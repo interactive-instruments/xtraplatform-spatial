@@ -7,14 +7,14 @@ package de.ii.xtraplatform.crs.api;
 public abstract class BoundingBoxTransformer implements CrsTransformer{
         
     @Override
-    public BoundingBox transformBoundingBox(BoundingBox bbox, EpsgCrs targetCrs) throws CrsTransformationException {
+    public BoundingBox transformBoundingBox(BoundingBox boundingBox, EpsgCrs targetCrs) throws CrsTransformationException {
                 
         // DEBUG
         //System.out.println( bbox.getXmin()+" " +bbox.getYmin()+" "+bbox.getXmax()+" "+bbox.getYmax()+" 0;");
-        CoordinateTuple ll = this.transform(bbox.getXmin(), bbox.getYmin());
-        CoordinateTuple lr = this.transform(bbox.getXmax(), bbox.getYmin());
-        CoordinateTuple ur = this.transform(bbox.getXmax(), bbox.getYmax());
-        CoordinateTuple ul = this.transform(bbox.getXmin(), bbox.getYmax());
+        CoordinateTuple ll = this.transform(boundingBox.getXmin(), boundingBox.getYmin());
+        CoordinateTuple lr = this.transform(boundingBox.getXmax(), boundingBox.getYmin());
+        CoordinateTuple ur = this.transform(boundingBox.getXmax(), boundingBox.getYmax());
+        CoordinateTuple ul = this.transform(boundingBox.getXmin(), boundingBox.getYmax());
 
         if (ll.isNull() || ul.isNull() || lr.isNull() || ur.isNull()) {
             throw new CrsTransformationException();

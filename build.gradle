@@ -56,7 +56,7 @@ subprojects {
     group = 'de.interactive-instruments'
 
     sourceCompatibility = 1.7
-    
+
     repositories {     
         mavenLocal()
         mavenCentral()

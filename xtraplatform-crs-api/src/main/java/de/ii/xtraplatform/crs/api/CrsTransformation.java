@@ -10,10 +10,10 @@ public interface CrsTransformation {
 
     CrsTransformer getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs);
 
-    boolean isSRSAxisOrderEastNorth(String epsg);
+    boolean isCrsAxisOrderEastNorth(String crs);
 
-    boolean isSRSSupported(String epsg);
+    boolean isCrsSupported(String crs);
     
-    double getUnitEquivalentInMeter(String epsg);
+    double getUnitEquivalentInMeter(String crs);
     
 }

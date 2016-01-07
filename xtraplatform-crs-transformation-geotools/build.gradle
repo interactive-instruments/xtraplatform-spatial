@@ -1,0 +1,44 @@
+
+def rep = repositories.maven {
+    url "http://download.osgeo.org/webdav/geotools"
+}
+repositories.remove(rep)
+repositories.addFirst(rep)
+
+
+dependencies {
+    compile project(':xtraplatform-crs-api')
+
+    // TODO: update
+    embedded group: 'org.geotools', name: 'gt-referencing', version: '11.0'
+    embedded group: 'org.geotools', name: 'gt-epsg-hsql', version: '11.0'
+    embedded group: 'org.geotools', name: 'gt-epsg-extension', version: '11.0'
+    embedded group: 'org.geotools', name: 'gt-opengis', version: '11.0'
+    
+    // TODO: do we need this? does this enable transformation from 3D to 2D?
+    //embedded group: 'org.geotools', name: 'gt-referencing3D', version: '11.0'
+    
+}
+
+jar {
+    manifest { 
+        instruction 'Export-Package'
+        instruction 'Private-Package', 
+            'de.ii.xtraplatform.crs.geotools'
+            
+        instruction 'Embed-Dependency',
+            'gt-opengis',
+            'gt-referencing',
+            'gt-epsg-hsql',
+            'gt-epsg-extension'
+        instructionFirst 'Import-Package', '!javax.measure.unit' 
+        
+        instruction 'Import-Package', 'javax.swing.event' 
+        instruction 'Import-Package', 'javax.swing.tree' 
+        instruction 'Import-Package', 'javax.sql' 
+        instruction 'Import-Package', 'javax.naming' 
+        instruction 'Import-Package', 'javax.imageio.spi'
+            
+        instruction 'Embed-Transitive', 'true'
+    }
+}

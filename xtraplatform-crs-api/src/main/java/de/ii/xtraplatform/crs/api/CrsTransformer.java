@@ -6,11 +6,11 @@ package de.ii.xtraplatform.crs.api;
  */
 public interface CrsTransformer {
 
-    public CoordinateTuple transform(double x, double y);
+    CoordinateTuple transform(double x, double y);
 
-    public CoordinateTuple transform(CoordinateTuple coord);
+    CoordinateTuple transform(CoordinateTuple coordinateTuple);
 
-    public double[] transform(double[] coord, int numPts);
+    double[] transform(double[] coordinates, int numberOfPoints);
     
-    public BoundingBox transformBoundingBox(BoundingBox bbox, EpsgCrs targetCrs) throws CrsTransformationException;
+    BoundingBox transformBoundingBox(BoundingBox boundingBox, EpsgCrs targetCrs) throws CrsTransformationException;
 }

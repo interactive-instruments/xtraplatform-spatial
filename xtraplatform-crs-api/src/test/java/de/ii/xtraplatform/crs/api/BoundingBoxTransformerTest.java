@@ -91,12 +91,12 @@ public class BoundingBoxTransformerTest {
         }
 
         @Override
-        public CoordinateTuple transform(CoordinateTuple coord) {
+        public CoordinateTuple transform(CoordinateTuple coordinateTuple) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public double[] transform(double[] coord, int numPts) {
+        public double[] transform(double[] coordinates, int numberOfPoints) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
     }
