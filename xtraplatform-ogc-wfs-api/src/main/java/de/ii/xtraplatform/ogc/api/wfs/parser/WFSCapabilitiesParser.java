@@ -2,14 +2,7 @@ package de.ii.xtraplatform.ogc.api.wfs.parser;
 
 import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.WFS;
-import java.io.IOException;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
-
-import de.ii.xtraplatform.ogc.api.exceptions.ParseError;
-import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
-import de.ii.xtraplatform.ogc.api.exceptions.WFSException;
-import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
+import de.ii.xtraplatform.ogc.api.XLINK;
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.staxmate.SMInputFactory;
@@ -18,14 +11,18 @@ import org.codehaus.staxmate.in.SMInputCursor;
 import org.forgerock.i18n.slf4j.LocalizedLogger;
 import org.xml.sax.InputSource;
 
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
+import java.io.IOException;
+
 /**
  *
  * @author zahnen
  */
 public class WFSCapabilitiesParser {
 
-    private static final String XLINK_NSURI = "http://www.w3.org/1999/xlink";
     private static final LocalizedLogger LOGGER = XSFLogger.getLogger(WFSCapabilitiesParser.class);
+
     private final WFSCapabilitiesAnalyzer analyzer;
     private final SMInputFactory staxFactory;
 
@@ -34,234 +31,561 @@ public class WFSCapabilitiesParser {
         this.staxFactory = staxFactory;
     }
 
-    public void parse(HttpEntity entity) throws ParseError {
+    public void parse(HttpEntity entity) {
         try {
             InputSource is = new InputSource(entity.getContent());
             parse(is);
         } catch (IOException ex) {
-            LOGGER.error(FrameworkMessages.ERROR_PARSING_WFS_CAPABILITIES);
-            throw new SchemaParseException(FrameworkMessages.ERROR_PARSING_WFS_CAPABILITIES);
+            // TODO: move to analyzer for XtraProxy
+            //LOGGER.error(FrameworkMessages.ERROR_PARSING_WFS_CAPABILITIES);
+            //throw new SchemaParseException(FrameworkMessages.ERROR_PARSING_WFS_CAPABILITIES);
+
+            analyzer.analyzeFailed(ex);
         } finally {
             EntityUtils.consumeQuietly(entity);
         }
     }
 
-    public void parse(InputSource is) throws WFSException {
-        LOGGER.debug(FrameworkMessages.PARSING_CAPABILITIES_FOR_WFS);
+    public void parse(InputSource is) {
+
         SMInputCursor root = null;
+
         try {
             root = staxFactory.rootElementCursor(is.getByteStream()).advance();
 
-            if (root.getLocalName().contains("ExceptionReport")) {
-                SMInputCursor exception = root.childElementCursor().advance();
-                while (exception.readerAccessible()) {
-
-                    String exceptionCode = "";
-                    String exceptionText = "";
-                    while (exception.readerAccessible()) {
-                        if (exception.getCurrEventCode() == XMLStreamConstants.START_ELEMENT) {
-                            if (exception.getLocalName().equals("ServiceException")) {
-                                exceptionCode = exception.getAttrValue("code");
-                                exceptionText = exception.collectDescendantText();
-                            }
-                        }
-                        exception = exception.advance();
-                    }
-
-                    LOGGER.error(FrameworkMessages.EXCEPTION_COMING_FROM_WFS, exceptionCode + " " + exceptionText + "");
-                    WFSException wfse = new WFSException(FrameworkMessages.EXCEPTION_COMING_FROM_WFS, exceptionText);
-                    wfse.addDetail(FrameworkMessages.EXCEPTION_COMING_FROM_WFS, exceptionCode);
-                    throw wfse;
-                }
+            if (checkForExceptionReport(root)) {
+                return;
             }
 
-            analyzer.analyzeNamespaces(root.getStreamReader());
+            parseNamespaces(root);
 
-            // for WFS 1.0.0 ...
-            String version = root.getAttrValue("version");
+            analyzer.analyzeVersion(root.getAttrValue(WFS.getWord(WFS.VOCABULARY.VERSION)));
 
-            analyzer.analyzeVersion(version);
+            SMInputCursor capabilitiesChild = root.childElementCursor().advance();
 
-            SMInputCursor body = root.childElementCursor().advance();
+            while (capabilitiesChild.readerAccessible()) {
 
-            while (body.readerAccessible()) {
-                if (body.hasLocalName("ServiceIdentification") || body.hasLocalName("Service")) {
-                    parseServiceIdentification(body);
-                } else if (body.hasLocalName("OperationsMetadata")) {
-                    parseOperationsMetadata(body);
-                } else if (body.hasLocalName("FeatureTypeList")) {
-                    parseFeatureTypes(body);
+                switch (WFS.findKey(capabilitiesChild.getLocalName())) {
+                    case SERVICE_IDENTIFICATION:
+                        parseServiceIdentification(capabilitiesChild);
+                        break;
+                    case SERVICE_PROVIDER:
+                        parseServiceProvider(capabilitiesChild);
+                        break;
+                    case OPERATIONS_METADATA:
+                        parseOperationsMetadata(capabilitiesChild);
+                        break;
+                    case FEATURE_TYPE_LIST:
+                        parseFeatureTypeList(capabilitiesChild);
+                        break;
                 }
-                body = body.advance();
+
+                capabilitiesChild = capabilitiesChild.advance();
             }
-        } catch (WFSException ex) {
-            throw ex;
         } catch (XMLStreamException ex) {
-            LOGGER.error(FrameworkMessages.ERROR_PARSING_WFS_CAPABILITIES);
-            throw new ParseError(FrameworkMessages.ERROR_PARSING_WFS_CAPABILITIES);
+            // TODO: move to analyzer for XtraProxy
+            //LOGGER.error(FrameworkMessages.ERROR_PARSING_WFS_CAPABILITIES);
+            //throw new ParseError(FrameworkMessages.ERROR_PARSING_WFS_CAPABILITIES);
+
+            analyzer.analyzeFailed(ex);
         } finally {
             if (root != null) {
                 try {
                     root.getStreamReader().closeCompletely();
                 } catch (XMLStreamException ex) {
+                    // ignore
                 }
             }
         }
     }
 
-    private void parseServiceIdentification(SMInputCursor cursor) throws XMLStreamException {
-        SMInputCursor serviceIdentification = cursor.childElementCursor().advance();
-        while (serviceIdentification.readerAccessible()) {
-            if (serviceIdentification.hasLocalName("Title")) {
-                analyzer.analyzeTitle(serviceIdentification.collectDescendantText());
-            } else if (serviceIdentification.hasLocalName("Abstract")) {
-                String txt = serviceIdentification.collectDescendantText();
-                if (!txt.isEmpty()) {
-                    analyzer.analyzeTitle(": " + txt);
+    private void parseNamespaces(SMInputCursor cursor) throws XMLStreamException {
+        XMLStreamReader xml = cursor.getStreamReader();
+
+        for (int i = 0; i < xml.getNamespaceCount(); i++) {
+            analyzer.analyzeNamespace(xml.getNamespacePrefix(i), xml.getNamespaceURI(i));
+        }
+    }
+
+    private boolean checkForExceptionReport(SMInputCursor cursor) throws XMLStreamException {
+
+        boolean exceptionFound = false;
+
+        // TODO: make version agnostic
+        if (WFS.findKey(cursor.getLocalName()) == WFS.VOCABULARY.EXCEPTION_REPORT) {
+
+            exceptionFound = true;
+
+            SMInputCursor exceptionReportChild = cursor.childElementCursor().advance();
+
+            while (exceptionReportChild.readerAccessible()) {
+
+                switch (WFS.findKey(exceptionReportChild.getLocalName())) {
+                    case EXCEPTION:
+                        parseException(exceptionReportChild);
+                        break;
                 }
-            } else if (serviceIdentification.hasLocalName("Fees")) {
-                String txt = serviceIdentification.collectDescendantText();
-                if (!txt.isEmpty()) {
-                    analyzer.analyzeTitle(", Fees: " + txt);
-                }
-            } else if (serviceIdentification.hasLocalName("AccessConstraints")) {
-                String txt = serviceIdentification.collectDescendantText();
-                if (!txt.isEmpty()) {
-                    analyzer.analyzeTitle(", AccessConstraints: " + txt);
-                    analyzer.analyzeCopyright(txt);
-                }
-            } else if (serviceIdentification.hasLocalName("ServiceTypeVersion")) {
-                analyzer.analyzeVersion(serviceIdentification.collectDescendantText());
+
+                exceptionReportChild = exceptionReportChild.advance();
+
+                // TODO: move to analyzer for XtraProxy
+                /*LOGGER.error(FrameworkMessages.EXCEPTION_COMING_FROM_WFS, exceptionCode + " " + exceptionText + "");
+                WFSException wfse = new WFSException(FrameworkMessages.EXCEPTION_COMING_FROM_WFS, exceptionText);
+                wfse.addDetail(FrameworkMessages.EXCEPTION_COMING_FROM_WFS, exceptionCode);
+                throw wfse;
+                */
             }
-            serviceIdentification = serviceIdentification.advance();
+        }
+
+        return exceptionFound;
+    }
+
+    private void parseException(SMInputCursor cursor) throws XMLStreamException {
+
+        String exceptionCode = cursor.getAttrValue(WFS.getWord(WFS.VERSION._1_1_0, WFS.VOCABULARY.EXCEPTION_CODE));
+
+        if (exceptionCode != null) {
+
+            SMInputCursor exceptionChild = cursor.childElementCursor().advance();
+
+            while (exceptionChild.readerAccessible()) {
+
+                switch (WFS.findKey(exceptionChild.getLocalName())) {
+                    case EXCEPTION_TEXT:
+                        analyzer.analyzeFailed(exceptionCode, exceptionChild.collectDescendantText());
+                        break;
+                }
+
+                exceptionChild = exceptionChild.advance();
+            }
+
+        } else {
+            exceptionCode = cursor.getAttrValue(WFS.getWord(WFS.VERSION._1_0_0, WFS.VOCABULARY.EXCEPTION_CODE));
+
+            analyzer.analyzeFailed(exceptionCode, cursor.collectDescendantText());
+        }
+
+    }
+
+    private void parseServiceIdentification(SMInputCursor cursor) throws XMLStreamException {
+
+        SMInputCursor serviceIdentificationChild = cursor.childElementCursor().advance();
+
+        while (serviceIdentificationChild.readerAccessible()) {
+
+            switch (WFS.findKey(serviceIdentificationChild.getLocalName())) {
+                case TITLE:
+                    analyzer.analyzeTitle(serviceIdentificationChild.collectDescendantText());
+                    break;
+                case ABSTRACT:
+                    analyzer.analyzeAbstract(serviceIdentificationChild.collectDescendantText());
+                    break;
+                case KEYWORDS:
+                    parseKeywords("", false, serviceIdentificationChild);
+                    break;
+                case FEES:
+                    analyzer.analyzeFees(serviceIdentificationChild.collectDescendantText());
+                    break;
+                case ACCESS_CONSTRAINTS:
+                    analyzer.analyzeAccessConstraints(serviceIdentificationChild.collectDescendantText());
+                    break;
+                case SERVICE_TYPE_VERSION:
+                    analyzer.analyzeVersion(serviceIdentificationChild.collectDescendantText());
+                    break;
+            }
+
+            serviceIdentificationChild = serviceIdentificationChild.advance();
+        }
+    }
+
+    private void parseKeywords(String featureTypeName, boolean isFeatureType, SMInputCursor cursor) throws XMLStreamException {
+        SMInputCursor keywordsChild = cursor.descendantMixedCursor().advance();
+
+        while (keywordsChild.readerAccessible()) {
+
+            if (keywordsChild.getCurrEvent().hasText() && keywordsChild.getCurrEvent() != SMEvent.IGNORABLE_WS) {
+                String keywords = keywordsChild.getText().trim();
+                if (!keywords.isEmpty()) {
+                    if (isFeatureType) {
+                        analyzer.analyzeFeatureTypeKeywords(featureTypeName, keywords.split(","));
+                    } else {
+                        analyzer.analyzeKeywords(keywords.split(","));
+                    }
+                }
+            }
+
+            keywordsChild = keywordsChild.advance();
+        }
+    }
+
+    private void parseServiceProvider(SMInputCursor cursor) throws XMLStreamException {
+        SMInputCursor serviceProviderChild = cursor.childElementCursor().advance();
+
+        while (serviceProviderChild.readerAccessible()) {
+
+            switch (WFS.findKey(serviceProviderChild.getLocalName())) {
+                case PROVIDER_NAME:
+                    analyzer.analyzeProviderName(serviceProviderChild.collectDescendantText());
+                    break;
+                case PROVIDER_SITE:
+                    analyzer.analyzeProviderSite(serviceProviderChild.collectDescendantText());
+                    break;
+                case SERVICE_CONTACT:
+                    parseServiceContact(serviceProviderChild);
+                    break;
+            }
+
+            serviceProviderChild = serviceProviderChild.advance();
+        }
+    }
+
+    private void parseServiceContact(SMInputCursor cursor) throws XMLStreamException {
+        SMInputCursor serviceContactChild = cursor.childElementCursor().advance();
+
+        while (serviceContactChild.readerAccessible()) {
+
+            switch (WFS.findKey(serviceContactChild.getLocalName())) {
+                case INDIVIDUAL_NAME:
+                    analyzer.analyzeServiceContactIndividualName(serviceContactChild.collectDescendantText());
+                    break;
+                case ORGANIZATION_NAME:
+                    analyzer.analyzeServiceContactOrganizationName(serviceContactChild.collectDescendantText());
+                    break;
+                case POSITION_NAME:
+                    analyzer.analyzeServiceContactPositionName(serviceContactChild.collectDescendantText());
+                    break;
+                case CONTACT_INFO:
+                    parseContactInfo(serviceContactChild);
+                    break;
+                case ROLE:
+                    analyzer.analyzeServiceContactRole(serviceContactChild.collectDescendantText());
+                    break;
+            }
+
+            serviceContactChild = serviceContactChild.advance();
+        }
+    }
+
+    private void parseContactInfo(SMInputCursor cursor) throws XMLStreamException {
+        SMInputCursor contactInfoChild = cursor.childElementCursor().advance();
+
+        while (contactInfoChild.readerAccessible()) {
+
+            switch (WFS.findKey(contactInfoChild.getLocalName())) {
+                case PHONE:
+                    parsePhone(contactInfoChild);
+                    break;
+                case ADDRESS:
+                    parseAddress(contactInfoChild);
+                    break;
+                case ONLINE_RESOURCE:
+                    analyzer.analyzeServiceContactOnlineResource(contactInfoChild.getAttrValue(XLINK.getNS(XLINK.VERSION.DEFAULT), XLINK.getWord(XLINK.VOCABULARY.HREF)));
+                    break;
+                case HOURS_OF_SERVICE:
+                    analyzer.analyzeServiceContactHoursOfService(contactInfoChild.collectDescendantText());
+                    break;
+                case CONTACT_INSTRUCTIONS:
+                    analyzer.analyzeServiceContactInstructions(contactInfoChild.collectDescendantText());
+                    break;
+            }
+
+            contactInfoChild = contactInfoChild.advance();
+        }
+    }
+
+    private void parsePhone(SMInputCursor cursor) throws XMLStreamException {
+        SMInputCursor phoneChild = cursor.childElementCursor().advance();
+
+        while (phoneChild.readerAccessible()) {
+
+            switch (WFS.findKey(phoneChild.getLocalName())) {
+                case VOICE:
+                    analyzer.analyzeServiceContactPhone(phoneChild.collectDescendantText());
+                    break;
+                case FACSIMILE:
+                    analyzer.analyzeServiceContactFacsimile(phoneChild.collectDescendantText());
+                    break;
+            }
+
+            phoneChild = phoneChild.advance();
+        }
+    }
+
+    private void parseAddress(SMInputCursor cursor) throws XMLStreamException {
+        SMInputCursor addressChild = cursor.childElementCursor().advance();
+
+        while (addressChild.readerAccessible()) {
+
+            switch (WFS.findKey(addressChild.getLocalName())) {
+                case DELIVERY_POINT:
+                    analyzer.analyzeServiceContactDeliveryPoint(addressChild.collectDescendantText());
+                    break;
+                case CITY:
+                    analyzer.analyzeServiceContactCity(addressChild.collectDescendantText());
+                    break;
+                case ADMINISTRATIVE_AREA:
+                    analyzer.analyzeServiceContactAdministrativeArea(addressChild.collectDescendantText());
+                    break;
+                case POSTAL_CODE:
+                    analyzer.analyzeServiceContactPostalCode(addressChild.collectDescendantText());
+                    break;
+                case COUNTRY:
+                    analyzer.analyzeServiceContactCountry(addressChild.collectDescendantText());
+                    break;
+                case EMAIL:
+                    analyzer.analyzeServiceContactEmail(addressChild.collectDescendantText());
+                    break;
+            }
+
+            addressChild = addressChild.advance();
         }
     }
 
     private void parseOperationsMetadata(SMInputCursor cursor) throws XMLStreamException {
-        SMInputCursor operationsMetadata = cursor.childElementCursor().advance();
-        while (operationsMetadata.readerAccessible()) {
-            if (operationsMetadata.hasLocalName("Operation") || operationsMetadata.hasLocalName("Parameter")) {
 
-                String op = operationsMetadata.getAttrValue("name");
-                WFS.OPERATION wfsOp = WFS.OPERATION.fromString(op);
+        SMInputCursor operationsMetadataChild = cursor.childElementCursor().advance();
 
-                if (wfsOp != null) {
-                    //LOGGER.info("OPERATION: {}", wfsOp.toString());
+        while (operationsMetadataChild.readerAccessible()) {
 
-                    SMInputCursor dcp = operationsMetadata.descendantElementCursor().advance();
-                    while (dcp.readerAccessible()) {
-                        if (dcp.getCurrEvent() == SMEvent.START_ELEMENT) {
-                            if (dcp.hasLocalName("Post")) {
-                                String url = dcp.getAttrValue(XLINK_NSURI, "href");
-                                //LOGGER.info(" - Post: {}", url);
-                                analyzer.analyzeDCPPOST(wfsOp, url);
-                            }
-                            if (dcp.hasLocalName("Get")) {
-                                String url = dcp.getAttrValue(XLINK_NSURI, "href");
-                                //LOGGER.info(" - Get: {}", url);
-                                analyzer.analyzeDCPGET(wfsOp, url);
-                            }
-                            if (dcp.hasLocalName("Parameter")) {
-                                if (dcp.getAttrValue("name").equals("outputFormat")) {
+            switch (WFS.findKey(operationsMetadataChild.getLocalName())) {
+                case OPERATION:
+                    parseOperation(operationsMetadataChild);
+                    break;
+                case PARAMETER:
+                    parseParameterOrConstraint(WFS.OPERATION.NONE, false, operationsMetadataChild);
+                    break;
+                case CONSTRAINT:
+                    parseParameterOrConstraint(WFS.OPERATION.NONE, true, operationsMetadataChild);
+                    break;
+            }
 
-                                    SMInputCursor value = dcp.childElementCursor().advance();
-                                    while (value.readerAccessible()) {
+            operationsMetadataChild = operationsMetadataChild.advance();
+        }
+    }
 
-                                        if (value.hasLocalName("AllowedValues")) {
-                                            value = value.childElementCursor().advance();
-                                        }
+    private void parseOperation(SMInputCursor cursor) throws XMLStreamException {
 
-                                        if (value.hasLocalName("Value") || value.hasLocalName("DefaultValue")) {
-                                            String val = value.collectDescendantText();
-                                            analyzer.analyzeGMLOutputFormat(val);
-                                        }
-                                        value = value.advance();
-                                    }
+        WFS.OPERATION wfsOperation = WFS.OPERATION.fromString(cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.NAME_ATTRIBUTE)));
+
+        if (wfsOperation == WFS.OPERATION.NONE) {
+            wfsOperation = WFS.OPERATION.fromString(cursor.getLocalName());
+        }
+
+        if (wfsOperation == WFS.OPERATION.NONE) {
+            cursor = cursor.childElementCursor().advance();
+
+            if (WFS.OPERATION.fromString(cursor.getLocalName()) != WFS.OPERATION.NONE) {
+                while (cursor.readerAccessible()) {
+                    parseOperation(cursor);
+
+                    cursor = cursor.advance();
+                }
+
+                return;
+            }
+        }
+
+        if (wfsOperation != WFS.OPERATION.NONE) {
+
+            SMInputCursor operationChild = cursor.childElementCursor().advance();
+
+            while (operationChild.readerAccessible()) {
+
+                switch (WFS.findKey(operationChild.getLocalName())) {
+                    case DCP:
+                        SMInputCursor dcpChild = operationChild.descendantElementCursor().advance();
+
+                        while (dcpChild.readerAccessible()) {
+                            if (dcpChild.getCurrEvent() == SMEvent.START_ELEMENT) {
+                                switch (WFS.findKey(dcpChild.getLocalName())) {
+                                    case GET:
+                                        analyzer.analyzeOperationGetUrl(wfsOperation, WFS.cleanUrl(parseUrl(dcpChild)));
+                                        break;
+                                    case POST:
+                                        analyzer.analyzeOperationPostUrl(wfsOperation, WFS.cleanUrl(parseUrl(dcpChild)));
+                                        break;
                                 }
                             }
+                            dcpChild = dcpChild.advance();
                         }
-                        dcp = dcp.advance();
-                    }
-                } else if (op.equals("outputFormat")) {
-                    SMInputCursor value = operationsMetadata.childElementCursor().advance();
-                    while (value.readerAccessible()) {
-
-                        if (value.hasLocalName("AllowedValues")) {
-                            value = value.childElementCursor().advance();
-                        }
-
-                        if (value.hasLocalName("Value") || value.hasLocalName("DefaultValue")) {
-                            String val = value.collectDescendantText();
-                            analyzer.analyzeGMLOutputFormat(val);
-                        }
-                        value = value.advance();
-                    }
-                }
-            }
-            operationsMetadata = operationsMetadata.advance();
-        }
-    }
-
-    private void parseFeatureTypes(SMInputCursor cursor) throws XMLStreamException {
-        SMInputCursor featureTypes = cursor.descendantElementCursor().advance();
-        while (featureTypes.readerAccessible()) {
-
-            if (featureTypes.hasLocalName("FeatureType")) {
-                analyzer.analyzeNamespaces(featureTypes.getStreamReader());
-            } else if (featureTypes.hasLocalName("Name")) {
-                analyzer.analyzeNamespaces(featureTypes.getStreamReader());
-                analyzer.analyzeFeatureType(featureTypes.collectDescendantText());
-            } else if (featureTypes.hasLocalName("WGS84BoundingBox")) {
-                parseBoundingBox(featureTypes);
-            } else if (featureTypes.hasLocalName("LatLongBoundingBox")) {
-
-                if (featureTypes.getCurrEvent() == SMEvent.START_ELEMENT) {
-                    parseLatLongBoundingBox(featureTypes);
+                        break;
+                    case PARAMETER:
+                        parseParameterOrConstraint(wfsOperation, false, operationChild);
+                        break;
+                    case RESULT_FORMAT:
+                        parseResultFormat(wfsOperation, operationChild);
+                        break;
+                    case CONSTRAINT:
+                        parseParameterOrConstraint(wfsOperation, true, operationChild);
+                        break;
+                    case METADATA:
+                        analyzer.analyzeOperationMetadata(wfsOperation, operationChild.getAttrValue(XLINK.getNS(XLINK.VERSION.DEFAULT), XLINK.getWord(XLINK.VOCABULARY.HREF)));
+                        break;
                 }
 
-            } else if (featureTypes.hasLocalName("DefaultCRS") || featureTypes.hasLocalName("DefaultSRS")) {
-                parseDefaultCRS(featureTypes);
-            } else if (featureTypes.hasLocalName("OtherCRS") || featureTypes.hasLocalName("OtherSRS") || featureTypes.hasLocalName("SRS")) {
-                parseOtherCRS(featureTypes);
+                operationChild = operationChild.advance();
             }
-            featureTypes = featureTypes.advance();
         }
     }
 
-    private void parseDefaultCRS(SMInputCursor cursor) throws XMLStreamException {
-        analyzer.analyzeDefaultSRS(cursor.getElemStringValue());
+    private String parseUrl(SMInputCursor cursor) throws XMLStreamException {
+        String url = cursor.getAttrValue(XLINK.getNS(XLINK.VERSION.DEFAULT), XLINK.getWord(XLINK.VOCABULARY.HREF));
+        if (url == null) {
+            url = cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.ONLINE_RESOURCE_ATTRIBUTE));
+        }
+        return url;
     }
 
-    private void parseOtherCRS(SMInputCursor cursor) throws XMLStreamException {
-        analyzer.analyzeOtherSRS(cursor.getElemStringValue());
+    private void parseParameterOrConstraint(WFS.OPERATION operation, boolean isConstraint, SMInputCursor cursor) throws XMLStreamException {
+
+        WFS.VOCABULARY parameterName = WFS.findKey(cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.NAME_ATTRIBUTE)));
+
+        if (parameterName != WFS.VOCABULARY.NOT_A_WORD) {
+
+            SMInputCursor parameterChild = cursor.descendantElementCursor().advance();
+
+            while (parameterChild.readerAccessible()) {
+                if (parameterChild.getCurrEvent() == SMEvent.START_ELEMENT) {
+                    switch (WFS.findKey(parameterChild.getLocalName())) {
+                        case VALUE:
+                        case DEFAULT_VALUE:
+                            if (isConstraint) {
+                                analyzer.analyzeOperationConstraint(operation, parameterName, parameterChild.collectDescendantText());
+                            } else {
+                                analyzer.analyzeOperationParameter(operation, parameterName, parameterChild.collectDescendantText());
+                            }
+                            break;
+                    }
+                }
+
+                parameterChild = parameterChild.advance();
+            }
+
+        }
     }
 
-    private void parseBoundingBox(SMInputCursor cursor) throws XMLStreamException {
+    private void parseResultFormat(WFS.OPERATION operation, SMInputCursor cursor) throws XMLStreamException {
 
-        SMInputCursor bbox = cursor.childElementCursor().advance();
-        String bblower = null;
-        String bbupper = null;
+        WFS.VOCABULARY parameterName = WFS.findKey(cursor.getLocalName());
 
-        while (bbox.readerAccessible()) {
-            if (bbox.hasLocalName("LowerCorner")) {
-                bblower = bbox.getElemStringValue();
+        if (parameterName == WFS.VOCABULARY.RESULT_FORMAT) {
+
+            SMInputCursor parameterChild = cursor.childElementCursor().advance();
+
+            while (parameterChild.readerAccessible()) {
+                analyzer.analyzeOperationParameter(operation, WFS.VOCABULARY.OUTPUT_FORMAT, parameterChild.getLocalName());
+
+                parameterChild = parameterChild.advance();
             }
-            if (bbox.hasLocalName("UpperCorner")) {
-                bbupper = bbox.getElemStringValue();
+
+        }
+    }
+
+    private void parseFeatureTypeList(SMInputCursor cursor) throws XMLStreamException {
+        SMInputCursor featureTypeListChild = cursor.childElementCursor().advance();
+
+        while (featureTypeListChild.readerAccessible()) {
+
+            switch (WFS.findKey(featureTypeListChild.getLocalName())) {
+                case FEATURE_TYPE:
+                    parseFeatureType(featureTypeListChild);
+                    break;
             }
-            bbox = bbox.advance();
+
+            featureTypeListChild = featureTypeListChild.advance();
+        }
+    }
+
+    private void parseFeatureType(SMInputCursor cursor) throws XMLStreamException {
+
+        parseNamespaces(cursor);
+
+        SMInputCursor featureTypeChild = cursor.childElementCursor().advance();
+
+        String featureTypeName = null;
+
+        while (featureTypeChild.readerAccessible()) {
+
+            switch (WFS.findKey(featureTypeChild.getLocalName())) {
+                case NAME:
+                    parseNamespaces(featureTypeChild);
+                    featureTypeName = featureTypeChild.collectDescendantText();
+                    analyzer.analyzeFeatureType(featureTypeName);
+                    break;
+                case TITLE:
+                    analyzer.analyzeFeatureTypeTitle(featureTypeName, featureTypeChild.collectDescendantText());
+                    break;
+                case ABSTRACT:
+                    analyzer.analyzeFeatureTypeAbstract(featureTypeName, featureTypeChild.collectDescendantText());
+                    break;
+                case KEYWORDS:
+                    parseKeywords(featureTypeName, true, featureTypeChild);
+                    break;
+                case DEFAULT_CRS:
+                    analyzer.analyzeFeatureTypeDefaultCrs(featureTypeName, featureTypeChild.getElemStringValue());
+                    break;
+                case OTHER_CRS:
+                    analyzer.analyzeFeatureTypeOtherCrs(featureTypeName, featureTypeChild.getElemStringValue());
+                    break;
+                case WGS84_BOUNDING_BOX:
+                    parseBoundingBox(featureTypeName, featureTypeChild);
+                    break;
+                case METADATA_URL:
+                    parseMetadataUrl(featureTypeName, featureTypeChild);
+                    break;
+            }
+
+            featureTypeChild = featureTypeChild.advance();
+        }
+    }
+
+    private void parseBoundingBox(String featureTypeName, SMInputCursor cursor) throws XMLStreamException {
+
+        String xmin = cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.MIN_X));
+        String ymin = cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.MIN_Y));
+        String xmax = cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.MAX_X));
+        String ymax = cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.MAX_Y));
+
+        if (xmin == null || ymin == null || xmax == null || ymax == null) {
+
+            SMInputCursor bboxChild = cursor.childElementCursor().advance();
+
+            String[] lowerCorner = null;
+            String[] upperCorner = null;
+
+            while (bboxChild.readerAccessible()) {
+
+                switch (WFS.findKey(bboxChild.getLocalName())) {
+                    case LOWER_CORNER:
+                        lowerCorner = bboxChild.getElemStringValue().trim().split(" ");
+                        break;
+                    case UPPER_CORNER:
+                        upperCorner = bboxChild.getElemStringValue().trim().split(" ");
+                        break;
+                }
+
+                bboxChild = bboxChild.advance();
+            }
+
+            if (lowerCorner != null && lowerCorner.length == 2 && upperCorner != null && upperCorner.length == 2) {
+                xmin = lowerCorner[0];
+                ymin = lowerCorner[1];
+                xmax = upperCorner[0];
+                ymax = upperCorner[1];
+            }
         }
 
-        analyzer.analyzeBoundingBox(bblower, bbupper);
+        analyzer.analyzeFeatureTypeBoundingBox(featureTypeName, xmin, ymin, xmax, ymax);
     }
 
-    private void parseLatLongBoundingBox(SMInputCursor cursor) throws XMLStreamException {
+    private void parseMetadataUrl(String featureTypeName, SMInputCursor cursor) throws XMLStreamException {
 
-        String xmin = cursor.getAttrValue("minx");
-        String ymin = cursor.getAttrValue("miny");
-        String xmax = cursor.getAttrValue("maxx");
-        String ymax = cursor.getAttrValue("maxy");
+        String url = cursor.getAttrValue(XLINK.getNS(XLINK.VERSION.DEFAULT), XLINK.getWord(XLINK.VOCABULARY.HREF));
 
-        analyzer.analyzeBoundingBox(xmin, ymin, xmax, ymax);
+        if (url == null) {
+            url = cursor.collectDescendantText();
+        }
+
+        analyzer.analyzeFeatureTypeMetadataUrl(featureTypeName, url);
     }
 }

@@ -15,7 +15,7 @@ import org.w3c.dom.Element;
  */
 public class GetCapabilities extends WFSOperationGetCapabilities {
 
-    WFS.VERSION m_version;
+    private final WFS.VERSION m_version;
 
     public GetCapabilities() {
         m_version = null;
@@ -33,6 +33,7 @@ public class GetCapabilities extends WFSOperationGetCapabilities {
     public String getPOSTXML(XMLNamespaceNormalizer nsStore, Versions vs) {
         this.initialize(nsStore);
 
+        // TODO
         if (vs.getWfsVersion() == null) {
             vs.setWfsVersion(WFS.VERSION._1_1_0);
         }
@@ -45,6 +46,7 @@ public class GetCapabilities extends WFSOperationGetCapabilities {
             oper.setAttribute(WFS.getWord(m_version, WFS.VOCABULARY.VERSION), m_version.toString());
         }
 
+        // TODO
         oper.setAttribute("service", "WFS");
 
         String out = doc.toString(true);
@@ -55,12 +57,12 @@ public class GetCapabilities extends WFSOperationGetCapabilities {
     @Override
     public Map<String, String> getGETParameters(XMLNamespaceNormalizer nsStore, Versions vs) {
 
-        Map<String, String> params = new HashMap();
+        Map<String, String> params = new HashMap<>();
 
         params.put("REQUEST", this.getOperation().toString());
         params.put("SERVICE", "WFS");
 
-        if (vs.getWfsVersion() == null && m_version != null) {
+        if (m_version != null) {
             params.put("VERSION", m_version.toString());
         } else if( vs.getWfsVersion() != null) {
             params.put("VERSION", vs.getWfsVersion().toString());

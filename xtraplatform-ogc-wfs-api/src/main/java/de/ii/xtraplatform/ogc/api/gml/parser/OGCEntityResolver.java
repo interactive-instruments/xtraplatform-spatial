@@ -124,8 +124,8 @@ public class OGCEntityResolver implements EntityResolver {
             if (systemId.contains("/exts/InspireFeatureDownload/service")) {
                 String url = systemId;
                 // workaround for A4I 10.1 SP1 (Patch1) blank encoding bug in GET parameters
-                if (url.contains("OUTPUTFORMAT=")) {
-                    int start = url.indexOf("OUTPUTFORMAT=") + 13;
+                if (url.contains("OUTPUT_FORMAT=")) {
+                    int start = url.indexOf("OUTPUT_FORMAT=") + 13;
                     int end = url.indexOf("&", start);
                     String out = url.substring(start, end).replaceAll("%20", "");
                     url = url.substring(0, start) + out + url.substring(end);

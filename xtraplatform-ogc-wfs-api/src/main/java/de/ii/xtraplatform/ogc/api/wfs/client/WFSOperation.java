@@ -92,7 +92,7 @@ public abstract class WFSOperation {
         }
         
         if (vs.getGmlVersion() != null && vs.getWfsVersion() != null) {
-            oper.setAttribute(GML.getWord(vs.getWfsVersion(), WFS.VOCABULARY.OUTPUTFORMAT), GML.getWord(vs.getGmlVersion(), GML.VOCABULARY.OUTPUTFORMAT_VALUE));
+            oper.setAttribute(GML.getWord(vs.getWfsVersion(), WFS.VOCABULARY.OUTPUT_FORMAT), GML.getWord(vs.getGmlVersion(), GML.VOCABULARY.OUTPUTFORMAT_VALUE));
             oper.setAttribute(WFS.getWord(vs.getWfsVersion(), WFS.VOCABULARY.VERSION), vs.getWfsVersion().toString());
         }
 
@@ -141,7 +141,7 @@ public abstract class WFSOperation {
         params.put("SERVICE", "WFS");
 
         if (vs != null) {
-            params.put(GML.getWord(vs.getWfsVersion(), WFS.VOCABULARY.OUTPUTFORMAT).toUpperCase(), GML.getWord(vs.getGmlVersion(), GML.VOCABULARY.OUTPUTFORMAT_VALUE));
+            params.put(GML.getWord(vs.getWfsVersion(), WFS.VOCABULARY.OUTPUT_FORMAT).toUpperCase(), GML.getWord(vs.getGmlVersion(), GML.VOCABULARY.OUTPUTFORMAT_VALUE));
             params.put(WFS.getWord(vs.getWfsVersion(), WFS.VOCABULARY.VERSION).toUpperCase(), vs.getWfsVersion().toString());
         }   
         if (this.count != null) {

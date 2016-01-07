@@ -14,17 +14,17 @@ public class VersionedVocabulary {
         PREFIX, URI;
     }
     protected static final Map<Class, Map<Enum, Map<Enum, String>>> vocabulary;
-    private static final Class[] children = {WFS.class, FES.class, GML.class};
+    private static final Class[] children = {WFS.class, FES.class, GML.class, XLINK.class, XSI.class};
     
     static {
-        vocabulary = new HashMap();
+        vocabulary = new HashMap<>();
 
         //TODO: this is a dirty hack to execute the static initializers of the subclasses
         for (Class c : children) {
             try {
                 c.newInstance();
-            } catch (InstantiationException ex) {
-            } catch (IllegalAccessException ex) {
+            } catch (InstantiationException | IllegalAccessException ex) {
+                // ignore
             }
         }
     }
@@ -32,10 +32,10 @@ public class VersionedVocabulary {
     protected static void addWord(Enum v, Enum w, String s) {
         Class c = v.getDeclaringClass().getEnclosingClass();
         if (!vocabulary.containsKey(c)) {
-            vocabulary.put(c, new HashMap());
+            vocabulary.put(c, new HashMap<Enum, Map<Enum, String>>());
         }
         if (!vocabulary.get(c).containsKey(v)) {
-            vocabulary.get(c).put(v, new HashMap());
+            vocabulary.get(c).put(v, new HashMap<Enum, String>());
         }
         for (Map.Entry<Enum, Map<Enum, String>> e : vocabulary.get(c).entrySet()) {
             if (e.getKey().equals(v) || e.getKey().compareTo(v) > 0) {
@@ -51,6 +51,18 @@ public class VersionedVocabulary {
             word = vocabulary.get(c).get(v).get(w);
         }
         return word;
+    }
+
+    public static String getWord(Enum w) {
+        Class c = w.getDeclaringClass().getEnclosingClass();
+        if (vocabulary.containsKey(c)) {
+            for (Map<Enum, String> voc : vocabulary.get(c).values()) {
+                if (voc.containsKey(w)) {
+                    return voc.get(w);
+                }
+            }
+        }
+        return "";
     }
             
     public static String getQN(Enum v, Enum w) {

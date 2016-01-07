@@ -12,15 +12,14 @@ public class XLINK extends VersionedVocabulary {
 
     public enum VOCABULARY {
 
-        NIL, NIL_TRUE;
+        HREF;
     }
 
     static {
-        addWord(VERSION.DEFAULT, NAMESPACE.PREFIX, "xsi");
-        addWord(VERSION.DEFAULT, NAMESPACE.URI, "http://www.w3.org/2001/XMLSchema-instance");
+        addWord(VERSION.DEFAULT, NAMESPACE.PREFIX, "xlink");
+        addWord(VERSION.DEFAULT, NAMESPACE.URI, "http://www.w3.org/1999/xlink");
         
         
-        addWord(VERSION.DEFAULT, VOCABULARY.NIL, "nil");
-        addWord(VERSION.DEFAULT, VOCABULARY.NIL_TRUE, "true");
+        addWord(VERSION.DEFAULT, VOCABULARY.HREF, "href");
     }
 }
