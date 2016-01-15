@@ -49,4 +49,8 @@ public class WFSRequest {
         });
         
     }
+
+    public String getAsUrl() {
+        return wfs.getRequestUrl(operation);
+    }
 }

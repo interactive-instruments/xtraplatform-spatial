@@ -361,6 +361,22 @@ public class WFSAdapter {
         return response;
     }
 
+    public String getRequestUrl(WFSOperation operation) {
+        URIBuilder uri = new URIBuilder(findUrl(operation.getOperation(), WFS.METHOD.GET));
+
+        Map<String, String> params = operation.getGETParameters(nsStore, versions);
+
+        for (Map.Entry<String, String> param : params.entrySet()) {
+            uri.addParameter(param.getKey(), param.getValue());
+        }
+
+        try {
+            return uri.build().toString();
+        } catch (URISyntaxException e) {
+            return "";
+        }
+    }
+
     private HttpResponse requestGET(WFSOperation operation) {
         URIBuilder uri = new URIBuilder(findUrl(operation.getOperation(), WFS.METHOD.GET));
 
