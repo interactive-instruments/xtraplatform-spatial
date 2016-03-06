@@ -192,6 +192,11 @@ public class LoggingWfsCapabilitiesAnalyzer implements WFSCapabilitiesAnalyzer {
     }
 
     @Override
+    public void analyzeInspireMetadataUrl(String metadataUrl) {
+        LOGGER.getLogger().debug("analyzeInspireMetadataUrl {}", metadataUrl);
+    }
+
+    @Override
     public void analyzeFeatureType(String featureTypeName) {
         LOGGER.getLogger().debug("analyzeFeatureType {}", featureTypeName);
     }

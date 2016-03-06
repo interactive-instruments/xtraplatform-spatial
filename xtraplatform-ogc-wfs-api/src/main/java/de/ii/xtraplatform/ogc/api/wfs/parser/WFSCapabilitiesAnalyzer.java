@@ -61,6 +61,8 @@ public interface WFSCapabilitiesAnalyzer {
     void analyzeOperationConstraint(WFS.OPERATION operation, WFS.VOCABULARY constraintName, String value);
     void analyzeOperationMetadata(WFS.OPERATION operation, String url);
 
+    void analyzeInspireMetadataUrl(String metadataUrl);
+
     void analyzeFeatureType(String featureTypeName);
     void analyzeFeatureTypeTitle(String featureTypeName, String title);
     void analyzeFeatureTypeAbstract(String featureTypeName, String abstrct);

@@ -187,6 +187,11 @@ public class AbstractWfsCapabilitiesAnalyzer implements WFSCapabilitiesAnalyzer 
     }
 
     @Override
+    public void analyzeInspireMetadataUrl(String metadataUrl) {
+
+    }
+
+    @Override
     public void analyzeFeatureType(String featureTypeName) {
 
     }

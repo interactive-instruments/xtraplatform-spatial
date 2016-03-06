@@ -372,6 +372,9 @@ public class WFSCapabilitiesParser {
                 case CONSTRAINT:
                     parseParameterOrConstraint(WFS.OPERATION.NONE, true, operationsMetadataChild);
                     break;
+                case EXTENDED_CAPABILITIES:
+                    parseExtendedCapabilities(operationsMetadataChild);
+                    break;
             }
 
             operationsMetadataChild = operationsMetadataChild.advance();
@@ -493,6 +496,44 @@ public class WFSCapabilitiesParser {
                 parameterChild = parameterChild.advance();
             }
 
+        }
+    }
+
+    private void parseExtendedCapabilities(SMInputCursor cursor) throws XMLStreamException {
+
+        SMInputCursor extendedCapabilitiesChild = cursor.childElementCursor().advance();
+
+        while (extendedCapabilitiesChild.readerAccessible()) {
+
+            switch (WFS.findKey(extendedCapabilitiesChild.getLocalName())) {
+                case EXTENDED_CAPABILITIES:
+                    SMInputCursor extendedCapabilitiesChild2 = extendedCapabilitiesChild.childElementCursor().advance();
+
+                    while (extendedCapabilitiesChild2.readerAccessible()) {
+
+                        switch (WFS.findKey(extendedCapabilitiesChild2.getLocalName())) {
+                            case INSPIRE_METADATA_URL:
+                                SMInputCursor inspireMetadataChild = extendedCapabilitiesChild2.childElementCursor().advance();
+
+                                while (inspireMetadataChild.readerAccessible()) {
+
+                                    switch (WFS.findKey(inspireMetadataChild.getLocalName())) {
+                                        case INSPIRE_URL:
+                                            analyzer.analyzeInspireMetadataUrl(inspireMetadataChild.collectDescendantText());
+                                            break;
+                                    }
+
+                                    inspireMetadataChild = inspireMetadataChild.advance();
+                                }
+                                break;
+                        }
+
+                        extendedCapabilitiesChild2 = extendedCapabilitiesChild2.advance();
+                    }
+                    break;
+            }
+
+            extendedCapabilitiesChild = extendedCapabilitiesChild.advance();
         }
     }
 

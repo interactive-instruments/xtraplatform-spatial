@@ -260,6 +260,13 @@ public class MultiWfsCapabilitiesAnalyzer implements WFSCapabilitiesAnalyzer {
     }
 
     @Override
+    public void analyzeInspireMetadataUrl(String metadataUrl) {
+        for (WFSCapabilitiesAnalyzer analyzer: analyzers) {
+            analyzer.analyzeInspireMetadataUrl(metadataUrl);
+        }
+    }
+
+    @Override
     public void analyzeFeatureType(String featureTypeName) {
         for (WFSCapabilitiesAnalyzer analyzer: analyzers) {
             analyzer.analyzeFeatureType(featureTypeName);

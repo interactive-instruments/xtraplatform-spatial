@@ -93,7 +93,7 @@ public class WFSAdapter {
             // TODO: temporary basic auth hack
             // extract and remove credentials from url if existing
             //URI noAuthUri = this.extractBasicAuthCredentials(new URI(url));
-            URI noAuthUri = new URI(url);
+            URI noAuthUri = parseAndCleanWfsUrl(url);
             Map<WFS.METHOD, URI> urls = new ImmutableMap.Builder<WFS.METHOD, URI>()
                 .put(WFS.METHOD.GET, noAuthUri)
                 .put(WFS.METHOD.POST, noAuthUri)
@@ -530,4 +530,19 @@ public class WFSAdapter {
         this.httpMethod = WFS.METHOD.fromString(httpMethod);
     }
 
+    public static URI parseAndCleanWfsUrl(String url) throws URISyntaxException {
+        URI inUri = new URI(url.trim());
+        URIBuilder outUri = new URIBuilder(inUri).removeQuery();
+
+        if (inUri.getQuery() != null && !inUri.getQuery().isEmpty()) {
+            for (String inParam : inUri.getQuery().split("&")) {
+                String[] param = inParam.split("=");
+                if (!WFS.hasKVPKey(param[0].toUpperCase())) {
+                    outUri.addParameter(param[0], param[1]);
+                }
+            }
+        }
+
+        return outUri.build();
+    }
 }
