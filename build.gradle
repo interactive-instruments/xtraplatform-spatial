@@ -3,34 +3,27 @@ buildscript {
         mavenCentral() 
         jcenter()
         maven {
-            url "http://repository.excilys.com/content/groups/public"
-        }
-        maven {
-            url "http://nyx/artifactory/plugins-snapshot"
-        }
-        maven {
-            url "http://nyx/artifactory/plugins-release"
-        }
-        maven {
             url "https://plugins.gradle.org/m2/"
         }
-
+        maven {
+            url "https://dl.bintray.com/iide/maven"
+        }
     } 
-    dependencies { 
-        classpath group: 'de.interactive-instruments', name: 'gradle-plugin-forgerock-i18n', version: '1.0.6'
-        classpath group: 'de.interactive-instruments', name: 'gradle-plugin-osgi-ipojo', version: '1.12.1.26'        
-        classpath group: 'net.serenity-bdd', name: 'serenity-gradle-plugin', version: '1.1.16'
+    dependencies {
+        classpath group: 'de.interactive_instruments', name: 'gradle-plugin-osgi-ipojo', version: '1.12.1.26'
         classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.12.1"
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
     } 
 }
 
 apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
 
-version = '0.1.0'
+version = '1.0.1'
 
-version += '-SNAPSHOT'
+//version += '-SNAPSHOT'
 
-group = 'de.interactive-instruments'
+group = 'de.interactive_instruments'
 
 repositories {     
     mavenCentral()
@@ -49,16 +42,16 @@ dependencies {
 
 subprojects {
     apply plugin: 'java'
-    apply plugin: 'forgerock-i18n'
     apply plugin: 'osgi-ipojo'
     apply plugin: 'maven-publish'
+    apply plugin: 'com.jfrog.bintray'
     apply plugin: 'license'
 
-    version = '0.1.0'
+    version = '1.0.1'
 
-    version += '-SNAPSHOT'
+    //version += '-SNAPSHOT'
 
-    group = 'de.interactive-instruments'
+    group = 'de.interactive_instruments'
 
     sourceCompatibility = 1.7
 
@@ -78,13 +71,13 @@ subprojects {
         mavenCentral()
         jcenter()
         maven {
-            url "http://nyx/artifactory/libs-release"
-        }
-        maven {
             url "http://maven.forgerock.org/repo/repo"
         }
         maven {
             url 'http://oss.sonatype.org/content/repositories/snapshots'
+        }
+        maven {
+            url "https://dl.bintray.com/iide/maven"
         }
     }
     
@@ -92,12 +85,6 @@ subprojects {
         testCompile group: 'org.testng', name: 'testng', version: '6.8.5'
         testCompile group: 'junit', name: 'junit', version: '4.12'
         testCompile group: 'org.mockito', name: 'mockito-core', version: '1.9.5'
-        testCompile ('net.serenity-bdd:serenity-core:1.1.16') {
-            exclude module: 'guava'
-        }
-        testCompile ('net.serenity-bdd:serenity-junit:1.1.16') {
-            exclude module: 'guava'
-        }
     }
     
     test {
@@ -153,8 +140,8 @@ subprojects {
         provided group: 'org.apache.felix', name: 'org.apache.felix.framework', version: '4.4.1'
         provided group: 'org.apache.felix', name: 'org.apache.felix.ipojo', version: '1.12.1'
 
-        provided group: 'de.interactive-instruments', name: 'xtraplatform-api', version: '1.0.0-SNAPSHOT'
-        provided group: 'de.interactive-instruments', name: 'xtraplatform-dropwizard', version: '1.0.0-SNAPSHOT'
+        provided group: 'de.interactive_instruments', name: 'xtraplatform-api', version: '1.0.0'
+        provided group: 'de.interactive_instruments', name: 'xtraplatform-dropwizard', version: '1.0.0'
     }
     
     jar {
@@ -164,15 +151,44 @@ subprojects {
         }
     }
     
-    i18n {
+    /*i18n {
         outDir = new File(sourceSets.main.java.srcDirs.toList().first().parentFile, "i18n")
+    }*/
+    sourceSets.main.java.srcDirs += new File(sourceSets.main.java.srcDirs.toList().first().parentFile, "i18n")
+
+    task sourceJar(type: Jar) {
+        from sourceSets.main.allSource
     }
-    sourceSets.main.java.srcDirs += i18n.outDir
 
     publishing {
         publications {
             maven(MavenPublication) {
                 from components.java
+
+                artifact sourceJar {
+                    classifier "sources"
+                }
+            }
+        }
+    }
+
+    bintray {
+        user = project.bintrayUser
+        key = project.bintrayApiKey
+        publications = ['maven']
+        publish = false
+        pkg {
+            repo = 'maven'
+            name = project.name
+            userOrg = 'iide'
+            licenses = ['Apache-2.0']
+            websiteUrl = 'https://github.com/interactive-instruments/XtraPlatform-SDI-Tools'
+            issueTrackerUrl = 'https://github.com/interactive-instruments/XtraPlatform-SDI-Tools/issues'
+            vcsUrl = 'https://github.com/interactive-instruments/XtraPlatform-SDI-Tools.git'
+            githubRepo = 'interactive-instruments/XtraPlatform-SDI-Tools'
+            githubReleaseNotesFile = 'README.md'
+            version {
+                name = project.version
             }
         }
     }
@@ -228,12 +244,23 @@ publishing {
     }
 }
 
-allprojects {
-    publishing {
-        repositories {
-            maven {
-                url "http://nyx/artifactory/libs-snapshot-local"
-            }
+bintray {
+    user = project.bintrayUser
+    key = project.bintrayApiKey
+    publications = ['maven']
+    publish = false
+    pkg {
+        repo = 'maven'
+        name = project.name
+        userOrg = 'iide'
+        licenses = ['Apache-2.0']
+        websiteUrl = 'https://github.com/interactive-instruments/XtraPlatform-SDI-Tools'
+        issueTrackerUrl = 'https://github.com/interactive-instruments/XtraPlatform-SDI-Tools/issues'
+        vcsUrl = 'https://github.com/interactive-instruments/XtraPlatform-SDI-Tools.git'
+        githubRepo = 'interactive-instruments/XtraPlatform-SDI-Tools'
+        githubReleaseNotesFile = 'README.md'
+        version {
+            name = project.version
         }
     }
 }
