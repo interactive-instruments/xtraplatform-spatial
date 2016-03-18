@@ -16,7 +16,6 @@
 package de.ii.ogc.wfs.proxy;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.ldproxy.service.IndexMapping;
 
 import java.util.ArrayList;
 import java.util.HashMap;
