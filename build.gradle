@@ -5,9 +5,6 @@ buildscript {
         maven {
             url "https://plugins.gradle.org/m2/"
         }
-        maven {
-            url "https://dl.bintray.com/iide/maven"
-        }
     } 
     dependencies {
         classpath group: 'de.interactive_instruments', name: 'gradle-plugin-osgi-ipojo', version: '1.12.1.26'
@@ -19,9 +16,9 @@ buildscript {
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
 
-version = '1.0.1'
+version = '1.0.2'
 
-version += '-SNAPSHOT'
+//version += '-SNAPSHOT'
 
 group = 'de.interactive_instruments'
 
@@ -47,7 +44,7 @@ subprojects {
     apply plugin: 'com.jfrog.bintray'
     apply plugin: 'license'
 
-    version = '1.0.1'
+    version = '1.0.0'
 
     //version += '-SNAPSHOT'
 
@@ -127,21 +124,14 @@ subprojects {
     }
 
     dependencies {
-        
-        // TODO
-        provided 'com.google.guava:guava:17.0'
+        // TODO: get from root project, at least the versions
+        provided group: 'de.interactive_instruments', name: 'xtraplatform-bundles-runtime', version: '1.0.3'
+        // TODO: shouldn't we only be allowed to use api bundles here?
+        provided group: 'de.interactive_instruments', name: 'xtraplatform-bundles-core', version: '1.0.2'
 
-        // TODO: retrieve from bundles-runtime
-        provided group: 'org.slf4j', name: 'slf4j-api', version: '1.7.6'
-        provided group: 'ch.qos.logback', name: 'logback-classic', version: '1.1.3'
-        provided group: 'ch.qos.logback', name: 'logback-core', version: '1.1.3'
-
-        provided group: 'org.osgi', name: 'org.osgi.compendium', version: '4.2.0'
-        provided group: 'org.apache.felix', name: 'org.apache.felix.framework', version: '4.4.1'
-        provided group: 'org.apache.felix', name: 'org.apache.felix.ipojo', version: '1.12.1'
-
-        provided group: 'de.interactive_instruments', name: 'xtraplatform-api', version: '1.0.0'
-        provided group: 'de.interactive_instruments', name: 'xtraplatform-dropwizard', version: '1.0.0'
+        // TODO: this is in bundles-runtime, but with transitive=false
+        // TODO: we need the transitive dependencies in provided
+        provided group: 'de.interactive_instruments', name: 'xtraplatform-dropwizard', version: '1.0.2'
     }
     
     jar {
@@ -193,33 +183,6 @@ subprojects {
         }
     }
 }
-
-/*configure(subprojects.findAll {it.name != 'xtraplatform-api' && it.name != 'xtraplatform-dropwizard' && it.name != 'xtraplatform-logging-i18n' && it.name != 'xtraplatform-runtime'}) {
-    dependencies {
-        compile project(':xtraplatform-api')
-    }
-}
-
-configure(subprojects.findAll {it.name != 'xtraplatform-logging-i18n' && it.name != 'xtraplatform-dropwizard' && it.name != 'xtraplatform-runtime'}) {
-    dependencies {
-        compile project(':xtraplatform-dropwizard')
-    }
-    
-    jar {
-    manifest { 
-     instruction 'Import-Package', 'com.fasterxml.jackson.module.afterburner.ser'   
-     instruction 'Import-Package', '*'   
-    }
-    }
-}
-
-configure(subprojects.findAll {it.name != 'xtraplatform-logging-i18n'}) {
-    dependencies {
-        compile project(':xtraplatform-logging-i18n')
-    }
-}*/
-
-//conf2ScopeMappings.addMapping(1, configurations.provided, 'compile')
 
 publishing {
     publications {
