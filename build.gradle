@@ -64,7 +64,7 @@ subprojects {
     }
 
     repositories {     
-        mavenLocal()
+        //mavenLocal()
         mavenCentral()
         jcenter()
         maven {
@@ -207,6 +207,7 @@ publishing {
     }
 }
 
+// TODO: does not work without commenting out subprojects bintray plugin
 bintray {
     user = project.bintrayUser
     key = project.bintrayApiKey
