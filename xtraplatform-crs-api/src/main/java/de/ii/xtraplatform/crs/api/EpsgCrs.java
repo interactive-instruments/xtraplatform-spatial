@@ -50,8 +50,16 @@ public class EpsgCrs {
         return code;
     }
 
+    public void setCode(int code) {
+        this.code = code;
+    }
+
     public boolean isLongitudeFirst() {
         return longitudeFirst;
+    }
+
+    public void setLongiduteFirst(boolean longitudeFirst) {
+        this.longitudeFirst = longitudeFirst;
     }
 
     public String getAsSimple() {

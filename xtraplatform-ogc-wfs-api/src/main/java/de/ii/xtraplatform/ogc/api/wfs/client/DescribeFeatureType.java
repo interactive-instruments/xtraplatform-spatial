@@ -15,6 +15,7 @@
  */
 package de.ii.xtraplatform.ogc.api.wfs.client;
 
+import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
@@ -54,6 +55,10 @@ public class DescribeFeatureType extends WFSOperationDescribeFeatureType {
 
         if (vs.getWfsVersion() != null) {
             params.put("VERSION", vs.getWfsVersion().toString());
+
+            if (vs.getGmlVersion() != null && !vs.getGmlVersion().isGreaterOrEqual(vs.getWfsVersion().getGmlVersion())) {
+                params.put("OUTPUTFORMAT", GML.getWord(vs.getGmlVersion(), GML.VOCABULARY.OUTPUTFORMAT_VALUE));
+            }
         }
 
         if (this.fts != null && !fts.containsKey("")) {

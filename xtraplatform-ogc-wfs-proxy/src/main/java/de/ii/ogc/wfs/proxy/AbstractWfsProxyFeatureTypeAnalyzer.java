@@ -39,6 +39,7 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
         DOUBLE("double"),
         INT("int"),
         INTEGER("integer"),
+        BOOLEAN("boolean"),
         NONE("");
 
         private String stringRepresentation;
@@ -80,23 +81,28 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
 
         GEOMETRY("GeometryPropertyType"),
         ABSTRACT_GEOMETRY("GeometricPrimitivePropertyType"),
-        POINT("PointPropertyType"),
-        MULTI_POINT("MultiPointPropertyType"),
-        LINE_STRING("LineStringPropertyType"),
-        MULTI_LINESTRING("MultiLineStringPropertyType"),
-        CURVE("CurvePropertyType"),
-        MULTI_CURVE("MultiCurvePropertyType"),
-        SURFACE("SurfacePropertyType"),
-        MULTI_SURFACE("MultiSurfacePropertyType"),
-        POLYGON("PolygonPropertyType"),
-        MULTI_POLYGON("MultiPolygonPropertyType"),
+        POINT("PointPropertyType", "Point"),
+        MULTI_POINT("MultiPointPropertyType", "MultiPoint"),
+        LINE_STRING("LineStringPropertyType", "LineString"),
+        MULTI_LINESTRING("MultiLineStringPropertyType", "MultiLineString"),
+        CURVE("CurvePropertyType", "Curve"),
+        MULTI_CURVE("MultiCurvePropertyType", "MultiCurve"),
+        SURFACE("SurfacePropertyType", "Surface"),
+        MULTI_SURFACE("MultiSurfacePropertyType", "MultiSurface"),
+        POLYGON("PolygonPropertyType", "Polygon"),
+        MULTI_POLYGON("MultiPolygonPropertyType", "MultiPolygon"),
         SOLID("SolidPropertyType"),
         NONE("");
 
         private String stringRepresentation;
+        private String elementStringRepresentation;
 
         GML_GEOMETRY_TYPE(String stringRepresentation) {
             this.stringRepresentation = stringRepresentation;
+        }
+        GML_GEOMETRY_TYPE(String stringRepresentation, String elementStringRepresentation) {
+            this(stringRepresentation);
+            this.elementStringRepresentation = elementStringRepresentation;
         }
 
         @Override
@@ -106,7 +112,7 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
 
         public static GML_GEOMETRY_TYPE fromString(String type) {
             for (GML_GEOMETRY_TYPE v : GML_GEOMETRY_TYPE.values()) {
-                if (v.toString().equals(type)) {
+                if (v.toString().equals(type) || (v.elementStringRepresentation != null && v.elementStringRepresentation.equals(type))) {
                     return v;
                 }
             }

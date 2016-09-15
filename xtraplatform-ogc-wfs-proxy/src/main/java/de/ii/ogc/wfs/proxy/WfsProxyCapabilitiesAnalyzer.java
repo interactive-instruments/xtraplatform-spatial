@@ -17,6 +17,7 @@ package de.ii.ogc.wfs.proxy;
 
 import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
 import de.ii.xtraplatform.ogc.api.wfs.parser.AbstractWfsCapabilitiesAnalyzer;
@@ -25,6 +26,8 @@ import org.forgerock.i18n.slf4j.LocalizedLogger;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  *
@@ -34,9 +37,11 @@ public class WfsProxyCapabilitiesAnalyzer extends AbstractWfsCapabilitiesAnalyze
 
     private static final LocalizedLogger LOGGER = XSFLogger.getLogger(WfsProxyCapabilitiesAnalyzer.class);
     private WfsProxyService wfsProxy;
+    private Map<WFS.OPERATION, GML.VERSION> versions;
 
     public WfsProxyCapabilitiesAnalyzer(WfsProxyService wfsProxy) {
         this.wfsProxy = wfsProxy;
+        this.versions = new HashMap<>();
     }
 
     @Override
@@ -175,7 +180,27 @@ public class WfsProxyCapabilitiesAnalyzer extends AbstractWfsCapabilitiesAnalyze
     @Override
     public void analyzeOperationParameter(WFS.OPERATION operation, WFS.VOCABULARY parameterName, String value) {
         if (parameterName == WFS.VOCABULARY.OUTPUT_FORMAT) {
-            wfsProxy.getWfsAdapter().setGmlVersionFromOutputFormat(value);
+            LOGGER.getLogger().debug("CAP VERSION {} {}", operation, value);
+            GML.VERSION v1 = versions.get(operation);
+            GML.VERSION v2 = GML.VERSION.fromOutputFormatString(value);
+            if (v2 != null) {
+                if (v1 != null) {
+                   if (v2.isGreater(v1)) {
+                   versions.put(operation, v2);
+                   }
+                }
+                else {
+                   versions.put(operation, v2);
+                }
+            }
+            GML.VERSION v3 = versions.get(WFS.OPERATION.DESCRIBE_FEATURE_TYPE);
+            GML.VERSION v4 = versions.get(WFS.OPERATION.GET_FEATURE);
+            GML.VERSION v5 = (v3 == null ? v4 : (v4 == null ? v3 : (v3.isGreater(v4) ? v4 : v3)));
+            LOGGER.getLogger().debug("CAP VERSION {}", v5);
+            if (v5 != null) {
+               wfsProxy.getWfsAdapter().setGmlVersion(v5.toString());
+            }
+            //wfsProxy.getWfsAdapter().setGmlVersionFromOutputFormat(value);
         }
     }
 }

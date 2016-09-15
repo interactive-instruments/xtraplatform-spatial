@@ -45,6 +45,7 @@ public class WfsProxyCrsTransformations {
     private void initDefaultTransformer() {
         // TODO: handle transformation not available
         if (isAvailable() && wfsDefaultCrs != null && !wfsDefaultCrs.equals(proxyDefaultCrs)) {
+            LOGGER.getLogger().debug("TRANSFORMER {} {} -> {} {}", wfsDefaultCrs.getCode(), wfsDefaultCrs.isLongitudeFirst() ? "lonlat" : "latlon", proxyDefaultCrs.getCode(), proxyDefaultCrs.isLongitudeFirst() ? "lonlat" : "latlon");
             this.defaultTransformer = crsTransformation.getTransformer(wfsDefaultCrs, proxyDefaultCrs);
         }
     }
