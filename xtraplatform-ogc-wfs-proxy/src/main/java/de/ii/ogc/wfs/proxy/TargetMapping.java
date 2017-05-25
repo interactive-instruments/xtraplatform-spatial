@@ -28,7 +28,7 @@ import de.ii.xtraplatform.jackson.dynamic.DynamicTypeIdResolver;
 public interface TargetMapping {
     String getName();
 
-    boolean isEnabled();
+    Boolean isEnabled();
 
     @JsonIgnore
     boolean isGeometry();

@@ -65,6 +65,7 @@ public class WFSAdapter {
     //private GML.VERSION gmlVersion;
     private Versions versions;
     private HttpClient httpClient;
+    private HttpClient untrustedSslHttpClient;
     private XMLNamespaceNormalizer nsStore;
     private boolean alphaNumericId;
     private EpsgCrs defaultCrs = null;
@@ -108,55 +109,8 @@ public class WFSAdapter {
 
     public void initialize(HttpClient httpClient, HttpClient untrustedSslhttpClient) {
         this.httpClient = httpClient;
-
-        // TODO: temporary basic auth hack
-        //if (this.urls.containsKey("auth")) {
-            URI uri = null;
-            //try {
-                //uri = extractBasicAuthCredentials(this.urls.get("auth").get(WFS.METHOD.GET));
-                uri = this.urls.get(DEFAULT_OPERATION).get(WFS.METHOD.GET);
-            //} catch (URISyntaxException ex) {
-            //}
-            if (uri != null && uri.getScheme().equals("https")) {
-                this.httpClient = untrustedSslhttpClient;
-            }
-        //}
+        this.untrustedSslHttpClient = untrustedSslhttpClient;
     }
-
-    /*private URI extractBasicAuthCredentials(URI uri) throws URISyntaxException {
-        String url = uri.toString();
-        LOGGER.getLogger().debug("AUTHURL: {}", url);
-        //LOGGER.getLogger().info("AUTHORITY: {}", uri.getRawAuthority());
-        //LOGGER.getLogger().info("USERINFO: {}", uri.getRawUserInfo());
-
-        if (url.startsWith("http://") || url.startsWith("https://")) {
-            int offset = url.startsWith("http://") ? 7 : 8;
-            String auth[] = new String[0];
-            int endOfHost = url.indexOf("/", offset);
-            int at = url.indexOf("@", offset);
-            if (at > -1 && at < endOfHost) {
-                auth = url.substring(offset, at).split(":");
-                LOGGER.getLogger().debug("AUTH: {} : {}", auth[0], auth[1]);
-            }
-            if (auth.length == 2) {
-                this.useBasicAuth = true;
-                this.user = auth[0];
-                this.password = auth[1];
-
-                if (!this.urls.containsKey("auth")) {
-                    Map<WFS.METHOD, URI> tmp = new HashMap();
-                    tmp.put(WFS.METHOD.GET, uri);
-                    tmp.put(WFS.METHOD.POST, uri);
-                    this.urls.put("auth", tmp);
-                }
-            }
-            if (at > -1) {
-                url = (url.startsWith("http://") ? "http://" : "https://") + url.substring(at + 1);
-            }
-        }
-        LOGGER.getLogger().debug("NOAUTHURL: {}", url);
-        return new URI(url);
-    }*/
 
     public EpsgCrs getDefaultCrs() {
         return defaultCrs;
@@ -295,6 +249,8 @@ public class WFSAdapter {
 
         URI url = findUrl(operation.getOperation(), WFS.METHOD.POST);
 
+        HttpClient httpClient = url.getScheme().equals("https") ? this.untrustedSslHttpClient : this.httpClient;
+
         URIBuilder uri = new URIBuilder(url);
 
         String xml = operation.getPOSTXML(nsStore, versions);
@@ -378,7 +334,11 @@ public class WFSAdapter {
     }
 
     private HttpResponse requestGET(WFSOperation operation) {
-        URIBuilder uri = new URIBuilder(findUrl(operation.getOperation(), WFS.METHOD.GET));
+        URI url = findUrl(operation.getOperation(), WFS.METHOD.GET);
+
+        HttpClient httpClient = url.getScheme().equals("https") ? this.untrustedSslHttpClient : this.httpClient;
+
+        URIBuilder uri = new URIBuilder(url);
 
         Map<String, String> params = operation.getGETParameters(nsStore, versions);
 
