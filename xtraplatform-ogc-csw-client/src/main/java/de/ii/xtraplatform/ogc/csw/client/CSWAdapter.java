@@ -1,0 +1,379 @@
+/**
+ * Copyright 2016 interactive instruments GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package de.ii.xtraplatform.ogc.csw.client;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.CharStreams;
+import de.ii.xsf.logging.XSFLogger;
+import de.ii.xtraplatform.ogc.api.CSW;
+import de.ii.xtraplatform.ogc.api.Versions;
+import de.ii.xtraplatform.ogc.api.exceptions.ReadError;
+import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
+import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicHttpResponse;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.util.EntityUtils;
+import org.forgerock.i18n.slf4j.LocalizedLogger;
+
+/**
+ *
+ * @author zahnen
+ */
+public class CSWAdapter {
+
+    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(CSWAdapter.class);
+    private static final String DEFAULT_OPERATION = "default";
+
+    private Map<String, Map<CSW.METHOD, URI>> urls;
+    private CSW.VERSION version;
+    private HttpClient httpClient;
+    private HttpClient untrustedSslHttpClient;
+    private XMLNamespaceNormalizer nsStore;
+    private boolean ignoreTimeouts = false;
+    private CSW.METHOD httpMethod;
+    private boolean useBasicAuth = false;
+    private String user;
+    private String password;
+
+    public CSWAdapter() {
+        this.urls = new HashMap<>();
+        this.nsStore = new XMLNamespaceNormalizer();
+        this.httpMethod = CSW.METHOD.GET;
+    }
+
+    public CSWAdapter(String url) {
+        this();
+        try {
+            // TODO: temporary basic auth hack
+            // extract and remove credentials from url if existing
+            //URI noAuthUri = this.extractBasicAuthCredentials(new URI(url));
+            URI noAuthUri = parseAndCleanWfsUrl(url);
+            Map<CSW.METHOD, URI> urls = new ImmutableMap.Builder<CSW.METHOD, URI>()
+                .put(CSW.METHOD.GET, noAuthUri)
+                .put(CSW.METHOD.POST, noAuthUri)
+                .build();
+
+            this.urls.put(DEFAULT_OPERATION, urls);
+        } catch (URISyntaxException ex) {
+            LOGGER.error(FrameworkMessages.INVALID_WFS_URL, url);
+            throw new WebApplicationException();
+        }
+    }
+
+    public void initialize(HttpClient httpClient, HttpClient untrustedSslhttpClient) {
+        this.httpClient = httpClient;
+        this.untrustedSslHttpClient = untrustedSslhttpClient;
+    }
+
+    public Map<String, Map<CSW.METHOD, URI>> getUrls() {
+        return this.urls;
+    }
+
+    public void setUrls(Map<String, Map<CSW.METHOD, URI>> urls) {
+        this.urls = urls;
+    }
+
+    public void addUrl(URI url, CSW.OPERATION op, CSW.METHOD method) {
+        // TODO: remove toString
+        if (!this.urls.containsKey(op.toString())) {
+            Map<CSW.METHOD, URI> urls = new ImmutableMap.Builder<CSW.METHOD, URI>()
+                    .put(method, url)
+                    .build();
+            this.urls.put(op.toString(), urls);
+        }
+    }
+
+    public String getVersion() {
+        return version != null ? version.toString() : null;
+    }
+
+    public void setVersion(String version) {
+        CSW.VERSION v = CSW.VERSION.fromString(version);
+        if (v != null) {
+            if (this.version == null || v.isGreater(this.version)) {
+                this.version = v;
+                LOGGER.debug(FrameworkMessages.VERSION_SET_TO, version);
+            }
+        }
+    }
+
+    public HttpEntity request(CSWOperation operation) {
+
+        // TODO: POST or GET
+        HttpResponse r;
+        if (httpMethod == CSW.METHOD.POST)
+            r = requestPOST(operation);
+        else
+            r = requestGET(operation);
+        operation.setResponseHeaders(r.getAllHeaders());
+        return r.getEntity();
+    }
+
+    private HttpResponse requestPOST(CSWOperation operation) {
+
+        URI url = findUrl(operation.getOperation(), CSW.METHOD.POST);
+
+        HttpClient httpClient = url.getScheme().equals("https") ? this.untrustedSslHttpClient : this.httpClient;
+
+        URIBuilder uri = new URIBuilder(url);
+
+        String xml = operation.toXml(nsStore, version);
+        
+        LOGGER.getLogger().debug("{}\n{}", uri, xml);
+        
+        HttpPost httpPost;
+        HttpResponse response = null;
+
+        try {
+            httpPost = new HttpPost(uri.build());
+            
+            for( String key : operation.getRequestHeaders().keySet()) {
+                httpPost.setHeader(key, operation.getRequestHeaders().get(key));
+            }
+
+            // TODO: temporary basic auth hack
+            if (useBasicAuth) {
+                String basic_auth = new String(Base64.encodeBase64((user + ":" + password).getBytes()));
+                httpPost.addHeader("Authorization", "Basic " + basic_auth);
+            }
+
+            StringEntity xmlEntity = new StringEntity(xml,
+                    ContentType.create("text/plain", "UTF-8"));
+            httpPost.setEntity(xmlEntity);
+            
+            response = httpClient.execute(httpPost, new BasicHttpContext());
+
+            // check http status
+            checkResponseStatus(response.getStatusLine().getStatusCode(), uri);
+
+        } catch (SocketTimeoutException ex) {
+            if (ignoreTimeouts) {
+                LOGGER.warn(FrameworkMessages.POST_REQUEST_TIMED_OUT_AFTER_MS_URL_REQUEST, HttpConnectionParams.getConnectionTimeout(httpClient.getParams()), uri.toString(), xml);
+            }
+            response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "");
+            response.setEntity(new StringEntity("", ContentType.TEXT_XML));
+        } catch (IOException ex) {
+            //LOGGER.error(ERROR_IN_POST_REQUEST_TO_URL_REQUEST, uri.toString(), xml, ex);
+            //LOGGER.debug("Error requesting URL: {}", uri.toString());
+
+            try {
+                if (!isDefaultUrl(uri.build(), CSW.METHOD.POST)) {
+
+                    LOGGER.info(FrameworkMessages.REMOVING_URL, uri.toString());
+                    this.urls.remove(operation.getOperation().toString());
+
+                    LOGGER.info(FrameworkMessages.RETRY_WITH_DEFAULT_URL, this.urls.get("default"));
+                    return requestPOST(operation);
+                }
+            } catch (URISyntaxException ex0) {
+            }
+
+            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            throw new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+        } catch (URISyntaxException ex) {
+            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            throw new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+        } catch (ReadError ex) {
+            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            throw ex;
+        }
+        LOGGER.debug(FrameworkMessages.WFS_REQUEST_SUBMITTED);
+        return response;
+    }
+
+    public String getRequestUrl(CSWOperation operation) {
+        URIBuilder uri = new URIBuilder(findUrl(operation.getOperation(), CSW.METHOD.GET));
+
+        Map<String, String> params = operation.toKvp(nsStore, version);
+
+        for (Map.Entry<String, String> param : params.entrySet()) {
+            uri.addParameter(param.getKey(), param.getValue());
+        }
+
+        try {
+            return uri.build().toString();
+        } catch (URISyntaxException e) {
+            return "";
+        }
+    }
+
+    private HttpResponse requestGET(CSWOperation operation) {
+        URI url = findUrl(operation.getOperation(), CSW.METHOD.GET);
+
+        HttpClient httpClient = url.getScheme().equals("https") ? this.untrustedSslHttpClient : this.httpClient;
+
+        URIBuilder uri = new URIBuilder(url);
+
+        Map<String, String> params = operation.toKvp(nsStore, version);
+
+        for (Map.Entry<String, String> param : params.entrySet()) {
+            uri.addParameter(param.getKey(), param.getValue());
+        }
+        LOGGER.debug(FrameworkMessages.GET_REQUEST_OPERATION_URL, operation.toString(), uri.toString());
+
+        boolean retried = false;
+        HttpGet httpGet;
+        HttpResponse response;
+
+        try {
+
+            // replace the + with %20
+            String uristring = uri.build().toString();
+            uristring = uristring.replaceAll("\\+", "%20");
+            httpGet = new HttpGet(uristring);
+
+            // TODO: temporary basic auth hack
+            if (useBasicAuth) {
+                String basic_auth = new String(Base64.encodeBase64((user + ":" + password).getBytes()));
+                httpGet.addHeader("Authorization", "Basic " + basic_auth);
+            }
+
+            response = httpClient.execute(httpGet, new BasicHttpContext());
+
+            // check http status
+            checkResponseStatus(response.getStatusLine().getStatusCode(), uri);
+
+        } catch (SocketTimeoutException ex) {
+            if (ignoreTimeouts) {
+                LOGGER.warn(FrameworkMessages.GET_REQUEST_TIMED_OUT_AFTER_MS_URL_REQUEST, HttpConnectionParams.getConnectionTimeout(httpClient.getParams()), uri.toString());
+            }
+            response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "");
+            response.setEntity(new StringEntity("", ContentType.TEXT_XML));
+        } catch (IOException ex) {
+            try {
+                if (!isDefaultUrl(uri.build(), CSW.METHOD.GET)) {
+
+                    LOGGER.info(FrameworkMessages.REMOVING_URL, uri.toString());
+                    this.urls.remove(operation.getOperation().toString());
+
+                    LOGGER.info(FrameworkMessages.RETRY_WITH_DEFAULT_URL, this.urls.get("default"));
+                    return requestGET(operation);
+                }
+            } catch (URISyntaxException ex0) {
+            }
+            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            throw new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+        } catch (URISyntaxException ex) {
+            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            throw new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+        }
+        LOGGER.debug(FrameworkMessages.WFS_REQUEST_SUBMITTED);
+        return response;
+    }
+
+    private void checkResponseStatus(int status, URIBuilder uri) {
+        if (status >= 400) {
+            String reason = "No reason available";
+            try {
+                reason = status + " " + Response.Status.fromStatusCode(status).getReasonPhrase();
+            } catch (Exception e) {
+            }
+            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL_REASON, uri.toString(), reason);
+            ReadError re = new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            re.addDetail("Reason: " + reason);
+            throw re;
+        }
+    }
+
+    public XMLNamespaceNormalizer getNsStore() {
+        return nsStore;
+    }
+
+    public void setNsStore(XMLNamespaceNormalizer nsStore) {
+        this.nsStore = nsStore;
+    }
+
+    public void addNamespace(String namespaceURI) {
+        nsStore.addNamespace(namespaceURI);
+    }
+
+    public void addNamespace(String prefix, String namespaceURI) {
+        nsStore.addNamespace(prefix, namespaceURI);
+    }
+
+    public String retrieveNamespaceURI(String prefix) {
+        return nsStore.getNamespaceURI(prefix);
+    }
+
+    public URI findUrl(CSW.OPERATION operation, CSW.METHOD method) {
+
+        URI uri = this.urls.containsKey(operation.toString()) ? this.urls.get(operation.toString()).get(method) : this.urls.get("default").get(method);
+
+        if (uri == null && method.equals(CSW.METHOD.GET)) {
+            return this.urls.get("default").get(method);
+        }
+
+        return uri;
+    }
+
+    private boolean isDefaultUrl(URI uri, CSW.METHOD method) {
+        URI defaultURI = this.urls.get("default").get(method);
+        URI inputURI = uri;
+
+        if (defaultURI.getHost().startsWith(inputURI.getHost())) {
+            return true;
+        }
+        return false;
+    }
+
+    public void setIgnoreTimeouts(boolean ignoreTimeouts) {
+        this.ignoreTimeouts = ignoreTimeouts;
+    }
+
+
+    public String getHttpMethod() {
+        return httpMethod.toString();
+    }
+
+    public void setHttpMethod(String httpMethod) {
+        this.httpMethod = CSW.METHOD.fromString(httpMethod);
+    }
+
+    public static URI parseAndCleanWfsUrl(String url) throws URISyntaxException {
+        URI inUri = new URI(url.trim());
+        URIBuilder outUri = new URIBuilder(inUri).removeQuery();
+
+        if (inUri.getQuery() != null && !inUri.getQuery().isEmpty()) {
+            for (String inParam : inUri.getQuery().split("&")) {
+                String[] param = inParam.split("=");
+                if (!CSW.hasKVPKey(param[0].toUpperCase())) {
+                    outUri.addParameter(param[0], param[1]);
+                }
+            }
+        }
+
+        return outUri.build();
+    }
+}
