@@ -29,6 +29,7 @@ public interface GMLAnalyzer {
     public void analyzeFeatureEnd();
     public void analyzeAttribute(String nsuri, String localName, String value);
     public void analyzePropertyStart(String nsuri, String localName, int depth, SMInputCursor feature, boolean nil);
+    public void analyzePropertyText(String nsuri, String localName, int depth, String text);
     public void analyzePropertyEnd(String nsuri, String localName, int depth);   
     public void analyzeFailed(Exception ex);
 }

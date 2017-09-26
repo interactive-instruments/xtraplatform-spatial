@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 interactive instruments GmbH
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,14 +23,15 @@ import java.util.Map;
  * @author zahnen
  */
 public class VersionedVocabulary {
-    
+
     public enum NAMESPACE {
-        
+
         PREFIX, URI;
     }
+
     protected static final Map<Class, Map<Enum, Map<Enum, String>>> vocabulary;
-    private static final Class[] children = {WFS.class, FES.class, GML.class, XLINK.class, XSI.class};
-    
+    private static final Class[] children = {WFS.class, FES.class, GML.class, XLINK.class, XSI.class, CSW.class, OWS.class};
+
     static {
         vocabulary = new HashMap<>();
 
@@ -43,7 +44,7 @@ public class VersionedVocabulary {
             }
         }
     }
-    
+
     protected static void addWord(Enum v, Enum w, String s) {
         Class c = v.getDeclaringClass().getEnclosingClass();
         if (!vocabulary.containsKey(c)) {
@@ -58,8 +59,12 @@ public class VersionedVocabulary {
             }
         }
     }
-    
+
     public static String getWord(Enum v, Enum w) {
+        if (v == null) {
+            return getWord(w);
+        }
+
         String word = "";
         Class c = v.getDeclaringClass().getEnclosingClass();
         if (vocabulary.containsKey(c) && vocabulary.get(c).containsKey(v) && vocabulary.get(c).get(v).containsKey(w)) {
@@ -79,15 +84,15 @@ public class VersionedVocabulary {
         }
         return "";
     }
-            
+
     public static String getQN(Enum v, Enum w) {
         return getWord(v, NAMESPACE.PREFIX) + ":" + getWord(v, w);
     }
-    
+
     public static String getNS(Enum v) {
         return getWord(v, NAMESPACE.URI);
     }
-    
+
     public static String getPR(Enum v) {
         return getWord(v, NAMESPACE.PREFIX);
     }

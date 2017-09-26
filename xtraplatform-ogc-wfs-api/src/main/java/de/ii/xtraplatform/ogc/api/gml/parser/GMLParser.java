@@ -27,6 +27,7 @@ import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.staxmate.SMInputFactory;
+import org.codehaus.staxmate.in.SMFilterFactory;
 import org.codehaus.staxmate.in.SMFlatteningCursor;
 import org.codehaus.staxmate.in.SMInputCursor;
 import org.forgerock.i18n.slf4j.LocalizedLogger;
@@ -47,11 +48,16 @@ public class GMLParser {
     private final GMLAnalyzer analyzer;
     private final SMInputFactory staxFactory;
     private int featureDepth;
+    private boolean parseText;
 
     public GMLParser(GMLAnalyzer analyzer, SMInputFactory staxFactory) {
         this.analyzer = analyzer;
         this.staxFactory = staxFactory;
         this.featureDepth = 1;
+    }
+
+    public void enableTextParsing() {
+        this.parseText = true;
     }
 
     public void parse(ListenableFuture<HttpEntity> entity, String ns, String ft) throws ExecutionException {
@@ -135,7 +141,16 @@ public class GMLParser {
             analyzer.analyzeAttribute(cursor.getAttrNsUri(i), cursor.getAttrLocalName(i), cursor.getAttrValue(i));
         }
 
-        SMFlatteningCursor feature = (SMFlatteningCursor) cursor.descendantElementCursor().advance();
+        SMFlatteningCursor feature;
+        StringBuilder text = null;
+        if (parseText) {
+            feature = (SMFlatteningCursor) cursor.descendantCursor().advance();
+            text = new StringBuilder();
+        } else {
+            feature = (SMFlatteningCursor) cursor.descendantElementCursor().advance();
+        }
+
+
         while (feature.readerAccessible()) {
             if (feature.getCurrEventCode() == XMLStreamConstants.START_ELEMENT) {
                 boolean nil = false;
@@ -151,8 +166,15 @@ public class GMLParser {
                 analyzer.analyzePropertyStart(feature.getNsUri(), feature.getLocalName(), feature.getParentCount() - featureDepth, feature, nil);
 
             } else if (feature.getCurrEventCode() == XMLStreamConstants.END_ELEMENT) {
+                if (parseText && text.length() > 0) {
+                    analyzer.analyzePropertyText(feature.getNsUri(), feature.getLocalName(), feature.getParentCount() - featureDepth, text.toString());
+                    text = new StringBuilder();
+                }
                 analyzer.analyzePropertyEnd(feature.getNsUri(), feature.getLocalName(), feature.getParentCount() - featureDepth);
+            } else if (parseText && (feature.getCurrEventCode() == XMLStreamConstants.CHARACTERS)) {
+                text.append(feature.getText().trim());
             }
+
             feature = (SMFlatteningCursor) feature.advance();
         }
 

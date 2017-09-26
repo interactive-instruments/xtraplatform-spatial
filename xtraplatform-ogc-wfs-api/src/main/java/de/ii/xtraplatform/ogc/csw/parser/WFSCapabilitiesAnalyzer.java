@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.ii.xtraplatform.ogc.api.wfs.parser;
+package de.ii.xtraplatform.ogc.csw.parser;
 
-import de.ii.xtraplatform.ogc.api.OWS;
+import de.ii.xtraplatform.ogc.api.WFS;
 
 /**
  *
@@ -55,11 +55,11 @@ public interface WFSCapabilitiesAnalyzer {
     void analyzeServiceContactHoursOfService(String hoursOfService);
     void analyzeServiceContactInstructions(String instructions);
 
-    void analyzeOperationGetUrl(OWS.OPERATION operation, String url);
-    void analyzeOperationPostUrl(OWS.OPERATION operation, String url);
-    void analyzeOperationParameter(OWS.OPERATION operation, OWS.VOCABULARY parameterName, String value);
-    void analyzeOperationConstraint(OWS.OPERATION operation, OWS.VOCABULARY constraintName, String value);
-    void analyzeOperationMetadata(OWS.OPERATION operation, String url);
+    void analyzeOperationGetUrl(WFS.OPERATION operation, String url);
+    void analyzeOperationPostUrl(WFS.OPERATION operation, String url);
+    void analyzeOperationParameter(WFS.OPERATION operation, WFS.VOCABULARY parameterName, String value);
+    void analyzeOperationConstraint(WFS.OPERATION operation, WFS.VOCABULARY constraintName, String value);
+    void analyzeOperationMetadata(WFS.OPERATION operation, String url);
 
     void analyzeInspireMetadataUrl(String metadataUrl);
 

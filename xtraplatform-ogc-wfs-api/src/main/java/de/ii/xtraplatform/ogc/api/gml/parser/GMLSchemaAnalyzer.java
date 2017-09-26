@@ -24,4 +24,5 @@ public interface GMLSchemaAnalyzer {
     public void analyzeAttribute(String nsuri, String localName, String type, boolean required);
     public void analyzeProperty(String nsuri, String localName, String type, long minOccurs, long maxOccurs, 
             int depth, boolean isParentMultible, boolean isComplex, boolean isObject);
+    public void analyzeNamespaceRewrite(String oldNamespace, String newNamespace, String featureTypeName);
 }

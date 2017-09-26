@@ -80,6 +80,13 @@ public class XMLNamespaceNormalizer {
 
     }
 
+    public void addNamespace(String prefix, String namespaceURI, boolean overwritePrefix) {
+        if (prefix != null && namespaces.containsKey(prefix)) {
+            namespaces.remove(prefix);
+        }
+        addNamespace(prefix, namespaceURI);
+    }
+
     public void addNamespace(String prefix, String namespaceURI) {
 
         if (namespaces.containsKey(prefix)) {

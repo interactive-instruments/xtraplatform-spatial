@@ -121,6 +121,7 @@ public class GMLSchemaParser {
 
             for (Map.Entry<String, List<String>> ns : elements.entrySet()) {
                 String nsuri = ns.getKey();
+                String oldNsUri = null;
                 //LOGGER.debug("namespace {}", nsuri);
 
                 XSSchema schema = schemas.getSchema(nsuri);
@@ -132,8 +133,8 @@ public class GMLSchemaParser {
 
                     // looks as if the schema for the targetNamespace of the document is always second in the list
                     schema = schemas.getSchema(1);
+                    oldNsUri = nsuri;
                     nsuri = schema.getTargetNamespace();
-
                 }
 
                 for (String e : ns.getValue()) {
@@ -142,6 +143,9 @@ public class GMLSchemaParser {
                         //LOGGER.debug(" - element {}, type: {}", elem.getName(), elem.getType().getName());
 
                         for (GMLSchemaAnalyzer analyzer : analyzers) {
+                            if (oldNsUri != null) {
+                                analyzer.analyzeNamespaceRewrite(oldNsUri, nsuri, elem.getName());
+                            }
                             analyzer.analyzeFeatureType(nsuri, elem.getName());
                             for (XSAttributeUse att : elem.getType().asComplexType().getAttributeUses()) {
                                 //LOGGER.debug("   - attribute {}, required: {}, type: {}, ns: {}", att.getDecl().getName(), att.isRequired(), att.getDecl().getType().getName(), att.getDecl().getTargetNamespace());

@@ -26,7 +26,7 @@ import java.util.Map;
  *
  * @author fischer
  */
-public class WFS extends VersionedVocabulary {
+public class OWS extends VersionedVocabulary {
 
     public enum VERSION {
 
@@ -74,19 +74,13 @@ public class WFS extends VersionedVocabulary {
         }
     }
 
-    public static boolean hasKVPKey(String key) {
-
-        String[] keys = {"REQUEST", "SERVICE", "VERSION", "NAMESPACES", "TYPENAMES", "COUNT", "NAMESPACE", "TYPENAME", "MAXFEATURES", "OUTPUT_FORMAT", "VALUEREFERENCE"};
-
-        return Arrays.asList(keys).contains(key);
-    }
-
     public enum OPERATION {
 
         GET_CAPABILITES("GetCapabilities"),
         DESCRIBE_FEATURE_TYPE("DescribeFeatureType"),
         GET_FEATURE("GetFeature"),
         GET_PROPERTY_VALUE("GetPropertyValue"),
+        GET_RECORDS("GetRecords"),
         NONE("");
         private final String stringRepresentation;
 
@@ -145,7 +139,7 @@ public class WFS extends VersionedVocabulary {
         CITY, ADMINISTRATIVE_AREA, POSTAL_CODE, COUNTRY, EMAIL, OPERATION, NAME_ATTRIBUTE, GET, POST,
         DCP, PARAMETER, CONSTRAINT, METADATA, VALUE, DEFAULT_VALUE, ONLINE_RESOURCE_ATTRIBUTE, COUNT_DEFAULT, RESULT_FORMAT,
         DEFAULT_CRS, OTHER_CRS, WGS84_BOUNDING_BOX, METADATA_URL, LOWER_CORNER, UPPER_CORNER, MIN_X, MIN_Y, MAX_X, MAX_Y,
-        EXTENDED_CAPABILITIES, INSPIRE_METADATA_URL, INSPIRE_URL;
+        EXTENDED_CAPABILITIES, INSPIRE_METADATA_URL, INSPIRE_URL, SUPPORTED_ISO_QUERYABLES, CONSTRAINTLANGUAGE, CONSTRAINT_LANGUAGE;
     }
 
     static {
@@ -257,39 +251,21 @@ public class WFS extends VersionedVocabulary {
         addWord(VERSION._2_0_0, VOCABULARY.EXTENDED_CAPABILITIES, "ExtendedCapabilities");
         addWord(VERSION._2_0_0, VOCABULARY.INSPIRE_METADATA_URL, "MetadataUrl");
         addWord(VERSION._2_0_0, VOCABULARY.INSPIRE_URL, "URL");
+
+
+        addWord(VERSION._2_0_0, VOCABULARY.SUPPORTED_ISO_QUERYABLES, "SupportedISOQueryables");
+        addWord(VERSION._2_0_0, VOCABULARY.CONSTRAINT_LANGUAGE, "ConstraintLanguage");
+        addWord(VERSION._2_0_0, VOCABULARY.CONSTRAINTLANGUAGE, "CONSTRAINTLANGUAGE");
     }
 
     public static VOCABULARY findKey(String word) {
         for (VERSION v: VERSION.values()) {
-            for (Map.Entry<Enum, String> e: vocabulary.get(WFS.class).get(v).entrySet()) {
+            for (Map.Entry<Enum, String> e: vocabulary.get(OWS.class).get(v).entrySet()) {
                 if (e.getKey() instanceof VOCABULARY && e.getValue().equals(word)) {
                     return (VOCABULARY) e.getKey();
                 }
             }
         }
         return VOCABULARY.NOT_A_WORD;
-    }
-
-    public static String cleanUrl(String url) {
-        try {
-            URI inUri = new URI(url.trim());
-            URIBuilder outUri = new URIBuilder(inUri).removeQuery();
-
-            if (inUri.getQuery() != null && !inUri.getQuery().isEmpty()) {
-                for (String inParam : inUri.getQuery().split("&")) {
-                    String[] param = inParam.split("=");
-                    if (!WFS.hasKVPKey(param[0].toUpperCase())) {
-                        if (param.length >= 2)
-                        outUri.addParameter(param[0], param[1]);
-                        else
-                            System.out.println("SINGLE " + param[0]);
-                    }
-                }
-            }
-
-            return outUri.toString();
-        } catch (URISyntaxException ex) {
-            return url;
-        }
     }
 }

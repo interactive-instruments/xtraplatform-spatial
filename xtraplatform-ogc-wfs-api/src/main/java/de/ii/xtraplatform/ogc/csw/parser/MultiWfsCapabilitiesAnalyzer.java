@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.ii.xtraplatform.ogc.api.wfs.parser;
+package de.ii.xtraplatform.ogc.csw.parser;
 
-import de.ii.xtraplatform.ogc.api.OWS;
+import de.ii.xtraplatform.ogc.api.WFS;
 
 /**
  * @author zahnen
@@ -225,35 +225,35 @@ public class MultiWfsCapabilitiesAnalyzer implements WFSCapabilitiesAnalyzer {
     }
 
     @Override
-    public void analyzeOperationGetUrl(OWS.OPERATION operation, String url) {
+    public void analyzeOperationGetUrl(WFS.OPERATION operation, String url) {
         for (WFSCapabilitiesAnalyzer analyzer: analyzers) {
             analyzer.analyzeOperationGetUrl(operation, url);
         }
     }
 
     @Override
-    public void analyzeOperationPostUrl(OWS.OPERATION operation, String url) {
+    public void analyzeOperationPostUrl(WFS.OPERATION operation, String url) {
         for (WFSCapabilitiesAnalyzer analyzer: analyzers) {
             analyzer.analyzeOperationPostUrl(operation, url);
         }
     }
 
     @Override
-    public void analyzeOperationParameter(OWS.OPERATION operation, OWS.VOCABULARY parameterName, String value) {
+    public void analyzeOperationParameter(WFS.OPERATION operation, WFS.VOCABULARY parameterName, String value) {
         for (WFSCapabilitiesAnalyzer analyzer: analyzers) {
             analyzer.analyzeOperationParameter(operation, parameterName, value);
         }
     }
 
     @Override
-    public void analyzeOperationConstraint(OWS.OPERATION operation, OWS.VOCABULARY constraintName, String value) {
+    public void analyzeOperationConstraint(WFS.OPERATION operation, WFS.VOCABULARY constraintName, String value) {
         for (WFSCapabilitiesAnalyzer analyzer: analyzers) {
             analyzer.analyzeOperationConstraint(operation, constraintName, value);
         }
     }
 
     @Override
-    public void analyzeOperationMetadata(OWS.OPERATION operation, String url) {
+    public void analyzeOperationMetadata(WFS.OPERATION operation, String url) {
         for (WFSCapabilitiesAnalyzer analyzer: analyzers) {
             analyzer.analyzeOperationMetadata(operation, url);
         }

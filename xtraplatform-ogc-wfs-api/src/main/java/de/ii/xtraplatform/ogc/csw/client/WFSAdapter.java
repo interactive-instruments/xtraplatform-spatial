@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.ii.xtraplatform.ogc.api.wfs.client;
+package de.ii.xtraplatform.ogc.csw.client;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.MapMaker;
 import com.google.common.io.CharStreams;
 import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
@@ -69,11 +67,11 @@ public class WFSAdapter {
     private HttpClient untrustedSslHttpClient;
     private XMLNamespaceNormalizer nsStore;
     private boolean alphaNumericId;
-    private EpsgCrs defaultCrs;
+    private EpsgCrs defaultCrs = null;
     private Set<EpsgCrs> otherCrs;
-    private boolean ignoreTimeouts ;
+    private boolean ignoreTimeouts = false;
     private WFS.METHOD httpMethod;
-    private boolean useBasicAuth;
+    private boolean useBasicAuth = false;
     private String user;
     private String password;
 
@@ -84,14 +82,13 @@ public class WFSAdapter {
         this.versions = new Versions();
         this.defaultCrs = null;
         this.otherCrs = new HashSet<>();
-        this.ignoreTimeouts = true;
-        this.httpMethod = WFS.METHOD.GET;
-        this.useBasicAuth = false;
+        // TODO: workaround for existing configurations
+        this.httpMethod = WFS.METHOD.POST;
     }
 
     public WFSAdapter(String url) {
         this();
-
+        this.httpMethod = WFS.METHOD.GET;
         try {
             // TODO: temporary basic auth hack
             // extract and remove credentials from url if existing
@@ -170,9 +167,11 @@ public class WFSAdapter {
     public void addUrl(URI url, WFS.OPERATION op, WFS.METHOD method) {
         // TODO: remove toString
         if (!this.urls.containsKey(op.toString())) {
-            this.urls.put(op.toString(), new HashMap<WFS.METHOD, URI>());
+            Map<WFS.METHOD, URI> urls = new ImmutableMap.Builder<WFS.METHOD, URI>()
+                    .put(method, url)
+                    .build();
+            this.urls.put(op.toString(), urls);
         }
-            this.urls.get(op.toString()).put(method, url);
     }
 
     public boolean isAlphaNumericId() {
@@ -198,7 +197,7 @@ public class WFSAdapter {
     }
 
     public void capabilitiesAnalyzed() {
-        if (versions.getGmlVersion() == null && versions.getWfsVersion() != null) {
+        if (versions.getGmlVersion() == null) {
             versions.setGmlVersion(versions.getWfsVersion().getGmlVersion());
         }
     }
@@ -456,7 +455,7 @@ public class WFSAdapter {
         this.ignoreTimeouts = ignoreTimeouts;
     }
 
-    /*public void checkHttpMethodSupport() {
+    public void checkHttpMethodSupport() {
 
         URI url = findUrl(WFS.OPERATION.DESCRIBE_FEATURE_TYPE, WFS.METHOD.POST);
         if (url == null) {
@@ -480,7 +479,7 @@ public class WFSAdapter {
         } finally {
             EntityUtils.consumeQuietly(dft);
         }
-    }*/
+    }
 
     public String getHttpMethod() {
         return httpMethod.toString();
