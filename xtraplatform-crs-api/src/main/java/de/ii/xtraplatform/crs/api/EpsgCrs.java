@@ -88,6 +88,13 @@ public class EpsgCrs {
         return true;
     }
 
+    @Override
+    public int hashCode() {
+        int result = code;
+        result = 31 * result + (longitudeFirst ? 1 : 0);
+        return result;
+    }
+
     private static int parsePrefixedCode(String prefixedCode) {
         int code = -1;
 
