@@ -20,9 +20,10 @@ package de.ii.ogc.wfs.proxy;
  */
 public class WFSProxyServiceProperties {
     private int maxFeatures;
+    private WfsProxyMappingStatus mappingStatus;
 
-    public WFSProxyServiceProperties(int maxFeatures) {
-        this.maxFeatures = maxFeatures;
+    public WFSProxyServiceProperties() {
+        this.mappingStatus = new WfsProxyMappingStatus();
     }
 
     public int getMaxFeatures() {
@@ -31,5 +32,13 @@ public class WFSProxyServiceProperties {
 
     public void setMaxFeatures(int maxFeatures) {
         this.maxFeatures = maxFeatures;
+    }
+
+    public WfsProxyMappingStatus getMappingStatus() {
+        return mappingStatus;
+    }
+
+    public void setMappingStatus(WfsProxyMappingStatus mappingStatus) {
+        this.mappingStatus = mappingStatus;
     }
 }

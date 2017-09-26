@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,7 +31,7 @@ public class WfsProxyFeatureTypeMapping {
     private Map<String, Map<String, List<TargetMapping>>> mappings;
 
     public WfsProxyFeatureTypeMapping() {
-        this.mappings = new HashMap<>();
+        this.mappings = new LinkedHashMap<>();
     }
 
     public void addMapping(String path, String targetType, TargetMapping targetMapping) {

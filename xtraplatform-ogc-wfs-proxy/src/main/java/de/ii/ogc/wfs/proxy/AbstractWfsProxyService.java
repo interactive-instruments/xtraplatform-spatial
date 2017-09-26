@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 interactive instruments GmbH
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,6 +26,7 @@ import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ParseError;
+import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
 import de.ii.xtraplatform.ogc.api.exceptions.WFSException;
 import de.ii.xtraplatform.ogc.api.gml.parser.GMLSchemaAnalyzer;
 import de.ii.xtraplatform.ogc.api.gml.parser.GMLSchemaParser;
@@ -76,6 +77,7 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
         super();
         this.featureTypes = new HashMap<>();
         this.schemaAnalyzers = new ArrayList<>();
+        this.serviceProperties = new WFSProxyServiceProperties();
     }
 
     public AbstractWfsProxyService(String id, String type, File configDirectory, WFSAdapter wfsAdapter) {
@@ -83,6 +85,7 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
         this.wfsAdapter = wfsAdapter;
         this.featureTypes = new HashMap<>();
         this.schemaAnalyzers = new ArrayList<>();
+        this.serviceProperties = new WFSProxyServiceProperties();
     }
 
     @Override
@@ -169,16 +172,18 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
     private void analyzeCapabilities(WFS.VERSION version) throws ParseError {
 
         HttpEntity capabilities;
+        GetCapabilities getCapabilities;
 
         if (version == null) {
             LOGGER.debug(FrameworkMessages.ANALYZING_CAPABILITIES);
-            capabilities = wfsAdapter.request(new GetCapabilities());
+            getCapabilities = new GetCapabilities();
         } else {
             LOGGER.debug(FrameworkMessages.ANALYZING_CAPABILITIES_VERSION, version.toString());
-            capabilities = wfsAdapter.request(new GetCapabilities(version));
+            getCapabilities = new GetCapabilities(version);
         }
+        capabilities = wfsAdapter.request(getCapabilities);
 
-        WFSCapabilitiesAnalyzer analyzer = new WfsProxyCapabilitiesAnalyzer(this);
+        WFSCapabilitiesAnalyzer analyzer = new WfsProxyCapabilitiesAnalyzer(this, wfsAdapter.getRequestUrl(getCapabilities));
         WFSCapabilitiesParser wfsParser = new WFSCapabilitiesParser(analyzer, staxFactory);
 
         wfsParser.parse(capabilities);
@@ -201,27 +206,50 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
         return featureTypesPerNamespace;
     }
 
-    private void analyzeFeatureTypes() {
-        HttpEntity dft = wfsAdapter.request(new DescribeFeatureType());
-        // TODO: ???
-        URI baseuri = wfsAdapter.findUrl(WFS.OPERATION.DESCRIBE_FEATURE_TYPE, WFS.METHOD.GET);
+    public void analyzeFeatureTypes() {
+        WfsProxyMappingStatus mappingStatus = serviceProperties.getMappingStatus();
+        //mappingStatus.setEnabled(!disableMapping);
+        //mappingStatus.setLoading(!disableMapping);
 
-        Map<String, List<String>> fts = retrieveSupportedFeatureTypesPerNamespace();
+        // TODO: if loading, run analysis in background queue
+        // separate (or this?) function, start from store
+        if (mappingStatus.isEnabled() && mappingStatus.isLoading()) {
+            //mappingStatus.setEnabled(true);
+            //mappingStatus.setLoading(true);
 
-        if (!featureTypes.isEmpty()) {
-            // create mappings
-            GMLSchemaParser gmlSchemaParser;
-            // TODO: temporary basic auth hack
-            //if (wfs.usesBasicAuth()) {
-            //    gmlParser = new GMLSchemaParser(analyzers, baseuri, new OGCEntityResolver(sslHttpClient, wfs.getUser(), wfs.getPassword()));
-            //} else {
-            gmlSchemaParser = new GMLSchemaParser(schemaAnalyzers, baseuri);
-            //}
-            gmlSchemaParser.parse(dft, fts);
+            HttpEntity dft = wfsAdapter.request(new DescribeFeatureType());
+            // TODO: ???
+            URI baseuri = wfsAdapter.findUrl(WFS.OPERATION.DESCRIBE_FEATURE_TYPE, WFS.METHOD.GET);
+
+            Map<String, List<String>> fts = retrieveSupportedFeatureTypesPerNamespace();
+
+            if (!featureTypes.isEmpty()) {
+                // create mappings
+                GMLSchemaParser gmlSchemaParser;
+                // TODO: temporary basic auth hack
+                //if (wfs.usesBasicAuth()) {
+                //    gmlParser = new GMLSchemaParser(analyzers, baseuri, new OGCEntityResolver(sslHttpClient, wfs.getUser(), wfs.getPassword()));
+                //} else {
+                gmlSchemaParser = new GMLSchemaParser(schemaAnalyzers, baseuri);
+                //}
+                try {
+                    gmlSchemaParser.parse(dft, fts);
+
+                    mappingStatus.setLoading(false);
+                    mappingStatus.setSupported(true);
+                } catch (Exception ex) {
+                    mappingStatus.setLoading(false);
+                    mappingStatus.setSupported(false);
+                    mappingStatus.setErrorMessage(ex.getMessage());
+                    if (ex.getClass() == SchemaParseException.class) {
+                        mappingStatus.setErrorMessageDetails(((SchemaParseException)ex).getDetails());
+                    }
+                }
+            }
+
+            // only log warnings about timeouts in the analysis phase
+            //wfsAdapter.setIgnoreTimeouts(true);
         }
-
-        // only log warnings about timeouts in the analysis phase
-        wfsAdapter.setIgnoreTimeouts(true);
     }
 
     public void analyzeWFS() {
@@ -235,9 +263,12 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
 
         crsTransformations.setWfsDefaultCrs(wfsAdapter.getDefaultCrs());
 
-        wfsAdapter.checkHttpMethodSupport();
+        // TODO: background tests, check method, check urls
+        //wfsAdapter.checkHttpMethodSupport();
 
-        analyzeFeatureTypes();
+        // TODO: analyze functionality like paging in background queue
+
+
     }
 
     @Override

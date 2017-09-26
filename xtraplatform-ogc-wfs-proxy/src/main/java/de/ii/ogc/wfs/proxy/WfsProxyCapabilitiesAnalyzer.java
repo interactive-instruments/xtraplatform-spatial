@@ -18,7 +18,9 @@ package de.ii.ogc.wfs.proxy;
 import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.GML;
+import de.ii.xtraplatform.ogc.api.OWS;
 import de.ii.xtraplatform.ogc.api.WFS;
+import de.ii.xtraplatform.ogc.api.exceptions.ParseError;
 import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
 import de.ii.xtraplatform.ogc.api.wfs.parser.AbstractWfsCapabilitiesAnalyzer;
 import de.ii.xtraplatform.ogc.api.wfs.parser.WFSCapabilitiesAnalyzer;
@@ -38,10 +40,12 @@ public class WfsProxyCapabilitiesAnalyzer extends AbstractWfsCapabilitiesAnalyze
     private static final LocalizedLogger LOGGER = XSFLogger.getLogger(WfsProxyCapabilitiesAnalyzer.class);
     private WfsProxyService wfsProxy;
     private Map<WFS.OPERATION, GML.VERSION> versions;
+    private  String url;
 
-    public WfsProxyCapabilitiesAnalyzer(WfsProxyService wfsProxy) {
+    public WfsProxyCapabilitiesAnalyzer(WfsProxyService wfsProxy, String url) {
         this.wfsProxy = wfsProxy;
         this.versions = new HashMap<>();
+        this.url = url;
     }
 
     @Override
@@ -160,37 +164,40 @@ public class WfsProxyCapabilitiesAnalyzer extends AbstractWfsCapabilitiesAnalyze
     }
 
     @Override
-    public void analyzeOperationPostUrl(WFS.OPERATION op, String url) {
+    public void analyzeOperationPostUrl(OWS.OPERATION op, String url) {
+        WFS.OPERATION op2 = WFS.OPERATION.fromString(op.toString());
         try {
-            wfsProxy.getWfsAdapter().addUrl(new URI(url.trim()), op, WFS.METHOD.POST);
+            wfsProxy.getWfsAdapter().addUrl(new URI(url.trim()), op2, WFS.METHOD.POST);
         } catch (URISyntaxException ex) {
             // TODO
         }
     }
 
     @Override
-    public void analyzeOperationGetUrl(WFS.OPERATION op, String url) {
+    public void analyzeOperationGetUrl(OWS.OPERATION op, String url) {
+        WFS.OPERATION op2 = WFS.OPERATION.fromString(op.toString());
         try {
-            wfsProxy.getWfsAdapter().addUrl(new URI(url.trim()), op, WFS.METHOD.GET);
+            wfsProxy.getWfsAdapter().addUrl(new URI(url.trim()), op2, WFS.METHOD.GET);
         } catch (URISyntaxException ex) {
             // TODO
         }
     }
 
     @Override
-    public void analyzeOperationParameter(WFS.OPERATION operation, WFS.VOCABULARY parameterName, String value) {
-        if (parameterName == WFS.VOCABULARY.OUTPUT_FORMAT) {
-            LOGGER.getLogger().debug("CAP VERSION {} {}", operation, value);
-            GML.VERSION v1 = versions.get(operation);
+    public void analyzeOperationParameter(OWS.OPERATION operation, OWS.VOCABULARY parameterName, String value) {
+        WFS.OPERATION op2 = WFS.OPERATION.fromString(operation.toString());
+        if (parameterName == OWS.VOCABULARY.OUTPUT_FORMAT) {
+            LOGGER.getLogger().debug("CAP VERSION {} {}", op2, value);
+            GML.VERSION v1 = versions.get(op2);
             GML.VERSION v2 = GML.VERSION.fromOutputFormatString(value);
             if (v2 != null) {
                 if (v1 != null) {
                    if (v2.isGreater(v1)) {
-                   versions.put(operation, v2);
+                   versions.put(op2, v2);
                    }
                 }
                 else {
-                   versions.put(operation, v2);
+                   versions.put(op2, v2);
                 }
             }
             GML.VERSION v3 = versions.get(WFS.OPERATION.DESCRIBE_FEATURE_TYPE);
@@ -202,5 +209,13 @@ public class WfsProxyCapabilitiesAnalyzer extends AbstractWfsCapabilitiesAnalyze
             }
             //wfsProxy.getWfsAdapter().setGmlVersionFromOutputFormat(value);
         }
+    }
+
+    @Override
+    public void analyzeFailed(String exceptionCode, String exceptionText) {
+        ParseError pe = new ParseError("GetCapabilities request returned ExceptionReport: " + url);
+        pe.addDetail("ExceptionCode: " + exceptionCode);
+        pe.addDetail("ExceptionText: " + exceptionText);
+        throw pe;
     }
 }

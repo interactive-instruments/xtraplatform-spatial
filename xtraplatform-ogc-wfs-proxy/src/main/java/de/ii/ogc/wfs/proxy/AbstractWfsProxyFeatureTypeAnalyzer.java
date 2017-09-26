@@ -163,6 +163,23 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
     abstract protected TargetMapping getTargetMappingForProperty(String path, String nsuri, String localName, String type, long minOccurs, long maxOccurs, int depth, boolean isParentMultiple, boolean isComplex, boolean isObject);
 
     @Override
+    public void analyzeNamespaceRewrite(String oldNamespace, String newNamespace, String featureTypeName) {
+        String prefix = proxyService.getWfsAdapter().getNsStore().getNamespacePrefix(oldNamespace);
+        if (prefix != null) {
+            proxyService.getWfsAdapter().getNsStore().addNamespace(prefix, newNamespace, true);
+
+            String fullName = oldNamespace + ":" + featureTypeName;
+            WfsProxyFeatureType wfsProxyFeatureType = proxyService.getFeatureTypes().get(fullName);
+            if (wfsProxyFeatureType != null) {
+                wfsProxyFeatureType.setNamespace(newNamespace);
+                proxyService.getFeatureTypes().remove(fullName);
+                fullName = newNamespace + ":" + featureTypeName;
+                proxyService.getFeatureTypes().put(fullName, wfsProxyFeatureType);
+            }
+        }
+    }
+
+    @Override
     public void analyzeFeatureType(String nsuri, String localName) {
 
         if (nsuri.isEmpty()) {
@@ -185,7 +202,7 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
         TargetMapping targetMapping = getTargetMappingForFeatureType(nsuri, localName);
 
         if (targetMapping != null) {
-            currentFeatureType.getMappings().addMapping(fullName, getTargetType(), targetMapping);
+             currentFeatureType.getMappings().addMapping(fullName, getTargetType(), targetMapping);
         }
     }
 
@@ -224,6 +241,8 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
 
         if (!isObject) {
             currentPathWithoutObjects.track(nsuri, localName, depth);
+        } else {
+            currentPathWithoutObjects.track(null, null, depth);
         }
 
         String path = currentPath.toString();
@@ -236,7 +255,7 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
 
         if (currentFeatureType != null && !isPathMapped(path)) {
 
-            TargetMapping targetMapping = getTargetMappingForProperty(currentPathWithoutObjects.toFieldName(), nsuri, localName, type, minOccurs, maxOccurs, depth, isParentMultiple, isComplex, isObject);
+            TargetMapping targetMapping = getTargetMappingForProperty(currentPath.toFieldNameGml()/*currentPathWithoutObjects.toFieldName()*/, nsuri, localName, type, minOccurs, maxOccurs, depth, isParentMultiple, isComplex, isObject);
 
             if (targetMapping != null) {
                 mappedPaths.add(path);
