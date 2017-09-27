@@ -43,7 +43,7 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
         LONG("long"),
         SHORT("short"),
         BOOLEAN("boolean"),
-        URI("anyUri"),
+        URI("anyURI"),
         NONE("");
 
         private String stringRepresentation;
