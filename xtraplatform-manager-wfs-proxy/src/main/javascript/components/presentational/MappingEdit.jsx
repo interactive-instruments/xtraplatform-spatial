@@ -21,7 +21,7 @@ class MappingEdit extends Component {
         this.state = {
             enabled: props.mapping.enabled || false,
             name: props.mapping.name || (props.isFeatureType && props.mimeType === 'text/html' ? '{{id}}' : ''),
-            type: props.mapping.type || '',
+            type: props.mapping.type || 'NONE',
             showInCollection: props.mapping.showInCollection || false,
             itemType: props.mapping.itemType || '',
             itemProp: props.mapping.itemProp || '',
@@ -38,7 +38,7 @@ class MappingEdit extends Component {
             this.setState({
                 enabled: nextProps.mapping.enabled || false,
                 name: nextProps.mapping.name || (nextProps.isFeatureType && nextProps.mimeType === 'text/html' ? '{{id}}' : ''),
-                type: nextProps.mapping.type || '',
+                type: nextProps.mapping.type || 'NONE',
                 showInCollection: nextProps.mapping.showInCollection || false,
                 itemType: nextProps.mapping.itemType || '',
                 itemProp: nextProps.mapping.itemProp || '',
