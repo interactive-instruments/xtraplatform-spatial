@@ -32,8 +32,8 @@ public class XMLPathTracker {
 
     public XMLPathTracker() {
         this.multiple = false;
-        this.localPath = new ArrayList();
-        this.path = new ArrayList();
+        this.localPath = new ArrayList<>();
+        this.path = new ArrayList<>();
     }
     
     public XMLPathTracker(XMLNamespaceNormalizer nsStore) {
@@ -42,8 +42,10 @@ public class XMLPathTracker {
     }
     
     public void track(String nsuri, String localName, int depth) {
-        if (depth <= path.size()) {
+        if (depth <= localPath.size()) {
             localPath.subList(depth - 1, localPath.size()).clear();
+        }
+        if (depth <= path.size()) {
             path.subList(depth - 1, path.size()).clear();
         }
         track(nsuri, localName);
@@ -51,7 +53,8 @@ public class XMLPathTracker {
     
     public void track(String nsuri, String localName) {
         localPath.add(localName);
-        path.add(nsuri + ":" + localName);
+        if (nsuri != null && localName != null)
+            path.add(nsuri + ":" + localName);
     }
 
     public boolean isMultiple() {
@@ -63,16 +66,16 @@ public class XMLPathTracker {
     }
     
     public String toFieldName() {
-        return Joiner.on(".").join(localPath);
+        return Joiner.on(".").skipNulls().join(localPath);
     }
     
     @Override
     public String toString() {
-        return Joiner.on("/").join(path);
+        return Joiner.on("/").skipNulls().join(path);
     }
     
     public String toLocalPath() {
-        return Joiner.on("/").join(localPath);
+        return Joiner.on("/").skipNulls().join(localPath);
     }
     
     public boolean isEmpty() {

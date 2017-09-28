@@ -228,6 +228,8 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
 
         if (!isObject) {
             currentPathWithoutObjects.track(nsuri, localName, depth);
+        } else {
+            currentPathWithoutObjects.track(null, null, depth);
         }
 
         String path = currentPath.toString();
