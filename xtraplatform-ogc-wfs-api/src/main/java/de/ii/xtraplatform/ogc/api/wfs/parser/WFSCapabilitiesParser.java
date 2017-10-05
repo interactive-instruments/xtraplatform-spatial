@@ -1,24 +1,20 @@
 /**
- * Copyright 2016 interactive instruments GmbH
+ * Copyright 2017 European Union, interactive instruments GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+/**
+ * bla
  */
 package de.ii.xtraplatform.ogc.api.wfs.parser;
 
 import de.ii.xsf.logging.XSFLogger;
-import de.ii.xtraplatform.ogc.api.WFS;
+import de.ii.xtraplatform.ogc.api.OWS;
 import de.ii.xtraplatform.ogc.api.XLINK;
 import org.apache.http.HttpEntity;
+import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.staxmate.SMInputFactory;
 import org.codehaus.staxmate.in.SMEvent;
@@ -74,13 +70,13 @@ public class WFSCapabilitiesParser {
 
             parseNamespaces(root);
 
-            analyzer.analyzeVersion(root.getAttrValue(WFS.getWord(WFS.VOCABULARY.VERSION)));
+            analyzer.analyzeVersion(root.getAttrValue(OWS.getWord(OWS.VOCABULARY.VERSION)));
 
             SMInputCursor capabilitiesChild = root.childElementCursor().advance();
 
             while (capabilitiesChild.readerAccessible()) {
 
-                switch (WFS.findKey(capabilitiesChild.getLocalName())) {
+                switch (OWS.findKey(capabilitiesChild.getLocalName())) {
                     case SERVICE_IDENTIFICATION:
                         parseServiceIdentification(capabilitiesChild);
                         break;
@@ -127,17 +123,20 @@ public class WFSCapabilitiesParser {
         boolean exceptionFound = false;
 
         // TODO: make version agnostic
-        if (WFS.findKey(cursor.getLocalName()) == WFS.VOCABULARY.EXCEPTION_REPORT) {
+        if (OWS.findKey(cursor.getLocalName()) == OWS.VOCABULARY.EXCEPTION_REPORT) {
 
             exceptionFound = true;
 
             SMInputCursor exceptionReportChild = cursor.childElementCursor().advance();
 
+            boolean reportChildFound = false;
+
             while (exceptionReportChild.readerAccessible()) {
 
-                switch (WFS.findKey(exceptionReportChild.getLocalName())) {
+                switch (OWS.findKey(exceptionReportChild.getLocalName())) {
                     case EXCEPTION:
                         parseException(exceptionReportChild);
+                        reportChildFound = true;
                         break;
                 }
 
@@ -150,14 +149,19 @@ public class WFSCapabilitiesParser {
                 throw wfse;
                 */
             }
+
+            if (!reportChildFound) {
+                analyzer.analyzeFailed("", "");
+            }
         }
+
 
         return exceptionFound;
     }
 
     private void parseException(SMInputCursor cursor) throws XMLStreamException {
 
-        String exceptionCode = cursor.getAttrValue(WFS.getWord(WFS.VERSION._1_1_0, WFS.VOCABULARY.EXCEPTION_CODE));
+        String exceptionCode = cursor.getAttrValue(OWS.getWord(OWS.VERSION._1_1_0, OWS.VOCABULARY.EXCEPTION_CODE));
 
         if (exceptionCode != null) {
 
@@ -165,7 +169,7 @@ public class WFSCapabilitiesParser {
 
             while (exceptionChild.readerAccessible()) {
 
-                switch (WFS.findKey(exceptionChild.getLocalName())) {
+                switch (OWS.findKey(exceptionChild.getLocalName())) {
                     case EXCEPTION_TEXT:
                         analyzer.analyzeFailed(exceptionCode, exceptionChild.collectDescendantText());
                         break;
@@ -175,7 +179,7 @@ public class WFSCapabilitiesParser {
             }
 
         } else {
-            exceptionCode = cursor.getAttrValue(WFS.getWord(WFS.VERSION._1_0_0, WFS.VOCABULARY.EXCEPTION_CODE));
+            exceptionCode = cursor.getAttrValue(OWS.getWord(OWS.VERSION._1_0_0, OWS.VOCABULARY.EXCEPTION_CODE));
 
             analyzer.analyzeFailed(exceptionCode, cursor.collectDescendantText());
         }
@@ -188,7 +192,7 @@ public class WFSCapabilitiesParser {
 
         while (serviceIdentificationChild.readerAccessible()) {
 
-            switch (WFS.findKey(serviceIdentificationChild.getLocalName())) {
+            switch (OWS.findKey(serviceIdentificationChild.getLocalName())) {
                 case TITLE:
                     analyzer.analyzeTitle(serviceIdentificationChild.collectDescendantText());
                     break;
@@ -238,7 +242,7 @@ public class WFSCapabilitiesParser {
 
         while (serviceProviderChild.readerAccessible()) {
 
-            switch (WFS.findKey(serviceProviderChild.getLocalName())) {
+            switch (OWS.findKey(serviceProviderChild.getLocalName())) {
                 case PROVIDER_NAME:
                     analyzer.analyzeProviderName(serviceProviderChild.collectDescendantText());
                     break;
@@ -259,7 +263,7 @@ public class WFSCapabilitiesParser {
 
         while (serviceContactChild.readerAccessible()) {
 
-            switch (WFS.findKey(serviceContactChild.getLocalName())) {
+            switch (OWS.findKey(serviceContactChild.getLocalName())) {
                 case INDIVIDUAL_NAME:
                     analyzer.analyzeServiceContactIndividualName(serviceContactChild.collectDescendantText());
                     break;
@@ -286,7 +290,7 @@ public class WFSCapabilitiesParser {
 
         while (contactInfoChild.readerAccessible()) {
 
-            switch (WFS.findKey(contactInfoChild.getLocalName())) {
+            switch (OWS.findKey(contactInfoChild.getLocalName())) {
                 case PHONE:
                     parsePhone(contactInfoChild);
                     break;
@@ -313,7 +317,7 @@ public class WFSCapabilitiesParser {
 
         while (phoneChild.readerAccessible()) {
 
-            switch (WFS.findKey(phoneChild.getLocalName())) {
+            switch (OWS.findKey(phoneChild.getLocalName())) {
                 case VOICE:
                     analyzer.analyzeServiceContactPhone(phoneChild.collectDescendantText());
                     break;
@@ -331,7 +335,7 @@ public class WFSCapabilitiesParser {
 
         while (addressChild.readerAccessible()) {
 
-            switch (WFS.findKey(addressChild.getLocalName())) {
+            switch (OWS.findKey(addressChild.getLocalName())) {
                 case DELIVERY_POINT:
                     analyzer.analyzeServiceContactDeliveryPoint(addressChild.collectDescendantText());
                     break;
@@ -362,15 +366,15 @@ public class WFSCapabilitiesParser {
 
         while (operationsMetadataChild.readerAccessible()) {
 
-            switch (WFS.findKey(operationsMetadataChild.getLocalName())) {
+            switch (OWS.findKey(operationsMetadataChild.getLocalName())) {
                 case OPERATION:
                     parseOperation(operationsMetadataChild);
                     break;
                 case PARAMETER:
-                    parseParameterOrConstraint(WFS.OPERATION.NONE, false, operationsMetadataChild);
+                    parseParameterOrConstraint(OWS.OPERATION.NONE, false, operationsMetadataChild);
                     break;
                 case CONSTRAINT:
-                    parseParameterOrConstraint(WFS.OPERATION.NONE, true, operationsMetadataChild);
+                    parseParameterOrConstraint(OWS.OPERATION.NONE, true, operationsMetadataChild);
                     break;
                 case EXTENDED_CAPABILITIES:
                     parseExtendedCapabilities(operationsMetadataChild);
@@ -383,44 +387,44 @@ public class WFSCapabilitiesParser {
 
     private void parseOperation(SMInputCursor cursor) throws XMLStreamException {
 
-        WFS.OPERATION wfsOperation = WFS.OPERATION.fromString(cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.NAME_ATTRIBUTE)));
+        OWS.OPERATION wfsOperation = OWS.OPERATION.fromString(cursor.getAttrValue(OWS.getWord(OWS.VOCABULARY.NAME_ATTRIBUTE)));
 
-        if (wfsOperation == WFS.OPERATION.NONE) {
-            wfsOperation = WFS.OPERATION.fromString(cursor.getLocalName());
+        if (wfsOperation == OWS.OPERATION.NONE) {
+            wfsOperation = OWS.OPERATION.fromString(cursor.getLocalName());
         }
 
-        if (wfsOperation == WFS.OPERATION.NONE) {
+        if (wfsOperation == OWS.OPERATION.NONE) {
             cursor = cursor.childElementCursor().advance();
 
-            if (WFS.OPERATION.fromString(cursor.getLocalName()) != WFS.OPERATION.NONE) {
-                while (cursor.readerAccessible()) {
+            while (cursor.readerAccessible()) {
+                if (OWS.OPERATION.fromString(cursor.getLocalName()) != OWS.OPERATION.NONE) {
                     parseOperation(cursor);
-
-                    cursor = cursor.advance();
                 }
 
-                return;
+                cursor = cursor.advance();
             }
+
+            return;
         }
 
-        if (wfsOperation != WFS.OPERATION.NONE) {
+        if (wfsOperation != OWS.OPERATION.NONE) {
 
             SMInputCursor operationChild = cursor.childElementCursor().advance();
 
             while (operationChild.readerAccessible()) {
 
-                switch (WFS.findKey(operationChild.getLocalName())) {
+                switch (OWS.findKey(operationChild.getLocalName())) {
                     case DCP:
                         SMInputCursor dcpChild = operationChild.descendantElementCursor().advance();
 
                         while (dcpChild.readerAccessible()) {
                             if (dcpChild.getCurrEvent() == SMEvent.START_ELEMENT) {
-                                switch (WFS.findKey(dcpChild.getLocalName())) {
+                                switch (OWS.findKey(dcpChild.getLocalName())) {
                                     case GET:
-                                        analyzer.analyzeOperationGetUrl(wfsOperation, WFS.cleanUrl(parseUrl(dcpChild)));
+                                        analyzer.analyzeOperationGetUrl(wfsOperation, parseUrl(dcpChild));
                                         break;
                                     case POST:
-                                        analyzer.analyzeOperationPostUrl(wfsOperation, WFS.cleanUrl(parseUrl(dcpChild)));
+                                        analyzer.analyzeOperationPostUrl(wfsOperation, parseUrl(dcpChild));
                                         break;
                                 }
                             }
@@ -449,22 +453,22 @@ public class WFSCapabilitiesParser {
     private String parseUrl(SMInputCursor cursor) throws XMLStreamException {
         String url = cursor.getAttrValue(XLINK.getNS(XLINK.VERSION.DEFAULT), XLINK.getWord(XLINK.VOCABULARY.HREF));
         if (url == null) {
-            url = cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.ONLINE_RESOURCE_ATTRIBUTE));
+            url = cursor.getAttrValue(OWS.getWord(OWS.VOCABULARY.ONLINE_RESOURCE_ATTRIBUTE));
         }
         return url;
     }
 
-    private void parseParameterOrConstraint(WFS.OPERATION operation, boolean isConstraint, SMInputCursor cursor) throws XMLStreamException {
+    private void parseParameterOrConstraint(OWS.OPERATION operation, boolean isConstraint, SMInputCursor cursor) throws XMLStreamException {
 
-        WFS.VOCABULARY parameterName = WFS.findKey(cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.NAME_ATTRIBUTE)));
+        OWS.VOCABULARY parameterName = OWS.findKey(cursor.getAttrValue(OWS.getWord(OWS.VOCABULARY.NAME_ATTRIBUTE)));
 
-        if (parameterName != WFS.VOCABULARY.NOT_A_WORD) {
+        if (parameterName != OWS.VOCABULARY.NOT_A_WORD) {
 
             SMInputCursor parameterChild = cursor.descendantElementCursor().advance();
 
             while (parameterChild.readerAccessible()) {
                 if (parameterChild.getCurrEvent() == SMEvent.START_ELEMENT) {
-                    switch (WFS.findKey(parameterChild.getLocalName())) {
+                    switch (OWS.findKey(parameterChild.getLocalName())) {
                         case VALUE:
                         case DEFAULT_VALUE:
                             if (isConstraint) {
@@ -482,16 +486,16 @@ public class WFSCapabilitiesParser {
         }
     }
 
-    private void parseResultFormat(WFS.OPERATION operation, SMInputCursor cursor) throws XMLStreamException {
+    private void parseResultFormat(OWS.OPERATION operation, SMInputCursor cursor) throws XMLStreamException {
 
-        WFS.VOCABULARY parameterName = WFS.findKey(cursor.getLocalName());
+        OWS.VOCABULARY parameterName = OWS.findKey(cursor.getLocalName());
 
-        if (parameterName == WFS.VOCABULARY.RESULT_FORMAT) {
+        if (parameterName == OWS.VOCABULARY.RESULT_FORMAT) {
 
             SMInputCursor parameterChild = cursor.childElementCursor().advance();
 
             while (parameterChild.readerAccessible()) {
-                analyzer.analyzeOperationParameter(operation, WFS.VOCABULARY.OUTPUT_FORMAT, parameterChild.getLocalName());
+                analyzer.analyzeOperationParameter(operation, OWS.VOCABULARY.OUTPUT_FORMAT, parameterChild.getLocalName());
 
                 parameterChild = parameterChild.advance();
             }
@@ -505,19 +509,19 @@ public class WFSCapabilitiesParser {
 
         while (extendedCapabilitiesChild.readerAccessible()) {
 
-            switch (WFS.findKey(extendedCapabilitiesChild.getLocalName())) {
+            switch (OWS.findKey(extendedCapabilitiesChild.getLocalName())) {
                 case EXTENDED_CAPABILITIES:
                     SMInputCursor extendedCapabilitiesChild2 = extendedCapabilitiesChild.childElementCursor().advance();
 
                     while (extendedCapabilitiesChild2.readerAccessible()) {
 
-                        switch (WFS.findKey(extendedCapabilitiesChild2.getLocalName())) {
+                        switch (OWS.findKey(extendedCapabilitiesChild2.getLocalName())) {
                             case INSPIRE_METADATA_URL:
                                 SMInputCursor inspireMetadataChild = extendedCapabilitiesChild2.childElementCursor().advance();
 
                                 while (inspireMetadataChild.readerAccessible()) {
 
-                                    switch (WFS.findKey(inspireMetadataChild.getLocalName())) {
+                                    switch (OWS.findKey(inspireMetadataChild.getLocalName())) {
                                         case INSPIRE_URL:
                                             analyzer.analyzeInspireMetadataUrl(inspireMetadataChild.collectDescendantText());
                                             break;
@@ -542,7 +546,7 @@ public class WFSCapabilitiesParser {
 
         while (featureTypeListChild.readerAccessible()) {
 
-            switch (WFS.findKey(featureTypeListChild.getLocalName())) {
+            switch (OWS.findKey(featureTypeListChild.getLocalName())) {
                 case FEATURE_TYPE:
                     parseFeatureType(featureTypeListChild);
                     break;
@@ -562,7 +566,7 @@ public class WFSCapabilitiesParser {
 
         while (featureTypeChild.readerAccessible()) {
 
-            switch (WFS.findKey(featureTypeChild.getLocalName())) {
+            switch (OWS.findKey(featureTypeChild.getLocalName())) {
                 case NAME:
                     parseNamespaces(featureTypeChild);
                     featureTypeName = featureTypeChild.collectDescendantText();
@@ -597,10 +601,10 @@ public class WFSCapabilitiesParser {
 
     private void parseBoundingBox(String featureTypeName, SMInputCursor cursor) throws XMLStreamException {
 
-        String xmin = cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.MIN_X));
-        String ymin = cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.MIN_Y));
-        String xmax = cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.MAX_X));
-        String ymax = cursor.getAttrValue(WFS.getWord(WFS.VOCABULARY.MAX_Y));
+        String xmin = cursor.getAttrValue(OWS.getWord(OWS.VOCABULARY.MIN_X));
+        String ymin = cursor.getAttrValue(OWS.getWord(OWS.VOCABULARY.MIN_Y));
+        String xmax = cursor.getAttrValue(OWS.getWord(OWS.VOCABULARY.MAX_X));
+        String ymax = cursor.getAttrValue(OWS.getWord(OWS.VOCABULARY.MAX_Y));
 
         if (xmin == null || ymin == null || xmax == null || ymax == null) {
 
@@ -611,7 +615,7 @@ public class WFSCapabilitiesParser {
 
             while (bboxChild.readerAccessible()) {
 
-                switch (WFS.findKey(bboxChild.getLocalName())) {
+                switch (OWS.findKey(bboxChild.getLocalName())) {
                     case LOWER_CORNER:
                         lowerCorner = bboxChild.getElemStringValue().trim().split(" ");
                         break;

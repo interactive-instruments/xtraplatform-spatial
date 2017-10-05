@@ -1,23 +1,19 @@
 /**
- * Copyright 2016 interactive instruments GmbH
+ * Copyright 2017 European Union, interactive instruments GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+/**
+ * bla
  */
 package de.ii.xtraplatform.ogc.api.wfs.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.MapMaker;
 import com.google.common.io.CharStreams;
 import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
@@ -68,11 +64,11 @@ public class WFSAdapter {
     private HttpClient untrustedSslHttpClient;
     private XMLNamespaceNormalizer nsStore;
     private boolean alphaNumericId;
-    private EpsgCrs defaultCrs = null;
+    private EpsgCrs defaultCrs;
     private Set<EpsgCrs> otherCrs;
-    private boolean ignoreTimeouts = false;
+    private boolean ignoreTimeouts ;
     private WFS.METHOD httpMethod;
-    private boolean useBasicAuth = false;
+    private boolean useBasicAuth;
     private String user;
     private String password;
 
@@ -83,13 +79,14 @@ public class WFSAdapter {
         this.versions = new Versions();
         this.defaultCrs = null;
         this.otherCrs = new HashSet<>();
-        // TODO: workaround for existing configurations
-        this.httpMethod = WFS.METHOD.POST;
+        this.ignoreTimeouts = true;
+        this.httpMethod = WFS.METHOD.GET;
+        this.useBasicAuth = false;
     }
 
     public WFSAdapter(String url) {
         this();
-        this.httpMethod = WFS.METHOD.GET;
+
         try {
             // TODO: temporary basic auth hack
             // extract and remove credentials from url if existing
@@ -168,11 +165,9 @@ public class WFSAdapter {
     public void addUrl(URI url, WFS.OPERATION op, WFS.METHOD method) {
         // TODO: remove toString
         if (!this.urls.containsKey(op.toString())) {
-            Map<WFS.METHOD, URI> urls = new ImmutableMap.Builder<WFS.METHOD, URI>()
-                    .put(method, url)
-                    .build();
-            this.urls.put(op.toString(), urls);
+            this.urls.put(op.toString(), new HashMap<WFS.METHOD, URI>());
         }
+            this.urls.get(op.toString()).put(method, url);
     }
 
     public boolean isAlphaNumericId() {
@@ -198,7 +193,7 @@ public class WFSAdapter {
     }
 
     public void capabilitiesAnalyzed() {
-        if (versions.getGmlVersion() == null) {
+        if (versions.getGmlVersion() == null && versions.getWfsVersion() != null) {
             versions.setGmlVersion(versions.getWfsVersion().getGmlVersion());
         }
     }
@@ -456,7 +451,7 @@ public class WFSAdapter {
         this.ignoreTimeouts = ignoreTimeouts;
     }
 
-    public void checkHttpMethodSupport() {
+    /*public void checkHttpMethodSupport() {
 
         URI url = findUrl(WFS.OPERATION.DESCRIBE_FEATURE_TYPE, WFS.METHOD.POST);
         if (url == null) {
@@ -480,7 +475,7 @@ public class WFSAdapter {
         } finally {
             EntityUtils.consumeQuietly(dft);
         }
-    }
+    }*/
 
     public String getHttpMethod() {
         return httpMethod.toString();

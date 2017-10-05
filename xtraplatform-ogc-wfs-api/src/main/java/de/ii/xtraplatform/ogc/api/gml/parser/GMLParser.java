@@ -1,17 +1,12 @@
 /**
- * Copyright 2016 interactive instruments GmbH
+ * Copyright 2017 European Union, interactive instruments GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+/**
+ * bla
  */
 package de.ii.xtraplatform.ogc.api.gml.parser;
 
@@ -27,6 +22,7 @@ import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.staxmate.SMInputFactory;
+import org.codehaus.staxmate.in.SMFilterFactory;
 import org.codehaus.staxmate.in.SMFlatteningCursor;
 import org.codehaus.staxmate.in.SMInputCursor;
 import org.forgerock.i18n.slf4j.LocalizedLogger;
@@ -47,11 +43,16 @@ public class GMLParser {
     private final GMLAnalyzer analyzer;
     private final SMInputFactory staxFactory;
     private int featureDepth;
+    private boolean parseText;
 
     public GMLParser(GMLAnalyzer analyzer, SMInputFactory staxFactory) {
         this.analyzer = analyzer;
         this.staxFactory = staxFactory;
         this.featureDepth = 1;
+    }
+
+    public void enableTextParsing() {
+        this.parseText = true;
     }
 
     public void parse(ListenableFuture<HttpEntity> entity, String ns, String ft) throws ExecutionException {
@@ -135,7 +136,16 @@ public class GMLParser {
             analyzer.analyzeAttribute(cursor.getAttrNsUri(i), cursor.getAttrLocalName(i), cursor.getAttrValue(i));
         }
 
-        SMFlatteningCursor feature = (SMFlatteningCursor) cursor.descendantElementCursor().advance();
+        SMFlatteningCursor feature;
+        StringBuilder text = null;
+        if (parseText) {
+            feature = (SMFlatteningCursor) cursor.descendantCursor().advance();
+            text = new StringBuilder();
+        } else {
+            feature = (SMFlatteningCursor) cursor.descendantElementCursor().advance();
+        }
+
+
         while (feature.readerAccessible()) {
             if (feature.getCurrEventCode() == XMLStreamConstants.START_ELEMENT) {
                 boolean nil = false;
@@ -151,8 +161,15 @@ public class GMLParser {
                 analyzer.analyzePropertyStart(feature.getNsUri(), feature.getLocalName(), feature.getParentCount() - featureDepth, feature, nil);
 
             } else if (feature.getCurrEventCode() == XMLStreamConstants.END_ELEMENT) {
+                if (parseText && text.length() > 0) {
+                    analyzer.analyzePropertyText(feature.getNsUri(), feature.getLocalName(), feature.getParentCount() - featureDepth, text.toString());
+                    text = new StringBuilder();
+                }
                 analyzer.analyzePropertyEnd(feature.getNsUri(), feature.getLocalName(), feature.getParentCount() - featureDepth);
+            } else if (parseText && (feature.getCurrEventCode() == XMLStreamConstants.CHARACTERS)) {
+                text.append(feature.getText().trim());
             }
+
             feature = (SMFlatteningCursor) feature.advance();
         }
 
