@@ -1,17 +1,12 @@
 /**
- * Copyright 2016 interactive instruments GmbH
+ * Copyright 2017 European Union, interactive instruments GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+/**
+ * bla
  */
 package de.ii.xtraplatform.ogc.api.gml.parser;
 
@@ -121,6 +116,7 @@ public class GMLSchemaParser {
 
             for (Map.Entry<String, List<String>> ns : elements.entrySet()) {
                 String nsuri = ns.getKey();
+                String oldNsUri = null;
                 //LOGGER.debug("namespace {}", nsuri);
 
                 XSSchema schema = schemas.getSchema(nsuri);
@@ -132,8 +128,8 @@ public class GMLSchemaParser {
 
                     // looks as if the schema for the targetNamespace of the document is always second in the list
                     schema = schemas.getSchema(1);
+                    oldNsUri = nsuri;
                     nsuri = schema.getTargetNamespace();
-
                 }
 
                 for (String e : ns.getValue()) {
@@ -142,6 +138,9 @@ public class GMLSchemaParser {
                         //LOGGER.debug(" - element {}, type: {}", elem.getName(), elem.getType().getName());
 
                         for (GMLSchemaAnalyzer analyzer : analyzers) {
+                            if (oldNsUri != null) {
+                                analyzer.analyzeNamespaceRewrite(oldNsUri, nsuri, elem.getName());
+                            }
                             analyzer.analyzeFeatureType(nsuri, elem.getName());
                             for (XSAttributeUse att : elem.getType().asComplexType().getAttributeUses()) {
                                 //LOGGER.debug("   - attribute {}, required: {}, type: {}, ns: {}", att.getDecl().getName(), att.isRequired(), att.getDecl().getType().getName(), att.getDecl().getTargetNamespace());

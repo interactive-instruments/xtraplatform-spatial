@@ -1,21 +1,16 @@
 /**
- * Copyright 2016 interactive instruments GmbH
+ * Copyright 2017 European Union, interactive instruments GmbH
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+/**
+ * bla
  */
 package de.ii.xtraplatform.ogc.api.wfs.parser;
 
-import de.ii.xtraplatform.ogc.api.WFS;
+import de.ii.xtraplatform.ogc.api.OWS;
 
 /**
  *
@@ -55,11 +50,11 @@ public interface WFSCapabilitiesAnalyzer {
     void analyzeServiceContactHoursOfService(String hoursOfService);
     void analyzeServiceContactInstructions(String instructions);
 
-    void analyzeOperationGetUrl(WFS.OPERATION operation, String url);
-    void analyzeOperationPostUrl(WFS.OPERATION operation, String url);
-    void analyzeOperationParameter(WFS.OPERATION operation, WFS.VOCABULARY parameterName, String value);
-    void analyzeOperationConstraint(WFS.OPERATION operation, WFS.VOCABULARY constraintName, String value);
-    void analyzeOperationMetadata(WFS.OPERATION operation, String url);
+    void analyzeOperationGetUrl(OWS.OPERATION operation, String url);
+    void analyzeOperationPostUrl(OWS.OPERATION operation, String url);
+    void analyzeOperationParameter(OWS.OPERATION operation, OWS.VOCABULARY parameterName, String value);
+    void analyzeOperationConstraint(OWS.OPERATION operation, OWS.VOCABULARY constraintName, String value);
+    void analyzeOperationMetadata(OWS.OPERATION operation, String url);
 
     void analyzeInspireMetadataUrl(String metadataUrl);
 
