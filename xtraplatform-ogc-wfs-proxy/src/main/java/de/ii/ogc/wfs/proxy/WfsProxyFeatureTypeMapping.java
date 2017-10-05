@@ -36,7 +36,7 @@ public class WfsProxyFeatureTypeMapping {
 
     public void addMapping(String path, String targetType, TargetMapping targetMapping) {
         if (!mappings.containsKey(path)) {
-            mappings.put(path, new HashMap<String, List<TargetMapping>>());
+            mappings.put(path, new LinkedHashMap<String, List<TargetMapping>>());
         }
         if (!mappings.get(path).containsKey(targetType)) {
             mappings.get(path).put(targetType, new ArrayList<TargetMapping>());
