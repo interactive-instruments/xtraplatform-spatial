@@ -8,7 +8,7 @@ buildscript {
     } 
     dependencies {
         classpath group: 'de.interactive_instruments', name: 'gradle-plugin-osgi-ipojo', version: '1.12.1.26'
-        classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.12.1"
+        classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
     } 
 }
@@ -55,12 +55,76 @@ subprojects {
     license {
         header rootProject.file('gradle/license-header')
         strictCheck true
+        skipExistingHeaders false
         excludes([
                 "**/*.mustache",
                 "**/*.png",
                 "**/*.ico",
                 "**/*.xcf",
                 "**/*.json"])
+        ext.year = Calendar.getInstance().get(Calendar.YEAR)
+        ext.name = "interactive instruments GmbH"
+
+        //ext.name = "European Union, interactive instruments GmbH"
+        //includes([
+        excludes([
+            "**/FrameworkMessages.java",
+            "**/CSWAdapter.java",
+            "**/CSWOperation.java",
+            "**/CSWOperationGetCapabilities.java",
+            "**/CSWOperationGetRecords.java",
+            "**/CSWOperationQuery.java",
+            "**/CSWQuery.java",
+            "**/CSWRequest.java",
+            "**/AbstractCSWRecordsAnalyzer.java",
+            "**/CSWCapabilitiesAnalyzer.java",
+            "**/CSWCapabilitiesParser.java",
+            "**/CSWRecordsAnalyzer.java",
+            "**/CSWRecordsParser.java",
+            "**/ExtractWFSUrlsFromCSW.java",
+            "**/ExtractWfsUrlsCSWRecordsAnalyzer.java",
+            "**/LoggingCSWRecordsAnalyzer.java",
+            "**/MultiCSWRecordsAnalyzer.java",
+            "**/CSWAdapterTest.java",
+            "**/CSW.java",
+            "**/OWS.java",
+            "**/VersionedVocabulary.java",
+            "**/WFS.java",
+            "**/GMLAnalyzer.java",
+            "**/GMLParser.java",
+            "**/GMLSchemaAnalyzer.java",
+            "**/GMLSchemaParser.java",
+            "**/WFSAdapter.java",
+            "**/AbstractWfsCapabilitiesAnalyzer.java",
+            "**/LoggingWfsCapabilitiesAnalyzer.java",
+            "**/MultiWfsCapabilitiesAnalyzer.java",
+            "**/WFSCapabilitiesAnalyzer.java",
+            "**/WFSCapabilitiesParser.java",
+            "**/DescribeFeatureType.java",
+            "**/GetCapabilities.java",
+            "**/WFSAdapter.java",
+            "**/WFSOperation.java",
+            "**/WFSOperationDescribeFeatureType.java",
+            "**/WFSOperationGetCapabilities.java",
+            "**/WFSOperationGetFeature.java",
+            "**/WFSOperationGetPropertyValue.java",
+            "**/WFSQuery.java",
+            "**/WFSRequest.java",
+            "**/AbstractWfsCapabilitiesAnalyzer.java",
+            "**/LoggingWfsCapabilitiesAnalyzer.java",
+            "**/MultiWfsCapabilitiesAnalyzer.java",
+            "**/WFSCapabilitiesAnalyzer.java",
+            "**/WFSCapabilitiesParser.java",
+            "**/XMLNamespaceNormalizer.java",
+            "**/XMLPathTracker.java",
+            "**/AbstractWfsProxyFeatureTypeAnalyzer.java",
+            "**/AbstractWfsProxyService.java",
+            "**/WFSProxyServiceProperties.java",
+            "**/WfsProxyCapabilities.java",
+            "**/WfsProxyCapabilitiesAnalyzer.java",
+            "**/WfsProxyMappingStatus.java",
+            "**/WfsProxyOnTheFlyMapping.java"
+        ])
     }
 
     repositories {     
