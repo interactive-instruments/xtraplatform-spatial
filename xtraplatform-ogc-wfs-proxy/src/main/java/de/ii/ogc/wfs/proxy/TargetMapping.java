@@ -21,10 +21,15 @@ import de.ii.xtraplatform.jackson.dynamic.DynamicTypeIdResolver;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "mappingType")
 @JsonTypeIdResolver(DynamicTypeIdResolver.class)
 public interface TargetMapping {
+    final String BASE_TYPE = "general";
+
     String getName();
 
     Boolean isEnabled();
 
     @JsonIgnore
     boolean isGeometry();
+
+    @JsonIgnore
+    TargetMapping mergeCopyWithBase(TargetMapping targetMapping);
 }
