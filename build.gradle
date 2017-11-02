@@ -9,7 +9,7 @@ buildscript {
     dependencies {
         classpath group: 'de.interactive_instruments', name: 'gradle-plugin-osgi-ipojo', version: '1.12.1.26'
         classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.6'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
     } 
 }
 
@@ -231,7 +231,7 @@ subprojects {
         user = project.bintrayUser
         key = project.bintrayApiKey
         publications = ['maven']
-        publish = false
+        publish = true
         pkg {
             repo = 'maven'
             name = project.name
@@ -251,7 +251,7 @@ subprojects {
 
 publishing {
     publications {
-        maven(MavenPublication) {
+        mavenRoot(MavenPublication) {
             pom.withXml{
                 def dependenciesNode = asNode().appendNode('dependencies')
 
@@ -276,8 +276,8 @@ publishing {
 bintray {
     user = project.bintrayUser
     key = project.bintrayApiKey
-    publications = ['maven']
-    publish = false
+    publications = ['mavenRoot']
+    publish = true
     pkg {
         repo = 'maven'
         name = project.name

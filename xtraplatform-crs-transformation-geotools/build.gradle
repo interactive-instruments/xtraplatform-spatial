@@ -45,5 +45,5 @@ jar {
     }
 }
 
-apply from: 'license-report.gradle'
+//apply from: 'license-report.gradle'
 
