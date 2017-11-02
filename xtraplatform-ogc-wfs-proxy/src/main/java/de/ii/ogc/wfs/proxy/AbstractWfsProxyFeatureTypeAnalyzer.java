@@ -32,9 +32,13 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
         GEOMETRY("geometry"),
         DECIMAL("decimal"),
         DOUBLE("double"),
+        FLOAT("float"),
         INT("int"),
         INTEGER("integer"),
+        LONG("long"),
+        SHORT("short"),
         BOOLEAN("boolean"),
+        URI("anyURI"),
         NONE("");
 
         private String stringRepresentation;

@@ -37,6 +37,7 @@ public abstract class WFSOperation {
     private XMLNamespaceNormalizer localNS;
     private boolean hits;
     private String valueReference;
+    private boolean inialized;
 
     public WFSOperation() {
         this.query = new ArrayList<WFSQuery>();
@@ -86,7 +87,10 @@ public abstract class WFSOperation {
 
     // returns the XML POST Request as String
     public String getPOSTXML(XMLNamespaceNormalizer nsStore, Versions vs) {
-        this.initialize(nsStore);
+        if (!inialized) {
+            this.initialize(nsStore);
+            this.inialized = true;
+        }
                 
         XMLDocument doc = new XMLDocument(nsStore);
         
@@ -129,7 +133,7 @@ public abstract class WFSOperation {
         }
         
         if (this.hits) {
-            oper.setAttribute("resultType", "hits");
+            oper.setAttribute(WFS.getWord(vs.getWfsVersion(), WFS.VOCABULARY.RESULT_TYPE), WFS.getWord(vs.getWfsVersion(), WFS.VOCABULARY.HITS));
         }
 
         oper.setAttribute("service", "WFS");
@@ -143,9 +147,12 @@ public abstract class WFSOperation {
 
     // Returns the GET parameters for a GET request as Map<String, String>
     public Map<String, String> getGETParameters(XMLNamespaceNormalizer nsStore, Versions vs) {
-        this.initialize(nsStore);
+        if (!inialized) {
+            this.initialize(nsStore);
+            this.inialized = true;
+        }
 
-        Map<String, String> params = new HashMap();
+        Map<String, String> params = new HashMap<>();
 
         params.put("REQUEST", this.getOperation().toString());
         params.put("SERVICE", "WFS");
@@ -171,7 +178,7 @@ public abstract class WFSOperation {
         }
         
         if (this.hits) {
-            params.put("RESULTTYPE", "hits");
+            params.put(WFS.getWord(vs.getWfsVersion(), WFS.VOCABULARY.RESULT_TYPE).toUpperCase(), WFS.getWord(vs.getWfsVersion(), WFS.VOCABULARY.HITS));
         }
 
         if (localNS != null) {

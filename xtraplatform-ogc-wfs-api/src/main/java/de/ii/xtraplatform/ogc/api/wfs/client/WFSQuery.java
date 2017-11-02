@@ -28,13 +28,11 @@ import java.util.Map;
 public class WFSQuery {
 
     private List<OGCFilter> filter = null;
-    private List<String> typenames = null;
+    private List<String> typeNames = null;
     private EpsgCrs srs = null;
-    private boolean hits;
 
     public WFSQuery() {
-        filter = new ArrayList();
-        this.hits = true;
+        this.filter = new ArrayList<>();
     }
 
     public void addFilter(OGCFilter filter) {
@@ -42,21 +40,21 @@ public class WFSQuery {
     }
         
     public void addTypename(String typename) {
-        if (typenames == null) {
-            typenames = new ArrayList<String>();
+        if (typeNames == null) {
+            typeNames = new ArrayList<String>();
         }
 
-        typenames.add(typename);
+        typeNames.add(typename);
     }
     
-    public String getTypenames() {
+    public String getTypeNames() {
         
         String tns = "";
-            for (int i = 0; i < typenames.size(); i++) {
+            for (int i = 0; i < typeNames.size(); i++) {
                 if (i != 0) {
                     tns += ",";
                 }
-                tns += typenames.get(i);
+                tns += typeNames.get(i);
             }
         
         return tns;
@@ -85,8 +83,8 @@ public class WFSQuery {
             fil.toXML(version.getFilterVersion(), query, doc);
         }
 
-        if (typenames != null) {
-            query.setAttribute(WFS.getWord(version, WFS.VOCABULARY.TYPENAMES), getTypenames());
+        if (typeNames != null) {
+            query.setAttribute(WFS.getWord(version, WFS.VOCABULARY.TYPENAMES), getTypeNames());
         }
 
         if (this.srs != null) {
@@ -97,10 +95,10 @@ public class WFSQuery {
     
     public void toKVP(WFS.VERSION version, Map<String, String> params, XMLNamespaceNormalizer nsStore){
         
-        if (typenames != null) {
-            params.put(WFS.getWord(version, WFS.VOCABULARY.TYPENAMES).toUpperCase(), getTypenames());
+        if (typeNames != null) {
+            params.put(WFS.getWord(version, WFS.VOCABULARY.TYPENAMES).toUpperCase(), getTypeNames());
         }
-        
+
         if (this.srs != null) {
            params.put(WFS.getWord(version, WFS.VOCABULARY.SRSNAME).toUpperCase(), getSrs(version));
         }

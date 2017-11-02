@@ -10,6 +10,8 @@
  */
 package de.ii.xtraplatform.ogc.api;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.apache.http.client.utils.URIBuilder;
 
 import java.net.URI;
@@ -71,7 +73,7 @@ public class WFS extends VersionedVocabulary {
 
     public static boolean hasKVPKey(String key) {
 
-        String[] keys = {"REQUEST", "SERVICE", "VERSION", "NAMESPACES", "TYPENAMES", "COUNT", "NAMESPACE", "TYPENAME", "MAXFEATURES", "OUTPUT_FORMAT", "VALUEREFERENCE"};
+        String[] keys = {"REQUEST", "SERVICE", "VERSION", "NAMESPACES", "TYPENAMES", "COUNT", "NAMESPACE", "TYPENAME", "MAXFEATURES", "OUTPUT_FORMAT", "VALUEREFERENCE", "RESULT_TYPE"};
 
         return Arrays.asList(keys).contains(key);
     }
@@ -114,11 +116,13 @@ public class WFS extends VersionedVocabulary {
             this.stringRepresentation = stringRepresentation;
         }
 
+        @JsonValue
         @Override
         public String toString() {
             return stringRepresentation;
         }
 
+        @JsonCreator
         public static METHOD fromString(String type) {
             for (METHOD v : METHOD.values()) {
                 if (v.toString().equals(type)) {
@@ -140,7 +144,7 @@ public class WFS extends VersionedVocabulary {
         CITY, ADMINISTRATIVE_AREA, POSTAL_CODE, COUNTRY, EMAIL, OPERATION, NAME_ATTRIBUTE, GET, POST,
         DCP, PARAMETER, CONSTRAINT, METADATA, VALUE, DEFAULT_VALUE, ONLINE_RESOURCE_ATTRIBUTE, COUNT_DEFAULT, RESULT_FORMAT,
         DEFAULT_CRS, OTHER_CRS, WGS84_BOUNDING_BOX, METADATA_URL, LOWER_CORNER, UPPER_CORNER, MIN_X, MIN_Y, MAX_X, MAX_Y,
-        EXTENDED_CAPABILITIES, INSPIRE_METADATA_URL, INSPIRE_URL;
+        EXTENDED_CAPABILITIES, INSPIRE_METADATA_URL, INSPIRE_URL, RESULT_TYPE, HITS;
     }
 
     static {
@@ -190,6 +194,8 @@ public class WFS extends VersionedVocabulary {
         addWord(VERSION._1_0_0, VOCABULARY.MIN_Y, "miny");
         addWord(VERSION._1_0_0, VOCABULARY.MAX_X, "maxx");
         addWord(VERSION._1_0_0, VOCABULARY.MAX_Y, "maxy");
+        addWord(VERSION._1_0_0, VOCABULARY.RESULT_TYPE, "resultType");
+        addWord(VERSION._1_0_0, VOCABULARY.HITS, "hits");
 
         addWord(VERSION._1_1_0, VOCABULARY.QUERY, "Query");
         addWord(VERSION._1_1_0, VOCABULARY.TYPENAMES, "typeName");

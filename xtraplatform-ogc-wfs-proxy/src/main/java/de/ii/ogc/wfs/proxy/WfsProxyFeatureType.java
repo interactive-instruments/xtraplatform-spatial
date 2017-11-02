@@ -10,6 +10,8 @@
  */
 package de.ii.ogc.wfs.proxy;
 
+import java.util.List;
+
 /**
  * @author zahnen
  */
@@ -59,5 +61,11 @@ public class WfsProxyFeatureType {
 
     public void setMappings(WfsProxyFeatureTypeMapping mappings) {
         this.mappings = mappings;
+    }
+
+    public boolean isEnabled() {
+        List<TargetMapping> baseMapping = mappings.findMappings(namespace + ":" + name, TargetMapping.BASE_TYPE);
+
+        return !baseMapping.isEmpty() && baseMapping.get(0).isEnabled();
     }
 }

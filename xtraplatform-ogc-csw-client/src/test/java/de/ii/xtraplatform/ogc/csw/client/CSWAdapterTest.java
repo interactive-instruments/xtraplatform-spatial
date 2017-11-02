@@ -41,7 +41,7 @@ public class CSWAdapterTest {
         // OK
         List<String> urls = ImmutableList.of(
                 //"http://geoportal.bayern.de/csw/bvv" // 8
-                "http://gdk.gdi-de.org/gdi-de/srv/eng/csw" // 2595
+                //"http://gdk.gdi-de.org/gdi-de/srv/eng/csw" // 2595
                 //"https://geometadaten.lfrz.at/at.lfrz.discoveryservices/srv/de/csw202" // 2
                 //"http://www.ign.es/csw-inspire/srv/eng/csw" // 3, has some more than can't be detected
                 //"http://csw.geo.be/eng/csw" // 7, verified
@@ -49,7 +49,7 @@ public class CSWAdapterTest {
                 //"http://csw.data.gov.uk/geonetwork/srv/en/csw" // 96
                 //"http://www.paikkatietohakemisto.fi/geonetwork/srv/eng/csw" // 0, wrong operation name, e.g. SYKEn INSPIRE-latauspalvelu, BETA
                 //"https://inspirebg.eu/geonetwork/srv/eng/csw" // 0
-                //"https://www.nationaalgeoregister.nl/geonetwork/srv/dut/csw-inspire" // 44
+                "https://www.nationaalgeoregister.nl/geonetwork/srv/dut/csw-inspire" // 44
                 //"http://snig.dgterritorio.pt/geoportal/csw/discovery" // 129
                 //"http://inspire.maaamet.ee/geoportal/csw/discovery" // 2, some more with wrong operation name, e.g. Eesti Corine andmete allalaadimisteenus
         );

@@ -40,8 +40,10 @@ public class XMLPathTracker {
     }
 
     public void track(String nsuri, String localName, int depth) {
-        if (depth <= path.size()) {
+        if (depth <= localPath.size()) {
             localPath.subList(depth - 1, localPath.size()).clear();
+        }
+        if (depth <= path.size()) {
             path.subList(depth - 1, path.size()).clear();
             noObjectPath.subList(depth - 1, noObjectPath.size()).clear();
         }
@@ -77,11 +79,11 @@ public class XMLPathTracker {
 
     @Override
     public String toString() {
-        return Joiner.on("/").join(path);
+        return Joiner.on("/").skipNulls().join(path);
     }
 
     public String toLocalPath() {
-        return Joiner.on("/").join(localPath);
+        return Joiner.on("/").skipNulls().join(localPath);
     }
 
     public boolean isEmpty() {

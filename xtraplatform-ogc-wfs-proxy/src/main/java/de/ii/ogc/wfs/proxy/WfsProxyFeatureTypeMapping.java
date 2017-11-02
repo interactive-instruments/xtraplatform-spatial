@@ -31,7 +31,7 @@ public class WfsProxyFeatureTypeMapping {
 
     public void addMapping(String path, String targetType, TargetMapping targetMapping) {
         if (!mappings.containsKey(path)) {
-            mappings.put(path, new HashMap<String, List<TargetMapping>>());
+            mappings.put(path, new LinkedHashMap<String, List<TargetMapping>>());
         }
         if (!mappings.get(path).containsKey(targetType)) {
             mappings.get(path).put(targetType, new ArrayList<TargetMapping>());
@@ -41,7 +41,21 @@ public class WfsProxyFeatureTypeMapping {
 
     public List<TargetMapping> findMappings(String path, String targetType) {
         if (mappings.containsKey(path) && mappings.get(path).containsKey(targetType)) {
-               return mappings.get(path).get(targetType);
+            List<TargetMapping> mappingList = mappings.get(path).get(targetType);
+
+            //TODO
+            if (mappings.get(path).containsKey(TargetMapping.BASE_TYPE)) {
+                TargetMapping baseMapping = mappings.get(path).get(TargetMapping.BASE_TYPE).get(0);
+                List<TargetMapping> mergedMappingList = new ArrayList<>();
+
+                for (TargetMapping targetMapping: mappingList) {
+                    mergedMappingList.add(targetMapping.mergeCopyWithBase(baseMapping));
+                }
+
+                mappingList = mergedMappingList;
+            }
+
+            return mappingList;
         }
         return ImmutableList.<TargetMapping>of();
     }
