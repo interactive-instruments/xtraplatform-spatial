@@ -10,6 +10,8 @@
  */
 package de.ii.ogc.wfs.proxy;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.List;
 
 /**
@@ -63,6 +65,7 @@ public class WfsProxyFeatureType {
         this.mappings = mappings;
     }
 
+    @JsonIgnore
     public boolean isEnabled() {
         List<TargetMapping> baseMapping = mappings.findMappings(namespace + ":" + name, TargetMapping.BASE_TYPE);
 
