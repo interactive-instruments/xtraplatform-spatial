@@ -10,27 +10,16 @@
  */
 package de.ii.xtraplatform.ogc.api.wfs.client;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.MapMaker;
-import com.google.common.io.CharStreams;
 import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
-import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.GML;
+import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ReadError;
 import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -44,8 +33,15 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.protocol.BasicHttpContext;
-import org.apache.http.util.EntityUtils;
 import org.forgerock.i18n.slf4j.LocalizedLogger;
+
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.*;
 
 /**
  *

@@ -171,7 +171,7 @@ public abstract class WFSOperation {
         }
         
         if (this.hits) {
-            params.put("RESULTTYPE", "hits");
+            params.put("RESULT_TYPE", "hits");
         }
 
         if (localNS != null) {

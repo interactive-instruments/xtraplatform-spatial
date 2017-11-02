@@ -40,10 +40,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author zahnen
@@ -108,6 +105,12 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
 
     public void setFeatureTypes(Map<String, WfsProxyFeatureType> featureTypes) {
         this.featureTypes.putAll(featureTypes);
+    }
+
+    @Override
+    @JsonIgnore
+    public Optional<WfsProxyFeatureType> getFeatureTypeByName(String name) {
+        return featureTypes.values().stream().filter(ft -> ft.getName().toLowerCase().equals(name.toLowerCase())).findFirst();
     }
 
     @JsonIgnore
