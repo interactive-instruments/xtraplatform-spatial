@@ -54,7 +54,7 @@ public class XMLPathTracker {
         localPath.add(localName);
         if (nsuri != null && localName != null)
             path.add(nsuri + ":" + localName);
-        if (localName != null && !Character.isUpperCase(localName.charAt(0))) {
+        if (localName != null && (!Character.isUpperCase(localName.charAt(0)) || noObjectPath.isEmpty())) {
             noObjectPath.add(localName);
         } else {
             noObjectPath.add(null);
