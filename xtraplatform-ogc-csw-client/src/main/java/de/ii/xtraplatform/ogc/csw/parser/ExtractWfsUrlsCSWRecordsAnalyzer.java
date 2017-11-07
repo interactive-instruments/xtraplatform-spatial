@@ -79,7 +79,7 @@ public class ExtractWfsUrlsCSWRecordsAnalyzer extends AbstractCSWRecordsAnalyzer
 
     @Override
     public void analyzeServiceTypeVersion(String serviceTypeVersion) {
-        if (serviceTypeVersion.contains("WFS")) {
+        if (serviceTypeVersion.toUpperCase().contains("WFS")) {
             this.currentServiceIsWfs = true;
         }
     }

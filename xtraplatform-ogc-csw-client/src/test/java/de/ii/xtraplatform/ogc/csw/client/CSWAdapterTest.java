@@ -49,7 +49,8 @@ public class CSWAdapterTest {
                 //"http://csw.data.gov.uk/geonetwork/srv/en/csw" // 96
                 //"http://www.paikkatietohakemisto.fi/geonetwork/srv/eng/csw" // 0, wrong operation name, e.g. SYKEn INSPIRE-latauspalvelu, BETA
                 //"https://inspirebg.eu/geonetwork/srv/eng/csw" // 0
-                "https://www.nationaalgeoregister.nl/geonetwork/srv/dut/csw-inspire" // 44
+                //"https://www.nationaalgeoregister.nl/geonetwork/srv/dut/csw-inspire" // 44
+                "https://nationaalgeoregister.nl/geonetwork/srv/dut/csw"
                 //"http://snig.dgterritorio.pt/geoportal/csw/discovery" // 129
                 //"http://inspire.maaamet.ee/geoportal/csw/discovery" // 2, some more with wrong operation name, e.g. Eesti Corine andmete allalaadimisteenus
         );
