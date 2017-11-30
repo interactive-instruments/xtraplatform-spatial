@@ -98,6 +98,10 @@ public class GMLParser {
                 while (body.readerAccessible()) {
                     if (body.hasName(featureType)) {
                         parseFeature(body);
+                    } else if (body.hasLocalName(ft)) {
+                        if (analyzer.analyzeNamespaceRewrite(ns, body.getNsUri(), ft)) {
+                            parseFeature(body);
+                        }
                     }
                     body = body.advance();
                 }

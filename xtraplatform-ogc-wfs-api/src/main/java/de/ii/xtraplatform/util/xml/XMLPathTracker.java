@@ -40,6 +40,9 @@ public class XMLPathTracker {
     }
 
     public void track(String nsuri, String localName, int depth) {
+        if (depth == -1) {
+            return;
+        }
         if (depth <= localPath.size()) {
             localPath.subList(depth - 1, localPath.size()).clear();
         }

@@ -12,17 +12,17 @@ package de.ii.ogc.wfs.proxy;
 
 import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.GML;
-import de.ii.xtraplatform.ogc.api.gml.parser.GMLSchemaAnalyzer;
 import de.ii.xtraplatform.util.xml.XMLPathTracker;
 import org.forgerock.i18n.slf4j.LocalizedLogger;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
  * @author zahnen
  */
-public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAnalyzer {
+public class WfsProxyFeatureTypeAnalyzer {
 
     public enum GML_TYPE {
         ID("ID"),
@@ -132,37 +132,32 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
         }
     }
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(AbstractWfsProxyFeatureTypeAnalyzer.class);
-    protected static final String GML_NS_URI = GML.getNS(GML.VERSION._2_1_1);
+    public static final String GML_NS_URI = GML.getNS(GML.VERSION._2_1_1);
+    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(WfsProxyFeatureTypeAnalyzer.class);
 
     private WfsProxyService proxyService;
     // TODO: could it be more than one?
     private WfsProxyFeatureType currentFeatureType;
     private XMLPathTracker currentPath;
-    private XMLPathTracker currentPathWithoutObjects;
+    //private XMLPathTracker currentPathWithoutObjects;
     private Set<String> mappedPaths;
     //private boolean geometryMapped;
     private int geometryCounter;
+    private final List<WfsProxyMappingProvider> mappingProviders;
 
-    public AbstractWfsProxyFeatureTypeAnalyzer(WfsProxyService proxyService) {
+    public WfsProxyFeatureTypeAnalyzer(WfsProxyService proxyService, List<WfsProxyMappingProvider> mappingProviders) {
         this.proxyService = proxyService;
         this.currentPath = new XMLPathTracker();
-        this.currentPathWithoutObjects = new XMLPathTracker();
+        //this.currentPathWithoutObjects = new XMLPathTracker();
         this.mappedPaths = new HashSet<>();
         //this.geometryMapped = false;
         this.geometryCounter = -1;
+        this.mappingProviders = mappingProviders;
     }
 
-    abstract protected String getTargetType();
+    protected boolean analyzeNamespaceRewrite(String oldNamespace, String newNamespace, String featureTypeName) {
+        boolean rewritten = false;
 
-    abstract protected TargetMapping getTargetMappingForFeatureType(String nsuri, String localName);
-
-    abstract protected TargetMapping getTargetMappingForAttribute(String nsuri, String localName, String type, boolean required);
-
-    abstract protected TargetMapping getTargetMappingForProperty(String path, String nsuri, String localName, String type, long minOccurs, long maxOccurs, int depth, boolean isParentMultiple, boolean isComplex, boolean isObject);
-
-    @Override
-    public void analyzeNamespaceRewrite(String oldNamespace, String newNamespace, String featureTypeName) {
         String prefix = proxyService.getWfsAdapter().getNsStore().getNamespacePrefix(oldNamespace);
         if (prefix != null) {
             proxyService.getWfsAdapter().getNsStore().addNamespace(prefix, newNamespace, true);
@@ -174,75 +169,85 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
                 proxyService.getFeatureTypes().remove(fullName);
                 fullName = newNamespace + ":" + featureTypeName;
                 proxyService.getFeatureTypes().put(fullName, wfsProxyFeatureType);
+                rewritten = true;
             }
         }
+
+        return rewritten;
     }
 
-    @Override
-    public void analyzeFeatureType(String nsuri, String localName) {
+    protected void analyzeFeatureType(String nsUri, String localName) {
 
-        if (nsuri.isEmpty()) {
+        if (nsUri.isEmpty()) {
             //LOGGER.error(FrameworkMessages.NSURI_IS_EMPTY);
         }
 
-        String fullName = nsuri + ":" + localName;
+        String fullName = nsUri + ":" + localName;
         currentFeatureType = proxyService.getFeatureTypes().get(fullName);
 
         mappedPaths.clear();
         currentPath.clear();
-        currentPathWithoutObjects.clear();
+        //currentPathWithoutObjects.clear();
 
         //geometryMapped = false;
         this.geometryCounter = -1;
 
-        proxyService.getWfsAdapter().addNamespace(nsuri);
+        proxyService.getWfsAdapter().addNamespace(nsUri);
 
 
-        TargetMapping targetMapping = getTargetMappingForFeatureType(nsuri, localName);
+        for (WfsProxyMappingProvider mappingProvider: mappingProviders) {
 
-        if (targetMapping != null) {
-             currentFeatureType.getMappings().addMapping(fullName, getTargetType(), targetMapping);
+            TargetMapping targetMapping = mappingProvider.getTargetMappingForFeatureType(nsUri, localName);
+
+            if (targetMapping != null) {
+                currentFeatureType.getMappings().addMapping(fullName, mappingProvider.getTargetType(), targetMapping);
+            }
         }
     }
 
-    @Override
-    public void analyzeAttribute(String nsuri, String localName, String type, boolean required) {
+    protected void analyzeAttribute(String nsUri, String localName, String type) {
 
-        proxyService.getWfsAdapter().addNamespace(nsuri);
+        // only first level gml:ids
+        if (!currentPath.isEmpty()) {
+            return;
+        }
 
-        currentPath.track(nsuri, "@" + localName);
+        proxyService.getWfsAdapter().addNamespace(nsUri);
+
+        currentPath.track(nsUri, "@" + localName);
 
         // only gml:id of the feature for now
         // TODO: version
-        if ((localName.equals("id") && nsuri.startsWith(GML_NS_URI)) || localName.equals("fid")) {
+        if ((localName.equals("id") && nsUri.startsWith(GML_NS_URI)) || localName.equals("fid")) {
             String path = currentPath.toString();
 
             if (currentFeatureType != null && !isPathMapped(path)) {
 
-                TargetMapping targetMapping = getTargetMappingForAttribute(nsuri, localName, type, required);
+                for (WfsProxyMappingProvider mappingProvider: mappingProviders) {
 
-                if (targetMapping != null) {
-                    mappedPaths.add(path);
+                    TargetMapping targetMapping = mappingProvider.getTargetMappingForAttribute(currentPath.toFieldNameGml(), nsUri, localName, GML_TYPE.ID);
 
-                    currentFeatureType.getMappings().addMapping(path, getTargetType(), targetMapping);
+                    if (targetMapping != null) {
+                        mappedPaths.add(path);
+
+                        currentFeatureType.getMappings().addMapping(path, mappingProvider.getTargetType(), targetMapping);
+                    }
                 }
             }
         }
     }
 
-    @Override
-    public void analyzeProperty(String nsuri, String localName, String type, long minOccurs, long maxOccurs, int depth,
-                                boolean isParentMultiple, boolean isComplex, boolean isObject) {
+    protected void analyzeProperty(String nsUri, String localName, String type, int depth, boolean isObject) {
 
-        proxyService.getWfsAdapter().addNamespace(nsuri);
+        proxyService.getWfsAdapter().addNamespace(nsUri);
 
-        currentPath.track(nsuri, localName, depth);
+        currentPath.track(nsUri, localName, depth);
 
-        if (!isObject) {
-            currentPathWithoutObjects.track(nsuri, localName, depth);
+        /*if (!isObject) {
+            currentPathWithoutObjects.track(nsUri, localName, depth);
         } else {
             currentPathWithoutObjects.track(null, null, depth);
-        }
+        }*/
 
         String path = currentPath.toString();
 
@@ -254,12 +259,33 @@ public abstract class AbstractWfsProxyFeatureTypeAnalyzer implements GMLSchemaAn
 
         if (currentFeatureType != null && !isPathMapped(path)) {
 
-            TargetMapping targetMapping = getTargetMappingForProperty(currentPath.toFieldNameGml()/*currentPathWithoutObjects.toFieldName()*/, nsuri, localName, type, minOccurs, maxOccurs, depth, isParentMultiple, isComplex, isObject);
+            for (WfsProxyMappingProvider mappingProvider: mappingProviders) {
 
-            if (targetMapping != null) {
-                mappedPaths.add(path);
+                TargetMapping targetMapping = null;
 
-                currentFeatureType.getMappings().addMapping(path, getTargetType(), targetMapping);
+                GML_TYPE dataType = GML_TYPE.fromString(type);
+
+                if (dataType.isValid()) {
+
+                    targetMapping = mappingProvider.getTargetMappingForProperty(currentPath.toFieldNameGml(), nsUri, localName, dataType);
+
+                } else {
+
+                    GML_GEOMETRY_TYPE geoType = GML_GEOMETRY_TYPE.fromString(type);
+
+                    if (geoType.isValid()) {
+
+                        targetMapping = mappingProvider.getTargetMappingForGeometry(currentPath.toFieldNameGml(), nsUri, localName, geoType);
+                    } else {
+                        LOGGER.getLogger().debug("NOT MAPPED {} {}", currentPath.toFieldNameGml(), type);
+                    }
+                }
+
+                if (targetMapping != null) {
+                    mappedPaths.add(path);
+
+                    currentFeatureType.getMappings().addMapping(path, mappingProvider.getTargetType(), targetMapping);
+                }
             }
         }
     }

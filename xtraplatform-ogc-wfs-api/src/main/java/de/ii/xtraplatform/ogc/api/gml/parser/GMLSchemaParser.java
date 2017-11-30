@@ -68,7 +68,7 @@ public class GMLSchemaParser {
         this.entityResolver = entityResolver;
     }
 
-    public void parse(HttpEntity entity, Map<String, List<String>> elements) {
+    public void parse(HttpEntity entity, Map<String, List<String>> elements) throws SchemaParseException {
         try {
             InputSource is = new InputSource(entity.getContent());
             parse(is, elements);

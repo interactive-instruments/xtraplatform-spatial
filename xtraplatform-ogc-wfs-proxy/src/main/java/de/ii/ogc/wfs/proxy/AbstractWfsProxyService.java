@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.ListenableFuture;
 import de.ii.xsf.core.api.AbstractService;
 import de.ii.xsf.core.api.Resource;
 import de.ii.xsf.logging.XSFLogger;
@@ -23,12 +24,12 @@ import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ParseError;
 import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
 import de.ii.xtraplatform.ogc.api.exceptions.WFSException;
+import de.ii.xtraplatform.ogc.api.gml.parser.GMLAnalyzer;
+import de.ii.xtraplatform.ogc.api.gml.parser.GMLParser;
 import de.ii.xtraplatform.ogc.api.gml.parser.GMLSchemaAnalyzer;
 import de.ii.xtraplatform.ogc.api.gml.parser.GMLSchemaParser;
 import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
-import de.ii.xtraplatform.ogc.api.wfs.client.DescribeFeatureType;
-import de.ii.xtraplatform.ogc.api.wfs.client.GetCapabilities;
-import de.ii.xtraplatform.ogc.api.wfs.client.WFSAdapter;
+import de.ii.xtraplatform.ogc.api.wfs.client.*;
 import de.ii.xtraplatform.ogc.api.wfs.parser.WFSCapabilitiesAnalyzer;
 import de.ii.xtraplatform.ogc.api.wfs.parser.WFSCapabilitiesParser;
 import org.apache.http.HttpEntity;
@@ -41,6 +42,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author zahnen
@@ -54,6 +56,7 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
     private WFSProxyServiceProperties serviceProperties;
     private final Map<String, WfsProxyFeatureType> featureTypes;
     protected final List<GMLSchemaAnalyzer> schemaAnalyzers;
+    protected  GMLAnalyzer mappingFromDataAnalyzers;
 
     protected HttpClient httpClient;
     protected HttpClient sslHttpClient;
@@ -215,38 +218,79 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
             //mappingStatus.setEnabled(true);
             //mappingStatus.setLoading(true);
 
-            HttpEntity dft = wfsAdapter.request(new DescribeFeatureType());
-            // TODO: ???
-            URI baseuri = wfsAdapter.findUrl(WFS.OPERATION.DESCRIBE_FEATURE_TYPE, WFS.METHOD.GET);
 
-            Map<String, List<String>> fts = retrieveSupportedFeatureTypesPerNamespace();
+
+            Map<String, List<String>> featureTypesByNamespace = retrieveSupportedFeatureTypesPerNamespace();
 
             if (!featureTypes.isEmpty()) {
-                // create mappings
-                GMLSchemaParser gmlSchemaParser;
-                // TODO: temporary basic auth hack
-                //if (wfs.usesBasicAuth()) {
-                //    gmlParser = new GMLSchemaParser(analyzers, baseuri, new OGCEntityResolver(sslHttpClient, wfs.getUser(), wfs.getPassword()));
-                //} else {
-                gmlSchemaParser = new GMLSchemaParser(schemaAnalyzers, baseuri);
-                //}
+
                 try {
-                    gmlSchemaParser.parse(dft, fts);
+                    analyzeFeatureTypesWithDescribeFeatureType(featureTypesByNamespace);
 
                     mappingStatus.setLoading(false);
                     mappingStatus.setSupported(true);
                 } catch (Exception ex) {
-                    mappingStatus.setLoading(false);
+                    // TODO: message should be a service level warning
+                    /*mappingStatus.setLoading(false);
                     mappingStatus.setSupported(false);
                     mappingStatus.setErrorMessage(ex.getMessage());
                     if (ex.getClass() == SchemaParseException.class) {
                         mappingStatus.setErrorMessageDetails(((SchemaParseException)ex).getDetails());
+                    }*/
+
+                    try {
+                        analyzeFeatureTypesWithGetFeature(featureTypesByNamespace);
+
+                        mappingStatus.setLoading(false);
+                        mappingStatus.setSupported(true);
+                    } catch (Exception ex2) {
+                        // TODO: we should never get here if we have a test for a working GetFeature
+                        mappingStatus.setLoading(false);
+                        mappingStatus.setSupported(false);
+                        mappingStatus.setErrorMessage(ex2.getMessage());
+                        if (ex2.getClass() == SchemaParseException.class) {
+                            mappingStatus.setErrorMessageDetails(((SchemaParseException)ex2).getDetails());
+                        }
                     }
                 }
             }
 
             // only log warnings about timeouts in the analysis phase
             //wfsAdapter.setIgnoreTimeouts(true);
+        }
+    }
+
+    private void analyzeFeatureTypesWithDescribeFeatureType(Map<String, List<String>> featureTypesByNamespace) throws SchemaParseException {
+        HttpEntity dft = wfsAdapter.request(new DescribeFeatureType());
+        // TODO: ???
+        URI baseUri = wfsAdapter.findUrl(WFS.OPERATION.DESCRIBE_FEATURE_TYPE, WFS.METHOD.GET);
+
+        // create mappings
+        GMLSchemaParser gmlSchemaParser;
+        // TODO: temporary basic auth hack
+        //if (wfs.usesBasicAuth()) {
+        //    gmlParser = new GMLSchemaParser(analyzers, baseUri, new OGCEntityResolver(sslHttpClient, wfs.getUser(), wfs.getPassword()));
+        //} else {
+        gmlSchemaParser = new GMLSchemaParser(schemaAnalyzers, baseUri);
+        //}
+
+        gmlSchemaParser.parse(dft, featureTypesByNamespace);
+    }
+
+    private void analyzeFeatureTypesWithGetFeature(Map<String, List<String>> featureTypesByNamespace) throws ExecutionException {
+        if (mappingFromDataAnalyzers != null) {
+            for (Map.Entry<String, List<String>> ns : featureTypesByNamespace.entrySet()) {
+                String nsUri = ns.getKey();
+
+                for (String featureType : ns.getValue()) {
+                    ListenableFuture<HttpEntity> getFeature = new WFSRequest(wfsAdapter, new GetFeaturePaging(nsUri, featureType, 1, 0)).getResponse();
+
+                    GMLParser gmlParser = new GMLParser(mappingFromDataAnalyzers, staxFactory);
+                    gmlParser.enableTextParsing();
+
+                    gmlParser.parse(getFeature, nsUri, featureType);
+                }
+            }
         }
     }
 

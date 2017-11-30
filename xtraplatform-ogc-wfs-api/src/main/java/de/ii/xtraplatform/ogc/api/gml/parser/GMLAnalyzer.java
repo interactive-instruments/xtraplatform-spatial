@@ -18,13 +18,14 @@ import org.codehaus.staxmate.in.SMInputCursor;
  * @author zahnen
  */
 public interface GMLAnalyzer {
-    public void analyzeStart(Future<SMInputCursor> rootFuture);
-    public void analyzeEnd();
-    public void analyzeFeatureStart(String id, String nsuri, String localName);
-    public void analyzeFeatureEnd();
-    public void analyzeAttribute(String nsuri, String localName, String value);
-    public void analyzePropertyStart(String nsuri, String localName, int depth, SMInputCursor feature, boolean nil);
-    public void analyzePropertyText(String nsuri, String localName, int depth, String text);
-    public void analyzePropertyEnd(String nsuri, String localName, int depth);   
-    public void analyzeFailed(Exception ex);
+    void analyzeStart(Future<SMInputCursor> rootFuture);
+    void analyzeEnd();
+    void analyzeFeatureStart(String id, String nsUri, String localName);
+    void analyzeFeatureEnd();
+    void analyzeAttribute(String nsUri, String localName, String value);
+    void analyzePropertyStart(String nsUri, String localName, int depth, SMInputCursor feature, boolean nil);
+    void analyzePropertyText(String nsUri, String localName, int depth, String text);
+    void analyzePropertyEnd(String nsUri, String localName, int depth);
+    void analyzeFailed(Exception ex);
+    boolean analyzeNamespaceRewrite(String oldNamespace, String newNamespace, String featureTypeName);
 }

@@ -37,9 +37,9 @@ public class MultiGMLAnalyzer implements GMLAnalyzer {
     }
 
     @Override
-    public void analyzeFeatureStart(String id, String nsuri, String localName) {
+    public void analyzeFeatureStart(String id, String nsUri, String localName) {
         for (GMLAnalyzer analyzer: analyzers) {
-            analyzer.analyzeFeatureStart(id, nsuri, localName);
+            analyzer.analyzeFeatureStart(id, nsUri, localName);
         }
     }
 
@@ -51,30 +51,30 @@ public class MultiGMLAnalyzer implements GMLAnalyzer {
     }
 
     @Override
-    public void analyzeAttribute(String nsuri, String localName, String value) {
+    public void analyzeAttribute(String nsUri, String localName, String value) {
         for (GMLAnalyzer analyzer: analyzers) {
-            analyzer.analyzeAttribute(nsuri, localName, value);
+            analyzer.analyzeAttribute(nsUri, localName, value);
         }
     }
 
     @Override
-    public void analyzePropertyStart(String nsuri, String localName, int depth, SMInputCursor feature, boolean nil) {
+    public void analyzePropertyStart(String nsUri, String localName, int depth, SMInputCursor feature, boolean nil) {
         for (GMLAnalyzer analyzer: analyzers) {
-            analyzer.analyzePropertyStart(nsuri, localName, depth, feature, nil);
+            analyzer.analyzePropertyStart(nsUri, localName, depth, feature, nil);
         }
     }
 
     @Override
-    public void analyzePropertyText(String nsuri, String localName, int depth, String text) {
+    public void analyzePropertyText(String nsUri, String localName, int depth, String text) {
         for (GMLAnalyzer analyzer: analyzers) {
-            analyzer.analyzePropertyText(nsuri, localName, depth, text);
+            analyzer.analyzePropertyText(nsUri, localName, depth, text);
         }
     }
 
     @Override
-    public void analyzePropertyEnd(String nsuri, String localName, int depth) {
+    public void analyzePropertyEnd(String nsUri, String localName, int depth) {
         for (GMLAnalyzer analyzer: analyzers) {
-            analyzer.analyzePropertyEnd(nsuri, localName, depth);
+            analyzer.analyzePropertyEnd(nsUri, localName, depth);
         }
     }
 
@@ -83,5 +83,13 @@ public class MultiGMLAnalyzer implements GMLAnalyzer {
         for (GMLAnalyzer analyzer: analyzers) {
             analyzer.analyzeFailed(ex);
         }
+    }
+
+    @Override
+    public boolean analyzeNamespaceRewrite(String oldNamespace, String newNamespace, String featureTypeName) {
+        for (GMLAnalyzer analyzer: analyzers) {
+            analyzer.analyzeNamespaceRewrite(oldNamespace, newNamespace, featureTypeName);
+        }
+        return false;
     }
 }
