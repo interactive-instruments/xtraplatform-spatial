@@ -24,25 +24,27 @@ import org.apache.http.HttpResponse;
  */
 public class WFSRequest {
 
-    private WFSAdapter wfs;
-    private WFSOperation operation;
-    private HttpResponse response;
-    private ListeningExecutorService pool;
+    private final WFSAdapter wfs;
+    private final WFSOperation operation;
+    private final ListeningExecutorService pool;
 
     public WFSRequest(WFSAdapter wfs, WFSOperation operation) {
         this.wfs = wfs;
         this.operation = operation;
-        this.pool = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
+        this.pool = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
     }
 
     public ListenableFuture<HttpEntity> getResponse() {
-            return pool.submit(new Callable<HttpEntity>() {
+        final ListenableFuture<HttpEntity> response = pool.submit(new Callable<HttpEntity>() {
             @Override
             public HttpEntity call() throws Exception {
                 return wfs.request(operation);
             }
         });
-        
+
+        pool.shutdown();
+
+        return response;
     }
 
     public String getAsUrl() {
