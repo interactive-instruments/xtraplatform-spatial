@@ -39,8 +39,21 @@ public class XMLPathTracker {
         this.nsStore = nsStore;
     }
 
+    public void track(int depth) {
+        shorten(depth);
+    }
+
     public void track(String nsuri, String localName, int depth) {
-        if (depth == -1) {
+        if (depth < 0) {
+            return;
+        }
+        shorten(depth);
+
+        track(nsuri, localName);
+    }
+
+    private void shorten(final int depth) {
+        if (depth <= 0) {
             return;
         }
         if (depth <= localPath.size()) {
@@ -50,7 +63,6 @@ public class XMLPathTracker {
             path.subList(depth - 1, path.size()).clear();
             noObjectPath.subList(depth - 1, noObjectPath.size()).clear();
         }
-        track(nsuri, localName);
     }
 
     public void track(String nsuri, String localName) {

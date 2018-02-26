@@ -1,13 +1,20 @@
 version = '1.1.7'
 //version += '-SNAPSHOT'
 
-dependencies {    
     compile project(':xtraplatform-crs-api')
     compile project(':xtraplatform-geotools')
-    
+
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.0-SNAPSHOT'
+
     embedded group: 'com.sun.xsom', name: 'xsom', version: '20140925'
-    embedded group: 'com.fasterxml', name: 'aalto-xml', version: '0.9.11'
+    embedded group: 'com.fasterxml', name: 'aalto-xml', version: '1.0.0'
     embedded group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1'
+
+    //embedded group: 'com.typesafe.akka', name: 'akka-stream_2.12', version: '2.5.9'
+    embedded group: 'com.lightbend.akka', name: 'akka-stream-alpakka-xml_2.12', version: '0.17'
+
+    testCompile group: 'com.typesafe.akka', name: 'akka-http_2.12',   version: '10.0.11'
+    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.9'
 }
  
 jar {
@@ -16,7 +23,10 @@ jar {
             'xsom',
             'aalto-xml',
             //'woodstox-core',
-            'staxmate'
+            'staxmate',
+//                'akka-stream_2.12',
+//                'akka-http_2.12',
+                'akka-stream-alpakka-xml_2.12'
             
         instruction 'Embed-Transitive', 'true'
         instruction 'Embed-Export', 'true'
