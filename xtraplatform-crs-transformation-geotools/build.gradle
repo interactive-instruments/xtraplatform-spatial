@@ -1,24 +1,29 @@
-version = '1.1.0'
+version = '1.1.1'
 //version += '-SNAPSHOT'
 
 def rep = repositories.maven {
-    url "http://download.osgeo.org/webdav/geotools"
+    url "http://download.osgeo.org/webdav/geotools/"
 }
 repositories.remove(rep)
 repositories.addFirst(rep)
+def rep2 = repositories.maven {
+    url "http://repo.boundlessgeo.com/main/"
+}
+repositories.remove(rep2)
+repositories.addFirst(rep2)
 
 
 dependencies {
     compile project(':xtraplatform-crs-api')
 
     // TODO: update
-    embedded group: 'org.geotools', name: 'gt-referencing', version: '11.0'
-    embedded group: 'org.geotools', name: 'gt-epsg-hsql', version: '11.0'
-    embedded group: 'org.geotools', name: 'gt-epsg-extension', version: '11.0'
-    embedded group: 'org.geotools', name: 'gt-opengis', version: '11.0'
+    embedded group: 'org.geotools', name: 'gt-referencing', version: '18.2'
+    embedded group: 'org.geotools', name: 'gt-epsg-hsql', version: '18.2'
+    embedded group: 'org.geotools', name: 'gt-epsg-extension', version: '18.2'
+    embedded group: 'org.geotools', name: 'gt-opengis', version: '18.2'
     
     // TODO: do we need this? does this enable transformation from 3D to 2D?
-    //embedded group: 'org.geotools', name: 'gt-referencing3D', version: '11.0'
+    //embedded group: 'org.geotools', name: 'gt-referencing3D', version: '18.2'
     
 }
 
