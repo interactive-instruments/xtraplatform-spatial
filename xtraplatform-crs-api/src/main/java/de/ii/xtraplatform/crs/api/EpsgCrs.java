@@ -10,6 +10,8 @@
  */
 package de.ii.xtraplatform.crs.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  *
  * @author zahnen
@@ -57,14 +59,17 @@ public class EpsgCrs {
         this.longitudeFirst = longitudeFirst;
     }
 
+    @JsonIgnore
     public String getAsSimple() {
         return SIMPLE_PREFIX.concat(Integer.toString(code));
     }
 
+    @JsonIgnore
     public String getAsUrn() {
         return URN_PREFIX.concat(Integer.toString(code));
     }
 
+    @JsonIgnore
     public String getAsUri() {
         return URI_PREFIX.concat(Integer.toString(code));
     }

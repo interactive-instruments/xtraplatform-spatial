@@ -65,8 +65,7 @@ public class WFSAdapter {
     private boolean ignoreTimeouts ;
     private WFS.METHOD httpMethod;
     private boolean useBasicAuth;
-    private String user;
-    private String password;
+    private String basicAuthCredentials;
 
     public WFSAdapter() {
         this.urls = new HashMap<>();
@@ -77,7 +76,6 @@ public class WFSAdapter {
         this.otherCrs = new HashSet<>();
         this.ignoreTimeouts = true;
         this.httpMethod = WFS.METHOD.GET;
-        this.useBasicAuth = false;
     }
 
     public WFSAdapter(String url) {
@@ -86,8 +84,8 @@ public class WFSAdapter {
         try {
             // TODO: temporary basic auth hack
             // extract and remove credentials from url if existing
-            //URI noAuthUri = this.extractBasicAuthCredentials(new URI(url));
-            URI noAuthUri = parseAndCleanWfsUrl(url);
+            URI noAuthUri = this.extractBasicAuthCredentials(new URI(url));
+            noAuthUri = parseAndCleanWfsUrl(noAuthUri);
             Map<WFS.METHOD, URI> urls = new ImmutableMap.Builder<WFS.METHOD, URI>()
                 .put(WFS.METHOD.GET, noAuthUri)
                 .put(WFS.METHOD.POST, noAuthUri)
@@ -103,6 +101,44 @@ public class WFSAdapter {
     public void initialize(HttpClient httpClient, HttpClient untrustedSslhttpClient) {
         this.httpClient = httpClient;
         this.untrustedSslHttpClient = untrustedSslhttpClient;
+    }
+
+    private URI extractBasicAuthCredentials(URI uri) throws URISyntaxException {
+        String url = uri.toString();
+        LOGGER.getLogger().debug("AUTHURL: {}", url);
+
+        if (url.startsWith("http://") || url.startsWith("https://")) {
+            int offset = url.startsWith("http://") ? 7 : 8;
+            String auth;
+            int endOfHost = url.indexOf("/", offset);
+            int at = url.indexOf("@", offset);
+            if (at > -1 && at < endOfHost) {
+                auth = url.substring(offset, at);
+                this.useBasicAuth = true;
+                this.basicAuthCredentials = new String(Base64.encodeBase64((auth).getBytes()));
+            }
+            if (at > -1) {
+                url = (url.startsWith("http://") ? "http://" : "https://") + url.substring(at + 1);
+            }
+        }
+        LOGGER.getLogger().debug("NOAUTHURL: {}", url);
+        return new URI(url);
+    }
+
+    public boolean isUsesBasicAuth() {
+        return useBasicAuth;
+    }
+
+    public void setUseBasicAuth(boolean useBasicAuth) {
+        this.useBasicAuth = useBasicAuth;
+    }
+
+    public String getBasicAuthCredentials() {
+        return basicAuthCredentials;
+    }
+
+    public void setBasicAuthCredentials(String basicAuthCredentials) {
+        this.basicAuthCredentials = basicAuthCredentials;
     }
 
     public EpsgCrs getDefaultCrs() {
@@ -260,8 +296,7 @@ public class WFSAdapter {
 
             // TODO: temporary basic auth hack
             if (useBasicAuth) {
-                String basic_auth = new String(Base64.encodeBase64((user + ":" + password).getBytes()));
-                httpPost.addHeader("Authorization", "Basic " + basic_auth);
+                httpPost.addHeader("Authorization", "Basic " + basicAuthCredentials);
             }
 
             StringEntity xmlEntity = new StringEntity(xml,
@@ -351,8 +386,7 @@ public class WFSAdapter {
 
             // TODO: temporary basic auth hack
             if (useBasicAuth) {
-                String basic_auth = new String(Base64.encodeBase64((user + ":" + password).getBytes()));
-                httpGet.addHeader("Authorization", "Basic " + basic_auth);
+                httpGet.addHeader("Authorization", "Basic " + basicAuthCredentials);
             }
 
             response = httpClient.execute(httpGet, new BasicHttpContext());
@@ -482,7 +516,10 @@ public class WFSAdapter {
     }
 
     public static URI parseAndCleanWfsUrl(String url) throws URISyntaxException {
-        URI inUri = new URI(url.trim());
+       return parseAndCleanWfsUrl(new URI(removeBasicAuthCredentials(url.trim())));
+    }
+
+    private static URI parseAndCleanWfsUrl(URI inUri) throws URISyntaxException {
         URIBuilder outUri = new URIBuilder(inUri).removeQuery();
 
         if (inUri.getQuery() != null && !inUri.getQuery().isEmpty()) {
@@ -495,5 +532,19 @@ public class WFSAdapter {
         }
 
         return outUri.build();
+    }
+
+    private static String removeBasicAuthCredentials(final String inUrl) throws URISyntaxException {
+        String url = inUrl;
+
+        if (url.startsWith("http://") || url.startsWith("https://")) {
+            int offset = url.startsWith("http://") ? 7 : 8;
+            int at = url.indexOf("@", offset);
+            if (at > -1) {
+                url = (url.startsWith("http://") ? "http://" : "https://") + url.substring(at + 1);
+            }
+        }
+
+        return url;
     }
 }
