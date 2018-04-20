@@ -29,7 +29,7 @@ public class OGCFilter {
     private final List<OGCFilterExpression> expressions;
 
     public OGCFilter() {
-        expressions = new ArrayList();
+        expressions = new ArrayList<>();
     }
 
     public void addExpression(OGCFilterExpression expression) {
@@ -59,21 +59,19 @@ public class OGCFilter {
             return;
         }
 
-        // check if the first lexel expression is BBOX
+        // check if the first level expression is BBOX
         try {
-            OGCFilterAnd and = (OGCFilterAnd) expressions.get(0);
-            if (and != null && !and.operands.isEmpty()) {
-                OGCBBOXFilterExpression bbox = (OGCBBOXFilterExpression) and.operands.get(0);
+            OGCBBOXFilterExpression bbox = (OGCBBOXFilterExpression) expressions.get(0);
                 if (bbox != null) {
 
                     bbox.toKVP(version, params);
                     return;
                 }
-            }
         } catch (ClassCastException ex) {
+            // ignore
         }
 
-        // check if the first lexel expression is ResourceId
+        // check if the first level expression is ResourceId
         try {
             OGCResourceIdExpression resid = (OGCResourceIdExpression) expressions.get(0);
             if (resid != null) {
@@ -82,15 +80,15 @@ public class OGCFilter {
                 return;
             }
         } catch (ClassCastException ex) {
+            // ignore
         }
 
-        if (expressions.get(0) instanceof OGCFilterExpression) {
+        if (expressions.get(0) != null) {
 
             XMLDocument doc = new XMLDocument(nsStore);
             Element e = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.FILTER));
             doc.appendChild(e);
 
-            // is not null because we won't be here in that case (null instanceof SomeClass == false)
             expressions.get(0).toXML(version, e, doc);
             
             if (e.hasChildNodes()) {

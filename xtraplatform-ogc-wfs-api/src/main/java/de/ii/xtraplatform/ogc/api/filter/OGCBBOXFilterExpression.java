@@ -81,9 +81,9 @@ public class OGCBBOXFilterExpression extends OGCFilterExpression {
         String max = env.getXmax() + "," + env.getYmax();
         String bbox = min+","+max;
         
-        if( env.getEpsgCrs().getCode() != 4326) {
+//        if( env.getEpsgCrs().getCode() != 4326) {
             bbox += ","+env.getEpsgCrs().getAsSimple();
-        }
+  //      }
         params.put(FES.getWord(version, FES.VOCABULARY.BBOX).toUpperCase(), bbox);     
     }
 }
