@@ -10,17 +10,17 @@
  */
 package de.ii.xtraplatform.crs.geotools;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.BoundingBoxTransformer;
 import de.ii.xtraplatform.crs.api.CoordinateTuple;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
 import org.geotools.referencing.CRS;
 import org.opengis.geometry.MismatchedDimensionException;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -28,7 +28,7 @@ import org.opengis.referencing.operation.TransformException;
  */
 public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements CrsTransformer  {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(GeoToolsCrsTransformer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GeoToolsCrsTransformer.class);
     private final MathTransform mathTransform;
 
     GeoToolsCrsTransformer(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs) throws FactoryException {
@@ -53,7 +53,7 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
 
             return target;
         } catch (MismatchedDimensionException | TransformException ex) {
-            LOGGER.getLogger().error("GeoTools error", ex);
+            LOGGER.error("GeoTools error", ex);
         }
 
         return null;

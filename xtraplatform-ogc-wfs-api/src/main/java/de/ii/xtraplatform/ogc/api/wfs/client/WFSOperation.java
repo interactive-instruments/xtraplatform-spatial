@@ -10,19 +10,20 @@
  */
 package de.ii.xtraplatform.ogc.api.wfs.client;
 
-import de.ii.xsf.logging.XSFLogger;
-import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.GML;
-import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.util.xml.XMLDocument;
+import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import org.apache.http.Header;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Element;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.http.Header;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
-import org.w3c.dom.Element;
 
 /**
  *
@@ -30,7 +31,7 @@ import org.w3c.dom.Element;
  */
 public abstract class WFSOperation {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(WFSOperation.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WFSOperation.class);
     private List<WFSQuery> query;
     private Integer count;
     private Integer startIndex;
@@ -140,7 +141,7 @@ public abstract class WFSOperation {
 
         String out = doc.toString(true);
         
-        LOGGER.getLogger().debug(out);
+        LOGGER.debug(out);
 
         return out;
     }

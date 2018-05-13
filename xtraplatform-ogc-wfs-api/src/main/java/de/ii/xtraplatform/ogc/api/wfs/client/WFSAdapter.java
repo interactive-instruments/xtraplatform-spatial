@@ -12,13 +12,11 @@ package de.ii.xtraplatform.ogc.api.wfs.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ReadError;
-import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
@@ -33,7 +31,8 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.protocol.BasicHttpContext;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
@@ -41,7 +40,11 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -49,7 +52,7 @@ import java.util.*;
  */
 public class WFSAdapter {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(WFSAdapter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WFSAdapter.class);
     private static final String DEFAULT_OPERATION = "default";
 
     private Map<String, Map<WFS.METHOD, URI>> urls;
@@ -93,7 +96,7 @@ public class WFSAdapter {
 
             this.urls.put(DEFAULT_OPERATION, urls);
         } catch (URISyntaxException ex) {
-            LOGGER.error(FrameworkMessages.INVALID_WFS_URL, url);
+            LOGGER.error("Invalid WFS url '{}'", url);
             throw new WebApplicationException();
         }
     }
@@ -105,7 +108,7 @@ public class WFSAdapter {
 
     private URI extractBasicAuthCredentials(URI uri) throws URISyntaxException {
         String url = uri.toString();
-        LOGGER.getLogger().debug("AUTHURL: {}", url);
+        LOGGER.debug("AUTHURL: {}", url);
 
         if (url.startsWith("http://") || url.startsWith("https://")) {
             int offset = url.startsWith("http://") ? 7 : 8;
@@ -121,7 +124,7 @@ public class WFSAdapter {
                 url = (url.startsWith("http://") ? "http://" : "https://") + url.substring(at + 1);
             }
         }
-        LOGGER.getLogger().debug("NOAUTHURL: {}", url);
+        LOGGER.debug("NOAUTHURL: {}", url);
         return new URI(url);
     }
 
@@ -148,7 +151,7 @@ public class WFSAdapter {
     public void setDefaultCrs(EpsgCrs defaultCrs) {
         if (this.defaultCrs == null) {
             this.defaultCrs = defaultCrs;
-            LOGGER.getLogger().debug("added default CRS {} {}", defaultCrs.getAsUrn(), defaultCrs.isLongitudeFirst() ? "LonLat" : "LatLon");
+            LOGGER.debug("added default CRS {} {}", defaultCrs.getAsUrn(), defaultCrs.isLongitudeFirst() ? "LonLat" : "LatLon");
             this.otherCrs.add(defaultCrs);
         }
     }
@@ -159,7 +162,7 @@ public class WFSAdapter {
 
     public void addOtherCrs(EpsgCrs otherCrs) {
         if (this.otherCrs.add(otherCrs)) {
-            LOGGER.debug(FrameworkMessages.ADDED_SRS, otherCrs.getAsUrn());
+            LOGGER.debug("added other CRS '{}'", otherCrs.getAsUrn());
             if (this.defaultCrs == null) {
                 this.setDefaultCrs(otherCrs);
             }
@@ -219,7 +222,7 @@ public class WFSAdapter {
         if (v != null) {
             if (this.versions.getWfsVersion() == null || v.isGreater(this.versions.getWfsVersion())) {
                 this.versions.setWfsVersion(v);
-                LOGGER.debug(FrameworkMessages.VERSION_SET_TO, version);
+                LOGGER.debug("Version set to '{}'", version);
             }
         }
     }
@@ -247,7 +250,7 @@ public class WFSAdapter {
         if (v != null) {
             if (this.versions.getGmlVersion() == null || v.isGreater(this.versions.getGmlVersion())) {
                 this.versions.setGmlVersion(v);
-                LOGGER.debug(FrameworkMessages.VERSION_SET_TO, " GML: " + this.versions.getGmlVersion().toString());
+                LOGGER.debug("Version set to GML: '{}'", this.versions.getGmlVersion());
             }
         } else { // Parsing of gml version was not successful, set the default version
             this.versions.setGmlVersion(this.versions.getWfsVersion().getGmlVersion());
@@ -282,7 +285,7 @@ public class WFSAdapter {
 
         String xml = operation.getPOSTXML(nsStore, versions);
         
-        LOGGER.getLogger().debug("{}\n{}", uri, xml);
+        LOGGER.debug("{}\n{}", uri, xml);
         
         HttpPost httpPost;
         HttpResponse response = null;
@@ -310,7 +313,7 @@ public class WFSAdapter {
 
         } catch (SocketTimeoutException ex) {
             if (ignoreTimeouts) {
-                LOGGER.warn(FrameworkMessages.POST_REQUEST_TIMED_OUT_AFTER_MS_URL_REQUEST, HttpConnectionParams.getConnectionTimeout(httpClient.getParams()), uri.toString(), xml);
+                LOGGER.warn("POST request timed out after %d ms, URL: {} \\nRequest: {}", HttpConnectionParams.getConnectionTimeout(httpClient.getParams()), uri, xml);
             }
             response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "");
             response.setEntity(new StringEntity("", ContentType.TEXT_XML));
@@ -321,25 +324,25 @@ public class WFSAdapter {
             try {
                 if (!isDefaultUrl(uri.build(), WFS.METHOD.POST)) {
 
-                    LOGGER.info(FrameworkMessages.REMOVING_URL, uri.toString());
+                    LOGGER.info("Removing URL: {}", uri);
                     this.urls.remove(operation.getOperation().toString());
 
-                    LOGGER.info(FrameworkMessages.RETRY_WITH_DEFAULT_URL, this.urls.get("default"));
+                    LOGGER.info("Retry with default URL: {}", this.urls.get("default"));
                     return requestPOST(operation);
                 }
             } catch (URISyntaxException ex0) {
             }
 
-            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            LOGGER.error("Failed requesting URL: '{}'", uri);
+            throw new ReadError("Failed requesting URL: '{}'", uri);
         } catch (URISyntaxException ex) {
-            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            LOGGER.error("Failed requesting URL: '{}'", uri);
+            throw new ReadError("Failed requesting URL: '{}'", uri);
         } catch (ReadError ex) {
-            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            LOGGER.error("Failed requesting URL: '{}'", uri);
             throw ex;
         }
-        LOGGER.debug(FrameworkMessages.WFS_REQUEST_SUBMITTED);
+        LOGGER.debug("WFS request submitted");
         return response;
     }
 
@@ -371,7 +374,7 @@ public class WFSAdapter {
         for (Map.Entry<String, String> param : params.entrySet()) {
             uri.addParameter(param.getKey(), param.getValue());
         }
-        LOGGER.debug(FrameworkMessages.GET_REQUEST_OPERATION_URL, operation.toString(), uri.toString());
+        LOGGER.debug("GET Request {}: {}", operation, uri);
 
         boolean retried = false;
         HttpGet httpGet;
@@ -396,7 +399,7 @@ public class WFSAdapter {
 
         } catch (SocketTimeoutException ex) {
             if (ignoreTimeouts) {
-                LOGGER.warn(FrameworkMessages.GET_REQUEST_TIMED_OUT_AFTER_MS_URL_REQUEST, HttpConnectionParams.getConnectionTimeout(httpClient.getParams()), uri.toString());
+                LOGGER.warn("GET request timed out after %d ms, URL: {}", HttpConnectionParams.getConnectionTimeout(httpClient.getParams()), uri);
             }
             response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "");
             response.setEntity(new StringEntity("", ContentType.TEXT_XML));
@@ -404,21 +407,21 @@ public class WFSAdapter {
             try {
                 if (!isDefaultUrl(uri.build(), WFS.METHOD.GET)) {
 
-                    LOGGER.info(FrameworkMessages.REMOVING_URL, uri.toString());
+                    LOGGER.info("Removing URL: {}", uri);
                     this.urls.remove(operation.getOperation().toString());
 
-                    LOGGER.info(FrameworkMessages.RETRY_WITH_DEFAULT_URL, this.urls.get("default"));
+                    LOGGER.info("Retry with default URL: {}", this.urls.get("default"));
                     return requestGET(operation);
                 }
             } catch (URISyntaxException ex0) {
             }
-            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            LOGGER.error("Failed requesting URL: '{}'", uri);
+            throw new ReadError("Failed requesting URL: '{}'", uri);
         } catch (URISyntaxException ex) {
-            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            LOGGER.error("Failed requesting URL: '{}'", uri);
+            throw new ReadError("Failed requesting URL: '{}'", uri);
         }
-        LOGGER.debug(FrameworkMessages.WFS_REQUEST_SUBMITTED);
+        LOGGER.debug("WFS request submitted");
         return response;
     }
 
@@ -429,8 +432,8 @@ public class WFSAdapter {
                 reason = status + " " + Response.Status.fromStatusCode(status).getReasonPhrase();
             } catch (Exception e) {
             }
-            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL_REASON, uri.toString(), reason);
-            ReadError re = new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            LOGGER.error("Failed requesting URL: '{}' Reason: '{}'", uri, reason);
+            ReadError re = new ReadError("Failed requesting URL: '{}'", uri);
             re.addDetail("Reason: " + reason);
             throw re;
         }

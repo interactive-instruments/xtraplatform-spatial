@@ -7,13 +7,11 @@
  */
 package de.ii.xtraplatform.ogc.api.gml.parser;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.WFS;
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.staxmate.SMInputFactory;
 import org.codehaus.staxmate.in.SMInputCursor;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
 import org.xml.sax.InputSource;
 
 import javax.xml.stream.XMLStreamException;
@@ -24,8 +22,6 @@ import java.io.IOException;
  * @author zahnen
  */
 public class GMLDictionaryParser {
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(GMLDictionaryParser.class);
-
     private final GMLDictionaryAnalyzer analyzer;
     private final SMInputFactory staxFactory;
 

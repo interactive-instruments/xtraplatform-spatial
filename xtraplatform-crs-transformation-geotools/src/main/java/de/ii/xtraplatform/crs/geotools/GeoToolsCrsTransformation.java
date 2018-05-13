@@ -10,16 +10,16 @@
  */
 package de.ii.xtraplatform.crs.geotools;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
 import org.geotools.referencing.CRS;
 import org.opengis.referencing.FactoryException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.measure.unit.SI;
 import javax.measure.unit.Unit;
@@ -33,7 +33,7 @@ import javax.measure.unit.Unit;
 @Instantiate
 public class GeoToolsCrsTransformation implements CrsTransformation {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(GeoToolsCrsTransformation.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GeoToolsCrsTransformation.class);
 
     @Override
     public boolean isCrsSupported(String crs) {
@@ -63,7 +63,7 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
         try {
             return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs)), CRS.decode(applyWorkarounds(targetCrs)));
         } catch (FactoryException ex) {
-            LOGGER.getLogger().debug("GeoTools error", ex);
+            LOGGER.debug("GeoTools error", ex);
         }
         return null;
     }
@@ -73,7 +73,7 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
         try {
             return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs.getAsSimple()), sourceCrs.isLongitudeFirst()), CRS.decode(applyWorkarounds(targetCrs.getAsSimple()), targetCrs.isLongitudeFirst()));
         } catch (FactoryException ex) {
-            LOGGER.getLogger().debug("GeoTools error", ex);
+            LOGGER.debug("GeoTools error", ex);
         }
         return null;
     }
@@ -95,7 +95,7 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
                 return (Math.PI/180.00) * CRS.getEllipsoid(CRS.decode(applyWorkarounds(crs))).getSemiMajorAxis();
             }
         } catch (FactoryException ex) {
-            LOGGER.getLogger().debug("GeoTools error", ex);
+            LOGGER.debug("GeoTools error", ex);
         }
 
         return 1;

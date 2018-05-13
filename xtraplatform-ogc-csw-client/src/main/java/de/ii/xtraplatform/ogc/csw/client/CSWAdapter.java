@@ -11,21 +11,9 @@
 package de.ii.xtraplatform.ogc.csw.client;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.CharStreams;
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.CSW;
-import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.exceptions.ReadError;
-import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -37,10 +25,18 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
-import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.protocol.BasicHttpContext;
-import org.apache.http.util.EntityUtils;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -48,7 +44,7 @@ import org.forgerock.i18n.slf4j.LocalizedLogger;
  */
 public class CSWAdapter {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(CSWAdapter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CSWAdapter.class);
     private static final String DEFAULT_OPERATION = "default";
 
     private Map<String, Map<CSW.METHOD, URI>> urls;
@@ -82,7 +78,7 @@ public class CSWAdapter {
 
             this.urls.put(DEFAULT_OPERATION, urls);
         } catch (URISyntaxException ex) {
-            LOGGER.error(FrameworkMessages.INVALID_WFS_URL, url);
+            //LOGGER.error(FrameworkMessages.INVALID_WFS_URL, url);
             throw new WebApplicationException();
         }
     }
@@ -119,7 +115,7 @@ public class CSWAdapter {
         if (v != null) {
             if (this.version == null || v.isGreater(this.version)) {
                 this.version = v;
-                LOGGER.debug(FrameworkMessages.VERSION_SET_TO, version);
+                //LOGGER.debug(FrameworkMessages.VERSION_SET_TO, version);
             }
         }
     }
@@ -146,7 +142,7 @@ public class CSWAdapter {
 
         String xml = operation.toXml(nsStore, version);
         
-        LOGGER.getLogger().debug("{}\n{}", uri, xml);
+        LOGGER.debug("{}\n{}", uri, xml);
         
         HttpPost httpPost;
         HttpResponse response = null;
@@ -175,7 +171,7 @@ public class CSWAdapter {
 
         } catch (SocketTimeoutException ex) {
             if (ignoreTimeouts) {
-                LOGGER.warn(FrameworkMessages.POST_REQUEST_TIMED_OUT_AFTER_MS_URL_REQUEST, HttpConnectionParams.getConnectionTimeout(httpClient.getParams()), uri.toString(), xml);
+                //LOGGER.warn(FrameworkMessages.POST_REQUEST_TIMED_OUT_AFTER_MS_URL_REQUEST, HttpConnectionParams.getConnectionTimeout(httpClient.getParams()), uri.toString(), xml);
             }
             response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "");
             response.setEntity(new StringEntity("", ContentType.TEXT_XML));
@@ -186,25 +182,25 @@ public class CSWAdapter {
             try {
                 if (!isDefaultUrl(uri.build(), CSW.METHOD.POST)) {
 
-                    LOGGER.info(FrameworkMessages.REMOVING_URL, uri.toString());
+                    //LOGGER.info(FrameworkMessages.REMOVING_URL, uri.toString());
                     this.urls.remove(operation.getOperation().toString());
 
-                    LOGGER.info(FrameworkMessages.RETRY_WITH_DEFAULT_URL, this.urls.get("default"));
+                    //LOGGER.info(FrameworkMessages.RETRY_WITH_DEFAULT_URL, this.urls.get("default"));
                     return requestPOST(operation);
                 }
             } catch (URISyntaxException ex0) {
             }
 
-            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            throw new ReadError("Failed requesting URL: '{}'", uri);
         } catch (URISyntaxException ex) {
-            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            throw new ReadError("Failed requesting URL: '{}'", uri);
         } catch (ReadError ex) {
-            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
             throw ex;
         }
-        LOGGER.debug(FrameworkMessages.WFS_REQUEST_SUBMITTED);
+        //LOGGER.debug(FrameworkMessages.WFS_REQUEST_SUBMITTED);
         return response;
     }
 
@@ -236,7 +232,7 @@ public class CSWAdapter {
         for (Map.Entry<String, String> param : params.entrySet()) {
             uri.addParameter(param.getKey(), param.getValue());
         }
-        LOGGER.debug(FrameworkMessages.GET_REQUEST_OPERATION_URL, operation.toString(), uri.toString());
+        //LOGGER.debug(FrameworkMessages.GET_REQUEST_OPERATION_URL, operation.toString(), uri.toString());
 
         boolean retried = false;
         HttpGet httpGet;
@@ -262,7 +258,7 @@ public class CSWAdapter {
 
         } catch (SocketTimeoutException ex) {
             if (ignoreTimeouts) {
-                LOGGER.warn(FrameworkMessages.GET_REQUEST_TIMED_OUT_AFTER_MS_URL_REQUEST, HttpConnectionParams.getConnectionTimeout(httpClient.getParams()), uri.toString());
+                //LOGGER.warn(FrameworkMessages.GET_REQUEST_TIMED_OUT_AFTER_MS_URL_REQUEST, HttpConnectionParams.getConnectionTimeout(httpClient.getParams()), uri.toString());
             }
             response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "");
             response.setEntity(new StringEntity("", ContentType.TEXT_XML));
@@ -270,21 +266,21 @@ public class CSWAdapter {
             try {
                 if (!isDefaultUrl(uri.build(), CSW.METHOD.GET)) {
 
-                    LOGGER.info(FrameworkMessages.REMOVING_URL, uri.toString());
+                    //LOGGER.info(FrameworkMessages.REMOVING_URL, uri.toString());
                     this.urls.remove(operation.getOperation().toString());
 
-                    LOGGER.info(FrameworkMessages.RETRY_WITH_DEFAULT_URL, this.urls.get("default"));
+                    //LOGGER.info(FrameworkMessages.RETRY_WITH_DEFAULT_URL, this.urls.get("default"));
                     return requestGET(operation);
                 }
             } catch (URISyntaxException ex0) {
             }
-            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            throw new ReadError("Failed requesting URL: '{}'", uri);
         } catch (URISyntaxException ex) {
-            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            throw new ReadError("Failed requesting URL: '{}'", uri);
         }
-        LOGGER.debug(FrameworkMessages.WFS_REQUEST_SUBMITTED);
+        //LOGGER.debug(FrameworkMessages.WFS_REQUEST_SUBMITTED);
         return response;
     }
 
@@ -295,8 +291,8 @@ public class CSWAdapter {
                 reason = status + " " + Response.Status.fromStatusCode(status).getReasonPhrase();
             } catch (Exception e) {
             }
-            LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL_REASON, uri.toString(), reason);
-            ReadError re = new ReadError(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
+            //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL_REASON, uri.toString(), reason);
+            ReadError re = new ReadError("Failed requesting URL: '{}'", uri);
             re.addDetail("Reason: " + reason);
             throw re;
         }

@@ -1,5 +1,5 @@
-version = '1.1.2'
-//version += '-SNAPSHOT'
+version = '1.1.3'
+version += '-SNAPSHOT'
 
 dependencies {
     compile project(':xtraplatform-crs-api')

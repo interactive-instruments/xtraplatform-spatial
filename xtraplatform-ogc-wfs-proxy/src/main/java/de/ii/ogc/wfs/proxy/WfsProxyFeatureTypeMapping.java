@@ -65,7 +65,22 @@ public class WfsProxyFeatureTypeMapping {
 
         for (String path: getMappings().keySet()) {
             if (getMappings().get(path).containsKey(targetType)) {
-                mappings.put(path, getMappings().get(path).get(targetType));
+                List<TargetMapping> mappingList = getMappings().get(path).get(targetType);
+
+                //TODO
+                if (getMappings().get(path).containsKey(TargetMapping.BASE_TYPE)) {
+                    TargetMapping baseMapping = getMappings().get(path).get(TargetMapping.BASE_TYPE).get(0);
+                    List<TargetMapping> mergedMappingList = new ArrayList<>();
+
+                    for (TargetMapping targetMapping: mappingList) {
+                        mergedMappingList.add(targetMapping.mergeCopyWithBase(baseMapping));
+                    }
+
+                    mappingList = mergedMappingList;
+                }
+
+
+                mappings.put(path, mappingList);
             }
         }
 

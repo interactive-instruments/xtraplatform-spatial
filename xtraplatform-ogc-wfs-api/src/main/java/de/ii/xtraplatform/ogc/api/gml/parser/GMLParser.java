@@ -13,19 +13,17 @@ package de.ii.xtraplatform.ogc.api.gml.parser;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.XSI;
 import de.ii.xtraplatform.ogc.api.exceptions.GMLAnalyzeFailed;
 import de.ii.xtraplatform.ogc.api.exceptions.WFSException;
-import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
 import org.apache.http.HttpEntity;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.staxmate.SMInputFactory;
-import org.codehaus.staxmate.in.SMFilterFactory;
 import org.codehaus.staxmate.in.SMFlatteningCursor;
 import org.codehaus.staxmate.in.SMInputCursor;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamConstants;
@@ -39,7 +37,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class GMLParser {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(GMLParser.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GMLParser.class);
     private final GMLAnalyzer analyzer;
     private final SMInputFactory staxFactory;
     private int featureDepth;
@@ -59,7 +57,7 @@ public class GMLParser {
 
         QName featureType = new QName(ns, ft);
 
-        LOGGER.debug(FrameworkMessages.PARSING_GETFEATURE_RESPONSE_FOR, ft);
+        LOGGER.debug("Parsing GetFeature response for '{}'", ft);
 
         ListenableFuture<SMInputCursor> rootFuture = Futures.transform(entity, new Function<HttpEntity, SMInputCursor>() {
             @Override
@@ -67,7 +65,7 @@ public class GMLParser {
                 try {
                     return staxFactory.rootElementCursor(e.getContent()).advance();
                 } catch (IOException | IllegalStateException | XMLStreamException ex) {
-                    LOGGER.debug(FrameworkMessages.ERROR_PARSING_WFS_GETFEATURE, ex.getMessage());
+                    LOGGER.debug("Error parsing WFS GetFeature (IOException) {}", ex.getMessage());
                 }
 
                 return null;
@@ -84,7 +82,7 @@ public class GMLParser {
                 return;
             }
 
-            LOGGER.debug(FrameworkMessages.PARSING_GETFEATURE_RESPONSE_FOR, ft);
+            LOGGER.debug("Parsing GetFeature response for '{}'", ft);
 
             // parse for exceptions
             if (root.getLocalName().equals(WFS.getWord(WFS.VOCABULARY.EXCEPTION_REPORT))) {
@@ -109,11 +107,11 @@ public class GMLParser {
 
             analyzer.analyzeEnd();
         } catch (GMLAnalyzeFailed ex) {
-            LOGGER.debug(FrameworkMessages.GMLPARSER_RECIEVED_STOP_PARSING, ex.getMessage());
+            LOGGER.debug("GMLParser recieved 'stop parsing' {}", ex.getMessage());
         } catch (XMLStreamException ex) {
-            LOGGER.debug(FrameworkMessages.ERROR_PARSING_WFS_GETFEATURE, ex.getMessage());
+            LOGGER.debug("Error parsing WFS GetFeature (IOException) {}", ex.getMessage());
         } catch (Exception ex) {
-            LOGGER.debug(FrameworkMessages.ERROR_PARSING_WFS_GETFEATURE, ex.getMessage());
+            LOGGER.debug("Error parsing WFS GetFeature (IOException) {}", ex.getMessage());
             ex.printStackTrace();
         } finally {
             try {
@@ -199,8 +197,8 @@ public class GMLParser {
             body = (SMFlatteningCursor) body.advance();
         }
 
-        LOGGER.error(FrameworkMessages.EXCEPTION_COMING_FROM_WFS, exceptionCode + " " + exceptionText);
-        WFSException wfse = new WFSException(FrameworkMessages.EXCEPTION_COMING_FROM_WFS, exceptionCode);
+        LOGGER.error("Exception coming from WFS: '{} {}'.", exceptionCode, exceptionText);
+        WFSException wfse = new WFSException("Exception coming from WFS: '{}'.", exceptionCode);
         wfse.addDetail(exceptionText);
         throw wfse;
     }

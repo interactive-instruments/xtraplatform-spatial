@@ -7,8 +7,8 @@
  */
 package de.ii.xtraplatform.ogc.api.wfs.client;
 
-import de.ii.xsf.logging.XSFLogger;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -17,7 +17,7 @@ import java.util.Map;
  */
 public class GetFeaturePaging extends GetFeatureFiltered {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(GetFeaturePaging.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GetFeaturePaging.class);
 
     public GetFeaturePaging(String namespaceUri, String featureTypeName, int count, int startIndex) {
         this(namespaceUri, featureTypeName, count, startIndex, null, null);

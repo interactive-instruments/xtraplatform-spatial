@@ -10,18 +10,18 @@
  */
 package de.ii.ogc.wfs.proxy;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author zahnen
  */
 public class WfsProxyCrsTransformations {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(WfsProxyCrsTransformations.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WfsProxyCrsTransformations.class);
 
     private final CrsTransformation crsTransformation;
     private EpsgCrs wfsDefaultCrs;
@@ -40,7 +40,7 @@ public class WfsProxyCrsTransformations {
     private void initDefaultTransformer() {
         // TODO: handle transformation not available
         if (isAvailable() && wfsDefaultCrs != null && !wfsDefaultCrs.equals(proxyDefaultCrs)) {
-            LOGGER.getLogger().debug("TRANSFORMER {} {} -> {} {}", wfsDefaultCrs.getCode(), wfsDefaultCrs.isLongitudeFirst() ? "lonlat" : "latlon", proxyDefaultCrs.getCode(), proxyDefaultCrs.isLongitudeFirst() ? "lonlat" : "latlon");
+            LOGGER.debug("TRANSFORMER {} {} -> {} {}", wfsDefaultCrs.getCode(), wfsDefaultCrs.isLongitudeFirst() ? "lonlat" : "latlon", proxyDefaultCrs.getCode(), proxyDefaultCrs.isLongitudeFirst() ? "lonlat" : "latlon");
             this.defaultTransformer = crsTransformation.getTransformer(wfsDefaultCrs, proxyDefaultCrs);
         }
     }

@@ -8,12 +8,19 @@
 package de.ii.xtraplatform.ogc.api.wfs.client;
 
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.BoundingBox;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
-import de.ii.xtraplatform.ogc.api.filter.*;
+import de.ii.xtraplatform.ogc.api.filter.OGCBBOXFilterExpression;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilter;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterAnd;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterExpression;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterLiteral;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterPropertyIsEqualTo;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterPropertyIsLike;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterValueReference;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -24,7 +31,7 @@ import java.util.Map;
  */
 public class GetFeatureFiltered extends WFSOperationGetFeature {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(GetFeatureFiltered.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GetFeatureFiltered.class);
 
     private String namespaceUri;
     private String featureTypeName;

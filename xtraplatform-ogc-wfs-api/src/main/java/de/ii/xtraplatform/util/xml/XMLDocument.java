@@ -10,9 +10,11 @@
  */
 package de.ii.xtraplatform.util.xml;
 
-import de.ii.xsf.logging.XSFLogger;
-import java.io.StringWriter;
-import java.io.Writer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
@@ -20,9 +22,8 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import java.io.StringWriter;
+import java.io.Writer;
 
 /**
  *
@@ -30,7 +31,7 @@ import org.w3c.dom.Element;
  */
 public class XMLDocument {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(XMLDocument.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(XMLDocument.class);
     private Document doc;
     private XMLNamespaceNormalizer nsn;
 
@@ -45,7 +46,7 @@ public class XMLDocument {
             doc = builder.newDocument();
 
         } catch (Exception ex) {
-            LOGGER.getLogger().error("Error creating XMLDocument", ex);
+            LOGGER.error("Error creating XMLDocument", ex);
         }
     }
 
@@ -72,7 +73,7 @@ public class XMLDocument {
             tf.transform(new DOMSource(doc), new StreamResult(out));
             return out.toString();
         } catch (Exception ex) {
-            LOGGER.getLogger().error("Error serializing XMLDocument", ex);
+            LOGGER.error("Error serializing XMLDocument", ex);
         }
         return null;
     }

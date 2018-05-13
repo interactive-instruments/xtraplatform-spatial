@@ -7,17 +7,14 @@
  */
 package de.ii.xtraplatform.ogc.api.filter;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.util.xml.XMLDocument;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import org.w3c.dom.Element;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.forgerock.i18n.slf4j.LocalizedLogger;
-import org.w3c.dom.Element;
 
 /**
  *
@@ -25,7 +22,6 @@ import org.w3c.dom.Element;
  */
 public class OGCFilter {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(OGCFilter.class);
     private final List<OGCFilterExpression> expressions;
 
     public OGCFilter() {

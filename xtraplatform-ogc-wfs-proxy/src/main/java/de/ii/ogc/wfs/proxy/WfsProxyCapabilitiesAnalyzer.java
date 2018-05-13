@@ -10,21 +10,20 @@
  */
 package de.ii.ogc.wfs.proxy;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.OWS;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ParseError;
-import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
 import de.ii.xtraplatform.ogc.api.wfs.parser.AbstractWfsCapabilitiesAnalyzer;
 import de.ii.xtraplatform.ogc.api.wfs.parser.WFSCapabilitiesAnalyzer;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -32,7 +31,7 @@ import java.util.HashMap;
  */
 public class WfsProxyCapabilitiesAnalyzer extends AbstractWfsCapabilitiesAnalyzer implements WFSCapabilitiesAnalyzer  {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(WfsProxyCapabilitiesAnalyzer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WfsProxyCapabilitiesAnalyzer.class);
     private WfsProxyService wfsProxy;
     private Map<WFS.OPERATION, GML.VERSION> versions;
     private  String url;
@@ -70,7 +69,7 @@ public class WfsProxyCapabilitiesAnalyzer extends AbstractWfsCapabilitiesAnalyze
             String uri = wfsProxy.getWfsAdapter().getNsStore().getNamespaceURI(wfsProxy.getWfsAdapter().getNsStore().extractPrefix(featureTypeName));
             String localName = wfsProxy.getWfsAdapter().getNsStore().getLocalName(featureTypeName);
 
-            LOGGER.debug(FrameworkMessages.WFS_FEATURETYPE_NAME, featureTypeName);
+            LOGGER.debug("WFS FeatureType '{}'", featureTypeName);
 
             String displayName = wfsProxy.getWfsAdapter().getNsStore().getShortNamespacePrefix(uri); //getNamespacePrefix(uri);
             if (displayName.length() > 0) {
@@ -182,7 +181,7 @@ public class WfsProxyCapabilitiesAnalyzer extends AbstractWfsCapabilitiesAnalyze
     public void analyzeOperationParameter(OWS.OPERATION operation, OWS.VOCABULARY parameterName, String value) {
         WFS.OPERATION op2 = WFS.OPERATION.fromString(operation.toString());
         if (parameterName == OWS.VOCABULARY.OUTPUT_FORMAT) {
-            LOGGER.getLogger().debug("CAP VERSION {} {}", op2, value);
+            LOGGER.debug("CAP VERSION {} {}", op2, value);
             GML.VERSION v1 = versions.get(op2);
             GML.VERSION v2 = GML.VERSION.fromOutputFormatString(value);
             if (v2 != null) {
@@ -198,7 +197,7 @@ public class WfsProxyCapabilitiesAnalyzer extends AbstractWfsCapabilitiesAnalyze
             GML.VERSION v3 = versions.get(WFS.OPERATION.DESCRIBE_FEATURE_TYPE);
             GML.VERSION v4 = versions.get(WFS.OPERATION.GET_FEATURE);
             GML.VERSION v5 = (v3 == null ? v4 : (v4 == null ? v3 : (v3.isGreater(v4) ? v4 : v3)));
-            LOGGER.getLogger().debug("CAP VERSION {}", v5);
+            LOGGER.debug("CAP VERSION {}", v5);
             if (v5 != null) {
                wfsProxy.getWfsAdapter().setGmlVersion(v5.toString());
             }

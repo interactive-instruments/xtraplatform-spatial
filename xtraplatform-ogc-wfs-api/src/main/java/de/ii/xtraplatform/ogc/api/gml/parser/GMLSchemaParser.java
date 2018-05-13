@@ -10,9 +10,6 @@
  */
 package de.ii.xtraplatform.ogc.api.gml.parser;
 
-import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
-import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
-import de.ii.xtraplatform.util.xml.XMLPathTracker;
 import com.sun.xml.xsom.XSAttributeUse;
 import com.sun.xml.xsom.XSComplexType;
 import com.sun.xml.xsom.XSElementDecl;
@@ -23,8 +20,19 @@ import com.sun.xml.xsom.XSSchemaSet;
 import com.sun.xml.xsom.XSTerm;
 import com.sun.xml.xsom.XSType;
 import com.sun.xml.xsom.parser.XSOMParser;
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.GML;
+import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
+import de.ii.xtraplatform.util.xml.XMLPathTracker;
+import org.apache.http.HttpEntity;
+import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -32,14 +40,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.http.HttpEntity;
-import org.apache.http.util.EntityUtils;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
 
 /**
  *
@@ -47,7 +47,7 @@ import org.xml.sax.SAXParseException;
  */
 public class GMLSchemaParser {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(GMLSchemaParser.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GMLSchemaParser.class);
     private final List<GMLSchemaAnalyzer> analyzers;
     private final XMLPathTracker currentPath;
     private final List<XSElementDecl> abstractObjectDecl;
@@ -73,8 +73,8 @@ public class GMLSchemaParser {
             InputSource is = new InputSource(entity.getContent());
             parse(is, elements);
         } catch (IOException ex) {
-            LOGGER.error(FrameworkMessages.ERROR_PARSING_APPLICATION_SCHEMA, ex);
-            throw new SchemaParseException(FrameworkMessages.ERROR_PARSING_APPLICATION_SCHEMA, ex.getMessage());
+            LOGGER.error("Error parsing application schema. {}", ex);
+            throw new SchemaParseException("Error parsing application schema. {}", ex.getMessage());
         } finally {
             EntityUtils.consumeQuietly(entity);
         }
@@ -124,7 +124,7 @@ public class GMLSchemaParser {
                 // workaround for broken WFSs where FeatureTypes are in different namespaces in Capabilities and Schema
                 // in this case we search in the targetNamespace of the Schema
                 if (schema == null && lax) {
-                    LOGGER.info(FrameworkMessages.SCHEMA_FOR_NAMESPACE_NOT_FOUND_RETRYING, ns.getKey());
+                    LOGGER.info("Schema for Namespace '{}' not found, searching in targetNamespace schema instead. ", ns.getKey());
 
                     // looks as if the schema for the targetNamespace of the document is always second in the list
                     schema = schemas.getSchema(1);
@@ -164,8 +164,8 @@ public class GMLSchemaParser {
 
             // File included in schema not found
             if (ex.getCause() != null && ex.getCause().getClass().getName().contains("FileNotFoundException")) {
-                LOGGER.error(FrameworkMessages.ERROR_PARSING_APPLICATION_SCHEMA_FILE_NOT_FOUND, ex.getCause().getMessage());
-                throw new SchemaParseException(FrameworkMessages.ERROR_PARSING_APPLICATION_SCHEMA_FILE_NOT_FOUND, ex.getCause().getMessage());
+                LOGGER.error("The GML application schema provided by the WFS imports schema '{}', but that schema cannot be accessed. A valid GML application schema is required to determine the layers of the proxy service and its characteristics.. Please contact the WFS provider to correct the schema error.", ex.getCause().getMessage());
+                throw new SchemaParseException("The GML application schema provided by the WFS imports schema '{}', but that schema cannot be accessed. A valid GML application schema is required to determine the layers of the proxy service and its characteristics.. Please contact the WFS provider to correct the schema error.", ex.getCause().getMessage());
             }
             
             String msg = ex.getMessage();
@@ -176,8 +176,8 @@ public class GMLSchemaParser {
                 msgex = msg.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
             }
  
-            LOGGER.error(FrameworkMessages.ERROR_PARSING_APPLICATION_SCHEMA_PARSE_EXCEPTION, msg);
-            SchemaParseException spe = new SchemaParseException(FrameworkMessages.ERROR_PARSING_APPLICATION_SCHEMA_PARSE_EXCEPTION, "");
+            LOGGER.error("The GML application schema provided by the WFS is invalid. A valid GML application schema is required to determine the layers of the proxy service and its characteristics.. Please contact the WFS provider to correct the schema error. {}", msg);
+            SchemaParseException spe = new SchemaParseException("The GML application schema provided by the WFS is invalid. A valid GML application schema is required to determine the layers of the proxy service and its characteristics.. Please contact the WFS provider to correct the schema error. {}", "");
 
             spe.addDetail(msgex);
             

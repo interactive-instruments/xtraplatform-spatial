@@ -10,13 +10,12 @@
  */
 package de.ii.xtraplatform.util.xml;
 
-import de.ii.xsf.logging.XSFLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
 
 /**
  *
@@ -24,7 +23,7 @@ import org.forgerock.i18n.slf4j.LocalizedLogger;
  */
 public class XMLNamespaceNormalizer {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(XMLNamespaceNormalizer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(XMLNamespaceNormalizer.class);
     private Map<String, String> namespaces;
     private int nscount;
     private int shortcount;
@@ -91,7 +90,7 @@ public class XMLNamespaceNormalizer {
         if (prefix != null && prefix.isEmpty()) {
             //defaultNamespaceURI = namespaceURI;
             //prefix = defaultNamespacePRE;
-            LOGGER.debug(FrameworkMessages.ADDED_DEFAULT_NAMESPACE, prefix, namespaceURI);
+            LOGGER.debug("Added Default-Namespace: {}, {}", prefix, namespaceURI);
             this.addNamespace(namespaceURI);
         }
 
@@ -99,10 +98,10 @@ public class XMLNamespaceNormalizer {
             // force gml prefix for gml namespace (some WFS want it like that ... [carbon])
             if (namespaceURI.startsWith("http://www.opengis.net/gml")) {
                 namespaces.put("gml", namespaceURI);
-                LOGGER.debug(FrameworkMessages.ADDED_GML_NAMESPACE, "gml", namespaceURI);
+                LOGGER.debug("Added gml Namespace: {}, {}", "gml", namespaceURI);
             } else if (!namespaces.containsValue(namespaceURI) && prefix != null) {
                 namespaces.put(prefix, namespaceURI);
-                LOGGER.debug(FrameworkMessages.ADDED_NAMESPACE, prefix, namespaceURI);
+                LOGGER.debug("Added Namespace: {}, {}", prefix, namespaceURI);
             }
         }
 

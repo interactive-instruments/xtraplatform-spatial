@@ -10,21 +10,28 @@
  */
 package de.ii.xtraplatform.ogc.csw.parser;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.CSW;
-import de.ii.xtraplatform.ogc.api.filter.*;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilter;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterAnd;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterLiteral;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterPropertyIsEqualTo;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterPropertyIsLike;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterValueReference;
 import de.ii.xtraplatform.ogc.api.wfs.parser.LoggingWfsCapabilitiesAnalyzer;
 import de.ii.xtraplatform.ogc.api.wfs.parser.MultiWfsCapabilitiesAnalyzer;
 import de.ii.xtraplatform.ogc.api.wfs.parser.WFSCapabilitiesParser;
-import de.ii.xtraplatform.ogc.csw.client.*;
+import de.ii.xtraplatform.ogc.csw.client.CSWAdapter;
+import de.ii.xtraplatform.ogc.csw.client.CSWOperation;
+import de.ii.xtraplatform.ogc.csw.client.CSWOperationGetCapabilities;
+import de.ii.xtraplatform.ogc.csw.client.CSWOperationGetRecords;
+import de.ii.xtraplatform.ogc.csw.client.CSWQuery;
+import de.ii.xtraplatform.ogc.csw.client.CSWRequest;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.HttpClient;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.staxmate.SMInputFactory;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -32,7 +39,6 @@ import java.util.concurrent.ExecutionException;
  */
 public class ExtractWFSUrlsFromCSW {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(ExtractWFSUrlsFromCSW.class);
     private HttpClient httpClient;
     private SMInputFactory staxFactory;
 

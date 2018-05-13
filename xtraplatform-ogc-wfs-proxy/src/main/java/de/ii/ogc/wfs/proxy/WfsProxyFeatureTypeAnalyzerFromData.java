@@ -7,11 +7,11 @@
  */
 package de.ii.ogc.wfs.proxy;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.exceptions.GMLAnalyzeFailed;
 import de.ii.xtraplatform.ogc.api.gml.parser.GMLAnalyzer;
 import org.codehaus.staxmate.in.SMInputCursor;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,7 +27,7 @@ import java.util.concurrent.Future;
  */
 public class WfsProxyFeatureTypeAnalyzerFromData extends WfsProxyFeatureTypeAnalyzer implements GMLAnalyzer {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(WfsProxyFeatureTypeAnalyzerFromData.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WfsProxyFeatureTypeAnalyzerFromData.class);
 
     public WfsProxyFeatureTypeAnalyzerFromData(WfsProxyService proxyService, List<WfsProxyMappingProvider> mappingProviders) {
         super(proxyService, mappingProviders);
@@ -36,7 +36,7 @@ public class WfsProxyFeatureTypeAnalyzerFromData extends WfsProxyFeatureTypeAnal
 
     @Override
     public final void analyzeFailed(Exception ex) {
-        LOGGER.getLogger().error("AbstractFeatureWriter -> analyzeFailed", ex);
+        LOGGER.error("AbstractFeatureWriter -> analyzeFailed", ex);
         throw new GMLAnalyzeFailed("AbstractFeatureWriter -> analyzeFailed");
     }
 

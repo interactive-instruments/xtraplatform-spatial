@@ -10,12 +10,12 @@
  */
 package de.ii.xtraplatform.ogc.csw.client;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.CSW;
 import de.ii.xtraplatform.util.xml.XMLDocument;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.apache.http.Header;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 
 import java.util.HashMap;
@@ -27,7 +27,7 @@ import java.util.Map;
  */
 public abstract class CSWOperation {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(CSWOperation.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CSWOperation.class);
 
     public CSWOperation() {
 
@@ -77,9 +77,9 @@ public abstract class CSWOperation {
 
         String out;
 
-        if (LOGGER.getLogger().isDebugEnabled()) {
+        if (LOGGER.isDebugEnabled()) {
             out = document.toString(true);
-            LOGGER.getLogger().debug(out);
+            LOGGER.debug(out);
         } else {
             out = document.toString(false);
         }
@@ -104,8 +104,8 @@ public abstract class CSWOperation {
 
         parameters = toKvp(parameters, nsStore, version);
 
-        if (LOGGER.getLogger().isDebugEnabled()) {
-            LOGGER.getLogger().debug(parameters.toString());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(parameters.toString());
         }
 
         return parameters;

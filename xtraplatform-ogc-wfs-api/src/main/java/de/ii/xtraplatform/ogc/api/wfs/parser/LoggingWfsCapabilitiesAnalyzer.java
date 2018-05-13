@@ -10,224 +10,224 @@
  */
 package de.ii.xtraplatform.ogc.api.wfs.parser;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.OWS;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author zahnen
  */
 public class LoggingWfsCapabilitiesAnalyzer implements WFSCapabilitiesAnalyzer {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(LoggingWfsCapabilitiesAnalyzer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggingWfsCapabilitiesAnalyzer.class);
 
     @Override
     public void analyzeStart() {
-        LOGGER.getLogger().debug("analyzeStart");
+        LOGGER.debug("analyzeStart");
     }
 
     @Override
     public void analyzeEnd() {
-        LOGGER.getLogger().debug("analyzeEnd");
+        LOGGER.debug("analyzeEnd");
     }
 
     @Override
     public void analyzeFailed(Exception ex) {
-        LOGGER.getLogger().debug("analyzeFailed", ex);
+        LOGGER.debug("analyzeFailed", ex);
     }
 
     @Override
     public void analyzeFailed(String exceptionCode, String exceptionText) {
-        LOGGER.getLogger().debug("analyzeFailed {} {}", exceptionCode, exceptionText);
+        LOGGER.debug("analyzeFailed {} {}", exceptionCode, exceptionText);
     }
 
     @Override
     public void analyzeNamespace(String prefix, String uri) {
-        LOGGER.getLogger().debug("analyzeNamespace {} {}", prefix, uri);
+        LOGGER.debug("analyzeNamespace {} {}", prefix, uri);
     }
 
     @Override
     public void analyzeVersion(String version) {
-        LOGGER.getLogger().debug("analyzeVersion {}", version);
+        LOGGER.debug("analyzeVersion {}", version);
     }
 
     @Override
     public void analyzeTitle(String title) {
-        LOGGER.getLogger().debug("analyzeTitle {}", title);
+        LOGGER.debug("analyzeTitle {}", title);
     }
 
     @Override
     public void analyzeAbstract(String abstrct) {
-        LOGGER.getLogger().debug("analyzeAbstract {}", abstrct);
+        LOGGER.debug("analyzeAbstract {}", abstrct);
     }
 
     @Override
     public void analyzeKeywords(String... keywords) {
-        LOGGER.getLogger().debug("analyzeKeywords {}", (Object) keywords);
+        LOGGER.debug("analyzeKeywords {}", (Object) keywords);
     }
 
     @Override
     public void analyzeFees(String fees) {
-        LOGGER.getLogger().debug("analyzeFees {}", fees);
+        LOGGER.debug("analyzeFees {}", fees);
     }
 
     @Override
     public void analyzeAccessConstraints(String accessConstraints) {
-        LOGGER.getLogger().debug("analyzeAccessConstraints {}", accessConstraints);
+        LOGGER.debug("analyzeAccessConstraints {}", accessConstraints);
     }
 
     @Override
     public void analyzeProviderName(String providerName) {
-        LOGGER.getLogger().debug("analyzeProviderName {}", providerName);
+        LOGGER.debug("analyzeProviderName {}", providerName);
     }
 
     @Override
     public void analyzeProviderSite(String providerSite) {
-        LOGGER.getLogger().debug("analyzeProviderSite {}", providerSite);
+        LOGGER.debug("analyzeProviderSite {}", providerSite);
     }
 
     @Override
     public void analyzeServiceContactIndividualName(String individualName) {
-        LOGGER.getLogger().debug("analyzeServiceContactIndividualName {}", individualName);
+        LOGGER.debug("analyzeServiceContactIndividualName {}", individualName);
     }
 
     @Override
     public void analyzeServiceContactOrganizationName(String organizationName) {
-        LOGGER.getLogger().debug("analyzeServiceContactOrganizationName {}", organizationName);
+        LOGGER.debug("analyzeServiceContactOrganizationName {}", organizationName);
     }
 
     @Override
     public void analyzeServiceContactPositionName(String positionName) {
-        LOGGER.getLogger().debug("analyzeServiceContactPositionName {}", positionName);
+        LOGGER.debug("analyzeServiceContactPositionName {}", positionName);
     }
 
     @Override
     public void analyzeServiceContactRole(String role) {
-        LOGGER.getLogger().debug("analyzeServiceContactRole {}", role);
+        LOGGER.debug("analyzeServiceContactRole {}", role);
     }
 
     @Override
     public void analyzeServiceContactPhone(String phone) {
-        LOGGER.getLogger().debug("analyzeServiceContactPhone {}", phone);
+        LOGGER.debug("analyzeServiceContactPhone {}", phone);
     }
 
     @Override
     public void analyzeServiceContactFacsimile(String facsimile) {
-        LOGGER.getLogger().debug("analyzeServiceContactFacsimile {}", facsimile);
+        LOGGER.debug("analyzeServiceContactFacsimile {}", facsimile);
     }
 
     @Override
     public void analyzeServiceContactDeliveryPoint(String deliveryPoint) {
-        LOGGER.getLogger().debug("analyzeServiceContactDeliveryPoint {}", deliveryPoint);
+        LOGGER.debug("analyzeServiceContactDeliveryPoint {}", deliveryPoint);
     }
 
     @Override
     public void analyzeServiceContactCity(String city) {
-        LOGGER.getLogger().debug("analyzeServiceContactCity {}", city);
+        LOGGER.debug("analyzeServiceContactCity {}", city);
     }
 
     @Override
     public void analyzeServiceContactAdministrativeArea(String administrativeArea) {
-        LOGGER.getLogger().debug("analyzeServiceContactAdministrativeArea {}", administrativeArea);
+        LOGGER.debug("analyzeServiceContactAdministrativeArea {}", administrativeArea);
     }
 
     @Override
     public void analyzeServiceContactPostalCode(String postalCode) {
-        LOGGER.getLogger().debug("analyzeServiceContactPostalCode {}", postalCode);
+        LOGGER.debug("analyzeServiceContactPostalCode {}", postalCode);
     }
 
     @Override
     public void analyzeServiceContactCountry(String country) {
-        LOGGER.getLogger().debug("analyzeServiceContactCountry {}", country);
+        LOGGER.debug("analyzeServiceContactCountry {}", country);
     }
 
     @Override
     public void analyzeServiceContactEmail(String email) {
-        LOGGER.getLogger().debug("analyzeServiceContactEmail {}", email);
+        LOGGER.debug("analyzeServiceContactEmail {}", email);
     }
 
     @Override
     public void analyzeServiceContactOnlineResource(String onlineResource) {
-        LOGGER.getLogger().debug("analyzeServiceContactOnlineResource {}", onlineResource);
+        LOGGER.debug("analyzeServiceContactOnlineResource {}", onlineResource);
     }
 
     @Override
     public void analyzeServiceContactHoursOfService(String hoursOfService) {
-        LOGGER.getLogger().debug("analyzeServiceContactHoursOfService {}", hoursOfService);
+        LOGGER.debug("analyzeServiceContactHoursOfService {}", hoursOfService);
     }
 
     @Override
     public void analyzeServiceContactInstructions(String instructions) {
-        LOGGER.getLogger().debug("analyzeServiceContactInstructions {}", instructions);
+        LOGGER.debug("analyzeServiceContactInstructions {}", instructions);
     }
 
     @Override
     public void analyzeOperationGetUrl(OWS.OPERATION operation, String url) {
-        LOGGER.getLogger().debug("analyzeOperationGetUrl {} {}", operation, url);
+        LOGGER.debug("analyzeOperationGetUrl {} {}", operation, url);
     }
 
     @Override
     public void analyzeOperationPostUrl(OWS.OPERATION operation, String url) {
-        LOGGER.getLogger().debug("analyzeOperationPostUrl {} {}", operation, url);
+        LOGGER.debug("analyzeOperationPostUrl {} {}", operation, url);
     }
 
     @Override
     public void analyzeOperationParameter(OWS.OPERATION operation, OWS.VOCABULARY parameterName, String value) {
-        LOGGER.getLogger().debug("analyzeOperationParameter {} {} {}", operation, parameterName, value);
+        LOGGER.debug("analyzeOperationParameter {} {} {}", operation, parameterName, value);
     }
 
     @Override
     public void analyzeOperationConstraint(OWS.OPERATION operation, OWS.VOCABULARY constraintName, String value) {
-        LOGGER.getLogger().debug("analyzeOperationConstraint {} {} {}", operation, constraintName, value);
+        LOGGER.debug("analyzeOperationConstraint {} {} {}", operation, constraintName, value);
     }
 
     @Override
     public void analyzeOperationMetadata(OWS.OPERATION operation, String url) {
-        LOGGER.getLogger().debug("analyzeOperationMetadata {} {}", operation, url);
+        LOGGER.debug("analyzeOperationMetadata {} {}", operation, url);
     }
 
     @Override
     public void analyzeInspireMetadataUrl(String metadataUrl) {
-        LOGGER.getLogger().debug("analyzeInspireMetadataUrl {}", metadataUrl);
+        LOGGER.debug("analyzeInspireMetadataUrl {}", metadataUrl);
     }
 
     @Override
     public void analyzeFeatureType(String featureTypeName) {
-        LOGGER.getLogger().debug("analyzeFeatureType {}", featureTypeName);
+        LOGGER.debug("analyzeFeatureType {}", featureTypeName);
     }
 
     @Override
     public void analyzeFeatureTypeTitle(String featureTypeName, String title) {
-        LOGGER.getLogger().debug("analyzeFeatureTypeTitle {} {}", featureTypeName, title);
+        LOGGER.debug("analyzeFeatureTypeTitle {} {}", featureTypeName, title);
     }
 
     @Override
     public void analyzeFeatureTypeAbstract(String featureTypeName, String abstrct) {
-        LOGGER.getLogger().debug("analyzeFeatureTypeAbstract {} {}", featureTypeName, abstrct);
+        LOGGER.debug("analyzeFeatureTypeAbstract {} {}", featureTypeName, abstrct);
     }
 
     @Override
     public void analyzeFeatureTypeKeywords(String featureTypeName, String... keywords) {
-        LOGGER.getLogger().debug("analyzeFeatureTypeKeywords {} {}", featureTypeName, (Object) keywords);
+        LOGGER.debug("analyzeFeatureTypeKeywords {} {}", featureTypeName, (Object) keywords);
     }
 
     @Override
     public void analyzeFeatureTypeBoundingBox(String featureTypeName, String xmin, String ymin, String xmax, String ymax) {
-        LOGGER.getLogger().debug("analyzeFeatureTypeBoundingBox {} {} {} {} {}", featureTypeName, xmin, ymin, xmax, ymax);
+        LOGGER.debug("analyzeFeatureTypeBoundingBox {} {} {} {} {}", featureTypeName, xmin, ymin, xmax, ymax);
     }
 
     @Override
     public void analyzeFeatureTypeDefaultCrs(String featureTypeName, String crs) {
-        LOGGER.getLogger().debug("analyzeFeatureTypeDefaultCrs {} {}", featureTypeName, crs);
+        LOGGER.debug("analyzeFeatureTypeDefaultCrs {} {}", featureTypeName, crs);
     }
 
     @Override
     public void analyzeFeatureTypeOtherCrs(String featureTypeName, String crs) {
-        LOGGER.getLogger().debug("analyzeFeatureTypeOtherCrs {} {}", featureTypeName, crs);
+        LOGGER.debug("analyzeFeatureTypeOtherCrs {} {}", featureTypeName, crs);
     }
 
     @Override
     public void analyzeFeatureTypeMetadataUrl(String featureTypeName, String url) {
-        LOGGER.getLogger().debug("analyzeFeatureTypeMetadataUrl {} {}", featureTypeName, url);
+        LOGGER.debug("analyzeFeatureTypeMetadataUrl {} {}", featureTypeName, url);
     }
 }

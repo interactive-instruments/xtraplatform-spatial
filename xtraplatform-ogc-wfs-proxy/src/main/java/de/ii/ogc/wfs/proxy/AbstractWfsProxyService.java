@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ListenableFuture;
 import de.ii.xsf.core.api.AbstractService;
 import de.ii.xsf.core.api.Resource;
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.WFS;
@@ -28,20 +27,28 @@ import de.ii.xtraplatform.ogc.api.gml.parser.GMLAnalyzer;
 import de.ii.xtraplatform.ogc.api.gml.parser.GMLParser;
 import de.ii.xtraplatform.ogc.api.gml.parser.GMLSchemaAnalyzer;
 import de.ii.xtraplatform.ogc.api.gml.parser.GMLSchemaParser;
-import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
-import de.ii.xtraplatform.ogc.api.wfs.client.*;
+import de.ii.xtraplatform.ogc.api.wfs.client.DescribeFeatureType;
+import de.ii.xtraplatform.ogc.api.wfs.client.GetCapabilities;
+import de.ii.xtraplatform.ogc.api.wfs.client.GetFeaturePaging;
+import de.ii.xtraplatform.ogc.api.wfs.client.WFSAdapter;
+import de.ii.xtraplatform.ogc.api.wfs.client.WFSRequest;
 import de.ii.xtraplatform.ogc.api.wfs.parser.WFSCapabilitiesAnalyzer;
 import de.ii.xtraplatform.ogc.api.wfs.parser.WFSCapabilitiesParser;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.HttpClient;
 import org.codehaus.staxmate.SMInputFactory;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -49,7 +56,7 @@ import java.util.concurrent.ExecutionException;
  */
 public abstract class AbstractWfsProxyService extends AbstractService implements Resource, WfsProxyService {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(AbstractWfsProxyService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractWfsProxyService.class);
 
     private WFSAdapter wfsAdapter;
     private WfsProxyCrsTransformations crsTransformations;
@@ -176,10 +183,10 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
         GetCapabilities getCapabilities;
 
         if (version == null) {
-            LOGGER.debug(FrameworkMessages.ANALYZING_CAPABILITIES);
+            LOGGER.debug("Analyzing Capabilities");
             getCapabilities = new GetCapabilities();
         } else {
-            LOGGER.debug(FrameworkMessages.ANALYZING_CAPABILITIES_VERSION, version.toString());
+            LOGGER.debug("Analyzing Capabilities (version: {})", version.toString());
             getCapabilities = new GetCapabilities(version);
         }
         capabilities = wfsAdapter.request(getCapabilities);
@@ -295,11 +302,11 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
     }
 
     public void analyzeWFS() {
-        LOGGER.debug(FrameworkMessages.ANALYZING_WFS);
+        LOGGER.debug("Analyzing WFS");
         analyzeCapabilities();
 
         if (wfsAdapter.getDefaultCrs() == null) {
-            ParseError pe = new ParseError(FrameworkMessages.NO_VALID_SRS_FOUND_IN_GETCAPABILITIES_RESPONSE);
+            ParseError pe = new ParseError("No valid SRS found in GetCapabilities response");
             throw pe;
         }
 

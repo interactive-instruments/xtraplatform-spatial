@@ -10,12 +10,10 @@
  */
 package de.ii.xtraplatform.ogc.api.filter;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.crs.api.BoundingBox;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.util.xml.XMLDocument;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
 import org.w3c.dom.Element;
 
 import java.util.Map;
@@ -26,7 +24,6 @@ import java.util.Map;
  */
 public class OGCBBOXFilterExpression extends OGCFilterExpression {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(OGCFilterExpression.class);
     private BoundingBox env;
     private String geometryPath;
 

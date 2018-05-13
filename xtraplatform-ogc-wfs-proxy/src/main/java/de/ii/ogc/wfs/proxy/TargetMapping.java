@@ -10,7 +10,6 @@
  */
 package de.ii.ogc.wfs.proxy;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import de.ii.xtraplatform.jackson.dynamic.DynamicTypeIdResolver;
@@ -20,16 +19,14 @@ import de.ii.xtraplatform.jackson.dynamic.DynamicTypeIdResolver;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "mappingType")
 @JsonTypeIdResolver(DynamicTypeIdResolver.class)
-public interface TargetMapping {
+public interface TargetMapping<T> {
     final String BASE_TYPE = "general";
 
     String getName();
 
+    T getType();
+
     Boolean isEnabled();
 
-    @JsonIgnore
-    boolean isGeometry();
-
-    @JsonIgnore
     TargetMapping mergeCopyWithBase(TargetMapping targetMapping);
 }

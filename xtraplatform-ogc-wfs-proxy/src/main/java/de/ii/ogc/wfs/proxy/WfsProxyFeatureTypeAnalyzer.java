@@ -10,10 +10,10 @@
  */
 package de.ii.ogc.wfs.proxy;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.util.xml.XMLPathTracker;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
@@ -133,7 +133,7 @@ public class WfsProxyFeatureTypeAnalyzer {
     }
 
     public static final String GML_NS_URI = GML.getNS(GML.VERSION._2_1_1);
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(WfsProxyFeatureTypeAnalyzer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WfsProxyFeatureTypeAnalyzer.class);
 
     private WfsProxyService proxyService;
     // TODO: could it be more than one?
@@ -277,7 +277,7 @@ public class WfsProxyFeatureTypeAnalyzer {
 
                         targetMapping = mappingProvider.getTargetMappingForGeometry(currentPath.toFieldNameGml(), nsUri, localName, geoType);
                     } else {
-                        LOGGER.getLogger().debug("NOT MAPPED {} {}", currentPath.toFieldNameGml(), type);
+                        LOGGER.debug("NOT MAPPED {} {}", currentPath.toFieldNameGml(), type);
                     }
                 }
 

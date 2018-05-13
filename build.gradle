@@ -16,9 +16,9 @@ buildscript {
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
 
-version = '1.1.8'
+version = '1.1.9'
 
-//version += '-SNAPSHOT'
+version += '-SNAPSHOT'
 
 group = 'de.interactive_instruments'
 
@@ -42,12 +42,12 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'osgi-ipojo'
     apply plugin: 'maven-publish'
-    //apply plugin: 'com.jfrog.bintray'
+    apply plugin: 'com.jfrog.bintray'
     apply plugin: 'license'
 
-    version = '1.1.0'
+    version = '1.1.1'
 
-    //version += '-SNAPSHOT'
+    version += '-SNAPSHOT'
 
     group = 'de.interactive_instruments'
 
@@ -133,9 +133,6 @@ subprojects {
         mavenCentral()
         jcenter()
         maven {
-            url "http://maven.forgerock.org/repo/repo"
-        }
-        maven {
             url 'http://oss.sonatype.org/content/repositories/snapshots'
         }
         maven {
@@ -192,11 +189,11 @@ subprojects {
         // TODO: get from root project, at least the versions
         provided group: 'de.interactive_instruments', name: 'xtraplatform-bundles-runtime', version: '1.1.0'
         // TODO: shouldn't we only be allowed to use api bundles here?
-        provided group: 'de.interactive_instruments', name: 'xtraplatform-bundles-core', version: '1.1.0'
+        provided group: 'de.interactive_instruments', name: 'xtraplatform-bundles-core', version: '1.1.1-SNAPSHOT'
 
         // TODO: this is in bundles-runtime, but with transitive=false
         // TODO: we need the transitive dependencies in provided
-        provided group: 'de.interactive_instruments', name: 'xtraplatform-dropwizard', version: '1.1.0'
+        provided group: 'de.interactive_instruments', name: 'xtraplatform-dropwizard', version: '1.1.1-SNAPSHOT'
     }
     
     jar {
@@ -205,11 +202,6 @@ subprojects {
             instructionReplace "Bundle-SymbolicName",project.name.replaceAll('-', '.')
         }
     }
-    
-    /*i18n {
-        outDir = new File(sourceSets.main.java.srcDirs.toList().first().parentFile, "i18n")
-    }*/
-    sourceSets.main.java.srcDirs += new File(sourceSets.main.java.srcDirs.toList().first().parentFile, "i18n")
 
     task sourceJar(type: Jar) {
         from sourceSets.main.allSource

@@ -8,9 +8,19 @@
 package de.ii.xtraplatform.ogc.api.gml.parser;
 
 import com.google.common.io.CharStreams;
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
-import de.ii.xtraplatform.ogc.api.i18n.FrameworkMessages;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
@@ -19,16 +29,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.protocol.BasicHttpContext;
-import org.apache.http.util.EntityUtils;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 /**
  *
@@ -36,7 +36,7 @@ import org.xml.sax.SAXException;
  */
 public class OGCEntityResolver implements EntityResolver {
 
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(OGCEntityResolver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OGCEntityResolver.class);
     private Map<String, String> uris = new HashMap();
     private HttpClient untrustedSslHttpClient;
     private boolean useBasicAuth = false;
@@ -60,7 +60,7 @@ public class OGCEntityResolver implements EntityResolver {
         // protected schema files
         if (systemId != null && systemId.startsWith("https://") && useBasicAuth) {
             HttpResponse response = null;
-            LOGGER.getLogger().debug("resolving protected schema: {}", systemId);
+            LOGGER.debug("resolving protected schema: {}", systemId);
             try {
                 HttpGet httpGet = new HttpGet(systemId);
 
@@ -76,8 +76,8 @@ public class OGCEntityResolver implements EntityResolver {
 
             } catch (IOException ex) {
                 ex.printStackTrace();
-                LOGGER.error(FrameworkMessages.ERROR_PARSING_APPLICATION_SCHEMA, ex);
-                throw new SchemaParseException(FrameworkMessages.ERROR_PARSING_APPLICATION_SCHEMA, ex.getMessage());
+                LOGGER.error("Error parsing application schema. {}", ex);
+                throw new SchemaParseException("Error parsing application schema. {}", ex.getMessage());
             } finally {
                 if (response != null) {
                     EntityUtils.consumeQuietly(response.getEntity());
@@ -139,8 +139,8 @@ public class OGCEntityResolver implements EntityResolver {
                 }
 
                 if (!url.equals(systemId)) {
-                    LOGGER.getLogger().debug("original systemId: {}", systemId);
-                    LOGGER.getLogger().debug("changed systemId: {}", url);
+                    LOGGER.debug("original systemId: {}", systemId);
+                    LOGGER.debug("changed systemId: {}", url);
                     return new InputSource(url);
                 }
             }

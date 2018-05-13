@@ -7,9 +7,7 @@
  */
 package de.ii.ogc.wfs.proxy;
 
-import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.gml.parser.GMLSchemaAnalyzer;
-import org.forgerock.i18n.slf4j.LocalizedLogger;
 
 import java.util.List;
 
@@ -17,8 +15,6 @@ import java.util.List;
  * @author zahnen
  */
 public class WfsProxyFeatureTypeAnalyzerFromSchema extends WfsProxyFeatureTypeAnalyzer implements GMLSchemaAnalyzer {
-
-    private static final LocalizedLogger LOGGER = XSFLogger.getLogger(WfsProxyFeatureTypeAnalyzerFromSchema.class);
 
     public WfsProxyFeatureTypeAnalyzerFromSchema(WfsProxyService proxyService, List<WfsProxyMappingProvider> mappingProviders) {
         super(proxyService, mappingProviders);
