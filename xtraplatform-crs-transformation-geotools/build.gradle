@@ -1,5 +1,5 @@
 version = '1.1.1'
-version += '-SNAPSHOT'
+//version += '-SNAPSHOT'
 
 def rep = repositories.maven {
     url "http://download.osgeo.org/webdav/geotools"
