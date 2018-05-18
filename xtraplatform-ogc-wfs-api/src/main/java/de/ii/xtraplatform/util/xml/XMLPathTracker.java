@@ -11,6 +11,7 @@
 package de.ii.xtraplatform.util.xml;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,8 @@ public class XMLPathTracker {
     private List<String> path;
     private List<String> noObjectPath;
     private XMLNamespaceNormalizer nsStore;
+    private final Joiner joiner;
+    private final StringBuilder stringBuilder;
 
     private boolean multiple;
 
@@ -32,6 +35,8 @@ public class XMLPathTracker {
         this.localPath = new ArrayList<>();
         this.path = new ArrayList<>();
         this.noObjectPath = new ArrayList<>();
+        this.joiner = Joiner.on('/').skipNulls();
+        this.stringBuilder = new StringBuilder();
     }
 
     public XMLPathTracker(XMLNamespaceNormalizer nsStore) {
@@ -85,20 +90,25 @@ public class XMLPathTracker {
     }
 
     public String toFieldName() {
-        return Joiner.on(".").skipNulls().join(localPath);
+        return joiner.join(localPath);
     }
 
     public String toFieldNameGml() {
-        return Joiner.on(".").skipNulls().join(noObjectPath);
+        return joiner.join(noObjectPath);
     }
 
     @Override
     public String toString() {
-        return Joiner.on("/").skipNulls().join(path);
+        stringBuilder.setLength(0);
+        return joiner.appendTo(stringBuilder, path).toString();
     }
 
     public String toLocalPath() {
-        return Joiner.on("/").skipNulls().join(localPath);
+        return joiner.join(localPath);
+    }
+
+    public List<String> asList() {
+        return path;
     }
 
     public boolean isEmpty() {

@@ -2,45 +2,45 @@ package de.ii.ogc.wfs.proxy;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.dispatch.Futures;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
+import akka.http.javadsl.coding.Coder;
 import akka.http.javadsl.model.*;
+import akka.http.javadsl.model.headers.AcceptEncoding;
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
+import akka.http.javadsl.settings.ConnectionPoolSettings;
+import akka.http.scaladsl.model.headers.HttpEncodings;
 import akka.japi.Pair;
 import akka.japi.function.Function2;
 import akka.stream.ActorMaterializer;
-import akka.stream.Attributes;
 import akka.stream.Materializer;
+import akka.stream.OverflowStrategy;
+import akka.stream.javadsl.FileIO;
 import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
 import de.ii.ogc.wfs.proxy.StreamingFeatureTransformer.TransformEvent;
 import de.ii.xsf.logging.XSFLogger;
 import de.ii.xtraplatform.ogc.api.wfs.client.WFSRequest;
 import org.apache.felix.ipojo.annotations.*;
 import org.forgerock.i18n.slf4j.LocalizedLogger;
-import scala.concurrent.Future;
-import scala.concurrent.duration.FiniteDuration;
 import scala.util.Try;
 
 import javax.ws.rs.core.StreamingOutput;
 import javax.xml.namespace.QName;
+import java.io.File;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
+import java.util.Date;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * @author zahnen
@@ -59,8 +59,8 @@ public class AkkaStreamer extends AllDirectives {
 
     private CompletionStage<ServerBinding> binding;
     private Flow<Pair<HttpRequest, Object>, Pair<Try<HttpResponse>, Object>, NotUsed> pool;
-    private Flow<ByteString, TransformEvent, NotUsed> parser;
-    private Flow<TransformEvent, ByteString, Consumer<OutputStream>> writer;
+    private Supplier<Flow<ByteString, TransformEvent, NotUsed>> parser;
+    private Supplier<Flow<ByteString, ByteString, NotUsed>> writer;
 
     private ActorSystem system;
     private Http http;
@@ -87,7 +87,7 @@ public class AkkaStreamer extends AllDirectives {
             this.routeFlow = emptyRoute().flow(system, materializer);
             this.binding = startHttpServer();
 
-            this.pool = http.superPool();
+            this.pool = http.superPool(ConnectionPoolSettings.create(system).withMaxConnections(64), system.log());
             this.ready = true;
         } catch (Throwable e) {
             LOGGER.getLogger().debug("HTTP START FAILED", e);
@@ -133,6 +133,7 @@ public class AkkaStreamer extends AllDirectives {
         this.binding = restartHttpServer();
     }
 
+    // TODO: jax-rs to akka-http (https://jersey.java.net/apidocs/2.16/jersey/org/glassfish/jersey/server/model/Resource.html)
     private Route createRoute() {
         return route(
                 path("async", () ->
@@ -140,7 +141,7 @@ public class AkkaStreamer extends AllDirectives {
                                 get(() ->
                                         parameterOptional("page", page ->
                                                 parameterOptional("count", count ->
-                                                        complete((HttpEntity.Chunked)HttpEntities.createChunked(ContentTypes.APPLICATION_JSON, stream(page, count)).withoutSizeLimit())
+                                                        complete((HttpEntity.Chunked) HttpEntities.createChunked(ContentTypes.TEXT_PLAIN_UTF8, stream(page, count)).withoutSizeLimit())
                                                 )
                                         )
                                 )
@@ -157,7 +158,7 @@ public class AkkaStreamer extends AllDirectives {
         );
     }
 
-    private Source<ByteString, NotUsed> stream(Optional<String> page, Optional<String> count) {
+    private Source<ByteString, Date> stream(Optional<String> page, Optional<String> count) {
         String requestParams = page.map(p -> "&startIndex=" + p + "&").orElse("") + count.map(c -> "count=" + c).orElse("");
         LOGGER.getLogger().debug("HTTP REQUEST {}", requestParams);
 
@@ -177,34 +178,70 @@ public class AkkaStreamer extends AllDirectives {
             return NotUsed.getInstance();
         });*/
 
+        final Function<HttpResponse, HttpResponse> decodeResponse = response -> {
+            // Pick the right coder
+            final Coder coder;
+            if (HttpEncodings.gzip().equals(response.encoding())) {
+                coder = Coder.Gzip;
+            } else if (HttpEncodings.deflate().equals(response.encoding())) {
+                coder = Coder.Deflate;
+            } else {
+                coder = Coder.NoCoding;
+            }
+            LOGGER.getLogger().debug("HTTP Encoding {}", coder);
+
+            // Decode the entity
+            return coder.decodeMessage(response);
+        };
 
 
-        Source<ByteString, NotUsed> stream =
+        // TODO: measure performance with files to compare processing time only
+        Source<ByteString, Date> fromFile = FileIO.fromFile(new File("/home/zahnen/development/ldproxy/artillery/flurstueck-" + count.get() + "-" + page.get() + ".xml"))
+                .mapMaterializedValue(nu -> new Date());
+
+        Source<ByteString, Date> fromWfs =
                 //Source.fromCompletionStage(http.singleRequest(HttpRequest.create(wfsRequest.getAsUrl())))
-                Source.single(Pair.create(HttpRequest.create(wfsRequest.getAsUrl() + requestParams), null))
+                Source.single(Pair.create(HttpRequest.create(wfsRequest.getAsUrl() + requestParams).addHeader(AcceptEncoding.create(HttpEncodings.deflate().toRange(), HttpEncodings.gzip().toRange(), HttpEncodings.chunked().toRange())), null))
                         .via(pool)
                         .map(param -> {
                             //LOGGER.getLogger().debug("HTTP RESPONSE {}", param.toString());
                             return param.first().get();
                         })
+                        .map(decodeResponse::apply)
+                        .mapMaterializedValue(nu -> new Date())
                         .flatMapConcat(httpResponse -> {
                             LOGGER.getLogger().debug("HTTP RESPONSE {}", httpResponse.status());
                             return httpResponse.entity().withoutSizeLimit().getDataBytes();
-                        })
-                        .via(parser)//.map(t -> ByteString.fromString(t.toString() + "\\n"));
+                        });
+
+        Flow<ByteString, ByteString, NotUsed> mergeBuffer = Flow.of(ByteString.class)
+                .conflate((Function2<ByteString, ByteString, ByteString>) ByteString::concat);
+
+        // TODO: load tests with throttled file stream, simulate wfs with e.g. 4 cores and a certain throughput
+        Source<ByteString, Date> stream =
+                //fromFile
+                fromWfs
+                        //.buffer(128, OverflowStrategy.backpressure())
+                        //.via(parser.get())
+                        //.watchTermination((start, isDone) -> isDone.thenRun(() -> LOGGER.getLogger().debug("TOOK: {}", new Date().getTime() - start.getTime())))
+                        //.map(t -> ByteString.fromString(/*t.toString() +*/ "."))
+                        //.buffer(32768, OverflowStrategy.backpressure())
                         //.via(transformer);
-                        .via(writer);
+
+                        .via(writer.get())
+                        //.via(mergeBuffer)
+                ;
 
         Source<ByteString, NotUsed> byteStringNotUsedSource = Source.single(ByteString.fromString("{\"text\": \"HELLO WORLD\"}"));
 
         return stream;
     }
 
-    public void stream(final WfsProxyFeatureType featureType, final WFSRequest wfsRequest, final String outputFormat, final boolean isFeatureCollection, final Flow<TransformEvent, ByteString, Consumer<OutputStream>> writer, final Consumer<StreamingOutput> onSuccess, final Function<Throwable, Void> onFailure) {
+    public void stream(final WfsProxyFeatureType featureType, final WFSRequest wfsRequest, final String outputFormat, final boolean isFeatureCollection, final Supplier<Flow<ByteString, ByteString, NotUsed>> writer, final Consumer<StreamingOutput> onSuccess, final Function<Throwable, Void> onFailure) {
         //ActorSystem system = bundleActorSystem.getSystem();
         //final Http http = Http.get(system);
         //final Materializer materializer = ActorMaterializer.create(system);
-        this.parser = StreamingFeatureTransformer.parser(new QName(featureType.getNamespace(), featureType.getName()), featureType.getMappings(), outputFormat);
+        this.parser = () -> StreamingFeatureTransformer.parser(new QName(featureType.getNamespace(), featureType.getName()), featureType.getMappings(), outputFormat);
         this.writer = writer;
         this.wfsRequest = wfsRequest;
         addRoute();

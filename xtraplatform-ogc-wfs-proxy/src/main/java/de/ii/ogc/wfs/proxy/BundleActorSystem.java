@@ -42,8 +42,11 @@ public class BundleActorSystem /*extends ActorSystemActivator*/ {
         LOGGER.getLogger().debug("AKKA STARTING");
         try {
             final Config config = ConfigFactory.parseMap(new ImmutableMap.Builder<String, Object>()
-                    .put("akka.loglevel", "DEBUG")
+                    .put("akka.loglevel", "INFO")
                     //.put("akka.log-config-on-start", true)
+                    .put("akka.http.host-connection-pool.max-connections", 32)
+                    .put("akka.http.host-connection-pool.pool-implementation", "new")
+                    .put("akka.http.parsing.max-chunk-size", "16m")
                     .build());
             this.system = new OsgiActorSystemFactory(context, scala.Option.empty(), ConfigFactory.load(config)).createActorSystem(scala.Option.empty());
             this.started = true;

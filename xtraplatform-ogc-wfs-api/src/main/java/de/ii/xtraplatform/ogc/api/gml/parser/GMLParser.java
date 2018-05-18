@@ -1,9 +1,11 @@
 /**
  * Copyright 2017 European Union, interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * bla
  */
 /**
  * bla
@@ -29,6 +31,7 @@ import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -58,6 +61,7 @@ public class GMLParser {
         QName featureType = new QName(ns, ft);
 
         LOGGER.debug("Parsing GetFeature response for '{}'", ft);
+        try {
 
         ListenableFuture<SMInputCursor> rootFuture = Futures.transform(entity, new Function<HttpEntity, SMInputCursor>() {
             @Override
@@ -66,11 +70,43 @@ public class GMLParser {
                     return staxFactory.rootElementCursor(e.getContent()).advance();
                 } catch (IOException | IllegalStateException | XMLStreamException ex) {
                     LOGGER.debug("Error parsing WFS GetFeature (IOException) {}", ex.getMessage());
+                    return null;
                 }
+            });
 
-                return null;
+            parseRoot(rootFuture, ns, ft);
+        } finally {
+            try {
+                EntityUtils.consumeQuietly(entity.get());
+            } catch (InterruptedException ex) {
+
             }
-        });
+        }
+    }
+
+    public void parseStream(ListenableFuture<InputStream> inputStream, String ns, String ft) throws ExecutionException {
+
+            ListenableFuture<SMInputCursor> rootFuture = Futures.transform(inputStream, new Function<InputStream, SMInputCursor>() {
+                @Override
+                public SMInputCursor apply(InputStream i) {
+                    try {
+                        return staxFactory.rootElementCursor(i).advance();
+                    } catch ( IllegalStateException | XMLStreamException ex) {
+                        LOGGER.debug(FrameworkMessages.ERROR_PARSING_WFS_GETFEATURE, ex.getMessage());
+                    }
+
+                    return null;
+                }
+            });
+
+            parseRoot(rootFuture, ns, ft);
+    }
+
+    private void parseRoot(ListenableFuture<SMInputCursor> rootFuture, String ns, String ft) throws ExecutionException {
+
+        QName featureType = new QName(ns, ft);
+
+        LOGGER.debug(FrameworkMessages.PARSING_GETFEATURE_RESPONSE_FOR, ft);
 
         SMInputCursor root = null;
         try {
@@ -114,11 +150,6 @@ public class GMLParser {
             LOGGER.debug("Error parsing WFS GetFeature (IOException) {}", ex.getMessage());
             ex.printStackTrace();
         } finally {
-            try {
-                EntityUtils.consumeQuietly(entity.get());
-            } catch (InterruptedException ex) {
-
-            }
             if (root != null) {
                 try {
                     root.getStreamReader().closeCompletely();
