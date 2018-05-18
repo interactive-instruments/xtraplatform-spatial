@@ -8,7 +8,7 @@
 /**
  * bla
  */
-package de.ii.ogc.wfs.proxy;
+package de.ii.xtraplatform.feature.query.api;
 
 import com.google.common.collect.ImmutableList;
 
@@ -27,6 +27,10 @@ public class WfsProxyFeatureTypeMapping {
 
     public WfsProxyFeatureTypeMapping() {
         this.mappings = new LinkedHashMap<>();
+    }
+
+    public WfsProxyFeatureTypeMapping(Map<String, Map<String, List<TargetMapping>>> mappings) {
+        this.mappings = mappings;
     }
 
     public void addMapping(String path, String targetType, TargetMapping targetMapping) {
@@ -68,7 +72,7 @@ public class WfsProxyFeatureTypeMapping {
                 List<TargetMapping> mappingList = getMappings().get(path).get(targetType);
 
                 //TODO
-                if (getMappings().get(path).containsKey(TargetMapping.BASE_TYPE)) {
+                if (!targetType.equals(TargetMapping.BASE_TYPE) && getMappings().get(path).containsKey(TargetMapping.BASE_TYPE)) {
                     TargetMapping baseMapping = getMappings().get(path).get(TargetMapping.BASE_TYPE).get(0);
                     List<TargetMapping> mergedMappingList = new ArrayList<>();
 

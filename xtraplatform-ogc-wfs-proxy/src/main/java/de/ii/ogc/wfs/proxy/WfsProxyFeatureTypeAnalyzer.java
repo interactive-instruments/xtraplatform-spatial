@@ -10,6 +10,8 @@
  */
 package de.ii.ogc.wfs.proxy;
 
+import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import de.ii.xtraplatform.feature.query.api.WfsProxyFeatureType;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.util.xml.XMLPathTracker;
 import org.slf4j.Logger;

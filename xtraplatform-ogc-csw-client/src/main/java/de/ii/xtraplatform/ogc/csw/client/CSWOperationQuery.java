@@ -16,6 +16,7 @@ import de.ii.xtraplatform.util.xml.XMLDocument;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.w3c.dom.Element;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +80,7 @@ public abstract class CSWOperationQuery extends  CSWOperation {
     }
 
     @Override
-    protected Map<String, String> toKvp(Map<String, String> parameters, XMLNamespaceNormalizer nsStore, CSW.VERSION version) {
+    protected Map<String, String> toKvp(Map<String, String> parameters, XMLNamespaceNormalizer nsStore, CSW.VERSION version) throws ParserConfigurationException {
 
         if (this.maxRecords != null) {
             parameters.put(CSW.getWord(version, CSW.VOCABULARY.MAXRECORDS).toUpperCase(), String.valueOf(maxRecords));

@@ -16,6 +16,7 @@ import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.Map;
 
 /**
@@ -67,7 +68,7 @@ public class CSWOperationGetRecords extends CSWOperationQuery {
         }
 
         if (this.elementSetName != null) {
-            Element setName = document.createElementNS(CSW.getNS(version), CSW.getPR(version), CSW.getWord(version, CSW.VOCABULARY.ELEMENTSETNAME));
+            Element setName = document.createElementNS(CSW.getNS(version), CSW.getWord(version, CSW.VOCABULARY.ELEMENTSETNAME));
             setName.setTextContent(elementSetName);
 
             Node query = operationElement.getFirstChild();
@@ -78,7 +79,7 @@ public class CSWOperationGetRecords extends CSWOperationQuery {
     }
 
     @Override
-    protected Map<String, String> toKvp(Map<String, String> parameters, XMLNamespaceNormalizer nsStore, CSW.VERSION version) {
+    protected Map<String, String> toKvp(Map<String, String> parameters, XMLNamespaceNormalizer nsStore, CSW.VERSION version) throws ParserConfigurationException {
 
         if (this.constraintLanguage != null) {
             parameters.put(CSW.getWord(version, CSW.VOCABULARY.CONSTRAINTLANGUAGE).toUpperCase(), String.valueOf(constraintLanguage));

@@ -1,9 +1,11 @@
 /**
  * Copyright 2017 European Union, interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * bla
  */
 /**
  * bla
@@ -17,6 +19,7 @@ import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ReadError;
+import de.ii.xtraplatform.util.xml.XMLDocumentFactory;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
@@ -33,9 +36,12 @@ import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.protocol.BasicHttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
@@ -65,7 +71,7 @@ public class WFSAdapter {
     private boolean alphaNumericId;
     private EpsgCrs defaultCrs;
     private Set<EpsgCrs> otherCrs;
-    private boolean ignoreTimeouts ;
+    private boolean ignoreTimeouts;
     private WFS.METHOD httpMethod;
     private boolean useBasicAuth;
     private String basicAuthCredentials;
@@ -90,9 +96,9 @@ public class WFSAdapter {
             URI noAuthUri = this.extractBasicAuthCredentials(new URI(url));
             noAuthUri = parseAndCleanWfsUrl(noAuthUri);
             Map<WFS.METHOD, URI> urls = new ImmutableMap.Builder<WFS.METHOD, URI>()
-                .put(WFS.METHOD.GET, noAuthUri)
-                .put(WFS.METHOD.POST, noAuthUri)
-                .build();
+                    .put(WFS.METHOD.GET, noAuthUri)
+                    .put(WFS.METHOD.POST, noAuthUri)
+                    .build();
 
             this.urls.put(DEFAULT_OPERATION, urls);
         } catch (URISyntaxException ex) {
@@ -202,7 +208,8 @@ public class WFSAdapter {
         if (!this.urls.containsKey(op.toString())) {
             this.urls.put(op.toString(), new HashMap<WFS.METHOD, URI>());
         }
-            this.urls.get(op.toString()).put(method, url);
+        this.urls.get(op.toString())
+                 .put(method, url);
     }
 
     public boolean isAlphaNumericId() {
@@ -214,7 +221,8 @@ public class WFSAdapter {
     }
 
     public String getVersion() {
-        return versions != null && versions.getWfsVersion() != null ? versions.getWfsVersion().toString() : null;
+        return versions != null && versions.getWfsVersion() != null ? versions.getWfsVersion()
+                                                                              .toString() : null;
     }
 
     public void setVersion(String version) {
@@ -229,7 +237,8 @@ public class WFSAdapter {
 
     public void capabilitiesAnalyzed() {
         if (versions.getGmlVersion() == null && versions.getWfsVersion() != null) {
-            versions.setGmlVersion(versions.getWfsVersion().getGmlVersion());
+            versions.setGmlVersion(versions.getWfsVersion()
+                                           .getGmlVersion());
         }
     }
 
@@ -237,7 +246,8 @@ public class WFSAdapter {
         if (versions.getGmlVersion() == null) {
             return null;
         }
-        return versions.getGmlVersion().toString();
+        return versions.getGmlVersion()
+                       .toString();
     }
 
     public void setGmlVersion(String gmlversion) {
@@ -253,49 +263,82 @@ public class WFSAdapter {
                 LOGGER.debug("Version set to GML: '{}'", this.versions.getGmlVersion());
             }
         } else { // Parsing of gml version was not successful, set the default version
-            this.versions.setGmlVersion(this.versions.getWfsVersion().getGmlVersion());
+            this.versions.setGmlVersion(this.versions.getWfsVersion()
+                                                     .getGmlVersion());
         }
     }
 
     public HttpEntity request(WFSOperation operation) {
 
-        // TODO: POST or GET
-        // temporal workaround for beta
-        //URIBuilder uriGET = new URIBuilder(findUrl(operation.getOperation(), WFS.METHOD.GET));
-        URI uriGET = findUrl(operation.getOperation(), WFS.METHOD.GET);
-        URI uriPOST = findUrl(operation.getOperation(), WFS.METHOD.POST);
+        try {
+            // TODO: POST or GET
+            // temporal workaround for beta
+            //URIBuilder uriGET = new URIBuilder(findUrl(operation.getOperation(), WFS.METHOD.GET));
+            URI uriGET = findUrl(operation.getOperation(), WFS.METHOD.GET);
+            URI uriPOST = findUrl(operation.getOperation(), WFS.METHOD.POST);
 
-        if (httpMethod == WFS.METHOD.GET || uriGET.toString().contains("wsinspire.geoportail.lu") || uriPOST.toString().contains("wsinspire.geoportail.lu")) {
-            return requestGET(operation).getEntity();
+            if (httpMethod == WFS.METHOD.GET || uriGET.toString()
+                                                      .contains("wsinspire.geoportail.lu") || uriPOST.toString()
+                                                                                                     .contains("wsinspire.geoportail.lu")) {
+                return requestGET(operation).getEntity();
+            }
+
+            //URIBuilder uriPOST = new URIBuilder(findUrl(operation.getOperation(), WFS.METHOD.POST));
+            HttpResponse r = requestPOST(operation);
+            operation.setResponseHeaders(r.getAllHeaders());
+            return r.getEntity();
+        } catch (ParserConfigurationException e) {
+            throw new ReadError("Failed requesting URL: '{}'");
         }
-
-        //URIBuilder uriPOST = new URIBuilder(findUrl(operation.getOperation(), WFS.METHOD.POST));
-        HttpResponse r = requestPOST(operation);
-        operation.setResponseHeaders(r.getAllHeaders());
-        return r.getEntity();
     }
 
-    private HttpResponse requestPOST(WFSOperation operation) {
+    public HttpEntity request(WfsOperation operation) {
+
+        try {
+            // TODO: POST or GET
+            // temporal workaround for beta
+            //URIBuilder uriGET = new URIBuilder(findUrl(operation.getOperation(), WFS.METHOD.GET));
+            URI uriGET = findUrl(operation.getOperation(), WFS.METHOD.GET);
+            URI uriPOST = findUrl(operation.getOperation(), WFS.METHOD.POST);
+
+            if (httpMethod == WFS.METHOD.GET || uriGET.toString()
+                                                      .contains("wsinspire.geoportail.lu") || uriPOST.toString()
+                                                                                                     .contains("wsinspire.geoportail.lu")) {
+                return requestGET(operation).getEntity();
+            }
+
+            //URIBuilder uriPOST = new URIBuilder(findUrl(operation.getOperation(), WFS.METHOD.POST));
+            HttpResponse r = requestPOST(operation);
+            //operation.setResponseHeaders(r.getAllHeaders());
+            return r.getEntity();
+        } catch (ParserConfigurationException | TransformerException | IOException | SAXException e) {
+            throw new ReadError("Failed requesting URL: '{}'");
+        }
+    }
+
+    private HttpResponse requestPOST(WfsOperation operation) throws ParserConfigurationException, TransformerException, IOException, SAXException {
 
         URI url = findUrl(operation.getOperation(), WFS.METHOD.POST);
 
-        HttpClient httpClient = url.getScheme().equals("https") ? this.untrustedSslHttpClient : this.httpClient;
+        HttpClient httpClient = url.getScheme()
+                                   .equals("https") ? this.untrustedSslHttpClient : this.httpClient;
 
         URIBuilder uri = new URIBuilder(url);
 
-        String xml = operation.getPOSTXML(nsStore, versions);
-        
+        String xml = operation.asXml(new XMLDocumentFactory(nsStore), versions)
+                              .toString(false);
+
         LOGGER.debug("{}\n{}", uri, xml);
-        
+
         HttpPost httpPost;
         HttpResponse response = null;
 
         try {
             httpPost = new HttpPost(uri.build());
-            
-            for( String key : operation.getRequestHeaders().keySet()) {
+
+            /*for( String key : operation.getRequestHeaders().keySet()) {
                 httpPost.setHeader(key, operation.getRequestHeaders().get(key));
-            }
+            }*/
 
             // TODO: temporary basic auth hack
             if (useBasicAuth) {
@@ -305,11 +348,12 @@ public class WFSAdapter {
             StringEntity xmlEntity = new StringEntity(xml,
                     ContentType.create("text/plain", "UTF-8"));
             httpPost.setEntity(xmlEntity);
-            
+
             response = httpClient.execute(httpPost, new BasicHttpContext());
 
             // check http status
-            checkResponseStatus(response.getStatusLine().getStatusCode(), uri);
+            checkResponseStatus(response.getStatusLine()
+                                        .getStatusCode(), uri);
 
         } catch (SocketTimeoutException ex) {
             if (ignoreTimeouts) {
@@ -325,7 +369,84 @@ public class WFSAdapter {
                 if (!isDefaultUrl(uri.build(), WFS.METHOD.POST)) {
 
                     LOGGER.info("Removing URL: {}", uri);
-                    this.urls.remove(operation.getOperation().toString());
+                    this.urls.remove(operation.getOperation()
+                                              .toString());
+
+                    LOGGER.info("Retry with default URL: {}", this.urls.get("default"));
+                    return requestPOST(operation);
+                }
+            } catch (URISyntaxException ex0) {
+            }
+
+            LOGGER.error("Failed requesting URL: '{}'", uri);
+            throw new ReadError("Failed requesting URL: '{}'", uri);
+        } catch (URISyntaxException ex) {
+            LOGGER.error("Failed requesting URL: '{}'", uri);
+            throw new ReadError("Failed requesting URL: '{}'", uri);
+        } catch (ReadError ex) {
+            LOGGER.error("Failed requesting URL: '{}'", uri);
+            throw ex;
+        }
+        LOGGER.debug("WFS request submitted");
+        return response;
+    }
+
+    private HttpResponse requestPOST(WFSOperation operation) throws ParserConfigurationException {
+
+        URI url = findUrl(operation.getOperation(), WFS.METHOD.POST);
+
+        HttpClient httpClient = url.getScheme()
+                                   .equals("https") ? this.untrustedSslHttpClient : this.httpClient;
+
+        URIBuilder uri = new URIBuilder(url);
+
+        String xml = operation.getPOSTXML(nsStore, versions);
+
+        LOGGER.debug("{}\n{}", uri, xml);
+
+        HttpPost httpPost;
+        HttpResponse response = null;
+
+        try {
+            httpPost = new HttpPost(uri.build());
+
+            for (String key : operation.getRequestHeaders()
+                                       .keySet()) {
+                httpPost.setHeader(key, operation.getRequestHeaders()
+                                                 .get(key));
+            }
+
+            // TODO: temporary basic auth hack
+            if (useBasicAuth) {
+                httpPost.addHeader("Authorization", "Basic " + basicAuthCredentials);
+            }
+
+            StringEntity xmlEntity = new StringEntity(xml,
+                    ContentType.create("text/plain", "UTF-8"));
+            httpPost.setEntity(xmlEntity);
+
+            response = httpClient.execute(httpPost, new BasicHttpContext());
+
+            // check http status
+            checkResponseStatus(response.getStatusLine()
+                                        .getStatusCode(), uri);
+
+        } catch (SocketTimeoutException ex) {
+            if (ignoreTimeouts) {
+                LOGGER.warn("POST request timed out after %d ms, URL: {} \\nRequest: {}", HttpConnectionParams.getConnectionTimeout(httpClient.getParams()), uri, xml);
+            }
+            response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "");
+            response.setEntity(new StringEntity("", ContentType.TEXT_XML));
+        } catch (IOException ex) {
+            //LOGGER.error(ERROR_IN_POST_REQUEST_TO_URL_REQUEST, uri.toString(), xml, ex);
+            //LOGGER.debug("Error requesting URL: {}", uri.toString());
+
+            try {
+                if (!isDefaultUrl(uri.build(), WFS.METHOD.POST)) {
+
+                    LOGGER.info("Removing URL: {}", uri);
+                    this.urls.remove(operation.getOperation()
+                                              .toString());
 
                     LOGGER.info("Retry with default URL: {}", this.urls.get("default"));
                     return requestPOST(operation);
@@ -349,23 +470,47 @@ public class WFSAdapter {
     public String getRequestUrl(WFSOperation operation) {
         URIBuilder uri = new URIBuilder(findUrl(operation.getOperation(), WFS.METHOD.GET));
 
-        Map<String, String> params = operation.getGETParameters(nsStore, versions);
+        Map<String, String> params = null;
+        try {
+            params = operation.getGETParameters(nsStore, versions);
+        } catch (ParserConfigurationException e) {
+            return "";
+        }
 
         for (Map.Entry<String, String> param : params.entrySet()) {
             uri.addParameter(param.getKey(), param.getValue());
         }
 
         try {
-            return uri.build().toString();
+            return uri.build()
+                      .toString();
         } catch (URISyntaxException e) {
             return "";
         }
     }
 
-    private HttpResponse requestGET(WFSOperation operation) {
+    public String getRequestUrl(WfsOperation operation) {
+        try {
+            URIBuilder uri = new URIBuilder(findUrl(operation.getOperation(), WFS.METHOD.GET));
+
+            Map<String, String> params = operation.asKvp(new XMLDocumentFactory(nsStore), versions);
+
+            for (Map.Entry<String, String> param : params.entrySet()) {
+                uri.addParameter(param.getKey(), param.getValue());
+            }
+
+            return uri.build()
+                      .toString();
+        } catch (URISyntaxException | ParserConfigurationException | TransformerException | IOException | SAXException e) {
+            return "";
+        }
+    }
+
+    private HttpResponse requestGET(WFSOperation operation) throws ParserConfigurationException {
         URI url = findUrl(operation.getOperation(), WFS.METHOD.GET);
 
-        HttpClient httpClient = url.getScheme().equals("https") ? this.untrustedSslHttpClient : this.httpClient;
+        HttpClient httpClient = url.getScheme()
+                                   .equals("https") ? this.untrustedSslHttpClient : this.httpClient;
 
         URIBuilder uri = new URIBuilder(url);
 
@@ -383,7 +528,8 @@ public class WFSAdapter {
         try {
 
             // replace the + with %20
-            String uristring = uri.build().toString();
+            String uristring = uri.build()
+                                  .toString();
             uristring = uristring.replaceAll("\\+", "%20");
             httpGet = new HttpGet(uristring);
 
@@ -395,7 +541,8 @@ public class WFSAdapter {
             response = httpClient.execute(httpGet, new BasicHttpContext());
 
             // check http status
-            checkResponseStatus(response.getStatusLine().getStatusCode(), uri);
+            checkResponseStatus(response.getStatusLine()
+                                        .getStatusCode(), uri);
 
         } catch (SocketTimeoutException ex) {
             if (ignoreTimeouts) {
@@ -408,7 +555,75 @@ public class WFSAdapter {
                 if (!isDefaultUrl(uri.build(), WFS.METHOD.GET)) {
 
                     LOGGER.info("Removing URL: {}", uri);
-                    this.urls.remove(operation.getOperation().toString());
+                    this.urls.remove(operation.getOperation()
+                                              .toString());
+
+                    LOGGER.info("Retry with default URL: {}", this.urls.get("default"));
+                    return requestGET(operation);
+                }
+            } catch (URISyntaxException ex0) {
+            }
+            LOGGER.error("Failed requesting URL: '{}'", uri);
+            throw new ReadError("Failed requesting URL: '{}'", uri);
+        } catch (URISyntaxException ex) {
+            LOGGER.error("Failed requesting URL: '{}'", uri);
+            throw new ReadError("Failed requesting URL: '{}'", uri);
+        }
+        LOGGER.debug("WFS request submitted");
+        return response;
+    }
+
+    private HttpResponse requestGET(WfsOperation operation) throws ParserConfigurationException, TransformerException, IOException, SAXException {
+        URI url = findUrl(operation.getOperation(), WFS.METHOD.GET);
+
+        HttpClient httpClient = url.getScheme()
+                                   .equals("https") ? this.untrustedSslHttpClient : this.httpClient;
+
+        URIBuilder uri = new URIBuilder(url);
+
+        Map<String, String> params = operation.asKvp(new XMLDocumentFactory(nsStore), versions);
+
+        for (Map.Entry<String, String> param : params.entrySet()) {
+            uri.addParameter(param.getKey(), param.getValue());
+        }
+        LOGGER.debug("GET Request {}: {}", operation, uri);
+
+        boolean retried = false;
+        HttpGet httpGet;
+        HttpResponse response;
+
+        try {
+
+            // replace the + with %20
+            String uristring = uri.build()
+                                  .toString();
+            uristring = uristring.replaceAll("\\+", "%20");
+            httpGet = new HttpGet(uristring);
+
+            // TODO: temporary basic auth hack
+            if (useBasicAuth) {
+                httpGet.addHeader("Authorization", "Basic " + basicAuthCredentials);
+            }
+
+            response = httpClient.execute(httpGet, new BasicHttpContext());
+
+            // check http status
+            checkResponseStatus(response.getStatusLine()
+                                        .getStatusCode(), uri);
+
+        } catch (SocketTimeoutException ex) {
+            if (ignoreTimeouts) {
+                LOGGER.warn("GET request timed out after %d ms, URL: {}", HttpConnectionParams.getConnectionTimeout(httpClient.getParams()), uri);
+            }
+            response = new BasicHttpResponse(HttpVersion.HTTP_1_1, 200, "");
+            response.setEntity(new StringEntity("", ContentType.TEXT_XML));
+        } catch (IOException ex) {
+            try {
+                if (!isDefaultUrl(uri.build(), WFS.METHOD.GET)) {
+
+                    LOGGER.info("Removing URL: {}", uri);
+                    this.urls.remove(operation.getOperation()
+                                              .toString());
 
                     LOGGER.info("Retry with default URL: {}", this.urls.get("default"));
                     return requestGET(operation);
@@ -429,7 +644,8 @@ public class WFSAdapter {
         if (status >= 400) {
             String reason = "No reason available";
             try {
-                reason = status + " " + Response.Status.fromStatusCode(status).getReasonPhrase();
+                reason = status + " " + Response.Status.fromStatusCode(status)
+                                                       .getReasonPhrase();
             } catch (Exception e) {
             }
             LOGGER.error("Failed requesting URL: '{}' Reason: '{}'", uri, reason);
@@ -461,20 +677,25 @@ public class WFSAdapter {
 
     public URI findUrl(WFS.OPERATION operation, WFS.METHOD method) {
 
-        URI uri = this.urls.containsKey(operation.toString()) ? this.urls.get(operation.toString()).get(method) : this.urls.get("default").get(method);
+        URI uri = this.urls.containsKey(operation.toString()) ? this.urls.get(operation.toString())
+                                                                         .get(method) : this.urls.get("default")
+                                                                                                 .get(method);
 
         if (uri == null && method.equals(WFS.METHOD.GET)) {
-            return this.urls.get("default").get(method);
+            return this.urls.get("default")
+                            .get(method);
         }
 
         return uri;
     }
 
     private boolean isDefaultUrl(URI uri, WFS.METHOD method) {
-        URI defaultURI = this.urls.get("default").get(method);
+        URI defaultURI = this.urls.get("default")
+                                  .get(method);
         URI inputURI = uri;
 
-        if (defaultURI.getHost().startsWith(inputURI.getHost())) {
+        if (defaultURI.getHost()
+                      .startsWith(inputURI.getHost())) {
             return true;
         }
         return false;
@@ -519,14 +740,16 @@ public class WFSAdapter {
     }
 
     public static URI parseAndCleanWfsUrl(String url) throws URISyntaxException {
-       return parseAndCleanWfsUrl(new URI(removeBasicAuthCredentials(url.trim())));
+        return parseAndCleanWfsUrl(new URI(removeBasicAuthCredentials(url.trim())));
     }
 
     private static URI parseAndCleanWfsUrl(URI inUri) throws URISyntaxException {
         URIBuilder outUri = new URIBuilder(inUri).removeQuery();
 
-        if (inUri.getQuery() != null && !inUri.getQuery().isEmpty()) {
-            for (String inParam : inUri.getQuery().split("&")) {
+        if (inUri.getQuery() != null && !inUri.getQuery()
+                                              .isEmpty()) {
+            for (String inParam : inUri.getQuery()
+                                       .split("&")) {
                 String[] param = inParam.split("=");
                 if (!WFS.hasKVPKey(param[0].toUpperCase())) {
                     outUri.addParameter(param[0], param[1]);

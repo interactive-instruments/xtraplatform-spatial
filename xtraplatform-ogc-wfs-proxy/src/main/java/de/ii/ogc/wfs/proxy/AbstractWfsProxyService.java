@@ -19,6 +19,9 @@ import de.ii.xsf.core.api.AbstractService;
 import de.ii.xsf.core.api.Resource;
 import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.feature.query.api.FeatureProvider;
+import de.ii.xtraplatform.feature.query.api.WfsProxyFeatureType;
+import de.ii.xtraplatform.feature.source.wfs.FeatureProviderWfs;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ParseError;
 import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
@@ -75,6 +78,8 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
     public ObjectMapper jsonMapper;
     protected JsonFactory jsonFactory;
 
+    private FeatureProvider featureProvider;
+
     public AbstractWfsProxyService() {
         super();
         this.featureTypes = new HashMap<>();
@@ -88,6 +93,12 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
         this.featureTypes = new HashMap<>();
         this.schemaAnalyzers = new ArrayList<>();
         this.serviceProperties = new WFSProxyServiceProperties();
+    }
+
+    @Override
+    @JsonIgnore
+    public FeatureProvider getFeatureProvider() {
+        return featureProvider;
     }
 
     @Override
@@ -115,6 +126,9 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
 
     public void setFeatureTypes(Map<String, WfsProxyFeatureType> featureTypes) {
         this.featureTypes.putAll(featureTypes);
+        if (featureTypes != null && wfsAdapter != null) {
+            this.featureProvider = new FeatureProviderWfs(wfsAdapter, featureTypes);
+        }
     }
 
     @Override

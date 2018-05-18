@@ -10,12 +10,14 @@
  */
 package de.ii.xtraplatform.util.xml;
 
+import com.google.common.base.Splitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -30,10 +32,15 @@ public class XMLNamespaceNormalizer {
     private final Map<String, String> shortNamespaces;
 
     public XMLNamespaceNormalizer() {
-        namespaces = new HashMap<>();
-        shortNamespaces = new HashMap<>();
+        namespaces = new LinkedHashMap<>();
+        shortNamespaces = new LinkedHashMap<>();
         nscount = 0;
         shortcount = 0;
+    }
+
+    public XMLNamespaceNormalizer(Map<String,String> namespaces) {
+        this();
+        this.namespaces.putAll(namespaces);
     }
 
     public Map<String, String> getNamespaces() {
@@ -41,7 +48,7 @@ public class XMLNamespaceNormalizer {
     }
 
     public Map<String, String> xgetShortPrefixNamespaces() {
-        Map<String, String> shortns = new HashMap<>();
+        Map<String, String> shortns = new LinkedHashMap<>();
 
         for (Map.Entry<String, String> ns : namespaces.entrySet()) {
             boolean add = true;
@@ -164,6 +171,19 @@ public class XMLNamespaceNormalizer {
         String ftn = getLocalName(lqn);
 
         return prefix + ":" + ftn;
+    }
+
+    // TODO: change path serialization format
+    public String getPrefixedPath(String qualifiedPath) {
+        String prefixedPath = qualifiedPath;
+        for (Map.Entry<String,String> ns: namespaces.entrySet()) {
+            prefixedPath = prefixedPath.replaceAll(ns.getValue(), ns.getKey());
+        }
+        return prefixedPath;
+
+        /*return Splitter.on('/').splitToList(qualifiedPath).stream()
+                .map(this::getQualifiedName)
+                .collect(Collectors.joining("/"));*/
     }
 
     public String generateNamespaceDeclaration(String prefix) {

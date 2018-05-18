@@ -34,7 +34,8 @@ public class OGCFilterAnd extends OGCFilterExpression {
         if (operands.size() == 1) {
             operands.get(0).toXML(version, e, doc);
         } else if (operands.size() > 1) {
-            Element ex = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.AND));
+            doc.addNamespace(FES.getNS(version), FES.getPR(version));
+            Element ex = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.AND));
             e.appendChild(ex);
 
             for (OGCFilterExpression expr : operands) {

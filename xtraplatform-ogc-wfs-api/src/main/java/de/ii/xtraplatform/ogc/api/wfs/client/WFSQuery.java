@@ -17,6 +17,7 @@ import de.ii.xtraplatform.util.xml.XMLDocument;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.w3c.dom.Element;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +77,8 @@ public class WFSQuery {
     }
 
     public void toXML(WFS.VERSION version, Element e, XMLDocument doc) {
-        Element query = doc.createElementNS(WFS.getNS(version), WFS.getPR(version), WFS.getWord(version, WFS.VOCABULARY.QUERY));
+        doc.addNamespace(WFS.getNS(version), WFS.getPR(version));
+        Element query = doc.createElementNS(WFS.getNS(version), WFS.getWord(version, WFS.VOCABULARY.QUERY));
         e.appendChild(query);
 
         for (OGCFilter fil : filter) {
@@ -93,7 +95,7 @@ public class WFSQuery {
 
     }
     
-    public void toKVP(WFS.VERSION version, Map<String, String> params, XMLNamespaceNormalizer nsStore){
+    public void toKVP(WFS.VERSION version, Map<String, String> params, XMLNamespaceNormalizer nsStore) throws ParserConfigurationException {
         
         if (typeNames != null) {
             params.put(WFS.getWord(version, WFS.VOCABULARY.TYPENAMES).toUpperCase(), getTypeNames());

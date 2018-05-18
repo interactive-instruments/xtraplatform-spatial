@@ -8,10 +8,13 @@
 /**
  * bla
  */
-package de.ii.ogc.wfs.proxy;
+package de.ii.xtraplatform.feature.query.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.ii.xtraplatform.crs.api.BoundingBox;
+import org.threeten.extra.Interval;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -22,8 +25,12 @@ public class WfsProxyFeatureType {
     private String namespace;
     private String displayName;
     private WfsProxyFeatureTypeMapping mappings;
+    // TODO: to wfs3 extension
+    private TemporalExtent temporalExtent;
+    private BoundingBox spatialExtent;
 
     public WfsProxyFeatureType() {
+        this.temporalExtent = new TemporalExtent(Instant.now().toEpochMilli(), 0);
 
     }
     public WfsProxyFeatureType(String name, String namespace, String displayName) {
@@ -31,6 +38,16 @@ public class WfsProxyFeatureType {
         this.namespace = namespace;
         this.displayName = displayName;
         this.mappings = new WfsProxyFeatureTypeMapping();
+        this.temporalExtent = new TemporalExtent(Instant.now().toEpochMilli(), 0);
+    }
+
+    // TODO: only used for testing, replace by builder
+    public WfsProxyFeatureType(String name, String namespace, String displayName, WfsProxyFeatureTypeMapping wfsProxyFeatureTypeMapping) {
+        this.name = name;
+        this.namespace = namespace;
+        this.displayName = displayName;
+        this.mappings = wfsProxyFeatureTypeMapping;
+        this.temporalExtent = new TemporalExtent(Instant.now().toEpochMilli(), 0);
     }
 
     public String getName() {
@@ -70,5 +87,13 @@ public class WfsProxyFeatureType {
         List<TargetMapping> baseMapping = mappings.findMappings(namespace + ":" + name, TargetMapping.BASE_TYPE);
 
         return !baseMapping.isEmpty() && baseMapping.get(0).isEnabled();
+    }
+
+    public TemporalExtent getTemporalExtent() {
+        return temporalExtent;
+    }
+
+    public void setTemporalExtent(TemporalExtent temporalExtent) {
+        this.temporalExtent = temporalExtent;
     }
 }

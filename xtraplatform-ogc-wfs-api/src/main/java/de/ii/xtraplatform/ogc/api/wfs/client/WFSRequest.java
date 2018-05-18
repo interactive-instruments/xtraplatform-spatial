@@ -13,6 +13,8 @@ package de.ii.xtraplatform.ogc.api.wfs.client;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import org.apache.http.HttpEntity;
@@ -26,11 +28,20 @@ public class WFSRequest {
 
     private final WFSAdapter wfs;
     private final WFSOperation operation;
+    private final WfsOperation operation2;
     private final ListeningExecutorService pool;
 
     public WFSRequest(WFSAdapter wfs, WFSOperation operation) {
         this.wfs = wfs;
         this.operation = operation;
+        this.operation2 = null;
+        this.pool = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+    }
+
+    public WFSRequest(WFSAdapter wfs, WfsOperation operation) {
+        this.wfs = wfs;
+        this.operation = null;
+        this.operation2 = operation;
         this.pool = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
     }
 
@@ -38,7 +49,7 @@ public class WFSRequest {
         final ListenableFuture<HttpEntity> response = pool.submit(new Callable<HttpEntity>() {
             @Override
             public HttpEntity call() throws Exception {
-                return wfs.request(operation);
+                return Objects.isNull(operation2) ? wfs.request(operation) : wfs.request(operation2);
             }
         });
 
@@ -48,6 +59,6 @@ public class WFSRequest {
     }
 
     public String getAsUrl() {
-        return wfs.getRequestUrl(operation);
+        return Objects.isNull(operation2) ? wfs.getRequestUrl(operation) : wfs.getRequestUrl(operation2);
     }
 }

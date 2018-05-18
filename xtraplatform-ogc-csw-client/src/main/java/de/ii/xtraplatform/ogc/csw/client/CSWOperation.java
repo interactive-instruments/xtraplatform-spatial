@@ -12,12 +12,14 @@ package de.ii.xtraplatform.ogc.csw.client;
 
 import de.ii.xtraplatform.ogc.api.CSW;
 import de.ii.xtraplatform.util.xml.XMLDocument;
+import de.ii.xtraplatform.util.xml.XMLDocumentFactory;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.apache.http.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,15 +53,17 @@ public abstract class CSWOperation {
 
     protected abstract Element toXml(XMLDocument document, Element operationElement, CSW.VERSION version);
 
-    protected abstract Map<String, String> toKvp(Map<String, String> parameters, XMLNamespaceNormalizer nsStore, CSW.VERSION version);
+    protected abstract Map<String, String> toKvp(Map<String, String> parameters, XMLNamespaceNormalizer nsStore, CSW.VERSION version) throws ParserConfigurationException;
 
     // returns the XML POST Request as String
-    public String toXml(XMLNamespaceNormalizer nsStore, CSW.VERSION version) {
+    public String toXml(XMLNamespaceNormalizer nsStore, CSW.VERSION version) throws ParserConfigurationException {
         this.initialize(nsStore);
 
-        XMLDocument document = new XMLDocument(nsStore);
+        XMLDocumentFactory documentFactory = new XMLDocumentFactory(nsStore);
+        XMLDocument document = documentFactory.newDocument();
+        document.addNamespace(CSW.getNS(version), CSW.getPR(version));
 
-        Element operationElement = document.createElementNS(CSW.getNS(version), CSW.getPR(version), getOperationName(version));
+        Element operationElement = document.createElementNS(CSW.getNS(version), getOperationName(version));
 
 
         for (String uri : nsStore.xgetNamespaceUris()) {
@@ -88,7 +92,7 @@ public abstract class CSWOperation {
     }
 
     // Returns the KVP parameters for a GET request as Map<String, String>
-    public Map<String, String> toKvp(XMLNamespaceNormalizer nsStore, CSW.VERSION version) {
+    public Map<String, String> toKvp(XMLNamespaceNormalizer nsStore, CSW.VERSION version) throws ParserConfigurationException {
 
         Map<String, String> parameters = new HashMap<>();
 

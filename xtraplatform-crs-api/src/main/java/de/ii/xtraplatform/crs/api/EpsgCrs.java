@@ -20,7 +20,7 @@ public class EpsgCrs {
 
     private static final String SIMPLE_PREFIX = "EPSG:";
     private static final String URN_PREFIX = "urn:ogc:def:crs:EPSG::";
-    private static final String URI_PREFIX = "http://www.opengis.net/def/crs/epsg/0/";
+    private static final String URI_PREFIX = "http://www.opengis.net/def/crs/EPSG/0/";
     private int code;
     private boolean longitudeFirst = false;
 
@@ -104,7 +104,11 @@ public class EpsgCrs {
             try {
                 code = Integer.valueOf(prefixedCode.substring(prefixedCode.lastIndexOf("/") + 1));
             } catch (NumberFormatException e2) {
-                // ignore
+                try {
+                    code = Integer.valueOf(prefixedCode);
+                } catch (NumberFormatException e3) {
+                    // ignore
+                }
             }
         }
 

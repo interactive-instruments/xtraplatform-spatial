@@ -29,6 +29,6 @@ public abstract class WFSOperationGetCapabilities extends WFSOperation {
 
     @Override
     protected String getOperationName(WFS.VERSION version) {
-        return WFS.getWord(version, WFS.VOCABULARY.GET_CAPABILITES);
+        return WFS.getWord(version, getOperation());
     }
 }

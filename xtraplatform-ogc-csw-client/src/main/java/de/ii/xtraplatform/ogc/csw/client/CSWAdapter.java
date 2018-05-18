@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
@@ -122,17 +123,21 @@ public class CSWAdapter {
 
     public HttpEntity request(CSWOperation operation) {
 
-        // TODO: POST or GET
-        HttpResponse r;
-        if (httpMethod == CSW.METHOD.POST)
-            r = requestPOST(operation);
-        else
-            r = requestGET(operation);
-        operation.setResponseHeaders(r.getAllHeaders());
-        return r.getEntity();
+        try {
+            // TODO: POST or GET
+            HttpResponse r;
+            if (httpMethod == CSW.METHOD.POST)
+                r = requestPOST(operation);
+            else
+                r = requestGET(operation);
+            operation.setResponseHeaders(r.getAllHeaders());
+            return r.getEntity();
+        } catch (ParserConfigurationException e) {
+            return null;
+        }
     }
 
-    private HttpResponse requestPOST(CSWOperation operation) {
+    private HttpResponse requestPOST(CSWOperation operation) throws ParserConfigurationException {
 
         URI url = findUrl(operation.getOperation(), CSW.METHOD.POST);
 
@@ -205,6 +210,7 @@ public class CSWAdapter {
     }
 
     public String getRequestUrl(CSWOperation operation) {
+        try {
         URIBuilder uri = new URIBuilder(findUrl(operation.getOperation(), CSW.METHOD.GET));
 
         Map<String, String> params = operation.toKvp(nsStore, version);
@@ -213,14 +219,14 @@ public class CSWAdapter {
             uri.addParameter(param.getKey(), param.getValue());
         }
 
-        try {
+
             return uri.build().toString();
-        } catch (URISyntaxException e) {
+        } catch (URISyntaxException | ParserConfigurationException e) {
             return "";
         }
     }
 
-    private HttpResponse requestGET(CSWOperation operation) {
+    private HttpResponse requestGET(CSWOperation operation) throws ParserConfigurationException {
         URI url = findUrl(operation.getOperation(), CSW.METHOD.GET);
 
         HttpClient httpClient = url.getScheme().equals("https") ? this.untrustedSslHttpClient : this.httpClient;

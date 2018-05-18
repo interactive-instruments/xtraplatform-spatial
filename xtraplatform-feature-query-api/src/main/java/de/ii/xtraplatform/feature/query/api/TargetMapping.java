@@ -8,7 +8,7 @@
 /**
  * bla
  */
-package de.ii.ogc.wfs.proxy;
+package de.ii.xtraplatform.feature.query.api;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;

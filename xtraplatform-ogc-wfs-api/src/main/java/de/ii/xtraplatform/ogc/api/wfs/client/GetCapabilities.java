@@ -16,8 +16,11 @@ import java.util.Map;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.util.xml.XMLDocument;
+import de.ii.xtraplatform.util.xml.XMLDocumentFactory;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.w3c.dom.Element;
+
+import javax.xml.parsers.ParserConfigurationException;
 
 /**
  *
@@ -40,7 +43,7 @@ public class GetCapabilities extends WFSOperationGetCapabilities {
     }
 
     @Override
-    public String getPOSTXML(XMLNamespaceNormalizer nsStore, Versions vs) {
+    public String getPOSTXML(XMLNamespaceNormalizer nsStore, Versions vs) throws ParserConfigurationException {
         this.initialize(nsStore);
 
         // TODO
@@ -48,8 +51,10 @@ public class GetCapabilities extends WFSOperationGetCapabilities {
             vs.setWfsVersion(WFS.VERSION._1_1_0);
         }
 
-        XMLDocument doc = new XMLDocument(nsStore);
-        Element oper = doc.createElementNS(WFS.getNS(vs.getWfsVersion()), WFS.getPR(vs.getWfsVersion()), getOperationName(vs.getWfsVersion()));
+        XMLDocumentFactory documentFactory = new XMLDocumentFactory(nsStore);
+        XMLDocument doc = documentFactory.newDocument();
+        doc.addNamespace(WFS.getNS(vs.getWfsVersion()), WFS.getPR(vs.getWfsVersion()));
+        Element oper = doc.createElementNS(WFS.getNS(vs.getWfsVersion()), getOperationName(vs.getWfsVersion()));
         doc.appendChild(oper);
 
         if (m_version != null) {

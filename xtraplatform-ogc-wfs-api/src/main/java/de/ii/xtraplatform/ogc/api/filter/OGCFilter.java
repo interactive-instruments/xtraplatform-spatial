@@ -9,9 +9,11 @@ package de.ii.xtraplatform.ogc.api.filter;
 
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.util.xml.XMLDocument;
+import de.ii.xtraplatform.util.xml.XMLDocumentFactory;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.w3c.dom.Element;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +40,9 @@ public class OGCFilter {
             return;
         }
 
-        Element ex = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.FILTER));
+        doc.addNamespace(FES.getNS(version), FES.getPR(version));
+
+        Element ex = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.FILTER));
 
         for (OGCFilterExpression expr : expressions) {
             expr.toXML(version, ex, doc);
@@ -50,7 +54,7 @@ public class OGCFilter {
 
     }
 
-    public void toKVP(FES.VERSION version, Map<String, String> params, XMLNamespaceNormalizer nsStore) {
+    public void toKVP(FES.VERSION version, Map<String, String> params, XMLNamespaceNormalizer nsStore) throws ParserConfigurationException {
         if (expressions.isEmpty()) {
             return;
         }
@@ -80,9 +84,10 @@ public class OGCFilter {
         }
 
         if (expressions.get(0) != null) {
-
-            XMLDocument doc = new XMLDocument(nsStore);
-            Element e = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.FILTER));
+            XMLDocumentFactory documentFactory = new XMLDocumentFactory(nsStore);
+            XMLDocument doc = documentFactory.newDocument();
+            doc.addNamespace(FES.getNS(version), FES.getPR(version));
+            Element e = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.FILTER));
             doc.appendChild(e);
 
             expressions.get(0).toXML(version, e, doc);

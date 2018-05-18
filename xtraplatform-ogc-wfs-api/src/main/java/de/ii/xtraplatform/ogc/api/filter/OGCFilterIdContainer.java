@@ -36,7 +36,8 @@ public class OGCFilterIdContainer extends OGCFilterExpression {
 
         } else if (operands.size() > 1) {
             if (version.compareTo(FES.VERSION._1_1_0) > 0) {
-                Element ex = doc.createElementNS(FES.getNS(version),FES.getPR(version), FES.getWord(version, FES.VOCABULARY.OR));
+                doc.addNamespace(FES.getNS(version),FES.getPR(version));
+                Element ex = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.OR));
                 e.appendChild(ex);
 
                 for (OGCFilterExpression expr : operands) {

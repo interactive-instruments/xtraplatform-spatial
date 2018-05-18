@@ -31,8 +31,8 @@ public class OGCFilterNot extends OGCFilterExpression {
 
     @Override
     public void toXML(FES.VERSION version, Element e, XMLDocument doc) {
-
-        Element ex = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.NOT));
+        doc.addNamespace(FES.getNS(version), FES.getPR(version));
+        Element ex = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.NOT));
         e.appendChild(ex);
 
         for (OGCFilterExpression expr : operands) {

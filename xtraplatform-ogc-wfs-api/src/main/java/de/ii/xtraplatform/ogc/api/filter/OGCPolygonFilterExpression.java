@@ -36,10 +36,11 @@ public class OGCPolygonFilterExpression extends OGCFilterExpression {
     @Override
     public void toXML(FES.VERSION version, Element e, XMLDocument doc) {
 
-        Element intersects = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.INTERSECTS));
+        doc.addNamespace(FES.getNS(version), FES.getPR(version));
+        Element intersects = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.INTERSECTS));
         e.appendChild(intersects);
 
-        Element valRef = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.VALUE_REFERENCE));
+        Element valRef = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.VALUE_REFERENCE));
         intersects.appendChild(valRef);
         valRef.setTextContent(geometryPath);
 
@@ -47,7 +48,8 @@ public class OGCPolygonFilterExpression extends OGCFilterExpression {
         //intersects.appendChild(literal);
 
         GML.VERSION gmlversion = version.getGmlVersion();
-        Element polygon = doc.createElementNS(GML.getNS(gmlversion), GML.getPR(gmlversion), GML.getWord(gmlversion, GML.VOCABULARY.POLYGON));
+        doc.addNamespace(GML.getNS(gmlversion), GML.getPR(gmlversion));
+        Element polygon = doc.createElementNS(GML.getNS(gmlversion), GML.getWord(gmlversion, GML.VOCABULARY.POLYGON));
         intersects.appendChild(polygon);
 
         if (version.isGreaterOrEqual(FES.VERSION._2_0_0)) {
@@ -62,10 +64,10 @@ public class OGCPolygonFilterExpression extends OGCFilterExpression {
         for (List<List<Double>> rings : poly.getRings()) {
 
             // TODO: interior ...
-            Element exterior = doc.createElementNS(GML.getNS(gmlversion), GML.getPR(gmlversion), GML.getWord(gmlversion, GML.VOCABULARY.EXTERIOR));
+            Element exterior = doc.createElementNS(GML.getNS(gmlversion), GML.getWord(gmlversion, GML.VOCABULARY.EXTERIOR));
             polygon.appendChild(exterior);
 
-            Element linearring = doc.createElementNS(GML.getNS(gmlversion), GML.getPR(gmlversion), GML.getWord(gmlversion, GML.VOCABULARY.LINEAR_RING));
+            Element linearring = doc.createElementNS(GML.getNS(gmlversion), GML.getWord(gmlversion, GML.VOCABULARY.LINEAR_RING));
             exterior.appendChild(linearring);
 
             StringBuilder c = new StringBuilder();
@@ -76,7 +78,7 @@ public class OGCPolygonFilterExpression extends OGCFilterExpression {
                 }
             }
 
-            Element poslist = doc.createElementNS(GML.getNS(gmlversion), GML.getPR(gmlversion), GML.getWord(gmlversion, GML.VOCABULARY.POS_LIST));
+            Element poslist = doc.createElementNS(GML.getNS(gmlversion), GML.getWord(gmlversion, GML.VOCABULARY.POS_LIST));
             linearring.appendChild(poslist);
             poslist.setTextContent(c.toString());
         }

@@ -23,8 +23,9 @@ public class OGCFilterValueReference extends OGCFilterLiteral {
     }
     
     @Override
-    public void toXML(VERSION version, Element e, XMLDocument doc) {       
-        Element ex = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.VALUE_REFERENCE));
+    public void toXML(VERSION version, Element e, XMLDocument doc) {
+        doc.addNamespace(FES.getNS(version), FES.getPR(version));
+        Element ex = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.VALUE_REFERENCE));
         ex.setTextContent(value);
         e.appendChild(ex);
     }

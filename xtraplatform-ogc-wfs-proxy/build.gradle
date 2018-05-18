@@ -4,4 +4,6 @@ version += '-SNAPSHOT'
 dependencies {
     compile project(':xtraplatform-crs-api')
     compile project(':xtraplatform-ogc-wfs-api')
+    compile project(':xtraplatform-feature-query-api')
+    compile project(':xtraplatform-feature-query-wfs')
 }

@@ -28,7 +28,8 @@ public class OGCFilterPropertyIsEqualTo extends OGCFilterExpression {
         
     @Override
     public void toXML(FES.VERSION version, Element e, XMLDocument doc) {
-        Element ex = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.EQUAL));     
+        doc.addNamespace(FES.getNS(version), FES.getPR(version));
+        Element ex = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.EQUAL));
         e.appendChild(ex);
         left.toXML(version, ex, doc);
         right.toXML(version, ex, doc);

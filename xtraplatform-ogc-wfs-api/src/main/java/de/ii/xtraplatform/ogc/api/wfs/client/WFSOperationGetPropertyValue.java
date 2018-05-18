@@ -25,6 +25,6 @@ import de.ii.xtraplatform.ogc.api.WFS;
 
     @Override
     protected String getOperationName(WFS.VERSION version) {
-        return WFS.getWord(version, WFS.VOCABULARY.GET_PROPERTY_VALUE);
+        return WFS.getWord(version, getOperation());
     }
 }

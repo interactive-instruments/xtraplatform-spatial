@@ -35,12 +35,14 @@ public class OGCBBOXFilterExpression extends OGCFilterExpression {
     @Override
     public void toXML(FES.VERSION version, Element e, XMLDocument doc) {
 
-        //LOGGER.debug("BBOX {} {}", FES.getNS(version), FES.getQN(version, FES.VOCABULARY.BBOX));      
-        
-        Element bbox = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.BBOX));
+        //LOGGER.debug("BBOX {} {}", FES.getNS(version), FES.getQN(version, FES.VOCABULARY.BBOX));
+        doc.addNamespace(FES.getNS(version), FES.getPR(version));
+        doc.addNamespace(GML.getNS(version.getGmlVersion()), GML.getPR(version));
+
+        Element bbox = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.BBOX));
         e.appendChild(bbox);
 
-        Element valRef = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.VALUE_REFERENCE));
+        Element valRef = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.VALUE_REFERENCE));
         bbox.appendChild(valRef);
         valRef.setTextContent(geometryPath);
 
@@ -53,7 +55,7 @@ public class OGCBBOXFilterExpression extends OGCFilterExpression {
             max = env.getYmax() + " " + env.getXmax();
         }
 
-        Element envelope = doc.createElementNS(GML.getNS(version.getGmlVersion()), GML.getPR(version), GML.getWord(version.getGmlVersion(), GML.VOCABULARY.ENVELOPE));
+        Element envelope = doc.createElementNS(GML.getNS(version.getGmlVersion()), GML.getWord(version.getGmlVersion(), GML.VOCABULARY.ENVELOPE));
 
         if (version.isGreaterOrEqual(FES.VERSION._2_0_0)) {
             envelope.setAttribute(GML.getWord(version.getGmlVersion(), GML.VOCABULARY.SRSNAME), env.getEpsgCrs().getAsUrn());
@@ -63,11 +65,11 @@ public class OGCBBOXFilterExpression extends OGCFilterExpression {
 
         bbox.appendChild(envelope);
 
-        Element lower = doc.createElementNS(GML.getNS(version.getGmlVersion()), GML.getPR(version), GML.getWord(version.getGmlVersion(), GML.VOCABULARY.LOWER_CORNER));
+        Element lower = doc.createElementNS(GML.getNS(version.getGmlVersion()), GML.getWord(version.getGmlVersion(), GML.VOCABULARY.LOWER_CORNER));
         lower.setTextContent(min);
         envelope.appendChild(lower);
 
-        Element upper = doc.createElementNS(GML.getNS(version.getGmlVersion()), GML.getPR(version), GML.getWord(version.getGmlVersion(), GML.VOCABULARY.UPPER_CORNER));
+        Element upper = doc.createElementNS(GML.getNS(version.getGmlVersion()), GML.getWord(version.getGmlVersion(), GML.VOCABULARY.UPPER_CORNER));
         upper.setTextContent(max);
         envelope.appendChild(upper);
     }

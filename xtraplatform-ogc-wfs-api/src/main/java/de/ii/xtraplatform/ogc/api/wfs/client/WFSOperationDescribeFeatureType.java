@@ -29,7 +29,7 @@ public abstract class WFSOperationDescribeFeatureType  extends WFSOperation {
 
     @Override
     protected String getOperationName(WFS.VERSION version) {
-        return WFS.getWord(version, WFS.VOCABULARY.DESCRIBE_FEATURE_TYPE);
+        return WFS.getWord(version, getOperation());
     }
     
 }

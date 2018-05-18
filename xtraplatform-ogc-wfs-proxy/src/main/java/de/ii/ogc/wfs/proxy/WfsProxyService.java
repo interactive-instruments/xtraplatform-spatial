@@ -12,6 +12,8 @@ package de.ii.ogc.wfs.proxy;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.ii.xsf.core.api.Service;
+import de.ii.xtraplatform.feature.query.api.FeatureProvider;
+import de.ii.xtraplatform.feature.query.api.WfsProxyFeatureType;
 import de.ii.xtraplatform.ogc.api.wfs.client.WFSAdapter;
 
 import java.util.Map;
@@ -29,4 +31,6 @@ public interface WfsProxyService extends Service {
 
     @JsonIgnore
     Optional<WfsProxyFeatureType> getFeatureTypeByName(String name);
+
+    FeatureProvider getFeatureProvider();
 }

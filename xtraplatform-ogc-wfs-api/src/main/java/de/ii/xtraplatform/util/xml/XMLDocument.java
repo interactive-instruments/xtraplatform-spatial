@@ -12,11 +12,11 @@ package de.ii.xtraplatform.util.xml;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
@@ -32,42 +32,65 @@ import java.io.Writer;
 public class XMLDocument {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(XMLDocument.class);
-    private Document doc;
-    private XMLNamespaceNormalizer nsn;
+    final Document doc;
+    final XMLNamespaceNormalizer nsn;
 
-    public XMLDocument(XMLNamespaceNormalizer nsn) {
+    XMLDocument(XMLNamespaceNormalizer nsn, Document doc) {
         this.nsn = nsn;
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        try {
-            factory.setNamespaceAware(true);
-            factory.setValidating(true);
-
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            doc = builder.newDocument();
-
-        } catch (Exception ex) {
-            LOGGER.error("Error creating XMLDocument", ex);
-        }
+        this.doc = doc;
     }
 
-    public void appendChild(Element element) {
+    public void appendChild(Node element) {
         this.doc.appendChild(element);
     }
 
-    public Element createElementNS(String namespace, String prefix, String localName) {
+    public Node adoptDocument(XMLDocument document) {
+        return adoptDocument(document.doc);
+    }
 
+    public Node adoptDocument(Node document) {
+        Node node = this.doc.adoptNode(document);
+        int num = node.getAttributes().getLength()-1;
+        for (int i = num; i >= 0; i--) {
+            Attr attr = (Attr) node.getAttributes().item(i);
+            if (attr.getName().startsWith("xmlns:")) {
+                this.addNamespace(attr.getValue(), attr.getLocalName());
+                node.getAttributes().removeNamedItem(attr.getName());
+            }
+        }
+
+        return node;
+    }
+
+    public void addNamespace(String namespace, String prefix) {
         this.nsn.addNamespace(prefix, namespace);
-               
+    }
+
+    public Element createElementNS(String namespace, String localName) {
+
         return this.doc.createElementNS(namespace, this.nsn.getQualifiedName(namespace, localName));
     }
 
-    // returns the String representation of the XML Document
+    public void done() {
+        for (String uri : nsn.xgetNamespaceUris()) {
+            this.doc.getDocumentElement().setAttribute("xmlns:" + uri + "", nsn.getNamespaceURI(uri));
+        }
+    }
+
     public String toString(boolean pretty) {
+        return toString(pretty, false);
+    }
+
+    // returns the String representation of the XML Document
+    public String toString(boolean pretty, boolean omitXmlDeclaration) {
         try {
             Transformer tf = TransformerFactory.newInstance().newTransformer();
             tf.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
             if (pretty) {
                 tf.setOutputProperty(OutputKeys.INDENT, "yes");
+            }
+            if (omitXmlDeclaration) {
+                tf.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
             }
             Writer out = new StringWriter();
             tf.transform(new DOMSource(doc), new StreamResult(out));

@@ -49,8 +49,9 @@ public class OGCFilterPropertyIsLike extends OGCFilterExpression {
         
     @Override
     public void toXML(VERSION version, Element e, XMLDocument doc) {
-    
-        Element ex = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.LIKE));
+
+        doc.addNamespace(FES.getNS(version), FES.getPR(version));
+        Element ex = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.LIKE));
         
         ex.setAttribute( FES.getWord(version, FES.VOCABULARY.WILD_CARD) , wildCard);
         ex.setAttribute( FES.getWord(version, FES.VOCABULARY.SINGLE_CHAR) , singleChar);

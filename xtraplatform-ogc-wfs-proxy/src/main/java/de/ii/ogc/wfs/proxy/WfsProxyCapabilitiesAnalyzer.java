@@ -11,6 +11,7 @@
 package de.ii.ogc.wfs.proxy;
 
 import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.feature.query.api.WfsProxyFeatureType;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.OWS;
 import de.ii.xtraplatform.ogc.api.WFS;

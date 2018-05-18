@@ -17,6 +17,7 @@ import de.ii.xtraplatform.util.xml.XMLDocument;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.w3c.dom.Element;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +49,8 @@ public class CSWQuery {
     }
 
     Element toXML(XMLDocument doc, CSW.VERSION version) {
-        Element query = doc.createElementNS(CSW.getNS(version), CSW.getPR(version), CSW.getWord(version, CSW.VOCABULARY.QUERY));
-        Element constraint = doc.createElementNS(CSW.getNS(version), CSW.getPR(version), CSW.getWord(version, CSW.VOCABULARY.CONSTRAINT));
+        Element query = doc.createElementNS(CSW.getNS(version), CSW.getWord(version, CSW.VOCABULARY.QUERY));
+        Element constraint = doc.createElementNS(CSW.getNS(version), CSW.getWord(version, CSW.VOCABULARY.CONSTRAINT));
         constraint.setAttribute(CSW.getWord(version, CSW.VOCABULARY.VERSION), version.getFilterVersion().toString());
         query.appendChild(constraint);
 
@@ -63,7 +64,7 @@ public class CSWQuery {
          return query;
     }
 
-    Map<String, String> toKVP(Map<String, String> parameters, XMLNamespaceNormalizer nsStore, CSW.VERSION version){
+    Map<String, String> toKVP(Map<String, String> parameters, XMLNamespaceNormalizer nsStore, CSW.VERSION version) throws ParserConfigurationException {
         
         if (!typeNames.isEmpty()) {
             parameters.put(CSW.getWord(version, CSW.VOCABULARY.TYPENAMES).toUpperCase(), getTypeNames());

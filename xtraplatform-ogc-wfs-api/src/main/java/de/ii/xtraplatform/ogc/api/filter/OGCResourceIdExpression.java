@@ -11,6 +11,7 @@
 package de.ii.xtraplatform.ogc.api.filter;
 
 import de.ii.xtraplatform.ogc.api.FES;
+import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.util.xml.XMLDocument;
 
 import java.util.Map;
@@ -30,7 +31,8 @@ public class OGCResourceIdExpression extends OGCFilterExpression {
 
     @Override
     public void toXML(FES.VERSION version, Element e, XMLDocument doc) {
-        Element ex = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.RESOURCEID));
+        doc.addNamespace(FES.getNS(version), FES.getPR(version));
+        Element ex = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.RESOURCEID));
         if (version.isEqual(FES.VERSION._1_1_0)) {
             ex.setAttribute("gml:" + FES.getWord(version, FES.VOCABULARY.RESOURCEID_ATTR), id);
         } else {

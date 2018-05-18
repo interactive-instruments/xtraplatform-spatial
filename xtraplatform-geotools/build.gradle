@@ -1,0 +1,37 @@
+version = '1.1.0'
+version += '-SNAPSHOT'
+
+dependencies {
+    embedded group: 'org.geotools', name: 'gt-cql', version: '19.0'
+    embedded(group: 'org.geotools', name: 'gt-xml', version: '19.0') {
+        exclude module: 'xercesImpl'
+    }
+}
+
+// TODO: run osgi plugin with logging to find out why these imports are not found
+jar {
+    manifest {
+        instruction 'Embed-Dependency',
+                'gt-cql',
+                'gt-xml'
+
+        instruction 'Embed-Transitive', 'true'
+        instruction 'Embed-Export', 'true'
+
+        instructionFirst 'Import-Package', 'javax.xml.transform'
+        instructionFirst 'Import-Package', 'javax.sql'
+        instructionFirst 'Import-Package', 'org.xml.sax'
+        instructionFirst 'Import-Package', 'javax.naming'
+        instructionFirst 'Import-Package', 'javax.swing.event'
+        instructionFirst 'Import-Package', 'javax.xml.namespace'
+        instructionFirst 'Import-Package', 'org.xml.sax.helpers'
+        instructionFirst 'Import-Package', 'org.w3c.dom'
+        instructionFirst 'Import-Package', 'org.xml.sax.ext'
+        instructionFirst 'Import-Package', 'javax.xml.parsers'
+        instructionFirst 'Import-Package', 'org.w3c.dom.events'
+        instructionFirst 'Import-Package', 'javax.xml.transform.sax'
+        instructionFirst 'Import-Package', 'javax.xml.transform.stream'
+        instructionFirst 'Import-Package', 'javax.xml.datatype'
+        instructionFirst 'Import-Package', 'javax.xml.transform.dom'
+    }
+}

@@ -25,8 +25,9 @@ public class OGCFilterLiteral extends OGCFilterExpression {
     }
     
     @Override
-    public void toXML(VERSION version, Element e, XMLDocument doc) {       
-        Element ex = doc.createElementNS(FES.getNS(version), FES.getPR(version), FES.getWord(version, FES.VOCABULARY.LITERAL));
+    public void toXML(VERSION version, Element e, XMLDocument doc) {
+        doc.addNamespace(FES.getNS(version), FES.getPR(version));
+        Element ex = doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.LITERAL));
         ex.setTextContent(value);
         e.appendChild(ex);
     }

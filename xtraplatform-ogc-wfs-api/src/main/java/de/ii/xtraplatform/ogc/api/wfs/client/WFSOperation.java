@@ -14,12 +14,14 @@ import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.util.xml.XMLDocument;
+import de.ii.xtraplatform.util.xml.XMLDocumentFactory;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.apache.http.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -87,15 +89,16 @@ public abstract class WFSOperation {
     }
 
     // returns the XML POST Request as String
-    public String getPOSTXML(XMLNamespaceNormalizer nsStore, Versions vs) {
+    public String getPOSTXML(XMLNamespaceNormalizer nsStore, Versions vs) throws ParserConfigurationException {
         if (!inialized) {
             this.initialize(nsStore);
             this.inialized = true;
         }
-                
-        XMLDocument doc = new XMLDocument(nsStore);
+        XMLDocumentFactory documentFactory = new XMLDocumentFactory(nsStore);
+        XMLDocument doc = documentFactory.newDocument();
+        doc.addNamespace(WFS.getNS(vs.getWfsVersion()), WFS.getPR(vs.getWfsVersion()));
         
-        Element oper = doc.createElementNS(WFS.getNS(vs.getWfsVersion()), WFS.getPR(vs.getWfsVersion()), getOperationName(vs.getWfsVersion()));
+        Element oper = doc.createElementNS(WFS.getNS(vs.getWfsVersion()), getOperationName(vs.getWfsVersion()));
         doc.appendChild(oper);
 
         if (this.count != null) {
@@ -111,7 +114,7 @@ public abstract class WFSOperation {
             oper.setAttribute(WFS.getWord(vs.getWfsVersion(), WFS.VOCABULARY.VERSION), vs.getWfsVersion().toString());
         }
 
-        if (getOperationName(vs.getWfsVersion()).equals(GML.getWord(vs.getWfsVersion(), WFS.VOCABULARY.GET_PROPERTY_VALUE))) {
+        if (getOperationName(vs.getWfsVersion()).equals(GML.getWord(vs.getWfsVersion(), WFS.OPERATION.GET_PROPERTY_VALUE))) {
             if (valueReference != null) {
                 oper.setAttribute(WFS.getWord(vs.getWfsVersion(), WFS.VOCABULARY.VALUE_REFERENCE), valueReference);
             } else {
@@ -147,7 +150,7 @@ public abstract class WFSOperation {
     }
 
     // Returns the GET parameters for a GET request as Map<String, String>
-    public Map<String, String> getGETParameters(XMLNamespaceNormalizer nsStore, Versions vs) {
+    public Map<String, String> getGETParameters(XMLNamespaceNormalizer nsStore, Versions vs) throws ParserConfigurationException {
         if (!inialized) {
             this.initialize(nsStore);
             this.inialized = true;
@@ -170,7 +173,7 @@ public abstract class WFSOperation {
             params.put(WFS.getWord(vs.getWfsVersion(), WFS.VOCABULARY.STARTINDEX).toUpperCase(), String.valueOf(startIndex));
         }
 
-        if (getOperationName(vs.getWfsVersion()).equals(GML.getWord(vs.getWfsVersion(), WFS.VOCABULARY.GET_PROPERTY_VALUE))) {
+        if (getOperationName(vs.getWfsVersion()).equals(GML.getWord(vs.getWfsVersion(), WFS.OPERATION.GET_PROPERTY_VALUE))) {
             if (valueReference != null) {
                 params.put(WFS.getWord(vs.getWfsVersion(), WFS.VOCABULARY.VALUE_REFERENCE).toUpperCase(), valueReference);
             } else {
