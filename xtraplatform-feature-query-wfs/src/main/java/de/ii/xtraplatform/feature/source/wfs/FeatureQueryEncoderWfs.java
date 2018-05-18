@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.helpers.NamespaceSupport;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static de.ii.xtraplatform.util.functional.LambdaWithException.mayThrow;
@@ -124,6 +125,10 @@ public class FeatureQueryEncoderWfs {
     }
 
     private Filter encodeFilter(final String filter, final WfsProxyFeatureType featureType) throws CQLException {
+        if (Objects.isNull(filter) || Objects.isNull(featureType)) {
+            return null;
+        }
+
         return (Filter) ECQL.toFilter(filter)
                             .accept(new ResolvePropertyNamesFilterVisitor(featureType), null);
     }

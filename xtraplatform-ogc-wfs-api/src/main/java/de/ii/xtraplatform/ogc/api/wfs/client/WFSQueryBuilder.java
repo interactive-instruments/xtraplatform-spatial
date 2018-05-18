@@ -26,12 +26,16 @@ public class WFSQueryBuilder {
     }
 
     public WFSQueryBuilder typeName(String typeName) {
-        this.typeNames.add(typeName);
+        if (!Objects.isNull(typeName)) {
+            this.typeNames.add(typeName);
+        }
         return this;
     }
 
     public WFSQueryBuilder filter(Filter filter) {
-        this.filter.add(filter);
+        if (!Objects.isNull(filter)) {
+            this.filter.add(filter);
+        }
         return this;
     }
 
