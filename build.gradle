@@ -9,7 +9,7 @@ buildscript {
     dependencies {
         classpath group: 'de.interactive_instruments', name: 'gradle-plugin-osgi-ipojo', version: '1.12.1.30'
         classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0'
     } 
 }
 
@@ -42,12 +42,8 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'osgi-ipojo'
     apply plugin: 'maven-publish'
-    apply plugin: 'com.jfrog.bintray'
+    //apply plugin: 'com.jfrog.bintray'
     apply plugin: 'license'
-
-    version = '1.1.1'
-
-    version += '-SNAPSHOT'
 
     group = 'de.interactive_instruments'
 
@@ -224,27 +220,28 @@ subprojects {
             }
         }
     }
-
-    bintray {
-        user = project.bintrayUser
-        key = project.bintrayApiKey
-        publications = ['maven']
-        publish = true
-        pkg {
-            repo = 'maven'
-            name = project.name
-            userOrg = 'iide'
-            licenses = ['MPL-2.0']
-            websiteUrl = 'https://github.com/interactive-instruments/XtraPlatform-SDI-Tools'
-            issueTrackerUrl = 'https://github.com/interactive-instruments/XtraPlatform-SDI-Tools/issues'
-            vcsUrl = 'https://github.com/interactive-instruments/XtraPlatform-SDI-Tools.git'
-            githubRepo = 'interactive-instruments/XtraPlatform-SDI-Tools'
-            githubReleaseNotesFile = 'README.md'
-            version {
-                name = project.version
+    /*afterEvaluate { project ->
+        bintray {
+            user = project.bintrayUser
+            key = project.bintrayApiKey
+            publications = ['maven']
+            publish = true
+            pkg {
+                repo = 'maven'
+                name = project.name
+                userOrg = 'iide'
+                licenses = ['MPL-2.0']
+                websiteUrl = 'https://github.com/interactive-instruments/XtraPlatform-SDI-Tools'
+                issueTrackerUrl = 'https://github.com/interactive-instruments/XtraPlatform-SDI-Tools/issues'
+                vcsUrl = 'https://github.com/interactive-instruments/XtraPlatform-SDI-Tools.git'
+                githubRepo = 'interactive-instruments/XtraPlatform-SDI-Tools'
+                githubReleaseNotesFile = 'README.md'
+                version {
+                    name = project.version
+                }
             }
         }
-    }
+    }*/
 }
 
 publishing {
