@@ -5,9 +5,10 @@ buildscript {
         maven {
             url "https://plugins.gradle.org/m2/"
         }
+        mavenLocal()
     } 
     dependencies {
-        classpath group: 'de.interactive_instruments', name: 'gradle-plugin-osgi-ipojo', version: '1.12.1.30'
+        classpath group: 'de.interactive_instruments', name: 'gradle-plugin-osgi-ipojo', version: '1.12.1.32'
         classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0'
     } 
@@ -16,8 +17,8 @@ buildscript {
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
 
-version = '2.0.0'
-version += '-SNAPSHOT'
+version = '1.9.0'
+//version += '-SNAPSHOT'
 
 group = 'de.interactive_instruments'
 
@@ -188,13 +189,13 @@ subprojects {
 
     dependencies {
         // TODO: get from root project, at least the versions
-        provided group: 'de.interactive_instruments', name: 'xtraplatform-bundles-runtime', version: '1.1.1'
+        provided group: 'de.interactive_instruments', name: 'xtraplatform-bundles-runtime', version: '1.1.3'
         // TODO: shouldn't we only be allowed to use api bundles here?
-        provided group: 'de.interactive_instruments', name: 'xtraplatform-bundles-core', version: '1.1.3'
+        provided group: 'de.interactive_instruments', name: 'xtraplatform-bundles-core', version: '1.1.6'
 
         // TODO: this is in bundles-runtime, but with transitive=false
         // TODO: we need the transitive dependencies in provided
-        provided group: 'de.interactive_instruments', name: 'xtraplatform-dropwizard', version: '1.1.1'
+        provided group: 'de.interactive_instruments', name: 'xtraplatform-dropwizard', version: '1.1.3'
     }
     
     jar {
@@ -215,6 +216,24 @@ subprojects {
 
                 artifact sourceJar {
                     classifier "sources"
+                }
+
+                pom.withXml{
+                    asNode().remove(asNode().get('dependencies'))
+                    def dependenciesNode = asNode().appendNode('dependencies')
+
+                    configurations.provided.allDependencies.each {
+                        def dependencyNode = dependenciesNode.appendNode('dependency')
+                        dependencyNode.appendNode('groupId', it.group)
+                        dependencyNode.appendNode('artifactId', it.name)
+                        dependencyNode.appendNode('version', it.version)
+                        dependencyNode.appendNode('scope', 'runtime')
+
+                        def exclusionsNode = dependencyNode.appendNode('exclusions')
+                        def exclusionNode = exclusionsNode.appendNode('exclusion')
+                        exclusionNode.appendNode('groupId', '*')
+                        exclusionNode.appendNode('artifactId', '*')
+                    }
                 }
             }
         }

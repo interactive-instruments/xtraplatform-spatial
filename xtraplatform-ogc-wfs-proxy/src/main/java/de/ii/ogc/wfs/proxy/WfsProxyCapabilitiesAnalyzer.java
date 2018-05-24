@@ -11,7 +11,8 @@
 package de.ii.ogc.wfs.proxy;
 
 import de.ii.xtraplatform.crs.api.EpsgCrs;
-import de.ii.xtraplatform.feature.query.api.WfsProxyFeatureType;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeConfiguration;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTransformerService;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.OWS;
 import de.ii.xtraplatform.ogc.api.WFS;
@@ -33,11 +34,11 @@ import java.util.Map;
 public class WfsProxyCapabilitiesAnalyzer extends AbstractWfsCapabilitiesAnalyzer implements WFSCapabilitiesAnalyzer  {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WfsProxyCapabilitiesAnalyzer.class);
-    private WfsProxyService wfsProxy;
+    private FeatureTransformerService wfsProxy;
     private Map<WFS.OPERATION, GML.VERSION> versions;
     private  String url;
 
-    public WfsProxyCapabilitiesAnalyzer(WfsProxyService wfsProxy, String url) {
+    public WfsProxyCapabilitiesAnalyzer(FeatureTransformerService wfsProxy, String url) {
         this.wfsProxy = wfsProxy;
         this.versions = new HashMap<>();
         this.url = url;
@@ -81,7 +82,7 @@ public class WfsProxyCapabilitiesAnalyzer extends AbstractWfsCapabilitiesAnalyze
 
             String fullName = uri + ":" + localName;
 
-            wfsProxy.getFeatureTypes().put(fullName, new WfsProxyFeatureType(localName, uri, displayName));
+            wfsProxy.getFeatureTypes().put(fullName, new FeatureTypeConfiguration(localName, uri, displayName));
         }
     }
 

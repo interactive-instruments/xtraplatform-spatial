@@ -3,13 +3,11 @@ version = '1.1.1'
 
 dependencies {
     compile project(':xtraplatform-feature-query-api')
-    compile project(':xtraplatform-feature-transformer-api')
     compile project(':xtraplatform-ogc-wfs-api')
-    compile project(':xtraplatform-geotools')
+    //compile project(':xtraplatform-ogc-wfs-proxy')
 
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.0-SNAPSHOT'
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka-http',   version: '1.1.1-SNAPSHOT'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka-http',   version: '1.1.0-SNAPSHOT'
 
-    testCompile project(':xtraplatform-ogc-wfs-api')
     testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.9'
 }

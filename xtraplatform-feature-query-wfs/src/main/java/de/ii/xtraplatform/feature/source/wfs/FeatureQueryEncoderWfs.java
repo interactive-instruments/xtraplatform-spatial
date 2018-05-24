@@ -10,7 +10,7 @@ package de.ii.xtraplatform.feature.source.wfs;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.query.api.FeatureQuery;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
-import de.ii.xtraplatform.feature.query.api.WfsProxyFeatureType;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeConfiguration;
 import de.ii.xtraplatform.ogc.api.wfs.client.GetFeature;
 import de.ii.xtraplatform.ogc.api.wfs.client.GetFeatureBuilder;
 import de.ii.xtraplatform.ogc.api.wfs.client.WFSQuery2;
@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.helpers.NamespaceSupport;
 
+import javax.xml.namespace.QName;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -61,10 +62,10 @@ public class FeatureQueryEncoderWfs {
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderWfs.class);
 
     // TODO: resolve property and type names in query
-    private final Map<String, WfsProxyFeatureType> featureTypes;
+    private final Map<String, FeatureTypeConfiguration> featureTypes;
     private final XMLNamespaceNormalizer namespaceNormalizer;
 
-    public FeatureQueryEncoderWfs(Map<String, WfsProxyFeatureType> featureTypes, XMLNamespaceNormalizer namespaceNormalizer) {
+    public FeatureQueryEncoderWfs(Map<String, FeatureTypeConfiguration> featureTypes, XMLNamespaceNormalizer namespaceNormalizer) {
         this.featureTypes = featureTypes;
         this.namespaceNormalizer = namespaceNormalizer;
     }
@@ -84,6 +85,14 @@ public class FeatureQueryEncoderWfs {
         return getFeature.asKvp(documentFactory, versions);
     }*/
 
+    public Optional<QName> getFeatureTypeName(final FeatureQuery query) {
+        return featureTypes.values()
+                           .stream()
+                           .filter(ft -> ft.getName().equals(query.getType()))
+                           .findFirst()
+                           .map(ft -> new QName(ft.getNamespace(), ft.getName(), namespaceNormalizer.getNamespacePrefix(ft.getNamespace())));
+    }
+
     public Optional<GetFeature> encode(final FeatureQuery query) {
         return encode(query, false);
     }
@@ -100,7 +109,7 @@ public class FeatureQueryEncoderWfs {
         }
     }
 
-    private GetFeature encode(FeatureQuery query, WfsProxyFeatureType featureType, final boolean hitsOnly) throws CQLException {
+    private GetFeature encode(FeatureQuery query, FeatureTypeConfiguration featureType, final boolean hitsOnly) throws CQLException {
         final String featureTypeName = namespaceNormalizer.getQualifiedName(featureType.getNamespace(), featureType.getName());
 
         final WFSQuery2 wfsQuery = new WFSQueryBuilder().typeName(featureTypeName)
@@ -124,7 +133,7 @@ public class FeatureQueryEncoderWfs {
         return getFeature.build();
     }
 
-    private Filter encodeFilter(final String filter, final WfsProxyFeatureType featureType) throws CQLException {
+    private Filter encodeFilter(final String filter, final FeatureTypeConfiguration featureType) throws CQLException {
         if (Objects.isNull(filter) || Objects.isNull(featureType)) {
             return null;
         }
@@ -136,9 +145,9 @@ public class FeatureQueryEncoderWfs {
     private class ResolvePropertyNamesFilterVisitor extends DuplicatingFilterVisitor {
         final FilterFactory2 filterFactory = new FilterFactoryImpl();
         final NamespaceSupport namespaceSupport;
-        final WfsProxyFeatureType featureType;
+        final FeatureTypeConfiguration featureType;
 
-        private ResolvePropertyNamesFilterVisitor(final WfsProxyFeatureType featureType) {
+        private ResolvePropertyNamesFilterVisitor(final FeatureTypeConfiguration featureType) {
             namespaceSupport = new NamespaceSupport();
             namespaceNormalizer.getNamespaces()
                                .forEach(namespaceSupport::declarePrefix);

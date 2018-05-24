@@ -12,8 +12,8 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.query.api.FeatureQuery;
 import de.ii.xtraplatform.feature.query.api.FeatureQueryBuilder;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
-import de.ii.xtraplatform.feature.query.api.WfsProxyFeatureType;
-import de.ii.xtraplatform.feature.query.api.WfsProxyFeatureTypeMapping;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeConfiguration;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
@@ -51,9 +51,9 @@ public class FeatureQueryEncoderWfsTest {
     private static final Versions VERSIONS = new Versions(WFS.VERSION._2_0_0, GML.VERSION._3_2_1);
     private static final XMLNamespaceNormalizer NAMESPACES = new XMLNamespaceNormalizer(ImmutableMap.of("au", "urn:inspire:au"));
 
-    private static final Map<String, WfsProxyFeatureType> FEATURETYPES = ImmutableMap.of("urn:inspire:au:AdministrativeUnit",
-            new WfsProxyFeatureType("AdministrativeUnit", "urn:inspire:au", "au:AdministrativeUnit",
-                    new WfsProxyFeatureTypeMapping(ImmutableMap.of("urn:inspire:au:nested/urn:inspire:au:name", ImmutableMap.of(TargetMapping.BASE_TYPE, ImmutableList.of(new MockMapping("name"))), "urn:inspire:au:pos", ImmutableMap.of(TargetMapping.BASE_TYPE, ImmutableList.of(new MockMapping("pos")))))));
+    private static final Map<String, FeatureTypeConfiguration> FEATURETYPES = ImmutableMap.of("urn:inspire:au:AdministrativeUnit",
+            new FeatureTypeConfiguration("AdministrativeUnit", "urn:inspire:au", "au:AdministrativeUnit",
+                    new FeatureTypeMapping(ImmutableMap.of("urn:inspire:au:nested/urn:inspire:au:name", ImmutableMap.of(TargetMapping.BASE_TYPE, ImmutableList.of(new MockMapping("name"))), "urn:inspire:au:pos", ImmutableMap.of(TargetMapping.BASE_TYPE, ImmutableList.of(new MockMapping("pos")))))));
 
     private static final FeatureQuery QUERY = new FeatureQueryBuilder().type("AdministrativeUnit")
                                                                        .limit(10)
@@ -184,6 +184,11 @@ public class FeatureQueryEncoderWfsTest {
         @Override
         public TargetMapping mergeCopyWithBase(TargetMapping targetMapping) {
             return null;
+        }
+
+        @Override
+        public boolean isSpatial() {
+            return false;
         }
     }
 }

@@ -5,9 +5,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-/**
- * bla
- */
 package de.ii.xtraplatform.feature.query.api;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -17,19 +14,9 @@ import de.ii.xtraplatform.jackson.dynamic.DynamicTypeIdResolver;
 /**
  * @author zahnen
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "mappingType")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "providerType")
 @JsonTypeIdResolver(DynamicTypeIdResolver.class)
-public interface TargetMapping<T> {
-    final String BASE_TYPE = "general";
 
-    String getName();
+public interface FeatureProviderConfiguration {
 
-    T getType();
-
-    Boolean isEnabled();
-
-    TargetMapping mergeCopyWithBase(TargetMapping targetMapping);
-
-    //TODO
-    boolean isSpatial();
 }

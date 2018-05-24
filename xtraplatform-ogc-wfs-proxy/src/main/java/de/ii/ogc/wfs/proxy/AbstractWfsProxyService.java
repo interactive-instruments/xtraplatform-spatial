@@ -20,8 +20,12 @@ import de.ii.xsf.core.api.Resource;
 import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.query.api.FeatureProvider;
-import de.ii.xtraplatform.feature.query.api.WfsProxyFeatureType;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeConfiguration;
 import de.ii.xtraplatform.feature.source.wfs.FeatureProviderWfs;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTransformerServiceProperties;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMappingStatus;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTransformerService;
+import de.ii.xtraplatform.feature.transformer.api.TransformingFeatureProvider;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ParseError;
 import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
@@ -57,14 +61,14 @@ import java.util.concurrent.ExecutionException;
 /**
  * @author zahnen
  */
-public abstract class AbstractWfsProxyService extends AbstractService implements Resource, WfsProxyService {
+public abstract class AbstractWfsProxyService extends AbstractService implements Resource, FeatureTransformerService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractWfsProxyService.class);
 
     private WFSAdapter wfsAdapter;
     private WfsProxyCrsTransformations crsTransformations;
-    private WFSProxyServiceProperties serviceProperties;
-    private final Map<String, WfsProxyFeatureType> featureTypes;
+    private FeatureTransformerServiceProperties serviceProperties;
+    private final Map<String, FeatureTypeConfiguration> featureTypes;
     protected final List<GMLSchemaAnalyzer> schemaAnalyzers;
     protected  GMLAnalyzer mappingFromDataAnalyzers;
 
@@ -78,13 +82,13 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
     public ObjectMapper jsonMapper;
     protected JsonFactory jsonFactory;
 
-    private FeatureProvider featureProvider;
+    private TransformingFeatureProvider featureProvider;
 
     public AbstractWfsProxyService() {
         super();
         this.featureTypes = new HashMap<>();
         this.schemaAnalyzers = new ArrayList<>();
-        this.serviceProperties = new WFSProxyServiceProperties();
+        this.serviceProperties = new FeatureTransformerServiceProperties();
     }
 
     public AbstractWfsProxyService(String id, String type, File configDirectory, WFSAdapter wfsAdapter) {
@@ -92,12 +96,12 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
         this.wfsAdapter = wfsAdapter;
         this.featureTypes = new HashMap<>();
         this.schemaAnalyzers = new ArrayList<>();
-        this.serviceProperties = new WFSProxyServiceProperties();
+        this.serviceProperties = new FeatureTransformerServiceProperties();
     }
 
     @Override
     @JsonIgnore
-    public FeatureProvider getFeatureProvider() {
+    public TransformingFeatureProvider getFeatureProvider() {
         return featureProvider;
     }
 
@@ -111,20 +115,20 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
     }
 
     @Override
-    public WFSProxyServiceProperties getServiceProperties() {
+    public FeatureTransformerServiceProperties getServiceProperties() {
         return serviceProperties;
     }
 
-    public void setServiceProperties(WFSProxyServiceProperties serviceProperties) {
+    public void setServiceProperties(FeatureTransformerServiceProperties serviceProperties) {
         this.serviceProperties = serviceProperties;
     }
 
     @Override
-    public Map<String, WfsProxyFeatureType> getFeatureTypes() {
+    public Map<String, FeatureTypeConfiguration> getFeatureTypes() {
         return featureTypes;
     }
 
-    public void setFeatureTypes(Map<String, WfsProxyFeatureType> featureTypes) {
+    public void setFeatureTypes(Map<String, FeatureTypeConfiguration> featureTypes) {
         this.featureTypes.putAll(featureTypes);
         if (featureTypes != null && wfsAdapter != null) {
             this.featureProvider = new FeatureProviderWfs(wfsAdapter, featureTypes);
@@ -133,7 +137,7 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
 
     @Override
     @JsonIgnore
-    public Optional<WfsProxyFeatureType> getFeatureTypeByName(String name) {
+    public Optional<FeatureTypeConfiguration> getFeatureTypeByName(String name) {
         return featureTypes.values().stream().filter(ft -> ft.getName().toLowerCase().equals(name.toLowerCase())).findFirst();
     }
 
@@ -218,7 +222,7 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
     private Map<String, List<String>> retrieveSupportedFeatureTypesPerNamespace() {
         Map<String, List<String>> featureTypesPerNamespace = new HashMap<>();
 
-        for (WfsProxyFeatureType featureType : featureTypes.values()) {
+        for (FeatureTypeConfiguration featureType : featureTypes.values()) {
             if (!featureTypesPerNamespace.containsKey(featureType.getNamespace())) {
                 featureTypesPerNamespace.put(featureType.getNamespace(), new ArrayList<String>());
             }
@@ -229,7 +233,7 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
     }
 
     public void analyzeFeatureTypes() {
-        WfsProxyMappingStatus mappingStatus = serviceProperties.getMappingStatus();
+        FeatureTypeMappingStatus mappingStatus = serviceProperties.getMappingStatus();
         //mappingStatus.setEnabled(!disableMapping);
         //mappingStatus.setLoading(!disableMapping);
 

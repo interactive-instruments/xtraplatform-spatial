@@ -6,6 +6,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  * <p>
  * bla
+ * <p>
+ * bla
  */
 /**
  * bla
@@ -63,14 +65,16 @@ public class GMLParser {
         LOGGER.debug("Parsing GetFeature response for '{}'", ft);
         try {
 
-        ListenableFuture<SMInputCursor> rootFuture = Futures.transform(entity, new Function<HttpEntity, SMInputCursor>() {
-            @Override
-            public SMInputCursor apply(HttpEntity e) {
-                try {
-                    return staxFactory.rootElementCursor(e.getContent()).advance();
-                } catch (IOException | IllegalStateException | XMLStreamException ex) {
-                    LOGGER.debug("Error parsing WFS GetFeature (IOException) {}", ex.getMessage());
-                    return null;
+            ListenableFuture<SMInputCursor> rootFuture = Futures.transform(entity, new Function<HttpEntity, SMInputCursor>() {
+                @Override
+                public SMInputCursor apply(HttpEntity e) {
+                    try {
+                        return staxFactory.rootElementCursor(e.getContent())
+                                          .advance();
+                    } catch (IOException | IllegalStateException | XMLStreamException ex) {
+                        LOGGER.debug("Error parsing WFS GetFeature (IOException) {}", ex.getMessage());
+                        return null;
+                    }
                 }
             });
 
@@ -86,27 +90,26 @@ public class GMLParser {
 
     public void parseStream(ListenableFuture<InputStream> inputStream, String ns, String ft) throws ExecutionException {
 
-            ListenableFuture<SMInputCursor> rootFuture = Futures.transform(inputStream, new Function<InputStream, SMInputCursor>() {
-                @Override
-                public SMInputCursor apply(InputStream i) {
-                    try {
-                        return staxFactory.rootElementCursor(i).advance();
-                    } catch ( IllegalStateException | XMLStreamException ex) {
-                        LOGGER.debug(FrameworkMessages.ERROR_PARSING_WFS_GETFEATURE, ex.getMessage());
-                    }
-
-                    return null;
+        ListenableFuture<SMInputCursor> rootFuture = Futures.transform(inputStream, new Function<InputStream, SMInputCursor>() {
+            @Override
+            public SMInputCursor apply(InputStream i) {
+                try {
+                    return staxFactory.rootElementCursor(i)
+                                      .advance();
+                } catch (IllegalStateException | XMLStreamException ex) {
+                    LOGGER.debug("Error parsing WFS GetFeature (IOException) {}", ex.getMessage());
                 }
-            });
 
-            parseRoot(rootFuture, ns, ft);
+                return null;
+            }
+        });
+
+        parseRoot(rootFuture, ns, ft);
     }
 
     private void parseRoot(ListenableFuture<SMInputCursor> rootFuture, String ns, String ft) throws ExecutionException {
 
         QName featureType = new QName(ns, ft);
-
-        LOGGER.debug(FrameworkMessages.PARSING_GETFEATURE_RESPONSE_FOR, ft);
 
         SMInputCursor root = null;
         try {
@@ -121,14 +124,16 @@ public class GMLParser {
             LOGGER.debug("Parsing GetFeature response for '{}'", ft);
 
             // parse for exceptions
-            if (root.getLocalName().equals(WFS.getWord(WFS.VOCABULARY.EXCEPTION_REPORT))) {
+            if (root.getLocalName()
+                    .equals(WFS.getWord(WFS.VOCABULARY.EXCEPTION_REPORT))) {
                 parseException(root);
             }
 
             if (root.hasName(featureType)) {
                 parseFeature(root);
             } else {
-                SMInputCursor body = root.descendantElementCursor().advance();
+                SMInputCursor body = root.descendantElementCursor()
+                                         .advance();
                 while (body.readerAccessible()) {
                     if (body.hasName(featureType)) {
                         parseFeature(body);
@@ -152,7 +157,8 @@ public class GMLParser {
         } finally {
             if (root != null) {
                 try {
-                    root.getStreamReader().closeCompletely();
+                    root.getStreamReader()
+                        .closeCompletely();
                 } catch (XMLStreamException ex) {
                 }
             }
@@ -172,10 +178,12 @@ public class GMLParser {
         SMFlatteningCursor feature;
         StringBuilder text = null;
         if (parseText) {
-            feature = (SMFlatteningCursor) cursor.descendantCursor().advance();
+            feature = (SMFlatteningCursor) cursor.descendantCursor()
+                                                 .advance();
             text = new StringBuilder();
         } else {
-            feature = (SMFlatteningCursor) cursor.descendantElementCursor().advance();
+            feature = (SMFlatteningCursor) cursor.descendantElementCursor()
+                                                 .advance();
         }
 
 
@@ -184,8 +192,11 @@ public class GMLParser {
                 boolean nil = false;
 
                 for (int i = 0; i < feature.getAttrCount(); i++) {
-                    if (feature.getAttrNsUri(i).equals(XSI.getNS(XSI.VERSION.DEFAULT))
-                            && feature.getAttrLocalName(i).equals(XSI.getWord(XSI.VOCABULARY.NIL)) && feature.getAttrValue(i).equals(XSI.getWord(XSI.VOCABULARY.NIL_TRUE))) {
+                    if (feature.getAttrNsUri(i)
+                               .equals(XSI.getNS(XSI.VERSION.DEFAULT))
+                            && feature.getAttrLocalName(i)
+                                      .equals(XSI.getWord(XSI.VOCABULARY.NIL)) && feature.getAttrValue(i)
+                                                                                         .equals(XSI.getWord(XSI.VOCABULARY.NIL_TRUE))) {
                         nil = true;
                     }
                     analyzer.analyzeAttribute(feature.getAttrNsUri(i), feature.getAttrLocalName(i), feature.getAttrValue(i));
@@ -200,7 +211,8 @@ public class GMLParser {
                 }
                 analyzer.analyzePropertyEnd(feature.getNsUri(), feature.getLocalName(), feature.getParentCount() - featureDepth);
             } else if (parseText && (feature.getCurrEventCode() == XMLStreamConstants.CHARACTERS)) {
-                text.append(feature.getText().trim());
+                text.append(feature.getText()
+                                   .trim());
             }
 
             feature = (SMFlatteningCursor) feature.advance();
@@ -211,17 +223,20 @@ public class GMLParser {
 
     private void parseException(SMInputCursor cursor) throws XMLStreamException {
 
-        SMFlatteningCursor body = (SMFlatteningCursor) cursor.descendantElementCursor().advance();
+        SMFlatteningCursor body = (SMFlatteningCursor) cursor.descendantElementCursor()
+                                                             .advance();
 
         String exceptionCode = "";
         String exceptionText = "";
 
         while (body.readerAccessible()) {
             if (body.getCurrEventCode() == XMLStreamConstants.START_ELEMENT) {
-                if (body.getLocalName().equals(WFS.getWord(WFS.VOCABULARY.EXCEPTION))) {
+                if (body.getLocalName()
+                        .equals(WFS.getWord(WFS.VOCABULARY.EXCEPTION))) {
                     exceptionCode = body.getAttrValue(WFS.getWord(WFS.VOCABULARY.EXCEPTION_CODE));
                 }
-                if (body.getLocalName().equals(WFS.getWord(WFS.VOCABULARY.EXCEPTION_TEXT))) {
+                if (body.getLocalName()
+                        .equals(WFS.getWord(WFS.VOCABULARY.EXCEPTION_TEXT))) {
                     exceptionText = body.collectDescendantText();
                 }
             }

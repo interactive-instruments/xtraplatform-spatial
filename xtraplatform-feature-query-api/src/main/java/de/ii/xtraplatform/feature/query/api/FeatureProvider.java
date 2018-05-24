@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.feature.query.api;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import de.ii.xtraplatform.akka.http.AkkaHttp;
 import org.apache.http.HttpEntity;
 
 import java.util.Optional;
@@ -15,7 +16,9 @@ import java.util.Optional;
 /**
  * @author zahnen
  */
-public interface FeatureProvider {
-    Optional<ListenableFuture<HttpEntity>> getFeatureStream(FeatureQuery query);
+public interface FeatureProvider<T extends FeatureConsumer> {
+    FeatureStream<T> getFeatureStream(FeatureQuery query, AkkaHttp akkaHttp);
     Optional<ListenableFuture<HttpEntity>> getFeatureCount(FeatureQuery query);
+    Optional<String> encodeFeatureQuery(FeatureQuery query);
+    String getSourceFormat();
 }

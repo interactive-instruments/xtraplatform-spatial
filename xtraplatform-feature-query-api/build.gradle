@@ -3,4 +3,6 @@ version = '1.1.0'
 
 dependencies {
     compile project(':xtraplatform-crs-api')
+
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.0'
 }
