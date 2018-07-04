@@ -139,25 +139,35 @@ class FeatureTransformerFromGml implements GmlConsumer {
         }
     }
 
-    private String join(List<String> elements) {
+    /*private String join(List<String> elements) {
         stringBuilder.setLength(0);
         return joiner.appendTo(stringBuilder, elements)
                      .toString();
-    }
+    }*/
 
     @Override
     public void onGmlPropertyText(String text) throws Exception {
         if (inProperty) {
-            if (inCoordinates) {
+            stringBuilder.append(text);
+            /*if (inCoordinates) {
                 featureTransformer.onGeometryCoordinates(text);
             } else {
                 featureTransformer.onPropertyText(text);
-            }
+            }*/
         }
     }
 
     @Override
     public void onGmlPropertyEnd(String namespace, String localName, List<String> path) throws Exception {
+        if (stringBuilder.length() > 0) {
+            if (inCoordinates) {
+                featureTransformer.onGeometryCoordinates(stringBuilder.toString());
+            } else {
+                featureTransformer.onPropertyText(stringBuilder.toString());
+            }
+            stringBuilder.setLength(0);
+        }
+
         if (transformGeometry != null) {
             if (inGeometry != null && inGeometry.equals(path)) {
                 inGeometry = null;
