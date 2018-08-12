@@ -157,7 +157,7 @@ public class WFSAdapter {
     public void setDefaultCrs(EpsgCrs defaultCrs) {
         if (this.defaultCrs == null) {
             this.defaultCrs = defaultCrs;
-            LOGGER.debug("added default CRS {} {}", defaultCrs.getAsUrn(), defaultCrs.isLongitudeFirst() ? "LonLat" : "LatLon");
+            LOGGER.debug("added default CRS {} {}", defaultCrs.getAsUrn(), defaultCrs.isForceLongitudeFirst() ? "LonLat" : "LatLon");
             this.otherCrs.add(defaultCrs);
         }
     }

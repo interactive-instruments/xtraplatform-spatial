@@ -1,0 +1,38 @@
+package de.ii.xtraplatform.feature.provider.pgis;
+
+import akka.stream.ActorMaterializer;
+import akka.stream.alpakka.slick.javadsl.Slick;
+import akka.stream.alpakka.slick.javadsl.SlickSession;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
+import com.google.common.collect.ImmutableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * @author zahnen
+ */
+public class SqlFeatureRemover {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlFeatureCreator.class);
+
+    private final SlickSession session;
+    private final ActorMaterializer materializer;
+
+    public SqlFeatureRemover(SlickSession session, ActorMaterializer materializer) {
+        this.session = session;
+        this.materializer = materializer;
+    }
+
+    public boolean remove(String featureType, String featureId) {
+        Integer rowsDeleted = Source.from(ImmutableList.of(featureId))
+                                    //TODO: derive from SqlPathTree
+                             .via(Slick.flow(session, id -> String.format("DELETE FROM osirisobjekt WHERE id=(SELECT id FROM %s WHERE id=%s)", featureType, id)))
+                             .runWith(Sink.fold(0, (prev, next) -> prev + next),
+                                     materializer)
+                             .toCompletableFuture()
+                             .join();
+
+        return rowsDeleted > 0;
+    }
+}

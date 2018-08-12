@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.util.functional;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -25,6 +26,11 @@ public class LambdaWithException {
         void apply(T t) throws E;
     }
 
+    @FunctionalInterface
+    public interface BiConsumerWithException<T, U, E extends Exception> {
+        void apply(T t, U u) throws E;
+    }
+
     public static <T, R, E extends Exception> Function<T, R> mayThrow(FunctionWithException<T, R, E> fe) {
         return arg -> {
             try {
@@ -35,10 +41,20 @@ public class LambdaWithException {
         };
     }
 
-    public static <T, R, E extends Exception> Consumer<T> consumerMayThrow(ConsumerWithException<T, E> ce) {
+    public static <T, E extends Exception> Consumer<T> consumerMayThrow(ConsumerWithException<T, E> ce) {
         return arg -> {
             try {
                 ce.apply(arg);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    public static <T, U, E extends Exception> BiConsumer<T, U> biConsumerMayThrow(BiConsumerWithException<T, U, E> ce) {
+        return (arg, arg2) -> {
+            try {
+                ce.apply(arg, arg2);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

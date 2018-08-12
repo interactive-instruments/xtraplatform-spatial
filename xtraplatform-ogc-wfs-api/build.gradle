@@ -1,12 +1,12 @@
-version = '1.1.7'
-//version += '-SNAPSHOT'
+version = '1.1.9'
+version += '-SNAPSHOT'
 
 dependencies {
 
     compile project(':xtraplatform-crs-api')
     compile project(':xtraplatform-geotools')
 
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.0'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.1'
 
     embedded group: 'com.sun.xsom', name: 'xsom', version: '20140925'
     embedded group: 'com.fasterxml', name: 'aalto-xml', version: '1.0.0'

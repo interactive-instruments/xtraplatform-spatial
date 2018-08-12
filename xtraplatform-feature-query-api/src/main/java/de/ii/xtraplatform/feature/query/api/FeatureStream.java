@@ -15,5 +15,5 @@ import java.util.function.Function;
 /**
  * @author zahnen
  */
-public interface FeatureStream<T extends  FeatureConsumer> extends Function<T, CompletionStage<Done>> {
+public interface FeatureStream<T> extends Function<T, CompletionStage<Done>> {
 }

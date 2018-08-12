@@ -1,5 +1,5 @@
 version = '1.1.0'
-//version += '-SNAPSHOT'
+version += '-SNAPSHOT'
 
 dependencies {
     embedded group: 'org.geotools', name: 'gt-cql', version: '19.0'
@@ -33,5 +33,6 @@ jar {
         instructionFirst 'Import-Package', 'javax.xml.transform.stream'
         instructionFirst 'Import-Package', 'javax.xml.datatype'
         instructionFirst 'Import-Package', 'javax.xml.transform.dom'
+        instructionFirst 'Import-Package', 'javax.annotation'
     }
 }

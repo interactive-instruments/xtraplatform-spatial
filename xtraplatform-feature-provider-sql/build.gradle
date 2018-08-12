@@ -1,0 +1,50 @@
+apply plugin: 'scala'
+
+version = '2.0.0'
+version += '-SNAPSHOT'
+
+dependencies {
+    compile project(':xtraplatform-feature-query-api')
+
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.1'
+
+    embedded (group: 'com.lightbend.akka', name: 'akka-stream-alpakka-slick_2.12', version: '0.19') {
+        exclude  group: 'com.typesafe.akka', module: 'akka-stream_2.12'
+        exclude  group: 'org.scala-lang', module: 'scala-library'
+        exclude  group: 'com.typesafe', module: 'config'
+        exclude  group: 'org.reactivestreams', module: 'reactive-streams'
+        exclude  group: 'org.slf4j', module: 'slf4j-api'
+    }
+    //embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.2'
+
+    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.9'
+}
+
+jar {
+    manifest {
+        instructionFirst 'Import-Package', "!org.immutables.value"
+        instructionFirst 'Import-Package', "!waffle.windows.auth"
+        instructionFirst 'Import-Package', "!waffle.windows.auth.impl"
+        instructionFirst 'Import-Package', "!org.hibernate"
+        instructionFirst 'Import-Package', "!org.hibernate.service"
+        instructionFirst 'Import-Package', "!org.hibernate.service.spi"
+        instructionFirst 'Import-Package', "!org.hibernate.engine.jdbc.connections.spi"
+        instructionFirst 'Import-Package', "!com.sun.jna"
+        instructionFirst 'Import-Package', "!com.sun.jna.win32"
+        instructionFirst 'Import-Package', "!com.sun.jna.platform.win32"
+        instructionFirst 'Import-Package', "!io.prometheus.client"
+        instructionFirst 'Import-Package', "!com.sun.jna.ptr"
+        instructionFirst 'Import-Package', "!org.osgi.service.jdbc"
+        // TODO
+        instructionFirst 'Import-Package', "org.postgresql.ds"
+        instruction 'Import-Package', "*"
+
+        instruction 'Embed-Dependency',
+                'akka-stream-alpakka-slick_2.12'
+                //'postgresql'
+
+        instruction 'Embed-Transitive', 'true'
+        instruction 'Embed-Export', 'true'
+        instruction 'Embed-Import', 'true'
+    }
+}

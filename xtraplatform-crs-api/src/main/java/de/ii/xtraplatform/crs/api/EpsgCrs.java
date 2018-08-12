@@ -22,11 +22,11 @@ public class EpsgCrs {
     private static final String URN_PREFIX = "urn:ogc:def:crs:EPSG::";
     private static final String URI_PREFIX = "http://www.opengis.net/def/crs/EPSG/0/";
     private int code;
-    private boolean longitudeFirst = false;
+    private boolean forceLongitudeFirst = false;
 
     public EpsgCrs() {
         this.code = -1;
-        this.longitudeFirst = false;
+        this.forceLongitudeFirst = false;
     }
 
     public EpsgCrs(int code) {
@@ -34,9 +34,9 @@ public class EpsgCrs {
         this.code = code;
     }
 
-    public EpsgCrs(int code, boolean longitudeFirst) {
+    public EpsgCrs(int code, boolean forceLongitudeFirst) {
         this(code);
-        this.longitudeFirst = longitudeFirst;
+        this.forceLongitudeFirst = forceLongitudeFirst;
     }
 
     public EpsgCrs(String prefixedCode) {
@@ -51,12 +51,12 @@ public class EpsgCrs {
         this.code = code;
     }
 
-    public boolean isLongitudeFirst() {
-        return longitudeFirst;
+    public boolean isForceLongitudeFirst() {
+        return forceLongitudeFirst;
     }
 
-    public void setLongiduteFirst(boolean longitudeFirst) {
-        this.longitudeFirst = longitudeFirst;
+    public void setForceLongiduteFirst(boolean forceLongitudeFirst) {
+        this.forceLongitudeFirst = forceLongitudeFirst;
     }
 
     @JsonIgnore
@@ -83,7 +83,7 @@ public class EpsgCrs {
         if (getClass() != obj.getClass())
             return false;
         final EpsgCrs other = (EpsgCrs) obj;
-        if (code != other.getCode() || longitudeFirst != other.isLongitudeFirst())
+        if (code != other.getCode() || forceLongitudeFirst != other.isForceLongitudeFirst())
             return false;
         return true;
     }
@@ -91,7 +91,7 @@ public class EpsgCrs {
     @Override
     public int hashCode() {
         int result = code;
-        result = 31 * result + (longitudeFirst ? 1 : 0);
+        result = 31 * result + (forceLongitudeFirst ? 1 : 0);
         return result;
     }
 

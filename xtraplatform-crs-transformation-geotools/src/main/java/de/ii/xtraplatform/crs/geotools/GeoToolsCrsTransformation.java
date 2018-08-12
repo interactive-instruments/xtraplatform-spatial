@@ -71,7 +71,7 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
     @Override
     public CrsTransformer getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
         try {
-            return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs.getAsSimple()), sourceCrs.isLongitudeFirst()), CRS.decode(applyWorkarounds(targetCrs.getAsSimple()), targetCrs.isLongitudeFirst()));
+            return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs.getAsSimple()), sourceCrs.isForceLongitudeFirst()), CRS.decode(applyWorkarounds(targetCrs.getAsSimple()), targetCrs.isForceLongitudeFirst()));
         } catch (FactoryException ex) {
             LOGGER.debug("GeoTools error", ex);
         }

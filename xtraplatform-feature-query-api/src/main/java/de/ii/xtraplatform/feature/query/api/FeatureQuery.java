@@ -8,44 +8,30 @@
 package de.ii.xtraplatform.feature.query.api;
 
 import de.ii.xtraplatform.crs.api.EpsgCrs;
+import org.immutables.value.Value;
+
+import javax.annotation.Nullable;
 
 /**
  * @author zahnen
  */
-public class FeatureQuery {
+@Value.Immutable
+public abstract class FeatureQuery {
 
-    private final String type;
-    private final EpsgCrs crs;
-    private final int limit;
-    private final int offset;
-    private final String filter;
+    public abstract String getType();
 
+    @Nullable
+    public abstract EpsgCrs getCrs();
 
-    public FeatureQuery(String type, EpsgCrs crs, int limit, int offset, String filter) {
-        this.type = type;
-        this.crs = crs;
-        this.limit = limit;
-        this.offset = offset;
-        this.filter = filter;
-    }
+    @Value.Default
+    public int getLimit() {return 0;}
 
-    public String getType() {
-        return type;
-    }
+    @Value.Default
+    public int getOffset() {return 0;};
 
-    public EpsgCrs getCrs() {
-        return crs;
-    }
+    @Nullable
+    public abstract String getFilter();
 
-    public int getLimit() {
-        return limit;
-    }
-
-    public int getOffset() {
-        return offset;
-    }
-
-    public String getFilter() {
-        return filter;
-    }
+    @Value.Default
+    public boolean hitsOnly() {return false;}
 }

@@ -27,10 +27,10 @@ public interface FeatureTransformerService extends Service {
 
     FeatureTransformerServiceProperties getServiceProperties();
 
-    Map<String, FeatureTypeConfiguration> getFeatureTypes();
+    Map<String, FeatureTypeConfigurationOld> getFeatureTypes();
 
     @JsonIgnore
-    Optional<FeatureTypeConfiguration> getFeatureTypeByName(String name);
+    Optional<FeatureTypeConfigurationOld> getFeatureTypeByName(String name);
 
     FeatureProvider getFeatureProvider();
 }

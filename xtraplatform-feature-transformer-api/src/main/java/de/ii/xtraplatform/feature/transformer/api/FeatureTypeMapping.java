@@ -1,128 +1,157 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.feature.transformer.api;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import org.immutables.value.Value;
 
-import java.util.ArrayList;
+import java.util.AbstractMap;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author zahnen
  */
-public class FeatureTypeMapping {
-    // TODO: multiplicity
-    private final Map<String, Map<String, List<TargetMapping>>> mappings;
+@Value.Immutable
+@Value.Modifiable
+//TODO: @JsonAnySetter not generated for ModifiableFeatureTypeMapping
+//TODO: map order only sustained with Builder
+@JsonDeserialize(builder = ImmutableFeatureTypeMapping.Builder.class)
+public abstract class FeatureTypeMapping {
 
-    private final Map<List<String>, Map<String, List<TargetMapping>>> mappings2;
+    @JsonAnyGetter
+    public abstract Map<String, SourcePathMapping> getMappings();
 
-    FeatureTypeMapping() {
-        this.mappings = new LinkedHashMap<>();
-        this.mappings2 = new LinkedHashMap<>();
+    @Value.Derived
+    protected Map<List<String>, SourcePathMapping> getMappingsWithPathAsList() {
+        return getMappings().entrySet()
+                            .stream()
+                            .map(pathToList())
+                            //TODO .flatMap(splitDoubleColumnPath())
+                            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    // TODO: use prefixes for gml paths, split on / only
+    private List<String> splitPath(String path) {
+        Splitter splitter = path.contains("http://") ? Splitter.onPattern("\\/(?=http)") : Splitter.on("/");
+        return splitter.omitEmptyStrings()
+                       .splitToList(path);
     }
 
     @JsonIgnore
     public boolean isEmpty() {
-        return mappings.isEmpty();
+        return getMappings() == null || getMappings().isEmpty();
     }
 
-    public FeatureTypeMapping(Map<String, Map<String, List<TargetMapping>>> mappings) {
-        this.mappings = mappings;
-        this.mappings2 = new LinkedHashMap<>();
+    public Optional<TargetMapping> findMappings(String path, String targetType) {
+        return getMappings().containsKey(path) ? findMappings(getMappings().get(path), targetType) : Optional.empty();
     }
 
-    public void addMapping(String path, String targetType, TargetMapping targetMapping) {
-        if (!mappings.containsKey(path)) {
-            mappings.put(path, new LinkedHashMap<String, List<TargetMapping>>());
-        }
-        if (!mappings.get(path).containsKey(targetType)) {
-            mappings.get(path).put(targetType, new ArrayList<TargetMapping>());
-        }
-        mappings.get(path).get(targetType).add(targetMapping);
+    public Optional<TargetMapping> findMappings(List<String> path, String targetType) {
+        return getMappingsWithPathAsList().containsKey(path) ? findMappings(getMappingsWithPathAsList().get(path), targetType) : Optional.empty();
     }
 
-    public List<TargetMapping> findMappings(String path, String targetType) {
-        if (mappings.containsKey(path) && mappings.get(path).containsKey(targetType)) {
-            List<TargetMapping> mappingList = mappings.get(path).get(targetType);
+    private Optional<TargetMapping> findMappings(SourcePathMapping mapping, String targetType) {
+        if (mapping.hasMappingForType(targetType)) {
+            TargetMapping targetMapping = mapping.getMappingForType(targetType);
 
             //TODO
-            if (mappings.get(path).containsKey(TargetMapping.BASE_TYPE)) {
-                TargetMapping baseMapping = mappings.get(path).get(TargetMapping.BASE_TYPE).get(0);
-                List<TargetMapping> mergedMappingList = new ArrayList<>();
-
-                for (TargetMapping targetMapping : mappingList) {
-                    mergedMappingList.add(targetMapping.mergeCopyWithBase(baseMapping));
-                }
-
-                mappingList = mergedMappingList;
+            if (mapping.hasMappingForType(TargetMapping.BASE_TYPE)) {
+                TargetMapping baseMapping = mapping.getMappingForType(TargetMapping.BASE_TYPE);
+                targetMapping = targetMapping.mergeCopyWithBase(baseMapping);
             }
 
-            return mappingList;
-        }
-        return ImmutableList.<TargetMapping>of();
-    }
-    public List<TargetMapping> findMappings2(List<String> path, String targetType) {
-        if (mappings2.containsKey(path) && mappings2.get(path).containsKey(targetType)) {
-            List<TargetMapping> mappingList = mappings2.get(path).get(targetType);
-
-            //TODO
-            if (mappings2.get(path).containsKey(TargetMapping.BASE_TYPE)) {
-                TargetMapping baseMapping = mappings2.get(path).get(TargetMapping.BASE_TYPE).get(0);
-                return mappingList.stream()
-                        .map(mapping -> mapping.mergeCopyWithBase(baseMapping))
-                        .collect(Collectors.toList());
+            if (targetMapping.isEnabled()) {
+                return Optional.of(targetMapping);
             }
-
-            return mappingList;
         }
-        return ImmutableList.<TargetMapping>of();
+        return Optional.empty();
     }
 
-    public Map<String, List<TargetMapping>> findMappings(String targetType) {
-        Map<String, List<TargetMapping>> mappings = new HashMap<>();
+    //TODO: only used once, check
+    public Map<String, TargetMapping> findMappings(String targetType) {
+        Map<String, TargetMapping> mappings = new HashMap<>();
 
         for (String path : getMappings().keySet()) {
-            if (getMappings().get(path).containsKey(targetType)) {
-                List<TargetMapping> mappingList = getMappings().get(path).get(targetType);
+            if (getMappings().get(path)
+                             .hasMappingForType(targetType)) {
+                TargetMapping targetMapping = getMappings().get(path)
+                                                           .getMappingForType(targetType);
 
                 //TODO
-                if (!targetType.equals(TargetMapping.BASE_TYPE) && getMappings().get(path).containsKey(TargetMapping.BASE_TYPE)) {
-                    TargetMapping baseMapping = getMappings().get(path).get(TargetMapping.BASE_TYPE).get(0);
-                    List<TargetMapping> mergedMappingList = new ArrayList<>();
-
-                    for (TargetMapping targetMapping: mappingList) {
-                        mergedMappingList.add(targetMapping.mergeCopyWithBase(baseMapping));
-                    }
-
-                    mappingList = mergedMappingList;
+                if (!targetType.equals(TargetMapping.BASE_TYPE) && getMappings().get(path)
+                                                                                .hasMappingForType(TargetMapping.BASE_TYPE)) {
+                    TargetMapping baseMapping = getMappings().get(path)
+                                                             .getMappingForType(TargetMapping.BASE_TYPE);
+                    targetMapping = targetMapping.mergeCopyWithBase(baseMapping);
                 }
 
-
-                mappings.put(path, mappingList);
+                mappings.put(path, targetMapping);
             }
         }
 
         return mappings;
     }
 
+    private Function<String, Stream<String>> splitDoubleColumn() {
+        return column -> Splitter.on(':')
+                                 .omitEmptyStrings()
+                                 .splitToList(column)
+                                 .stream();
+    }
 
-    public Map<String, Map<String, List<TargetMapping>>> getMappings() {
+
+    private Function<Map.Entry<List<String>, SourcePathMapping>, Stream<Map.Entry<List<String>, SourcePathMapping>>> splitDoubleColumnPath() {
+        return entry -> {
+            Optional<String> column = getColumnElement(entry.getKey());
+            if (column.isPresent() && column.get()
+                                            .contains(":")) {
+                return splitDoubleColumn().apply(column.get())
+                                          .map(col -> new AbstractMap.SimpleImmutableEntry<>(ImmutableList.<String>builder().addAll(entry.getKey()
+                                                                                                                                         .subList(0, entry.getKey()
+                                                                                                                                                          .size() - 1))
+                                                                                                                            .add(col)
+                                                                                                                            .build(), entry.getValue()));
+            }
+            return Stream.of(entry);
+        };
+    }
+
+    private Optional<String> getColumnElement(List<String> path) {
+        return path.size() <= 1 ? Optional.empty() : Optional.of(path.get(path.size() - 1));
+    }
+
+    private Function<Map.Entry<String, SourcePathMapping>, Map.Entry<List<String>, SourcePathMapping>> pathToList() {
+        return entry -> new AbstractMap.SimpleImmutableEntry<>(splitPath(entry.getKey()), entry.getValue());
+    }
+
+
+    /*public Map<String, Map<String, TargetMapping>> getMappings() {
         return mappings;
     }
 
-    void setMappings(Map<String, Map<String, List<TargetMapping>>> mappings) {
+    void setMappings(Map<String, Map<String, TargetMapping>> mappings) {
+        this.mappings.putAll(mappings);
+    }*/
+
+    //TODO: legacy
+    /*void setMappings(Map<String, Map<String, List<TargetMapping>>> mappings) {
         this.mappings.putAll(mappings);
 
         mappings.keySet().forEach(key -> {
@@ -130,5 +159,5 @@ public class FeatureTypeMapping {
             List<String> pathAsList = Splitter.onPattern("\\/(?=http)").splitToList(key);
             mappings2.put(pathAsList, mappings.get(key));
         });
-    }
+    }*/
 }

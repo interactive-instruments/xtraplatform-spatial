@@ -10,26 +10,54 @@
  */
 package de.ii.xtraplatform.feature.query.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import de.ii.xtraplatform.jackson.dynamic.DynamicTypeIdResolver;
+import de.ii.xsf.dropwizard.cfg.JacksonProvider;
+import org.immutables.value.Value;
+
+import javax.annotation.Nullable;
 
 /**
  * @author zahnen
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "mappingType")
-@JsonTypeIdResolver(DynamicTypeIdResolver.class)
-public interface TargetMapping<T> {
+@JsonTypeIdResolver(JacksonProvider.DynamicTypeIdResolver.class)
+public interface TargetMapping<T extends Enum<T>> {
     final String BASE_TYPE = "general";
 
+    //TODO
+    @Nullable
     String getName();
 
+    //TODO
+    @Nullable
     T getType();
 
-    Boolean isEnabled();
+    //TODO
+    @Nullable
+    Boolean getEnabled();
+
+    //TODO
+    @Nullable
+    Integer getSortPriority();
+
+    //TODO
+    @Nullable
+    String getFormat();
+
 
     TargetMapping mergeCopyWithBase(TargetMapping targetMapping);
 
     //TODO
+    @JsonIgnore
+    @Value.Derived
     boolean isSpatial();
+
+    //TODO
+    @JsonIgnore
+    @Value.Derived
+    default boolean isEnabled() {
+        return getEnabled() == null || getEnabled();
+    }
 }

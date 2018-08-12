@@ -328,10 +328,8 @@ public class EventBasedStreamingFeatureTransformer {
 
                 @Override
                 protected void onGmlFeatureStart(EventBasedStreamingGmlParser.GmlFeatureStart gmlFeatureStart) {
-                    final TransformFeatureStart transformFeatureStart = featureTypeMapping.findMappings(gmlFeatureStart.getQualifiedName(), outputFormat).stream()
-                            .filter(TargetMapping::isEnabled)
+                    final TransformFeatureStart transformFeatureStart = featureTypeMapping.findMappings(gmlFeatureStart.getQualifiedName(), outputFormat)
                             .map(mapping -> new TransformFeatureStart(mapping))
-                            .findFirst()
                             .orElse(new TransformFeatureStart());
                     transformEvents.add(transformFeatureStart);
                 }
@@ -350,10 +348,9 @@ public class EventBasedStreamingFeatureTransformer {
                         return;
                     }
 
-                    featureTypeMapping.findMappings(gmlAttribute.getQualifiedName(), outputFormat).stream()
-                            .filter(TargetMapping::isEnabled)
+                    featureTypeMapping.findMappings(gmlAttribute.getQualifiedName(), outputFormat)
                             .map(mapping -> new TransformAttribute(mapping, gmlAttribute.value))
-                            .forEach(transformEvents::add);
+                            .ifPresent(transformEvents::add);
                 }
 
                 // TODO: Geometry
@@ -361,11 +358,10 @@ public class EventBasedStreamingFeatureTransformer {
                 protected void onGmlPropertyStart(EventBasedStreamingGmlParser.GmlPropertyStart gmlPropertyStart) {
 
                     if (!inProperty) {
-                        featureTypeMapping.findMappings(gmlPropertyStart.path, outputFormat).stream()
-                                .filter(TargetMapping::isEnabled)
+                        featureTypeMapping.findMappings(gmlPropertyStart.path, outputFormat)
                                 .filter(targetMapping -> !targetMapping.isSpatial())
                                 .map(TransformProperty::new)
-                                .forEach(transformEvents::add);
+                                .ifPresent(transformEvents::add);
                     } else if (transformGeometry != null) {
                         onGeometryPart(gmlPropertyStart);
                     }
@@ -373,11 +369,9 @@ public class EventBasedStreamingFeatureTransformer {
                     inProperty = inProperty || !transformEvents.isEmpty();
 
                     if (!inProperty && transformGeometry == null) {
-                        featureTypeMapping.findMappings(gmlPropertyStart.path, outputFormat).stream()
-                                .filter(TargetMapping::isEnabled)
+                        featureTypeMapping.findMappings(gmlPropertyStart.path, outputFormat)
                                 .filter(TargetMapping::isSpatial)
                                 .map(TransformGeometry::new)
-                                .findFirst()
                                 .ifPresent(transformGeometry1 -> transformGeometry = transformGeometry1);
 
                         if (transformGeometry != null) {

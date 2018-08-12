@@ -1,0 +1,29 @@
+{
+    "server": {
+        "applicationConnectors": [
+            {
+                "type": "http",
+                "port": "7080"
+            }
+        ],
+        "adminConnectors": [
+            {
+                "type": "http",
+                "port": "7081"
+            }
+        ],
+        "gzip": {
+            "enabled": true
+        },
+        "shutdownGracePeriod": "5s"
+    },
+    "logging": {
+        "level": "DEBUG",
+        "appenders": [
+            {
+                "type": "console",
+                "timeZone": "Europe/Berlin"
+            }
+        ]
+    }
+}

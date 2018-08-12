@@ -1,100 +1,18 @@
-/**
- * Copyright 2018 interactive instruments GmbH
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-/**
- * bla
- */
 package de.ii.xtraplatform.feature.transformer.api;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.ii.xtraplatform.crs.api.BoundingBox;
-import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import org.immutables.value.Value;
 
-import java.time.Instant;
-import java.util.List;
+import java.util.Optional;
 
 /**
  * @author zahnen
  */
-public class FeatureTypeConfiguration {
-    private String name;
-    private String displayName;
-    private FeatureTypeMapping mappings;
-    //TODO: to wfs source extension
-    private String namespace;
-    // TODO: to wfs3 target extension
-    private TemporalExtent temporalExtent;
-    private BoundingBox spatialExtent;
+public abstract class FeatureTypeConfiguration {
 
-    public FeatureTypeConfiguration() {
-        this.temporalExtent = new TemporalExtent(Instant.now().toEpochMilli(), 0);
+    public abstract String getId();
 
-    }
-    public FeatureTypeConfiguration(String name, String namespace, String displayName) {
-        this.name = name;
-        this.namespace = namespace;
-        this.displayName = displayName;
-        this.mappings = new FeatureTypeMapping();
-        this.temporalExtent = new TemporalExtent(Instant.now().toEpochMilli(), 0);
-    }
+    public abstract String getLabel();
 
-    // TODO: only used for testing, replace by builder
-    public FeatureTypeConfiguration(String name, String namespace, String displayName, FeatureTypeMapping wfsProxyFeatureTypeMapping) {
-        this.name = name;
-        this.namespace = namespace;
-        this.displayName = displayName;
-        this.mappings = wfsProxyFeatureTypeMapping;
-        this.temporalExtent = new TemporalExtent(Instant.now().toEpochMilli(), 0);
-    }
+    public abstract Optional<String> getDescription();
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getNamespace() {
-        return namespace;
-    }
-
-    public void setNamespace(String namespace) {
-        this.namespace = namespace;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public FeatureTypeMapping getMappings() {
-        return mappings;
-    }
-
-    public void setMappings(FeatureTypeMapping mappings) {
-        this.mappings = mappings;
-    }
-
-    @JsonIgnore
-    public boolean isEnabled() {
-        List<TargetMapping> baseMapping = mappings.findMappings(namespace + ":" + name, TargetMapping.BASE_TYPE);
-
-        return !baseMapping.isEmpty() && baseMapping.get(0).isEnabled();
-    }
-
-    public TemporalExtent getTemporalExtent() {
-        return temporalExtent;
-    }
-
-    public void setTemporalExtent(TemporalExtent temporalExtent) {
-        this.temporalExtent = temporalExtent;
-    }
 }

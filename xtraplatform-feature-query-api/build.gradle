@@ -1,8 +1,16 @@
-version = '1.1.0'
-//version += '-SNAPSHOT'
+version = '1.1.2'
+version += '-SNAPSHOT'
 
 dependencies {
     compile project(':xtraplatform-crs-api')
 
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.0'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.1'
+}
+
+
+jar {
+    manifest {
+        instructionFirst 'Import-Package', "!org.immutables.value"
+        instruction 'Import-Package', "*"
+    }
 }

@@ -17,21 +17,8 @@ import java.util.OptionalInt;
  * @author zahnen
  */
 public interface GmlConsumer extends FeatureConsumer {
-    void onGmlStart(OptionalInt numberReturned, OptionalInt numberMatched) throws Exception;
-
-    void onGmlEnd() throws Exception;
-
-    void onGmlFeatureStart(String namespace, String localName, List<String> path) throws Exception;
-
-    void onGmlFeatureEnd(String namespace, String localName, List<String> strings) throws Exception;
 
     void onGmlAttribute(String namespace, String localName, List<String> path, String value) throws Exception;
-
-    void onGmlPropertyStart(String namespace, String localName, List<String> path) throws Exception;
-
-    void onGmlPropertyText(String text) throws Exception;
-
-    void onGmlPropertyEnd(String namespace, String localName, List<String> path) throws Exception;
 
     void onNamespaceRewrite(QName featureType, String namespace) throws Exception;
 }

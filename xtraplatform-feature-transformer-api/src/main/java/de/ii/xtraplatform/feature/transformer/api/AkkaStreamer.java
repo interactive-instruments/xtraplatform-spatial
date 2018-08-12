@@ -38,7 +38,6 @@ import de.ii.xtraplatform.akka.http.ActorSystemProvider;
 import de.ii.xtraplatform.akka.http.AkkaHttp;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Controller;
-import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Invalidate;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -259,7 +258,7 @@ public class AkkaStreamer extends AllDirectives {
         return stream;
     }
 
-    public void streamFeatures(final FeatureTypeConfiguration featureType, final Optional<String> wfsRequest, final String outputFormat, final boolean isFeatureCollection, final Supplier<Flow<ByteString, ByteString, CompletionStage<Done>>> writer, final Consumer<StreamingOutput> onSuccess, final Function<Throwable, Void> onFailure) {
+    public void streamFeatures(final FeatureTypeConfigurationOld featureType, final Optional<String> wfsRequest, final String outputFormat, final boolean isFeatureCollection, final Supplier<Flow<ByteString, ByteString, CompletionStage<Done>>> writer, final Consumer<StreamingOutput> onSuccess, final Function<Throwable, Void> onFailure) {
         //ActorSystem system = bundleActorSystem.getSystem();
         //final Http http = Http.get(system);
         //final Materializer materializer = ActorMaterializer.create(system);
@@ -282,7 +281,7 @@ public class AkkaStreamer extends AllDirectives {
         //to.get(0).run(materializer);
     }
 
-    public void stream(final FeatureTypeConfiguration featureType, final Optional<String> wfsRequest, final String outputFormat, final boolean isFeatureCollection, final Supplier<Flow<ByteString, ByteString, CompletionStage<Done>>> writer, final Consumer<StreamingOutput> onSuccess, final Function<Throwable, Void> onFailure) {
+    public void stream(final FeatureTypeConfigurationOld featureType, final Optional<String> wfsRequest, final String outputFormat, final boolean isFeatureCollection, final Supplier<Flow<ByteString, ByteString, CompletionStage<Done>>> writer, final Consumer<StreamingOutput> onSuccess, final Function<Throwable, Void> onFailure) {
         //ActorSystem system = bundleActorSystem.getSystem();
         //final Http http = Http.get(system);
         //final Materializer materializer = ActorMaterializer.create(system);

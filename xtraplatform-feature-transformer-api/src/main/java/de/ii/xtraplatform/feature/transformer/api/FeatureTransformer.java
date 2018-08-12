@@ -7,19 +7,19 @@
  */
 package de.ii.xtraplatform.feature.transformer.api;
 
-import de.ii.xtraplatform.feature.query.api.FeatureConsumer;
+import de.ii.xtraplatform.feature.query.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 
-import java.util.Optional;
-import java.util.OptionalInt;
+import java.util.List;
+import java.util.OptionalLong;
 
 /**
  * @author zahnen
  */
-public interface FeatureTransformer extends FeatureConsumer {
+public interface FeatureTransformer {
     String getTargetFormat();
 
-    void onStart(OptionalInt numberReturned, OptionalInt numberMatched) throws Exception;
+    void onStart(OptionalLong numberReturned, OptionalLong numberMatched) throws Exception;
 
     void onEnd() throws Exception;
 
@@ -27,15 +27,13 @@ public interface FeatureTransformer extends FeatureConsumer {
 
     void onFeatureEnd() throws Exception;
 
-    void onAttribute(final TargetMapping mapping, final String value) throws Exception;
-
-    void onPropertyStart(final TargetMapping mapping) throws Exception;
+    void onPropertyStart(final TargetMapping mapping, List<Integer> multiplicities) throws Exception;
 
     void onPropertyText(final String text) throws Exception;
 
     void onPropertyEnd() throws Exception;
 
-    void onGeometryStart(final TargetMapping mapping, final GmlFeatureTypeAnalyzer.GML_GEOMETRY_TYPE type, final Integer dimension) throws Exception;
+    void onGeometryStart(final TargetMapping mapping, final SimpleFeatureGeometry type, final Integer dimension) throws Exception;
 
     void onGeometryNestedStart() throws Exception;
 

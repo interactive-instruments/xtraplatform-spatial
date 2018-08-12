@@ -19,9 +19,8 @@ import de.ii.xsf.core.api.AbstractService;
 import de.ii.xsf.core.api.Resource;
 import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
-import de.ii.xtraplatform.feature.query.api.FeatureProvider;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTypeConfiguration;
-import de.ii.xtraplatform.feature.source.wfs.FeatureProviderWfs;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeConfigurationOld;
+import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderWfs;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformerServiceProperties;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMappingStatus;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformerService;
@@ -68,7 +67,7 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
     private WFSAdapter wfsAdapter;
     private WfsProxyCrsTransformations crsTransformations;
     private FeatureTransformerServiceProperties serviceProperties;
-    private final Map<String, FeatureTypeConfiguration> featureTypes;
+    private final Map<String, FeatureTypeConfigurationOld> featureTypes;
     protected final List<GMLSchemaAnalyzer> schemaAnalyzers;
     protected  GMLAnalyzer mappingFromDataAnalyzers;
 
@@ -124,20 +123,21 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
     }
 
     @Override
-    public Map<String, FeatureTypeConfiguration> getFeatureTypes() {
+    public Map<String, FeatureTypeConfigurationOld> getFeatureTypes() {
         return featureTypes;
     }
 
-    public void setFeatureTypes(Map<String, FeatureTypeConfiguration> featureTypes) {
+    public void setFeatureTypes(Map<String, FeatureTypeConfigurationOld> featureTypes) {
         this.featureTypes.putAll(featureTypes);
+        //TODO
         if (featureTypes != null && wfsAdapter != null) {
-            this.featureProvider = new FeatureProviderWfs(wfsAdapter, featureTypes);
+            //this.featureProvider = new FeatureProviderWfs(wfsAdapter, featureTypes);
         }
     }
 
     @Override
     @JsonIgnore
-    public Optional<FeatureTypeConfiguration> getFeatureTypeByName(String name) {
+    public Optional<FeatureTypeConfigurationOld> getFeatureTypeByName(String name) {
         return featureTypes.values().stream().filter(ft -> ft.getName().toLowerCase().equals(name.toLowerCase())).findFirst();
     }
 
@@ -222,7 +222,7 @@ public abstract class AbstractWfsProxyService extends AbstractService implements
     private Map<String, List<String>> retrieveSupportedFeatureTypesPerNamespace() {
         Map<String, List<String>> featureTypesPerNamespace = new HashMap<>();
 
-        for (FeatureTypeConfiguration featureType : featureTypes.values()) {
+        for (FeatureTypeConfigurationOld featureType : featureTypes.values()) {
             if (!featureTypesPerNamespace.containsKey(featureType.getNamespace())) {
                 featureTypesPerNamespace.put(featureType.getNamespace(), new ArrayList<String>());
             }

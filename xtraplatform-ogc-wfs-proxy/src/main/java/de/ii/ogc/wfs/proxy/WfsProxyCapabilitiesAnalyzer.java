@@ -11,7 +11,7 @@
 package de.ii.ogc.wfs.proxy;
 
 import de.ii.xtraplatform.crs.api.EpsgCrs;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTypeConfiguration;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeConfigurationOld;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformerService;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.OWS;
@@ -82,7 +82,7 @@ public class WfsProxyCapabilitiesAnalyzer extends AbstractWfsCapabilitiesAnalyze
 
             String fullName = uri + ":" + localName;
 
-            wfsProxy.getFeatureTypes().put(fullName, new FeatureTypeConfiguration(localName, uri, displayName));
+            wfsProxy.getFeatureTypes().put(fullName, new FeatureTypeConfigurationOld(localName, uri, displayName));
         }
     }
 

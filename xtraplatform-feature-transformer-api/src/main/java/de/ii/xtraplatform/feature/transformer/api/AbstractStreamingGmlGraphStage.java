@@ -13,13 +13,17 @@ import com.fasterxml.aalto.AsyncByteArrayFeeder;
 import com.fasterxml.aalto.AsyncXMLInputFactory;
 import com.fasterxml.aalto.AsyncXMLStreamReader;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.util.xml.XMLPathTracker;
 
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 /**
  * @author zahnen
@@ -70,27 +74,27 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
 
                 case XMLStreamConstants.START_ELEMENT:
                     if (depth == 0) {
-                        OptionalInt numberMatched;
-                        OptionalInt numberReturned;
+                        OptionalLong numberMatched;
+                        OptionalLong numberReturned;
                         try {
-                            numberMatched = OptionalInt.of(Integer.parseInt(parser.getAttributeValue(null, "numberMatched")));
+                            numberMatched = OptionalLong.of(Long.parseLong(parser.getAttributeValue(null, "numberMatched")));
                         } catch (NumberFormatException e) {
-                            numberMatched = OptionalInt.empty();
+                            numberMatched = OptionalLong.empty();
                         }
                         try {
-                            numberReturned = OptionalInt.of(Integer.parseInt(parser.getAttributeValue(null, "numberReturned")));
+                            numberReturned = OptionalLong.of(Long.parseLong(parser.getAttributeValue(null, "numberReturned")));
                         } catch (NumberFormatException e) {
-                            numberReturned = OptionalInt.empty();
+                            numberReturned = OptionalLong.empty();
                         }
 
-                        gmlConsumer.onGmlStart(numberReturned, numberMatched);
+                        gmlConsumer.onStart(numberReturned, numberMatched);
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
                             gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i));
                         }
                     } else if (matchesFeatureType(parser.getNamespaceURI(), parser.getLocalName())) {
                         inFeature = true;
                         featureDepth = depth;
-                        gmlConsumer.onGmlFeatureStart(parser.getNamespaceURI(), parser.getLocalName(), pathTracker.asList());
+                        gmlConsumer.onFeatureStart(ImmutableList.of(getQualifiedName(parser.getNamespaceURI(), parser.getLocalName())));
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
                             gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i));
                         }
@@ -98,13 +102,13 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
                         inFeature = true;
                         featureDepth = depth;
                         gmlConsumer.onNamespaceRewrite(featureType, parser.getNamespaceURI());
-                        gmlConsumer.onGmlFeatureStart(parser.getNamespaceURI(), parser.getLocalName(), pathTracker.asList());
+                        gmlConsumer.onFeatureStart(ImmutableList.of(getQualifiedName(parser.getNamespaceURI(), parser.getLocalName())));
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
                             gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i));
                         }
                     } else if (inFeature) {
                         pathTracker.track(parser.getNamespaceURI(), parser.getLocalName(), depth - featureDepth);
-                        gmlConsumer.onGmlPropertyStart(parser.getNamespaceURI(), parser.getLocalName(), pathTracker.asList());
+                        gmlConsumer.onPropertyStart(pathTracker.asList(), ImmutableList.of());
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
                             gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i));
                         }
@@ -115,12 +119,12 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
                 case XMLStreamConstants.END_ELEMENT:
                     depth -= 1;
                     if (depth == 0) {
-                        gmlConsumer.onGmlEnd();
+                        gmlConsumer.onEnd();
                     } else if (matchesFeatureType(parser.getLocalName())) {
                         inFeature = false;
-                        gmlConsumer.onGmlFeatureEnd(parser.getNamespaceURI(), parser.getLocalName(), pathTracker.asList());
+                        gmlConsumer.onFeatureEnd(pathTracker.asList());
                     } else if (inFeature) {
-                        gmlConsumer.onGmlPropertyEnd(parser.getNamespaceURI(), parser.getLocalName(), pathTracker.asList());
+                        gmlConsumer.onPropertyEnd(pathTracker.asList());
                     }
                     pathTracker.track(depth - featureDepth);
                     break;
@@ -130,7 +134,7 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
                         String text = parser.getText();
                         // TODO
                         if (!parser.isWhiteSpace()) // && !text.matches("\\s*")
-                            gmlConsumer.onGmlPropertyText(text);
+                            gmlConsumer.onPropertyText(text);
                     }
                     break;
 
@@ -154,5 +158,11 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
 
     boolean matchesFeatureType(final String localName) {
         return featureType.getLocalPart().equals(localName);
+    }
+
+    private String getQualifiedName(String namespaceUri, String localName) {
+        return Optional.ofNullable(namespaceUri)
+                       .map(ns -> ns + ":" + localName)
+                       .orElse(localName);
     }
 }

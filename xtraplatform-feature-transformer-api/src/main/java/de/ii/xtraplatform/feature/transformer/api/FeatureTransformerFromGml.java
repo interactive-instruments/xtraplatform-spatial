@@ -9,12 +9,15 @@ package de.ii.xtraplatform.feature.transformer.api;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.feature.query.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 
 import javax.xml.namespace.QName;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalInt;
+import java.util.OptionalLong;
+import java.util.function.Predicate;
 
 import static de.ii.xtraplatform.util.functional.LambdaWithException.consumerMayThrow;
 import static de.ii.xtraplatform.util.functional.LambdaWithException.mayThrow;
@@ -45,7 +48,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
     private boolean geometrySent;
     private boolean inCoordinates;
     private TargetMapping transformGeometry;
-    private GmlFeatureTypeAnalyzer.GML_GEOMETRY_TYPE transformGeometryType;
+    private SimpleFeatureGeometry transformGeometryType;
     private Integer transformGeometryDimension;
     private final Joiner joiner;
     private final StringBuilder stringBuilder;
@@ -59,27 +62,24 @@ class FeatureTransformerFromGml implements GmlConsumer {
     }
 
     @Override
-    public void onGmlStart(OptionalInt numberReturned, OptionalInt numberMatched) throws Exception {
+    public void onStart(OptionalLong numberReturned, OptionalLong numberMatched) throws Exception {
         featureTransformer.onStart(numberReturned, numberMatched);
     }
 
     @Override
-    public void onGmlEnd() throws Exception {
+    public void onEnd() throws Exception {
         featureTransformer.onEnd();
     }
 
     @Override
-    public void onGmlFeatureStart(String namespace, String localName, List<String> path) throws Exception {
-        final TargetMapping mapping = featureTypeMapping.findMappings(getQualifiedName(namespace, localName), outputFormat)
-                                                        .stream()
-                                                        .filter(TargetMapping::isEnabled)
-                                                        .findFirst()
+    public void onFeatureStart(List<String> path) throws Exception {
+        final TargetMapping mapping = featureTypeMapping.findMappings(path.get(0), outputFormat)
                                                         .orElse(null);
         featureTransformer.onFeatureStart(mapping);
     }
 
     @Override
-    public void onGmlFeatureEnd(String namespace, String localName, List<String> strings) throws Exception {
+    public void onFeatureEnd(List<String> path) throws Exception {
         featureTransformer.onFeatureEnd();
     }
 
@@ -98,37 +98,35 @@ class FeatureTransformerFromGml implements GmlConsumer {
         }
 
         featureTypeMapping.findMappings(getQualifiedName(namespace, "@" + localName), outputFormat)
-                          .stream()
-                          .filter(TargetMapping::isEnabled)
-                          .forEach(consumerMayThrow(mapping -> featureTransformer.onAttribute(mapping, value)));
+                          .ifPresent(consumerMayThrow(mapping -> {
+                              //featureTransformer.onAttribute(mapping, value);
+                              featureTransformer.onPropertyStart(mapping, ImmutableList.of());
+                              featureTransformer.onPropertyText(value);
+                              featureTransformer.onPropertyEnd();
+                          }));
     }
 
     //TODO: on-the-fly mappings
     @Override
-    public void onGmlPropertyStart(String namespace, String localName, List<String> path) throws Exception {
+    public void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception {
         boolean mapped = false;
         if (!inProperty) {
-            mapped = featureTypeMapping.findMappings2(path, outputFormat)
-                                       .stream()
-                                       .filter(TargetMapping::isEnabled)
-                                       .filter(targetMapping -> !targetMapping.isSpatial())
+            mapped = featureTypeMapping.findMappings(path, outputFormat)
+                                       .filter(isNotSpatial())
                                        .map(mayThrow(mapping -> {
-                                           featureTransformer.onPropertyStart(mapping);
-                                           return true;
+                                           featureTransformer.onPropertyStart(mapping, multiplicities);
+                                           return mapping;
                                        }))
-                                       .reduce(false, (a, b) -> a || b);
+                                       .isPresent();
         } else if (transformGeometry != null) {
-            onGeometryPart(localName);
+            onGeometryPart(getLocalName(path));
         }
 
         inProperty = inProperty || mapped;
 
         if (!inProperty && transformGeometry == null) {
-            featureTypeMapping.findMappings2(path, outputFormat)
-                              .stream()
-                              .filter(TargetMapping::isEnabled)
-                              .filter(TargetMapping::isSpatial)
-                              .findFirst()
+            featureTypeMapping.findMappings(path, outputFormat)
+                              .filter(isSpatial())
                               .ifPresent(mapping -> transformGeometry = mapping);
 
             if (transformGeometry != null) {
@@ -139,6 +137,14 @@ class FeatureTransformerFromGml implements GmlConsumer {
         }
     }
 
+    private Predicate<TargetMapping> isSpatial() {
+        return TargetMapping::isSpatial;
+    }
+
+    private Predicate<TargetMapping> isNotSpatial() {
+        return mapping -> !mapping.isSpatial();
+    }
+
     private String join(List<String> elements) {
         stringBuilder.setLength(0);
         return joiner.appendTo(stringBuilder, elements)
@@ -146,7 +152,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
     }
 
     @Override
-    public void onGmlPropertyText(String text) throws Exception {
+    public void onPropertyText(String text) throws Exception {
         if (inProperty) {
             if (inCoordinates) {
                 featureTransformer.onGeometryCoordinates(text);
@@ -157,7 +163,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
     }
 
     @Override
-    public void onGmlPropertyEnd(String namespace, String localName, List<String> path) throws Exception {
+    public void onPropertyEnd(List<String> path) throws Exception {
         if (transformGeometry != null) {
             if (inGeometry != null && inGeometry.equals(path)) {
                 inGeometry = null;
@@ -168,7 +174,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
                 featureTransformer.onGeometryEnd();
                 inProperty = false;
             } else {
-                onGeometryPartEnd(localName);
+                onGeometryPartEnd(getLocalName(path));
             }
         } else if (inProperty) {
             featureTransformer.onPropertyEnd();
@@ -185,7 +191,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
         if (transformGeometry == null) return;
 
         if (transformGeometryType == null) {
-            final GmlFeatureTypeAnalyzer.GML_GEOMETRY_TYPE geometryType = GmlFeatureTypeAnalyzer.GML_GEOMETRY_TYPE.fromString(localName);
+            final SimpleFeatureGeometry geometryType = GmlFeatureTypeAnalyzer.GML_GEOMETRY_TYPE.fromString(localName).toSimpleFeatureGeometry();
             if (geometryType.isValid()) {
                 transformGeometryType = geometryType;
             }
@@ -222,5 +228,9 @@ class FeatureTransformerFromGml implements GmlConsumer {
         return Optional.ofNullable(namespaceUri)
                        .map(ns -> ns + ":" + localName)
                        .orElse(localName);
+    }
+
+    private String getLocalName(List<String> path) {
+        return path.isEmpty() ? null : path.get(path.size()-1).substring(path.get(path.size()-1).lastIndexOf(":")+1);
     }
 }

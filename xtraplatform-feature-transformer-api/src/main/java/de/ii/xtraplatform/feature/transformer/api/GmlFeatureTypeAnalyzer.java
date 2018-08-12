@@ -10,6 +10,7 @@
  */
 package de.ii.xtraplatform.feature.transformer.api;
 
+import de.ii.xtraplatform.feature.query.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.util.xml.XMLPathTracker;
@@ -77,7 +78,7 @@ public class GmlFeatureTypeAnalyzer {
         }
     }
 
-    public enum GML_GEOMETRY_TYPE {
+    public enum GML_GEOMETRY_TYPE implements SimpleFeatureGeometryFrom {
 
         GEOMETRY("GeometryPropertyType"),
         ABSTRACT_GEOMETRY("GeometricPrimitivePropertyType"),
@@ -128,6 +129,54 @@ public class GmlFeatureTypeAnalyzer {
             return false;
         }
 
+        @Override
+        public SimpleFeatureGeometry toSimpleFeatureGeometry() {
+            SimpleFeatureGeometry simpleFeatureGeometry = SimpleFeatureGeometry.NONE;
+
+            switch (this) {
+
+                case GEOMETRY:
+                    break;
+                case ABSTRACT_GEOMETRY:
+                    break;
+                case POINT:
+                    simpleFeatureGeometry = SimpleFeatureGeometry.POINT;
+                    break;
+                case MULTI_POINT:
+                    simpleFeatureGeometry = SimpleFeatureGeometry.MULTI_POINT;
+                    break;
+                case LINE_STRING:
+                    simpleFeatureGeometry = SimpleFeatureGeometry.LINE_STRING;
+                    break;
+                case MULTI_LINESTRING:
+                    simpleFeatureGeometry = SimpleFeatureGeometry.MULTI_LINE_STRING;
+                    break;
+                case CURVE:
+                    simpleFeatureGeometry = SimpleFeatureGeometry.LINE_STRING;
+                    break;
+                case MULTI_CURVE:
+                    simpleFeatureGeometry = SimpleFeatureGeometry.MULTI_LINE_STRING;
+                    break;
+                case SURFACE:
+                    simpleFeatureGeometry = SimpleFeatureGeometry.POLYGON;
+                    break;
+                case MULTI_SURFACE:
+                    simpleFeatureGeometry = SimpleFeatureGeometry.MULTI_POLYGON;
+                    break;
+                case POLYGON:
+                    simpleFeatureGeometry = SimpleFeatureGeometry.POLYGON;
+                    break;
+                case MULTI_POLYGON:
+                    simpleFeatureGeometry = SimpleFeatureGeometry.MULTI_POLYGON;
+                    break;
+                case SOLID:
+                    break;
+            }
+
+            return simpleFeatureGeometry;
+        }
+
+        @Override
         public boolean isValid() {
             return this != NONE;
         }
@@ -138,7 +187,8 @@ public class GmlFeatureTypeAnalyzer {
 
     private FeatureTransformerService proxyService;
     // TODO: could it be more than one?
-    private FeatureTypeConfiguration currentFeatureType;
+    private FeatureTypeConfigurationOld currentFeatureType;
+    private ImmutableFeatureTypeMapping.Builder currentFeatureTypeMapping;
     private XMLPathTracker currentPath;
     //private XMLPathTracker currentPathWithoutObjects;
     private Set<String> mappedPaths;
@@ -164,7 +214,7 @@ public class GmlFeatureTypeAnalyzer {
             proxyService.getWfsAdapter().getNsStore().addNamespace(prefix, newNamespace, true);
 
             String fullName = oldNamespace + ":" + featureTypeName;
-            FeatureTypeConfiguration wfsProxyFeatureType = proxyService.getFeatureTypes().get(fullName);
+            FeatureTypeConfigurationOld wfsProxyFeatureType = proxyService.getFeatureTypes().get(fullName);
             if (wfsProxyFeatureType != null) {
                 wfsProxyFeatureType.setNamespace(newNamespace);
                 proxyService.getFeatureTypes().remove(fullName);
@@ -179,12 +229,18 @@ public class GmlFeatureTypeAnalyzer {
 
     protected void analyzeFeatureType(String nsUri, String localName) {
 
+        // finish former feature type
+        // does the service exist yet or are we just building the data here?
+        //featureProviderDataBuilder.putMappings(currentFeatureType.getName(), currentFeatureTypeMapping.build());
+
+
         if (nsUri.isEmpty()) {
             //LOGGER.error(FrameworkMessages.NSURI_IS_EMPTY);
         }
 
         String fullName = nsUri + ":" + localName;
         currentFeatureType = proxyService.getFeatureTypes().get(fullName);
+        currentFeatureTypeMapping = ImmutableFeatureTypeMapping.builder();
 
         mappedPaths.clear();
         currentPath.clear();
@@ -201,7 +257,8 @@ public class GmlFeatureTypeAnalyzer {
             TargetMapping targetMapping = mappingProvider.getTargetMappingForFeatureType(nsUri, localName);
 
             if (targetMapping != null) {
-                currentFeatureType.getMappings().addMapping(fullName, mappingProvider.getTargetType(), targetMapping);
+                currentFeatureTypeMapping.putMappings(fullName, ImmutableSourcePathMapping.builder().putMappings(mappingProvider.getTargetType(), targetMapping).build());
+                //currentFeatureType.getMappings().addMapping(fullName, mappingProvider.getTargetType(), targetMapping);
             }
         }
     }
@@ -231,7 +288,8 @@ public class GmlFeatureTypeAnalyzer {
                     if (targetMapping != null) {
                         mappedPaths.add(path);
 
-                        currentFeatureType.getMappings().addMapping(path, mappingProvider.getTargetType(), targetMapping);
+                        currentFeatureTypeMapping.putMappings(path, ImmutableSourcePathMapping.builder().putMappings(mappingProvider.getTargetType(), targetMapping).build());
+                        //currentFeatureType.getMappings().addMapping(path, mappingProvider.getTargetType(), targetMapping);
                     }
                 }
             }
@@ -285,7 +343,8 @@ public class GmlFeatureTypeAnalyzer {
                 if (targetMapping != null) {
                     mappedPaths.add(path);
 
-                    currentFeatureType.getMappings().addMapping(path, mappingProvider.getTargetType(), targetMapping);
+                    currentFeatureTypeMapping.putMappings(path, ImmutableSourcePathMapping.builder().putMappings(mappingProvider.getTargetType(), targetMapping).build());
+                    //currentFeatureType.getMappings().addMapping(path, mappingProvider.getTargetType(), targetMapping);
                 }
             }
         }
