@@ -154,16 +154,26 @@ class FeatureTransformerFromGml implements GmlConsumer {
     @Override
     public void onPropertyText(String text) throws Exception {
         if (inProperty) {
-            if (inCoordinates) {
+            stringBuilder.append(text);
+            /*if (inCoordinates) {
                 featureTransformer.onGeometryCoordinates(text);
             } else {
                 featureTransformer.onPropertyText(text);
-            }
+            }*/
         }
     }
 
     @Override
     public void onPropertyEnd(List<String> path) throws Exception {
+        if (stringBuilder.length() > 0) {
+            if (inCoordinates) {
+                featureTransformer.onGeometryCoordinates(stringBuilder.toString());
+            } else {
+                featureTransformer.onPropertyText(stringBuilder.toString());
+            }
+            stringBuilder.setLength(0);
+        }
+
         if (transformGeometry != null) {
             if (inGeometry != null && inGeometry.equals(path)) {
                 inGeometry = null;
