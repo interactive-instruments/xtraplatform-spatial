@@ -21,6 +21,7 @@ public class EpsgCrs {
     private static final String SIMPLE_PREFIX = "EPSG:";
     private static final String URN_PREFIX = "urn:ogc:def:crs:EPSG::";
     private static final String URI_PREFIX = "http://www.opengis.net/def/crs/EPSG/0/";
+    private static final String CRS84 = "http://www.opengis.net/def/crs/OGC/1.3/CRS84";
     private int code;
     private boolean forceLongitudeFirst = false;
 
@@ -71,6 +72,9 @@ public class EpsgCrs {
 
     @JsonIgnore
     public String getAsUri() {
+        if (code == 4326 && forceLongitudeFirst) {
+            return CRS84;
+        }
         return URI_PREFIX.concat(Integer.toString(code));
     }
 

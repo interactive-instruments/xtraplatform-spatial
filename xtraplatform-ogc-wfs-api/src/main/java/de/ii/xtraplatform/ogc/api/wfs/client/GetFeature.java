@@ -71,7 +71,7 @@ public class GetFeature implements WfsOperation {
         }
 
         if (this.resultType == RESULT_TYPE.HITS) {
-            operation.setAttribute(WFS.getWord(versions.getWfsVersion(), WFS.VOCABULARY.RESULT_TYPE), String.valueOf(RESULT_TYPE.HITS));
+            operation.setAttribute(WFS.getWord(versions.getWfsVersion(), WFS.VOCABULARY.RESULT_TYPE), String.valueOf(RESULT_TYPE.HITS).toLowerCase());
         }
 
         if (versions.getGmlVersion() != null && versions.getWfsVersion() != null) {

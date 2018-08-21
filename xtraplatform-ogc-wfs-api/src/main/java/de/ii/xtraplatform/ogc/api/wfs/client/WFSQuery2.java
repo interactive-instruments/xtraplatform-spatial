@@ -21,6 +21,7 @@ import de.ii.xtraplatform.util.xml.XMLDocument;
 import org.eclipse.xsd.XSDElementDeclaration;
 import org.eclipse.xsd.XSDFactory;
 import org.eclipse.xsd.XSDParticle;
+import org.geotools.filter.FidFilterImpl;
 import org.geotools.filter.v2_0.bindings.BBOXTypeBinding;
 import org.geotools.filter.v2_0.bindings.BinaryComparisonOpTypeBinding;
 import org.geotools.geometry.jts.LiteCoordinateSequence;
@@ -103,14 +104,20 @@ public class WFSQuery2 {
         // check if the first level expression is ResourceId
 
         if (!filter.isEmpty()) {
-            final Node node = document.adoptDocument(new FilterEncoder(versions.getWfsVersion()).encode(filter.get(0)));
-            document.appendChild(node);
-            document.done();
-            final String filterString = document.toString(false, true);
-            LOGGER.debug("FILTER {}", filterString);
-            builder.put(WFS.getWord(versions.getWfsVersion()
-                                            .getFilterVersion(), FES.VOCABULARY.FILTER)
-                           .toUpperCase(), filterString);
+            if (filter.get(0) instanceof FidFilterImpl) {
+                builder.put(WFS.getWord(versions.getWfsVersion()
+                                                .getFilterVersion(), FES.VOCABULARY.RESOURCEID)
+                               .toUpperCase(), Joiner.on(',').join(((FidFilterImpl) filter.get(0)).getFidsSet()));
+            } else {
+                final Node node = document.adoptDocument(new FilterEncoder(versions.getWfsVersion()).encode(filter.get(0)));
+                document.appendChild(node);
+                document.done();
+                final String filterString = document.toString(false, true);
+                LOGGER.debug("FILTER {}", filterString);
+                builder.put(WFS.getWord(versions.getWfsVersion()
+                                                .getFilterVersion(), FES.VOCABULARY.FILTER)
+                               .toUpperCase(), filterString);
+            }
         }
 
 

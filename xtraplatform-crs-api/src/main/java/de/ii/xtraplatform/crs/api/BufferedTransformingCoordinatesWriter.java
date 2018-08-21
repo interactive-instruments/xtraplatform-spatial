@@ -31,6 +31,7 @@ public class BufferedTransformingCoordinatesWriter extends DefaultCoordinatesWri
     private final boolean reversepolygon;
 
     private int zCounter = 0;
+    private boolean continuing;
 
     public BufferedTransformingCoordinatesWriter(CoordinateFormatter formatter, int srsDimension, CrsTransformer transformer, boolean swap, boolean reversepolygon) {
         super(formatter, srsDimension);
@@ -68,6 +69,10 @@ public class BufferedTransformingCoordinatesWriter extends DefaultCoordinatesWri
         if (force || counter == BUFFER_SIZE) {
 
             double[] c = postProcessCoordinates(coordinateBuffer, (counter - zCounter) / 2);
+
+            if (continuing) {
+                super.writeSeparator();
+            }
 
             if (this.reversepolygon) {
 
@@ -117,6 +122,8 @@ public class BufferedTransformingCoordinatesWriter extends DefaultCoordinatesWri
                 }
                 counter = 0;
             }
+
+            continuing = true;
         }
     }
 

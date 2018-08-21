@@ -61,7 +61,7 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
     @Override
     public CrsTransformer getTransformer(String sourceCrs, String targetCrs) {
         try {
-            return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs)), CRS.decode(applyWorkarounds(targetCrs)));
+            return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs)), CRS.decode(applyWorkarounds(targetCrs)), new EpsgCrs(targetCrs));
         } catch (FactoryException ex) {
             LOGGER.debug("GeoTools error", ex);
         }
@@ -71,7 +71,7 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
     @Override
     public CrsTransformer getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
         try {
-            return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs.getAsSimple()), sourceCrs.isForceLongitudeFirst()), CRS.decode(applyWorkarounds(targetCrs.getAsSimple()), targetCrs.isForceLongitudeFirst()));
+            return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs.getAsSimple()), sourceCrs.isForceLongitudeFirst()), CRS.decode(applyWorkarounds(targetCrs.getAsSimple()), targetCrs.isForceLongitudeFirst()), targetCrs);
         } catch (FactoryException ex) {
             LOGGER.debug("GeoTools error", ex);
         }
@@ -84,20 +84,5 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
             return code.replace("102100", "3857");
         }
         return code;
-    }
-
-    @Override
-    public double getUnitEquivalentInMeter(String crs) {
-        try {
-            Unit unit = CRS.getHorizontalCRS(CRS.decode(applyWorkarounds(crs))).getCoordinateSystem().getAxis(0).getUnit();
-
-            if( unit != SI.METER) {
-                return (Math.PI/180.00) * CRS.getEllipsoid(CRS.decode(applyWorkarounds(crs))).getSemiMajorAxis();
-            }
-        } catch (FactoryException ex) {
-            LOGGER.debug("GeoTools error", ex);
-        }
-
-        return 1;
     }
 }

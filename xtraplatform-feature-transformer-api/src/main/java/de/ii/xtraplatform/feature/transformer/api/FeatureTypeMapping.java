@@ -1,6 +1,6 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- * <p>
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.feature.transformer.api;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Splitter;
@@ -29,15 +30,17 @@ import java.util.stream.Stream;
  * @author zahnen
  */
 @Value.Immutable
-@Value.Modifiable
+//@Value.Modifiable
 //TODO: @JsonAnySetter not generated for ModifiableFeatureTypeMapping
 //TODO: map order only sustained with Builder
-@JsonDeserialize(builder = ImmutableFeatureTypeMapping.Builder.class)
+//@JsonDeserialize(builder = ImmutableFeatureTypeMapping.Builder.class)
+@JsonDeserialize(as = ModifiableFeatureTypeMapping.class)
 public abstract class FeatureTypeMapping {
 
     @JsonAnyGetter
     public abstract Map<String, SourcePathMapping> getMappings();
 
+    @JsonIgnore
     @Value.Derived
     protected Map<List<String>, SourcePathMapping> getMappingsWithPathAsList() {
         return getMappings().entrySet()

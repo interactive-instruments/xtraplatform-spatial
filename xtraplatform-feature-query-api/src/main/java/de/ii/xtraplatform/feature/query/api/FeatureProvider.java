@@ -7,9 +7,6 @@
  */
 package de.ii.xtraplatform.feature.query.api;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.http.HttpEntity;
-
 import java.util.Optional;
 
 /**
@@ -17,9 +14,16 @@ import java.util.Optional;
  */
 public interface FeatureProvider<T extends FeatureConsumer> {
     FeatureStream<T> getFeatureStream(FeatureQuery query);
-    Optional<ListenableFuture<HttpEntity>> getFeatureCount(FeatureQuery query);
     Optional<String> encodeFeatureQuery(FeatureQuery query);
     String getSourceFormat();
+
+    interface MetadataAware {
+        void getMetadata(FeatureProviderMetadataConsumer metadataConsumer);
+    }
+
+    interface DataGenerator<U extends FeatureProviderData> {
+        FeatureProviderMetadataConsumer getDataGenerator(U data);
+    }
 
     //TODO
     /*interface Queries {

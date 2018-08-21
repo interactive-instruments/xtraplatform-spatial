@@ -64,7 +64,7 @@ public class CoordinateTuple {
     }
 
     public String getXasString() {
-        return String.valueOf(c[0]);
+        return  String.valueOf(c[0]);
     }
 
     public String getYasString() {

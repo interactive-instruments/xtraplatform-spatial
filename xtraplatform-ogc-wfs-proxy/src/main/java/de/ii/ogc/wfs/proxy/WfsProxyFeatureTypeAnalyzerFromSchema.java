@@ -7,9 +7,9 @@
  */
 package de.ii.ogc.wfs.proxy;
 
-import de.ii.xtraplatform.feature.transformer.api.GmlFeatureTypeAnalyzer;
+import de.ii.xtraplatform.feature.provider.wfs.GmlFeatureTypeAnalyzer;
+import de.ii.xtraplatform.feature.provider.wfs.ModifiableFeatureProviderDataWfs;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTransformerService;
 import de.ii.xtraplatform.ogc.api.gml.parser.GMLSchemaAnalyzer;
 
 import java.util.List;
@@ -19,7 +19,7 @@ import java.util.List;
  */
 public class WfsProxyFeatureTypeAnalyzerFromSchema extends GmlFeatureTypeAnalyzer implements GMLSchemaAnalyzer {
 
-    public WfsProxyFeatureTypeAnalyzerFromSchema(FeatureTransformerService proxyService, List<TargetMappingProviderFromGml> mappingProviders) {
+    public WfsProxyFeatureTypeAnalyzerFromSchema(ModifiableFeatureProviderDataWfs proxyService, List<TargetMappingProviderFromGml> mappingProviders) {
         super(proxyService, mappingProviders);
     }
 

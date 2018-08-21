@@ -17,7 +17,7 @@ package de.ii.xtraplatform.crs.api;
 public abstract class BoundingBoxTransformer implements CrsTransformer{
         
     @Override
-    public BoundingBox transformBoundingBox(BoundingBox boundingBox, EpsgCrs targetCrs) throws CrsTransformationException {
+    public BoundingBox transformBoundingBox(BoundingBox boundingBox) throws CrsTransformationException {
                 
         // DEBUG
         //System.out.println( bbox.getXmin()+" " +bbox.getYmin()+" "+bbox.getXmax()+" "+bbox.getYmax()+" 0;");
@@ -31,7 +31,7 @@ public abstract class BoundingBoxTransformer implements CrsTransformer{
         }
 
         BoundingBox envOut = new BoundingBox();
-        envOut.setEpsgCrs(targetCrs);
+        envOut.setEpsgCrs(getTargetCrs());
               
         // Die BoundingBox ins boxIn (lx,ly,hx,hy) im System crsIn wird in das System 
         // crsOut transformiert. Dabei wird sichergestellt, dass es sich wieder um eine

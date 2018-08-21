@@ -1,3 +1,10 @@
+/**
+ * Copyright 2018 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.feature.transformer.api;
 
 
@@ -19,33 +26,33 @@ import java.util.Optional;
 /**
  * @author zahnen
  */
-@Component
-@Provides
-@Entity(entityType = Service.class, dataType = FeatureTransformerServiceData.class)
+//@Component
+//@Provides
+//@Entity(entityType = Service.class, dataType = FeatureTransformerServiceData.class)
 // TODO: @Stereotype does not seem to work, maybe test with bnd-ipojo-plugin
 // needed to register the ConfigurationHandler when no other properties are set
-@HandlerDeclaration("<properties></properties>")
-public class AbstractFeatureTransformerService extends AbstractService<FeatureTransformerServiceData> implements FeatureTransformerService2 {
+//@HandlerDeclaration("<properties></properties>")
+public abstract class AbstractFeatureTransformerService extends AbstractService<FeatureTransformerServiceData> implements FeatureTransformerService2 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureTransformerService.class);
 
     @Requires
     private FeatureProviderRegistry featureProviderRegistry;
 
-    private TransformingFeatureProvider featureProvider;
+    protected TransformingFeatureProvider featureProvider;
 
-    AbstractFeatureTransformerService() {
+    public AbstractFeatureTransformerService() {
 
 
     }
 
     //TODO: setData not called without this
-    @Validate
-    void onStart() {
-        LOGGER.debug("STARTED {} {}", getId(), shouldRegister());
-    }
+    //@Validate
+    //void onStart() {
+    //    LOGGER.debug("STARTED {} {}", getId(), shouldRegister());
+    //}
 
-    @Override
+    /*@Override
     protected ImmutableFeatureTransformerServiceData dataToImmutable(FeatureTransformerServiceData data) {
         final ImmutableFeatureTransformerServiceData serviceData = ImmutableFeatureTransformerServiceData.copyOf(data);
 
@@ -53,9 +60,9 @@ public class AbstractFeatureTransformerService extends AbstractService<FeatureTr
         this.featureProvider = (TransformingFeatureProvider) featureProviderRegistry.createFeatureProvider(serviceData.getFeatureProvider());
 
         return serviceData;
-    }
+    }*/
 
-    @Override
+    /*@Override
     public Optional<FeatureTypeConfiguration> getFeatureTypeByName(String name) {
         return Optional.ofNullable(getData().getFeatureTypes().get(name));
     }
@@ -70,5 +77,5 @@ public class AbstractFeatureTransformerService extends AbstractService<FeatureTr
     }
     public CrsTransformer getBboxTransformer() {
         return featureProvider.getReverseCrsTransformer();
-    }
+    }*/
 }

@@ -12,6 +12,7 @@
  */
 package de.ii.xtraplatform.ogc.api.wfs.client;
 
+import akka.japi.Pair;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
@@ -503,6 +504,30 @@ public class WFSAdapter {
                       .toString();
         } catch (URISyntaxException | ParserConfigurationException | TransformerException | IOException | SAXException e) {
             return "";
+        }
+    }
+
+    public Pair<String,String> getRequestUrlAndBody(WfsOperation operation) {
+        try {
+            URI uri = findUrl(operation.getOperation(), WFS.METHOD.POST);
+            String xml = operation.asXml(new XMLDocumentFactory(nsStore), versions).toString(false);
+
+            return new Pair<>(uri.toString(), xml);
+
+        } catch (TransformerException | ParserConfigurationException | SAXException | IOException e) {
+            return null;
+        }
+    }
+
+    public Pair<String,String> getRequestUrlAndBody(WFSOperation operation) {
+        try {
+            URI uri = findUrl(operation.getOperation(), WFS.METHOD.POST);
+            String xml = operation.getPOSTXML(nsStore, versions);
+
+            return new Pair<>(uri.toString(), xml);
+
+        } catch ( ParserConfigurationException e) {
+            return null;
         }
     }
 

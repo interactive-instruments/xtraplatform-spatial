@@ -1,18 +1,32 @@
+/**
+ * Copyright 2018 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.feature.provider.wfs;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
+import org.apache.http.client.utils.URIBuilder;
 import org.immutables.value.Value;
+
+import javax.ws.rs.core.UriBuilder;
+import java.util.Optional;
 
 /**
  * @author zahnen
  */
+//TODO
+//@Value.Style(validationMethod = Value.Style.ValidationMethod.NONE)
 @Value.Immutable
 @Value.Modifiable
-@JsonDeserialize(as = ImmutableFeatureProviderDataWfs.class)
+@JsonDeserialize(as = ModifiableFeatureProviderDataWfs.class)
 public abstract class FeatureProviderDataWfs extends FeatureProviderDataTransformer {
 
     @Value.Derived
@@ -22,6 +36,13 @@ public abstract class FeatureProviderDataWfs extends FeatureProviderDataTransfor
     }
 
     public abstract ConnectionInfo getConnectionInfo();
+
+    @Override
+    @Value.Derived
+    public Optional<String> getDataSourceUrl() {
+        URIBuilder uriBuilder = new URIBuilder(getConnectionInfo().getUri());
+        return Optional.of(uriBuilder.addParameter("SERVICE", "WFS").addParameter("REQUEST", "GetCapabilities").toString());
+    }
 
     @Override
     public boolean isFeatureTypeEnabled(String featureType) {

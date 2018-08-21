@@ -1,3 +1,10 @@
+/**
+ * Copyright 2018 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -17,7 +24,7 @@ import java.util.OptionalInt;
 @JsonDeserialize(as = ModifiableConnectionInfo.class)
 public abstract class ConnectionInfo {
 
-    enum METHOD {GET,POST}
+    public enum METHOD {GET,POST}
 
     public abstract URI getUri();
     public abstract METHOD getMethod();
@@ -27,5 +34,4 @@ public abstract class ConnectionInfo {
     public abstract Optional<String> getPassword();
     public abstract Map<String,String> getOtherUrls();
     public abstract Map<String,String> getNamespaces();
-    public abstract EpsgCrs getNativeCrs();
 }

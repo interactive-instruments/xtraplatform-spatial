@@ -9,9 +9,9 @@ package de.ii.xtraplatform.feature.transformer.api;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.query.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
 
 import javax.xml.namespace.QName;
 import java.util.List;
@@ -201,7 +201,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
         if (transformGeometry == null) return;
 
         if (transformGeometryType == null) {
-            final SimpleFeatureGeometry geometryType = GmlFeatureTypeAnalyzer.GML_GEOMETRY_TYPE.fromString(localName).toSimpleFeatureGeometry();
+            final SimpleFeatureGeometry geometryType = GML_GEOMETRY_TYPE.fromString(localName).toSimpleFeatureGeometry();
             if (geometryType.isValid()) {
                 transformGeometryType = geometryType;
             }

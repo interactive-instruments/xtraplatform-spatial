@@ -21,6 +21,7 @@ import akka.util.ByteString;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.EventBasedStreamingGmlParser.GmlEvent;
+import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,7 +160,7 @@ public class EventBasedStreamingFeatureTransformer {
     }
 
     public static final class TransformGeometry extends TransformWithMapping {
-        public GmlFeatureTypeAnalyzer.GML_GEOMETRY_TYPE type;
+        public GML_GEOMETRY_TYPE type;
         public Integer dimension;
 
         public TransformGeometry(TargetMapping mapping) {
@@ -414,7 +415,7 @@ public class EventBasedStreamingFeatureTransformer {
                     if (transformGeometry == null) return;
 
                     if (transformGeometry.type == null) {
-                        final GmlFeatureTypeAnalyzer.GML_GEOMETRY_TYPE geometryType = GmlFeatureTypeAnalyzer.GML_GEOMETRY_TYPE.fromString(gmlPropertyStart.localName);
+                        final GML_GEOMETRY_TYPE geometryType = GML_GEOMETRY_TYPE.fromString(gmlPropertyStart.localName);
                         if (geometryType.isValid()) {
                             transformGeometry.type = geometryType;
                         }

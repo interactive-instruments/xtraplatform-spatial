@@ -7,9 +7,11 @@
  */
 package de.ii.ogc.wfs.proxy;
 
-import de.ii.xtraplatform.feature.transformer.api.GmlFeatureTypeAnalyzer;
+import de.ii.xtraplatform.feature.provider.wfs.GmlFeatureTypeAnalyzer;
+import de.ii.xtraplatform.feature.provider.wfs.ModifiableFeatureProviderDataWfs;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTransformerService;
+import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
+import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_TYPE;
 import de.ii.xtraplatform.ogc.api.exceptions.GMLAnalyzeFailed;
 import de.ii.xtraplatform.ogc.api.gml.parser.GMLAnalyzer;
 import org.codehaus.staxmate.in.SMInputCursor;
@@ -32,7 +34,7 @@ public class WfsProxyFeatureTypeAnalyzerFromData extends GmlFeatureTypeAnalyzer 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WfsProxyFeatureTypeAnalyzerFromData.class);
 
-    public WfsProxyFeatureTypeAnalyzerFromData(FeatureTransformerService proxyService, List<TargetMappingProviderFromGml> mappingProviders) {
+    public WfsProxyFeatureTypeAnalyzerFromData(ModifiableFeatureProviderDataWfs proxyService, List<TargetMappingProviderFromGml> mappingProviders) {
         super(proxyService, mappingProviders);
     }
 

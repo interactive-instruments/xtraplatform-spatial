@@ -24,6 +24,4 @@ public interface CrsTransformation {
 
     boolean isCrsSupported(String crs);
     
-    double getUnitEquivalentInMeter(String crs);
-    
 }

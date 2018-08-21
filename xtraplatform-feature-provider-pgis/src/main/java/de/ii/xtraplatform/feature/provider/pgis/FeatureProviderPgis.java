@@ -1,3 +1,10 @@
+/**
+ * Copyright 2018 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.feature.provider.pgis;
 
 import akka.Done;
@@ -13,7 +20,6 @@ import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.akka.http.ActorSystemProvider;
 import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
-import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.query.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.query.api.FeatureQuery;
 import de.ii.xtraplatform.feature.query.api.FeatureStream;
@@ -51,9 +57,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -82,9 +85,6 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     private Map<String, SqlFeatureInserts> featureAddSinks;
     private Map<String, SqlFeatureInserts> featureUpdateSinks;
     private SqlFeatureRemover featureRemover;
-    private CrsTransformer defaultTransformer;
-    private CrsTransformer defaultReverseTransformer;
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
 
 
     FeatureProviderPgis(@Context BundleContext context, @Requires ActorSystemProvider actorSystemProvider, @Requires CrsTransformation crsTransformation, @Property(name = ".data") FeatureProviderDataPgis data) {
@@ -110,20 +110,6 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
             this.featureAddSinks = createFeatureSinks(data.getMappings(), false);
             this.featureUpdateSinks = createFeatureSinks(data.getMappings(), true);
             this.featureRemover = new SqlFeatureRemover(session, materializer);
-
-            //TODO: move somewhere else, feature provider only knows source crs, but not target
-            EpsgCrs sourceCrs = data.getConnectionInfo().getNativeCrs();
-            EpsgCrs wgs84 = new EpsgCrs(4326, true);
-
-            executorService.schedule(() -> {
-                try {
-                    this.defaultTransformer = crsTransformation.getTransformer(sourceCrs, wgs84);
-                    this.defaultReverseTransformer = crsTransformation.getTransformer(wgs84, sourceCrs);
-                    LOGGER.debug("TRANSFORMER {} {} -> {} {}", sourceCrs.getCode(), sourceCrs.isForceLongitudeFirst() ? "lonlat" : "latlon", wgs84.getCode(), wgs84.isForceLongitudeFirst() ? "lonlat" : "latlon");
-                } catch (Throwable e) {
-                    LOGGER.error("CRS transformer could not created"/*, e*/);
-                }
-            }, 3, TimeUnit.SECONDS);
         } catch (Throwable e) {
             LOGGER.error("CONNECTING TO DB FAILED", e);
             this.session = null;
@@ -143,7 +129,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     }
 
     @Override
-    public List<String> addFeaturesFromStream(String featureType, Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream) {
+    public List<String> addFeaturesFromStream(String featureType, CrsTransformer crsTransformer, Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream) {
         Optional<SqlFeatureInserts> featureSink = Optional.ofNullable(featureAddSinks.get(featureType));
 
         if (!featureSink.isPresent()) {
@@ -152,7 +138,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
 
         //TODO: merge classes
         SqlFeatureCreator sqlFeatureCreator = new SqlFeatureCreator(session, materializer, featureSink.get());
-        FeatureTransformerSql featureTransformerSql = new FeatureTransformerSql(sqlFeatureCreator, defaultReverseTransformer);
+        FeatureTransformerSql featureTransformerSql = new FeatureTransformerSql(sqlFeatureCreator, crsTransformer);
 
         try {
             stream.apply(featureTransformerSql)
@@ -173,7 +159,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     }
 
     @Override
-    public void updateFeatureFromStream(String featureType, String id, Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream) {
+    public void updateFeatureFromStream(String featureType, String id, CrsTransformer crsTransformer, Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream) {
         Optional<SqlFeatureInserts> featureSink = Optional.ofNullable(featureUpdateSinks.get(featureType));
 
         if (!featureSink.isPresent()) {
@@ -187,7 +173,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
 
         //TODO: merge classes
         SqlFeatureCreator sqlFeatureCreator = new SqlFeatureCreator(session, materializer, featureSink.get());
-        FeatureTransformerSql featureTransformerSql = new FeatureTransformerSql(sqlFeatureCreator, defaultReverseTransformer, id);
+        FeatureTransformerSql featureTransformerSql = new FeatureTransformerSql(sqlFeatureCreator, crsTransformer, id);
 
         try {
             stream.apply(featureTransformerSql)
@@ -211,21 +197,6 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     @Override
     public void deleteFeature(String featureType, String id) {
         featureRemover.remove(featureType, id);
-    }
-
-    @Override
-    public CrsTransformer getCrsTransformer() {
-        return defaultTransformer;
-    }
-
-    @Override
-    public CrsTransformer getReverseCrsTransformer() {
-        return defaultReverseTransformer;
-    }
-
-    @Override
-    public Optional<ListenableFuture<HttpEntity>> getFeatureCount(FeatureQuery query) {
-        return Optional.empty();
     }
 
     @Override

@@ -1,11 +1,21 @@
-version = '1.1.1'
-version += '-SNAPSHOT'
+version = '1.1.2'
+//version += '-SNAPSHOT'
 
 dependencies {
-    embedded group: 'org.geotools', name: 'gt-cql', version: '19.0'
-    embedded(group: 'org.geotools', name: 'gt-xml', version: '19.0') {
+    embedded group: 'org.geotools', name: 'gt-cql', version: '19.2'
+    embedded(group: 'org.geotools', name: 'gt-xml', version: '19.2') {
         exclude module: 'xercesImpl'
+        exclude module: 'guava'
+        exclude module: 'animal-sniffer-annotations'
+        exclude module: 'error_prone_annotations'
+        exclude module: 'checker-qual'
+        exclude module: 'j2objc-annotations'
+        exclude module: 'jsr305'
     }
+
+    embedded group: 'org.geotools', name: 'gt-referencing', version: '19.2'
+    embedded group: 'org.geotools', name: 'gt-epsg-hsql', version: '19.2'
+    embedded group: 'org.geotools', name: 'gt-epsg-extension', version: '19.2'
 }
 
 // TODO: run osgi plugin with logging to find out why these imports are not found
@@ -13,7 +23,10 @@ jar {
     manifest {
         instruction 'Embed-Dependency',
                 'gt-cql',
-                'gt-xml'
+                'gt-xml',
+                'gt-referencing',
+                'gt-epsg-hsql',
+                'gt-epsg-extension'
 
         instruction 'Embed-Transitive', 'true'
         instruction 'Embed-Export', 'true'
@@ -23,6 +36,7 @@ jar {
         instructionFirst 'Import-Package', 'org.xml.sax'
         instructionFirst 'Import-Package', 'javax.naming'
         instructionFirst 'Import-Package', 'javax.swing.event'
+        instructionFirst 'Import-Package', 'javax.swing.tree'
         instructionFirst 'Import-Package', 'javax.xml.namespace'
         instructionFirst 'Import-Package', 'org.xml.sax.helpers'
         instructionFirst 'Import-Package', 'org.w3c.dom'
@@ -34,5 +48,6 @@ jar {
         instructionFirst 'Import-Package', 'javax.xml.datatype'
         instructionFirst 'Import-Package', 'javax.xml.transform.dom'
         instructionFirst 'Import-Package', 'javax.annotation'
+        instruction 'Import-Package', 'javax.imageio.spi'
     }
 }

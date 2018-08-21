@@ -98,27 +98,23 @@ public class FeatureQueryEncoderWfs {
     }
 
     public Optional<GetFeature> encode(final FeatureQuery query) {
-        return encode(query, false);
-    }
-
-    public Optional<GetFeature> encode(final FeatureQuery query, final boolean hitsOnly) {
         try {
             return getFeatureTypeName(query)
             //return featureTypes.values()
             //                   .stream()
             //                   .filter(ft -> ft.getName().equals(query.getType()))
             //                   .findFirst()
-                               .map(mayThrow(ft -> encode(query, ft, featureTypeMappings.get(query.getType()), hitsOnly)));
+                               .map(mayThrow(ft -> encode(query, ft, featureTypeMappings.get(query.getType()))));
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Filter is invalid", e.getCause());
         }
     }
 
-    private GetFeature encode(FeatureQuery query, QName featureType, FeatureTypeMapping featureTypeMapping, final boolean hitsOnly) throws CQLException {
+    private GetFeature encode(FeatureQuery query, QName featureType, FeatureTypeMapping featureTypeMapping) throws CQLException {
         final String featureTypeName = namespaceNormalizer.getQualifiedName(featureType.getNamespaceURI(), featureType.getLocalPart());
 
         final WFSQuery2 wfsQuery = new WFSQueryBuilder().typeName(featureTypeName)
-                                                        .crs(query.getCrs())
+                                                        //TODO .crs(query.getCrs())
                                                         .filter(encodeFilter(query.getFilter(), featureTypeMapping))
                                                         .build();
         final GetFeatureBuilder getFeature = new GetFeatureBuilder();
@@ -131,7 +127,7 @@ public class FeatureQueryEncoderWfs {
         if (query.getOffset() > 0) {
             getFeature.startIndex(query.getOffset());
         }
-        if (hitsOnly) {
+        if (query.hitsOnly()) {
             getFeature.hitsOnly();
         }
 
@@ -182,7 +178,7 @@ public class FeatureQueryEncoderWfs {
             if (property.isPresent()) {
                 LOGGER.debug("PROP {}", property.get());
                 if (filter.getSRS() != null) {
-                    return new BBOXImpl(filterFactory.property(property.get(), namespaceSupport), filter.getBounds().getMinX(), filter.getBounds().getMinY(), filter.getBounds().getMaxX(), filter.getBounds().getMaxY(), new EpsgCrs(filter.getSRS()).getAsUri());
+                    return new BBOXImpl(filterFactory.property(property.get(), namespaceSupport), filter.getBounds().getMinX(), filter.getBounds().getMinY(), filter.getBounds().getMaxX(), filter.getBounds().getMaxY(), filter.getSRS());
                 }
                 return filterFactory.bbox(filterFactory.property(property.get(), namespaceSupport), filter.getBounds());
             }

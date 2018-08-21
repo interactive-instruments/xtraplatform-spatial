@@ -16,11 +16,21 @@ package de.ii.xtraplatform.crs.api;
  */
 public interface CrsTransformer {
 
+    EpsgCrs getSourceCrs();
+
+    EpsgCrs getTargetCrs();
+
+    boolean isTargetMetric();
+
     CoordinateTuple transform(double x, double y);
 
     CoordinateTuple transform(CoordinateTuple coordinateTuple);
 
     double[] transform(double[] coordinates, int numberOfPoints);
     
-    BoundingBox transformBoundingBox(BoundingBox boundingBox, EpsgCrs targetCrs) throws CrsTransformationException;
+    BoundingBox transformBoundingBox(BoundingBox boundingBox) throws CrsTransformationException;
+
+    double getSourceUnitEquivalentInMeters();
+
+    double getTargetUnitEquivalentInMeters();
 }

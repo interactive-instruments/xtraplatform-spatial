@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Writer;
+import java.util.Objects;
 
 /**
  *
@@ -45,14 +46,14 @@ public enum CoordinatesWriterType {
             //LOGGER.debug("creating GML2JsonBufferedTransformingCoordinatesWriter");
             return new BufferedTransformingCoordinatesWriter(builder.formatter, builder.srsDimension, builder.transformer, builder.swap, builder.reversepolygon);
         }
-    }/*,
+    },
     SIMPLIFY_BUFFER_TRANSFORM {
         @Override
         Writer create(Builder builder) {
             //LOGGER.debug("creating GML2JsonSimplifiyingBufferedTransformingCoordinatesWriter");
-            return new SimplifiyingBufferedTransformingCoordinatesWriter(builder.jsonOut, builder.srsDimension, builder.transformer, builder.simplifier, builder.swap, builder.reversepolygon);
+            return new SimplifiyingBufferedTransformingCoordinatesWriter(builder.formatter, builder.srsDimension, builder.transformer, builder.simplifier, builder.swap, builder.reversepolygon);
         }
-    }*/;
+    };
 
     abstract Writer create(Builder builder);
 
@@ -74,7 +75,7 @@ public enum CoordinatesWriterType {
         private boolean simplify;
         private boolean reversepolygon;
         private CrsTransformer transformer;
-        //private DouglasPeuckerLineSimplifier simplifier;
+        private DouglasPeuckerLineSimplifier simplifier;
         
         public Builder () {
             this.srsDimension = 2;
@@ -85,10 +86,10 @@ public enum CoordinatesWriterType {
         }
         
         public CoordinatesWriterType getType() {
-            /*if (simplify) {
+            if (simplify) {
                 return CoordinatesWriterType.SIMPLIFY_BUFFER_TRANSFORM;
             }
-            else*/ if (reversepolygon) {
+            else if (reversepolygon) {
                 return CoordinatesWriterType.BUFFER_TRANSFORM;
             }
             else if (transform) {
@@ -132,11 +133,32 @@ public enum CoordinatesWriterType {
             this.transform = true;
             return this;
         }
-        
-        /*public Builder simplifier(DouglasPeuckerLineSimplifier simplifier) {
-            this.simplifier = simplifier;
+        // TODO: staged builder, has to be set after transformer
+        public Builder simplifier(double maxAllowableOffset, int minPoints) {
+            this.simplifier = new DouglasPeuckerLineSimplifier(normalizeMaxAllowableOffset(maxAllowableOffset), minPoints);
             this.simplify = true;
             return this;
-        }*/
+        }
+
+        private double normalizeMaxAllowableOffset(double maxAllowableOffset) {
+            if (Objects.isNull(transformer)) {
+                return maxAllowableOffset;
+            }
+
+            double requestFactor = transformer.getTargetUnitEquivalentInMeters();
+            double localFactor = transformer.getSourceUnitEquivalentInMeters();
+
+            if (requestFactor == 1
+                    && localFactor != 1) {
+                return maxAllowableOffset / localFactor;
+
+            } else if (requestFactor != 1
+                    && localFactor == 1) {
+                return maxAllowableOffset * requestFactor;
+            }
+
+            return maxAllowableOffset;
+
+        }
     }
 }

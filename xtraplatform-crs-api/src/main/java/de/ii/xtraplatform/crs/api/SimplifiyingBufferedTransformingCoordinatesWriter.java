@@ -7,23 +7,20 @@
  */
 package de.ii.xtraplatform.crs.api;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import de.ii.xtraplatform.crs.api.CrsTransformer;
-
 /**
  *
  * @author zahnen
  */
 public class SimplifiyingBufferedTransformingCoordinatesWriter extends BufferedTransformingCoordinatesWriter {
 
-    //private DouglasPeuckerLineSimplifier simplifier;
+    private final DouglasPeuckerLineSimplifier simplifier;
 
-    public SimplifiyingBufferedTransformingCoordinatesWriter(CoordinateFormatter formatter, int srsDimension, CrsTransformer transformer, /*DouglasPeuckerLineSimplifier simplifier,*/ boolean swap, boolean reversepolygon) {
+    public SimplifiyingBufferedTransformingCoordinatesWriter(CoordinateFormatter formatter, int srsDimension, CrsTransformer transformer, DouglasPeuckerLineSimplifier simplifier, boolean swap, boolean reversepolygon) {
         super(formatter, srsDimension, transformer, swap, reversepolygon);
-        //this.simplifier = simplifier;
+        this.simplifier = simplifier;
     }
 
-    /*@Override
+    @Override
     protected double[] postProcessCoordinates(double[] in, int numPts) {
         double[] out;
         if (simplifier != null) {
@@ -31,5 +28,5 @@ public class SimplifiyingBufferedTransformingCoordinatesWriter extends BufferedT
             return super.postProcessCoordinates(out, out.length / 2);
         }
         return super.postProcessCoordinates(in, numPts);
-    }*/
+    }
 }

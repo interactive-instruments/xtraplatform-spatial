@@ -10,6 +10,7 @@
  */
 package de.ii.xtraplatform.ogc.api.wfs.client;
 
+import akka.japi.Pair;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -60,5 +61,9 @@ public class WFSRequest {
 
     public String getAsUrl() {
         return Objects.isNull(operation2) ? wfs.getRequestUrl(operation) : wfs.getRequestUrl(operation2);
+    }
+
+    public Pair<String,String> getAsUrlAndBody() {
+        return Objects.isNull(operation2) ? wfs.getRequestUrlAndBody(operation) : wfs.getRequestUrlAndBody(operation2);
     }
 }

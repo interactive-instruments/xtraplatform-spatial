@@ -34,4 +34,9 @@ public abstract class FeatureQuery {
 
     @Value.Default
     public boolean hitsOnly() {return false;}
+
+    @Value.Default
+    public double getMaxAllowableOffset() {
+        return 0;
+    }
 }

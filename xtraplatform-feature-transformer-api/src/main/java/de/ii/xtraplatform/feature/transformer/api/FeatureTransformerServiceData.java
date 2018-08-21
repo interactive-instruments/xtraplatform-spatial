@@ -1,29 +1,28 @@
+/**
+ * Copyright 2018 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.feature.transformer.api;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.feature.query.api.FeatureProviderData;
-import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import com.fasterxml.jackson.annotation.JsonMerge;
 import de.ii.xtraplatform.service.api.ServiceData;
-import org.immutables.value.Value;
 
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import static de.ii.xtraplatform.feature.query.api.TargetMapping.BASE_TYPE;
 
 /**
  * @author zahnen
  */
-@Value.Immutable
-@Value.Modifiable
-@Value.Style(deepImmutablesDetection = true)
-@JsonDeserialize(as = ModifiableFeatureTransformerServiceData.class)
-public abstract class FeatureTransformerServiceData extends ServiceData {
+//@Value.Immutable
+//@Value.Modifiable
+//@Value.Style(deepImmutablesDetection = true)
+//@JsonDeserialize(as = ModifiableFeatureTransformerServiceData.class)
+public abstract class FeatureTransformerServiceData<T extends FeatureTypeConfiguration> extends ServiceData {
 
-    //TODO
-    public abstract Map<String, FeatureTypeConfigurationWfs3> getFeatureTypes();
+    public abstract Map<String, T> getFeatureTypes();
 
+    @JsonMerge
     public abstract FeatureProviderDataTransformer getFeatureProvider();
 }

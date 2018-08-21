@@ -40,11 +40,14 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
 
     private final QName featureType;
     private final GmlConsumer gmlConsumer;
+    private final StringBuilder buffer;
+    private boolean isBuffering;
 
     protected AbstractStreamingGmlGraphStage(Shape shape, QName featureType, GmlConsumer gmlConsumer) throws XMLStreamException {
         super(shape);
         this.featureType = featureType;
         this.gmlConsumer = gmlConsumer;
+        this.buffer = new StringBuilder();
     }
 
     @Override
@@ -117,12 +120,20 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
                     break;
 
                 case XMLStreamConstants.END_ELEMENT:
+                    if (isBuffering) {
+                        this.isBuffering = false;
+                        if (buffer.length() > 0) {
+                            gmlConsumer.onPropertyText(buffer.toString());
+                            buffer.setLength(0);
+                        }
+                    }
+
                     depth -= 1;
                     if (depth == 0) {
                         gmlConsumer.onEnd();
                     } else if (matchesFeatureType(parser.getLocalName())) {
                         inFeature = false;
-                        gmlConsumer.onFeatureEnd(pathTracker.asList());
+                        gmlConsumer.onFeatureEnd(ImmutableList.of(getQualifiedName(parser.getNamespaceURI(), parser.getLocalName())));
                     } else if (inFeature) {
                         gmlConsumer.onPropertyEnd(pathTracker.asList());
                     }
@@ -131,10 +142,14 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
 
                 case XMLStreamConstants.CHARACTERS:
                     if (inFeature) {
-                        String text = parser.getText();
-                        // TODO
-                        if (!parser.isWhiteSpace()) // && !text.matches("\\s*")
-                            gmlConsumer.onPropertyText(text);
+                        //String text = parser.getText();
+                        // TODO: whitespace
+                        // TODO: remove coalesce in transformer
+                        if (!parser.isWhiteSpace()) { // && !text.matches("\\s*")
+                            this.isBuffering = true;
+                            buffer.append(parser.getText());
+                            //gmlConsumer.onPropertyText(text);
+                        }
                     }
                     break;
 
