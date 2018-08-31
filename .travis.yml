@@ -12,7 +12,7 @@ install:
 script:
 - "./gradlew check -PbintrayUser=$BINTRAY_USER -PbintrayApiKey=$BINTRAY_PASS"
 after_success:
-- if [[ -n "$TRAVIS_TAG" ]]; then ./gradlew bintrayUpload -PbintrayUser=$BINTRAY_USER
+- if [[ -n "$TRAVIS_TAG" ]]; then ./gradlew bintrayUpload --continue -PbintrayUser=$BINTRAY_USER
   -PbintrayApiKey=$BINTRAY_PASS; fi
 env:
   global:

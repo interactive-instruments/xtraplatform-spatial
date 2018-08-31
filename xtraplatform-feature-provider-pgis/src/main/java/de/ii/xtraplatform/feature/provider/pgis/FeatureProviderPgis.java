@@ -13,6 +13,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.slick.javadsl.SlickSession;
 import akka.stream.javadsl.RunnableGraph;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.typesafe.config.Config;
@@ -48,6 +49,7 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import java.util.AbstractMap;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -223,12 +225,19 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     }
 
     private Config createSlickConfig(ConnectionInfo connectionInfo) {
+        String password = connectionInfo.getPassword();
+        try {
+            password = new String(Base64.getDecoder().decode(password), Charsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            //ignore if not valid base64
+        }
+
         return ConfigFactory.parseMap(ImmutableMap.<String, Object>builder()
                 .put("profile", "slick.jdbc.PostgresProfile$")
                 //.put("dataSourceClass", "org.postgresql.ds.PGSimpleDataSource")
                 .put("db", ImmutableMap.<String, Object>builder()
                         .put("user", connectionInfo.getUser())
-                        .put("password", connectionInfo.getPassword())
+                        .put("password", password)
                         .put("dataSourceClass", "org.postgresql.ds.PGSimpleDataSource")
                         //.put("hikaricp.dataSourceClassName", "org.postgresql.ds.PGSimpleDataSource")
                         //.put("hikaricp.datasource.user", connectionInfo.getUser())
