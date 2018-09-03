@@ -176,6 +176,9 @@ class FeatureTransformerFromGml implements GmlConsumer {
 
         if (transformGeometry != null) {
             if (inGeometry != null && inGeometry.equals(path)) {
+                if (transformGeometryType == SimpleFeatureGeometry.MULTI_POLYGON) {
+                    featureTransformer.onGeometryNestedEnd();
+                }
                 inGeometry = null;
                 transformGeometry = null;
                 transformGeometryType = null;
@@ -211,6 +214,9 @@ class FeatureTransformerFromGml implements GmlConsumer {
             if (GEOMETRY_PARTS.contains(localName)) {
                 if (!geometrySent) {
                     featureTransformer.onGeometryStart(transformGeometry, transformGeometryType, transformGeometryDimension);
+                    if (transformGeometryType == SimpleFeatureGeometry.MULTI_POLYGON) {
+                        featureTransformer.onGeometryNestedStart();
+                    }
                     geometrySent = true;
                 }
                 featureTransformer.onGeometryNestedStart();
