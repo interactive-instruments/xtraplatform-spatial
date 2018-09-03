@@ -7,9 +7,11 @@
  */
 package de.ii.xtraplatform.feature.transformer.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.query.api.FeatureProviderData;
+import org.immutables.value.Value;
 
 import javax.xml.namespace.QName;
 import java.util.Map;
@@ -27,4 +29,10 @@ public abstract class FeatureProviderDataTransformer extends FeatureProviderData
     public abstract boolean isFeatureTypeEnabled(final String featureType);
 
     public abstract EpsgCrs getNativeCrs();
+
+    @JsonIgnore
+    @Value.Default
+    public boolean supportsTransactions() {
+        return false;
+    }
 }

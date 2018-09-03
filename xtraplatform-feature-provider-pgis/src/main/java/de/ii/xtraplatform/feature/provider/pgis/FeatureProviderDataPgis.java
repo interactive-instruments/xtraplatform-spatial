@@ -48,4 +48,9 @@ public abstract class FeatureProviderDataPgis extends FeatureProviderDataTransfo
                            .getMappingStatus()
                            .isEnabled() ||*/ mapping.isPresent();
     }
+
+    @Override
+    public boolean supportsTransactions() {
+        return true;
+    }
 }

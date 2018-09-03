@@ -44,6 +44,7 @@ import slick.jdbc.SetParameter;
 import slick.jdbc.SetParameter$;
 import slick.sql.SqlStreamingAction;
 
+import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import java.util.AbstractMap;
@@ -105,31 +106,12 @@ public class SqlFeatureSource {
 
         return createRowStream(query)
                 .runForeach(slickRowInfo -> {
-                    LOGGER.info("{}", slickRowInfo);
                     if (slickRowInfo.getPath()
                                     .size() >= 3 && queries.getMultiTables()
                                                            .contains(slickRowInfo.getName())) {
-/*
-                        oo
-                        oa
-                        oa
-                        of
-                        of
-                        of
-                        of
-                        rr
-                        ab
-                        e
-                        ge
-                        ft
-                        // TODO: SKEY2, match of with oa
-*/
+
                         boolean same = slickRowInfo.getPath()
                                                    .equals(previousPath.get(0));
-                        /*boolean nested = !same && slickRowInfo.getPath().size() >= previousPath.get(0)
-                                                                                               .size() && slickRowInfo.getPath().subList(0, previousPath.get(0)
-                                                                                                                                                        .size()).equals(previousPath.get(0));
-*/
 
 
                         if (same) {
@@ -209,27 +191,6 @@ public class SqlFeatureSource {
                                 }
                             }
                         }
-                        /*else if (nested) {
-                            String previousTable = previousPath.get(0)
-                                                               .get(previousPath.get(0)
-                                                                                .size()-1);
-                            List<Integer> multi = Lists.newArrayList(multiplicities.get(previousTable));
-                            multi.add(1);
-                            multiplicities.put(slickRowInfo.getName(), multi);
-                        }*/
-
-
-                        //TODO
-                        //for (int i = 2; i < slickRowInfo.getPath().size(); i++) {
-                        //   String elem = slickRowInfo.getPath().get(slickRowInfo.getPath().size()-2);
-                        //   List<Integer> counts = multiplicities.getOrDefault(slickRowInfo.getName(), new ArrayList<>());
-                        //   if (elem.contains("_2_")) {
-                        //multiplicities.putIfAbsent(slickRowInfo.getName(), 0);
-                        //multiplicities.computeIfPresent(slickRowInfo.getName(), (s, i) -> i + 1);
-                        //   }
-                        //}
-                        //multiplicities.putIfAbsent(slickRowInfo.getName(), 0);
-                        //multiplicities.computeIfPresent(slickRowInfo.getName(), (s, i) -> i + 1);
                     }
 
                     if (!slickRowInfo.getName()
@@ -283,7 +244,6 @@ public class SqlFeatureSource {
 
                         previousPath.put(0, slickRowInfo.getPath());
                     }
-                    //currentId[0] = slickRowInfo.getIds();
                     currentId[0] = slickRowInfo.getIds()
                                                .get(0);
 
@@ -292,8 +252,13 @@ public class SqlFeatureSource {
                     if (throwable instanceof WebApplicationException) {
                         throw (WebApplicationException) throwable;
                     }
-
+                    LOGGER.error(throwable.getMessage());
                     LOGGER.debug("STREAM FAILURE", throwable);
+
+                    if (isIdFilter(query.getFilter())) {
+                        throw new InternalServerErrorException();
+                    }
+
                     try {
                         if (!meta[0]) {
                             consumer.onStart(OptionalLong.of(0), OptionalLong.empty());
