@@ -117,9 +117,7 @@ public class FeatureQueryEncoderSql {
                 public Object visit(BBOX filter, Object extraData) {
                     LOGGER.debug("BBOX {} | {}, {}, {}, {}", filter.getPropertyName(), filter.getMinX(), filter.getMinY(), filter.getMaxX(), filter.getMaxY());
 
-                    //conditions.add(String.format("ST_Intersects({{prop}}, ST_GeomFromText('POLYGON((%2$s %1$s,%2$s %3$s,%4$s %3$s,%4$s %1$s,%2$s %1$s))',4326)) = 'TRUE'", filter.getMinX(), filter.getMinY(), filter.getMaxX(), filter.getMaxY()));
-                    //TODO: crs from config
-                    conditions.add(String.format(Locale.US, "ST_Intersects({{prop}}, ST_GeomFromText('POLYGON((%1$.3f %2$.3f,%3$.3f %2$.3f,%3$.3f %4$.3f,%1$.3f %4$.3f,%1$.3f %2$.3f))',25832)) = 'TRUE'", filter.getMinX(), filter.getMinY(), filter.getMaxX(), filter.getMaxY()));
+                    conditions.add(String.format(Locale.US, "ST_Intersects({{prop}}, ST_GeomFromText('POLYGON((%1$.3f %2$.3f,%3$.3f %2$.3f,%3$.3f %4$.3f,%1$.3f %4$.3f,%1$.3f %2$.3f))',%5$s)) = 'TRUE'", filter.getMinX(), filter.getMinY(), filter.getMaxX(), filter.getMaxY(), new EpsgCrs(filter.getSRS()).getCode()));
                     return super.visit(filter, extraData);
                 }
 
@@ -211,7 +209,7 @@ public class FeatureQueryEncoderSql {
                                                                 String[] joinCondition = toCondition(pathElement);
                                                                 String table = toTable(pathElement);
 
-                                                                return String.format("JOIN %1$s ON %3$s.%2$s=%1$s.%4$s", table, joinCondition[0], mainTable, joinCondition[1]);
+                                                                return String.format("JOIN %1$s ON %3$s.%2$s=%1$s.%4$s", table.equals(mainTable) ? table + " AS MAIN2" : table, joinCondition[0], mainTable, joinCondition[1]);
                                                             })
                                                             .collect(Collectors.joining(" "));
 
