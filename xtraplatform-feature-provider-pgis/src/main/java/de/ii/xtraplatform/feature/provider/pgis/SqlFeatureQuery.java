@@ -67,7 +67,7 @@ public abstract class SqlFeatureQuery {
 
 
         String join = getJoinPathElements(getPaths().get(0)).stream()
-                                                            .map(tableAndJoinCondition -> String.format("JOIN %s ON %s", tableAndJoinCondition.first().equals(mainTable) ? tableAndJoinCondition.first() + " AS MAIN2" : tableAndJoinCondition.first(), tableAndJoinCondition.second()
+                                                            .map(tableAndJoinCondition -> String.format("JOIN %s ON %s", tableAndJoinCondition.first().equals(mainTable) ? tableAndJoinCondition.first() + " AS MAIN2" : tableAndJoinCondition.first(), tableAndJoinCondition.first().equals(mainTable) ? tableAndJoinCondition.second().get().replace(mainTable, "MAIN2") : tableAndJoinCondition.second()
                                                                                                                                                                              .get()))
                                                             .collect(Collectors.joining(" "));
 
