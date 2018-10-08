@@ -70,7 +70,7 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
 
     @Override
     public void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception {
-        boolean ignore = !inProperty && !fields.isEmpty() && !fields.contains("*") && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
+        boolean ignore = !inProperty && !fields.contains("*") && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
                                                                                                          .filter(targetMapping -> targetMapping.isSpatial() || targetMapping.getType()
                                                                                                                                                                             .toString()
                                                                                                                                                                             .toUpperCase()
