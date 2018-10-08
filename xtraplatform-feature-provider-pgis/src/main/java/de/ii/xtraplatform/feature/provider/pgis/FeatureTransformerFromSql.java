@@ -1,6 +1,6 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -13,6 +13,7 @@ import de.ii.xtraplatform.feature.query.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
+import de.ii.xtraplatform.feature.transformer.api.TargetMappingWfs3;
 
 import java.io.IOException;
 import java.io.StreamTokenizer;
@@ -69,9 +70,12 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
 
     @Override
     public void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception {
-        boolean ignore = !inProperty && !fields.isEmpty() && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
-                                                                 .filter(targetMapping -> fields.contains(targetMapping.getName()))
-                                                                 .isPresent();
+        boolean ignore = !inProperty && !fields.isEmpty() && !fields.contains("*") && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
+                                                                                                         .filter(targetMapping -> targetMapping.isSpatial() || targetMapping.getType()
+                                                                                                                                                                            .toString()
+                                                                                                                                                                            .toUpperCase()
+                                                                                                                                                                            .equals("ID") || fields.contains(targetMapping.getName()))
+                                                                                                         .isPresent();
         if (ignore) {
             return;
         }
@@ -153,6 +157,7 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
         if (geometryMapping != null) {
             geometryMapping = null;
             featureTransformer.onGeometryEnd();
+            inProperty = false;
         } else if (inProperty) {
             featureTransformer.onPropertyEnd();
             inProperty = false;

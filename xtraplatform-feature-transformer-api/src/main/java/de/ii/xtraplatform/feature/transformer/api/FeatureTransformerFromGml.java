@@ -113,7 +113,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
     public void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception {
         boolean mapped = false;
         if (!inProperty) {
-            boolean ignore = !fields.isEmpty() && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
+            boolean ignore = !fields.isEmpty() && !fields.contains("*") && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
                                                                     .filter(targetMapping -> fields.contains(targetMapping.getName()))
                                                                     .isPresent();
             if (ignore) {
