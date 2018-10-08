@@ -35,11 +35,13 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
 
     private boolean inProperty = false;
     private TargetMapping geometryMapping;
+    private final List<String> fields;
 
-    public FeatureTransformerFromSql(FeatureTypeMapping featureTypeMapping, FeatureTransformer featureTransformer) {
+    public FeatureTransformerFromSql(FeatureTypeMapping featureTypeMapping, FeatureTransformer featureTransformer, List<String> fields) {
         this.featureTypeMapping = featureTypeMapping;
         this.featureTransformer = featureTransformer;
         this.outputFormat = featureTransformer.getTargetFormat();
+        this.fields = fields;
     }
 
 
@@ -67,6 +69,13 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
 
     @Override
     public void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception {
+        boolean ignore = !inProperty && !fields.isEmpty() && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
+                                                                 .filter(targetMapping -> fields.contains(targetMapping.getName()))
+                                                                 .isPresent();
+        if (ignore) {
+            return;
+        }
+
         featureTypeMapping.findMappings(path, outputFormat)
                           .ifPresent(consumerMayThrow(mapping -> {
                               inProperty = true;

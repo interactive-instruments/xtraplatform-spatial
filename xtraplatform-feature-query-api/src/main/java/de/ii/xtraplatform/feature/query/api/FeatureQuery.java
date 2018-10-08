@@ -7,10 +7,12 @@
  */
 package de.ii.xtraplatform.feature.query.api;
 
+import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 /**
  * @author zahnen
@@ -38,5 +40,10 @@ public abstract class FeatureQuery {
     @Value.Default
     public double getMaxAllowableOffset() {
         return 0;
+    }
+
+    @Value.Default
+    public List<String> getFields() {
+        return ImmutableList.of();
     }
 }

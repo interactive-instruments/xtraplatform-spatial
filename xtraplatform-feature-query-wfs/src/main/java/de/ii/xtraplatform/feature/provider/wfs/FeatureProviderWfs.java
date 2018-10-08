@@ -169,7 +169,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
 
             //StreamingGmlTransformerFlow.transformer(featureType, featureTypeMapping, null/*FeatureConsumer*/);
             Sink<ByteString, CompletionStage<Done>> parser = GmlStreamParser.transform(queryEncoder.getFeatureTypeName(query)
-                                                                                                   .get(), featureTypeMapping.get(), featureTransformer);
+                                                                                                   .get(), featureTypeMapping.get(), featureTransformer, query.getFields());
             return runQuery(query, parser);
         };
     }

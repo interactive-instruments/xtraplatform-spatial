@@ -1,6 +1,6 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -52,11 +52,13 @@ class FeatureTransformerFromGml implements GmlConsumer {
     private Integer transformGeometryDimension;
     private final Joiner joiner;
     private final StringBuilder stringBuilder;
+    private final List<String> fields;
 
-    FeatureTransformerFromGml(FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer) {
+    FeatureTransformerFromGml(FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer, List<String> fields) {
         this.featureTypeMapping = featureTypeMapping;
         this.featureTransformer = featureTransformer;
         this.outputFormat = featureTransformer.getTargetFormat();
+        this.fields = fields;
         this.joiner = Joiner.on('/');
         this.stringBuilder = new StringBuilder();
     }
@@ -111,6 +113,13 @@ class FeatureTransformerFromGml implements GmlConsumer {
     public void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception {
         boolean mapped = false;
         if (!inProperty) {
+            boolean ignore = !fields.isEmpty() && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
+                                                                    .filter(targetMapping -> fields.contains(targetMapping.getName()))
+                                                                    .isPresent();
+            if (ignore) {
+                return;
+            }
+
             mapped = featureTypeMapping.findMappings(path, outputFormat)
                                        .filter(isNotSpatial())
                                        .map(mayThrow(mapping -> {
@@ -204,7 +213,8 @@ class FeatureTransformerFromGml implements GmlConsumer {
         if (transformGeometry == null) return;
 
         if (transformGeometryType == null) {
-            final SimpleFeatureGeometry geometryType = GML_GEOMETRY_TYPE.fromString(localName).toSimpleFeatureGeometry();
+            final SimpleFeatureGeometry geometryType = GML_GEOMETRY_TYPE.fromString(localName)
+                                                                        .toSimpleFeatureGeometry();
             if (geometryType.isValid()) {
                 transformGeometryType = geometryType;
             }
@@ -247,6 +257,8 @@ class FeatureTransformerFromGml implements GmlConsumer {
     }
 
     private String getLocalName(List<String> path) {
-        return path.isEmpty() ? null : path.get(path.size()-1).substring(path.get(path.size()-1).lastIndexOf(":")+1);
+        return path.isEmpty() ? null : path.get(path.size() - 1)
+                                           .substring(path.get(path.size() - 1)
+                                                          .lastIndexOf(":") + 1);
     }
 }

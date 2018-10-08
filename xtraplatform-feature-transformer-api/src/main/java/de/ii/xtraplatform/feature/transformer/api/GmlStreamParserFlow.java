@@ -15,6 +15,7 @@ import akka.stream.stage.AbstractOutHandler;
 import akka.stream.stage.GraphStageLogic;
 import akka.stream.stage.GraphStageWithMaterializedValue;
 import akka.util.ByteString;
+import com.google.common.collect.ImmutableList;
 import scala.Tuple2;
 
 import javax.xml.namespace.QName;
@@ -43,7 +44,7 @@ public class GmlStreamParserFlow {
     static class FeatureTransformerFromGmlFlow extends FeatureTransformerFromGml implements GmlConsumerFlow {
 
         FeatureTransformerFromGmlFlow(FeatureTypeMapping featureTypeMapping, final GmlTransformerFlow gmlTransformer) {
-            super(featureTypeMapping, gmlTransformer);
+            super(featureTypeMapping, gmlTransformer, ImmutableList.of());
         }
 
         @Override

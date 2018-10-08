@@ -23,6 +23,7 @@ import scala.Tuple2;
 
 import javax.xml.namespace.QName;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -35,8 +36,8 @@ public class GmlStreamParser {
         return Sink.fromGraph(new FeatureSinkFromGml(featureType, gmlConsumer));
     }
 
-    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureType, final FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer) {
-        return GmlStreamParser.consume(featureType, new FeatureTransformerFromGml(featureTypeMapping, featureTransformer));
+    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureType, final FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer, List<String> fields) {
+        return GmlStreamParser.consume(featureType, new FeatureTransformerFromGml(featureTypeMapping, featureTransformer, fields));
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GmlStreamParser.class);
