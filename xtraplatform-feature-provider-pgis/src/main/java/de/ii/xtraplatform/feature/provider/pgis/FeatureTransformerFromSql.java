@@ -70,13 +70,7 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
 
     @Override
     public void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception {
-        boolean ignore = !inProperty && !fields.contains("*") && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
-                                                                                                         .filter(targetMapping -> targetMapping.isSpatial() || targetMapping.getType()
-                                                                                                                                                                            .toString()
-                                                                                                                                                                            .toUpperCase()
-                                                                                                                                                                            .equals("ID") || fields.contains(targetMapping.getName()) || fields.stream().anyMatch(field -> targetMapping.getName().matches(field + "\\[\\w\\]\\..*")))
-                                                                                                         .isPresent();
-        if (ignore) {
+        if (shouldIgnoreProperty(path)) {
             return;
         }
 
@@ -89,6 +83,27 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
                                   featureTransformer.onPropertyStart(mapping, multiplicities);
                               }
                           }));
+    }
+
+    private boolean shouldIgnoreProperty(List<String> path) {
+        return !inProperty && !fields.contains("*") && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
+                                                                          .filter(this::isPropertyInWhitelist)
+                                                                          .isPresent();
+    }
+
+    private boolean isPropertyInWhitelist(TargetMapping targetMapping) {
+        return targetMapping.isSpatial()
+                || targetMapping.getType()
+                                .toString()
+                                .toUpperCase()
+                                .equals("ID")
+                || fields.contains(targetMapping.getName())
+                || fields.stream()
+                         .anyMatch(field -> {
+                             String regex = field + "(?:\\[\\w*\\])?\\..*";
+                             return targetMapping.getName()
+                                          .matches(regex);
+                         });
     }
 
     @Override
