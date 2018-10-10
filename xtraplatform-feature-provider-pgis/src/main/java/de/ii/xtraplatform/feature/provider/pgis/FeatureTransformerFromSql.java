@@ -74,7 +74,7 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
                                                                                                          .filter(targetMapping -> targetMapping.isSpatial() || targetMapping.getType()
                                                                                                                                                                             .toString()
                                                                                                                                                                             .toUpperCase()
-                                                                                                                                                                            .equals("ID") || fields.contains(targetMapping.getName()) || fields.stream().anyMatch(field -> targetMapping.getName().startsWith(field + ".")))
+                                                                                                                                                                            .equals("ID") || fields.contains(targetMapping.getName()) || fields.stream().anyMatch(field -> targetMapping.getName().matches(field + "\\[\\w\\]\\..*")))
                                                                                                          .isPresent();
         if (ignore) {
             return;
