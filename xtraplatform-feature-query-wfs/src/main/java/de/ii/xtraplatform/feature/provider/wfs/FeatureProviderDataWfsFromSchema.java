@@ -9,6 +9,7 @@ package de.ii.xtraplatform.feature.provider.wfs;
 
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
+import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
 
 import java.util.List;
 
@@ -25,6 +26,25 @@ public class FeatureProviderDataWfsFromSchema extends GmlFeatureTypeAnalyzer imp
     @Override
     public boolean analyzeNamespaceRewrite(String oldNamespace, String newNamespace, String featureTypeName) {
         return super.analyzeNamespaceRewrite(oldNamespace, newNamespace, featureTypeName);
+    }
+
+    @Override
+    public void analyzeFailure(Exception e) {
+        ModifiableMappingStatus mappingStatus = ModifiableMappingStatus.create();
+        mappingStatus.setErrorMessage(e.getMessage());
+        if (e.getClass() == SchemaParseException.class) {
+            mappingStatus.setErrorMessageDetails(((SchemaParseException)e).getDetails());
+        }
+
+        providerDataWfs.setMappingStatus(mappingStatus);
+    }
+
+    @Override
+    public void analyzeSuccess() {
+        ModifiableMappingStatus mappingStatus = ModifiableMappingStatus.create();
+        mappingStatus.setSupported(true);
+
+        providerDataWfs.setMappingStatus(mappingStatus);
     }
 
     @Override

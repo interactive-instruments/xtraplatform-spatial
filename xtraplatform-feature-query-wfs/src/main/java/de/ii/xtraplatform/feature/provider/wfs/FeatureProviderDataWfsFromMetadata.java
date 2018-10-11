@@ -1,6 +1,6 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -28,12 +28,8 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
     public FeatureProviderDataWfsFromMetadata(ModifiableFeatureProviderDataWfs featureProviderDataWfs) {
         this.featureProviderDataWfs = featureProviderDataWfs;
         this.connectionInfo = (ModifiableConnectionInfo) featureProviderDataWfs.getConnectionInfo();
-        try {
-            URI cleanUri = parseAndCleanWfsUrl(connectionInfo.getUri());
-            connectionInfo.setUri(cleanUri);
-        } catch (URISyntaxException e) {
-            //ignore
-        }
+        URI cleanUri = parseAndCleanWfsUrl(connectionInfo.getUri());
+        connectionInfo.setUri(cleanUri);
         this.namespaceNormalizer = new XMLNamespaceNormalizer();
     }
 
@@ -45,7 +41,9 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
 
     @Override
     public void analyzeVersion(String version) {
-        connectionInfo.setVersion(version);
+        if (!connectionInfo.versionIsSet() || version.compareTo(connectionInfo.getVersion()) > 0) {
+            connectionInfo.setVersion(version);
+        }
     }
 
     @Override
@@ -73,7 +71,7 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
         //connectionInfo.putOtherUrls(operation, url);
     }
 
-    static URI parseAndCleanWfsUrl(URI inUri) throws URISyntaxException {
+    static URI parseAndCleanWfsUrl(URI inUri) {
         URIBuilder outUri = new URIBuilder(inUri).removeQuery();
 
         if (inUri.getQuery() != null && !inUri.getQuery()
@@ -87,6 +85,10 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
             }
         }
 
-        return outUri.build();
+        try {
+            return outUri.build();
+        } catch (URISyntaxException e) {
+            return inUri;
+        }
     }
 }

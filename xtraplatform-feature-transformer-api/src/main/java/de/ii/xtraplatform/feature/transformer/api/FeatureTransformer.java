@@ -42,4 +42,8 @@ public interface FeatureTransformer {
     void onGeometryNestedEnd() throws Exception;
 
     void onGeometryEnd() throws Exception;
+
+    interface OnTheFly {
+        OnTheFlyMapping getOnTheFlyMapping();
+    }
 }

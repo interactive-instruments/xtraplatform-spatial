@@ -44,6 +44,6 @@ public abstract class FeatureQuery {
 
     @Value.Default
     public List<String> getFields() {
-        return ImmutableList.of();
+        return ImmutableList.of("*");
     }
 }

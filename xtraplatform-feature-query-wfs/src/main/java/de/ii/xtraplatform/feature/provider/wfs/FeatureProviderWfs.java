@@ -1,6 +1,6 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -30,6 +30,8 @@ import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.GmlConsumer;
 import de.ii.xtraplatform.feature.transformer.api.GmlStreamParser;
+import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
+import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
 import de.ii.xtraplatform.feature.transformer.api.TransformingFeatureProvider;
 import de.ii.xtraplatform.ogc.api.WFS;
@@ -59,9 +61,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static de.ii.xtraplatform.feature.provider.wfs.FeatureProviderWfs.PROVIDER_TYPE;
 
@@ -86,6 +90,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     private final Map<String, FeatureTypeMapping> featureTypeMappings;
     private final FeatureQueryEncoderWfs queryEncoder;
     private final boolean useHttpPost;
+    private final MappingStatus mappingStatus;
 
     FeatureProviderWfs(@Requires CrsTransformation crsTransformation, @Property(name = ".data") FeatureProviderDataWfs data) {
         this.wfsAdapter = new WFSAdapter();
@@ -94,35 +99,58 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
         wfsAdapter.setGmlVersion(data.getConnectionInfo()
                                      .getGmlVersion());
         wfsAdapter.setDefaultCrs(data.getNativeCrs());
-        wfsAdapter.setUrls(ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, data.getConnectionInfo()
-                                                                                          .getUri(), WFS.METHOD.POST, data.getConnectionInfo()
-                                                                                                                         .getUri())));
+        wfsAdapter.setUrls(ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(data.getConnectionInfo()
+                                                                                                                                                 .getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(data.getConnectionInfo()
+                                                                                                                                                                                                                                         .getUri()))));
         wfsAdapter.setNsStore(new XMLNamespaceNormalizer(data.getConnectionInfo()
                                                              .getNamespaces()));
 
-        this.featureTypes = !data.getFeatureTypes().isEmpty() ? data.getFeatureTypes() : data.getMappings()
-                                .entrySet()
-                                .stream()
-                                .map(entry -> {
-                                    //TODO
-                                    String featureTypePath = entry.getValue()
-                                                                  .getMappings()
-                                                                  .keySet()
-                                                                  .iterator()
-                                                                  .next();
-                                    String localName = featureTypePath.substring(featureTypePath.lastIndexOf(":") + 1);
-                                    String namespace = featureTypePath.substring(0, featureTypePath.lastIndexOf(":"));
+        this.featureTypes = !data.getFeatureTypes()
+                                 .isEmpty() ? data.getFeatureTypes() : data.getMappings()
+                                                                           .entrySet()
+                                                                           .stream()
+                                                                           .map(entry -> {
+                                                                               //TODO
+                                                                               String featureTypePath = entry.getValue()
+                                                                                                             .getMappings()
+                                                                                                             .keySet()
+                                                                                                             .iterator()
+                                                                                                             .next();
+                                                                               String localName = featureTypePath.substring(featureTypePath.lastIndexOf(":") + 1);
+                                                                               String namespace = featureTypePath.substring(0, featureTypePath.lastIndexOf(":"));
 
 
-                                    return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), new QName(namespace, localName));
-                                })
-                                .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+                                                                               return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), new QName(namespace, localName));
+                                                                           })
+                                                                           .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
         this.featureTypeMappings = data.getMappings();
 
-        this.queryEncoder = new FeatureQueryEncoderWfs(featureTypes, featureTypeMappings, wfsAdapter.getNsStore());
+        Map<String, FeatureTypeMapping> queryMappings;
+        if (data.getMappingStatus()
+                .getEnabled()) {
+            queryMappings = featureTypeMappings;
+        } else {
+            queryMappings = getOnTheFlyMappings(data.getFeatureTypes()
+                                                               .keySet());
+        }
 
-        this.useHttpPost = data.getConnectionInfo().getMethod() == ConnectionInfo.METHOD.POST;
+        //TODO: if mapping disabled, create dummy mappings for gml:id, depending on version (TODO: set gmlVersion depending on wfsVersion)
+        this.queryEncoder = new FeatureQueryEncoderWfs(featureTypes, queryMappings, wfsAdapter.getNsStore());
+
+        this.useHttpPost = data.getConnectionInfo()
+                               .getMethod() == ConnectionInfo.METHOD.POST;
+
+        this.mappingStatus = data.getMappingStatus();
+    }
+
+    private Map<String, FeatureTypeMapping> getOnTheFlyMappings(Set<String> featureTypes) {
+        return featureTypes.stream()
+                           .map(featureType -> new AbstractMap.SimpleEntry<>(featureType, ImmutableFeatureTypeMapping.builder()
+                                                                                                                     .mappings(ImmutableMap.of("http://www.opengis.net/gml/3.2:@id", ImmutableSourcePathMapping.builder()
+                                                                                                                                                                             .build()))
+                                                                                                                     .build()))
+                           .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     /*public FeatureProviderWfs(final WFSAdapter wfsAdapter, final Map<String, FeatureTypeConfigurationOld> featureTypes) {
@@ -162,14 +190,19 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
             Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(query.getType());
 
             if (!featureTypeMapping.isPresent()) {
-                CompletableFuture<Done> promise = new CompletableFuture<>();
-                promise.completeExceptionally(new IllegalStateException("No features available for type"));
-                return promise;
+                try {
+                    FeatureTransformer.OnTheFly onTheFly = (FeatureTransformer.OnTheFly) featureTransformer;
+                } catch (ClassCastException e) {
+
+                    CompletableFuture<Done> promise = new CompletableFuture<>();
+                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
+                    return promise;
+                }
             }
 
             //StreamingGmlTransformerFlow.transformer(featureType, featureTypeMapping, null/*FeatureConsumer*/);
             Sink<ByteString, CompletionStage<Done>> parser = GmlStreamParser.transform(queryEncoder.getFeatureTypeName(query)
-                                                                                                   .get(), featureTypeMapping.get(), featureTransformer, query.getFields());
+                                                                                                   .get(), featureTypeMapping.orElse(null), featureTransformer, query.getFields());
             return runQuery(query, parser);
         };
     }
@@ -237,7 +270,6 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     }
 
 
-
     private void analyzeCapabilities(FeatureProviderMetadataConsumer metadataConsumer) {
         try {
             analyzeCapabilities(metadataConsumer, null);
@@ -277,7 +309,6 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
                                      .runWith(StreamConverters.asInputStream(), akkaHttp.getMaterializer());
 
 
-
         WFSCapabilitiesParser wfsParser = new WFSCapabilitiesParser(metadataConsumer, staxFactory);
 
         wfsParser.parse(source);
@@ -289,23 +320,12 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     }
 
     @Override
-    public void getSchema(FeatureProviderSchemaConsumer schemaConsumer, Map<String,QName> featureTypes) {
+    public void getSchema(FeatureProviderSchemaConsumer schemaConsumer, Map<String, QName> featureTypes) {
         analyzeFeatureTypes(schemaConsumer, featureTypes);
     }
 
-    public void analyzeFeatureTypes(FeatureProviderSchemaConsumer schemaConsumer, Map<String,QName> featureTypes) {
-        //TODO FeatureTypeMappingStatus mappingStatus = serviceProperties.getMappingStatus();
-
-        //mappingStatus.setEnabled(!disableMapping);
-        //mappingStatus.setLoading(!disableMapping);
-
-        // TODO: if loading, run analysis in background queue
-        // separate (or this?) function, start from store
-        //if (mappingStatus.isEnabled() && mappingStatus.isLoading()) {
-            //mappingStatus.setEnabled(true);
-            //mappingStatus.setLoading(true);
-
-
+    public void analyzeFeatureTypes(FeatureProviderSchemaConsumer schemaConsumer, Map<String, QName> featureTypes) {
+        if (mappingStatus.getEnabled() && mappingStatus.getLoading()) {
 
             Map<String, List<String>> featureTypesByNamespace = retrieveSupportedFeatureTypesPerNamespace(featureTypes);
 
@@ -344,7 +364,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
 
             // only log warnings about timeouts in the analysis phase
             //wfsAdapter.setIgnoreTimeouts(true);
-        //}
+        }
     }
 
     private void analyzeFeatureTypesWithDescribeFeatureType(FeatureProviderSchemaConsumer schemaConsumer, Map<String, List<String>> featureTypesByNamespace) throws SchemaParseException {
@@ -365,14 +385,15 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
         gmlSchemaParser.parse(source, featureTypesByNamespace);
     }
 
-    private Map<String, List<String>> retrieveSupportedFeatureTypesPerNamespace(Map<String,QName> featureTypes) {
+    private Map<String, List<String>> retrieveSupportedFeatureTypesPerNamespace(Map<String, QName> featureTypes) {
         Map<String, List<String>> featureTypesPerNamespace = new HashMap<>();
 
         for (QName featureType : featureTypes.values()) {
             if (!featureTypesPerNamespace.containsKey(featureType.getNamespaceURI())) {
                 featureTypesPerNamespace.put(featureType.getNamespaceURI(), new ArrayList<>());
             }
-            featureTypesPerNamespace.get(featureType.getNamespaceURI()).add(featureType.getLocalPart());
+            featureTypesPerNamespace.get(featureType.getNamespaceURI())
+                                    .add(featureType.getLocalPart());
         }
 
         return featureTypesPerNamespace;

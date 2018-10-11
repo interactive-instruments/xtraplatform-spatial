@@ -72,17 +72,27 @@ public class GMLSchemaParser {
         try {
             InputSource is = new InputSource(inputStream);
             parse(is, elements);
+
+            for (FeatureProviderSchemaConsumer analyzer : analyzers) {
+                analyzer.analyzeSuccess();
+            }
+
         } catch (Exception ex) {
             LOGGER.error("Error parsing application schema. {}", ex);
-            throw new SchemaParseException("Error parsing application schema. {}", ex.getMessage());
+
+            for (FeatureProviderSchemaConsumer analyzer : analyzers) {
+                analyzer.analyzeFailure(ex);
+            }
+
+            //throw new SchemaParseException("Error parsing application schema. {}", ex.getMessage());
         }
     }
 
-    public void parse(InputSource is, Map<String, List<String>> elements) {
+    private void parse(InputSource is, Map<String, List<String>> elements) {
         parse(is, elements, true);
     }
 
-    public void parse(InputSource is, Map<String, List<String>> elements, boolean lax) {
+    private void parse(InputSource is, Map<String, List<String>> elements, boolean lax) {
         //LOGGER.debug("Parsing GML application schema");
         XSOMParser parser = new XSOMParser();
 

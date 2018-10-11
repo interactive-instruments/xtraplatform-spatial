@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
@@ -16,7 +15,6 @@ import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
 import org.apache.http.client.utils.URIBuilder;
 import org.immutables.value.Value;
 
-import javax.ws.rs.core.UriBuilder;
 import java.util.Optional;
 
 /**
@@ -37,6 +35,11 @@ public abstract class FeatureProviderDataWfs extends FeatureProviderDataTransfor
 
     public abstract ConnectionInfo getConnectionInfo();
 
+    @Value.Default
+    public MappingStatus getMappingStatus() {
+        return ImmutableMappingStatus.builder().build();
+    }
+
     @Override
     @Value.Derived
     public Optional<String> getDataSourceUrl() {
@@ -46,6 +49,10 @@ public abstract class FeatureProviderDataWfs extends FeatureProviderDataTransfor
 
     @Override
     public boolean isFeatureTypeEnabled(String featureType) {
+        if (!getMappingStatus().getEnabled()) {
+            return true;
+        }
+
         //TODO: better way to detect mapping for feature type
         FeatureTypeMapping featureTypeMapping = getMappings().get(featureType);
         if (featureTypeMapping != null) {

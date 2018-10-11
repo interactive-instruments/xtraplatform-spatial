@@ -11,6 +11,7 @@
 package de.ii.xtraplatform.ogc.csw.parser;
 
 import de.ii.xtraplatform.ogc.api.CSW;
+import de.ii.xtraplatform.ogc.api.exceptions.ReadError;
 import de.ii.xtraplatform.ogc.api.filter.OGCFilter;
 import de.ii.xtraplatform.ogc.api.filter.OGCFilterAnd;
 import de.ii.xtraplatform.ogc.api.filter.OGCFilterLiteral;
@@ -31,6 +32,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.staxmate.SMInputFactory;
 
+import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotAcceptableException;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 
@@ -155,7 +158,10 @@ public class ExtractWFSUrlsFromCSW {
 
             } catch (InterruptedException | ExecutionException e) {
                 // ignore
-                e.printStackTrace();
+                //e.printStackTrace();
+                if (e.getCause().getClass() == ReadError.class)  {
+                    throw new BadRequestException(e.getCause().getMessage());
+                }
             } finally {
                 EntityUtils.consumeQuietly(entity);
             }

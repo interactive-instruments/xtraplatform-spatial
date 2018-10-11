@@ -197,10 +197,10 @@ public class CSWAdapter {
             }
 
             //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError("Failed requesting URL: '{}'", uri);
+            throw new ReadError("Failed requesting URL: '" + uri.toString() + "'");
         } catch (URISyntaxException ex) {
             //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError("Failed requesting URL: '{}'", uri);
+            throw new ReadError("Failed requesting URL: '" + uri.toString() + "'");
         } catch (ReadError ex) {
             //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
             throw ex;
@@ -281,10 +281,10 @@ public class CSWAdapter {
             } catch (URISyntaxException ex0) {
             }
             //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError("Failed requesting URL: '{}'", uri);
+            throw new ReadError("Failed requesting URL: '" + uri.toString() + "'");
         } catch (URISyntaxException ex) {
             //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError("Failed requesting URL: '{}'", uri);
+            throw new ReadError("Failed requesting URL: '" + uri.toString() + "'");
         }
         //LOGGER.debug(FrameworkMessages.WFS_REQUEST_SUBMITTED);
         return response;
@@ -298,7 +298,7 @@ public class CSWAdapter {
             } catch (Exception e) {
             }
             //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL_REASON, uri.toString(), reason);
-            ReadError re = new ReadError("Failed requesting URL: '{}'", uri);
+            ReadError re = new ReadError("Failed requesting URL: '" + uri.toString() + "'");
             re.addDetail("Reason: " + reason);
             throw re;
         }

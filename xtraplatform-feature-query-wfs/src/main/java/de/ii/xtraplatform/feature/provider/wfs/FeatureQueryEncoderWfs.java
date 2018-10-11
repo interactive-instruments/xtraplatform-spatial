@@ -175,6 +175,13 @@ public class FeatureQueryEncoderWfs {
 
             Optional<String> property = getPrefixedPropertyName(filter.getExpression1().toString());
 
+            if (!property.isPresent() && filter.getExpression1().toString().equals("NOT_AVAILABLE")) {
+                if (filter.getSRS() != null) {
+                    return new BBOXImpl(null, filter.getBounds().getMinX(), filter.getBounds().getMinY(), filter.getBounds().getMaxX(), filter.getBounds().getMaxY(), filter.getSRS());
+                }
+                return filterFactory.bbox(null, filter.getBounds());
+            }
+
             if (property.isPresent()) {
                 LOGGER.debug("PROP {}", property.get());
                 if (filter.getSRS() != null) {
