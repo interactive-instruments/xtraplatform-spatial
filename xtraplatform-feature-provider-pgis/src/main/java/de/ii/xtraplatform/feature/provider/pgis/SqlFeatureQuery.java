@@ -82,6 +82,22 @@ public abstract class SqlFeatureQuery {
         return String.format("SELECT %s FROM %s%s%s%s ORDER BY %s%s%s", columns, mainTable, join.isEmpty() ? "" : " ", join, where, orderBy, limit2, offset2);
     }
 
+    @Value.Derived
+    public String toSqlSimple() {
+        String mainTable = getPathElements(getPaths().get(0)).get(0);
+
+        String columns = getColumnStream().map(this::getQualifiedColumn)
+                               .collect(Collectors.joining(", "));
+
+
+        String join = getJoinPathElements(getPaths().get(0)).stream()
+                                                            .map(tableAndJoinCondition -> String.format("JOIN %s ON %s", tableAndJoinCondition.first().equals(mainTable) ? tableAndJoinCondition.first() + " AS MAIN2" : tableAndJoinCondition.first(), tableAndJoinCondition.first().equals(mainTable) ? tableAndJoinCondition.second().get().replace(mainTable, "MAIN2") : tableAndJoinCondition.second()
+                                                                                                                                                                                                                                                                                                                                                                                                  .get()))
+                                                            .collect(Collectors.joining(" "));
+
+        return String.format("SELECT %s FROM %s%s%s", columns, mainTable, join.isEmpty() ? "" : " ", join);
+    }
+
     private Stream<String> getColumnStream() {
         return getPaths().stream()
                          .map(this::getPathElements)

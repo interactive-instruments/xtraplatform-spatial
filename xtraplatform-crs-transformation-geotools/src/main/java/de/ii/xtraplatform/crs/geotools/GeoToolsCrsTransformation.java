@@ -35,6 +35,18 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GeoToolsCrsTransformation.class);
 
+    public GeoToolsCrsTransformation() {
+        LOGGER.debug("warming up GeoTools ...");
+
+        try {
+            new GeoToolsCrsTransformer(CRS.decode("EPSG:4326"), CRS.decode("EPSG:4258"), new EpsgCrs(4258));
+        } catch (Throwable ex) {
+            //ignore
+        }
+
+        LOGGER.debug("done");
+    }
+
     @Override
     public boolean isCrsSupported(String crs) {
 

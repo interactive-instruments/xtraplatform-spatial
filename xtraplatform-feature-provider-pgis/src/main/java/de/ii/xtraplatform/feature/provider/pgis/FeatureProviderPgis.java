@@ -1,6 +1,6 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -10,17 +10,21 @@ package de.ii.xtraplatform.feature.provider.pgis;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.alpakka.slick.javadsl.Slick;
 import akka.stream.alpakka.slick.javadsl.SlickSession;
 import akka.stream.javadsl.RunnableGraph;
+import akka.stream.javadsl.Sink;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Charsets;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.akka.http.ActorSystemProvider;
+import de.ii.xtraplatform.crs.api.BoundingBox;
 import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
+import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.query.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.query.api.FeatureQuery;
 import de.ii.xtraplatform.feature.query.api.FeatureStream;
@@ -35,7 +39,6 @@ import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.StaticServiceProperty;
-import org.apache.http.HttpEntity;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.wiring.BundleWiring;
 import org.slf4j.Logger;
@@ -87,6 +90,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     private Map<String, SqlFeatureInserts> featureAddSinks;
     private Map<String, SqlFeatureInserts> featureUpdateSinks;
     private SqlFeatureRemover featureRemover;
+    private Map<String, String> extentQueries;
 
 
     FeatureProviderPgis(@Context BundleContext context, @Requires ActorSystemProvider actorSystemProvider, @Requires CrsTransformation crsTransformation, @Property(name = ".data") FeatureProviderDataPgis data) {
@@ -112,6 +116,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
             this.featureAddSinks = createFeatureSinks(data.getMappings(), false);
             this.featureUpdateSinks = createFeatureSinks(data.getMappings(), true);
             this.featureRemover = new SqlFeatureRemover(session, materializer);
+            this.extentQueries = createExtentQueries(data.getMappings());
         } catch (Throwable e) {
             LOGGER.error("CONNECTING TO DB FAILED", e);
             this.session = null;
@@ -128,6 +133,43 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     public FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query) {
         return featureTransformer -> createFeatureStream(query, new FeatureTransformerFromSql(data.getMappings()
                                                                                                   .get(query.getType()), featureTransformer, query.getFields()));
+    }
+
+    @Override
+    public BoundingBox getSpatialExtent(String featureTypeId) {
+        Optional<String> query = Optional.ofNullable(extentQueries.get(featureTypeId));
+
+        BoundingBox[] boundingBox = {new BoundingBox(-180.0D, -90.0D, 180.0D, 90.0D, new EpsgCrs(4326))};
+
+        if (!query.isPresent()) {
+            return boundingBox[0];
+        }
+
+        Slick.source(session, query.get(), slickRow -> {
+            BoundingBox boundingBox1 = parseBbox(slickRow.nextString());
+            if (boundingBox1 != null) {
+                boundingBox[0] = boundingBox1;
+            }
+            return slickRow;
+        })
+             .runWith(Sink.ignore(), materializer)
+             .toCompletableFuture()
+             .join();
+
+        return boundingBox[0];
+    }
+
+    private BoundingBox parseBbox(String pgisBbox) {
+        List<String> bbox = Splitter.onPattern("[(), ]")
+                                       .omitEmptyStrings()
+                                       .trimResults()
+                                       .splitToList(pgisBbox);
+
+        if (bbox.size() > 4) {
+            return new BoundingBox(Double.parseDouble(bbox.get(1)), Double.parseDouble(bbox.get(2)), Double.parseDouble(bbox.get(3)), Double.parseDouble(bbox.get(4)), data.getNativeCrs());
+        }
+
+        return null;
     }
 
     @Override
@@ -227,7 +269,8 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     private Config createSlickConfig(ConnectionInfo connectionInfo) {
         String password = connectionInfo.getPassword();
         try {
-            password = new String(Base64.getDecoder().decode(password), Charsets.UTF_8);
+            password = new String(Base64.getDecoder()
+                                        .decode(password), Charsets.UTF_8);
         } catch (IllegalArgumentException e) {
             //ignore if not valid base64
         }
@@ -322,6 +365,42 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
                        .collect(ImmutableMap.toImmutableMap(AbstractMap.SimpleImmutableEntry::getKey, AbstractMap.SimpleImmutableEntry::getValue));
     }
 
+    private Map<String, String> createExtentQueries(Map<String, FeatureTypeMapping> mappings) {
+        return mappings.entrySet()
+                       .stream()
+                       .map(featureTypeMappings -> {
+                           Set<String> multiTables = new HashSet<>();
+
+                           List<String> paths = featureTypeMappings.getValue()
+                                                                   .getMappings()
+                                                                   .entrySet()
+                                                                   .stream()
+                                                                   .filter(stringSourcePathMappingEntry -> stringSourcePathMappingEntry.getValue()
+                                                                                                                                       .getMappingForType(BASE_TYPE)
+                                                                                                                                       .isSpatial())
+                                                                   .map(stringSourcePathMappingEntry -> geomToExtent(stringSourcePathMappingEntry.getKey()))
+                                                                   .collect(Collectors.toList());
+
+                           //LOGGER.debug("PATHS {} {}", featureTypeMappings.getKey(), paths);
+
+                           SqlPathTree sqlPathTree = new SqlPathTree.Builder()
+                                   .fromPaths(paths)
+                                   .build();
+
+                           ImmutableSqlFeatureQueries queries = ImmutableSqlFeatureQueries.builder()
+                                                                                          .paths(paths)
+                                                                                          .multiTables(multiTables)
+                                                                                          .sqlPaths(sqlPathTree)
+                                                                                          .build();
+
+
+                           return new AbstractMap.SimpleImmutableEntry<>(featureTypeMappings.getKey(), queries.getQueries()
+                                                                                                              .get(0)
+                                                                                                              .toSqlSimple());
+                       })
+                       .collect(ImmutableMap.toImmutableMap(AbstractMap.SimpleImmutableEntry::getKey, AbstractMap.SimpleImmutableEntry::getValue));
+    }
+
     private Map<String, SqlFeatureInserts> createFeatureSinks(Map<String, FeatureTypeMapping> mappings, boolean withId) {
         return mappings.entrySet()
                        .stream()
@@ -352,5 +431,10 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     private String geomToWkt(String path) {
         int sep = path.lastIndexOf("/") + 1;
         return path.substring(0, sep) + "ST_AsText(ST_ForcePolygonCCW(" + path.substring(sep) + "))";
+    }
+
+    private String geomToExtent(String path) {
+        int sep = path.lastIndexOf("/") + 1;
+        return path.substring(0, sep) + "ST_Extent(" + path.substring(sep) + ")";
     }
 }
