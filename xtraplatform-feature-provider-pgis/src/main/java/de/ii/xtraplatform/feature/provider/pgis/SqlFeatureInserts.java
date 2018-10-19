@@ -220,15 +220,12 @@ public abstract class SqlFeatureInserts {
                                  .first();
         Pair<String, String> ref = refs.get(table);
 
-        //TODO: get column names from parent/this
         String columnNames = String.format("%s,%s", ref.first(), ref.second());
 
-        String column1 = ref.first()
+        String sourceIdColumn = ref.first()
                             .replace('_', '.');
-        //TODO: get name from child
-        String column2 = ref.second()
-                            .replace('_', '.')
-                            .replace("ortsangabe", "ortsangaben");
+        String targetIdColumn = lastRef[0] + '.' + lastRef[1];
+
         queries.add(nestedRow -> {
             Map<String, String> ids = nestedRow.getNested(nestedPath.getTrail(), parentRows).ids;
             Map<String, String> parentIds = nestedRow.getNested(nestedPath.getParentPaths(), parentRows).ids;
@@ -237,7 +234,7 @@ public abstract class SqlFeatureInserts {
                              .size()) {
                 throw new IllegalStateException(String.format("No values found for row %s of %s", row, path));
             }*/
-            String columnValues = String.format("%s,%s", parentIds.get(column1), ids.get(column2));
+            String columnValues = String.format("%s,%s", parentIds.get(sourceIdColumn), ids.get(targetIdColumn));
 
             return new Pair<>(String.format("INSERT INTO %s (%s) VALUES (%s) RETURNING null;", table, columnNames, columnValues), Optional.empty());
         });
