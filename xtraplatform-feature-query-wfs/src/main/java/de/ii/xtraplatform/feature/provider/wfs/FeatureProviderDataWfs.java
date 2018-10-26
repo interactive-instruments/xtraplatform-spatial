@@ -17,6 +17,7 @@ import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
 import org.apache.http.client.utils.URIBuilder;
 import org.immutables.value.Value;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -57,7 +58,7 @@ public abstract class FeatureProviderDataWfs extends FeatureProviderDataTransfor
 
     @Override
     public boolean isFeatureTypeEnabled(String featureType) {
-        if (!getMappingStatus().getEnabled()) {
+        if (!getMappingStatus().getEnabled() || Objects.nonNull(getMappingStatus().getErrorMessage())) {
             return true;
         }
 

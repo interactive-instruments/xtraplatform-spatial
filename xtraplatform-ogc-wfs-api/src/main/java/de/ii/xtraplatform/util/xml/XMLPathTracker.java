@@ -26,6 +26,7 @@ public class XMLPathTracker {
     private List<String> noObjectPath;
     private XMLNamespaceNormalizer nsStore;
     private final Joiner joiner;
+    private final Joiner dotJoiner;
     private final StringBuilder stringBuilder;
 
     private boolean multiple;
@@ -36,6 +37,7 @@ public class XMLPathTracker {
         this.path = new ArrayList<>();
         this.noObjectPath = new ArrayList<>();
         this.joiner = Joiner.on('/').skipNulls();
+        this.dotJoiner = Joiner.on('.').skipNulls();
         this.stringBuilder = new StringBuilder();
     }
 
@@ -94,7 +96,7 @@ public class XMLPathTracker {
     }
 
     public String toFieldNameGml() {
-        return joiner.join(noObjectPath);
+        return dotJoiner.join(noObjectPath);
     }
 
     @Override
