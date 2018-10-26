@@ -24,6 +24,7 @@ import de.ii.xtraplatform.feature.transformer.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
 import de.ii.xtraplatform.ogc.api.gml.parser.OGCEntityResolver;
+import de.ii.xtraplatform.scheduler.api.TaskProgress;
 import de.ii.xtraplatform.util.xml.XMLPathTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,14 +69,20 @@ public class GMLSchemaParser {
         this.entityResolver = entityResolver;
     }
 
-    public void parse(InputStream inputStream, Map<String, List<String>> elements) throws SchemaParseException {
+    public void parse(InputStream inputStream, Map<String, List<String>> elements, TaskProgress taskProgress) {
         try {
+            taskProgress.setCompleteness(0.1);
+            taskProgress.setStatusMessage("retrieving GML application schema");
+
             InputSource is = new InputSource(inputStream);
-            parse(is, elements);
+            parse(is, elements, taskProgress);
 
             for (FeatureProviderSchemaConsumer analyzer : analyzers) {
                 analyzer.analyzeSuccess();
             }
+
+            taskProgress.setCompleteness(1);
+            taskProgress.setStatusMessage("success");
 
         } catch (Exception ex) {
             LOGGER.error("Error parsing application schema. {}", ex);
@@ -84,15 +91,16 @@ public class GMLSchemaParser {
                 analyzer.analyzeFailure(ex);
             }
 
-            //throw new SchemaParseException("Error parsing application schema. {}", ex.getMessage());
+            taskProgress.setCompleteness(1);
+            taskProgress.setStatusMessage("failure");
         }
     }
 
-    private void parse(InputSource is, Map<String, List<String>> elements) {
-        parse(is, elements, true);
+    private void parse(InputSource is, Map<String, List<String>> elements, TaskProgress taskProgress) {
+        parse(is, elements, true, taskProgress);
     }
 
-    private void parse(InputSource is, Map<String, List<String>> elements, boolean lax) {
+    private void parse(InputSource is, Map<String, List<String>> elements, boolean lax, TaskProgress taskProgress) {
         //LOGGER.debug("Parsing GML application schema");
         XSOMParser parser = new XSOMParser();
 
@@ -122,7 +130,12 @@ public class GMLSchemaParser {
                 gcoObjectType = schema1.getElementDecl("AbstractObject").getType();
             }
 
+            int total = elements.values().stream().mapToInt(List::size).sum();
+            double count = 1.0;
+            double factor = 0.8 / total;
             for (Map.Entry<String, List<String>> ns : elements.entrySet()) {
+
+
                 String nsuri = ns.getKey();
                 String oldNsUri = null;
                 //LOGGER.debug("namespace {}", nsuri);
@@ -141,6 +154,10 @@ public class GMLSchemaParser {
                 }
 
                 for (String e : ns.getValue()) {
+                    taskProgress.setCompleteness(0.1 + (count * factor));
+                    taskProgress.setStatusMessage("analyzing feature type " + e);
+                    count += 1.0;
+
                     XSElementDecl elem = schema.getElementDecl(e);
                     if (elem != null && elem.getType().isComplexType()) {
                         //LOGGER.debug(" - element {}, type: {}", elem.getName(), elem.getType().getName());

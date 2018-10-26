@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
+import de.ii.xtraplatform.feature.transformer.api.ImmutableMappingStatus;
+import de.ii.xtraplatform.feature.transformer.api.MappingStatus;
 import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
 import org.immutables.value.Value;
 
@@ -31,6 +33,15 @@ public abstract class FeatureProviderDataPgis extends FeatureProviderDataTransfo
     }
 
     public abstract ConnectionInfo getConnectionInfo();
+
+    @Value.Default
+    @Override
+    public MappingStatus getMappingStatus() {
+        return ImmutableMappingStatus.builder()
+                                     .enabled(true)
+                                     .supported(true)
+                                     .build();
+    }
 
     @Value.Default
     public boolean computeNumberMatched() {

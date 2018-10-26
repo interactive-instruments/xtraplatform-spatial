@@ -19,12 +19,15 @@ import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_TYPE;
 import de.ii.xtraplatform.ogc.api.GML;
+import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import de.ii.xtraplatform.util.xml.XMLPathTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.namespace.QName;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -47,6 +50,7 @@ public class GmlFeatureTypeAnalyzer {
     //private boolean geometryMapped;
     private int geometryCounter;
     private final List<TargetMappingProviderFromGml> mappingProviders;
+    private final XMLNamespaceNormalizer namespaceNormalizer;
 
     public GmlFeatureTypeAnalyzer(ModifiableFeatureProviderDataWfs providerDataWfs, List<TargetMappingProviderFromGml> mappingProviders) {
         this.providerDataWfs = providerDataWfs;
@@ -56,25 +60,23 @@ public class GmlFeatureTypeAnalyzer {
         //this.geometryMapped = false;
         this.geometryCounter = -1;
         this.mappingProviders = mappingProviders;
+        this.namespaceNormalizer = new XMLNamespaceNormalizer(providerDataWfs.getConnectionInfo()
+                                                                  .getNamespaces());
     }
 
     protected boolean analyzeNamespaceRewrite(String oldNamespace, String newNamespace, String featureTypeName) {
         boolean rewritten = false;
 
-        /*TODO String prefix = providerDataWfs.getWfsAdapter().getNsStore().getNamespacePrefix(oldNamespace);
+        String prefix = namespaceNormalizer.getNamespacePrefix(oldNamespace);
         if (prefix != null) {
-            providerDataWfs.getWfsAdapter().getNsStore().addNamespace(prefix, newNamespace, true);
+            namespaceNormalizer.addNamespace(prefix, newNamespace, true);
 
-            String fullName = oldNamespace + ":" + featureTypeName;
-            FeatureTypeConfigurationOld wfsProxyFeatureType = providerDataWfs.getFeatureTypes().get(fullName);
-            if (wfsProxyFeatureType != null) {
-                wfsProxyFeatureType.setNamespace(newNamespace);
-                providerDataWfs.getFeatureTypes().remove(fullName);
-                fullName = newNamespace + ":" + featureTypeName;
-                providerDataWfs.getFeatureTypes().put(fullName, wfsProxyFeatureType);
+            QName newQualifiedName = new QName(newNamespace, featureTypeName);
+            if (providerDataWfs.getFeatureTypes().containsKey(featureTypeName)) {
+                providerDataWfs.getFeatureTypes().put(featureTypeName, newQualifiedName);
                 rewritten = true;
             }
-        }*/
+        }
 
         return rewritten;
     }
@@ -102,7 +104,7 @@ public class GmlFeatureTypeAnalyzer {
         //geometryMapped = false;
         this.geometryCounter = -1;
 
-        //providerDataWfs.getWfsAdapter().addNamespace(nsUri);
+        namespaceNormalizer.addNamespace(nsUri);
 
         ModifiableSourcePathMapping sourcePathMapping = ModifiableSourcePathMapping.create();
 
@@ -126,7 +128,7 @@ public class GmlFeatureTypeAnalyzer {
             return;
         }
 
-        //providerDataWfs.getWfsAdapter().addNamespace(nsUri);
+        namespaceNormalizer.addNamespace(nsUri);
 
         currentPath.track(nsUri, "@" + localName);
 
@@ -158,7 +160,7 @@ public class GmlFeatureTypeAnalyzer {
 
     protected void analyzeProperty(String nsUri, String localName, String type, int depth, boolean isObject) {
 
-        //providerDataWfs.getWfsAdapter().addNamespace(nsUri);
+        namespaceNormalizer.addNamespace(nsUri);
 
         currentPath.track(nsUri, localName, depth);
 
@@ -209,7 +211,9 @@ public class GmlFeatureTypeAnalyzer {
                     //currentFeatureType.getMappings().addMapping(path, mappingProvider.getTargetType(), targetMapping);
                 }
             }
-            currentFeatureTypeMapping.putMappings(path, sourcePathMapping);
+            if (!sourcePathMapping.getMappings().isEmpty()) {
+                currentFeatureTypeMapping.putMappings(path, sourcePathMapping);
+            }
         }
     }
 
@@ -221,5 +225,9 @@ public class GmlFeatureTypeAnalyzer {
             }
         }
         return false;
+    }
+
+    protected Map<String,String> getNamespaces() {
+        return namespaceNormalizer.getNamespaces();
     }
 }

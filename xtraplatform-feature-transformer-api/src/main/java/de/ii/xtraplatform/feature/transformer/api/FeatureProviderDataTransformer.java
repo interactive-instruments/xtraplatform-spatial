@@ -23,6 +23,8 @@ public abstract class FeatureProviderDataTransformer extends FeatureProviderData
 
     public abstract Map<String, QName> getFeatureTypes();
 
+    public abstract MappingStatus getMappingStatus();
+
     @JsonMerge
     public abstract Map<String, FeatureTypeMapping> getMappings();
 

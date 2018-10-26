@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
+import de.ii.xtraplatform.feature.transformer.api.ImmutableMappingStatus;
+import de.ii.xtraplatform.feature.transformer.api.MappingStatus;
 import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
 import org.apache.http.client.utils.URIBuilder;
 import org.immutables.value.Value;
@@ -36,15 +38,21 @@ public abstract class FeatureProviderDataWfs extends FeatureProviderDataTransfor
     public abstract ConnectionInfo getConnectionInfo();
 
     @Value.Default
+    @Override
     public MappingStatus getMappingStatus() {
-        return ImmutableMappingStatus.builder().build();
+        return ImmutableMappingStatus.builder()
+                                     .enabled(true)
+                                     .supported(false)
+                                     .build();
     }
 
     @Override
     @Value.Derived
     public Optional<String> getDataSourceUrl() {
         URIBuilder uriBuilder = new URIBuilder(getConnectionInfo().getUri());
-        return Optional.of(uriBuilder.addParameter("SERVICE", "WFS").addParameter("REQUEST", "GetCapabilities").toString());
+        return Optional.of(uriBuilder.addParameter("SERVICE", "WFS")
+                                     .addParameter("REQUEST", "GetCapabilities")
+                                     .toString());
     }
 
     @Override
@@ -57,10 +65,11 @@ public abstract class FeatureProviderDataWfs extends FeatureProviderDataTransfor
         FeatureTypeMapping featureTypeMapping = getMappings().get(featureType);
         if (featureTypeMapping != null) {
             SourcePathMapping firstMapping = featureTypeMapping.getMappings()
-                                                       .values()
-                                                       .iterator()
-                                                       .next();
-            return firstMapping.getMappingForType(TargetMapping.BASE_TYPE).isEnabled();
+                                                               .values()
+                                                               .iterator()
+                                                               .next();
+            return firstMapping.getMappingForType(TargetMapping.BASE_TYPE)
+                               .isEnabled();
         }
         return false;
     }

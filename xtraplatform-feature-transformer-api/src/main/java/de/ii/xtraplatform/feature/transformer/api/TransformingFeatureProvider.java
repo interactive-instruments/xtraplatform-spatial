@@ -12,10 +12,9 @@ import akka.stream.javadsl.RunnableGraph;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
 import de.ii.xtraplatform.feature.query.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.query.api.FeatureProvider;
-import de.ii.xtraplatform.feature.query.api.FeatureProviderData;
-import de.ii.xtraplatform.feature.query.api.FeatureProviderMetadataConsumer;
 import de.ii.xtraplatform.feature.query.api.FeatureQuery;
 import de.ii.xtraplatform.feature.query.api.FeatureStream;
+import de.ii.xtraplatform.scheduler.api.TaskProgress;
 
 import javax.xml.namespace.QName;
 import java.util.List;
@@ -35,7 +34,7 @@ public interface TransformingFeatureProvider<T extends FeatureTransformer, U ext
         void deleteFeature(String featureType, String id);
 
         interface SchemaAware {
-                void getSchema(FeatureProviderSchemaConsumer schemaConsumer, Map<String,QName> featureTypes);
+                void getSchema(FeatureProviderSchemaConsumer schemaConsumer, Map<String, QName> featureTypes, TaskProgress taskProgress);
         }
 
         interface DataGenerator<V extends FeatureProviderDataTransformer> extends FeatureProvider.DataGenerator<V> {

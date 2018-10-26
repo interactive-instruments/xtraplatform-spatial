@@ -1,6 +1,6 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- * <p>
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -32,16 +32,17 @@ import de.ii.xtraplatform.feature.transformer.api.GmlConsumer;
 import de.ii.xtraplatform.feature.transformer.api.GmlStreamParser;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping;
+import de.ii.xtraplatform.feature.transformer.api.MappingStatus;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
 import de.ii.xtraplatform.feature.transformer.api.TransformingFeatureProvider;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ParseError;
-import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
 import de.ii.xtraplatform.ogc.api.exceptions.WFSException;
 import de.ii.xtraplatform.ogc.api.wfs.client.DescribeFeatureType;
 import de.ii.xtraplatform.ogc.api.wfs.client.GetCapabilities;
 import de.ii.xtraplatform.ogc.api.wfs.client.WFSAdapter;
 import de.ii.xtraplatform.ogc.api.wfs.client.WFSRequest;
+import de.ii.xtraplatform.scheduler.api.TaskProgress;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Property;
@@ -65,7 +66,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static de.ii.xtraplatform.feature.provider.wfs.FeatureProviderWfs.PROVIDER_TYPE;
 
@@ -320,46 +320,17 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     }
 
     @Override
-    public void getSchema(FeatureProviderSchemaConsumer schemaConsumer, Map<String, QName> featureTypes) {
-        analyzeFeatureTypes(schemaConsumer, featureTypes);
+    public void getSchema(FeatureProviderSchemaConsumer schemaConsumer, Map<String, QName> featureTypes, TaskProgress taskProgress) {
+        analyzeFeatureTypes(schemaConsumer, featureTypes, taskProgress);
     }
 
-    public void analyzeFeatureTypes(FeatureProviderSchemaConsumer schemaConsumer, Map<String, QName> featureTypes) {
+    public void analyzeFeatureTypes(FeatureProviderSchemaConsumer schemaConsumer, Map<String, QName> featureTypes, TaskProgress taskProgress) {
         if (mappingStatus.getEnabled() && mappingStatus.getLoading()) {
 
             Map<String, List<String>> featureTypesByNamespace = retrieveSupportedFeatureTypesPerNamespace(featureTypes);
 
-            if (!featureTypes.isEmpty()) {
-
-                try {
-                    analyzeFeatureTypesWithDescribeFeatureType(schemaConsumer, featureTypesByNamespace);
-
-                    //mappingStatus.setLoading(false);
-                    //mappingStatus.setSupported(true);
-                } catch (Exception ex) {
-                    // TODO: message should be a service level warning
-                    /*mappingStatus.setLoading(false);
-                    mappingStatus.setSupported(false);
-                    mappingStatus.setErrorMessage(ex.getMessage());
-                    if (ex.getClass() == SchemaParseException.class) {
-                        mappingStatus.setErrorMessageDetails(((SchemaParseException)ex).getDetails());
-                    }*/
-
-                    /*TODO try {
-                        analyzeFeatureTypesWithGetFeature(featureTypesByNamespace);
-
-                        mappingStatus.setLoading(false);
-                        mappingStatus.setSupported(true);
-                    } catch (Exception ex2) {
-                        // TODO: we should never get here if we have a test for a working GetFeature
-                        mappingStatus.setLoading(false);
-                        mappingStatus.setSupported(false);
-                        mappingStatus.setErrorMessage(ex2.getMessage());
-                        if (ex2.getClass() == SchemaParseException.class) {
-                            mappingStatus.setErrorMessageDetails(((SchemaParseException)ex2).getDetails());
-                        }
-                    }*/
-                }
+            if (!featureTypesByNamespace.isEmpty()) {
+                    analyzeFeatureTypesWithDescribeFeatureType(schemaConsumer, featureTypesByNamespace, taskProgress);
             }
 
             // only log warnings about timeouts in the analysis phase
@@ -367,7 +338,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
         }
     }
 
-    private void analyzeFeatureTypesWithDescribeFeatureType(FeatureProviderSchemaConsumer schemaConsumer, Map<String, List<String>> featureTypesByNamespace) throws SchemaParseException {
+    private void analyzeFeatureTypesWithDescribeFeatureType(FeatureProviderSchemaConsumer schemaConsumer, Map<String, List<String>> featureTypesByNamespace, TaskProgress taskProgress) {
         URI baseUri = wfsAdapter.findUrl(WFS.OPERATION.DESCRIBE_FEATURE_TYPE, WFS.METHOD.GET);
 
         InputStream source = akkaHttp.get(new WFSRequest(wfsAdapter, new DescribeFeatureType()).getAsUrl())
@@ -382,7 +353,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
         gmlSchemaParser = new GMLSchemaParser(ImmutableList.of(schemaConsumer), baseUri);
         //}
 
-        gmlSchemaParser.parse(source, featureTypesByNamespace);
+        gmlSchemaParser.parse(source, featureTypesByNamespace, taskProgress);
     }
 
     private Map<String, List<String>> retrieveSupportedFeatureTypesPerNamespace(Map<String, QName> featureTypes) {

@@ -1,9 +1,11 @@
 /**
  * Copyright 2017 European Union, interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * bla
  */
 /**
  * bla
@@ -17,6 +19,8 @@ import org.slf4j.LoggerFactory;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -38,7 +42,7 @@ public class XMLNamespaceNormalizer {
         shortcount = 0;
     }
 
-    public XMLNamespaceNormalizer(Map<String,String> namespaces) {
+    public XMLNamespaceNormalizer(Map<String, String> namespaces) {
         this();
         this.namespaces.putAll(namespaces);
     }
@@ -53,7 +57,8 @@ public class XMLNamespaceNormalizer {
         for (Map.Entry<String, String> ns : namespaces.entrySet()) {
             boolean add = true;
             for (Map.Entry<String, String> ns0 : shortNamespaces.entrySet()) {
-                if (ns.getValue().equals(ns0.getValue())) {
+                if (ns.getValue()
+                      .equals(ns0.getValue())) {
                     shortns.put(ns0.getKey(), ns0.getValue());
                     add = false;
                 }
@@ -73,8 +78,10 @@ public class XMLNamespaceNormalizer {
         this.namespaces = namespaces;
 
         for (Map.Entry<String, String> ns : namespaces.entrySet()) {
-            if (ns.getKey() != null && ns.getKey().length() > 5) {
-                String pre = ns.getKey().substring(0, 5) + shortcount++;
+            if (ns.getKey() != null && ns.getKey()
+                                         .length() > 5) {
+                String pre = ns.getKey()
+                               .substring(0, 5) + shortcount++;
                 shortNamespaces.put(pre, ns.getValue());
             }
         }
@@ -121,7 +128,16 @@ public class XMLNamespaceNormalizer {
 
     public void addNamespace(String namespaceURI) {
         if (!namespaces.containsValue(namespaceURI)) {
-            String prefix = "ns" + nscount++;
+            String prefix;
+            Matcher last = Pattern.compile("\\/([a-zA-Z]+)$").matcher(namespaceURI);
+            Matcher nextToLast = Pattern.compile("\\/([a-zA-Z]+)\\/[0-9.]+$").matcher(namespaceURI);
+            if (last.find()) {
+                prefix = last.group(1);
+            } else if (nextToLast.find()) {
+                prefix = nextToLast.group(1);
+            } else {
+                prefix = "ns" + nscount++;
+            }
             addNamespace(prefix, namespaceURI);
         }
     }
@@ -137,7 +153,8 @@ public class XMLNamespaceNormalizer {
 
     public String convertToShortForm(String longform) {
         for (Map.Entry<String, String> ns : namespaces.entrySet()) {
-            if (ns != null && !ns.getValue().isEmpty()) {
+            if (ns != null && !ns.getValue()
+                                 .isEmpty()) {
                 longform = longform.replace(ns.getValue(), this.getNamespacePrefix(ns.getValue()));
             }
         }
@@ -176,7 +193,7 @@ public class XMLNamespaceNormalizer {
     // TODO: change path serialization format
     public String getPrefixedPath(String qualifiedPath) {
         String prefixedPath = qualifiedPath;
-        for (Map.Entry<String,String> ns: namespaces.entrySet()) {
+        for (Map.Entry<String, String> ns : namespaces.entrySet()) {
             prefixedPath = prefixedPath.replaceAll(ns.getValue(), ns.getKey());
         }
         return prefixedPath;
@@ -208,7 +225,8 @@ public class XMLNamespaceNormalizer {
 
     public String getNamespacePrefix(String uri) {
         for (Map.Entry<String, String> ns : namespaces.entrySet()) {
-            if (ns.getValue().equals(uri)) {
+            if (ns.getValue()
+                  .equals(uri)) {
                 return ns.getKey();
             }
         }
@@ -217,7 +235,8 @@ public class XMLNamespaceNormalizer {
 
     public String getShortNamespacePrefix(String uri) {
         for (Map.Entry<String, String> ns : shortNamespaces.entrySet()) {
-            if (ns.getValue().equals(uri)) {
+            if (ns.getValue()
+                  .equals(uri)) {
                 return ns.getKey();
             }
         }
