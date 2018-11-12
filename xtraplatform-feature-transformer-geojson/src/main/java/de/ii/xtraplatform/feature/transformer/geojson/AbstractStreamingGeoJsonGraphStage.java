@@ -106,11 +106,20 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
                     break;
 
                 case START_OBJECT:
+                    if (Objects.nonNull(currentName) && !started) {
+                        switch (currentName) {
+                            case "properties":
+                            case "geometry":
+                                startIfNecessary(false);
+                                break;
+                        }
+                    }
                     if (Objects.nonNull(currentName) && started) {
                         switch (currentName) {
                             case "properties":
                                 inProperties = true;
                                 featureDepth = depth;
+                                pathTracker.track(1);
                                 break;
                             case "geometry":
                                 inGeometry = true;
@@ -136,10 +145,7 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
                     if (depth == 0 && Objects.nonNull(currentName)) {
                         switch (currentName) {
                             case "features":
-                                featureConsumer.onStart(numberReturned, numberMatched);
-                                started = true;
-                                featureDepth = 1;
-                                inFeature = true;
+                                startIfNecessary(true);
                                 break;
                         }
                     } else if (Objects.nonNull(currentName) && (inProperties || inGeometry)) {
@@ -163,7 +169,10 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
                                 break;
                         }
                     } else if (Objects.nonNull(currentName) && (inProperties || inGeometry)) {
+                        if (inGeometry)
+                            pathTracker.track(depth - featureDepth);
                         depth -= 1;
+                        if (inProperties)
                         pathTracker.track(depth - featureDepth);
                         lastNameIsArrayDepth -= 1;
                     } else if (inGeometry) {
@@ -176,6 +185,8 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
                     break;
 
                 case END_OBJECT:
+                    if (inGeometry)
+                        pathTracker.track(depth - featureDepth);
                     if (Objects.nonNull(currentName) || lastNameIsArrayDepth == 0)
                         depth -= 1;
                     if (depth == -1) {
@@ -189,12 +200,13 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
                     } else if (inFeature) {
                         //featureConsumer.onPropertyEnd(pathTracker.asList());
                     }
+
                     if (Objects.equals(currentName, "properties"))
                         inProperties = false;
                     if (Objects.equals(currentName, "geometry")) {
                         inGeometry = false;
                     }
-                    if (inProperties || inGeometry)
+                    if (inProperties)
                         pathTracker.track(depth - featureDepth);
                     break;
 
@@ -214,13 +226,7 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
                             case "type":
                                 if (!parser.getValueAsString().equals("Feature")) break;
                             case "id":
-                                if (!started) {
-                                    featureConsumer.onStart(numberReturned, numberMatched);
-                                    started = true;
-                                    inFeature = true;
-                                    singleFeature = true;
-                                    featureConsumer.onFeatureStart(pathTracker.asList());
-                                }
+                                startIfNecessary(false);
                                 if (!currentName.equals("id")) break;
 
                                 pathTracker.track(currentName, 1);
@@ -247,9 +253,10 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
                         } else if (inGeometry)
                             pathTracker.track(depth - featureDepth + 1);
                     } else if (inGeometry) {
-                        featureConsumer.onPropertyStart(pathTracker.asList(), ImmutableList.of());
+                        // never reached
+                        /*featureConsumer.onPropertyStart(pathTracker.asList(), ImmutableList.of());
                         featureConsumer.onPropertyText(parser.getValueAsString());
-                        featureConsumer.onPropertyEnd(pathTracker.asList());
+                        featureConsumer.onPropertyEnd(pathTracker.asList());*/
                     }
 
                     /*else if (matchesFeatureType(parser.getNamespaceURI(), parser.getLocalName())) {
@@ -296,6 +303,20 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
         }
 
         return feedMeMore;
+    }
+
+    private void startIfNecessary(boolean isCollection) throws Exception {
+        if (!started) {
+            featureConsumer.onStart(numberReturned, numberMatched);
+            started = true;
+            inFeature = true;
+            if (isCollection) {
+                featureDepth = 1;
+            } else {
+                singleFeature = true;
+                featureConsumer.onFeatureStart(pathTracker.asList());
+            }
+        }
     }
 
     private void increaseMultiplicity(String path) {

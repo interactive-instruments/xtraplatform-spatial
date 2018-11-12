@@ -5,10 +5,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.feature.transformer.api;
+package de.ii.xtraplatform.feature.transformer.geojson;
 
 import de.ii.xtraplatform.feature.query.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
 
 import java.util.List;
 import java.util.Objects;
@@ -19,7 +20,7 @@ import static de.ii.xtraplatform.feature.query.api.TargetMapping.BASE_TYPE;
 /**
  * @author zahnen
  */
-public class LoggingFeatureTransformer implements FeatureTransformer {
+public class FeatureTransformerToString implements FeatureTransformer {
     private final StringBuilder log = new StringBuilder();
 
     @Override
@@ -59,7 +60,7 @@ public class LoggingFeatureTransformer implements FeatureTransformer {
         log.append(Objects.nonNull(mapping) ? mapping.getName() : "NOMAPPING");
         if (Objects.nonNull(mapping) && mapping.getName().contains("["))
             log.append("[").append(multiplicities).append("]");
-        log.append(": ");
+        log.append(":");
     }
 
     @Override
@@ -79,7 +80,7 @@ public class LoggingFeatureTransformer implements FeatureTransformer {
         log.append(Objects.nonNull(mapping) ? mapping.getName() : "NOMAPPING");
         log.append("|");
         log.append(type);
-        log.append(": ");
+        log.append(":");
     }
 
     @Override
@@ -90,7 +91,7 @@ public class LoggingFeatureTransformer implements FeatureTransformer {
     @Override
     public void onGeometryCoordinates(String text) throws Exception {
         log.append("\n")
-           .append(text);
+           .append(text.trim());
     }
 
     @Override

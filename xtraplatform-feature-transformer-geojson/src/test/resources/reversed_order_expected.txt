@@ -1,0 +1,80 @@
+START: -1 -1
+[]{
+    [geometry, coordinates, []: []:    [geometry, coordinates, [, []: []:    [geometry, coordinates, [, [, []: []:8.18523495507722
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.698295103021096
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:8.185283687843047
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.69823291309017
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:8.185340750477529
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.698164995459464
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:8.185391481556831
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.69814732787338
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:8.185557748451103
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.69821659947788
+   >[geometry, coordinates, [, [, []
+
+   >[geometry, coordinates, [, []
+
+   >[geometry, coordinates, []
+    [geometry, coordinates, []: []:    [geometry, coordinates, [, []: []:    [geometry, coordinates, [, [, []: []:8.185681115675656
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.698286680057166
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:8.185796151881165
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.69836248910692
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:8.185961921022393
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.698420628419534
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:8.186049719358214
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.6984635312452
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:8.186164506999352
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.69853377407446
+   >[geometry, coordinates, [, [, []
+
+   >[geometry, coordinates, [, []
+    [geometry, coordinates, [, []: []:    [geometry, coordinates, [, [, []: []:8.186313615874417
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.698603368350874
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:8.18641074595947
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.69866280390489
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:8.186559354976497
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.698721267043595
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:8.186734205060421
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.698790375060966
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:8.186890646862924
+   >[geometry, coordinates, [, [, []
+    [geometry, coordinates, [, [, []: []:49.69883198009526
+   >[geometry, coordinates, [, [, []
+
+   >[geometry, coordinates, [, []
+
+   >[geometry, coordinates, []
+    [geometry, type]: []:MultiPolygon
+   >[geometry, type]
+    [id]: []:24
+   >[id]
+    [kennung]: [1]:611320001-1
+   >[kennung]
+}
+END

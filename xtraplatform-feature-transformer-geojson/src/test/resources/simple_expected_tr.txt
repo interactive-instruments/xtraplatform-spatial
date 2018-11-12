@@ -1,0 +1,8 @@
+START: -1 -1
+NOMAPPING{
+    /fundortpflanzen/[id=id]osirisobjekt/id[[]]:24
+    /fundortpflanzen/[id=id]artbeobachtung/[geom=id]geom/geom|POINT:
+8.18523495507722 49.698295103021096
+    /fundortpflanzen/[id=id]osirisobjekt/kennung[[1]]:611320001-1
+}
+END

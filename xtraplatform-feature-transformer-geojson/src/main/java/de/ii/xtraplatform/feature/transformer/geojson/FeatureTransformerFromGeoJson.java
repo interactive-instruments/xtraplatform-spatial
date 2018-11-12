@@ -14,9 +14,11 @@ import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static de.ii.xtraplatform.util.functional.LambdaWithException.consumerMayThrow;
 
@@ -80,6 +82,11 @@ public class FeatureTransformerFromGeoJson implements FeatureConsumer {
     private List<String> currentPath;
     private int nesting = 0;
     private StringBuilder stringBuilder = new StringBuilder();
+
+    //TODO
+    private boolean geometryStarted;
+    private List<String> coordinateBuffer = new ArrayList<>();
+    private List<AtomicInteger> nestingLevelChangeBuffer = new ArrayList<>();
 
     public FeatureTransformerFromGeoJson(FeatureTypeMapping featureTypeMapping, FeatureTransformer featureTransformer) {
         this.featureTypeMapping = featureTypeMapping;
@@ -148,6 +155,18 @@ public class FeatureTransformerFromGeoJson implements FeatureConsumer {
         if (!(stringBuilder.length() == 0)) {
             featureTransformer.onGeometryCoordinates(stringBuilder.toString());
         }
+
+        //TODO
+        if (!coordinateBuffer.isEmpty()) {
+            int nestingLevelChange = nestingLevelChangeBuffer.get(0)
+                                                             .get();
+
+            for (int j = 0; j < nestingLevelChange; j++) {
+                featureTransformer.onGeometryNestedEnd();
+            }
+        }
+
+
         //TODO: check for all geo types
         for (int i = 1; i < nesting; i++) {
             featureTransformer.onGeometryNestedEnd();
@@ -157,6 +176,79 @@ public class FeatureTransformerFromGeoJson implements FeatureConsumer {
         nesting = 0;
         currentPath = null;
         stringBuilder = new StringBuilder();
+
+        geometryStarted = false;
+        coordinateBuffer = new ArrayList<>();
+        nestingLevelChangeBuffer = new ArrayList<>();
+    }
+
+    private void onGeometryStart(SimpleFeatureGeometry type) throws Exception {
+
+        geometryStarted = true;
+        featureTransformer.onGeometryStart(geometryMapping, type, 2);
+
+        if (!nestingLevelChangeBuffer.isEmpty() && coordinateBuffer.isEmpty()) {
+            int nestingLevelChange = nestingLevelChangeBuffer.get(0)
+                                                             .get();
+
+            for (int j = 0; j < nestingLevelChange; j++) {
+                featureTransformer.onGeometryNestedStart();
+            }
+
+        }
+
+        //TODO
+        if (!coordinateBuffer.isEmpty()) {
+            for (int i = 0; i < coordinateBuffer.size(); i++) {
+                int nestingLevelChange = nestingLevelChangeBuffer.get(i)
+                                                                 .get();
+
+                if (i > 0) {
+                    for (int j = 0; j < nestingLevelChange; j++) {
+                        featureTransformer.onGeometryNestedEnd();
+                    }
+                }
+                if (i == 0 || i < coordinateBuffer.size()) {
+                    for (int j = 0; j < nestingLevelChange; j++) {
+                        featureTransformer.onGeometryNestedStart();
+                    }
+                }
+
+                featureTransformer.onGeometryCoordinates(coordinateBuffer.get(i));
+            }
+        }
+    }
+
+    private void onGeometryNestedStart() throws Exception {
+        if (geometryStarted) {
+            featureTransformer.onGeometryNestedStart();
+        } else {
+            if (nestingLevelChangeBuffer.size() < coordinateBuffer.size() + 1) {
+                nestingLevelChangeBuffer.add(new AtomicInteger());
+            }
+            nestingLevelChangeBuffer.get(coordinateBuffer.size())
+                                    .incrementAndGet();
+        }
+    }
+
+    private void onGeometryNestedEnd() throws Exception {
+        if (geometryStarted) {
+            featureTransformer.onGeometryNestedEnd();
+        } else {
+            if (nestingLevelChangeBuffer.size() < coordinateBuffer.size() + 1) {
+                nestingLevelChangeBuffer.add(new AtomicInteger());
+            }
+            //nestingLevelChangeBuffer.get(coordinateBuffer.size())
+            //                        .decrementAndGet();
+        }
+    }
+
+    private void onGeometryCoordinates(String coordinates) throws Exception {
+        if (geometryStarted) {
+            featureTransformer.onGeometryCoordinates(coordinates);
+        } else {
+            coordinateBuffer.add(coordinates);
+        }
     }
 
     @Override
@@ -164,18 +256,18 @@ public class FeatureTransformerFromGeoJson implements FeatureConsumer {
         if (geometryMapping != null) {
             if (currentPath.get(1)
                            .equals("type")) {
-                featureTransformer.onGeometryStart(geometryMapping, GEO_JSON_GEOMETRY_TYPE.forString(text)
-                                                                                          .toSimpleFeatureGeometry(), 2);
+                onGeometryStart(GEO_JSON_GEOMETRY_TYPE.forString(text)
+                                                      .toSimpleFeatureGeometry());
             } else if (currentPath.get(1)
                                   .equals("coordinates")) {
                 if (nesting + 2 < currentPath.size() && !(stringBuilder.length() == 0)) {
-                    featureTransformer.onGeometryCoordinates(stringBuilder.toString());
+                    onGeometryCoordinates(stringBuilder.toString());
                     stringBuilder = new StringBuilder();
                 }
                 for (int i = nesting + 2; i < currentPath.size(); i++) {
                     //TODO: check for all geo types
                     if (nesting > 0) {
-                        featureTransformer.onGeometryNestedStart();
+                        onGeometryNestedStart();
                     }
                     nesting++;
                 }
@@ -194,14 +286,18 @@ public class FeatureTransformerFromGeoJson implements FeatureConsumer {
             //geometryMapping = null;
             //featureTransformer.onGeometryEnd();
             if (path.size() < nesting + 2 && !(stringBuilder.length() == 0)) {
-                featureTransformer.onGeometryCoordinates(stringBuilder.toString());
+                onGeometryCoordinates(stringBuilder.toString());
                 stringBuilder = new StringBuilder();
             }
-            for (int i = path.size(); i < nesting + 2; i++) {
-            //for (int i = 0; i < nesting && i < 2; i++) {
-                nesting--;
-                if (nesting < 3)
-                featureTransformer.onGeometryNestedEnd();
+
+            if (!(path.size() == 2 && path.get(1)
+                                          .equals("type"))) {
+                for (int i = path.size(); i < nesting + 2; i++) {
+                    //for (int i = 0; i < nesting && i < 2; i++) {
+                    nesting--;
+                    if (nesting < 3)
+                        onGeometryNestedEnd();
+                }
             }
         } else if (inProperty) {
             featureTransformer.onPropertyEnd();

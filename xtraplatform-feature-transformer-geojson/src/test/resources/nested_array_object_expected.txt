@@ -1,0 +1,26 @@
+START: -1 -1
+[]{
+    [id]: []:24
+   >[id]
+    [geometry, type]: []:Point
+   >[geometry, type]
+    [geometry, coordinates]: []:8.18523495507722
+   >[geometry, coordinates]
+    [geometry, coordinates]: []:49.698295103021096
+   >[geometry, coordinates]
+    [raumreferenz, ortsangabe, kreisschluessel]: [1, 1, 1]:11
+   >[raumreferenz, ortsangabe, kreisschluessel]
+    [raumreferenz, ortsangabe, flurstueckskennzeichen]: [1, 1, 1]:34
+   >[raumreferenz, ortsangabe, flurstueckskennzeichen]
+    [raumreferenz, ortsangabe, flurstueckskennzeichen]: [1, 2, 1]:35
+   >[raumreferenz, ortsangabe, flurstueckskennzeichen]
+    [raumreferenz, ortsangabe, flurstueckskennzeichen]: [1, 2, 2]:36
+   >[raumreferenz, ortsangabe, flurstueckskennzeichen]
+    [raumreferenz, ortsangabe, kreisschluessel]: [1, 3, 1]:12
+   >[raumreferenz, ortsangabe, kreisschluessel]
+    [raumreferenz, ortsangabe, flurstueckskennzeichen]: [1, 3, 1]:37
+   >[raumreferenz, ortsangabe, flurstueckskennzeichen]
+    [kennung]: [1]:611320001-1
+   >[kennung]
+}
+END

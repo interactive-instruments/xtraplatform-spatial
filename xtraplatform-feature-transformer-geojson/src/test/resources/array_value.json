@@ -1,0 +1,12 @@
+{
+  "type" : "Feature",
+  "id": "24",
+  "geometry" : {
+    "type" : "Point",
+    "coordinates" : [ 8.18523495507722, 49.698295103021096 ]
+  },
+  "properties" : {
+    "erfasser_array": ["John Doe", "Jane Doe"],
+    "kennung" : "611320001-1"
+  }
+}

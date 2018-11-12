@@ -1,0 +1,14 @@
+START: -1 -1
+[]{
+    [id]: []:24
+   >[id]
+    [geometry, type]: []:Point
+   >[geometry, type]
+    [geometry, coordinates]: []:8.18523495507722
+   >[geometry, coordinates]
+    [geometry, coordinates]: []:49.698295103021096
+   >[geometry, coordinates]
+    [kennung]: [1]:611320001-1
+   >[kennung]
+}
+END

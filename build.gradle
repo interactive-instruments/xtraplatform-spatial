@@ -15,10 +15,10 @@ buildscript {
 }
 
 apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.bintray'
+//apply plugin: 'com.jfrog.bintray'
 apply plugin: 'java'
 
-version = '2.0.19'
+version = '2.0.20'
 //version += '-SNAPSHOT'
 
 group = 'de.interactive_instruments'
@@ -137,9 +137,10 @@ tasks.test.dependsOn tasks.generateDependsFile
 
 subprojects {
     apply plugin: 'java'
+    apply plugin: 'groovy'
     apply plugin: 'osgi-ipojo'
     apply plugin: 'maven-publish'
-//    apply plugin: 'com.jfrog.bintray'
+    apply plugin: 'com.jfrog.bintray'
     apply plugin: 'license'
 
     group = 'de.interactive_instruments'
@@ -155,6 +156,7 @@ subprojects {
                 "**/*.png",
                 "**/*.ico",
                 "**/*.xcf",
+                "**/*.txt",
                 "**/*.json"])
         ext.year = Calendar.getInstance().get(Calendar.YEAR)
         ext.name = "interactive instruments GmbH"
@@ -242,13 +244,17 @@ subprojects {
     dependencies {    
         testCompile group: 'org.testng', name: 'testng', version: '6.8.5'
         testCompile group: 'junit', name: 'junit', version: '4.12'
+        testCompile "org.spockframework:spock-core:1.2-groovy-2.4"
+        testCompile( 'com.athaydes:spock-reports:1.6.1' ) {
+            transitive = false // this avoids affecting your version of Groovy/Spock
+        }
         testCompile group: 'org.mockito', name: 'mockito-core', version: '1.9.5'
     }
     
     test {
-        useTestNG()
+        //useTestNG()
         options {
-            includeGroups 'default'
+            //includeGroups 'default'
             /* if you want to run tests for debugging purposes that are not part
             of the continuous integration, put them in the "debug"-group and
             uncomment the following line just in your local working copy
@@ -259,6 +265,9 @@ subprojects {
         }
         testLogging.showStandardStreams = true
         reports.html.enabled = true
+
+        systemProperty 'com.athaydes.spockframework.report.outputDir', "$buildDir/reports/spock"
+        systemProperty 'com.athaydes.spockframework.report.showCodeBlocks', 'true'
 
     }
     
@@ -355,7 +364,7 @@ subprojects {
         }
     }
     afterEvaluate { project ->
-        /*bintray {
+        bintray {
             user = project.bintrayUser
             key = project.bintrayApiKey
             publications = ['maven']
@@ -374,7 +383,12 @@ subprojects {
                     name = project.version
                 }
             }
-        }*/
+        }
+        test {
+            systemProperty 'com.athaydes.spockframework.report.projectName', project.name
+            systemProperty 'com.athaydes.spockframework.report.projectVersion', project.version
+
+        }
     }
 }
 
@@ -402,7 +416,7 @@ publishing {
 }
 
 // TODO: does not work without commenting out subprojects bintray plugin
-bintray {
+/*bintray {
     user = project.bintrayUser
     key = project.bintrayApiKey
     publications = ['mavenRoot']
@@ -421,5 +435,5 @@ bintray {
             name = project.version
         }
     }
-}
+}*/
 apply from: 'license-report.gradle'
