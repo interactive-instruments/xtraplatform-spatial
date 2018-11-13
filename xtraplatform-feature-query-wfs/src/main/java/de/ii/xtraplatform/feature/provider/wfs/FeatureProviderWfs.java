@@ -78,7 +78,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
 
-    private static final String SOURCE_FORMAT = "application/xml+gml";
+    private static final String SOURCE_FORMAT = "application/gml+xml";
 
     static final String PROVIDER_TYPE = "WFS";
 
