@@ -139,6 +139,8 @@ public class SqlFeatureSource {
                             List<Integer> multi = new ArrayList<>();
                             List<String> parentTables = new ArrayList<>();
                             String child = null;
+                            boolean increased = false;
+                            int increasedMultiplicity = 0;
                             for (int i = 0; i < slickRowInfo.getPath()
                                                             .size(); i++) {
                                 String table = slickRowInfo.getPath()
@@ -149,11 +151,35 @@ public class SqlFeatureSource {
                                 if (queries.getMultiTables()
                                            .contains(table)) {
                                     if (multiplicities.containsKey(table)) {
+
+                                        //path is not the same as last, but was seen before
+
+
+
                                         if (i == slickRowInfo.getPath()
                                                              .size() - 1) {
-                                            multi.add(multiplicities.get(table)
-                                                                    .get(multiplicities.get(table)
-                                                                                       .size() - 1) + 1);
+                                            int m = multiplicities.get(table)
+                                                                  .get(multiplicities.get(table)
+                                                                                     .size() - 1);
+
+                                            int mp = increased ? multiplicities.get(table)
+                                                                               .get(increasedMultiplicity) : -1;
+
+
+
+                                            if (!increased || mp < multi.get(increasedMultiplicity)) {
+                                                m++;
+                                                LOGGER.debug("CURR_MULTI_INC {} {}", table, m);
+                                            } else {
+                                                int m2 = multi.remove(increasedMultiplicity);
+                                                multi.add(increasedMultiplicity, m2 + 1);
+                                                LOGGER.debug("PREV_MULTI_INC {} {}", increasedMultiplicity, m2);
+                                                if (m==0) m = 1;
+                                            }
+                                            increased = false;
+                                            increasedMultiplicity = -1;
+
+                                            multi.add(m);
                                             child = table;
 
                                             children.getOrDefault(table, new HashSet<>())
@@ -165,9 +191,17 @@ public class SqlFeatureSource {
                                                         }
                                                     });
                                         } else {
-                                            multi.add(multiplicities.get(table)
-                                                                    .get(multiplicities.get(table)
-                                                                                       .size() - 1));
+                                            int m = multiplicities.get(table)
+                                                                  .get(multiplicities.get(table)
+                                                                                     .size() - 1);
+                                            if (i == previousPath.get(0).size()-1 && previousPath.get(0).get(i).equals(slickRowInfo.getPath().get(i))) {
+                                                //m++;
+                                                increased = true;
+                                                //LOGGER.debug("PREV_MULTI_INC {} {}", table, m);
+                                                increasedMultiplicity = multi.size();
+                                            }
+
+                                            multi.add(m);
                                             parentTables.add(table);
                                         }
                                     } else {
@@ -190,8 +224,17 @@ public class SqlFeatureSource {
                                             .add(child);
                                 }
                             }
+
+                            //close multiplicities that do not belong to the current path
+                            /*String finalChild = child;
+                            new ArrayList<>(multiplicities.keySet()).forEach(key -> {
+                                if (!key.equals(finalChild) || parentTables.contains(key)) {
+                                    multiplicities.remove(key);
+                                }
+                            });*/
                         }
                     }
+                    LOGGER.debug("MULTI {}", multiplicities.get(slickRowInfo.getName()));
 
                     if (!slickRowInfo.getName()
                                      .equals("META")) {

@@ -218,15 +218,15 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
         String nextToken = getNextEmptyOrOpener(tokenizer);
         if (!Objects.equals(nextToken, EMPTY)) {
             nextToken = getNextWord(tokenizer);
+            featureTransformer.onGeometryNestedStart();
             Splitter.on(',')
                     .omitEmptyStrings()
                     .trimResults()
                     .splitToList(nextToken)
                     .forEach(consumerMayThrow(point -> {
-                        featureTransformer.onGeometryNestedStart();
                         featureTransformer.onGeometryCoordinates(point);
-                        featureTransformer.onGeometryNestedEnd();
                     }));
+            featureTransformer.onGeometryNestedEnd();
             nextToken = getNextCloserOrComma(tokenizer);
         }
     }
