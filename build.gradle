@@ -15,10 +15,10 @@ buildscript {
 }
 
 apply plugin: 'maven-publish'
-//apply plugin: 'com.jfrog.bintray'
+apply plugin: 'com.jfrog.bintray'
 apply plugin: 'java'
 
-version = '2.0.22'
+version = '2.0.23'
 //version += '-SNAPSHOT'
 
 group = 'de.interactive_instruments'
@@ -140,7 +140,7 @@ subprojects {
     apply plugin: 'groovy'
     apply plugin: 'osgi-ipojo'
     apply plugin: 'maven-publish'
-    apply plugin: 'com.jfrog.bintray'
+//    apply plugin: 'com.jfrog.bintray'
     apply plugin: 'license'
 
     group = 'de.interactive_instruments'
@@ -364,7 +364,7 @@ subprojects {
         }
     }
     afterEvaluate { project ->
-        bintray {
+        /*bintray {
             user = project.bintrayUser
             key = project.bintrayApiKey
             publications = ['maven']
@@ -383,7 +383,7 @@ subprojects {
                     name = project.version
                 }
             }
-        }
+        }*/
         test {
             systemProperty 'com.athaydes.spockframework.report.projectName', project.name
             systemProperty 'com.athaydes.spockframework.report.projectVersion', project.version
@@ -416,7 +416,7 @@ publishing {
 }
 
 // TODO: does not work without commenting out subprojects bintray plugin
-/*bintray {
+bintray {
     user = project.bintrayUser
     key = project.bintrayApiKey
     publications = ['mavenRoot']
@@ -435,5 +435,5 @@ publishing {
             name = project.version
         }
     }
-}*/
+}
 apply from: 'license-report.gradle'

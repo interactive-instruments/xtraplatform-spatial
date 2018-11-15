@@ -101,12 +101,20 @@ public class FeatureTransformerSql implements FeatureTransformer {
         this.currentFormat = mapping.getFormat();
 
         //TODO: creates rows for every table, need to know which are 1_1 1_N M_N
-        if (multiplicities.size() > 1) {
+        if (multiplicities.size() > 1 || isOneToN(currentRowPath)) {
             //addRows(currentRowPath, multiplicities, lastMultiplicities);
 
             //this.lastMultiplicities.put(cleanPath(currentRowPath), multiplicities);
             lastMultiplicities.putAll(addRows(currentRowPath, multiplicities, lastMultiplicities));
         }
+    }
+
+    private boolean isOneToN(String currentRowPath) {
+        int i = currentRowPath.indexOf("/", 1);
+        if ( i > -1 && currentRowPath.length() > i+8 && currentRowPath.substring(i, i+5).equals("/[id=") && !currentRowPath.substring(i, i+8).equals("/[id=id]")) {
+            return true;
+        }
+        return false;
     }
 
     Map<String, List<Integer>> addRows(String path, List<Integer> multiplicities, Map<String, List<Integer>> previousMultiplicities) {

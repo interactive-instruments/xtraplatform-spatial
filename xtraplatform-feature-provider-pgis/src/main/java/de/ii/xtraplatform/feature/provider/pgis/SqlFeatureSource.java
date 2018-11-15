@@ -96,13 +96,14 @@ public class SqlFeatureSource {
         String[] currentId = {null};
         int[] rowCount = {0};
         final Map<Integer, List<String>> previousPath = Maps.newHashMap(ImmutableMap.of(0, new ArrayList<>()));
-        Map<String, List<Integer>> previousMultiplicities = new LinkedHashMap<>();
-        Map<String, Set<String>> children = new LinkedHashMap<>();
+        //Map<String, List<Integer>> previousMultiplicities = new LinkedHashMap<>();
+        //Map<String, Set<String>> children = new LinkedHashMap<>();
 
         //TODO
         String mainTable = query.getType();
         List<String> mainTablePath = ImmutableList.of(mainTable);
-        Map<String, List<Integer>> multiplicities = new HashMap<>();
+        //Map<String, List<Integer>> multiplicities = new HashMap<>();
+        SqlMultiplicityTracker multiplicityTracker = new SqlMultiplicityTracker(queries.getMultiTables());
 
         return createRowStream(query)
                 .runForeach(slickRowInfo -> {
@@ -113,8 +114,9 @@ public class SqlFeatureSource {
                         boolean same = slickRowInfo.getPath()
                                                    .equals(previousPath.get(0));
 
+                        multiplicityTracker.track(slickRowInfo.getPath(), slickRowInfo.getIds());
 
-                        if (same) {
+                        /*if (same) {
                             List<Integer> multi = multiplicities.get(slickRowInfo.getName());
                             multi.set(multi.size() - 1, multi.get(multi.size() - 1) + 1);
                             multiplicities.put(slickRowInfo.getName(), multi);
@@ -224,17 +226,10 @@ public class SqlFeatureSource {
                                             .add(child);
                                 }
                             }
-
-                            //close multiplicities that do not belong to the current path
-                            /*String finalChild = child;
-                            new ArrayList<>(multiplicities.keySet()).forEach(key -> {
-                                if (!key.equals(finalChild) || parentTables.contains(key)) {
-                                    multiplicities.remove(key);
-                                }
-                            });*/
-                        }
+                        }*/
                     }
-                    LOGGER.debug("MULTI {}", multiplicities.get(slickRowInfo.getName()));
+                    //LOGGER.debug("MULTI {}", multiplicities.get(slickRowInfo.getName()));
+                    LOGGER.debug("MULTI2 {}", multiplicityTracker.getMultiplicitiesForPath(slickRowInfo.getPath()));
 
                     if (!slickRowInfo.getName()
                                      .equals("META")) {
@@ -261,7 +256,7 @@ public class SqlFeatureSource {
                                                                                       .get(0), currentId[0])) {
                         consumer.onFeatureEnd(mainTablePath);
                         opened[0] = false;
-                        multiplicities.clear();
+                        multiplicityTracker.reset();
                         previousPath.put(0, new ArrayList<>());
                     } else if (!started[0]) {
                         started[0] = true;
@@ -275,7 +270,7 @@ public class SqlFeatureSource {
                     Optional<ColumnValueInfo> columnValueInfo = slickRowInfo.next();
                     while (columnValueInfo.isPresent()) {
                         if (Objects.nonNull(columnValueInfo.get().value)) {
-                            consumer.onPropertyStart(columnValueInfo.get().path, multiplicities.getOrDefault(slickRowInfo.getName(), ImmutableList.of()));
+                            consumer.onPropertyStart(columnValueInfo.get().path, multiplicityTracker.getMultiplicitiesForPath(slickRowInfo.getPath()));
                             consumer.onPropertyText(columnValueInfo.get().value);
                             consumer.onPropertyEnd(columnValueInfo.get().path);
                         }

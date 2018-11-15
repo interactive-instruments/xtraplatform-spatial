@@ -419,8 +419,13 @@ public abstract class SqlPathTree {
             }
             last = next;
         }
-        if (last != null && !last.getTableName().contains("_2_"))
-        keyList.add(String.format("%s.%s AS SKEY_%s",last.getTableName(), "id", skeys));
+        if (last != null) {
+         if (!last.getTableName().contains("_2_")) {
+             keyList.add(String.format("%s.%s AS SKEY_%s", last.getTableName(), "id", skeys));
+         } else if (!last.getColumns().isEmpty()) {
+             keyList.add(String.format("%s.%s AS SKEY_%s", last.getTableName(), last.getColumns().get(last.getColumns().size()-1), skeys));
+         }
+        }
         return keyList;
     }
 

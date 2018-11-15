@@ -46,7 +46,7 @@ public abstract class FeatureTypeMapping {
         return getMappings().entrySet()
                             .stream()
                             .map(pathToList())
-                            //TODO .flatMap(splitDoubleColumnPath())
+                            .flatMap(splitDoubleColumnPath())
                             .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
