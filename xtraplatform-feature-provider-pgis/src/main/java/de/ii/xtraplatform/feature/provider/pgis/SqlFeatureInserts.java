@@ -119,7 +119,7 @@ public abstract class SqlFeatureInserts {
         Function<NestedSqlInsertRow, Pair<String, Optional<Consumer<String>>>> mainQuery = nestedRow -> {
             NestedSqlInsertRow currentRow = nestedRow.getNested(nestedPath.getTrail(), parentRows);
             Map<String, String> ids = ImmutableMap.<String, String>builder()
-                    .putAll(nestedRow.getNested(mainPath.getTrail(), parentRows).ids)
+                    .putAll(nestedRow.getNested(mainPath.getTrail(), ImmutableList.of()).ids)
                     .putAll(parentPath != null && !Objects.equals(parentPath, mainPath) ? nestedRow.getNested(parentPath.getTrail(), parentRows).ids : ImmutableMap.of())
                     .build();
             String query = String.format("INSERT INTO %s (%s) VALUES (%s)%s;", tableName, columnNames, getColumnValues(columnPaths2, columns3, currentRow.values, ids), returningId);

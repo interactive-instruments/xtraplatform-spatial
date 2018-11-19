@@ -15,10 +15,10 @@ buildscript {
 }
 
 apply plugin: 'maven-publish'
-apply plugin: 'com.jfrog.bintray'
+//apply plugin: 'com.jfrog.bintray'
 apply plugin: 'java'
 
-version = '2.0.23'
+version = '2.0.24'
 //version += '-SNAPSHOT'
 
 group = 'de.interactive_instruments'
@@ -140,7 +140,7 @@ subprojects {
     apply plugin: 'groovy'
     apply plugin: 'osgi-ipojo'
     apply plugin: 'maven-publish'
-//    apply plugin: 'com.jfrog.bintray'
+    apply plugin: 'com.jfrog.bintray'
     apply plugin: 'license'
 
     group = 'de.interactive_instruments'
@@ -266,8 +266,10 @@ subprojects {
         testLogging.showStandardStreams = true
         reports.html.enabled = true
 
-        systemProperty 'com.athaydes.spockframework.report.outputDir', "$buildDir/reports/spock"
+        systemProperty 'com.athaydes.spockframework.report.outputDir', "$rootProject.buildDir/reports/spock"
         systemProperty 'com.athaydes.spockframework.report.showCodeBlocks', 'true'
+        systemProperty 'com.athaydes.spockframework.report.projectName', rootProject.name
+        systemProperty 'com.athaydes.spockframework.report.projectVersion', rootProject.version
 
     }
     
@@ -364,7 +366,7 @@ subprojects {
         }
     }
     afterEvaluate { project ->
-        /*bintray {
+        bintray {
             user = project.bintrayUser
             key = project.bintrayApiKey
             publications = ['maven']
@@ -383,11 +385,6 @@ subprojects {
                     name = project.version
                 }
             }
-        }*/
-        test {
-            systemProperty 'com.athaydes.spockframework.report.projectName', project.name
-            systemProperty 'com.athaydes.spockframework.report.projectVersion', project.version
-
         }
     }
 }
@@ -416,7 +413,7 @@ publishing {
 }
 
 // TODO: does not work without commenting out subprojects bintray plugin
-bintray {
+/*bintray {
     user = project.bintrayUser
     key = project.bintrayApiKey
     publications = ['mavenRoot']
@@ -435,5 +432,5 @@ bintray {
             name = project.version
         }
     }
-}
+}*/
 apply from: 'license-report.gradle'

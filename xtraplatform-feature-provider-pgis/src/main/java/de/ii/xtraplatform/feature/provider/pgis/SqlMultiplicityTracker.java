@@ -96,8 +96,8 @@ public class SqlMultiplicityTracker {
     public List<Integer> getMultiplicitiesForPath(List<String> path) {
         return path.stream()
                    .map(element -> element.substring(element.indexOf("]") + 1))
-                   .filter(currentMultiplicities::containsKey)
-                   .map(currentMultiplicities::get)
+                   .filter(currentIds::containsKey)
+                   .map(table -> currentMultiplicities.getOrDefault(table, 1))
                    .collect(Collectors.toList());
     }
 }
