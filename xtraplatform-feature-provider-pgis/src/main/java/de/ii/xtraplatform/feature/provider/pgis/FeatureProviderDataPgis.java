@@ -16,6 +16,7 @@ import de.ii.xtraplatform.feature.transformer.api.MappingStatus;
 import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
 import org.immutables.value.Value;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 
 /**
@@ -47,6 +48,9 @@ public abstract class FeatureProviderDataPgis extends FeatureProviderDataTransfo
     public boolean computeNumberMatched() {
         return true;
     }
+
+    @Nullable
+    public abstract FeatureActionTrigger getTrigger();
 
     @Override
     public boolean isFeatureTypeEnabled(String featureType) {

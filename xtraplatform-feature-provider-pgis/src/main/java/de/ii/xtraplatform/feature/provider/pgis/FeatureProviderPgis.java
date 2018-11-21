@@ -1,6 +1,6 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -17,6 +17,7 @@ import akka.stream.javadsl.Sink;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -161,9 +162,9 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
 
     private BoundingBox parseBbox(String pgisBbox) {
         List<String> bbox = Splitter.onPattern("[(), ]")
-                                       .omitEmptyStrings()
-                                       .trimResults()
-                                       .splitToList(pgisBbox);
+                                    .omitEmptyStrings()
+                                    .trimResults()
+                                    .splitToList(pgisBbox);
 
         if (bbox.size() > 4) {
             return new BoundingBox(Double.parseDouble(bbox.get(1)), Double.parseDouble(bbox.get(2)), Double.parseDouble(bbox.get(3)), Double.parseDouble(bbox.get(4)), data.getNativeCrs());
@@ -240,7 +241,9 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
 
     @Override
     public void deleteFeature(String featureType, String id) {
-        featureRemover.remove(featureType, id);
+        featureRemover.remove(featureType, id, Optional.ofNullable(data.getTrigger())
+                                                   .map(featureActionTrigger -> featureActionTrigger.getOnDelete(id))
+                                                   .orElse(ImmutableList.of()));
     }
 
     @Override
