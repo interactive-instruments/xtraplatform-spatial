@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import de.ii.xtraplatform.jackson.dynamic.JacksonSubTypeIds;
+import de.ii.xsf.dropwizard.api.JacksonSubTypeIds;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ public class DynamicTypeIdResolverMock  implements TypeIdResolver {
         };
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(de.ii.xtraplatform.jackson.dynamic.DynamicTypeIdResolver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DynamicTypeIdResolverMock.class);
 
     private JavaType mBaseType;
     private final BiMap<Class<?>, String> mapping;

@@ -113,6 +113,11 @@ public abstract class SqlFeatureInserts {
         String columnNames = Joiner.on(',')
                                    .skipNulls()
                                    .join(columns2);
+        if (!columnNames.isEmpty()) {
+            columnNames = "(" + columnNames + ")";
+        }
+        String finalColumnNames = columnNames;
+
         String returningId = nestedPath.getType() != SqlPathTree.TYPE.ID_1_N ? " RETURNING id" : " RETURNING null";
         Optional<String> returningName = nestedPath.getType() != SqlPathTree.TYPE.ID_1_N ? Optional.of(tableName + ".id") : Optional.empty();
 
@@ -122,7 +127,14 @@ public abstract class SqlFeatureInserts {
                     .putAll(nestedRow.getNested(mainPath.getTrail(), ImmutableList.of()).ids)
                     .putAll(parentPath != null && !Objects.equals(parentPath, mainPath) ? nestedRow.getNested(parentPath.getTrail(), parentRows).ids : ImmutableMap.of())
                     .build();
-            String query = String.format("INSERT INTO %s (%s) VALUES (%s)%s;", tableName, columnNames, getColumnValues(columnPaths2, columns3, currentRow.values, ids), returningId);
+            String values = getColumnValues(columnPaths2, columns3, currentRow.values, ids);
+            if (!values.isEmpty()) {
+                values = "VALUES (" + values + ")";
+            } else {
+                values = "DEFAULT VALUES";
+            }
+
+            String query = String.format("INSERT INTO %s %s %s%s;", tableName, finalColumnNames, values, returningId);
             return new Pair<>(query, returningName.map(name -> id -> currentRow.ids.put(name, id)));
         };
 

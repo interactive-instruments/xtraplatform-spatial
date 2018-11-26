@@ -256,7 +256,8 @@ public abstract class SqlPathTree {
                                                                     .size()))
                        .forEach(path -> {
                            boolean shortened = false;
-                           for (int i = collect3.size() - 1; i >= 0; i--) {
+                           int i = collect3.size() - 1;
+                           for (; i >= 0; i--) {
                                String prevPath = collect3.get(i);
                                if (path.startsWith(prevPath)) {
                                    collect2.put(path, path.substring(prevPath.length()));
@@ -264,6 +265,16 @@ public abstract class SqlPathTree {
                                    shortened = true;
                                    break;
                                }
+                           }
+                           //split up paths with at least 2 m:n relations where the object table in the middle has no column mappings
+                           if (shortened && i == 0 && path.split("/").length > 4 && collect2.get(path).split("_2_").length > 2) {
+                               int splitAt = path.indexOf("_2_");
+                               splitAt = path.indexOf("/", splitAt);
+                               splitAt = path.indexOf("/", splitAt+1);
+                               String parentPath = path.substring(0,splitAt);
+                               collect2.put(parentPath, parentPath);
+                               collect2.put(path, parentPath);
+                               collect3.add(parentPath);
                            }
                            if (!shortened)
                                collect2.put(path, path);
@@ -278,7 +289,7 @@ public abstract class SqlPathTree {
 
             boolean isMain = true;
             for (int i = 1; i < sortedPaths.size(); i++) {
-                List<String> columnsPaths = queryGroups.get(sortedPaths.get(i));
+                List<String> columnsPaths = Optional.ofNullable(queryGroups.get(sortedPaths.get(i))).orElse(ImmutableList.of());
                 Builder node = new Builder()
                         .path(sortedPaths.get(i))
                         .columnPaths(columnsPaths);

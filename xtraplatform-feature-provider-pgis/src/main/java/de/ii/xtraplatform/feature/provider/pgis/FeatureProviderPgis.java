@@ -253,7 +253,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
 
     @Override
     public String getSourceFormat() {
-        return null;
+        return "application/sql";
     }
 
     private CompletionStage<Done> createFeatureStream(FeatureQuery query, FeatureConsumer featureConsumer) {

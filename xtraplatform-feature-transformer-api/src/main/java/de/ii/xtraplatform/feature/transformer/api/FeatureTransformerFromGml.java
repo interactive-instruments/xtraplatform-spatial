@@ -151,7 +151,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
             return;
         }
 
-        getMapping(getQualifiedName(namespace, "@" + localName), value)
+        getMapping(ImmutableList.<String>builder().addAll(path).add(getQualifiedName(namespace, "@" + localName)).build(), value)
                 .ifPresent(consumerMayThrow(mapping -> {
                     //featureTransformer.onAttribute(mapping, value);
                     featureTransformer.onPropertyStart(mapping, ImmutableList.of());

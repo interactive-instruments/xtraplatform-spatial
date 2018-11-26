@@ -19,6 +19,7 @@ import org.immutables.value.Value;
 
 import java.util.AbstractMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -89,7 +90,7 @@ public abstract class FeatureTypeMapping {
 
     //TODO: only used once, check
     public Map<String, TargetMapping> findMappings(String targetType) {
-        Map<String, TargetMapping> mappings = new HashMap<>();
+        Map<String, TargetMapping> mappings = new LinkedHashMap<>();
 
         for (String path : getMappings().keySet()) {
             if (getMappings().get(path)
@@ -113,7 +114,7 @@ public abstract class FeatureTypeMapping {
     }
 
     private Function<String, Stream<String>> splitDoubleColumn() {
-        return column -> Splitter.on(':')
+        return column -> column.startsWith("http://") ? Stream.of(column) : Splitter.on(':')
                                  .omitEmptyStrings()
                                  .splitToList(column)
                                  .stream();
