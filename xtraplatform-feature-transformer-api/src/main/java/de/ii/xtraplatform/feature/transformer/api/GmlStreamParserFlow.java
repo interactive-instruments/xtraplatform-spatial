@@ -16,6 +16,7 @@ import akka.stream.stage.GraphStageLogic;
 import akka.stream.stage.GraphStageWithMaterializedValue;
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import scala.Tuple2;
 
 import javax.xml.namespace.QName;
@@ -44,7 +45,7 @@ public class GmlStreamParserFlow {
     static class FeatureTransformerFromGmlFlow extends FeatureTransformerFromGml implements GmlConsumerFlow {
 
         FeatureTransformerFromGmlFlow(FeatureTypeMapping featureTypeMapping, final GmlTransformerFlow gmlTransformer) {
-            super(featureTypeMapping, gmlTransformer, ImmutableList.of());
+            super(featureTypeMapping, gmlTransformer, ImmutableList.of(), ImmutableMap.of());
         }
 
         @Override
@@ -81,7 +82,7 @@ public class GmlStreamParserFlow {
         public Tuple2<GraphStageLogic, CompletionStage<Done>> createLogicAndMaterializedValue(Attributes inheritedAttributes) throws XMLStreamException {
             CompletableFuture<Done> promise = new CompletableFuture<>();
 
-            GraphStageLogic logic =  new AbstractStreamingGmlGraphStage(shape, featureType, gmlConsumer) {
+            GraphStageLogic logic =  new AbstractStreamingGmlGraphStage(shape, ImmutableList.of(featureType), gmlConsumer) {
 
                 boolean started = false;
 

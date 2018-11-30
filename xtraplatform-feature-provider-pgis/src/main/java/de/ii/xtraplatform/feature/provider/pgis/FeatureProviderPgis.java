@@ -52,6 +52,7 @@ import slick.jdbc.JdbcProfile;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
+import javax.xml.namespace.QName;
 import java.util.AbstractMap;
 import java.util.Base64;
 import java.util.HashSet;
@@ -134,6 +135,12 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     public FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query) {
         return featureTransformer -> createFeatureStream(query, new FeatureTransformerFromSql(data.getMappings()
                                                                                                   .get(query.getType()), featureTransformer, query.getFields()));
+    }
+
+    @Override
+    public FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query, Map<QName, List<String>> resolvableTypes) {
+        //TODO
+        return getFeatureTransformStream(query, ImmutableMap.of());
     }
 
     @Override
@@ -247,7 +254,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     }
 
     @Override
-    public Optional<String> encodeFeatureQuery(FeatureQuery query) {
+    public Optional<String> encodeFeatureQuery(FeatureQuery query, Map<String, String> additionalQueryParameters) {
         return Optional.empty();
     }
 

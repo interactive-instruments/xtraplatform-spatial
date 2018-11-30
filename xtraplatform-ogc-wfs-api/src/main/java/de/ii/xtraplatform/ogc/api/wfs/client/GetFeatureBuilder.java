@@ -8,19 +8,24 @@
 package de.ii.xtraplatform.ogc.api.wfs.client;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.ogc.api.wfs.client.GetFeature.RESULT_TYPE;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GetFeatureBuilder {
     private final List<WFSQuery2> queries;
     private Integer count;
     private Integer startIndex;
     private boolean hitsOnly;
+    private Map<String, String> additionalOperationParameters;
 
     public GetFeatureBuilder() {
         this.queries = new ArrayList<>();
+        this.additionalOperationParameters = new HashMap<>();
     }
 
     public GetFeatureBuilder query(WFSQuery2 query) {
@@ -43,7 +48,12 @@ public class GetFeatureBuilder {
         return this;
     }
 
+    public GetFeatureBuilder additionalOperationParameters(Map<String, String> additionalOperationParameters) {
+        this.additionalOperationParameters.putAll(additionalOperationParameters);
+        return this;
+    }
+
     public GetFeature build() {
-        return new GetFeature(ImmutableList.copyOf(queries), count, startIndex, hitsOnly ? RESULT_TYPE.HITS : RESULT_TYPE.RESULT);
+        return new GetFeature(ImmutableList.copyOf(queries), count, startIndex, hitsOnly ? RESULT_TYPE.HITS : RESULT_TYPE.RESULT, ImmutableMap.copyOf(additionalOperationParameters));
     }
 }

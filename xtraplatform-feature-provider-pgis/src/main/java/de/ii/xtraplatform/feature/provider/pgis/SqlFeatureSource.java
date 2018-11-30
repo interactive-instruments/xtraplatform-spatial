@@ -1,6 +1,6 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -278,7 +278,7 @@ public class SqlFeatureSource {
                     }
 
                     if (Objects.equals(slickRowInfo.getIds()
-                                                .get(0), currentId[0])) {
+                                                   .get(0), currentId[0])) {
 
                         previousPath.put(0, slickRowInfo.getPath());
                     }
@@ -460,11 +460,11 @@ public class SqlFeatureSource {
                     9, matchRows(),
                     2, matchRows()
             );*/
-int[] i = {0};
-            Source<SlickRowInfo, NotUsed>[] slickRows = queries.getQueries()
-                                                               .stream()
-                                                               .map(query -> Slick.source(session, query.equals(queries.getMainQuery()) ? query.toSql(finalMainQuery.getFilter(), finalMainQuery.getLimit(), finalMainQuery.getOffset()) : query.toSql(finalSubQuery.getFilter(), finalSubQuery.getLimit(), finalSubQuery.getOffset()), toSlickRowInfo(query, i[0]++)))
-                                                               .toArray((IntFunction<Source<SlickRowInfo, NotUsed>[]>) Source[]::new);
+            int[] i = {0};
+            Source<SlickRowCustom, NotUsed>[] slickRows = queries.getQueries()
+                                                                 .stream()
+                                                                 .map(query -> Slick.source(session, query.equals(queries.getMainQuery()) ? query.toSql(finalMainQuery.getFilter(), finalMainQuery.getLimit(), finalMainQuery.getOffset()) : query.toSql(finalSubQuery.getFilter(), finalSubQuery.getLimit(), finalSubQuery.getOffset()), toSlickRowInfo(query, i[0]++)))
+                                                                 .toArray((IntFunction<Source<SlickRowCustom, NotUsed>[]>) Source[]::new);
 
             int mainQueryIndex = queries.getQueries()
                                         .indexOf(queries.getMainQuery());
@@ -478,28 +478,33 @@ int[] i = {0};
     }
 
     static <T extends Comparable<T>> Source<T, NotUsed> mergeAndSort(Source<T, NotUsed>... sources) {
-        return mergeAndSort(sources[0], sources[1], Arrays.asList(sources).subList(2, sources.length));
+        return mergeAndSort(sources[0], sources[1], Arrays.asList(sources)
+                                                          .subList(2, sources.length));
     }
 
     static <T extends Comparable<T>> Source<T, NotUsed> mergeAndSort(Source<T, NotUsed> source1, Source<T, NotUsed> source2, Iterable<Source<T, NotUsed>> rest) {
         Comparator<T> comparator = Comparator.naturalOrder();
         Source<T, NotUsed> mergedAndSorted = source1.mergeSorted(source2, comparator);
-        for (Source<T, NotUsed> source3: rest) {
+        for (Source<T, NotUsed> source3 : rest) {
             mergedAndSorted = mergedAndSorted.mergeSorted(source3, comparator);
         }
         return mergedAndSorted;
     }
 
     private Map<Integer, Predicate<Pair<SlickRowInfo, SlickRowInfo>>> getMatchers(Map<Integer, List<Integer>> dependencies) {
-        return dependencies.entrySet().stream()
-                .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), matchRows()))
-                .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+        return dependencies.entrySet()
+                           .stream()
+                           .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), matchRows()))
+                           .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private Map<Integer, List<Integer>> getDependencies(SqlFeatureQueries queries) {
         int mainQueryIndex = queries.getQueries()
                                     .indexOf(queries.getMainQuery());
-        List<Integer> all = IntStream.range(0, queries.getQueries().size()).boxed().collect(Collectors.toList());
+        List<Integer> all = IntStream.range(0, queries.getQueries()
+                                                      .size())
+                                     .boxed()
+                                     .collect(Collectors.toList());
         all.remove(mainQueryIndex);
 
         Map<Integer, List<Integer>> dependencies = new LinkedHashMap<>();
@@ -514,24 +519,36 @@ int[] i = {0};
                  .getType() == SqlPathTree.TYPE.ID_M_N) {
                 //all.remove(i);
                 //dependencies.put(i, new ArrayList<>());
-                parents.putIfAbsent(q.getSqlPath().getPath(), i);
+                parents.putIfAbsent(q.getSqlPath()
+                                     .getPath(), i);
             }
-            if (q.getSqlPathParent().isPresent() && q.getSqlPathParent().get().getType() == SqlPathTree.TYPE.ID_M_N) {
-                pdependencies.putIfAbsent(q.getSqlPathParent().get().getPath(), new ArrayList<>());
-                pdependencies.get(q.getSqlPathParent().get().getPath()).add(i);
+            if (q.getSqlPathParent()
+                 .isPresent() && q.getSqlPathParent()
+                                  .get()
+                                  .getType() == SqlPathTree.TYPE.ID_M_N) {
+                pdependencies.putIfAbsent(q.getSqlPathParent()
+                                           .get()
+                                           .getPath(), new ArrayList<>());
+                pdependencies.get(q.getSqlPathParent()
+                                   .get()
+                                   .getPath())
+                             .add(i);
             }
         }
 
-        pdependencies.keySet().forEach(p -> {
-            //TODO
-            if (p.equals("/[id=osirisobjekt_id]osirisobjekt_2_raumreferenz/[raumreferenz_id=id]raumreferenz")) return;
-            Integer index = parents.get(p);
-            if (index != null) {
-                all.removeAll(pdependencies.get(p));
-                dependencies.putIfAbsent(index, new ArrayList<>());
-                dependencies.get(index).addAll(pdependencies.get(p));
-            }
-        });
+        pdependencies.keySet()
+                     .forEach(p -> {
+                         //TODO
+                         if (p.equals("/[id=osirisobjekt_id]osirisobjekt_2_raumreferenz/[raumreferenz_id=id]raumreferenz"))
+                             return;
+                         Integer index = parents.get(p);
+                         if (index != null) {
+                             all.removeAll(pdependencies.get(p));
+                             dependencies.putIfAbsent(index, new ArrayList<>());
+                             dependencies.get(index)
+                                         .addAll(pdependencies.get(p));
+                         }
+                     });
 
         return dependencies;
     }
@@ -600,7 +617,7 @@ int[] i = {0};
                 '}';
     }
 
-    interface SlickRowCustom {
+    interface SlickRowCustom extends Comparable<SlickRowCustom> {
         Optional<ColumnValueInfo> next();
 
         default List<String> getIds() {
@@ -649,9 +666,14 @@ int[] i = {0};
         public String getName() {
             return "META";
         }
+
+        @Override
+        public int compareTo(SlickRowCustom slickRowCustom) {
+            return 0;
+        }
     }
 
-    static class SlickRowInfo implements SlickRowCustom, Comparable<SlickRowInfo> {
+    static class SlickRowInfo implements SlickRowCustom {
         //protected final String id;
         protected final String name;
         protected final List<String> path;
@@ -686,13 +708,15 @@ int[] i = {0};
         }
 
         @Override
-        public int compareTo(SlickRowInfo row) {
+        public int compareTo(SlickRowCustom rowCustom) {
+            SlickRowInfo row = (SlickRowInfo) rowCustom;
             int size = 0;
             for (int i = 0; i < idNames.size() && i < row.idNames.size(); i++) {
-                if (!idNames.get(i).equals(row.idNames.get(i))) {
+                if (!idNames.get(i)
+                            .equals(row.idNames.get(i))) {
                     break;
                 }
-                size = i+1;
+                size = i + 1;
             }
             //int size = Math.min(ids.size(), row.ids.size());
             //if (ids.size() != row.ids.size() && size > 1)
@@ -702,7 +726,6 @@ int[] i = {0};
 
             return result == 0 ? priority - row.priority : result;
         }
-
 
 
         @Override
@@ -739,9 +762,10 @@ int[] i = {0};
         }
     }
 
-    static int compareIdLists( List<String> ids1, List<String> ids2) {
+    static int compareIdLists(List<String> ids1, List<String> ids2) {
         for (int i = 0; i < ids1.size(); i++) {
-            int result = Integer.valueOf(ids1.get(i)).compareTo(Integer.valueOf(ids2.get(i)));
+            int result = Integer.valueOf(ids1.get(i))
+                                .compareTo(Integer.valueOf(ids2.get(i)));
             if (result != 0) {
                 return result;
             }

@@ -1,24 +1,24 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.feature.transformer.api;
 
-import akka.Done;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.query.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
 
 import javax.xml.namespace.QName;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 
 import static de.ii.xtraplatform.util.functional.LambdaWithException.consumerMayThrow;
@@ -45,6 +45,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
 
     private final FeatureTypeMapping featureTypeMapping;
     protected final FeatureTransformer featureTransformer;
+    private final Map<String, List<String>> resolvableTypes;
     private final String outputFormat;
     private boolean inProperty;
     private List<String> inGeometry;
@@ -59,10 +60,12 @@ class FeatureTransformerFromGml implements GmlConsumer {
     private final boolean onTheFly;
     private OnTheFlyMapping onTheFlyMapping;
     private List<Integer> currentMultiplicities;
+    private String currentType;
 
-    FeatureTransformerFromGml(FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer, List<String> fields) {
+    FeatureTransformerFromGml(FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer, List<String> fields, Map<QName, List<String>> resolvableTypes) {
         this.featureTypeMapping = featureTypeMapping;
         this.featureTransformer = featureTransformer;
+        this.resolvableTypes = resolvableTypes.entrySet().stream().collect(ImmutableMap.toImmutableMap(entry -> entry.getKey().getNamespaceURI() + ":" + entry.getKey().getLocalPart(), Map.Entry::getValue));
         this.outputFormat = featureTransformer.getTargetFormat();
         this.fields = fields;
         this.joiner = Joiner.on('/');
@@ -83,34 +86,55 @@ class FeatureTransformerFromGml implements GmlConsumer {
     }
 
     private Optional<TargetMapping> getMapping(String pathElement) {
+        return getMapping(pathElement, outputFormat);
+    }
+    private Optional<TargetMapping> getMapping(String pathElement, String format) {
         if (onTheFly) {
             return Optional.ofNullable(onTheFlyMapping.getTargetMappingForFeatureType(pathElement));
         } else {
-            return featureTypeMapping.findMappings(pathElement, outputFormat);
+            if (!resolvableTypes.isEmpty() && resolvableTypes.containsKey(pathElement)) {
+                return getMapping(resolvableTypes.get(pathElement), null, format);
+            }
+
+            return featureTypeMapping.findMappings(pathElement, format);
         }
     }
 
-    private Optional<TargetMapping> getMapping(String pathElement, String value) {
+    /*private Optional<TargetMapping> getMapping(String pathElement, String value) {
         if (onTheFly) {
             return Optional.ofNullable(onTheFlyMapping.getTargetMappingForAttribute(ImmutableList.of(pathElement), value));
         } else {
             return featureTypeMapping.findMappings(pathElement, outputFormat);
         }
-    }
+    }*/
 
     private Optional<TargetMapping> getMapping(List<String> path) {
         if (onTheFly) {
             return Optional.ofNullable(onTheFlyMapping.getTargetMappingForGeometry(path));
         } else {
-            return featureTypeMapping.findMappings(path, outputFormat);
+            return getMapping(path, outputFormat);
         }
     }
 
+    private Optional<TargetMapping> getMappingForFormat(List<String> path, String format) {
+        return getMapping(path, null, format);
+    }
+
     private Optional<TargetMapping> getMapping(List<String> path, String value) {
+        return getMapping(path, value, outputFormat);
+    }
+
+    private Optional<TargetMapping> getMapping(List<String> path, String value, String format) {
         if (onTheFly) {
             return Optional.ofNullable(onTheFlyMapping.getTargetMappingForProperty(path, value));
         } else {
-            return featureTypeMapping.findMappings(path, outputFormat);
+            if (!resolvableTypes.isEmpty() && resolvableTypes.containsKey(currentType)) {
+                return featureTypeMapping.findMappings(ImmutableList.<String>builder().addAll(resolvableTypes.get(currentType))
+                                                                 .addAll(path)
+                                                                 .build(), format);
+            }
+
+            return featureTypeMapping.findMappings(path, format);
         }
     }
 
@@ -126,8 +150,9 @@ class FeatureTransformerFromGml implements GmlConsumer {
 
     @Override
     public void onFeatureStart(List<String> path) throws Exception {
-        final TargetMapping mapping = getMapping(path.get(0))
-                .orElse(null);
+        final TargetMapping mapping = getMapping(path.get(0)).orElse(getMapping(path.get(0), TargetMapping.BASE_TYPE).orElse(null));
+
+        currentType = path.get(0);
 
         featureTransformer.onFeatureStart(mapping);
     }
@@ -151,7 +176,9 @@ class FeatureTransformerFromGml implements GmlConsumer {
             return;
         }
 
-        getMapping(ImmutableList.<String>builder().addAll(path).add(getQualifiedName(namespace, "@" + localName)).build(), value)
+        getMapping(ImmutableList.<String>builder().addAll(path)
+                                                  .add(getQualifiedName(namespace, "@" + localName))
+                                                  .build(), value)
                 .ifPresent(consumerMayThrow(mapping -> {
                     //featureTransformer.onAttribute(mapping, value);
                     featureTransformer.onPropertyStart(mapping, ImmutableList.of());
@@ -167,20 +194,20 @@ class FeatureTransformerFromGml implements GmlConsumer {
 
         if (!inProperty) {
             if (!onTheFly) {
-                boolean ignore = !fields.contains("*") && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
-                                                                             .filter(targetMapping -> fields.contains(targetMapping.getName()))
-                                                                             .isPresent();
+                boolean ignore = !fields.contains("*") && !getMappingForFormat(path, TargetMapping.BASE_TYPE)
+                        .filter(targetMapping -> fields.contains(targetMapping.getName()))
+                        .isPresent();
                 if (ignore) {
                     return;
                 }
 
-                mapped = featureTypeMapping.findMappings(path, outputFormat)
-                                           .filter(isNotSpatial())
-                                           .map(mayThrow(mapping -> {
-                                               featureTransformer.onPropertyStart(mapping, multiplicities);
-                                               return mapping;
-                                           }))
-                                           .isPresent();
+                mapped = getMapping(path)
+                        .filter(isNotSpatial())
+                        .map(mayThrow(mapping -> {
+                            featureTransformer.onPropertyStart(mapping, multiplicities);
+                            return mapping;
+                        }))
+                        .isPresent();
             } else {
                 this.currentMultiplicities = multiplicities;
             }
@@ -238,8 +265,8 @@ class FeatureTransformerFromGml implements GmlConsumer {
     public void onPropertyEnd(List<String> path) throws Exception {
         if (onTheFly && inGeometry == null) {
             boolean ignore = !fields.contains("*") && !getMapping(path, stringBuilder.toString())
-                                                                         .filter(targetMapping -> fields.contains(targetMapping.getName()))
-                                                                         .isPresent();
+                    .filter(targetMapping -> fields.contains(targetMapping.getName()))
+                    .isPresent();
             if (ignore) {
                 return;
             }
@@ -247,11 +274,11 @@ class FeatureTransformerFromGml implements GmlConsumer {
             this.inProperty = true;
 
             getMapping(path, stringBuilder.toString())
-                                       .filter(isNotSpatial())
-                                       .map(mayThrow(mapping -> {
-                                           featureTransformer.onPropertyStart(mapping, currentMultiplicities);
-                                           return mapping;
-                                       }));
+                    .filter(isNotSpatial())
+                    .map(mayThrow(mapping -> {
+                        featureTransformer.onPropertyStart(mapping, currentMultiplicities);
+                        return mapping;
+                    }));
         }
 
         if (stringBuilder.length() > 0) {

@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs;
 
-import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.query.api.FeatureQuery;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
@@ -97,20 +96,20 @@ public class FeatureQueryEncoderWfs {
                            .map(ft -> new QName(ft.getNamespace(), ft.getName(), namespaceNormalizer.getNamespacePrefix(ft.getNamespace())));*/
     }
 
-    public Optional<GetFeature> encode(final FeatureQuery query) {
+    public Optional<GetFeature> encode(final FeatureQuery query, Map<String, String> additionalQueryParameters) {
         try {
             return getFeatureTypeName(query)
             //return featureTypes.values()
             //                   .stream()
             //                   .filter(ft -> ft.getName().equals(query.getType()))
             //                   .findFirst()
-                               .map(mayThrow(ft -> encode(query, ft, featureTypeMappings.get(query.getType()))));
+                               .map(mayThrow(ft -> encode(query, ft, featureTypeMappings.get(query.getType()), additionalQueryParameters)));
         } catch (RuntimeException e) {
             throw new IllegalArgumentException("Filter is invalid", e.getCause());
         }
     }
 
-    private GetFeature encode(FeatureQuery query, QName featureType, FeatureTypeMapping featureTypeMapping) throws CQLException {
+    private GetFeature encode(FeatureQuery query, QName featureType, FeatureTypeMapping featureTypeMapping, Map<String, String> additionalQueryParameters) throws CQLException {
         final String featureTypeName = namespaceNormalizer.getQualifiedName(featureType.getNamespaceURI(), featureType.getLocalPart());
 
         final WFSQuery2 wfsQuery = new WFSQueryBuilder().typeName(featureTypeName)
@@ -129,6 +128,10 @@ public class FeatureQueryEncoderWfs {
         }
         if (query.hitsOnly()) {
             getFeature.hitsOnly();
+        }
+
+        if (!additionalQueryParameters.isEmpty()) {
+            getFeature.additionalOperationParameters(additionalQueryParameters);
         }
 
         return getFeature.build();
@@ -310,8 +313,9 @@ public class FeatureQueryEncoderWfs {
                               .findMappings(TargetMapping.BASE_TYPE)
                               .entrySet()
                               .stream()
-                              .filter(targetMappings -> targetMappings.getKey()
-                                                                      .endsWith(":"+property))
+                              .filter(targetMappings -> Objects.nonNull(targetMappings.getValue()
+                                                                                      .getName()) && Objects.equals(targetMappings.getValue()
+                                                                                     .getName().toLowerCase(), property))
                               .map(Map.Entry::getKey)
                               .findFirst()
                               .map(namespaceNormalizer::getPrefixedPath);

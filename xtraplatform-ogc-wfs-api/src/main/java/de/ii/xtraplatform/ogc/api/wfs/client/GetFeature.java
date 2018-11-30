@@ -39,12 +39,14 @@ public class GetFeature implements WfsOperation {
     private final Integer count;
     private final Integer startIndex;
     private final RESULT_TYPE resultType;
+    private final Map<String, String> additionalOperationParameters;
 
-    public GetFeature(List<WFSQuery2> query, Integer count, Integer startIndex, RESULT_TYPE resultType) {
+    public GetFeature(List<WFSQuery2> query, Integer count, Integer startIndex, RESULT_TYPE resultType, Map<String, String> additionalOperationParameters) {
         this.query = query;
         this.count = count;
         this.startIndex = startIndex;
         this.resultType = resultType;
+        this.additionalOperationParameters = additionalOperationParameters;
     }
 
     @Override
@@ -79,6 +81,10 @@ public class GetFeature implements WfsOperation {
             operation.setAttribute(WFS.getWord(versions.getWfsVersion(), WFS.VOCABULARY.VERSION), versions.getWfsVersion().toString());
         }
 
+        if (!additionalOperationParameters.isEmpty()) {
+            additionalOperationParameters.forEach(operation::setAttribute);
+        }
+
         for (WFSQuery2 q : query) {
             operation.appendChild(q.asXml(doc, versions));
         }
@@ -109,6 +115,10 @@ public class GetFeature implements WfsOperation {
 
         if (this.resultType == RESULT_TYPE.HITS) {
             builder.put(WFS.getWord(versions.getWfsVersion(), WFS.VOCABULARY.RESULT_TYPE).toUpperCase(), String.valueOf(RESULT_TYPE.HITS).toLowerCase());
+        }
+
+        if (!additionalOperationParameters.isEmpty()) {
+            additionalOperationParameters.forEach(builder::put);
         }
 
         if (!query.isEmpty()) {

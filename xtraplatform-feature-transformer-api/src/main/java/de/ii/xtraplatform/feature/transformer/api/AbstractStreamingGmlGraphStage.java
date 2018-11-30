@@ -20,6 +20,7 @@ import de.ii.xtraplatform.util.xml.XMLPathTracker;
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -38,14 +39,14 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
     boolean inFeature = false;
     XMLPathTracker pathTracker = new XMLPathTracker();
 
-    private final QName featureType;
+    private final List<QName> featureTypes;
     private final GmlConsumer gmlConsumer;
     private final StringBuilder buffer;
     private boolean isBuffering;
 
-    protected AbstractStreamingGmlGraphStage(Shape shape, QName featureType, GmlConsumer gmlConsumer) throws XMLStreamException {
+    protected AbstractStreamingGmlGraphStage(Shape shape, List<QName> featureTypes, GmlConsumer gmlConsumer) throws XMLStreamException {
         super(shape);
-        this.featureType = featureType;
+        this.featureTypes = featureTypes;
         this.gmlConsumer = gmlConsumer;
         this.buffer = new StringBuilder();
     }
@@ -104,7 +105,7 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
                     } else if (matchesFeatureType(parser.getLocalName())) {
                         inFeature = true;
                         featureDepth = depth;
-                        gmlConsumer.onNamespaceRewrite(featureType, parser.getNamespaceURI());
+                        gmlConsumer.onNamespaceRewrite(getMatchingFeatureType(parser.getLocalName()), parser.getNamespaceURI());
                         gmlConsumer.onFeatureStart(ImmutableList.of(getQualifiedName(parser.getNamespaceURI(), parser.getLocalName())));
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
                             gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i));
@@ -168,11 +169,15 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
     }
 
     boolean matchesFeatureType(final String namespace, final String localName) {
-        return featureType.getLocalPart().equals(localName) && Objects.nonNull(namespace) && featureType.getNamespaceURI().equals(namespace);
+        return featureTypes.stream().anyMatch(featureType -> featureType.getLocalPart().equals(localName) && Objects.nonNull(namespace) && featureType.getNamespaceURI().equals(namespace));
     }
 
     boolean matchesFeatureType(final String localName) {
-        return featureType.getLocalPart().equals(localName);
+        return featureTypes.stream().anyMatch(featureType -> featureType.getLocalPart().equals(localName));
+    }
+
+    QName getMatchingFeatureType(final String localName) {
+        return featureTypes.stream().filter(featureType -> featureType.getLocalPart().equals(localName)).findFirst().orElse(null);
     }
 
     private String getQualifiedName(String namespaceUri, String localName) {

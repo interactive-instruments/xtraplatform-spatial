@@ -16,6 +16,8 @@ import akka.stream.stage.AbstractInHandler;
 import akka.stream.stage.GraphStageLogic;
 import akka.stream.stage.GraphStageWithMaterializedValue;
 import akka.util.ByteString;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +26,11 @@ import scala.Tuple2;
 import javax.xml.namespace.QName;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author zahnen
@@ -33,11 +38,20 @@ import java.util.concurrent.CompletionStage;
 public class GmlStreamParser {
 
     public static Sink<ByteString, CompletionStage<Done>> consume(final QName featureType, final GmlConsumer gmlConsumer) {
-        return Sink.fromGraph(new FeatureSinkFromGml(featureType, gmlConsumer));
+        return consume(ImmutableList.of(featureType), gmlConsumer);
+    }
+
+    public static Sink<ByteString, CompletionStage<Done>> consume(final List<QName> featureTypes, final GmlConsumer gmlConsumer) {
+        return Sink.fromGraph(new FeatureSinkFromGml(featureTypes, gmlConsumer));
     }
 
     public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureType, final FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer, List<String> fields) {
-        return GmlStreamParser.consume(featureType, new FeatureTransformerFromGml(featureTypeMapping, featureTransformer, fields));
+        return transform(featureType, featureTypeMapping, featureTransformer, fields, ImmutableMap.of());
+    }
+
+    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureType, final FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer, List<String> fields, Map<QName, List<String>> resolvableTypes) {
+        List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(featureType) : ImmutableList.<QName>builder().add(featureType).addAll(resolvableTypes.keySet()).build();
+        return GmlStreamParser.consume(featureTypes, new FeatureTransformerFromGml(featureTypeMapping, featureTransformer, fields, resolvableTypes));
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GmlStreamParser.class);
@@ -47,11 +61,11 @@ public class GmlStreamParser {
         public final Inlet<ByteString> in = Inlet.create("FeatureSinkFromGml.in");
         private final SinkShape<ByteString> shape = SinkShape.of(in);
 
-        private final QName featureType;
+        private final List<QName> featureTypes;
         private final GmlConsumer gmlConsumer;
 
-        FeatureSinkFromGml(QName featureType, GmlConsumer gmlConsumer) {
-            this.featureType = featureType;
+        FeatureSinkFromGml(List<QName> featureTypes, GmlConsumer gmlConsumer) {
+            this.featureTypes = featureTypes;
             this.gmlConsumer = gmlConsumer;
         }
 
@@ -64,7 +78,7 @@ public class GmlStreamParser {
         public Tuple2<GraphStageLogic, CompletionStage<Done>> createLogicAndMaterializedValue(Attributes inheritedAttributes) throws Exception {
             CompletableFuture<Done> promise = new CompletableFuture<>();
 
-            GraphStageLogic logic = new AbstractStreamingGmlGraphStage(shape, featureType, gmlConsumer) {
+            GraphStageLogic logic = new AbstractStreamingGmlGraphStage(shape, featureTypes, gmlConsumer) {
 
                 @Override
                 public void preStart() throws Exception {
@@ -78,6 +92,38 @@ public class GmlStreamParser {
                         public void onPush() throws Exception {
                             try {
                                 byte[] bytes = grab(in).toArray();
+
+                                //TODO more than one chunk
+                                if (featureTypes.size() > 1) {
+                                    String s = new String(bytes, StandardCharsets.UTF_8);
+
+                                    int firstMember = -1;
+                                    Matcher matcher = Pattern.compile("<(?:\\w+:)?member>")
+                                                             .matcher(s);
+                                    if (matcher.find()) {
+                                        firstMember = matcher.start();
+                                    }
+
+                                    int additionalObjectsStart = -1;
+                                    Matcher matcher2 = Pattern.compile("<(?:\\w+:)?additionalObjects>")
+                                                              .matcher(s);
+                                    if (matcher2.find()) {
+                                        additionalObjectsStart = matcher2.start();
+                                    }
+
+                                    int additionalObjectsEnd = -1;
+                                    Matcher matcher3 = Pattern.compile("</(?:\\w+:)?additionalObjects>")
+                                                              .matcher(s);
+                                    if (matcher3.find()) {
+                                        additionalObjectsEnd = matcher3.end();
+                                    }
+
+                                    if (additionalObjectsStart > 0 && additionalObjectsEnd > 0 && firstMember > 0) {
+                                        s = s.substring(0,firstMember) + s.substring(additionalObjectsStart, additionalObjectsEnd) + s.substring(firstMember, additionalObjectsStart) + s.substring(additionalObjectsEnd+1);
+                                    }
+
+                                    bytes = s.getBytes();
+                                }
 
                                 if (LOGGER.isTraceEnabled()) {
                                     LOGGER.trace(new String(bytes, StandardCharsets.UTF_8));

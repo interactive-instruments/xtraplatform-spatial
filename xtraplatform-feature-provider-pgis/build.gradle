@@ -1,4 +1,4 @@
-version = '2.0.22'
+version = '2.0.23'
 //version += '-SNAPSHOT'
 
 dependencies {
@@ -7,7 +7,7 @@ dependencies {
     provided project(':xtraplatform-ogc-wfs-api')
     provided project(':xtraplatform-feature-provider-sql')
 
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.1'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.5'
 
     /*embedded (group: 'com.lightbend.akka', name: 'akka-stream-alpakka-slick_2.12', version: '0.19') {
         exclude  group: 'com.typesafe.akka', module: 'akka-stream_2.12'
@@ -18,7 +18,7 @@ dependencies {
     }*/
     embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.2'
 
-    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.9'
+    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.18'
 }
 
 jar {

@@ -1,4 +1,4 @@
-version = '1.2.2'
+version = '1.2.3'
 //version += '-SNAPSHOT'
 
 dependencies {
@@ -6,17 +6,19 @@ dependencies {
     compile project(':xtraplatform-crs-api')
     compile project(':xtraplatform-geotools')
 
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.1'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.5'
 
     embedded group: 'com.sun.xsom', name: 'xsom', version: '20140925'
     embedded group: 'com.fasterxml', name: 'aalto-xml', version: '1.0.0'
     embedded group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1'
 
     //embedded group: 'com.typesafe.akka', name: 'akka-stream_2.12', version: '2.5.9'
-    embedded group: 'com.lightbend.akka', name: 'akka-stream-alpakka-xml_2.12', version: '0.17'
+    embedded (group: 'com.lightbend.akka', name: 'akka-stream-alpakka-xml_2.12', version: '0.17') {
+        transitive = false
+    }
 
-    testCompile group: 'com.typesafe.akka', name: 'akka-http_2.12',   version: '10.0.11'
-    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.9'
+    testCompile group: 'com.typesafe.akka', name: 'akka-http_2.12',   version: '10.1.5'
+    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.18'
 }
  
 jar {

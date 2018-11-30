@@ -1,6 +1,6 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -132,7 +132,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
             queryMappings = featureTypeMappings;
         } else {
             queryMappings = getOnTheFlyMappings(data.getFeatureTypes()
-                                                               .keySet());
+                                                    .keySet());
         }
 
         //TODO: if mapping disabled, create dummy mappings for gml:id, depending on version (TODO: set gmlVersion depending on wfsVersion)
@@ -148,7 +148,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
         return featureTypes.stream()
                            .map(featureType -> new AbstractMap.SimpleEntry<>(featureType, ImmutableFeatureTypeMapping.builder()
                                                                                                                      .mappings(ImmutableMap.of("http://www.opengis.net/gml/3.2:@id", ImmutableSourcePathMapping.builder()
-                                                                                                                                                                             .build()))
+                                                                                                                                                                                                               .build()))
                                                                                                                      .build()))
                            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
@@ -186,6 +186,12 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
 
     @Override
     public FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query) {
+        return getFeatureTransformStream(query, ImmutableMap.of());
+    }
+
+    //TODO interface ResolveRelations
+    @Override
+    public FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query, Map<QName, List<String>> resolvableTypes) {
         return featureTransformer -> {
             Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(query.getType());
 
@@ -202,18 +208,32 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
 
             //StreamingGmlTransformerFlow.transformer(featureType, featureTypeMapping, null/*FeatureConsumer*/);
             Sink<ByteString, CompletionStage<Done>> parser = GmlStreamParser.transform(queryEncoder.getFeatureTypeName(query)
-                                                                                                   .get(), featureTypeMapping.orElse(null), featureTransformer, query.getFields());
-            return runQuery(query, parser);
+                                                                                                   .get(), featureTypeMapping.orElse(null), featureTransformer, query.getFields(), resolvableTypes);
+
+            Map<String, String> additionalQueryParameters;
+
+            if (!resolvableTypes.isEmpty()) {
+                //TODO depth???
+                additionalQueryParameters = ImmutableMap.of("resolve", "local", "resolvedepth", "1");
+            } else {
+                additionalQueryParameters = ImmutableMap.of();
+            }
+
+            return runQuery(query, parser, additionalQueryParameters);
         };
     }
 
     private CompletionStage<Done> runQuery(FeatureQuery query, Sink<ByteString, CompletionStage<Done>> parser) {
+        return runQuery(query, parser, ImmutableMap.of());
+    }
+
+    private CompletionStage<Done> runQuery(FeatureQuery query, Sink<ByteString, CompletionStage<Done>> parser, Map<String, String> additionalQueryParameters) {
         Source<ByteString, NotUsed> source;
         if (useHttpPost) {
-            Pair<String, String> request = encodeFeatureQueryPost(query).get();
+            Pair<String, String> request = encodeFeatureQueryPost(query, additionalQueryParameters).get();
             source = akkaHttp.postXml(request.first(), request.second());
         } else {
-            source = akkaHttp.get(encodeFeatureQuery(query).get());
+            source = akkaHttp.get(encodeFeatureQuery(query, additionalQueryParameters).get());
         }
 
         return source
@@ -240,13 +260,13 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     }
 
     @Override
-    public Optional<String> encodeFeatureQuery(FeatureQuery query) {
-        return queryEncoder.encode(query)
+    public Optional<String> encodeFeatureQuery(FeatureQuery query, Map<String, String> additionalQueryParameters) {
+        return queryEncoder.encode(query, additionalQueryParameters)
                            .map(getFeature -> new WFSRequest(wfsAdapter, getFeature).getAsUrl());
     }
 
-    public Optional<Pair<String, String>> encodeFeatureQueryPost(FeatureQuery query) {
-        return queryEncoder.encode(query)
+    public Optional<Pair<String, String>> encodeFeatureQueryPost(FeatureQuery query, Map<String, String> additionalQueryParameters) {
+        return queryEncoder.encode(query, additionalQueryParameters)
                            .map(getFeature -> new WFSRequest(wfsAdapter, getFeature).getAsUrlAndBody());
     }
 
@@ -330,7 +350,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
             Map<String, List<String>> featureTypesByNamespace = retrieveSupportedFeatureTypesPerNamespace(featureTypes);
 
             if (!featureTypesByNamespace.isEmpty()) {
-                    analyzeFeatureTypesWithDescribeFeatureType(schemaConsumer, featureTypesByNamespace, taskProgress);
+                analyzeFeatureTypesWithDescribeFeatureType(schemaConsumer, featureTypesByNamespace, taskProgress);
             }
 
             // only log warnings about timeouts in the analysis phase
