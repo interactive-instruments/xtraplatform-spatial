@@ -35,7 +35,7 @@ public class BoundingBoxTransformerTest {
 
         // test equality
         BoundingBox b = new BoundingBox(1, 2, 3, 4, crs);
-        BoundingBox c = bbt.transformBoundingBox(b, crs);
+        BoundingBox c = bbt.transformBoundingBox(b);
         Assert.assertEquals(b.toString(), c.toString());
 
         // stress it a little bit ...
@@ -51,10 +51,10 @@ public class BoundingBoxTransformerTest {
             BoundingBox b3 = new BoundingBox(1, 1, 3, 1, crs);
             BoundingBox b4 = new BoundingBox(1, -1, 2, 0, crs);
 
-            BoundingBox c1 = bbt.transformBoundingBox(b1, crs);
-            BoundingBox c2 = bbt.transformBoundingBox(b2, crs);
-            BoundingBox c3 = bbt.transformBoundingBox(b3, crs);
-            BoundingBox c4 = bbt.transformBoundingBox(b4, crs);
+            BoundingBox c1 = bbt.transformBoundingBox(b1);
+            BoundingBox c2 = bbt.transformBoundingBox(b2);
+            BoundingBox c3 = bbt.transformBoundingBox(b3);
+            BoundingBox c4 = bbt.transformBoundingBox(b4);
 
             Assert.assertTrue(c1.getXmax() >= c2.getXmin());
             Assert.assertTrue(c2.getYmax() >= c3.getYmin());
@@ -76,6 +76,21 @@ public class BoundingBoxTransformerTest {
 
         public void setUseRnd(boolean useRnd) {
             this.useRnd = useRnd;
+        }
+
+        @Override
+        public EpsgCrs getSourceCrs() {
+            return null;
+        }
+
+        @Override
+        public EpsgCrs getTargetCrs() {
+            return null;
+        }
+
+        @Override
+        public boolean isTargetMetric() {
+            return false;
         }
 
         // fake transformation
@@ -108,6 +123,16 @@ public class BoundingBoxTransformerTest {
         @Override
         public double[] transform(double[] coordinates, int numberOfPoints) {
             throw new UnsupportedOperationException("Not supported yet.");
+        }
+
+        @Override
+        public double getSourceUnitEquivalentInMeters() {
+            return 0;
+        }
+
+        @Override
+        public double getTargetUnitEquivalentInMeters() {
+            return 0;
         }
     }
 }

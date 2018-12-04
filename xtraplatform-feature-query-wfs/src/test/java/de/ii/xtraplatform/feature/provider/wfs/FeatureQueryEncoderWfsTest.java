@@ -9,6 +9,7 @@ package de.ii.xtraplatform.feature.provider.wfs;
 
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.query.api.FeatureQuery;
+import de.ii.xtraplatform.feature.query.api.ImmutableFeatureQuery;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeConfigurationOld;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
@@ -31,6 +32,8 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.xml.sax.SAXException;
 
+import javax.annotation.Nullable;
+import javax.xml.namespace.QName;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import java.io.ByteArrayInputStream;
@@ -62,11 +65,11 @@ public class FeatureQueryEncoderWfsTest {
                                                                                                        .build()))
                                                .build()));
 
-    private static final FeatureQuery QUERY = new FeatureQueryBuilder().type("AdministrativeUnit")
-                                                                       .limit(10)
-                                                                       .offset(10)
-                                                                       .filter("name = 'bla' AND name LIKE 'bl*' AND BBOX(pos, 50,7,51,8,'EPSG:4258')")
-                                                                       .build();
+    private static final FeatureQuery QUERY = ImmutableFeatureQuery.builder().type("AdministrativeUnit")
+                                                                   .limit(10)
+                                                                   .offset(10)
+                                                                   .filter("name = 'bla' AND name LIKE 'bl*' AND BBOX(pos, 50,7,51,8,'EPSG:4258')")
+                                                                   .build();
 
     private static final String EXPECTED_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" +
             "<wfs:GetFeature xmlns:wfs=\"http://www.opengis.net/wfs/2.0\" xmlns:au=\"urn:inspire:au\" xmlns:fes=\"http://www.opengis.net/fes/2.0\" xmlns:gml=\"http://www.opengis.net/gml/3.2\" xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" count=\"10\" outputFormat=\"application/gml+xml; version=3.2\" service=\"WFS\" startIndex=\"10\" version=\"2.0.0\">\n" +
@@ -100,7 +103,7 @@ public class FeatureQueryEncoderWfsTest {
     public void testAsXml() throws ParserConfigurationException, IOException, SAXException, CQLException, TransformerException {
         //String xml = new FeatureQueryEncoderWfs(featureTypes, namespaceNormalizer).asXml(QUERY, NAMESPACES, VERSIONS);
         Date from = new Date();
-        final Optional<GetFeature> getFeature = new FeatureQueryEncoderWfs(FEATURETYPES, featureTypeMappings, NAMESPACES).encode(QUERY);
+        final Optional<GetFeature> getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPES.values().iterator().next().getNamespace(), FEATURETYPES.values().iterator().next().getName())), ImmutableMap.of("au", FEATURETYPES.entrySet().iterator().next().getValue().getMappings()), NAMESPACES).encode(QUERY, );
 
         LOGGER.debug("TOOK {}", new Date().getTime() - from.getTime());
         Assert.assertTrue(getFeature.isPresent());
@@ -118,7 +121,7 @@ public class FeatureQueryEncoderWfsTest {
     @Test(groups = {"default"})
     public void testAsKvp() throws ParserConfigurationException, IOException, SAXException, CQLException, TransformerException {
         //Map<String, String> kvp = new FeatureQueryEncoderWfs(featureTypes, namespaceNormalizer).asKvp(QUERY, NAMESPACES, VERSIONS);
-        final Optional<GetFeature> getFeature = new FeatureQueryEncoderWfs(FEATURETYPES, featureTypeMappings, NAMESPACES).encode(QUERY);
+        final Optional<GetFeature> getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPES.values().iterator().next().getNamespace(), FEATURETYPES.values().iterator().next().getName())), ImmutableMap.of("au", FEATURETYPES.entrySet().iterator().next().getValue().getMappings()), NAMESPACES).encode(QUERY, );
 
         Assert.assertTrue(getFeature.isPresent());
 
@@ -186,6 +189,18 @@ public class FeatureQueryEncoderWfsTest {
 
         @Override
         public Boolean getEnabled() {
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public Integer getSortPriority() {
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public String getFormat() {
             return null;
         }
 

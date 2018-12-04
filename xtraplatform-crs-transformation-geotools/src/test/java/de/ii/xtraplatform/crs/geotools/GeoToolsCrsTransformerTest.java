@@ -11,6 +11,7 @@
 package de.ii.xtraplatform.crs.geotools;
 
 import de.ii.xtraplatform.crs.api.CoordinateTuple;
+import de.ii.xtraplatform.crs.api.EpsgCrs;
 import org.geotools.referencing.CRS;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -37,7 +38,7 @@ public class GeoToolsCrsTransformerTest {
         CoordinateReferenceSystem scrs = CRS.decode("EPSG:4326");
         CoordinateReferenceSystem tcrs = CRS.decode("EPSG:3857");
 
-        GeoToolsCrsTransformer gct = new GeoToolsCrsTransformer(scrs,tcrs);
+        GeoToolsCrsTransformer gct = new GeoToolsCrsTransformer(scrs,tcrs, new EpsgCrs(3857));
         
         double x = 50.7164;
         double y = 7.086;
