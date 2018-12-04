@@ -47,11 +47,13 @@ public interface TargetMapping<T extends Enum<T>> {
     String getFormat();
 
 
-    TargetMapping mergeCopyWithBase(TargetMapping targetMapping);
+    default TargetMapping mergeCopyWithBase(TargetMapping targetMapping) {
+     setBaseMapping(targetMapping);
+     return this;
+    }
 
     //TODO
     @JsonIgnore
-    @Value.Derived
     boolean isSpatial();
 
     //TODO
@@ -60,4 +62,18 @@ public interface TargetMapping<T extends Enum<T>> {
     default boolean isEnabled() {
         return getEnabled() == null || getEnabled();
     }
+
+    //TODO
+    @JsonIgnore
+    default boolean isReference() {return false;}
+
+    //TODO
+    @JsonIgnore
+    default boolean isReferenceEmbed() {return false;}
+
+    //TODO
+    @JsonIgnore
+    default TargetMapping getBaseMapping() {return null;}
+
+    default void setBaseMapping(TargetMapping targetMapping) {}
 }

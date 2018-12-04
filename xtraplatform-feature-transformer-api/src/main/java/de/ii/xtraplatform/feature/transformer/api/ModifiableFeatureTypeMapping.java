@@ -64,7 +64,7 @@ public final class ModifiableFeatureTypeMapping
    */
   @JsonIgnore
   @Override
-  protected final Map<List<String>, SourcePathMapping> getMappingsWithPathAsList() {
+  public final Map<List<String>, SourcePathMapping> getMappingsWithPathAsList() {
     return super.getMappingsWithPathAsList();
   }
 

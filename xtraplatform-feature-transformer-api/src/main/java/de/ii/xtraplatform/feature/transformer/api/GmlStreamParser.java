@@ -1,6 +1,6 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -18,7 +18,6 @@ import akka.stream.stage.GraphStageWithMaterializedValue;
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.ByteStreams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -27,6 +26,7 @@ import javax.xml.namespace.QName;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.regex.Matcher;
@@ -50,7 +50,9 @@ public class GmlStreamParser {
     }
 
     public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureType, final FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer, List<String> fields, Map<QName, List<String>> resolvableTypes) {
-        List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(featureType) : ImmutableList.<QName>builder().add(featureType).addAll(resolvableTypes.keySet()).build();
+        List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(featureType) : ImmutableList.<QName>builder().add(featureType)
+                                                                                                                             .addAll(resolvableTypes.keySet())
+                                                                                                                             .build();
         return GmlStreamParser.consume(featureTypes, new FeatureTransformerFromGml(featureTypeMapping, featureTransformer, fields, resolvableTypes));
     }
 
@@ -63,6 +65,9 @@ public class GmlStreamParser {
 
         private final List<QName> featureTypes;
         private final GmlConsumer gmlConsumer;
+        private String bufferOpening = null;
+        private String bufferMembers = null;
+        private String bufferAdditional = null;
 
         FeatureSinkFromGml(List<QName> featureTypes, GmlConsumer gmlConsumer) {
             this.featureTypes = featureTypes;
@@ -118,11 +123,33 @@ public class GmlStreamParser {
                                         additionalObjectsEnd = matcher3.end();
                                     }
 
-                                    if (additionalObjectsStart > 0 && additionalObjectsEnd > 0 && firstMember > 0) {
-                                        s = s.substring(0,firstMember) + s.substring(additionalObjectsStart, additionalObjectsEnd) + s.substring(firstMember, additionalObjectsStart) + s.substring(additionalObjectsEnd+1);
+                                    //opening tag
+                                    if (firstMember > 0 && Objects.isNull(bufferOpening)) {
+                                        bufferOpening = s.substring(0, firstMember);
+                                        bufferMembers = s.substring(firstMember, additionalObjectsStart > -1 ? additionalObjectsStart : s.length());
+                                    }
+                                    //members
+                                    else if (Objects.nonNull(bufferMembers) && Objects.isNull(bufferAdditional)) {
+                                        bufferMembers += s.substring(0, additionalObjectsStart > -1 ? additionalObjectsStart : s.length());
                                     }
 
-                                    bytes = s.getBytes();
+                                    //additional objects
+                                    if (additionalObjectsStart > -1) {
+                                        bufferAdditional = s.substring(additionalObjectsStart, additionalObjectsEnd > -1 ? additionalObjectsEnd : s.length());
+                                    } else if (Objects.nonNull(bufferAdditional)) {
+                                        bufferAdditional += s.substring(0, additionalObjectsEnd > -1 ? additionalObjectsEnd : s.length());
+                                    }
+
+                                    //closing tag
+                                    if (additionalObjectsEnd > 0) {
+                                        String rest = s.substring(additionalObjectsEnd + 1);
+                                        bytes = (bufferOpening + bufferAdditional + bufferMembers + rest).getBytes();
+                                    }
+                                    //get next chunk
+                                    else if (!isClosed(in)) {
+                                        pull(in);
+                                        return;
+                                    }
                                 }
 
                                 if (LOGGER.isTraceEnabled()) {
@@ -146,7 +173,8 @@ public class GmlStreamParser {
                         @Override
                         public void onUpstreamFinish() throws Exception {
                             try {
-                                parser.getInputFeeder().endOfInput();
+                                parser.getInputFeeder()
+                                      .endOfInput();
                                 while (parser.hasNext())
                                     advanceParser();
                             } catch (Exception e) {

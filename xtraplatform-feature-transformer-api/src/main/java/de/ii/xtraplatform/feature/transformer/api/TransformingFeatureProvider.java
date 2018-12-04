@@ -28,9 +28,6 @@ import java.util.function.Function;
 public interface TransformingFeatureProvider<T extends FeatureTransformer, U extends FeatureConsumer> extends FeatureProvider<U> {
         FeatureStream<T> getFeatureTransformStream(FeatureQuery query);
 
-    //TODO interface ResolveRelations
-    FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query, Map<QName, List<String>> resolvableTypes);
-
     //TODO
         List<String> addFeaturesFromStream(String featureType, CrsTransformer crsTransformer, Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream);
         void updateFeatureFromStream(String featureType, String id, CrsTransformer crsTransformer, Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream);

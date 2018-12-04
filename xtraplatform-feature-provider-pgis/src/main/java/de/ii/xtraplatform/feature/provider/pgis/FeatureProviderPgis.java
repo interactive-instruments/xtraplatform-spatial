@@ -138,12 +138,6 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     }
 
     @Override
-    public FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query, Map<QName, List<String>> resolvableTypes) {
-        //TODO
-        return getFeatureTransformStream(query, ImmutableMap.of());
-    }
-
-    @Override
     public BoundingBox getSpatialExtent(String featureTypeId) {
         Optional<String> query = Optional.ofNullable(extentQueries.get(featureTypeId));
 

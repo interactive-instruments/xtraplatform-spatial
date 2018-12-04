@@ -43,7 +43,7 @@ public abstract class FeatureTypeMapping {
 
     @JsonIgnore
     @Value.Derived
-    protected Map<List<String>, SourcePathMapping> getMappingsWithPathAsList() {
+    public Map<List<String>, SourcePathMapping> getMappingsWithPathAsList() {
         return getMappings().entrySet()
                             .stream()
                             .map(pathToList())

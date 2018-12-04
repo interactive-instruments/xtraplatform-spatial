@@ -11,14 +11,13 @@ import de.ii.xtraplatform.feature.query.api.FeatureConsumer;
 
 import javax.xml.namespace.QName;
 import java.util.List;
-import java.util.OptionalInt;
 
 /**
  * @author zahnen
  */
 public interface GmlConsumer extends FeatureConsumer {
 
-    void onGmlAttribute(String namespace, String localName, List<String> path, String value) throws Exception;
+    void onGmlAttribute(String namespace, String localName, List<String> path, String value, List<Integer> multiplicities) throws Exception;
 
     void onNamespaceRewrite(QName featureType, String namespace) throws Exception;
 }

@@ -15,8 +15,11 @@ import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
 
 import javax.xml.namespace.QName;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Predicate;
@@ -60,12 +63,16 @@ class FeatureTransformerFromGml implements GmlConsumer {
     private final boolean onTheFly;
     private OnTheFlyMapping onTheFlyMapping;
     private List<Integer> currentMultiplicities;
-    private String currentType;
+    private List<String> currentType;
 
     FeatureTransformerFromGml(FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer, List<String> fields, Map<QName, List<String>> resolvableTypes) {
         this.featureTypeMapping = featureTypeMapping;
         this.featureTransformer = featureTransformer;
-        this.resolvableTypes = resolvableTypes.entrySet().stream().collect(ImmutableMap.toImmutableMap(entry -> entry.getKey().getNamespaceURI() + ":" + entry.getKey().getLocalPart(), Map.Entry::getValue));
+        this.resolvableTypes = resolvableTypes.entrySet()
+                                              .stream()
+                                              .collect(ImmutableMap.toImmutableMap(entry -> entry.getKey()
+                                                                                                 .getNamespaceURI() + ":" + entry.getKey()
+                                                                                                                                 .getLocalPart(), Map.Entry::getValue));
         this.outputFormat = featureTransformer.getTargetFormat();
         this.fields = fields;
         this.joiner = Joiner.on('/');
@@ -88,6 +95,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
     private Optional<TargetMapping> getMapping(String pathElement) {
         return getMapping(pathElement, outputFormat);
     }
+
     private Optional<TargetMapping> getMapping(String pathElement, String format) {
         if (onTheFly) {
             return Optional.ofNullable(onTheFlyMapping.getTargetMappingForFeatureType(pathElement));
@@ -130,8 +138,8 @@ class FeatureTransformerFromGml implements GmlConsumer {
         } else {
             if (!resolvableTypes.isEmpty() && resolvableTypes.containsKey(currentType)) {
                 return featureTypeMapping.findMappings(ImmutableList.<String>builder().addAll(resolvableTypes.get(currentType))
-                                                                 .addAll(path)
-                                                                 .build(), format);
+                                                                                      .addAll(path)
+                                                                                      .build(), format);
             }
 
             return featureTypeMapping.findMappings(path, format);
@@ -148,22 +156,70 @@ class FeatureTransformerFromGml implements GmlConsumer {
         featureTransformer.onEnd();
     }
 
+    class FeatureProperty {
+        private List<String> path;
+        List<Integer> multiplicities;
+        String value;
+        final boolean isFeature;
+
+        FeatureProperty(List<String> path, List<Integer> multiplicities, String value) {
+            this.path = path;
+            this.multiplicities = multiplicities;
+            this.value = value;
+            this.isFeature = false;
+        }
+
+        FeatureProperty(List<String> path) {
+            this.path = path;
+            this.multiplicities = null;
+            this.value = null;
+            this.isFeature = true;
+        }
+
+        public List<String> getPath() {
+            return path;
+        }
+
+        public void setPath(List<String> path) {
+            if (!path.isEmpty() && path.get(path.size()-1).endsWith(":component")) {
+                boolean stop = true;
+            }
+            this.path = path;
+        }
+    }
+
+    //TODO ignore geometries for now, move nestingLevelChange logic here
+    Map<String, List<FeatureProperty>> buffer = new HashMap<>();
+    boolean doBuffer = false;
+    List<FeatureProperty> currentBuffer;
+    FeatureProperty currentProperty;
+
     @Override
     public void onFeatureStart(List<String> path) throws Exception {
-        final TargetMapping mapping = getMapping(path.get(0)).orElse(getMapping(path.get(0), TargetMapping.BASE_TYPE).orElse(null));
-
-        currentType = path.get(0);
-
-        featureTransformer.onFeatureStart(mapping);
+        //TODO maybe flag resolve and mainType is enough?
+        if (resolvableTypes.containsKey(path.get(0))) {
+            doBuffer = true;
+            currentType = path;
+        } else {
+            final TargetMapping mapping = getMapping(path.get(0)).orElse(getMapping(path.get(0), TargetMapping.BASE_TYPE).orElse(null));
+            featureTransformer.onFeatureStart(mapping);
+        }
     }
 
     @Override
     public void onFeatureEnd(List<String> path) throws Exception {
-        featureTransformer.onFeatureEnd();
+        if (doBuffer) {
+            doBuffer = false;
+            currentType = null;
+            currentBuffer = null;
+            currentProperty = null;
+        } else {
+            featureTransformer.onFeatureEnd();
+        }
     }
 
     @Override
-    public void onGmlAttribute(String namespace, String localName, List<String> path, String value) {
+    public void onGmlAttribute(String namespace, String localName, List<String> path, String value, List<Integer> multiplicities) {
         if (transformGeometry != null) {
             if (transformGeometryDimension == null && localName.equals("srsDimension")) {
                 try {
@@ -176,21 +232,86 @@ class FeatureTransformerFromGml implements GmlConsumer {
             return;
         }
 
-        getMapping(ImmutableList.<String>builder().addAll(path)
-                                                  .add(getQualifiedName(namespace, "@" + localName))
-                                                  .build(), value)
-                .ifPresent(consumerMayThrow(mapping -> {
-                    //featureTransformer.onAttribute(mapping, value);
-                    featureTransformer.onPropertyStart(mapping, ImmutableList.of());
-                    featureTransformer.onPropertyText(value);
-                    featureTransformer.onPropertyEnd();
-                }));
+        List<String> fullPath = ImmutableList.<String>builder().addAll(path)
+                                                               .add(getQualifiedName(namespace, "@" + localName))
+                                                               .build();
+
+        //TODO
+        if (doBuffer) {
+            if (path.isEmpty() && localName.equals("id")) {
+                buffer.putIfAbsent(value, new ArrayList<>());
+                currentBuffer = buffer.get(value);
+                currentBuffer.add(new FeatureProperty(currentType));
+                currentProperty = null;
+            }
+            /*if (Objects.nonNull(currentProperty) && Objects.isNull(currentProperty.value) && fullPath.subList(0,currentProperty.getPath().size()).equals(currentProperty.getPath())) {
+                currentProperty.setPath(fullPath);
+                currentProperty.multiplicities = ImmutableList.of();
+                currentProperty.value = value;
+                currentProperty = null;
+            } else {
+                currentProperty = new FeatureProperty(fullPath, ImmutableList.of(), value);*/
+                currentBuffer.add(new FeatureProperty(fullPath, multiplicities, value));
+              //  currentProperty = null;
+            //}
+        } else {
+            getMapping(fullPath, value)
+                    .ifPresent(consumerMayThrow(mapping -> {
+                        writeProperty(mapping, multiplicities, path, value);
+                    }));
+        }
+    }
+
+    private void writeProperty(TargetMapping mapping, List<Integer> multiplicities, List<String> path, String value) throws Exception {
+        if (!buffer.isEmpty() && Objects.nonNull(mapping.getBaseMapping()) && mapping.getBaseMapping().isReferenceEmbed()) {
+            if (buffer.containsKey(value.substring(1))) {
+                List<FeatureProperty> feature = buffer.get(value.substring(1));
+                List<String> pathPrefix = ImmutableList.<String>builder().addAll(path).addAll(feature.get(0).getPath()).build();
+
+                for (int i = 1; i < feature.size(); i++) {
+                    FeatureProperty property = feature.get(i);
+                    if (Objects.isNull(property.value)) {
+                        continue;
+                    }
+                    List<String> propertyPath = ImmutableList.<String>builder().addAll(pathPrefix).addAll(property.getPath()).build();
+                    onPropertyStart(propertyPath, ImmutableList.<Integer>builder().addAll(multiplicities).addAll(property.multiplicities).build());
+                    onPropertyText(property.value);
+                    onPropertyEnd(propertyPath);
+                }
+            }
+
+        } else {
+            featureTransformer.onPropertyStart(mapping, multiplicities);
+            featureTransformer.onPropertyText(value);
+            featureTransformer.onPropertyEnd();
+        }
+    }
+
+    private void writePropertyText(String value) throws Exception {
+        if (doBuffer) {
+            currentProperty.value = value;
+            currentProperty = null;
+        } else {
+            featureTransformer.onPropertyText(value);
+        }
     }
 
     //TODO: on-the-fly mappings
     @Override
     public void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception {
         boolean mapped = false;
+
+        //TODO
+        if (doBuffer) {
+            if (Objects.nonNull(currentProperty) && Objects.isNull(currentProperty.value) && path.subList(0,currentProperty.getPath().size()).equals(currentProperty.getPath())) {
+                currentProperty.setPath(ImmutableList.copyOf(path));
+                currentProperty.multiplicities = multiplicities;
+            } else {
+                currentProperty = new FeatureProperty(ImmutableList.copyOf(path), multiplicities, null);
+                currentBuffer.add(currentProperty);
+            }
+            return;
+        }
 
         if (!inProperty) {
             if (!onTheFly) {
@@ -251,7 +372,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
 
     @Override
     public void onPropertyText(String text) throws Exception {
-        if (inProperty || onTheFly) {
+        if (inProperty || onTheFly || doBuffer) {
             stringBuilder.append(text);
             /*if (inCoordinates) {
                 featureTransformer.onGeometryCoordinates(text);
@@ -285,7 +406,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
             if (inCoordinates) {
                 featureTransformer.onGeometryCoordinates(stringBuilder.toString());
             } else {
-                featureTransformer.onPropertyText(stringBuilder.toString());
+                writePropertyText(stringBuilder.toString());
             }
             stringBuilder.setLength(0);
         }
@@ -309,7 +430,9 @@ class FeatureTransformerFromGml implements GmlConsumer {
                 onGeometryPartEnd(getLocalName(path));
             }
         } else if (inProperty) {
-            featureTransformer.onPropertyEnd();
+            if (!doBuffer) {
+                featureTransformer.onPropertyEnd();
+            }
             inProperty = false;
         }
     }
