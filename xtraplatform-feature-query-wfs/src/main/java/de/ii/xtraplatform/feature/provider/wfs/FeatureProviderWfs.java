@@ -171,10 +171,28 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     @Override
     public FeatureStream<GmlConsumer> getFeatureStream(FeatureQuery query) {
         return featureConsumer -> {
+            Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(query.getType());
+            Map<QName, List<String>> resolvableTypes = featureTypeMapping.isPresent() ? getResolvableTypes(featureTypeMapping.get()) : ImmutableMap.of();
+
+            List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(queryEncoder.getFeatureTypeName(query)
+                                                                                                .get()) : ImmutableList.<QName>builder().add(queryEncoder.getFeatureTypeName(query)
+                                                                                                                                                         .get())
+                                                                                                                                 .addAll(resolvableTypes.keySet())
+                                                                                                                                 .build();
+
             //StreamingGmlTransformerFlow.transformer(featureType, featureTypeMapping, null/*FeatureConsumer*/);
-            Sink<ByteString, CompletionStage<Done>> parser = GmlStreamParser.consume(queryEncoder.getFeatureTypeName(query)
-                                                                                                 .get(), featureConsumer);
-            return runQuery(query, parser);
+            Sink<ByteString, CompletionStage<Done>> parser = GmlStreamParser.consume(featureTypes, featureConsumer);
+
+            Map<String, String> additionalQueryParameters;
+
+            if (!resolvableTypes.isEmpty()) {
+                //TODO depth???
+                additionalQueryParameters = ImmutableMap.of("resolve", "local", "resolvedepth", "1");
+            } else {
+                additionalQueryParameters = ImmutableMap.of();
+            }
+
+            return runQuery(query, parser, additionalQueryParameters);
         };
 
 
@@ -203,44 +221,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
                 }
             }
 
-            // TODO factor out, move into derived in FeatureTypeMapping
-            List<List<String>> embedRefs = featureTypeMapping.get()
-                                                             .getMappingsWithPathAsList()
-                                                             .entrySet()
-                                                             .stream()
-                                                             .filter(entry -> entry.getValue()
-                                                                                   .hasMappingForType(TargetMapping.BASE_TYPE) && entry.getValue()
-                                                                                                                                       .getMappingForType(TargetMapping.BASE_TYPE)
-                                                                                                                                       /*TODO*/.isReferenceEmbed())
-                                                             .map(Map.Entry::getKey)
-                                                             .collect(Collectors.toList());
-
-            List<List<String>> embedRoots = embedRefs.stream()
-                                                     .map(path -> path.subList(0, path.size() - 1))
-                                                     .collect(Collectors.toList());
-
-            Map<QName, List<String>> resolvableTypes = featureTypeMapping.get()
-                                                                    .getMappingsWithPathAsList()
-                                                                    .keySet()
-                                                                    .stream()
-                                                                    .filter(path -> embedRoots.stream()
-                                                                                              .anyMatch(root -> path.subList(0, root.size())
-                                                                                                                    .equals(root)) && embedRefs.stream()
-                                                                                                                                               .noneMatch(ref -> ref.equals(path)))
-                                                                    .map(path -> embedRoots.stream()
-                                                                                           .filter(root -> path.subList(0, root.size())
-                                                                                                               .equals(root))
-                                                                                           .findFirst()
-                                                                                           .map(root -> path.subList(0, root.size() + 1))
-                                                                                           .get())
-                                                                    .distinct()
-                                                                    .map(path -> {
-                                                                        String type = path.get(path.size() - 1);
-                                                                        QName qn = new QName(type.substring(0, type.lastIndexOf(":")), type.substring(type.lastIndexOf(":") + 1));
-                                                                        return new AbstractMap.SimpleImmutableEntry<>(qn, path);
-                                                                    })
-                                                                    .filter(entry -> featureTypes.values().stream().anyMatch(ft -> ft.equals(entry.getKey())))
-                                                                    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+            Map<QName, List<String>> resolvableTypes = getResolvableTypes(featureTypeMapping.get());
 
 
             //StreamingGmlTransformerFlow.transformer(featureType, featureTypeMapping, null/*FeatureConsumer*/);
@@ -258,6 +239,45 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
 
             return runQuery(query, parser, additionalQueryParameters);
         };
+    }
+
+    private Map<QName, List<String>> getResolvableTypes(FeatureTypeMapping featureTypeMapping) {
+        // TODO factor out, move into derived in FeatureTypeMapping
+        List<List<String>> embedRefs = featureTypeMapping.getMappingsWithPathAsList()
+                                                         .entrySet()
+                                                         .stream()
+                                                         .filter(entry -> entry.getValue()
+                                                                               .hasMappingForType(TargetMapping.BASE_TYPE) && entry.getValue()
+                                                                                                                                   .getMappingForType(TargetMapping.BASE_TYPE)
+                                                                                                                                   /*TODO*/.isReferenceEmbed())
+                                                         .map(Map.Entry::getKey)
+                                                         .collect(Collectors.toList());
+
+        List<List<String>> embedRoots = embedRefs.stream()
+                                                 .map(path -> path.subList(0, path.size() - 1))
+                                                 .collect(Collectors.toList());
+
+        return featureTypeMapping.getMappingsWithPathAsList()
+                                                                     .keySet()
+                                                                     .stream()
+                                                                     .filter(path -> embedRoots.stream()
+                                                                                               .anyMatch(root -> path.subList(0, root.size())
+                                                                                                                     .equals(root)) && embedRefs.stream()
+                                                                                                                                                .noneMatch(ref -> ref.equals(path)))
+                                                                     .map(path -> embedRoots.stream()
+                                                                                            .filter(root -> path.subList(0, root.size())
+                                                                                                                .equals(root))
+                                                                                            .findFirst()
+                                                                                            .map(root -> path.subList(0, root.size() + 1))
+                                                                                            .get())
+                                                                     .distinct()
+                                                                     .map(path -> {
+                                                                         String type = path.get(path.size() - 1);
+                                                                         QName qn = new QName(type.substring(0, type.lastIndexOf(":")), type.substring(type.lastIndexOf(":") + 1));
+                                                                         return new AbstractMap.SimpleImmutableEntry<>(qn, path);
+                                                                     })
+                                                                     .filter(entry -> featureTypes.values().stream().anyMatch(ft -> ft.equals(entry.getKey())))
+                                                                     .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private CompletionStage<Done> runQuery(FeatureQuery query, Sink<ByteString, CompletionStage<Done>> parser) {
