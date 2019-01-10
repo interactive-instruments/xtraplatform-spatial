@@ -1,6 +1,6 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -8,15 +8,15 @@
 package de.ii.xtraplatform.feature.provider.pgis;
 
 import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeConfigurationOld;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import org.geotools.filter.FilterFactoryImpl;
 import org.geotools.filter.spatial.BBOXImpl;
 import org.geotools.filter.text.cql2.CQLException;
 import org.geotools.filter.text.ecql.ECQL;
-import org.geotools.filter.visitor.DefaultFilterVisitor;
 import org.geotools.filter.visitor.DuplicatingFilterVisitor;
 import org.opengis.filter.And;
 import org.opengis.filter.Filter;
@@ -47,18 +47,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.helpers.NamespaceSupport;
 
-import java.time.LocalDateTime;
+import javax.ws.rs.BadRequestException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author zahnen
@@ -68,10 +67,18 @@ public class FeatureQueryEncoderSql {
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderSql.class);
 
     private final SqlFeatureQueries queries;
+    private final Map<String, String> propertiesToPaths;
 
-    public FeatureQueryEncoderSql(SqlFeatureQueries queries) {
+    public FeatureQueryEncoderSql(SqlFeatureQueries queries, FeatureTypeMapping featureTypeMapping) {
         this.queries = queries;
         //LOGGER.debug("PATHS {}", queries.getPaths());
+        this.propertiesToPaths = featureTypeMapping.findMappings(TargetMapping.BASE_TYPE)
+                                                   .entrySet()
+                                                   .stream()
+                                                   .filter(entry -> Objects.nonNull(entry.getValue().getName()))
+                                                   .map(entry -> new AbstractMap.SimpleEntry<>(entry.getValue()
+                                                                                                    .getName(), entry.getKey()))
+                                                   .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     ///fundorttiere/[id=id]artbeobachtung/[id=artbeobachtung_id]artbeobachtung_2_erfasser/[erfasser_id=id]erfasser/name LIKE '*Mat*'
@@ -97,18 +104,27 @@ public class FeatureQueryEncoderSql {
 
                 @Override
                 public Object visit(PropertyName expression, Object extraData) {
-                    Optional<String> path = queries.getPaths().stream()
+                    Optional<String> pathForProperty = Optional.ofNullable(propertiesToPaths.getOrDefault(expression.getPropertyName(), null)).map(path -> propertyPathsToSelect(path));
+                    if (!pathForProperty.isPresent()) {
+                        throw new BadRequestException("Filter invalid");
+                    }
+                    /*Optional<String> path = queries.getPaths()
+                                                   .stream()
                                                    .filter(p -> propertyPathsToShort(p).equals(expression.getPropertyName()))
                                                    .map(p -> propertyPathsToSelect(p))
-                                                   .findFirst();
-                    String path2 = path.get().substring(0, path.get().lastIndexOf(" ")+1);
-                    String cp = path.get().substring(path.get().lastIndexOf(" ")+1);
+                                                   .findFirst();*/
+                    String path2 = pathForProperty.get()
+                                       .substring(0, pathForProperty.get()
+                                                         .lastIndexOf(" ") + 1);
+                    String cp = pathForProperty.get()
+                                    .substring(pathForProperty.get()
+                                                   .lastIndexOf(" ") + 1);
 
-                    LOGGER.debug("PROP {} {}", expression.getPropertyName(), path.get());
+                    LOGGER.debug("PROP {} {}", expression.getPropertyName(), pathForProperty.get());
                     properties.add(path2);
                     conditionProperties.add(stripFunctions(cp));
                     //encoded.append(path.get());
-                    return  super.visit(filterFactory.property(path.get(), namespaceSupport), extraData);
+                    return super.visit(filterFactory.property(pathForProperty.get(), namespaceSupport), extraData);
 
                     //return super.visit(expression, extraData);
                 }
@@ -133,7 +149,8 @@ public class FeatureQueryEncoderSql {
                 public Object visit(PropertyIsLike filter, Object data) {
                     LOGGER.debug("LIKE {}", filter);
                     //encoded.append(filter.getExpression()).append(" LIKE '").append(filter.getLiteral()).append("'");
-                    conditions.add("{{prop}} LIKE '" + filter.getLiteral().replace('*', '%') + "'");
+                    conditions.add("{{prop}} LIKE '" + filter.getLiteral()
+                                                             .replace('*', '%') + "'");
                     return super.visit(filter, data);
                 }
 
@@ -144,9 +161,15 @@ public class FeatureQueryEncoderSql {
                     DateTimeFormatter dateTimeFormatter = DateTimeFormatter
                             .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXX");
                     Period period = toPeriod(during.getExpression2());
-                    ZonedDateTime localDateTime = ZonedDateTime.parse(period.getBeginning().getPosition().getDateTime(), dateTimeFormatter);
-                    ZonedDateTime localDateTime2 = ZonedDateTime.parse(period.getEnding().getPosition().getDateTime(), dateTimeFormatter);
-                    conditions.add("{{prop}} BETWEEN '" + localDateTime.toInstant().toString() + "' AND '" + localDateTime2.toInstant().toString() + "'");
+                    ZonedDateTime localDateTime = ZonedDateTime.parse(period.getBeginning()
+                                                                            .getPosition()
+                                                                            .getDateTime(), dateTimeFormatter);
+                    ZonedDateTime localDateTime2 = ZonedDateTime.parse(period.getEnding()
+                                                                             .getPosition()
+                                                                             .getDateTime(), dateTimeFormatter);
+                    conditions.add("{{prop}} BETWEEN '" + localDateTime.toInstant()
+                                                                       .toString() + "' AND '" + localDateTime2.toInstant()
+                                                                                                               .toString() + "'");
                     return super.visit(during, extraData);
                 }
 
@@ -156,17 +179,19 @@ public class FeatureQueryEncoderSql {
 
                     DateTimeFormatter dateTimeFormatter = DateTimeFormatter
                             .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXX");
-                    ZonedDateTime localDateTime = ZonedDateTime.parse(toInstant(equals.getExpression2()).getPosition().getDateTime(), dateTimeFormatter);
-                    conditions.add("{{prop}} = '" + localDateTime.toInstant().toString() + "'");
+                    ZonedDateTime localDateTime = ZonedDateTime.parse(toInstant(equals.getExpression2()).getPosition()
+                                                                                                        .getDateTime(), dateTimeFormatter);
+                    conditions.add("{{prop}} = '" + localDateTime.toInstant()
+                                                                 .toString() + "'");
                     return super.visit(equals, extraData);
                 }
 
                 protected Instant toInstant(Expression e) {
-                    return (Instant)e.evaluate(null, Instant.class);
+                    return (Instant) e.evaluate(null, Instant.class);
                 }
 
                 protected Period toPeriod(Expression e) {
-                    return (Period)e.evaluate(null, Period.class);
+                    return (Period) e.evaluate(null, Period.class);
                 }
 
             }, null);
@@ -175,7 +200,9 @@ public class FeatureQueryEncoderSql {
         for (int i = 0; i < properties.size(); i++) {
             if (i > 0) encoded.append(" AND ");
             encoded.append("(");
-            encoded.append(properties.get(i)).append(conditions.get(i).replace("{{prop}}", conditionProperties.get(i)));
+            encoded.append(properties.get(i))
+                   .append(conditions.get(i)
+                                     .replace("{{prop}}", conditionProperties.get(i)));
             encoded.append(")");
             encoded.append(")");
         }
@@ -198,28 +225,35 @@ public class FeatureQueryEncoderSql {
         List<String> pathElements = getPathElements(propertyPath);
         String parentTable = toTable(pathElements.get(0));
         String parentColumn = toCondition(pathElements.get(1))[0];
-        String mainTable = toTable(pathElements.get(pathElements.size()-3));
-        String mainColumn = toCondition(pathElements.get(pathElements.size()-3)).length > 1 ? toCondition(pathElements.get(pathElements.size()-3))[1] : "id";
-        String conditionTable = toTable(pathElements.get(pathElements.size()-2));
-        String conditionColumn = pathElements.get(pathElements.size()-1);
+        String mainTable = toTable(pathElements.get(pathElements.size() - 3));
+        String mainColumn = toCondition(pathElements.get(pathElements.size() - 3)).length > 1 ? toCondition(pathElements.get(pathElements.size() - 3))[1] : "id";
+        String conditionTable = toTable(pathElements.get(pathElements.size() - 2));
+        String conditionColumn = pathElements.get(pathElements.size() - 1);
 
 
-        String join = pathElements.subList(pathElements.size()-2, pathElements.size()-1).stream()
-                                                            .map(pathElement -> {
-                                                                String[] joinCondition = toCondition(pathElement);
-                                                                String table = toTable(pathElement);
+        String join = pathElements.subList(pathElements.size() - 2, pathElements.size() - 1)
+                                  .stream()
+                                  .map(pathElement -> {
+                                      String[] joinCondition = toCondition(pathElement);
+                                      String table = toTable(pathElement);
 
-                                                                return String.format("JOIN %1$s ON %3$s.%2$s=%1$s.%4$s", table.equals(mainTable) ? table + " AS MAIN2" : table, joinCondition[0], mainTable, joinCondition[1]);
-                                                            })
-                                                            .collect(Collectors.joining(" "));
+                                      return String.format("JOIN %1$s ON %3$s.%2$s=%1$s.%4$s", table.equals(mainTable) ? table + " AS MAIN2" : table, joinCondition[0], mainTable, joinCondition[1]);
+                                  })
+                                  .collect(Collectors.joining(" "));
 
         return String.format("%6$s.%7$s IN (SELECT %1$s.%2$s FROM %1$s %3$s WHERE %4$s.%5$s", mainTable, mainColumn, join, conditionTable, conditionColumn, parentTable, parentColumn);
     }
 
     private String stripFunctions(String column) {
         if (column.contains(".")) {
-            List<String> split = Splitter.on('.').omitEmptyStrings().splitToList(column);
-            return split.get(0) + "." + (split.get(1).contains("(") ? split.get(1).substring(split.get(1).lastIndexOf("(") + 1, split.get(1).indexOf(")")) : split.get(1));
+            List<String> split = Splitter.on('.')
+                                         .omitEmptyStrings()
+                                         .splitToList(column);
+            return split.get(0) + "." + (split.get(1)
+                                              .contains("(") ? split.get(1)
+                                                                    .substring(split.get(1)
+                                                                                    .lastIndexOf("(") + 1, split.get(1)
+                                                                                                                .indexOf(")")) : split.get(1));
         }
         return column.contains("(") ? column.substring(column.lastIndexOf("(") + 1, column.indexOf(")")) : column;
     }
@@ -229,7 +263,8 @@ public class FeatureQueryEncoderSql {
     }
 
     private String[] toCondition(String pathElement) {
-        return pathElement.contains("]") ? pathElement.substring(1, pathElement.indexOf("]")).split("=") : new String[]{pathElement};
+        return pathElement.contains("]") ? pathElement.substring(1, pathElement.indexOf("]"))
+                                                      .split("=") : new String[]{pathElement};
     }
 
     private List<String> getPathElements(String path) {
@@ -276,12 +311,17 @@ public class FeatureQueryEncoderSql {
         public Object visit(BBOX filter, Object extraData) {
             LOGGER.debug("BBOX {} | {} | {}", filter.getExpression1(), filter.getSRS(), extraData);
 
-            Optional<String> property = getPrefixedPropertyName(filter.getExpression1().toString());
+            Optional<String> property = getPrefixedPropertyName(filter.getExpression1()
+                                                                      .toString());
 
             if (property.isPresent()) {
                 LOGGER.debug("PROP {}", property.get());
                 if (filter.getSRS() != null) {
-                    return new BBOXImpl(filterFactory.property(property.get(), namespaceSupport), filter.getBounds().getMinX(), filter.getBounds().getMinY(), filter.getBounds().getMaxX(), filter.getBounds().getMaxY(), new EpsgCrs(filter.getSRS()).getAsUri());
+                    return new BBOXImpl(filterFactory.property(property.get(), namespaceSupport), filter.getBounds()
+                                                                                                        .getMinX(), filter.getBounds()
+                                                                                                                          .getMinY(), filter.getBounds()
+                                                                                                                                            .getMaxX(), filter.getBounds()
+                                                                                                                                                              .getMaxY(), new EpsgCrs(filter.getSRS()).getAsUri());
                 }
                 return filterFactory.bbox(filterFactory.property(property.get(), namespaceSupport), filter.getBounds());
             }
@@ -407,18 +447,18 @@ public class FeatureQueryEncoderSql {
                               .entrySet()
                               .stream()
                               .filter(targetMappings -> targetMappings.getKey()
-                                                                      .endsWith(":"+property))
+                                                                      .endsWith(":" + property))
                               .map(Map.Entry::getKey)
                               .findFirst()
-                              ;//.map(namespaceNormalizer::getPrefixedPath);
+                    ;//.map(namespaceNormalizer::getPrefixedPath);
         }
 
         protected Instant toInstant(Expression e) {
-            return (Instant)e.evaluate(null, Instant.class);
+            return (Instant) e.evaluate(null, Instant.class);
         }
 
         protected Period toPeriod(Expression e) {
-            return (Period)e.evaluate(null, Period.class);
+            return (Period) e.evaluate(null, Period.class);
         }
 
         protected Expression toTemporal(Expression e) {

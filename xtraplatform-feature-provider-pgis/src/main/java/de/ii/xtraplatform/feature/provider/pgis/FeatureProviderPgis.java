@@ -362,7 +362,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
                                                                                           .sqlPaths(sqlPathTree)
                                                                                           .build();
 
-                           SqlFeatureSource sqlFeatureSource = new SqlFeatureSource(session, queries, materializer, data.computeNumberMatched());
+                           SqlFeatureSource sqlFeatureSource = new SqlFeatureSource(session, queries, materializer, data.computeNumberMatched(), featureTypeMappings.getValue());
 
                            return new AbstractMap.SimpleImmutableEntry<>(featureTypeMappings.getKey(), sqlFeatureSource);
                        })

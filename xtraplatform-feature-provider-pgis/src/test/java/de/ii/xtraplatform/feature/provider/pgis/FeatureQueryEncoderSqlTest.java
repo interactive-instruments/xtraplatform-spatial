@@ -31,7 +31,7 @@ public class FeatureQueryEncoderSqlTest {
                                                                        .addPaths(path)
                                                                        .build();
 
-        String encodedFilter = new FeatureQueryEncoderSql(queries).encodeFilter(input);
+        String encodedFilter = new FeatureQueryEncoderSql(queries, mappings).encodeFilter(input);
         LOGGER.debug("ENCODED {}", encodedFilter);
 
         String expected = "((fundorttiere.id IN (SELECT artbeobachtung_2_erfasser.artbeobachtung_id FROM artbeobachtung_2_erfasser JOIN erfasser ON artbeobachtung_2_erfasser.erfasser_id=erfasser.id WHERE erfasser.name LIKE '%Mat%')) AND (fundorttiere.id IN (SELECT artbeobachtung_2_erfasser.artbeobachtung_id FROM artbeobachtung_2_erfasser JOIN erfasser ON artbeobachtung_2_erfasser.erfasser_id=erfasser.id WHERE erfasser.name = '5')))";
@@ -48,7 +48,7 @@ public class FeatureQueryEncoderSqlTest {
                                                                        .addPaths(path)
                                                                        .build();
 
-        String encodedFilter = new FeatureQueryEncoderSql(queries).encodeFilter(input);
+        String encodedFilter = new FeatureQueryEncoderSql(queries, mappings).encodeFilter(input);
         LOGGER.debug("ENCODED {}", encodedFilter);
 
         String expected = "((fundorttiere.id IN (SELECT artbeobachtung.id FROM artbeobachtung JOIN geom ON artbeobachtung.geom=geom.id WHERE ST_Intersects(geom.geom, ST_GeomFromText('POLYGON((441243.8931 5505398.3121,441247.3324 5505398.3121,441247.3324 5505405.2643,441243.8931 5505405.2643,441243.8931 5505398.3121))',25832)) = 'TRUE')))";
@@ -66,7 +66,7 @@ public class FeatureQueryEncoderSqlTest {
                                                                        .addPaths(path)
                                                                        .build();
 
-        String encodedFilter = new FeatureQueryEncoderSql(queries).encodeFilter(input);
+        String encodedFilter = new FeatureQueryEncoderSql(queries, mappings).encodeFilter(input);
         LOGGER.debug("ENCODED {}", encodedFilter);
 
         String expected = "((fundorttiere.id IN (SELECT fundorttiere.id FROM fundorttiere JOIN osirisobjekt ON fundorttiere.id=osirisobjekt.id WHERE osirisobjekt.veroeffentlichtam BETWEEN '1970-01-01T00:00:00Z' AND '2018-07-17T07:14:27Z')))";
@@ -84,7 +84,7 @@ public class FeatureQueryEncoderSqlTest {
                                                                        .addPaths(path)
                                                                        .build();
 
-        String encodedFilter = new FeatureQueryEncoderSql(queries).encodeFilter(input);
+        String encodedFilter = new FeatureQueryEncoderSql(queries, mappings).encodeFilter(input);
         LOGGER.debug("ENCODED {}", encodedFilter);
 
         String expected = "((fundorttiere.id IN (SELECT fundorttiere.id FROM fundorttiere JOIN osirisobjekt ON fundorttiere.id=osirisobjekt.id WHERE osirisobjekt.veroeffentlichtam = '2018-07-17T07:14:27Z')))";
@@ -104,7 +104,7 @@ public class FeatureQueryEncoderSqlTest {
                                                                        .addPaths(path, path2)
                                                                        .build();
 
-        String encodedFilter = new FeatureQueryEncoderSql(queries).encodeFilter(input);
+        String encodedFilter = new FeatureQueryEncoderSql(queries, mappings).encodeFilter(input);
         LOGGER.debug("ENCODED {}", encodedFilter);
 
         String expected = "((fundorttiere.id IN (SELECT artbeobachtung.id FROM artbeobachtung JOIN geom ON artbeobachtung.geom=geom.id WHERE ST_Intersects(geom.geom, ST_GeomFromText('POLYGON((441243.8931 5505398.3121,441247.3324 5505398.3121,441247.3324 5505405.2643,441243.8931 5505405.2643,441243.8931 5505398.3121))',25832)) = 'TRUE')) AND (fundorttiere.id IN (SELECT artbeobachtung_2_erfasser.artbeobachtung_id FROM artbeobachtung_2_erfasser JOIN erfasser ON artbeobachtung_2_erfasser.erfasser_id=erfasser.id WHERE erfasser.name LIKE '%Mat%')))";

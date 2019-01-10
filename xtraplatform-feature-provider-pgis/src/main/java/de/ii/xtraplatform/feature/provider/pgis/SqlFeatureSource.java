@@ -14,7 +14,6 @@ import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.slick.javadsl.Slick;
 import akka.stream.alpakka.slick.javadsl.SlickRow;
 import akka.stream.alpakka.slick.javadsl.SlickSession;
-import akka.stream.alpakka.slick.scaladsl.Slick$;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.base.Strings;
@@ -25,24 +24,10 @@ import com.google.common.collect.Maps;
 import de.ii.xtraplatform.feature.query.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.query.api.FeatureQuery;
 import de.ii.xtraplatform.feature.query.api.ImmutableFeatureQuery;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import org.geotools.filter.text.cql2.CQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.collection.immutable.Seq;
-import scala.collection.immutable.Vector;
-import slick.dbio.DBIOAction;
-import slick.dbio.Effect;
-import slick.dbio.Streaming;
-import slick.jdbc.GetResult;
-import slick.jdbc.GetResult$;
-import slick.jdbc.JdbcActionComponent;
-import slick.jdbc.JdbcBackend;
-import slick.jdbc.JdbcProfile;
-import slick.jdbc.PositionedResult;
-import slick.jdbc.SQLActionBuilder;
-import slick.jdbc.SetParameter;
-import slick.jdbc.SetParameter$;
-import slick.sql.SqlStreamingAction;
 
 import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotFoundException;
@@ -51,15 +36,12 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -81,11 +63,11 @@ public class SqlFeatureSource {
     private final FeatureQueryEncoderSql queryEncoder;
     private final boolean numberMatched;
 
-    public SqlFeatureSource(SlickSession session, SqlFeatureQueries queries, ActorMaterializer materializer, boolean numberMatched) {
+    public SqlFeatureSource(SlickSession session, SqlFeatureQueries queries, ActorMaterializer materializer, boolean numberMatched, FeatureTypeMapping mappings) {
         this.session = session;
         this.queries = queries;
         this.materializer = materializer;
-        this.queryEncoder = new FeatureQueryEncoderSql(queries);
+        this.queryEncoder = new FeatureQueryEncoderSql(queries, mappings);
         this.numberMatched = numberMatched;
     }
 

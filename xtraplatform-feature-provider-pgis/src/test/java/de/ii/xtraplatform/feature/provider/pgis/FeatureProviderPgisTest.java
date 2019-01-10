@@ -79,7 +79,8 @@ public class FeatureProviderPgisTest {
                                                                              .addPaths("/city/[id=cid]city_river/[rid=id]river/name")
                                                                              .build();
 
-                SqlFeatureSource sqlFeatureSource = new SqlFeatureSource(session, queries, materializer, true);
+                SqlFeatureSource sqlFeatureSource = new SqlFeatureSource(session, queries, materializer, true, featureTypeMappings.getValue()
+                                                                                                                                  .getMappings());
                 LoggingFeatureConsumer loggingConsumer = new LoggingFeatureConsumer();
 
                 CompletionStage<Done> done = sqlFeatureSource.runQuery(ImmutableFeatureQuery.builder().type("city")
