@@ -10,7 +10,7 @@
  */
 package de.ii.ogc.wfs.proxy;
 
-import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.util.xml.XMLPathTracker;
 
 /**

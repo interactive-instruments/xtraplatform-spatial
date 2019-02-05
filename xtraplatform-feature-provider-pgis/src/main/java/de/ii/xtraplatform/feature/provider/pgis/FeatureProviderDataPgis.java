@@ -8,12 +8,10 @@
 package de.ii.xtraplatform.feature.provider.pgis;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableMappingStatus;
 import de.ii.xtraplatform.feature.transformer.api.MappingStatus;
-import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;

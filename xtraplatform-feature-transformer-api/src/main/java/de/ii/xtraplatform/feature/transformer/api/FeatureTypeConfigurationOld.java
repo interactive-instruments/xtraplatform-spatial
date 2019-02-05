@@ -12,10 +12,9 @@ package de.ii.xtraplatform.feature.transformer.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.ii.xtraplatform.crs.api.BoundingBox;
-import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 
 /**

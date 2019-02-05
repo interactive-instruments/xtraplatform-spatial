@@ -9,32 +9,22 @@ package de.ii.xtraplatform.feature.transformer.geojson;
 
 import akka.stream.Shape;
 import akka.stream.stage.GraphStageLogic;
-import com.fasterxml.aalto.AsyncXMLStreamReader;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.async.ByteArrayFeeder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.query.api.FeatureConsumer;
-import de.ii.xtraplatform.feature.transformer.api.GmlConsumer;
-import de.ii.xtraplatform.util.xml.XMLPathTracker;
+import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.namespace.QName;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.OptionalLong;
-
-import static com.fasterxml.jackson.core.JsonToken.*;
 
 /**
  * @author zahnen

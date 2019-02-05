@@ -9,7 +9,7 @@ package de.ii.xtraplatform.feature.transformer.geojson;
 
 import akka.japi.Pair;
 import com.google.common.base.Splitter;
-import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping;
@@ -18,8 +18,6 @@ import javax.annotation.Nullable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author zahnen

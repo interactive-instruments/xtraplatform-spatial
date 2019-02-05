@@ -8,9 +8,9 @@
 package de.ii.xtraplatform.feature.provider.sql;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.query.api.FeatureProvider;
-import de.ii.xtraplatform.feature.query.api.FeatureProviderData;
-import de.ii.xtraplatform.feature.query.api.FeatureProviderRegistry;
+import de.ii.xtraplatform.feature.provider.api.FeatureProvider;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderRegistry;
 import org.apache.felix.ipojo.ComponentInstance;
 import org.apache.felix.ipojo.ConfigurationException;
 import org.apache.felix.ipojo.Factory;
@@ -18,7 +18,6 @@ import org.apache.felix.ipojo.MissingHandlerException;
 import org.apache.felix.ipojo.UnacceptableConfiguration;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
-import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.architecture.PropertyDescription;
 import org.apache.felix.ipojo.whiteboard.Wbp;

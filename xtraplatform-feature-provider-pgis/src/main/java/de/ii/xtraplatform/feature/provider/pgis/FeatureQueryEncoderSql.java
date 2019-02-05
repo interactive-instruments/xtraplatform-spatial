@@ -10,7 +10,7 @@ package de.ii.xtraplatform.feature.provider.pgis;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
-import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeConfigurationOld;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import org.geotools.filter.FilterFactoryImpl;

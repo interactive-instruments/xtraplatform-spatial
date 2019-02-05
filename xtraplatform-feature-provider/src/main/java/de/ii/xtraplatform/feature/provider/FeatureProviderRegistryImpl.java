@@ -8,9 +8,9 @@
 package de.ii.xtraplatform.feature.provider;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.query.api.FeatureProvider;
-import de.ii.xtraplatform.feature.query.api.FeatureProviderData;
-import de.ii.xtraplatform.feature.query.api.FeatureProviderRegistry;
+import de.ii.xtraplatform.feature.provider.api.FeatureProvider;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderRegistry;
 import org.apache.felix.ipojo.ComponentInstance;
 import org.apache.felix.ipojo.ConfigurationException;
 import org.apache.felix.ipojo.Factory;

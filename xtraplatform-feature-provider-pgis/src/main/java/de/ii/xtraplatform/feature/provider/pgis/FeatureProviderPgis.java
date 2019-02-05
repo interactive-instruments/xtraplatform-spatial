@@ -26,10 +26,10 @@ import de.ii.xtraplatform.crs.api.BoundingBox;
 import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
-import de.ii.xtraplatform.feature.query.api.FeatureConsumer;
-import de.ii.xtraplatform.feature.query.api.FeatureQuery;
-import de.ii.xtraplatform.feature.query.api.FeatureStream;
-import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
+import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
+import de.ii.xtraplatform.feature.provider.api.FeatureStream;
+import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
@@ -52,7 +52,6 @@ import slick.jdbc.JdbcProfile;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
-import javax.xml.namespace.QName;
 import java.util.AbstractMap;
 import java.util.Base64;
 import java.util.HashSet;
@@ -68,7 +67,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static de.ii.xtraplatform.feature.provider.pgis.FeatureProviderPgis.PROVIDER_TYPE;
-import static de.ii.xtraplatform.feature.query.api.TargetMapping.BASE_TYPE;
+import static de.ii.xtraplatform.feature.provider.api.TargetMapping.BASE_TYPE;
 
 /**
  * @author zahnen

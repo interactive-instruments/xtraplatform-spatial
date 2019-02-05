@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.feature.transformer.api;
 
-import de.ii.xtraplatform.feature.query.api.FeatureConsumer;
+import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 
 import javax.xml.namespace.QName;
 import java.util.List;

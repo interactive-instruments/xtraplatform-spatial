@@ -8,20 +8,11 @@
 package de.ii.xtraplatform.feature.transformer.api;
 
 
-import de.ii.xtraplatform.crs.api.CrsTransformer;
-import de.ii.xtraplatform.entity.api.handler.Entity;
-import de.ii.xtraplatform.feature.query.api.FeatureProviderRegistry;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderRegistry;
 import de.ii.xtraplatform.service.api.AbstractService;
-import de.ii.xtraplatform.service.api.Service;
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.HandlerDeclaration;
-import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
-import org.apache.felix.ipojo.annotations.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Optional;
 
 /**
  * @author zahnen

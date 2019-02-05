@@ -1,42 +1,10 @@
-version = '1.1.5'
+version = '2.1.0'
 //version += '-SNAPSHOT'
 
 dependencies {
     provided project(':xtraplatform-crs-api')
-    provided project(':xtraplatform-geotools')
+    provided project(':xtraplatform-geotools')    
+}
 
-    // TODO: update
-    /*embedded group: 'org.geotools', name: 'gt-referencing', version: '19.2'
-    embedded group: 'org.geotools', name: 'gt-epsg-hsql', version: '19.2'
-    embedded group: 'org.geotools', name: 'gt-epsg-extension', version: '19.2'
-    embedded group: 'org.geotools', name: 'gt-opengis', version: '19.2'*/
-    
-    // TODO: do we need this? does this enable transformation from 3D to 2D?
-    //embedded group: 'org.geotools', name: 'gt-referencing3D', version: '11.0'
-    
-}
-/*
-jar {
-    manifest { 
-        instruction 'Export-Package', '!de.ii.xtraplatform.crs.geotools'
-        instruction 'Private-Package', 'de.ii.xtraplatform.crs.geotools'
-            
-        instruction 'Embed-Dependency',
-            'gt-opengis',
-            'gt-referencing',
-            'gt-epsg-hsql',
-            'gt-epsg-extension'
-        instructionFirst 'Import-Package', '!javax.measure.unit' 
-        
-        instruction 'Import-Package', 'javax.swing.event' 
-        instruction 'Import-Package', 'javax.swing.tree' 
-        instruction 'Import-Package', 'javax.sql' 
-        instruction 'Import-Package', 'javax.naming' 
-        instruction 'Import-Package', 'javax.imageio.spi'
-            
-        instruction 'Embed-Transitive', 'true'
-    }
-}
-*/
 //apply from: 'license-report.gradle'
 

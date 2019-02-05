@@ -1,6 +1,6 @@
 apply plugin: 'scala'
 
-version = '2.0.1'
+version = '2.1.0'
 //version += '-SNAPSHOT'
 
 dependencies {
@@ -15,7 +15,6 @@ dependencies {
         exclude  group: 'org.reactivestreams', module: 'reactive-streams'
         exclude  group: 'org.slf4j', module: 'slf4j-api'
     }
-    //embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.2'
 
     testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.18'
 }
@@ -41,7 +40,6 @@ jar {
 
         instruction 'Embed-Dependency',
                 'akka-stream-alpakka-slick_2.12'
-                //'postgresql'
 
         instruction 'Embed-Transitive', 'true'
         instruction 'Embed-Export', 'true'

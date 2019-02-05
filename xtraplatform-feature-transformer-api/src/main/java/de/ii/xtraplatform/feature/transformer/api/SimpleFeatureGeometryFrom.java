@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.feature.transformer.api;
 
-import de.ii.xtraplatform.feature.query.api.SimpleFeatureGeometry;
+import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
 
 /**
  * @author zahnen

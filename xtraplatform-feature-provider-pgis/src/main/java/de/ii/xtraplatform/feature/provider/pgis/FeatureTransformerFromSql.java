@@ -8,12 +8,11 @@
 package de.ii.xtraplatform.feature.provider.pgis;
 
 import com.google.common.base.Splitter;
-import de.ii.xtraplatform.feature.query.api.FeatureConsumer;
-import de.ii.xtraplatform.feature.query.api.SimpleFeatureGeometry;
-import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
+import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
+import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
-import de.ii.xtraplatform.feature.transformer.api.TargetMappingWfs3;
 
 import java.io.IOException;
 import java.io.StreamTokenizer;

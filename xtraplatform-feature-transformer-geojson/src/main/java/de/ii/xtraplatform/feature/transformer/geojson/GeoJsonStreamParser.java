@@ -16,14 +16,13 @@ import akka.stream.stage.AbstractInHandler;
 import akka.stream.stage.GraphStageLogic;
 import akka.stream.stage.GraphStageWithMaterializedValue;
 import akka.util.ByteString;
-import de.ii.xtraplatform.feature.query.api.FeatureConsumer;
+import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
-import javax.xml.namespace.QName;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;

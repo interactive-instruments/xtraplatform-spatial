@@ -10,10 +10,10 @@ package de.ii.xtraplatform.feature.transformer.api;
 import akka.Done;
 import akka.stream.javadsl.RunnableGraph;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
-import de.ii.xtraplatform.feature.query.api.FeatureConsumer;
-import de.ii.xtraplatform.feature.query.api.FeatureProvider;
-import de.ii.xtraplatform.feature.query.api.FeatureQuery;
-import de.ii.xtraplatform.feature.query.api.FeatureStream;
+import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
+import de.ii.xtraplatform.feature.provider.api.FeatureProvider;
+import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
+import de.ii.xtraplatform.feature.provider.api.FeatureStream;
 import de.ii.xtraplatform.scheduler.api.TaskProgress;
 
 import javax.xml.namespace.QName;

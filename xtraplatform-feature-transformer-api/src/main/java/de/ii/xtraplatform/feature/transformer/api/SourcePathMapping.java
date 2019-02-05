@@ -10,7 +10,7 @@ package de.ii.xtraplatform.feature.transformer.api;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import org.immutables.value.Value;
 
 import java.util.Map;

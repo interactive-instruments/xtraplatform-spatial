@@ -10,7 +10,7 @@ package de.ii.xtraplatform.feature.transformer.api;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
-import de.ii.xtraplatform.feature.query.api.FeatureProviderData;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
 import org.immutables.value.Value;
 
 import javax.xml.namespace.QName;

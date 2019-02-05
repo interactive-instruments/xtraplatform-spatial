@@ -19,7 +19,7 @@ import akka.stream.stage.GraphStage;
 import akka.stream.stage.GraphStageLogic;
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.query.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.EventBasedStreamingGmlParser.GmlEvent;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
 import org.slf4j.Logger;
