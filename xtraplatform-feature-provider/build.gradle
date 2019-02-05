@@ -2,5 +2,5 @@ version = '2.1.0'
 //version += '-SNAPSHOT'
 
 dependencies {
-    compile project(':xtraplatform-feature-query-api')
+    compile project(':xtraplatform-feature-provider-api')
 }

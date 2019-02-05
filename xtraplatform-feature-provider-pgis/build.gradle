@@ -2,7 +2,7 @@ version = '2.1.0'
 //version += '-SNAPSHOT'
 
 dependencies {
-    provided project(':xtraplatform-feature-query-api')
+    provided project(':xtraplatform-feature-provider-api')
     provided project(':xtraplatform-feature-transformer-api')
     provided project(':xtraplatform-ogc-wfs-api')
     provided project(':xtraplatform-feature-provider-sql')
