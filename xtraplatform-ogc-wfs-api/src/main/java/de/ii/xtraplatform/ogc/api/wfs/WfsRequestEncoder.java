@@ -1,0 +1,121 @@
+/**
+ * Copyright 2017 European Union, interactive instruments GmbH
+ * <p>
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * bla
+ */
+/**
+ * bla
+ */
+package de.ii.xtraplatform.ogc.api.wfs;
+
+import akka.japi.Pair;
+import de.ii.xtraplatform.ogc.api.GML;
+import de.ii.xtraplatform.ogc.api.Versions;
+import de.ii.xtraplatform.ogc.api.WFS;
+import de.ii.xtraplatform.util.xml.XMLDocumentFactory;
+import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import org.apache.http.client.utils.URIBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ *
+ * @author zahnen
+ */
+public class WfsRequestEncoder {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(WfsRequestEncoder.class);
+
+    private Map<String, Map<WFS.METHOD, URI>> urls;
+    private Versions versions;
+    private XMLNamespaceNormalizer nsStore;
+
+    public WfsRequestEncoder() {
+        this.urls = new HashMap<>();
+        this.nsStore = new XMLNamespaceNormalizer();
+        this.versions = new Versions();
+    }
+
+    public void setUrls(Map<String, Map<WFS.METHOD, URI>> urls) {
+        this.urls = urls;
+    }
+
+    public void setVersion(String version) {
+        WFS.VERSION v = WFS.VERSION.fromString(version);
+        if (v != null) {
+            if (this.versions.getWfsVersion() == null || v.isGreater(this.versions.getWfsVersion())) {
+                this.versions.setWfsVersion(v);
+                LOGGER.debug("Version set to '{}'", version);
+            }
+        }
+    }
+
+    public void setGmlVersion(String gmlversion) {
+        GML.VERSION v = GML.VERSION.fromString(gmlversion);
+        this.versions.setGmlVersion(v);
+    }
+
+    public String getAsUrl(WfsOperation operation) {
+        try {
+            URIBuilder uri = new URIBuilder(findUrl(operation.getOperation(), WFS.METHOD.GET));
+
+            Map<String, String> params = operation.asKvp(new XMLDocumentFactory(nsStore), versions);
+
+            for (Map.Entry<String, String> param : params.entrySet()) {
+                uri.addParameter(param.getKey(), param.getValue());
+            }
+
+            return uri.build()
+                      .toString();
+        } catch (URISyntaxException | ParserConfigurationException | TransformerException | IOException | SAXException e) {
+            return "";
+        }
+    }
+
+    public Pair<String,String> getAsUrlAndBody(WfsOperation operation) {
+        try {
+            URI uri = findUrl(operation.getOperation(), WFS.METHOD.POST);
+            String xml = operation.asXml(new XMLDocumentFactory(nsStore), versions).toString(false);
+
+            return new Pair<>(uri.toString(), xml);
+
+        } catch (TransformerException | ParserConfigurationException | SAXException | IOException e) {
+            return null;
+        }
+    }
+
+    public XMLNamespaceNormalizer getNsStore() {
+        return nsStore;
+    }
+
+    public void setNsStore(XMLNamespaceNormalizer nsStore) {
+        this.nsStore = nsStore;
+    }
+
+    public URI findUrl(WFS.OPERATION operation, WFS.METHOD method) {
+
+        URI uri = this.urls.containsKey(operation.toString()) ? this.urls.get(operation.toString())
+                                                                         .get(method) : this.urls.get("default")
+                                                                                                 .get(method);
+
+        if (uri == null && method.equals(WFS.METHOD.GET)) {
+            return this.urls.get("default")
+                            .get(method);
+        }
+
+        return uri;
+    }
+}

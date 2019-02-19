@@ -13,7 +13,7 @@ package de.ii.xtraplatform.feature.transformer.api;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.ii.xsf.core.api.Service;
 import de.ii.xtraplatform.feature.provider.api.FeatureProvider;
-import de.ii.xtraplatform.ogc.api.wfs.client.WFSAdapter;
+import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder;
 
 import java.util.Map;
 import java.util.Optional;
@@ -23,7 +23,7 @@ import java.util.Optional;
  */
 public interface FeatureTransformerService extends Service {
     // TODO: FeatureProvider and Transformer
-    WFSAdapter getWfsAdapter();
+    WfsRequestEncoder getWfsAdapter();
 
     FeatureTransformerServiceProperties getServiceProperties();
 

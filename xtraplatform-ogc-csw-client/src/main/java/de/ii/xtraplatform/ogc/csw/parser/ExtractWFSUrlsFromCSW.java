@@ -18,9 +18,9 @@ import de.ii.xtraplatform.ogc.api.filter.OGCFilterLiteral;
 import de.ii.xtraplatform.ogc.api.filter.OGCFilterPropertyIsEqualTo;
 import de.ii.xtraplatform.ogc.api.filter.OGCFilterPropertyIsLike;
 import de.ii.xtraplatform.ogc.api.filter.OGCFilterValueReference;
-import de.ii.xtraplatform.ogc.api.wfs.parser.LoggingWfsCapabilitiesAnalyzer;
-import de.ii.xtraplatform.ogc.api.wfs.parser.MultiWfsCapabilitiesAnalyzer;
-import de.ii.xtraplatform.ogc.api.wfs.parser.WFSCapabilitiesParser;
+import de.ii.xtraplatform.ogc.parser.LoggingWfsCapabilitiesAnalyzer;
+import de.ii.xtraplatform.ogc.parser.MultiWfsCapabilitiesAnalyzer;
+import de.ii.xtraplatform.ogc.parser.WFSCapabilitiesParser;
 import de.ii.xtraplatform.ogc.csw.client.CSWAdapter;
 import de.ii.xtraplatform.ogc.csw.client.CSWOperation;
 import de.ii.xtraplatform.ogc.csw.client.CSWOperationGetCapabilities;
@@ -33,7 +33,6 @@ import org.apache.http.util.EntityUtils;
 import org.codehaus.staxmate.SMInputFactory;
 
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotAcceptableException;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 
@@ -60,7 +59,7 @@ public class ExtractWFSUrlsFromCSW {
         CSWCapabilitiesAnalyzer capabilitiesAnalyzer = new CSWCapabilitiesAnalyzer();
         LoggingWfsCapabilitiesAnalyzer capabilitiesAnalyzer1 = new LoggingWfsCapabilitiesAnalyzer();
         MultiWfsCapabilitiesAnalyzer capabilitiesAnalyzer2 = new MultiWfsCapabilitiesAnalyzer(capabilitiesAnalyzer, capabilitiesAnalyzer1);
-        de.ii.xtraplatform.ogc.api.wfs.parser.WFSCapabilitiesParser wfsCapabilitiesParser = new WFSCapabilitiesParser(capabilitiesAnalyzer, staxFactory);
+        WFSCapabilitiesParser wfsCapabilitiesParser = new WFSCapabilitiesParser(capabilitiesAnalyzer, staxFactory);
 
 
         CSWRequest request = new CSWRequest(adapter, getCapabilities);

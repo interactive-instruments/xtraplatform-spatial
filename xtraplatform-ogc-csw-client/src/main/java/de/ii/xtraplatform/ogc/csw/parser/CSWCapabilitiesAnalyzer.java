@@ -12,7 +12,7 @@ package de.ii.xtraplatform.ogc.csw.parser;
 
 import de.ii.xtraplatform.ogc.api.CSW;
 import de.ii.xtraplatform.ogc.api.OWS;
-import de.ii.xtraplatform.ogc.api.wfs.parser.AbstractWfsCapabilitiesAnalyzer;
+import de.ii.xtraplatform.ogc.parser.AbstractWfsCapabilitiesAnalyzer;
 
 import java.util.ArrayList;
 import java.util.HashMap;

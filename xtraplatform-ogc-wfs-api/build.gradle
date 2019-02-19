@@ -11,14 +11,6 @@ dependencies {
     embedded group: 'com.sun.xsom', name: 'xsom', version: '20140925'
     embedded group: 'com.fasterxml', name: 'aalto-xml', version: '1.0.0'
     embedded group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1'
-
-    //embedded group: 'com.typesafe.akka', name: 'akka-stream_2.12', version: '2.5.9'
-    embedded (group: 'com.lightbend.akka', name: 'akka-stream-alpakka-xml_2.12', version: '0.17') {
-        transitive = false
-    }
-
-    testCompile group: 'com.typesafe.akka', name: 'akka-http_2.12',   version: '10.1.5'
-    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.18'
 }
  
 jar {
@@ -27,10 +19,7 @@ jar {
             'xsom',
             'aalto-xml',
             //'woodstox-core',
-            'staxmate',
-//                'akka-stream_2.12',
-//                'akka-http_2.12',
-                'akka-stream-alpakka-xml_2.12'
+            'staxmate'
             
         instruction 'Embed-Transitive', 'true'
         instruction 'Embed-Export', 'true'

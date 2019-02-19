@@ -39,10 +39,9 @@ import de.ii.xtraplatform.feature.transformer.api.TransformingFeatureProvider;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ParseError;
 import de.ii.xtraplatform.ogc.api.exceptions.WFSException;
-import de.ii.xtraplatform.ogc.api.wfs.client.DescribeFeatureType;
-import de.ii.xtraplatform.ogc.api.wfs.client.GetCapabilities;
-import de.ii.xtraplatform.ogc.api.wfs.client.WFSAdapter;
-import de.ii.xtraplatform.ogc.api.wfs.client.WFSRequest;
+import de.ii.xtraplatform.ogc.api.wfs.DescribeFeatureType;
+import de.ii.xtraplatform.ogc.api.wfs.GetCapabilities;
+import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder;
 import de.ii.xtraplatform.scheduler.api.TaskProgress;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.apache.felix.ipojo.annotations.Component;
@@ -87,7 +86,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     @Requires
     private AkkaHttp akkaHttp;
 
-    private final WFSAdapter wfsAdapter;
+    private final WfsRequestEncoder wfsRequestEncoder;
     private final Map<String, QName> featureTypes;
     private final Map<String, FeatureTypeMapping> featureTypeMappings;
     private final FeatureQueryEncoderWfs queryEncoder;
@@ -95,17 +94,16 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     private final MappingStatus mappingStatus;
 
     FeatureProviderWfs(@Requires CrsTransformation crsTransformation, @Property(name = ".data") FeatureProviderDataWfs data) {
-        this.wfsAdapter = new WFSAdapter();
-        wfsAdapter.setVersion(data.getConnectionInfo()
-                                  .getVersion());
-        wfsAdapter.setGmlVersion(data.getConnectionInfo()
-                                     .getGmlVersion());
-        wfsAdapter.setDefaultCrs(data.getNativeCrs());
-        wfsAdapter.setUrls(ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(data.getConnectionInfo()
-                                                                                                                                                 .getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(data.getConnectionInfo()
+        this.wfsRequestEncoder = new WfsRequestEncoder();
+        wfsRequestEncoder.setVersion(data.getConnectionInfo()
+                                         .getVersion());
+        wfsRequestEncoder.setGmlVersion(data.getConnectionInfo()
+                                            .getGmlVersion());
+        wfsRequestEncoder.setUrls(ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(data.getConnectionInfo()
+                                                                                                                                                        .getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(data.getConnectionInfo()
                                                                                                                                                                                                                                          .getUri()))));
-        wfsAdapter.setNsStore(new XMLNamespaceNormalizer(data.getConnectionInfo()
-                                                             .getNamespaces()));
+        wfsRequestEncoder.setNsStore(new XMLNamespaceNormalizer(data.getConnectionInfo()
+                                                                    .getNamespaces()));
 
         this.featureTypes = !data.getFeatureTypes()
                                  .isEmpty() ? data.getFeatureTypes() : data.getMappings()
@@ -138,7 +136,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
         }
 
         //TODO: if mapping disabled, create dummy mappings for gml:id, depending on version (TODO: set gmlVersion depending on wfsVersion)
-        this.queryEncoder = new FeatureQueryEncoderWfs(featureTypes, queryMappings, wfsAdapter.getNsStore());
+        this.queryEncoder = new FeatureQueryEncoderWfs(featureTypes, queryMappings, wfsRequestEncoder.getNsStore());
 
         this.useHttpPost = data.getConnectionInfo()
                                .getMethod() == ConnectionInfo.METHOD.POST;
@@ -319,12 +317,12 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     @Override
     public Optional<String> encodeFeatureQuery(FeatureQuery query, Map<String, String> additionalQueryParameters) {
         return queryEncoder.encode(query, additionalQueryParameters)
-                           .map(getFeature -> new WFSRequest(wfsAdapter, getFeature).getAsUrl());
+                           .map(wfsRequestEncoder::getAsUrl);
     }
 
     public Optional<Pair<String, String>> encodeFeatureQueryPost(FeatureQuery query, Map<String, String> additionalQueryParameters) {
         return queryEncoder.encode(query, additionalQueryParameters)
-                           .map(getFeature -> new WFSRequest(wfsAdapter, getFeature).getAsUrlAndBody());
+                           .map(wfsRequestEncoder::getAsUrlAndBody);
     }
 
     @Override
@@ -382,7 +380,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
             LOGGER.debug("Analyzing Capabilities (version: {})", version.toString());
             getCapabilities = new GetCapabilities(version);
         }
-        InputStream source = akkaHttp.get(new WFSRequest(wfsAdapter, getCapabilities).getAsUrl())
+        InputStream source = akkaHttp.get(wfsRequestEncoder.getAsUrl(getCapabilities))
                                      .runWith(StreamConverters.asInputStream(), akkaHttp.getMaterializer());
 
 
@@ -416,9 +414,9 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     }
 
     private void analyzeFeatureTypesWithDescribeFeatureType(FeatureProviderSchemaConsumer schemaConsumer, Map<String, List<String>> featureTypesByNamespace, TaskProgress taskProgress) {
-        URI baseUri = wfsAdapter.findUrl(WFS.OPERATION.DESCRIBE_FEATURE_TYPE, WFS.METHOD.GET);
+        URI baseUri = wfsRequestEncoder.findUrl(WFS.OPERATION.DESCRIBE_FEATURE_TYPE, WFS.METHOD.GET);
 
-        InputStream source = akkaHttp.get(new WFSRequest(wfsAdapter, new DescribeFeatureType()).getAsUrl())
+        InputStream source = akkaHttp.get(wfsRequestEncoder.getAsUrl(new DescribeFeatureType()))
                                      .runWith(StreamConverters.asInputStream(), akkaHttp.getMaterializer());
 
         // create mappings

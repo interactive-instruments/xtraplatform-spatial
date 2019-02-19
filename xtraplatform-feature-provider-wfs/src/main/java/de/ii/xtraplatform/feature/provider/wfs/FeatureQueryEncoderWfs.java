@@ -10,10 +10,10 @@ package de.ii.xtraplatform.feature.provider.wfs;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
-import de.ii.xtraplatform.ogc.api.wfs.client.GetFeature;
-import de.ii.xtraplatform.ogc.api.wfs.client.GetFeatureBuilder;
-import de.ii.xtraplatform.ogc.api.wfs.client.WFSQuery2;
-import de.ii.xtraplatform.ogc.api.wfs.client.WFSQueryBuilder;
+import de.ii.xtraplatform.ogc.api.wfs.GetFeature;
+import de.ii.xtraplatform.ogc.api.wfs.GetFeatureBuilder;
+import de.ii.xtraplatform.ogc.api.wfs.WfsQuery;
+import de.ii.xtraplatform.ogc.api.wfs.WfsQueryBuilder;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.geotools.filter.FilterFactoryImpl;
 import org.geotools.filter.spatial.BBOXImpl;
@@ -112,10 +112,10 @@ public class FeatureQueryEncoderWfs {
     private GetFeature encode(FeatureQuery query, QName featureType, FeatureTypeMapping featureTypeMapping, Map<String, String> additionalQueryParameters) throws CQLException {
         final String featureTypeName = namespaceNormalizer.getQualifiedName(featureType.getNamespaceURI(), featureType.getLocalPart());
 
-        final WFSQuery2 wfsQuery = new WFSQueryBuilder().typeName(featureTypeName)
-                                                        //TODO .crs(query.getCrs())
-                                                        .filter(encodeFilter(query.getFilter(), featureTypeMapping))
-                                                        .build();
+        final WfsQuery wfsQuery = new WfsQueryBuilder().typeName(featureTypeName)
+                                                       //TODO .crs(query.getCrs())
+                                                       .filter(encodeFilter(query.getFilter(), featureTypeMapping))
+                                                       .build();
         final GetFeatureBuilder getFeature = new GetFeatureBuilder();
 
         getFeature.query(wfsQuery);

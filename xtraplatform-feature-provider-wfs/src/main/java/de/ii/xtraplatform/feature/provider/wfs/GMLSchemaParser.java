@@ -23,7 +23,6 @@ import com.sun.xml.xsom.parser.XSOMParser;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
-import de.ii.xtraplatform.ogc.api.gml.parser.OGCEntityResolver;
 import de.ii.xtraplatform.scheduler.api.TaskProgress;
 import de.ii.xtraplatform.util.xml.XMLPathTracker;
 import org.slf4j.Logger;
