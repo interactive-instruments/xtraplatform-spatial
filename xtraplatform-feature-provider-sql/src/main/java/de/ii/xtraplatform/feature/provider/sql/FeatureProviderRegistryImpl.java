@@ -40,7 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Provides
 //@Instantiate
 @Wbp(
-        filter = "(&(objectClass=org.apache.felix.ipojo.Factory)(component.providedServiceSpecifications=de.ii.xtraplatform.feature.query.api.FeatureProvider))",
+        filter = "(&(objectClass=org.apache.felix.ipojo.Factory)(component.providedServiceSpecifications=de.ii.xtraplatform.feature.provider.api.FeatureProvider))",
         onArrival = "onFactoryArrival",
         onDeparture = "onFactoryDeparture")
 public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {

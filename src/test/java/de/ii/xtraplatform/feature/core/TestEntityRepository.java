@@ -75,7 +75,7 @@ public class TestEntityRepository {
 
             .add("xtraplatform-crs-api")
             .add("xtraplatform-crs-transformation-geotools")
-            .add("xtraplatform-feature-query-api")
+            .add("xtraplatform-feature-provider-api")
             .add("xtraplatform-feature-transformer-api")
             .add("xtraplatform-feature-provider-pgis")
             .add("xtraplatform-feature-provider")
