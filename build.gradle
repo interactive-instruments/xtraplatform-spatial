@@ -10,7 +10,7 @@ buildscript {
     dependencies {
         classpath group: 'de.interactive_instruments', name: 'gradle-plugin-osgi-ipojo', version: '1.12.1.32'
         classpath "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.0'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
     } 
 }
 
@@ -140,7 +140,7 @@ subprojects {
     apply plugin: 'groovy'
     apply plugin: 'osgi-ipojo'
     apply plugin: 'maven-publish'
-//    apply plugin: 'com.jfrog.bintray'
+    apply plugin: 'com.jfrog.bintray'
     apply plugin: 'license'
 
     group = 'de.interactive_instruments'
@@ -152,6 +152,8 @@ subprojects {
         strictCheck true
         skipExistingHeaders false
         excludes([
+                "**/Modifiable*.java",
+                "**/Immutable*.java",
                 "**/*.mustache",
                 "**/*.png",
                 "**/*.ico",
@@ -366,7 +368,7 @@ subprojects {
         }
     }
     afterEvaluate { project ->
-        /*bintray {
+        bintray {
             user = project.bintrayUser
             key = project.bintrayApiKey
             publications = ['maven']
@@ -385,7 +387,7 @@ subprojects {
                     name = project.version
                 }
             }
-        }*/
+        }
     }
 }
 

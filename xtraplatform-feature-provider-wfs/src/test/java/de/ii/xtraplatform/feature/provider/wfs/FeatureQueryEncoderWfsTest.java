@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 interactive instruments GmbH
+ * Copyright 2019 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -41,7 +41,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * @author zahnen
@@ -103,13 +102,12 @@ public class FeatureQueryEncoderWfsTest {
     public void testAsXml() throws ParserConfigurationException, IOException, SAXException, CQLException, TransformerException {
         //String xml = new FeatureQueryEncoderWfs(featureTypes, namespaceNormalizer).asXml(QUERY, NAMESPACES, VERSIONS);
         Date from = new Date();
-        final Optional<GetFeature> getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPES.values().iterator().next().getNamespace(), FEATURETYPES.values().iterator().next().getName())), ImmutableMap.of("au", FEATURETYPES.entrySet().iterator().next().getValue().getMappings()), NAMESPACES, wfsRequestEncoder).encode(QUERY, );
+        final GetFeature getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPES.values().iterator().next().getNamespace(), FEATURETYPES.values().iterator().next().getName())), ImmutableMap.of("au", FEATURETYPES.entrySet().iterator().next().getValue().getMappings()), NAMESPACES, null).encode(QUERY, ImmutableMap.of());
 
         LOGGER.debug("TOOK {}", new Date().getTime() - from.getTime());
-        Assert.assertTrue(getFeature.isPresent());
+        Assert.assertNotNull(getFeature);
         final XMLDocumentFactory documentFactory = new XMLDocumentFactory(NAMESPACES);
-        final XMLDocument document = getFeature.get()
-                                               .asXml(documentFactory, VERSIONS);
+        final XMLDocument document = getFeature.asXml(documentFactory, VERSIONS);
         LOGGER.debug("TOOK {}", new Date().getTime() - from.getTime());
         String xml = document.toString(true);
         LOGGER.debug("TOOK {}", new Date().getTime() - from.getTime());
@@ -121,13 +119,12 @@ public class FeatureQueryEncoderWfsTest {
     @Test(groups = {"default"})
     public void testAsKvp() throws ParserConfigurationException, IOException, SAXException, CQLException, TransformerException {
         //Map<String, String> kvp = new FeatureQueryEncoderWfs(featureTypes, namespaceNormalizer).asKvp(QUERY, NAMESPACES, VERSIONS);
-        final Optional<GetFeature> getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPES.values().iterator().next().getNamespace(), FEATURETYPES.values().iterator().next().getName())), ImmutableMap.of("au", FEATURETYPES.entrySet().iterator().next().getValue().getMappings()), NAMESPACES, wfsRequestEncoder).encode(QUERY, );
+        final GetFeature getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPES.values().iterator().next().getNamespace(), FEATURETYPES.values().iterator().next().getName())), ImmutableMap.of("au", FEATURETYPES.entrySet().iterator().next().getValue().getMappings()), NAMESPACES, null).encode(QUERY, ImmutableMap.of());
 
-        Assert.assertTrue(getFeature.isPresent());
+        Assert.assertNotNull(getFeature);
 
         final XMLDocumentFactory documentFactory = new XMLDocumentFactory(NAMESPACES);
-        Map<String, String> kvp = getFeature.get()
-                                            .asKvp(documentFactory, VERSIONS);
+        Map<String, String> kvp = getFeature.asKvp(documentFactory, VERSIONS);
         LOGGER.info("{}", kvp);
 
         Assert.assertEquals(kvp.toString(), EXPECTED_KVP);

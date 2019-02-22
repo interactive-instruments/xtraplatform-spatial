@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 interactive instruments GmbH
+ * Copyright 2019 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.feature.provider.pgis;
 
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
+import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import org.geotools.filter.text.cql2.CQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +21,8 @@ import static org.testng.Assert.*;
  */
 public class FeatureQueryEncoderSqlTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderSqlTest.class);
+
+    FeatureTypeMapping mappings = ImmutableFeatureTypeMapping.builder().build();
 
     ///fundorttiere/[id=id]artbeobachtung/[id=artbeobachtung_id]artbeobachtung_2_erfasser/[erfasser_id=id]erfasser/name LIKE '*Mat*'
     //fundorttiere.id IN (SELECT artbeobachtung_2_erfasser.artbeobachtung_id FROM artbeobachtung_2_erfasser JOIN erfasser ON artbeobachtung_2_erfasser.erfasser_id=erfasser.id WHERE erfasser.name ILIKE '%Mat%' )

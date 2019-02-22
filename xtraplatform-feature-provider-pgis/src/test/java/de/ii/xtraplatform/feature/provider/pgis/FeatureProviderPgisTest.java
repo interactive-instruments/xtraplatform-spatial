@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 interactive instruments GmbH
+ * Copyright 2019 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeoutException;
  */
 public class FeatureProviderPgisTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderPgisTest.class);
+    /*private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderPgisTest.class);
 
     static ActorSystem system;
     static ActorMaterializer materializer;
@@ -132,5 +132,5 @@ public class FeatureProviderPgisTest {
         public void onPropertyEnd(List<String> path) throws Exception {
             log.append(String.format("END PROPERTY: %s\n", path));
         }
-    }
+    }*/
 }
