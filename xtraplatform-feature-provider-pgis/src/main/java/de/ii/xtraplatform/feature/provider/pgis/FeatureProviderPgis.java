@@ -247,11 +247,6 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     }
 
     @Override
-    public Optional<String> encodeFeatureQuery(FeatureQuery query, Map<String, String> additionalQueryParameters) {
-        return Optional.empty();
-    }
-
-    @Override
     public String getSourceFormat() {
         return "application/sql";
     }

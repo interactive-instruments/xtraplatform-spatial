@@ -11,7 +11,7 @@ package de.ii.xtraplatform.feature.provider.api;
  * @author zahnen
  */
 public interface FeatureProviderRegistry {
-    boolean isSupported(String type);
+    boolean isSupported(String providerType, String connectorType);
 
     FeatureProvider createFeatureProvider(FeatureProviderData featureProviderData);
 }

@@ -22,16 +22,13 @@ import java.util.OptionalInt;
 @Value.Immutable
 @Value.Modifiable
 @JsonDeserialize(as = ModifiableConnectionInfo.class)
-public abstract class ConnectionInfo {
+public abstract class ConnectionInfo extends WfsInfo {
 
     public enum METHOD {GET,POST}
 
     public abstract URI getUri();
     public abstract METHOD getMethod();
-    public abstract String getVersion();
-    public abstract String getGmlVersion();
     public abstract Optional<String> getUser();
     public abstract Optional<String> getPassword();
     public abstract Map<String,String> getOtherUrls();
-    public abstract Map<String,String> getNamespaces();
 }

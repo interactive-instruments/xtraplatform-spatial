@@ -7,8 +7,10 @@
  */
 package de.ii.xtraplatform.feature.provider.pgis;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.sql.SqlConnectorSlick;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableMappingStatus;
 import de.ii.xtraplatform.feature.transformer.api.MappingStatus;
@@ -25,10 +27,18 @@ import java.util.Optional;
 @JsonDeserialize(as = ModifiableFeatureProviderDataPgis.class)
 public abstract class FeatureProviderDataPgis extends FeatureProviderDataTransformer {
 
-    @Value.Derived
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @Value.Default
     @Override
     public String getProviderType() {
         return FeatureProviderPgis.PROVIDER_TYPE;
+    }
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @Value.Default
+    @Override
+    public String getConnectorType() {
+        return SqlConnectorSlick.CONNECTOR_TYPE;
     }
 
     public abstract ConnectionInfo getConnectionInfo();

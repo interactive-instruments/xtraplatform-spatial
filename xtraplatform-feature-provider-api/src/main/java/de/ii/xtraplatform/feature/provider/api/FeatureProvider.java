@@ -20,8 +20,6 @@ public interface FeatureProvider<T extends FeatureConsumer> {
 
     FeatureStream<T> getFeatureStream(FeatureQuery query);
 
-    Optional<String> encodeFeatureQuery(FeatureQuery query, Map<String, String> additionalQueryParameters);
-
     String getSourceFormat();
 
     default BoundingBox getSpatialExtent(String featureTypeId) {

@@ -1,12 +1,13 @@
 /**
  * Copyright 2018 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.feature.provider.wfs;
 
+import akka.japi.Pair;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
@@ -14,6 +15,7 @@ import de.ii.xtraplatform.ogc.api.wfs.GetFeature;
 import de.ii.xtraplatform.ogc.api.wfs.GetFeatureBuilder;
 import de.ii.xtraplatform.ogc.api.wfs.WfsQuery;
 import de.ii.xtraplatform.ogc.api.wfs.WfsQueryBuilder;
+import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.geotools.filter.FilterFactoryImpl;
 import org.geotools.filter.spatial.BBOXImpl;
@@ -51,8 +53,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import static de.ii.xtraplatform.util.functional.LambdaWithException.mayThrow;
-
 /**
  * @author zahnen
  */
@@ -60,53 +60,46 @@ public class FeatureQueryEncoderWfs {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderWfs.class);
 
-    // TODO: resolve property and type names in query
     private final Map<String, QName> featureTypes;
     private final Map<String, FeatureTypeMapping> featureTypeMappings;
     private final XMLNamespaceNormalizer namespaceNormalizer;
+    private final WfsRequestEncoder wfsRequestEncoder;
 
-    public FeatureQueryEncoderWfs(Map<String, QName> featureTypes, Map<String, FeatureTypeMapping> featureTypeMappings, XMLNamespaceNormalizer namespaceNormalizer) {
+    FeatureQueryEncoderWfs(Map<String, QName> featureTypes, Map<String, FeatureTypeMapping> featureTypeMappings, XMLNamespaceNormalizer namespaceNormalizer, WfsRequestEncoder wfsRequestEncoder) {
         this.featureTypes = featureTypes;
         this.featureTypeMappings = featureTypeMappings;
         this.namespaceNormalizer = namespaceNormalizer;
+        this.wfsRequestEncoder = wfsRequestEncoder;
     }
 
-    /*public String asXml(FeatureQuery query, XMLNamespaceNormalizer nsStore, Versions versions) throws CQLException, ParserConfigurationException, TransformerException, IOException, SAXException {
-        final GetFeature getFeature = encode(query);
-        final XMLDocumentFactory documentFactory = new XMLDocumentFactory(nsStore);
-        final XMLDocument document = getFeature.asXml(documentFactory, versions);
-
-        return document.toString(true);
+    public boolean isValid(final FeatureQuery query) {
+        return featureTypes.containsKey(query.getType());
     }
 
-    public Map<String, String> asKvp(FeatureQuery query, XMLNamespaceNormalizer nsStore, Versions versions) throws CQLException, ParserConfigurationException, TransformerException, IOException, SAXException {
-        final GetFeature getFeature = encode(query);
-        final XMLDocumentFactory documentFactory = new XMLDocumentFactory(nsStore);
-
-        return getFeature.asKvp(documentFactory, versions);
-    }*/
-
-    public Optional<QName> getFeatureTypeName(final FeatureQuery query) {
-        return Optional.ofNullable(featureTypes.get(query.getType()));
-
-        /*return featureTypes.values()
-                           .stream()
-                           .filter(ft -> ft.getName().equals(query.getType()))
-                           .findFirst()
-                           .map(ft -> new QName(ft.getNamespace(), ft.getName(), namespaceNormalizer.getNamespacePrefix(ft.getNamespace())));*/
+    public QName getFeatureTypeName(final FeatureQuery query) {
+        return featureTypes.get(query.getType());
     }
 
-    public Optional<GetFeature> encode(final FeatureQuery query, Map<String, String> additionalQueryParameters) {
+    public String encodeFeatureQuery(FeatureQuery query, Map<String, String> additionalQueryParameters) {
+        return wfsRequestEncoder.getAsUrl(encode(query, additionalQueryParameters));
+    }
+
+    public Pair<String, String> encodeFeatureQueryPost(FeatureQuery query, Map<String, String> additionalQueryParameters) {
+        return wfsRequestEncoder.getAsUrlAndBody(encode(query, additionalQueryParameters));
+    }
+
+    private GetFeature encode(final FeatureQuery query, Map<String, String> additionalQueryParameters) {
         try {
-            return getFeatureTypeName(query)
-            //return featureTypes.values()
-            //                   .stream()
-            //                   .filter(ft -> ft.getName().equals(query.getType()))
-            //                   .findFirst()
-                               .map(mayThrow(ft -> encode(query, ft, featureTypeMappings.get(query.getType()), additionalQueryParameters)));
-        } catch (RuntimeException e) {
+            final QName featureTypeName = getFeatureTypeName(query);
+
+            return encode(query, featureTypeName, featureTypeMappings.get(query.getType()), additionalQueryParameters);
+        } catch (CQLException e) {
             throw new IllegalArgumentException("Filter is invalid", e.getCause());
         }
+    }
+
+    WfsRequestEncoder getWfsRequestEncoder() {
+        return wfsRequestEncoder;
     }
 
     private GetFeature encode(FeatureQuery query, QName featureType, FeatureTypeMapping featureTypeMapping, Map<String, String> additionalQueryParameters) throws CQLException {
@@ -176,11 +169,18 @@ public class FeatureQueryEncoderWfs {
         public Object visit(BBOX filter, Object extraData) {
             LOGGER.debug("BBOX {} | {} | {}", filter.getExpression1(), filter.getSRS(), extraData);
 
-            Optional<String> property = getPrefixedPropertyName(filter.getExpression1().toString());
+            Optional<String> property = getPrefixedPropertyName(filter.getExpression1()
+                                                                      .toString());
 
-            if (!property.isPresent() && filter.getExpression1().toString().equals("NOT_AVAILABLE")) {
+            if (!property.isPresent() && filter.getExpression1()
+                                               .toString()
+                                               .equals("NOT_AVAILABLE")) {
                 if (filter.getSRS() != null) {
-                    return new BBOXImpl(null, filter.getBounds().getMinX(), filter.getBounds().getMinY(), filter.getBounds().getMaxX(), filter.getBounds().getMaxY(), filter.getSRS());
+                    return new BBOXImpl(null, filter.getBounds()
+                                                    .getMinX(), filter.getBounds()
+                                                                      .getMinY(), filter.getBounds()
+                                                                                        .getMaxX(), filter.getBounds()
+                                                                                                          .getMaxY(), filter.getSRS());
                 }
                 return filterFactory.bbox(null, filter.getBounds());
             }
@@ -188,7 +188,11 @@ public class FeatureQueryEncoderWfs {
             if (property.isPresent()) {
                 LOGGER.debug("PROP {}", property.get());
                 if (filter.getSRS() != null) {
-                    return new BBOXImpl(filterFactory.property(property.get(), namespaceSupport), filter.getBounds().getMinX(), filter.getBounds().getMinY(), filter.getBounds().getMaxX(), filter.getBounds().getMaxY(), filter.getSRS());
+                    return new BBOXImpl(filterFactory.property(property.get(), namespaceSupport), filter.getBounds()
+                                                                                                        .getMinX(), filter.getBounds()
+                                                                                                                          .getMinY(), filter.getBounds()
+                                                                                                                                            .getMaxX(), filter.getBounds()
+                                                                                                                                                              .getMaxY(), filter.getSRS());
                 }
                 return filterFactory.bbox(filterFactory.property(property.get(), namespaceSupport), filter.getBounds());
             }
@@ -310,23 +314,24 @@ public class FeatureQueryEncoderWfs {
 
         private Optional<String> getPrefixedPropertyName(String property) {
             return featureTypeMapping
-                              .findMappings(TargetMapping.BASE_TYPE)
-                              .entrySet()
-                              .stream()
-                              .filter(targetMappings -> Objects.nonNull(targetMappings.getValue()
-                                                                                      .getName()) && Objects.equals(targetMappings.getValue()
-                                                                                     .getName().toLowerCase(), property))
-                              .map(Map.Entry::getKey)
-                              .findFirst()
-                              .map(namespaceNormalizer::getPrefixedPath);
+                    .findMappings(TargetMapping.BASE_TYPE)
+                    .entrySet()
+                    .stream()
+                    .filter(targetMappings -> Objects.nonNull(targetMappings.getValue()
+                                                                            .getName()) && Objects.equals(targetMappings.getValue()
+                                                                                                                        .getName()
+                                                                                                                        .toLowerCase(), property))
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .map(namespaceNormalizer::getPrefixedPath);
         }
 
         protected Instant toInstant(Expression e) {
-            return (Instant)e.evaluate(null, Instant.class);
+            return (Instant) e.evaluate(null, Instant.class);
         }
 
         protected Period toPeriod(Expression e) {
-            return (Period)e.evaluate(null, Period.class);
+            return (Period) e.evaluate(null, Period.class);
         }
 
         protected Expression toTemporal(Expression e) {

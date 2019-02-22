@@ -26,6 +26,7 @@ public class FeatureProviderRegisterWfs implements JacksonSubTypeIds {
     public Map<Class<?>, String> getMapping() {
         return new ImmutableMap.Builder<Class<?>, String>()
                 .put(FeatureProviderDataWfs.class, FeatureProviderWfs.PROVIDER_TYPE)
+                .put(WfsConnectorHttp.class, WfsConnectorHttp.CONNECTOR_TYPE)
                 .build();
     }
 }

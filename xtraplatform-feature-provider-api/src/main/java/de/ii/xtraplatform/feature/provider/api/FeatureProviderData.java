@@ -23,6 +23,8 @@ public abstract class FeatureProviderData {
 
     public abstract String getProviderType();
 
+    public abstract String getConnectorType();
+
     @JsonIgnore
     public abstract Optional<String> getDataSourceUrl();
 }

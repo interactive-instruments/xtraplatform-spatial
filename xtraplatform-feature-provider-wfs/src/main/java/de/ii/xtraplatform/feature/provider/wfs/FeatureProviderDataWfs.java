@@ -7,6 +7,9 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
@@ -30,10 +33,18 @@ import java.util.Optional;
 @JsonDeserialize(as = ModifiableFeatureProviderDataWfs.class)
 public abstract class FeatureProviderDataWfs extends FeatureProviderDataTransformer {
 
-    @Value.Derived
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @Value.Default
     @Override
     public String getProviderType() {
         return FeatureProviderWfs.PROVIDER_TYPE;
+    }
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @Value.Default
+    @Override
+    public String getConnectorType() {
+     return WfsConnectorHttp.CONNECTOR_TYPE;
     }
 
     public abstract ConnectionInfo getConnectionInfo();

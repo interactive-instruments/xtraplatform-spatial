@@ -103,7 +103,7 @@ public class FeatureQueryEncoderWfsTest {
     public void testAsXml() throws ParserConfigurationException, IOException, SAXException, CQLException, TransformerException {
         //String xml = new FeatureQueryEncoderWfs(featureTypes, namespaceNormalizer).asXml(QUERY, NAMESPACES, VERSIONS);
         Date from = new Date();
-        final Optional<GetFeature> getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPES.values().iterator().next().getNamespace(), FEATURETYPES.values().iterator().next().getName())), ImmutableMap.of("au", FEATURETYPES.entrySet().iterator().next().getValue().getMappings()), NAMESPACES).encode(QUERY, );
+        final Optional<GetFeature> getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPES.values().iterator().next().getNamespace(), FEATURETYPES.values().iterator().next().getName())), ImmutableMap.of("au", FEATURETYPES.entrySet().iterator().next().getValue().getMappings()), NAMESPACES, wfsRequestEncoder).encode(QUERY, );
 
         LOGGER.debug("TOOK {}", new Date().getTime() - from.getTime());
         Assert.assertTrue(getFeature.isPresent());
@@ -121,7 +121,7 @@ public class FeatureQueryEncoderWfsTest {
     @Test(groups = {"default"})
     public void testAsKvp() throws ParserConfigurationException, IOException, SAXException, CQLException, TransformerException {
         //Map<String, String> kvp = new FeatureQueryEncoderWfs(featureTypes, namespaceNormalizer).asKvp(QUERY, NAMESPACES, VERSIONS);
-        final Optional<GetFeature> getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPES.values().iterator().next().getNamespace(), FEATURETYPES.values().iterator().next().getName())), ImmutableMap.of("au", FEATURETYPES.entrySet().iterator().next().getValue().getMappings()), NAMESPACES).encode(QUERY, );
+        final Optional<GetFeature> getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPES.values().iterator().next().getNamespace(), FEATURETYPES.values().iterator().next().getName())), ImmutableMap.of("au", FEATURETYPES.entrySet().iterator().next().getValue().getMappings()), NAMESPACES, wfsRequestEncoder).encode(QUERY, );
 
         Assert.assertTrue(getFeature.isPresent());
 
