@@ -98,7 +98,7 @@ public class FeatureQueryEncoderWfs {
         }
     }
 
-    WfsRequestEncoder getWfsRequestEncoder() {
+    public WfsRequestEncoder getWfsRequestEncoder() {
         return wfsRequestEncoder;
     }
 
