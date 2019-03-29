@@ -1,12 +1,12 @@
-version = '2.1.0'
-//version += '-SNAPSHOT'
+
+version = '2.2.0'
 
 dependencies {
 
-    compile project(':xtraplatform-crs-api')
-    compile project(':xtraplatform-geotools')
+    provided project(':xtraplatform-crs-api')
+    provided project(':xtraplatform-geotools')
 
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.5'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
 
     embedded group: 'com.sun.xsom', name: 'xsom', version: '20140925'
     embedded group: 'com.fasterxml', name: 'aalto-xml', version: '1.0.0'
@@ -15,18 +15,11 @@ dependencies {
  
 jar {
     manifest { 
-        instruction 'Embed-Dependency',
-            'xsom',
-            'aalto-xml',
-            //'woodstox-core',
-            'staxmate'
-            
-        instruction 'Embed-Transitive', 'true'
-        instruction 'Embed-Export', 'true'
+                
+        //instructionFirst 'Import-Package', '!org.apache.xml.*'
+        //instructionFirst 'Import-Package', '!org.eclipse.xsd'
         
-        
-        instructionFirst 'Import-Package', '!org.apache.xml.*'
-        
+        /*
         instruction 'Import-Package', 'javax.xml.stream.util'
         instruction 'Import-Package', 'javax.xml.stream.events'
         instruction 'Import-Package', 'org.xml.sax.helpers'
@@ -37,6 +30,8 @@ jar {
         instruction 'Import-Package', 'sun.security.x509'
         instruction 'Import-Package', 'javax.crypto'
         instruction 'Import-Package', 'javax.naming'
+        
+         */
 
     }
 }

@@ -1,9 +1,15 @@
-version = '2.1.0'
-//version += '-SNAPSHOT'
 
-dependencies {
-    embedded group: 'org.geotools', name: 'gt-cql', version: '19.2'
-    embedded(group: 'org.geotools', name: 'gt-xml', version: '19.2') {
+version = '2.2.0'
+
+ext {
+    geotoolsVersion = '19.2'
+}
+
+configurations {
+    embedded {
+        exclude group: 'javax.media', module: 'jai_core'
+        exclude group: 'org.geotools', module: 'gt-coverage'
+
         exclude module: 'xercesImpl'
         exclude module: 'guava'
         exclude module: 'animal-sniffer-annotations'
@@ -12,25 +18,19 @@ dependencies {
         exclude module: 'j2objc-annotations'
         exclude module: 'jsr305'
     }
-
-    embedded group: 'org.geotools', name: 'gt-referencing', version: '19.2'
-    embedded group: 'org.geotools', name: 'gt-epsg-hsql', version: '19.2'
-    embedded group: 'org.geotools', name: 'gt-epsg-extension', version: '19.2'
 }
 
-// TODO: run osgi plugin with logging to find out why these imports are not found
+dependencies {
+    embedded group: 'org.geotools', name: 'gt-cql', version: geotoolsVersion
+    embedded group: 'org.geotools', name: 'gt-xml', version: geotoolsVersion
+    embedded group: 'org.geotools', name: 'gt-referencing', version: geotoolsVersion
+    embedded group: 'org.geotools', name: 'gt-epsg-hsql', version: geotoolsVersion
+    embedded group: 'org.geotools', name: 'gt-epsg-extension', version: geotoolsVersion
+}
+
 jar {
     manifest {
-        instruction 'Embed-Dependency',
-                'gt-cql',
-                'gt-xml',
-                'gt-referencing',
-                'gt-epsg-hsql',
-                'gt-epsg-extension'
-
-        instruction 'Embed-Transitive', 'true'
-        instruction 'Embed-Export', 'true'
-
+/*
         instructionFirst 'Import-Package', 'javax.xml.transform'
         instructionFirst 'Import-Package', 'javax.sql'
         instructionFirst 'Import-Package', 'org.xml.sax'
@@ -49,5 +49,15 @@ jar {
         instructionFirst 'Import-Package', 'javax.xml.transform.dom'
         instructionFirst 'Import-Package', 'javax.annotation'
         instruction 'Import-Package', 'javax.imageio.spi'
+*/
+        instructionFirst 'Import-Package', '!com.sun.medialib.codec.*'
+        instructionFirst 'Import-Package', '!com.sun.image.codec.*'
+        instructionFirst 'Import-Package', '!org.eclipse.core.*'
+        instructionFirst 'Import-Package', '!org.jaxen.*'
+        instructionFirst 'Import-Package', '!junit.framework'
+        instructionFirst 'Import-Package', '!org.jdom.*'
+        instructionFirst 'Import-Package', '!org.apache.commons.beanutils'
+        instructionFirst 'Import-Package', '!javax.media.*'
+        instructionFirst 'Import-Package', '!javax.servlet.*'
     }
 }

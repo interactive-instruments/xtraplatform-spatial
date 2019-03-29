@@ -17,6 +17,7 @@ import org.xml.sax.InputSource;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * @author zahnen
@@ -30,19 +31,8 @@ public class GMLDictionaryParser {
         this.staxFactory = staxFactory;
     }
 
-    public void parse(HttpEntity entity) {
-        try {
-            InputSource is = new InputSource(entity.getContent());
-            parse(is);
-        } catch (IOException ex) {
-            // TODO: move to analyzer for XtraProxy
-            //LOGGER.error(FrameworkMessages.ERROR_PARSING_WFS_CAPABILITIES);
-            //throw new SchemaParseException(FrameworkMessages.ERROR_PARSING_WFS_CAPABILITIES);
-
-            analyzer.analyzeFailed(ex);
-        } finally {
-            EntityUtils.consumeQuietly(entity);
-        }
+    public void parse(InputStream inputStream) {
+        parse(new InputSource(inputStream));
     }
 
     public void parse(InputSource is) {

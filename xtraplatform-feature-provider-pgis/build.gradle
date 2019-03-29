@@ -1,13 +1,17 @@
-version = '2.1.0'
-//version += '-SNAPSHOT'
+
+version = '2.2.0'
 
 dependencies {
+    provided project(':xtraplatform-crs-api')
     provided project(':xtraplatform-feature-provider-api')
     provided project(':xtraplatform-feature-transformer-api')
     provided project(':xtraplatform-ogc-wfs-api')
     provided project(':xtraplatform-feature-provider-sql')
+    provided project(':xtraplatform-geotools')
 
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.5'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
+    //TODO: create own ActorSystemProvider, remove this dep
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka-http'
 
     embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.2'
 
@@ -16,7 +20,6 @@ dependencies {
 
 jar {
     manifest {
-        instructionFirst 'Import-Package', "!org.immutables.value"
         instructionFirst 'Import-Package', "!com.sun.jna"
         instructionFirst 'Import-Package', "!com.sun.jna.win32"
         instructionFirst 'Import-Package', "!com.sun.jna.platform.win32"
@@ -24,14 +27,5 @@ jar {
         instructionFirst 'Import-Package', "!org.osgi.service.jdbc"
         instructionFirst 'Import-Package', "!waffle.windows.auth"
         instructionFirst 'Import-Package', "!waffle.windows.auth.impl"
-        instruction 'Import-Package', "*"
-
-
-        instruction 'Embed-Dependency',
-                'postgresql'
-
-        instruction 'Embed-Transitive', 'true'
-        instruction 'Embed-Export', 'true'
-        instruction 'Embed-Import', 'true'
     }
 }

@@ -12,7 +12,7 @@ import akka.stream.javadsl.Sink;
 import akka.util.ByteString;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import de.ii.xsf.dropwizard.cfg.JacksonProvider;
+import de.ii.xtraplatform.dropwizard.cfg.JacksonProvider;
 
 import java.util.Map;
 import java.util.concurrent.CompletionStage;

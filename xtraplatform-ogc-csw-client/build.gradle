@@ -1,28 +1,25 @@
-version = '2.1.0'
-//version += '-SNAPSHOT'
+
+version = '2.2.0'
+
 
 dependencies {    
-    compile project(':xtraplatform-ogc-wfs-api')
+    provided project(':xtraplatform-ogc-wfs-api')
 
-    compile group: 'com.fasterxml', name: 'aalto-xml', version: '0.9.11'
-    compile group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1'
+    //TODO: ???
+    provided group: 'com.fasterxml', name: 'aalto-xml', version: '0.9.11'
+    provided group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1'
 }
  
 jar {
     manifest { 
-        /*instruction 'Embed-Dependency',
-            'aalto-xml',
-            'staxmate'
-            
-        instruction 'Embed-Transitive', 'true'
-        instruction 'Embed-Export', 'true'
-        */
         
         instructionFirst 'Import-Package', '!org.apache.xml.*'
-        
+        /*
         instruction 'Import-Package', 'javax.xml.stream.util'
         instruction 'Import-Package', 'javax.xml.stream.events'
         instruction 'Import-Package', 'org.xml.sax.helpers'
         instruction 'Import-Package', '*'
+        
+         */
     }
 }

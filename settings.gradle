@@ -2,7 +2,11 @@ rootProject.name = 'xtraplatform-sdi-tools'
 
 rootDir.listFiles().each { file ->
     if (file.isDirectory() && file.name.startsWith('xtraplatform-')) {
-    	include file.name
-    }
-    
+        include file.name
+    }  
 }
+
+includeBuild '../xtraplatform/xtraplatform-gradle-plugins'
+includeBuild '../xtraplatform/xtraplatform-base'
+includeBuild '../xtraplatform/xtraplatform-store'
+includeBuild '../xtraplatform/xtraplatform-web'

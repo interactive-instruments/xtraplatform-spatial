@@ -1,12 +1,11 @@
 apply plugin: 'scala'
 
-version = '2.1.0'
-//version += '-SNAPSHOT'
+version = '2.2.0'
 
 dependencies {
-    compile project(':xtraplatform-feature-provider-api')
+    provided project(':xtraplatform-feature-provider-api')
 
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka',   version: '1.1.5'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
 
     embedded (group: 'com.lightbend.akka', name: 'akka-stream-alpakka-slick_2.12', version: '0.19') {
         exclude  group: 'com.typesafe.akka', module: 'akka-stream_2.12'
@@ -21,7 +20,6 @@ dependencies {
 
 jar {
     manifest {
-        instructionFirst 'Import-Package', "!org.immutables.value"
         instructionFirst 'Import-Package', "!waffle.windows.auth"
         instructionFirst 'Import-Package', "!waffle.windows.auth.impl"
         instructionFirst 'Import-Package', "!org.hibernate"
@@ -36,13 +34,15 @@ jar {
         instructionFirst 'Import-Package', "!org.osgi.service.jdbc"
         // TODO
         instructionFirst 'Import-Package', "org.postgresql.ds"
-        instruction 'Import-Package', "*"
+    }
+}
 
-        instruction 'Embed-Dependency',
-                'akka-stream-alpakka-slick_2.12'
-
-        instruction 'Embed-Transitive', 'true'
-        instruction 'Embed-Export', 'true'
-        instruction 'Embed-Import', 'true'
+// workaround for known issue when using java-library plugin with groovy/scala: https://docs.gradle.org/5.2.1/userguide/java_library_plugin.html#sec:java_library_known_issues
+configurations {
+    apiElements {
+        outgoing.variants.getByName('classes').artifact(
+                file: compileScala.destinationDir,
+                type: ArtifactTypeDefinition.JVM_CLASS_DIRECTORY,
+                builtBy: compileScala)
     }
 }

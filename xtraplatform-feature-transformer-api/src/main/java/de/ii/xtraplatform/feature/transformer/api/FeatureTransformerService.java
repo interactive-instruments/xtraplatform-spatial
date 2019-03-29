@@ -11,7 +11,7 @@
 package de.ii.xtraplatform.feature.transformer.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.ii.xsf.core.api.Service;
+import de.ii.xtraplatform.service.api.Service;
 import de.ii.xtraplatform.feature.provider.api.FeatureProvider;
 import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder;
 

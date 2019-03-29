@@ -8,9 +8,9 @@
 /**
  * bla
  */
-package de.ii.xtraserver.framework.exceptions;
+package de.ii.xtraplatform.ogc.api.exceptions;
 
-import de.ii.xsf.core.api.exceptions.XtraserverFrameworkException;
+import de.ii.xtraplatform.api.exceptions.XtraserverFrameworkException;
 import javax.ws.rs.core.Response;
 
 /**

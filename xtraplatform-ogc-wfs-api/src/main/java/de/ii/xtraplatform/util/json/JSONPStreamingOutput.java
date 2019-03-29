@@ -10,7 +10,7 @@
  */
 package de.ii.xtraplatform.util.json;
 
-import de.ii.xsf.core.api.exceptions.XtraserverFrameworkException;
+import de.ii.xtraplatform.api.exceptions.XtraserverFrameworkException;
 import java.io.IOException;
 import java.io.OutputStream;
 import javax.ws.rs.WebApplicationException;
