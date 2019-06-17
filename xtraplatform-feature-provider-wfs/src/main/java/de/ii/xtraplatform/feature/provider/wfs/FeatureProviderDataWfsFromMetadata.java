@@ -21,11 +21,11 @@ import java.net.URISyntaxException;
  * @author zahnen
  */
 public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderMetadataConsumer {
-    private final ModifiableFeatureProviderDataWfs featureProviderDataWfs;
+    private final FeatureProviderDataWfs featureProviderDataWfs;
     private final ModifiableConnectionInfo connectionInfo;
     private final XMLNamespaceNormalizer namespaceNormalizer;
 
-    public FeatureProviderDataWfsFromMetadata(ModifiableFeatureProviderDataWfs featureProviderDataWfs) {
+    public FeatureProviderDataWfsFromMetadata(FeatureProviderDataWfs featureProviderDataWfs) {
         this.featureProviderDataWfs = featureProviderDataWfs;
         this.connectionInfo = (ModifiableConnectionInfo) featureProviderDataWfs.getConnectionInfo();
         URI cleanUri = parseAndCleanWfsUrl(connectionInfo.getUri());
@@ -51,13 +51,13 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
         if (featureTypeName.contains(":")) {
             String[] name = featureTypeName.split(":");
             String namespace = namespaceNormalizer.getNamespaceURI(name[0]);
-            featureProviderDataWfs.putFeatureTypes(name[1].toLowerCase(), new QName(namespace, name[1], name[0]));
+            //TODO featureProviderDataWfs.putFeatureTypes(name[1].toLowerCase(), new QName(namespace, name[1], name[0]));
         }
     }
 
     @Override
     public void analyzeFeatureTypeDefaultCrs(String featureTypeName, String crs) {
-        featureProviderDataWfs.setNativeCrs(new EpsgCrs(crs));
+        //TODO featureProviderDataWfs.setNativeCrs(new EpsgCrs(crs));
     }
 
     @Override

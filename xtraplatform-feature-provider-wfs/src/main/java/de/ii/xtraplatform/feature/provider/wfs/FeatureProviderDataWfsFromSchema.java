@@ -8,9 +8,7 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderSchemaConsumer;
-import de.ii.xtraplatform.feature.transformer.api.ModifiableMappingStatus;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
-import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
 
 import java.util.List;
 
@@ -19,7 +17,7 @@ import java.util.List;
  */
 public class FeatureProviderDataWfsFromSchema extends GmlFeatureTypeAnalyzer implements FeatureProviderSchemaConsumer {
 
-    public FeatureProviderDataWfsFromSchema(ModifiableFeatureProviderDataWfs featureProviderDataWfs, List<TargetMappingProviderFromGml> mappingProviders) {
+    public FeatureProviderDataWfsFromSchema(FeatureProviderDataWfs featureProviderDataWfs, List<TargetMappingProviderFromGml> mappingProviders) {
         super(featureProviderDataWfs, mappingProviders);
 
     }
@@ -31,13 +29,13 @@ public class FeatureProviderDataWfsFromSchema extends GmlFeatureTypeAnalyzer imp
 
     @Override
     public void analyzeFailure(Exception e) {
-        ModifiableMappingStatus mappingStatus = ModifiableMappingStatus.create().from(providerDataWfs.getMappingStatus());
+        /*TODO ModifiableMappingStatus mappingStatus = ModifiableMappingStatus.create().from(providerDataWfs.getMappingStatus());
         mappingStatus.setErrorMessage(e.getMessage());
         if (e.getClass() == SchemaParseException.class) {
             mappingStatus.setErrorMessageDetails(((SchemaParseException)e).getDetails());
-        }
+        }*/
 
-        providerDataWfs.setMappingStatus(mappingStatus);
+        //TODO providerDataWfs.setMappingStatus(mappingStatus);
     }
 
     @Override
@@ -45,11 +43,11 @@ public class FeatureProviderDataWfsFromSchema extends GmlFeatureTypeAnalyzer imp
         ModifiableConnectionInfo connectionInfo = ModifiableConnectionInfo.create()
                                                                 .from(providerDataWfs.getConnectionInfo());
         connectionInfo.putAllNamespaces(super.getNamespaces());
-        providerDataWfs.setConnectionInfo(connectionInfo);
+        //TODO providerDataWfs.setConnectionInfo(connectionInfo);
 
-        ModifiableMappingStatus mappingStatus = ModifiableMappingStatus.create().from(providerDataWfs.getMappingStatus());
-        mappingStatus.setSupported(true);
-        providerDataWfs.setMappingStatus(mappingStatus);
+        //TODO ModifiableMappingStatus mappingStatus = ModifiableMappingStatus.create().from(providerDataWfs.getMappingStatus());
+        //TODO mappingStatus.setSupported(true);
+        //TODO providerDataWfs.setMappingStatus(mappingStatus);
     }
 
     @Override

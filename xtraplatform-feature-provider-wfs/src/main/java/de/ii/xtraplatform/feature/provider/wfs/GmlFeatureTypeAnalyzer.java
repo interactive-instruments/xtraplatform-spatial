@@ -11,7 +11,7 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
-import de.ii.xtraplatform.feature.transformer.api.ModifiableFeatureTypeMapping;
+import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ModifiableSourcePathMapping;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
@@ -38,10 +38,10 @@ public class GmlFeatureTypeAnalyzer {
     public static final String GML_NS_URI = GML.getNS(GML.VERSION._2_1_1);
     private static final Logger LOGGER = LoggerFactory.getLogger(GmlFeatureTypeAnalyzer.class);
 
-    protected ModifiableFeatureProviderDataWfs providerDataWfs;
+    protected FeatureProviderDataWfs providerDataWfs;
     // TODO: could it be more than one?
     //private FeatureTypeConfigurationOld currentFeatureType;
-    private ModifiableFeatureTypeMapping currentFeatureTypeMapping;
+    private ImmutableFeatureTypeMapping.Builder currentFeatureTypeMapping;
     private XMLPathTracker currentPath;
     //private XMLPathTracker currentPathWithoutObjects;
     private Set<String> mappedPaths;
@@ -50,7 +50,7 @@ public class GmlFeatureTypeAnalyzer {
     private final List<TargetMappingProviderFromGml> mappingProviders;
     private final XMLNamespaceNormalizer namespaceNormalizer;
 
-    public GmlFeatureTypeAnalyzer(ModifiableFeatureProviderDataWfs providerDataWfs, List<TargetMappingProviderFromGml> mappingProviders) {
+    public GmlFeatureTypeAnalyzer(FeatureProviderDataWfs providerDataWfs, List<TargetMappingProviderFromGml> mappingProviders) {
         this.providerDataWfs = providerDataWfs;
         this.currentPath = new XMLPathTracker();
         //this.currentPathWithoutObjects = new XMLPathTracker();
@@ -92,8 +92,8 @@ public class GmlFeatureTypeAnalyzer {
 
         String fullName = nsUri + ":" + localName;
         //currentFeatureType = providerDataWfs.getFeatureTypes().get(fullName);
-        currentFeatureTypeMapping = ModifiableFeatureTypeMapping.create();
-        providerDataWfs.putMappings(localName.toLowerCase(), currentFeatureTypeMapping);
+        currentFeatureTypeMapping = ImmutableFeatureTypeMapping.builder();
+        //TODO providerDataWfs.putMappings(localName.toLowerCase(), currentFeatureTypeMapping);
 
         mappedPaths.clear();
         currentPath.clear();

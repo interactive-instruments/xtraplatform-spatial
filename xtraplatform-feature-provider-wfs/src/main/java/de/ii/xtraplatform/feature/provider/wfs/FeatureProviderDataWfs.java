@@ -29,8 +29,9 @@ import java.util.Optional;
 //TODO
 //@Value.Style(validationMethod = Value.Style.ValidationMethod.NONE)
 @Value.Immutable
-@Value.Modifiable
-@JsonDeserialize(as = ModifiableFeatureProviderDataWfs.class)
+//@Value.Modifiable
+@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
+@JsonDeserialize(builder = ImmutableFeatureProviderDataWfs.Builder.class)
 public abstract class FeatureProviderDataWfs extends FeatureProviderDataTransformer {
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
@@ -51,8 +52,8 @@ public abstract class FeatureProviderDataWfs extends FeatureProviderDataTransfor
 
     @Value.Default
     @Override
-    public MappingStatus getMappingStatus() {
-        return ImmutableMappingStatus.builder()
+    public /*TODO*/ImmutableMappingStatus getMappingStatus() {
+        return new ImmutableMappingStatus.Builder()
                                      .enabled(true)
                                      .supported(false)
                                      .build();

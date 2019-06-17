@@ -18,7 +18,7 @@ import org.immutables.value.Value;
 @Value.Modifiable
 @Value.Style(deepImmutablesDetection = true)
 @JsonDeserialize(as = ImmutableFeatureTypeConfigurationWfs3.class)
-public abstract class FeatureTypeConfigurationWfs3 extends FeatureTypeConfiguration {
+public abstract class FeatureTypeConfigurationWfs3 implements FeatureTypeConfiguration {
 
     //public abstract TemporalExtent getTemporalExtent();
 

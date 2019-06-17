@@ -12,12 +12,12 @@ import java.util.Optional;
 /**
  * @author zahnen
  */
-public abstract class FeatureTypeConfiguration {
+public interface FeatureTypeConfiguration {
 
-    public abstract String getId();
+    String getId();
 
-    public abstract String getLabel();
+    String getLabel();
 
-    public abstract Optional<String> getDescription();
+    Optional<String> getDescription();
 
 }

@@ -324,7 +324,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
 
     @Override
     public FeatureProviderMetadataConsumer getDataGenerator(FeatureProviderDataWfs data) {
-        return new FeatureProviderDataWfsFromMetadata((ModifiableFeatureProviderDataWfs) data);
+        return new FeatureProviderDataWfsFromMetadata(data);
     }
 
     @Override
@@ -374,6 +374,6 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
 
     @Override
     public FeatureProviderSchemaConsumer getMappingGenerator(FeatureProviderDataWfs data, List<TargetMappingProviderFromGml> mappingProviders) {
-        return new FeatureProviderDataWfsFromSchema((ModifiableFeatureProviderDataWfs) data, mappingProviders);
+        return new FeatureProviderDataWfsFromSchema(data, mappingProviders);
     }
 }

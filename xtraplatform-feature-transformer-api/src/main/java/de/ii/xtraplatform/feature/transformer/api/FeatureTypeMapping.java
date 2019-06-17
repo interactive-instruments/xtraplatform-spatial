@@ -31,8 +31,8 @@ import java.util.stream.Stream;
 //@Value.Modifiable
 //TODO: @JsonAnySetter not generated for ModifiableFeatureTypeMapping
 //TODO: map order only sustained with Builder
-//@JsonDeserialize(builder = ImmutableFeatureTypeMapping.Builder.class)
-@JsonDeserialize(as = ModifiableFeatureTypeMapping.class)
+@JsonDeserialize(builder = ImmutableFeatureTypeMapping.Builder.class)
+//@JsonDeserialize(as = ModifiableFeatureTypeMapping.class)
 public abstract class FeatureTypeMapping {
 
     @JsonAnyGetter

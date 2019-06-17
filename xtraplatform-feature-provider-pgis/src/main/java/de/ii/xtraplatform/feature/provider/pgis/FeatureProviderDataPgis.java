@@ -46,7 +46,7 @@ public abstract class FeatureProviderDataPgis extends FeatureProviderDataTransfo
     @Value.Default
     @Override
     public MappingStatus getMappingStatus() {
-        return ImmutableMappingStatus.builder()
+        return new ImmutableMappingStatus.Builder()
                                      .enabled(true)
                                      .supported(true)
                                      .build();

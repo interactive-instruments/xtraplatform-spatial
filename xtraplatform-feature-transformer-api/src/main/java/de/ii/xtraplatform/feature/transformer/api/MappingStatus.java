@@ -19,8 +19,9 @@ import java.util.Objects;
  * @author zahnen
  */
 @Value.Immutable
-@Value.Modifiable
-@JsonDeserialize(as = ModifiableMappingStatus.class)
+//@Value.Modifiable
+@Value.Style(builder = "new")
+@JsonDeserialize(builder = ImmutableMappingStatus.Builder.class)
 public abstract class MappingStatus {
 
     public abstract boolean getEnabled();
