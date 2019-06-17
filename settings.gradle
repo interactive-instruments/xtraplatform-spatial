@@ -1,3 +1,12 @@
+pluginManagement {
+    repositories {
+        maven {
+            url 'https://dl.bintray.com/iide/maven'
+        }
+        gradlePluginPortal()
+    }
+}
+
 rootProject.name = 'xtraplatform-sdi-tools'
 
 rootDir.listFiles().each { file ->
@@ -6,7 +15,3 @@ rootDir.listFiles().each { file ->
     }  
 }
 
-includeBuild '../xtraplatform/xtraplatform-gradle-plugins'
-includeBuild '../xtraplatform/xtraplatform-base'
-includeBuild '../xtraplatform/xtraplatform-store'
-includeBuild '../xtraplatform/xtraplatform-web'
