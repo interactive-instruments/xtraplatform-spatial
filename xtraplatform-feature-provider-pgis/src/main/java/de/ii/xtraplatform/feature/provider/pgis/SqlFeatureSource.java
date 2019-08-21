@@ -211,7 +211,9 @@ public class SqlFeatureSource {
                         }*/
                     }
                     //LOGGER.debug("MULTI {}", multiplicities.get(slickRowInfo.getName()));
-                    LOGGER.debug("MULTI2 {}", multiplicityTracker.getMultiplicitiesForPath(slickRowInfo.getPath()));
+                    if (LOGGER.isTraceEnabled()) {
+                        LOGGER.trace("MULTI2 {}", multiplicityTracker.getMultiplicitiesForPath(slickRowInfo.getPath()));
+                    }
 
                     if (!slickRowInfo.getName()
                                      .equals("META")) {
@@ -335,7 +337,9 @@ public class SqlFeatureSource {
 
                     //TODO can be min or max or both
                     String query = createMetaQuery(request2);
-                    LOGGER.debug("META QUERY {}", query);
+                    if (LOGGER.isTraceEnabled()) {
+                        LOGGER.trace("META QUERY {}", query);
+                    }
                     final long[] minKey = new long[1];
                     final long[] maxKey = new long[1];
                     final long[] numberReturned = new long[1];
@@ -357,7 +361,9 @@ public class SqlFeatureSource {
                          })
                          .toCompletableFuture()
                          .join();
-                    LOGGER.debug("META INFO {} {} {} {}", minKey[0], maxKey[0], numberReturned[0], numberMatched[0]);
+                    if (LOGGER.isTraceEnabled()) {
+                        LOGGER.trace("META INFO {} {} {} {}", minKey[0], maxKey[0], numberReturned[0], numberMatched[0]);
+                    }
 
                     count = numberReturned[0];
                     count2 = numberMatched[0];
@@ -365,7 +371,9 @@ public class SqlFeatureSource {
                                                                 .getSortColumn(), OptionalLong.of(minKey[0]), OptionalLong.of(maxKey[0])) + " AND " + filter;
 
 
-                    LOGGER.debug("META CLAUSE {}", subFilter);
+                    if (LOGGER.isTraceEnabled()) {
+                        LOGGER.trace("META CLAUSE {}", subFilter);
+                    }
 
                     mainQuery = ImmutableFeatureQuery.builder()
                                                      .type(request.getType())
@@ -387,7 +395,9 @@ public class SqlFeatureSource {
         } else if (request.getLimit() > 0 || request.getOffset() > 0) {
             //TODO can be min or max or both
             String query = createMetaQuery(request);
-            LOGGER.debug("META QUERY {}", query);
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("META QUERY {}", query);
+            }
             final long[] minKey = new long[1];
             final long[] maxKey = new long[1];
             final long[] numberReturned = new long[1];
@@ -409,7 +419,9 @@ public class SqlFeatureSource {
                  })
                  .toCompletableFuture()
                  .join();
-            LOGGER.debug("META INFO {} {} {} {}", minKey[0], maxKey[0], numberReturned[0], numberMatched[0]);
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("META INFO {} {} {} {}", minKey[0], maxKey[0], numberReturned[0], numberMatched[0]);
+            }
 
             count = numberReturned[0];
             count2 = numberMatched[0];
@@ -417,7 +429,9 @@ public class SqlFeatureSource {
                                                         .getSortColumn(), OptionalLong.of(minKey[0]), OptionalLong.of(maxKey[0]));
 
 
-            LOGGER.debug("META CLAUSE {}", subFilter);
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("META CLAUSE {}", subFilter);
+            }
 
             mainQuery = subQuery = ImmutableFeatureQuery.builder()
                                                         .type(request.getType())
@@ -730,7 +744,9 @@ public class SqlFeatureSource {
             if (columnCount >= columns.size()) {
                 return Optional.empty();
             }
-            LOGGER.debug("NEXT: {} {} {} {}", paths.get(columnCount), ids, columnCount, columns.get(columnCount));
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("NEXT: {} {} {} {}", paths.get(columnCount), ids, columnCount, columns.get(columnCount));
+            }
             return Optional.of(new ColumnValueInfo(paths.get(columnCount), columns.get(columnCount), values.get(columnCount++)));
         }
 

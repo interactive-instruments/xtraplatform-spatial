@@ -15,7 +15,7 @@ import org.immutables.value.Value;
  * @author zahnen
  */
 @Value.Immutable
-@JsonDeserialize(as = ImmutableTargetMappingWfs3.class)
+//@JsonDeserialize(as = ImmutableTargetMappingWfs3.class)
 public abstract class TargetMappingWfs3 implements TargetMapping<TargetMappingWfs3.WFS3_TYPES> {
     @Override
     public TargetMapping mergeCopyWithBase(TargetMapping targetMapping) {

@@ -124,8 +124,8 @@ public interface TargetMappingProviderFromGml {
             switch (this) {
 
                 case GEOMETRY:
-                    break;
                 case ABSTRACT_GEOMETRY:
+                    simpleFeatureGeometry = SimpleFeatureGeometry.ANY;
                     break;
                 case POINT:
                     simpleFeatureGeometry = SimpleFeatureGeometry.POINT;
@@ -176,7 +176,8 @@ public interface TargetMappingProviderFromGml {
 
     TargetMapping getTargetMappingForAttribute(String path, String nsUri, String localName, GML_TYPE type);
 
-    TargetMapping getTargetMappingForProperty(String path, String nsUri, String localName, GML_TYPE type);
+    TargetMapping getTargetMappingForProperty(String path, String nsUri, String localName, GML_TYPE type,
+                                              boolean isMultiple);
 
     TargetMapping getTargetMappingForGeometry(String path, String nsUri, String localName, GML_GEOMETRY_TYPE type);
 }

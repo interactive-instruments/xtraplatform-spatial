@@ -47,12 +47,11 @@ import java.util.List;
 public class FilterEncoder {
     private final Encoder encoder;
     private final WFS.VERSION version;
+    private final Configuration configuration;;
 
     // TODO: bugfixes for 1.0 and 1.1
     public FilterEncoder(WFS.VERSION version) {
         this.version = version;
-
-        Configuration configuration;
 
         switch (version) {
             case _1_0_0:
@@ -87,12 +86,12 @@ public class FilterEncoder {
     }
 
     public Element encode(Filter filter) throws TransformerException, IOException, SAXException {
-        return encoder.encodeAsDOM(filter, new QName(FES.getNS(version.getFilterVersion()), FES.getWord(version.getFilterVersion(), FES.VOCABULARY.FILTER), FES.getPR(version.getFilterVersion())))
+        return new Encoder(configuration).encodeAsDOM(filter, new QName(FES.getNS(version.getFilterVersion()), FES.getWord(version.getFilterVersion(), FES.VOCABULARY.FILTER), FES.getPR(version.getFilterVersion())))
                       .getDocumentElement();
     }
 
     public String encodeAsString(Filter filter) throws IOException {
-        return encoder.encodeAsString(filter, new QName(FES.getNS(version.getFilterVersion()), FES.getWord(version.getFilterVersion(), FES.VOCABULARY.FILTER), FES.getPR(version.getFilterVersion())));
+        return new Encoder(configuration).encodeAsString(filter, new QName(FES.getNS(version.getFilterVersion()), FES.getWord(version.getFilterVersion(), FES.VOCABULARY.FILTER), FES.getPR(version.getFilterVersion())));
     }
 
     public static class MyBBOXTypeBinding extends BBOXTypeBinding {

@@ -8,21 +8,23 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.feature.provider.api.ConnectionInfo;
 import org.immutables.value.Value;
 
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalInt;
 
 /**
  * @author zahnen
  */
 @Value.Immutable
-@Value.Modifiable
-@JsonDeserialize(as = ModifiableConnectionInfo.class)
-public abstract class ConnectionInfo extends WfsInfo {
+//@Value.Modifiable
+//@JsonDeserialize(as = ModifiableConnectionInfoWfs.class)
+@Value.Style(builder = "new")
+//@Value.Style(deepImmutablesDetection = true)
+@JsonDeserialize(builder = ImmutableConnectionInfoWfsHttp.Builder.class)
+public abstract class ConnectionInfoWfsHttp extends WfsInfo implements ConnectionInfo {
 
     public enum METHOD {GET,POST}
 

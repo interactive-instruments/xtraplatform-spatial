@@ -11,7 +11,6 @@
 package de.ii.xtraplatform.util.xml;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,13 +49,13 @@ public class XMLPathTracker {
         shorten(depth);
     }
 
-    public void track(String nsuri, String localName, int depth) {
+    public void track(String nsuri, String localName, int depth, boolean isMultiple) {
         if (depth < 0) {
             return;
         }
         shorten(depth);
 
-        track(nsuri, localName);
+        track(nsuri, localName, isMultiple);
     }
 
     private void shorten(final int depth) {
@@ -72,12 +71,12 @@ public class XMLPathTracker {
         }
     }
 
-    public void track(String nsuri, String localName) {
+    public void track(String nsuri, String localName, boolean isMultiple) {
         localPath.add(localName);
         if (nsuri != null && localName != null)
             path.add(nsuri + ":" + localName);
         if (localName != null && (!Character.isUpperCase(localName.charAt(0)) || noObjectPath.isEmpty())) {
-            noObjectPath.add(localName);
+            noObjectPath.add(localName + (isMultiple ? "[]" : ""));
         } else {
             noObjectPath.add(null);
         }

@@ -17,8 +17,8 @@ import java.util.Optional;
 /**
  * @author zahnen
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "providerType", visible = true)
-@JsonTypeIdResolver(JacksonProvider.DynamicTypeIdResolver.class)
+//@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "providerType", visible = true)
+//@JsonTypeIdResolver(JacksonProvider.DynamicTypeIdResolver.class)
 public abstract class FeatureProviderData {
 
     public abstract String getProviderType();

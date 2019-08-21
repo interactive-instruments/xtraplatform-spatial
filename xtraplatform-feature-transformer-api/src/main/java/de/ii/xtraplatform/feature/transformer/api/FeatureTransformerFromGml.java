@@ -1,6 +1,6 @@
 /**
  * Copyright 2019 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -65,7 +65,8 @@ class FeatureTransformerFromGml implements GmlConsumer {
     private List<Integer> currentMultiplicities;
     private List<String> currentType;
 
-    FeatureTransformerFromGml(FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer, List<String> fields, Map<QName, List<String>> resolvableTypes) {
+    FeatureTransformerFromGml(FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer,
+                              List<String> fields, Map<QName, List<String>> resolvableTypes) {
         this.featureTypeMapping = featureTypeMapping;
         this.featureTransformer = featureTransformer;
         this.resolvableTypes = resolvableTypes.entrySet()
@@ -181,7 +182,8 @@ class FeatureTransformerFromGml implements GmlConsumer {
         }
 
         public void setPath(List<String> path) {
-            if (!path.isEmpty() && path.get(path.size()-1).endsWith(":component")) {
+            if (!path.isEmpty() && path.get(path.size() - 1)
+                                       .endsWith(":component")) {
                 boolean stop = true;
             }
             this.path = path;
@@ -219,7 +221,8 @@ class FeatureTransformerFromGml implements GmlConsumer {
     }
 
     @Override
-    public void onGmlAttribute(String namespace, String localName, List<String> path, String value, List<Integer> multiplicities) {
+    public void onGmlAttribute(String namespace, String localName, List<String> path, String value,
+                               List<Integer> multiplicities) {
         if (transformGeometry != null) {
             if (transformGeometryDimension == null && localName.equals("srsDimension")) {
                 try {
@@ -251,8 +254,8 @@ class FeatureTransformerFromGml implements GmlConsumer {
                 currentProperty = null;
             } else {
                 currentProperty = new FeatureProperty(fullPath, ImmutableList.of(), value);*/
-                currentBuffer.add(new FeatureProperty(fullPath, multiplicities, value));
-              //  currentProperty = null;
+            currentBuffer.add(new FeatureProperty(fullPath, multiplicities, value));
+            //  currentProperty = null;
             //}
         } else {
             getMapping(fullPath, value)
@@ -262,19 +265,28 @@ class FeatureTransformerFromGml implements GmlConsumer {
         }
     }
 
-    private void writeProperty(TargetMapping mapping, List<Integer> multiplicities, List<String> path, String value) throws Exception {
-        if (!buffer.isEmpty() && Objects.nonNull(mapping.getBaseMapping()) && mapping.getBaseMapping().isReferenceEmbed()) {
+    private void writeProperty(TargetMapping mapping, List<Integer> multiplicities, List<String> path,
+                               String value) throws Exception {
+        if (!buffer.isEmpty() && Objects.nonNull(mapping.getBaseMapping()) && mapping.getBaseMapping()
+                                                                                     .isReferenceEmbed()) {
             if (buffer.containsKey(value.substring(1))) {
                 List<FeatureProperty> feature = buffer.get(value.substring(1));
-                List<String> pathPrefix = ImmutableList.<String>builder().addAll(path).addAll(feature.get(0).getPath()).build();
+                List<String> pathPrefix = ImmutableList.<String>builder().addAll(path)
+                                                                         .addAll(feature.get(0)
+                                                                                        .getPath())
+                                                                         .build();
 
                 for (int i = 1; i < feature.size(); i++) {
                     FeatureProperty property = feature.get(i);
                     if (Objects.isNull(property.value)) {
                         continue;
                     }
-                    List<String> propertyPath = ImmutableList.<String>builder().addAll(pathPrefix).addAll(property.getPath()).build();
-                    onPropertyStart(propertyPath, ImmutableList.<Integer>builder().addAll(multiplicities).addAll(property.multiplicities).build());
+                    List<String> propertyPath = ImmutableList.<String>builder().addAll(pathPrefix)
+                                                                               .addAll(property.getPath())
+                                                                               .build();
+                    onPropertyStart(propertyPath, ImmutableList.<Integer>builder().addAll(multiplicities)
+                                                                                  .addAll(property.multiplicities)
+                                                                                  .build());
                     onPropertyText(property.value);
                     onPropertyEnd(propertyPath);
                 }
@@ -303,7 +315,9 @@ class FeatureTransformerFromGml implements GmlConsumer {
 
         //TODO
         if (doBuffer) {
-            if (Objects.nonNull(currentProperty) && Objects.isNull(currentProperty.value) && path.subList(0,currentProperty.getPath().size()).equals(currentProperty.getPath())) {
+            if (Objects.nonNull(currentProperty) && Objects.isNull(currentProperty.value) && path.subList(0, currentProperty.getPath()
+                                                                                                                            .size())
+                                                                                                 .equals(currentProperty.getPath())) {
                 currentProperty.setPath(ImmutableList.copyOf(path));
                 currentProperty.multiplicities = multiplicities;
             } else {

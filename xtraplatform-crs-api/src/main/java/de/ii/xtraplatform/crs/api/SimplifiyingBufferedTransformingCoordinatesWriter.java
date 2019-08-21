@@ -15,8 +15,11 @@ public class SimplifiyingBufferedTransformingCoordinatesWriter extends BufferedT
 
     private final DouglasPeuckerLineSimplifier simplifier;
 
-    public SimplifiyingBufferedTransformingCoordinatesWriter(CoordinateFormatter formatter, int srsDimension, CrsTransformer transformer, DouglasPeuckerLineSimplifier simplifier, boolean swap, boolean reversepolygon) {
-        super(formatter, srsDimension, transformer, swap, reversepolygon);
+    public SimplifiyingBufferedTransformingCoordinatesWriter(CoordinateFormatter formatter, int srsDimension,
+                                                             CrsTransformer transformer,
+                                                             DouglasPeuckerLineSimplifier simplifier, boolean swap,
+                                                             boolean reversepolygon, int precision) {
+        super(formatter, srsDimension, transformer, swap, reversepolygon, precision);
         this.simplifier = simplifier;
     }
 
@@ -25,6 +28,7 @@ public class SimplifiyingBufferedTransformingCoordinatesWriter extends BufferedT
         double[] out;
         if (simplifier != null) {
             out = simplifier.simplify(in, numPts);
+
             return super.postProcessCoordinates(out, out.length / 2);
         }
         return super.postProcessCoordinates(in, numPts);

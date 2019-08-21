@@ -8,9 +8,15 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import akka.japi.Pair;
+import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
+import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
+import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
+import de.ii.xtraplatform.ogc.api.WFS;
+import de.ii.xtraplatform.ogc.api.wfs.FilterEncoder;
 import de.ii.xtraplatform.ogc.api.wfs.GetFeature;
 import de.ii.xtraplatform.ogc.api.wfs.GetFeatureBuilder;
 import de.ii.xtraplatform.ogc.api.wfs.WfsQuery;
@@ -25,6 +31,7 @@ import org.geotools.filter.visitor.DuplicatingFilterVisitor;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
 import org.opengis.filter.expression.Expression;
+import org.opengis.filter.expression.Function;
 import org.opengis.filter.expression.PropertyName;
 import org.opengis.filter.spatial.BBOX;
 import org.opengis.filter.temporal.After;
@@ -46,9 +53,11 @@ import org.opengis.temporal.Period;
 import org.opengis.temporal.TemporalPrimitive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Element;
 import org.xml.sax.helpers.NamespaceSupport;
 
 import javax.xml.namespace.QName;
+import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -59,6 +68,22 @@ import java.util.Optional;
 public class FeatureQueryEncoderWfs {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderWfs.class);
+
+    static {
+        LOGGER.debug("warming up GeoTools Filter ...");
+
+        try {
+            Filter filter = (Filter) ECQL.toFilter("'foo' = 'bar' AND BBOX(geometry, 366703.806, 5807220.953, 367087.571, 5807603.808, 'EPSG:25833')")
+                                         .accept(new ResolvePropertyNamesFilterVisitor(new ImmutableFeatureTypeMapping.Builder().build(), new XMLNamespaceNormalizer()), null);
+
+            Element encode = new FilterEncoder(WFS.VERSION._2_0_0).encode(filter);
+            LOGGER.trace("{}", encode);
+        } catch (Throwable ex) {
+            //ignore
+        }
+
+        LOGGER.debug("done");
+    }
 
     private final Map<String, QName> featureTypes;
     private final Map<String, FeatureTypeMapping> featureTypeMappings;
@@ -106,7 +131,7 @@ public class FeatureQueryEncoderWfs {
         final String featureTypeName = namespaceNormalizer.getQualifiedName(featureType.getNamespaceURI(), featureType.getLocalPart());
 
         final WfsQuery wfsQuery = new WfsQueryBuilder().typeName(featureTypeName)
-                                                       //TODO .crs(query.getCrs())
+                                                       .crs(query.getCrs())
                                                        .filter(encodeFilter(query.getFilter(), featureTypeMapping))
                                                        .build();
         final GetFeatureBuilder getFeature = new GetFeatureBuilder();
@@ -136,19 +161,21 @@ public class FeatureQueryEncoderWfs {
         }
 
         return (Filter) ECQL.toFilter(filter)
-                            .accept(new ResolvePropertyNamesFilterVisitor(featureTypeMapping), null);
+                            .accept(new ResolvePropertyNamesFilterVisitor(featureTypeMapping, namespaceNormalizer), null);
     }
 
-    private class ResolvePropertyNamesFilterVisitor extends DuplicatingFilterVisitor {
+    private static class ResolvePropertyNamesFilterVisitor extends DuplicatingFilterVisitor {
         final FilterFactory2 filterFactory = new FilterFactoryImpl();
         final NamespaceSupport namespaceSupport;
         final FeatureTypeMapping featureTypeMapping;
+        final XMLNamespaceNormalizer namespaceNormalizer;
 
-        private ResolvePropertyNamesFilterVisitor(final FeatureTypeMapping featureTypeMapping) {
+        private ResolvePropertyNamesFilterVisitor(final FeatureTypeMapping featureTypeMapping, final XMLNamespaceNormalizer namespaceNormalizer) {
             namespaceSupport = new NamespaceSupport();
             namespaceNormalizer.getNamespaces()
                                .forEach(namespaceSupport::declarePrefix);
             this.featureTypeMapping = featureTypeMapping;
+            this.namespaceNormalizer = namespaceNormalizer;
         }
 
         @Override
@@ -198,6 +225,19 @@ public class FeatureQueryEncoderWfs {
             }
 
             return super.visit(filter, extraData);
+        }
+
+        @Override
+        public Object visit(Function expression, Object extraData) {
+            if (expression.getName().toUpperCase().equals("STRTOLOWERCASE") && !expression.getParameters().isEmpty() && expression.getParameters().get(0) instanceof PropertyName) {
+                Optional<String> prefixedPropertyName = getPrefixedPropertyName(((PropertyName) expression.getParameters()
+                                                                                                          .get(0)).getPropertyName());
+                if (prefixedPropertyName.isPresent()) {
+                    return filterFactory.property(prefixedPropertyName.get(), namespaceSupport);
+                }
+            }
+
+            return super.visit(expression, extraData);
         }
 
         @Override
@@ -320,10 +360,16 @@ public class FeatureQueryEncoderWfs {
                     .filter(targetMappings -> Objects.nonNull(targetMappings.getValue()
                                                                             .getName()) && Objects.equals(targetMappings.getValue()
                                                                                                                         .getName()
-                                                                                                                        .toLowerCase(), property))
+                                                                                                                        .toLowerCase(), property.replaceAll("_id_", "id")))
                     .map(Map.Entry::getKey)
                     .findFirst()
-                    .map(namespaceNormalizer::getPrefixedPath);
+                    .map(namespaceNormalizer::getPrefixedPath)
+                    .map(prefixedPath -> {
+                        if (prefixedPath.contains("@")) {
+                            return "@" + prefixedPath.replaceAll("@", "");
+                        }
+                        return prefixedPath;
+                    });
         }
 
         protected Instant toInstant(Expression e) {

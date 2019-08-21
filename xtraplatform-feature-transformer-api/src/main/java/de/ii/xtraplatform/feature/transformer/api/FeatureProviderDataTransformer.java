@@ -7,30 +7,114 @@
  */
 package de.ii.xtraplatform.feature.transformer.api;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
+import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
+import de.ii.xtraplatform.feature.provider.api.ConnectionInfo;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
+import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import org.immutables.value.Value;
 
+import javax.annotation.Nullable;
 import javax.xml.namespace.QName;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @author zahnen
  */
+//TODO
+//@Value.Style(validationMethod = Value.Style.ValidationMethod.NONE)
+@Value.Immutable
+//@Value.Modifiable
+@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true, validationMethod = Value.Style.ValidationMethod.NONE)
+@ValueBuilderMapEncodingEnabled
+//@Value.Style(deepImmutablesDetection = true)
+@JsonDeserialize(builder = ImmutableFeatureProviderDataTransformer.Builder.class)
+//@JsonDeserialize(as = ModifiableFeatureProviderDataWfs.class)
 public abstract class FeatureProviderDataTransformer extends FeatureProviderData {
 
-    public abstract Map<String, QName> getFeatureTypes();
+    //@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @Override
+    public abstract String getProviderType();
 
-    public abstract MappingStatus getMappingStatus();
+    //@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @Value.Default
+    @Override
+    public String getConnectorType() {
+        return getProviderType().equals("PGIS") ? "SLICK" : "HTTP";
+    }
 
+    @JsonAlias(value = {"featureTypes"})
+    //@JsonIgnore
+    public abstract Map<String, QName> getLocalFeatureTypeNames();
+
+    //@JsonIgnore
+    public abstract ConnectionInfo getConnectionInfo();
+
+    //@JsonMerge
+    //public abstract Map<String, FeatureTypeMapping> getMappings();
+
+    //behaves exactly like Map<String, FeatureTypeConfigurationOgcApi>, but supports mergeable builder deserialization
+    // (immutables attributeBuilder does not work with maps yet)
     @JsonMerge
-    public abstract Map<String, FeatureTypeMapping> getMappings();
+    public abstract ValueBuilderMap<FeatureTypeMapping, ImmutableFeatureTypeMapping.Builder> getMappings();
 
-    public abstract boolean isFeatureTypeEnabled(final String featureType);
+    @Value.Default
+    public ImmutableMappingStatus getMappingStatus() {
+        return new ImmutableMappingStatus.Builder()
+                .enabled(true)
+                .supported(true)
+                .build();
+    }
+
+    @Override
+    @Value.Derived
+    public Optional<String> getDataSourceUrl() {
+        return Optional.ofNullable(getConnectionInfo()).flatMap(ConnectionInfo::getConnectionUri);
+                       /*.map(connectionInfo -> new URIBuilder(connectionInfo.getUri()))
+                       .map(uriBuilder -> uriBuilder.addParameter("SERVICE", "WFS")
+                                                    .addParameter("REQUEST", "GetCapabilities")
+                                                    .toString());*/
+    }
+
+    public boolean isFeatureTypeEnabled(String featureType) {
+        if (!getMappingStatus().getEnabled() || Objects.nonNull(getMappingStatus().getErrorMessage())) {
+            return true;
+        }
+
+        //TODO: better way to detect mapping for feature type
+        FeatureTypeMapping featureTypeMapping = getMappings().get(featureType);
+        if (featureTypeMapping != null) {
+            SourcePathMapping firstMapping = featureTypeMapping.getMappings()
+                                                               .values()
+                                                               .iterator()
+                                                               .next();
+            return firstMapping.getMappingForType(TargetMapping.BASE_TYPE)
+                               .isEnabled();
+        }
+        return false;
+    }
 
     public abstract EpsgCrs getNativeCrs();
+
+    public abstract List<EpsgCrs> getOtherCrs();
+
+    //TODO: pgis stuff
+    @Value.Default
+    public boolean computeNumberMatched() {
+        return true;
+    }
+
+    @Nullable
+    public abstract Object getTrigger();
 
     @JsonIgnore
     @Value.Default

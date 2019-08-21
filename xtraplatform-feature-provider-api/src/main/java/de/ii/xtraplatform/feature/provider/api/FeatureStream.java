@@ -8,12 +8,14 @@
 package de.ii.xtraplatform.feature.provider.api;
 
 import akka.Done;
+import com.codahale.metrics.Timer;
 
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
  * @author zahnen
  */
-public interface FeatureStream<T> extends Function<T, CompletionStage<Done>> {
+public interface FeatureStream<T> extends BiFunction<T, Timer.Context, CompletionStage<Done>> {
 }

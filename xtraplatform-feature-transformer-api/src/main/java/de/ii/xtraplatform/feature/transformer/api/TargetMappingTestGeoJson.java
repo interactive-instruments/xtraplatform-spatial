@@ -15,7 +15,7 @@ import org.immutables.value.Value;
  * @author zahnen
  */
 @Value.Immutable
-@JsonDeserialize(as = ImmutableTargetMappingTestGeoJson.class)
+//@JsonDeserialize(as = ImmutableTargetMappingTestGeoJson.class)
 public abstract class TargetMappingTestGeoJson implements TargetMapping<TargetMappingTestGeoJson.WFS3_TYPES> {
     @Override
     public TargetMapping mergeCopyWithBase(TargetMapping targetMapping) {

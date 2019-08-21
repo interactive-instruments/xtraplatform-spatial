@@ -88,7 +88,9 @@ public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {
             ComponentInstance instance =  providerFactories.get(featureProviderData.getProviderType()).createComponentInstance(new Hashtable<>(ImmutableMap.of(".data", featureProviderData, ".connector", connector)));
 
             ServiceReference[] refs = context.getServiceReferences(FeatureProvider.class.getName(), "(instance.name=" + instance.getInstanceName() +")");
-            return (FeatureProvider) context.getService(refs[0]);
+            FeatureProvider featureProvider = (FeatureProvider) context.getService(refs[0]);
+
+            return featureProvider;
 
         } catch (UnacceptableConfiguration | MissingHandlerException | ConfigurationException | InvalidSyntaxException | NullPointerException e) {
             throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getProviderType() + " could not be created", e);

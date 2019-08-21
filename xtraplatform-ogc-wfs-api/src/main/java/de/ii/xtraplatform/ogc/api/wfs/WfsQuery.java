@@ -38,6 +38,12 @@ public class WfsQuery {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WfsQuery.class);
 
+    private static final Map<WFS.VERSION, FilterEncoder> FILTER_ENCODERS = ImmutableMap.of(
+            WFS.VERSION._2_0_0, new FilterEncoder(WFS.VERSION._2_0_0),
+            WFS.VERSION._1_1_0, new FilterEncoder(WFS.VERSION._1_1_0),
+            WFS.VERSION._1_0_0, new FilterEncoder(WFS.VERSION._1_0_0)
+    );
+
     private final List<String> typeNames;
     private final List<Filter> filter;
     private final EpsgCrs crs;
@@ -54,7 +60,7 @@ public class WfsQuery {
         final Element query = document.createElementNS(WFS.getNS(versions.getWfsVersion()), WFS.getWord(versions.getWfsVersion(), WFS.VOCABULARY.QUERY));
 
         if (!filter.isEmpty()) {
-            final Node node = document.adoptDocument(new FilterEncoder(versions.getWfsVersion()).encode(filter.get(0)));
+            final Node node = document.adoptDocument(FILTER_ENCODERS.get(versions.getWfsVersion()).encode(filter.get(0)));
             query.appendChild(node);
         }
 
@@ -87,7 +93,7 @@ public class WfsQuery {
                                                 .getFilterVersion(), FES.VOCABULARY.RESOURCEID)
                                .toUpperCase(), Joiner.on(',').join(((FidFilterImpl) filter.get(0)).getFidsSet()));
             } else {
-                final Node node = document.adoptDocument(new FilterEncoder(versions.getWfsVersion()).encode(filter.get(0)));
+                final Node node = document.adoptDocument(FILTER_ENCODERS.get(versions.getWfsVersion()).encode(filter.get(0)));
                 document.appendChild(node);
                 document.done();
                 final String filterString = document.toString(false, true);

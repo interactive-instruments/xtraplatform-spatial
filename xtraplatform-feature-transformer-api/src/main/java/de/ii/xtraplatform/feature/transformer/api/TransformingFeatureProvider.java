@@ -10,8 +10,10 @@ package de.ii.xtraplatform.feature.transformer.api;
 import akka.Done;
 import akka.stream.javadsl.RunnableGraph;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
+import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureProvider;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderMetadataConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream;
 import de.ii.xtraplatform.scheduler.api.TaskProgress;
@@ -33,11 +35,23 @@ public interface TransformingFeatureProvider<T extends FeatureTransformer, U ext
         void updateFeatureFromStream(String featureType, String id, CrsTransformer crsTransformer, Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream);
         void deleteFeature(String featureType, String id);
 
-        interface SchemaAware {
+    boolean supportsCrs(EpsgCrs crs);
+
+    default boolean shouldSwapCoordinates(EpsgCrs crs) {
+        return false;
+    }
+
+    interface SchemaAware {
                 void getSchema(FeatureProviderSchemaConsumer schemaConsumer, Map<String, QName> featureTypes, TaskProgress taskProgress);
         }
 
-        interface DataGenerator<V extends FeatureProviderDataTransformer> extends FeatureProvider.DataGenerator<V> {
-                FeatureProviderSchemaConsumer getMappingGenerator(V data, List<TargetMappingProviderFromGml> mappingProviders);
+        interface DataGenerator {
+                FeatureProviderMetadataConsumer getDataGenerator(FeatureProviderDataTransformer data,
+                                                                 ImmutableFeatureProviderDataTransformer.Builder dataBuilder);
+
+                FeatureProviderSchemaConsumer getMappingGenerator(
+                        FeatureProviderDataTransformer data,
+                        ImmutableFeatureProviderDataTransformer.Builder dataBuilder,
+                        List<TargetMappingProviderFromGml> mappingProviders);
         }
 }

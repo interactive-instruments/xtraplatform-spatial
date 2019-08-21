@@ -9,6 +9,7 @@ package de.ii.xtraplatform.feature.transformer.api;
 
 import akka.stream.Shape;
 import akka.stream.stage.GraphStageLogic;
+import com.codahale.metrics.Timer;
 import com.fasterxml.aalto.AsyncByteArrayFeeder;
 import com.fasterxml.aalto.AsyncXMLInputFactory;
 import com.fasterxml.aalto.AsyncXMLStreamReader;
@@ -111,7 +112,7 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
                             gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i), ImmutableList.of());
                         }
                     } else if (inFeature) {
-                        pathTracker.track(parser.getNamespaceURI(), parser.getLocalName(), depth - featureDepth);
+                        pathTracker.track(parser.getNamespaceURI(), parser.getLocalName(), depth - featureDepth, false);
                         multiplicityTracker.track(pathTracker.asList());
                         gmlConsumer.onPropertyStart(pathTracker.asList(), multiplicityTracker.getMultiplicitiesForPath(pathTracker.asList()));
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
@@ -166,7 +167,6 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
             failStage(e);
             throw e;
         }
-
         return feedMeMore;
     }
 

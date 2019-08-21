@@ -7,8 +7,12 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs;
 
+import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderSchemaConsumer;
+import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureProviderDataTransformer;
+import de.ii.xtraplatform.feature.transformer.api.ImmutableMappingStatus;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
+import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
 
 import java.util.List;
 
@@ -17,8 +21,11 @@ import java.util.List;
  */
 public class FeatureProviderDataWfsFromSchema extends GmlFeatureTypeAnalyzer implements FeatureProviderSchemaConsumer {
 
-    public FeatureProviderDataWfsFromSchema(FeatureProviderDataWfs featureProviderDataWfs, List<TargetMappingProviderFromGml> mappingProviders) {
-        super(featureProviderDataWfs, mappingProviders);
+    public FeatureProviderDataWfsFromSchema(
+            FeatureProviderDataTransformer data,
+            ImmutableFeatureProviderDataTransformer.Builder dataBuilder,
+            List<TargetMappingProviderFromGml> mappingProviders) {
+        super(data, dataBuilder, mappingProviders);
 
     }
 
@@ -28,26 +35,30 @@ public class FeatureProviderDataWfsFromSchema extends GmlFeatureTypeAnalyzer imp
     }
 
     @Override
-    public void analyzeFailure(Exception e) {
-        /*TODO ModifiableMappingStatus mappingStatus = ModifiableMappingStatus.create().from(providerDataWfs.getMappingStatus());
-        mappingStatus.setErrorMessage(e.getMessage());
+    public void analyzeFailure(Throwable e) {
+        ImmutableMappingStatus.Builder builder = new ImmutableMappingStatus.Builder()
+                .from(providerDataWfs.getMappingStatus())
+                .errorMessage(e.getMessage());
         if (e.getClass() == SchemaParseException.class) {
-            mappingStatus.setErrorMessageDetails(((SchemaParseException)e).getDetails());
-        }*/
-
-        //TODO providerDataWfs.setMappingStatus(mappingStatus);
+            builder.addAllErrorMessageDetails(((SchemaParseException)e).getDetails());
+        }
+        dataBuilder.mappingStatus(builder.build());
     }
 
     @Override
     public void analyzeSuccess() {
-        ModifiableConnectionInfo connectionInfo = ModifiableConnectionInfo.create()
-                                                                .from(providerDataWfs.getConnectionInfo());
-        connectionInfo.putAllNamespaces(super.getNamespaces());
-        //TODO providerDataWfs.setConnectionInfo(connectionInfo);
+        super.analyzeSuccess();
 
-        //TODO ModifiableMappingStatus mappingStatus = ModifiableMappingStatus.create().from(providerDataWfs.getMappingStatus());
-        //TODO mappingStatus.setSupported(true);
-        //TODO providerDataWfs.setMappingStatus(mappingStatus);
+        ImmutableConnectionInfoWfsHttp.Builder connectionInfo = new ImmutableConnectionInfoWfsHttp.Builder()
+                                                                                .from(providerDataWfs.getConnectionInfo());
+        connectionInfo.namespaces(super.getNamespaces());
+
+            dataBuilder.connectionInfo(connectionInfo.build());
+
+            ImmutableMappingStatus mappingStatus = new ImmutableMappingStatus.Builder().from(providerDataWfs.getMappingStatus()).enabled(true)
+                                                                              .supported(true)
+                                                                              .build();
+            dataBuilder.mappingStatus(mappingStatus);
     }
 
     @Override
@@ -62,6 +73,10 @@ public class FeatureProviderDataWfsFromSchema extends GmlFeatureTypeAnalyzer imp
 
     @Override
     public void analyzeProperty(String nsUri, String localName, String type, long minOccurs, long maxOccurs, int depth, boolean isParentMultiple, boolean isComplex, boolean isObject) {
-        super.analyzeProperty(nsUri, localName, type, depth, isObject);
+        super.analyzeProperty(nsUri, localName, type, depth, isObject, isMultiple(maxOccurs));
+    }
+
+    private boolean isMultiple(long maxOccurs) {
+        return maxOccurs > 1 || maxOccurs == -1;
     }
 }

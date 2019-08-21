@@ -11,8 +11,10 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
+import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
-import de.ii.xtraplatform.feature.transformer.api.ModifiableSourcePathMapping;
+import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_TYPE;
@@ -26,6 +28,7 @@ import javax.xml.namespace.QName;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -38,11 +41,13 @@ public class GmlFeatureTypeAnalyzer {
     public static final String GML_NS_URI = GML.getNS(GML.VERSION._2_1_1);
     private static final Logger LOGGER = LoggerFactory.getLogger(GmlFeatureTypeAnalyzer.class);
 
-    protected FeatureProviderDataWfs providerDataWfs;
+    protected final FeatureProviderDataTransformer providerDataWfs;
+    protected final ImmutableFeatureProviderDataTransformer.Builder dataBuilder;
     // TODO: could it be more than one?
     //private FeatureTypeConfigurationOld currentFeatureType;
     private ImmutableFeatureTypeMapping.Builder currentFeatureTypeMapping;
     private XMLPathTracker currentPath;
+    private String currentLocalName;
     //private XMLPathTracker currentPathWithoutObjects;
     private Set<String> mappedPaths;
     //private boolean geometryMapped;
@@ -50,16 +55,18 @@ public class GmlFeatureTypeAnalyzer {
     private final List<TargetMappingProviderFromGml> mappingProviders;
     private final XMLNamespaceNormalizer namespaceNormalizer;
 
-    public GmlFeatureTypeAnalyzer(FeatureProviderDataWfs providerDataWfs, List<TargetMappingProviderFromGml> mappingProviders) {
-        this.providerDataWfs = providerDataWfs;
+    public GmlFeatureTypeAnalyzer(FeatureProviderDataTransformer data,
+                                  ImmutableFeatureProviderDataTransformer.Builder dataBuilder,
+                                  List<TargetMappingProviderFromGml> mappingProviders) {
+        this.providerDataWfs = data;
+        this.dataBuilder = dataBuilder;
         this.currentPath = new XMLPathTracker();
         //this.currentPathWithoutObjects = new XMLPathTracker();
         this.mappedPaths = new HashSet<>();
         //this.geometryMapped = false;
         this.geometryCounter = -1;
         this.mappingProviders = mappingProviders;
-        this.namespaceNormalizer = new XMLNamespaceNormalizer(providerDataWfs.getConnectionInfo()
-                                                                  .getNamespaces());
+        this.namespaceNormalizer = new XMLNamespaceNormalizer(((ConnectionInfoWfsHttp)providerDataWfs.getConnectionInfo()).getNamespaces());
     }
 
     protected boolean analyzeNamespaceRewrite(String oldNamespace, String newNamespace, String featureTypeName) {
@@ -70,13 +77,20 @@ public class GmlFeatureTypeAnalyzer {
             namespaceNormalizer.addNamespace(prefix, newNamespace, true);
 
             QName newQualifiedName = new QName(newNamespace, featureTypeName);
-            if (providerDataWfs.getFeatureTypes().containsKey(featureTypeName)) {
-                providerDataWfs.getFeatureTypes().put(featureTypeName, newQualifiedName);
+            if (providerDataWfs.getLocalFeatureTypeNames().containsKey(featureTypeName)) {
+                providerDataWfs.getLocalFeatureTypeNames().put(featureTypeName, newQualifiedName);
                 rewritten = true;
             }
         }
 
         return rewritten;
+    }
+
+    protected void analyzeSuccess() {
+        // finish last feature type
+        if (Objects.nonNull(currentFeatureTypeMapping) && Objects.nonNull(currentLocalName)) {
+            dataBuilder.putMappings(currentLocalName, currentFeatureTypeMapping.build());
+        }
     }
 
     protected void analyzeFeatureType(String nsUri, String localName) {
@@ -85,6 +99,10 @@ public class GmlFeatureTypeAnalyzer {
         // does the service exist yet or are we just building the data here?
         //featureProviderDataBuilder.putMappings(currentFeatureType.getName(), currentFeatureTypeMapping.build());
 
+        if (Objects.nonNull(currentFeatureTypeMapping) && Objects.nonNull(currentLocalName)) {
+            dataBuilder.putMappings(currentLocalName, currentFeatureTypeMapping.build());
+        }
+
 
         if (nsUri.isEmpty()) {
             //LOGGER.error(FrameworkMessages.NSURI_IS_EMPTY);
@@ -92,8 +110,8 @@ public class GmlFeatureTypeAnalyzer {
 
         String fullName = nsUri + ":" + localName;
         //currentFeatureType = providerDataWfs.getFeatureTypes().get(fullName);
-        currentFeatureTypeMapping = ImmutableFeatureTypeMapping.builder();
-        //TODO providerDataWfs.putMappings(localName.toLowerCase(), currentFeatureTypeMapping);
+        currentFeatureTypeMapping = new ImmutableFeatureTypeMapping.Builder();
+        currentLocalName = localName.toLowerCase();
 
         mappedPaths.clear();
         currentPath.clear();
@@ -104,7 +122,7 @@ public class GmlFeatureTypeAnalyzer {
 
         namespaceNormalizer.addNamespace(nsUri);
 
-        ModifiableSourcePathMapping sourcePathMapping = ModifiableSourcePathMapping.create();
+        ImmutableSourcePathMapping.Builder sourcePathMapping = new ImmutableSourcePathMapping.Builder();
 
         for (TargetMappingProviderFromGml mappingProvider: mappingProviders) {
 
@@ -116,7 +134,8 @@ public class GmlFeatureTypeAnalyzer {
                 //currentFeatureType.getMappings().addMapping(fullName, mappingProvider.getTargetType(), targetMapping);
             }
         }
-        currentFeatureTypeMapping.putMappings(fullName, sourcePathMapping);
+        currentFeatureTypeMapping.putMappings(fullName, sourcePathMapping.build());
+
     }
 
     protected void analyzeAttribute(String nsUri, String localName, String type) {
@@ -128,7 +147,7 @@ public class GmlFeatureTypeAnalyzer {
 
         namespaceNormalizer.addNamespace(nsUri);
 
-        currentPath.track(nsUri, "@" + localName);
+        currentPath.track(nsUri, "@" + localName, false);
 
         // only gml:id of the feature for now
         // TODO: version
@@ -137,7 +156,7 @@ public class GmlFeatureTypeAnalyzer {
 
             if (currentFeatureTypeMapping != null && !isPathMapped(path)) {
 
-                ModifiableSourcePathMapping sourcePathMapping = ModifiableSourcePathMapping.create();
+                ImmutableSourcePathMapping.Builder sourcePathMapping = new ImmutableSourcePathMapping.Builder();
 
                 for (TargetMappingProviderFromGml mappingProvider: mappingProviders) {
 
@@ -151,16 +170,17 @@ public class GmlFeatureTypeAnalyzer {
                         //currentFeatureType.getMappings().addMapping(path, mappingProvider.getTargetType(), targetMapping);
                     }
                 }
-                currentFeatureTypeMapping.putMappings(path, sourcePathMapping);
+                currentFeatureTypeMapping.putMappings(path, sourcePathMapping.build());
             }
         }
     }
 
-    protected void analyzeProperty(String nsUri, String localName, String type, int depth, boolean isObject) {
+    protected void analyzeProperty(String nsUri, String localName, String type, int depth, boolean isObject,
+                                   boolean isMultiple) {
 
         namespaceNormalizer.addNamespace(nsUri);
 
-        currentPath.track(nsUri, localName, depth);
+        currentPath.track(nsUri, localName, depth, isMultiple);
 
         /*if (!isObject) {
             currentPathWithoutObjects.track(nsUri, localName, depth);
@@ -178,7 +198,7 @@ public class GmlFeatureTypeAnalyzer {
 
         if (currentFeatureTypeMapping != null && !isPathMapped(path)) {
 
-            ModifiableSourcePathMapping sourcePathMapping = ModifiableSourcePathMapping.create();
+            ImmutableSourcePathMapping.Builder sourcePathMapping = new ImmutableSourcePathMapping.Builder();
 
             for (TargetMappingProviderFromGml mappingProvider: mappingProviders) {
 
@@ -188,7 +208,7 @@ public class GmlFeatureTypeAnalyzer {
 
                 if (dataType.isValid()) {
 
-                    targetMapping = mappingProvider.getTargetMappingForProperty(currentPath.toFieldNameGml(), nsUri, localName, dataType);
+                    targetMapping = mappingProvider.getTargetMappingForProperty(currentPath.toFieldNameGml(), nsUri, localName, dataType, isMultiple);
 
                 } else {
 
@@ -209,8 +229,8 @@ public class GmlFeatureTypeAnalyzer {
                     //currentFeatureType.getMappings().addMapping(path, mappingProvider.getTargetType(), targetMapping);
                 }
             }
-            if (!sourcePathMapping.getMappings().isEmpty()) {
-                currentFeatureTypeMapping.putMappings(path, sourcePathMapping);
+            if (!sourcePathMapping.build().getMappings().isEmpty()) {
+                currentFeatureTypeMapping.putMappings(path, sourcePathMapping.build());
             }
         }
     }

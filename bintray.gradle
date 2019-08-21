@@ -1,4 +1,4 @@
-
+//def p = project
 allprojects { p ->
   if (project.hasProperty('bintrayUser')) {
     apply plugin: 'com.jfrog.bintray'

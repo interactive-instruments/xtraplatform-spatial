@@ -24,7 +24,10 @@ import java.util.Optional;
  */
 @Value.Immutable
 @Value.Modifiable
-@JsonDeserialize(as = ModifiableFeatureProviderDataPgis.class)
+//@JsonDeserialize(as = ModifiableFeatureProviderDataPgis.class)
+@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
+//@Value.Style(deepImmutablesDetection = true)
+@JsonDeserialize(builder = ImmutableFeatureProviderDataPgis.Builder.class)
 public abstract class FeatureProviderDataPgis extends FeatureProviderDataTransformer {
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
@@ -41,11 +44,11 @@ public abstract class FeatureProviderDataPgis extends FeatureProviderDataTransfo
         return SqlConnectorSlick.CONNECTOR_TYPE;
     }
 
-    public abstract ConnectionInfo getConnectionInfo();
+    //public abstract ConnectionInfo getConnectionInfo();
 
     @Value.Default
     @Override
-    public MappingStatus getMappingStatus() {
+    public /*TODO*/ImmutableMappingStatus getMappingStatus() {
         return new ImmutableMappingStatus.Builder()
                                      .enabled(true)
                                      .supported(true)

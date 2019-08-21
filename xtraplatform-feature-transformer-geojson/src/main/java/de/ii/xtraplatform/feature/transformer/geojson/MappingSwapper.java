@@ -1,6 +1,6 @@
 /**
  * Copyright 2019 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -40,7 +40,7 @@ public class MappingSwapper {
     }
 
     public FeatureTypeMapping swapMapping(FeatureTypeMapping mappings, String targetFormat) {
-        ImmutableFeatureTypeMapping.Builder builder = ImmutableFeatureTypeMapping.builder();
+        ImmutableFeatureTypeMapping.Builder builder = new ImmutableFeatureTypeMapping.Builder();
 
         mappings.getMappings()
                 .forEach((path, sourceMappings) -> {
@@ -49,14 +49,17 @@ public class MappingSwapper {
                                   .entrySet()
                                   .stream()
                                   .filter(targetMappingEntry -> targetMappingEntry.getKey()
-                                                                                  .equals(getSourceFormat()) && Objects.nonNull(targetMappingEntry.getValue().getName()))
+                                                                                  .equals(getSourceFormat()) && Objects.nonNull(targetMappingEntry.getValue()
+                                                                                                                                                  .getName()))
                                   .forEach(targetMappingEntry -> {
                                       Pair<String, String> swappedPaths = swapMultiplicities(path, targetMappingEntry.getValue()
-                                                                                                                     .getName(), targetMappingEntry.getValue().isSpatial());
+                                                                                                                     .getName(), targetMappingEntry.getValue()
+                                                                                                                                                   .isSpatial());
 
-                                      builder.putMappings(swappedPaths.first(), ImmutableSourcePathMapping.builder()
-                                                                                                          .putMappings(targetFormat, new MappingReadFromWrite(swappedPaths.second(), formatToRegex(targetMappingEntry.getValue().getFormat())))
-                                                                                                          .build());
+                                      builder.putMappings(swappedPaths.first(), new ImmutableSourcePathMapping.Builder()
+                                              .putMappings(targetFormat, new MappingReadFromWrite(swappedPaths.second(), formatToRegex(targetMappingEntry.getValue()
+                                                                                                                                                         .getFormat())))
+                                              .build());
                                   });
                 });
         return builder.build();
@@ -86,7 +89,9 @@ public class MappingSwapper {
     }
 
     private String formatToRegex(String format) {
-        return Objects.nonNull(format) ? format.replaceAll("(?<=\\{\\{)(\\w+)_(\\w+)(?=\\}\\})", "$1" + UNDERSCORE_REPLACEMENT + "$2").replaceAll("\\{\\{(\\w+)\\}\\}", "(?<$1>.+)").replaceAll("/", "\\\\/") : null;
+        return Objects.nonNull(format) ? format.replaceAll("(?<=\\{\\{)(\\w+)_(\\w+)(?=\\}\\})", "$1" + UNDERSCORE_REPLACEMENT + "$2")
+                                               .replaceAll("\\{\\{(\\w+)\\}\\}", "(?<$1>.+)")
+                                               .replaceAll("/", "\\\\/") : null;
     }
 
 

@@ -53,6 +53,8 @@ public class WFSCapabilitiesParser {
 
         SMInputCursor root = null;
 
+        metadataConsumer.analyzeStart();
+
         try {
             root = staxFactory.rootElementCursor(is.getByteStream()).advance();
 
@@ -100,6 +102,8 @@ public class WFSCapabilitiesParser {
                 }
             }
         }
+
+        metadataConsumer.analyzeEnd();
     }
 
     private void parseNamespaces(SMInputCursor cursor) throws XMLStreamException {

@@ -19,10 +19,11 @@ import java.util.Map;
 //@Value.Modifiable
 //@Value.Style(deepImmutablesDetection = true)
 //@JsonDeserialize(as = ModifiableFeatureTransformerServiceData.class)
-public abstract class FeatureTransformerServiceData<T extends FeatureTypeConfiguration> extends ServiceData {
+public abstract class FeatureTransformerServiceData<T extends FeatureTypeConfiguration> implements ServiceData {
 
     public abstract Map<String, T> getFeatureTypes();
 
+    //@JsonIgnore
     @JsonMerge
     public abstract FeatureProviderDataTransformer getFeatureProvider();
 }

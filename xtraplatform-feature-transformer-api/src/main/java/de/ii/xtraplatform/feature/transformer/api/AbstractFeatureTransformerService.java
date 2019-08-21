@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 // TODO: @Stereotype does not seem to work, maybe test with bnd-ipojo-plugin
 // needed to register the ConfigurationHandler when no other properties are set
 //@HandlerDeclaration("<properties></properties>")
-public abstract class AbstractFeatureTransformerService extends AbstractService<FeatureTransformerServiceData> implements FeatureTransformerService2 {
+public abstract class AbstractFeatureTransformerService extends AbstractService<FeatureTransformerServiceData> implements FeatureTransformerService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureTransformerService.class);
 

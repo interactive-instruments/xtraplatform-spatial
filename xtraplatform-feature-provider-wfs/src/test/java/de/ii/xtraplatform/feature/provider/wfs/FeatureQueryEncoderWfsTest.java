@@ -1,6 +1,6 @@
 /**
  * Copyright 2019 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTypeConfigurationOld;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping;
 import de.ii.xtraplatform.ogc.api.GML;
@@ -52,19 +52,20 @@ public class FeatureQueryEncoderWfsTest {
     private static final Versions VERSIONS = new Versions(WFS.VERSION._2_0_0, GML.VERSION._3_2_1);
     private static final XMLNamespaceNormalizer NAMESPACES = new XMLNamespaceNormalizer(ImmutableMap.of("au", "urn:inspire:au"));
 
-    private static final Map<String, FeatureTypeConfigurationOld> FEATURETYPES = ImmutableMap.of("urn:inspire:au:AdministrativeUnit",
-            new FeatureTypeConfigurationOld("AdministrativeUnit", "urn:inspire:au", "au:AdministrativeUnit",
-                    ImmutableFeatureTypeMapping.builder()
-                                               .mappings(ImmutableMap.of(
-                                                       "urn:inspire:au:nested/urn:inspire:au:name", ImmutableSourcePathMapping.builder()
-                                                                                                                              .mappings(ImmutableMap.of(TargetMapping.BASE_TYPE, new MockMapping("name")))
-                                                                                                                              .build(),
-                                                       "urn:inspire:au:pos", ImmutableSourcePathMapping.builder()
-                                                                                                       .mappings(ImmutableMap.of(TargetMapping.BASE_TYPE, new MockMapping("pos")))
-                                                                                                       .build()))
-                                               .build()));
+    private static final String FEATURETYPE_NAME = "AdministrativeUnit";
+    private static final String FEATURETYPE_NAMESPACE = "urn:inspire:au";
+    private static final FeatureTypeMapping FEATURETYPE_MAPPING = new ImmutableFeatureTypeMapping.Builder()
+            .mappings(ImmutableMap.of(
+                    "urn:inspire:au:nested/urn:inspire:au:name", ImmutableSourcePathMapping.builder()
+                                                                                           .mappings(ImmutableMap.of(TargetMapping.BASE_TYPE, new MockMapping("name")))
+                                                                                           .build(),
+                    "urn:inspire:au:pos", ImmutableSourcePathMapping.builder()
+                                                                    .mappings(ImmutableMap.of(TargetMapping.BASE_TYPE, new MockMapping("pos")))
+                                                                    .build()))
+            .build();
 
-    private static final FeatureQuery QUERY = ImmutableFeatureQuery.builder().type("AdministrativeUnit")
+    private static final FeatureQuery QUERY = ImmutableFeatureQuery.builder()
+                                                                   .type("AdministrativeUnit")
                                                                    .limit(10)
                                                                    .offset(10)
                                                                    .filter("name = 'bla' AND name LIKE 'bl*' AND BBOX(pos, 50,7,51,8,'EPSG:4258')")
@@ -102,7 +103,7 @@ public class FeatureQueryEncoderWfsTest {
     public void testAsXml() throws ParserConfigurationException, IOException, SAXException, CQLException, TransformerException {
         //String xml = new FeatureQueryEncoderWfs(featureTypes, namespaceNormalizer).asXml(QUERY, NAMESPACES, VERSIONS);
         Date from = new Date();
-        final GetFeature getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPES.values().iterator().next().getNamespace(), FEATURETYPES.values().iterator().next().getName())), ImmutableMap.of("au", FEATURETYPES.entrySet().iterator().next().getValue().getMappings()), NAMESPACES, null).encode(QUERY, ImmutableMap.of());
+        final GetFeature getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPE_NAMESPACE, FEATURETYPE_NAME)), ImmutableMap.of("au", FEATURETYPE_MAPPING), NAMESPACES, null).encode(QUERY, ImmutableMap.of());
 
         LOGGER.debug("TOOK {}", new Date().getTime() - from.getTime());
         Assert.assertNotNull(getFeature);
@@ -119,7 +120,7 @@ public class FeatureQueryEncoderWfsTest {
     @Test(groups = {"default"})
     public void testAsKvp() throws ParserConfigurationException, IOException, SAXException, CQLException, TransformerException {
         //Map<String, String> kvp = new FeatureQueryEncoderWfs(featureTypes, namespaceNormalizer).asKvp(QUERY, NAMESPACES, VERSIONS);
-        final GetFeature getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPES.values().iterator().next().getNamespace(), FEATURETYPES.values().iterator().next().getName())), ImmutableMap.of("au", FEATURETYPES.entrySet().iterator().next().getValue().getMappings()), NAMESPACES, null).encode(QUERY, ImmutableMap.of());
+        final GetFeature getFeature = new FeatureQueryEncoderWfs(ImmutableMap.of("au", new QName(FEATURETYPE_NAMESPACE, FEATURETYPE_NAME)), ImmutableMap.of("au", FEATURETYPE_MAPPING), NAMESPACES, null).encode(QUERY, ImmutableMap.of());
 
         Assert.assertNotNull(getFeature);
 
@@ -166,6 +167,7 @@ public class FeatureQueryEncoderWfsTest {
     }
 
     enum bla {BLA}
+
     static class MockMapping implements TargetMapping<bla> {
 
         private final String name;

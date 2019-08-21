@@ -1,9 +1,13 @@
 /**
  * Copyright 2019 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * bla
+ * <p>
+ * bla
  */
 /**
  * bla
@@ -11,10 +15,11 @@
 package de.ii.xtraplatform.feature.transformer.geojson;
 
 import com.google.common.base.Joiner;
-import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import com.google.common.collect.ImmutableList;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -22,12 +27,15 @@ import java.util.List;
  */
 // TODO: make XMLPathTracker extension of this
 public class JsonPathTracker {
-    private List<String> localPath;
-    private final Joiner joiner;
+
+    private final String[] localPath;
+    private int length;
+    private static final Joiner JOINER = Joiner.on('.')
+                                               .skipNulls();
 
     public JsonPathTracker() {
-        this.localPath = new ArrayList<>();
-        this.joiner = Joiner.on('.').skipNulls();
+        this.localPath = new String[64];
+        this.length = 0;
     }
 
     public void track(int depth) {
@@ -47,21 +55,26 @@ public class JsonPathTracker {
         if (depth <= 0) {
             return;
         }
-        if (depth <= localPath.size()) {
-            localPath.subList(depth - 1, localPath.size()).clear();
+        if (depth <= length/*localPath.size()*/) {
+            //localPath.subList(depth - 1, localPath.size()).clear();
+            length = depth - 1;
         }
     }
 
     public void track(String localName) {
-        localPath.add(localName);
+        localPath[length] = localName;
+        length++;
     }
 
     @Override
     public String toString() {
-        return joiner.join(localPath);
+        //return JOINER.join(localPath.build());
+        return Arrays.stream(localPath, 0, length - 1)
+                     .collect(Collectors.joining("."));
     }
 
     public List<String> asList() {
-        return localPath;
+        return Arrays.stream(localPath, 0, length - 1)
+                     .collect(ImmutableList.toImmutableList());
     }
 }

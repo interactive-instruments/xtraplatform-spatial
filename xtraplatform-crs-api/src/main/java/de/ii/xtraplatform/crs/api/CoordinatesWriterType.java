@@ -44,14 +44,14 @@ public enum CoordinatesWriterType {
         @Override
         Writer create(Builder builder) {
             //LOGGER.debug("creating GML2JsonBufferedTransformingCoordinatesWriter");
-            return new BufferedTransformingCoordinatesWriter(builder.formatter, builder.srsDimension, builder.transformer, builder.swap, builder.reversepolygon);
+            return new BufferedTransformingCoordinatesWriter(builder.formatter, builder.srsDimension, builder.transformer, builder.swap, builder.reversepolygon, builder.precision);
         }
     },
     SIMPLIFY_BUFFER_TRANSFORM {
         @Override
         Writer create(Builder builder) {
             //LOGGER.debug("creating GML2JsonSimplifiyingBufferedTransformingCoordinatesWriter");
-            return new SimplifiyingBufferedTransformingCoordinatesWriter(builder.formatter, builder.srsDimension, builder.transformer, builder.simplifier, builder.swap, builder.reversepolygon);
+            return new SimplifiyingBufferedTransformingCoordinatesWriter(builder.formatter, builder.srsDimension, builder.transformer, builder.simplifier, builder.swap, builder.reversepolygon, builder.precision);
         }
     };
 
@@ -76,6 +76,7 @@ public enum CoordinatesWriterType {
         private boolean reversepolygon;
         private CrsTransformer transformer;
         private DouglasPeuckerLineSimplifier simplifier;
+        private int precision;
         
         public Builder () {
             this.srsDimension = 2;
@@ -83,6 +84,7 @@ public enum CoordinatesWriterType {
             this.transform = false;
             this.simplify = false;
             this.reversepolygon = false;
+            this.precision = 0;
         }
         
         public CoordinatesWriterType getType() {
@@ -136,6 +138,12 @@ public enum CoordinatesWriterType {
         // TODO: staged builder, has to be set after transformer
         public Builder simplifier(double maxAllowableOffset, int minPoints) {
             this.simplifier = new DouglasPeuckerLineSimplifier(normalizeMaxAllowableOffset(maxAllowableOffset), minPoints);
+            this.simplify = true;
+            return this;
+        }
+
+        public Builder precision(int precision) {
+            this.precision = precision;
             this.simplify = true;
             return this;
         }

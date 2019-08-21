@@ -1,6 +1,6 @@
 /**
  * Copyright 2019 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -37,19 +37,28 @@ import java.util.regex.Pattern;
  */
 public class GmlStreamParser {
 
-    public static Sink<ByteString, CompletionStage<Done>> consume(final QName featureType, final GmlConsumer gmlConsumer) {
+    public static Sink<ByteString, CompletionStage<Done>> consume(final QName featureType,
+                                                                  final GmlConsumer gmlConsumer) {
         return consume(ImmutableList.of(featureType), gmlConsumer);
     }
 
-    public static Sink<ByteString, CompletionStage<Done>> consume(final List<QName> featureTypes, final GmlConsumer gmlConsumer) {
+    public static Sink<ByteString, CompletionStage<Done>> consume(final List<QName> featureTypes,
+                                                                  final GmlConsumer gmlConsumer) {
         return Sink.fromGraph(new FeatureSinkFromGml(featureTypes, gmlConsumer));
     }
 
-    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureType, final FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer, List<String> fields) {
+    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureType,
+                                                                    final FeatureTypeMapping featureTypeMapping,
+                                                                    final FeatureTransformer featureTransformer,
+                                                                    List<String> fields) {
         return transform(featureType, featureTypeMapping, featureTransformer, fields, ImmutableMap.of());
     }
 
-    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureType, final FeatureTypeMapping featureTypeMapping, final FeatureTransformer featureTransformer, List<String> fields, Map<QName, List<String>> resolvableTypes) {
+    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureType,
+                                                                    final FeatureTypeMapping featureTypeMapping,
+                                                                    final FeatureTransformer featureTransformer,
+                                                                    List<String> fields,
+                                                                    Map<QName, List<String>> resolvableTypes) {
         List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(featureType) : ImmutableList.<QName>builder().add(featureType)
                                                                                                                              .addAll(resolvableTypes.keySet())
                                                                                                                              .build();
@@ -80,10 +89,12 @@ public class GmlStreamParser {
         }
 
         @Override
-        public Tuple2<GraphStageLogic, CompletionStage<Done>> createLogicAndMaterializedValue(Attributes inheritedAttributes) throws Exception {
+        public Tuple2<GraphStageLogic, CompletionStage<Done>> createLogicAndMaterializedValue(
+                Attributes inheritedAttributes) throws Exception {
             CompletableFuture<Done> promise = new CompletableFuture<>();
 
             GraphStageLogic logic = new AbstractStreamingGmlGraphStage(shape, featureTypes, gmlConsumer) {
+                int chunks = 0;
 
                 @Override
                 public void preStart() throws Exception {
@@ -180,7 +191,6 @@ public class GmlStreamParser {
                             } catch (Exception e) {
                                 promise.completeExceptionally(e);
                             }
-
                             completeStage();
                             promise.complete(Done.getInstance());
                         }

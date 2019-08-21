@@ -38,7 +38,15 @@ public abstract class FeatureQuery {
     public boolean hitsOnly() {return false;}
 
     @Value.Default
+    public boolean propertyOnly() {return false;}
+
+    @Value.Default
     public double getMaxAllowableOffset() {
+        return 0;
+    }
+
+    @Value.Default
+    public int getGeometryPrecision() {
         return 0;
     }
 

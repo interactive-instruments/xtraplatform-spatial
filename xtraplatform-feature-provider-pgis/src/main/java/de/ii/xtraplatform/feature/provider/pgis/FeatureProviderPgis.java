@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import de.ii.xtraplatform.akka.http.ActorSystemProvider;
+import de.ii.xtraplatform.akka.ActorSystemProvider;
 import de.ii.xtraplatform.crs.api.BoundingBox;
 import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
@@ -30,6 +30,7 @@ import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
@@ -85,7 +86,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
 
     private final ActorSystem system;
     private final ActorMaterializer materializer;
-    private final FeatureProviderDataPgis data;
+    private final FeatureProviderDataTransformer data;
     private SlickSession session;
     private Map<String, SqlFeatureSource> featureSources;
     private Map<String, SqlFeatureInserts> featureAddSinks;
@@ -94,7 +95,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     private Map<String, String> extentQueries;
 
 
-    FeatureProviderPgis(@Context BundleContext context, @Requires ActorSystemProvider actorSystemProvider, @Requires CrsTransformation crsTransformation, @Property(name = ".data") FeatureProviderDataPgis data) {
+    FeatureProviderPgis(@Context BundleContext context, @Requires ActorSystemProvider actorSystemProvider, @Requires CrsTransformation crsTransformation, @Property(name = ".data") FeatureProviderDataTransformer data) {
         //TODO: starts akka for every instance, move to singleton
         this.system = actorSystemProvider.getActorSystem(context, config);
         this.materializer = ActorMaterializer.create(system);
@@ -109,7 +110,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
                                              .getClassLoader();
             Thread.currentThread()
                   .setContextClassLoader(classLoader);
-            DatabaseConfig<JdbcProfile> databaseConfig = DatabaseConfig$.MODULE$.forConfig("", createSlickConfig(data.getConnectionInfo()), classLoader, ClassTag$.MODULE$.apply(JdbcProfile.class));
+            DatabaseConfig<JdbcProfile> databaseConfig = DatabaseConfig$.MODULE$.forConfig("", createSlickConfig((ConnectionInfoPgis) data.getConnectionInfo()), classLoader, ClassTag$.MODULE$.apply(JdbcProfile.class));
             this.session = SlickSession.forConfig(databaseConfig);
             system.registerOnTermination(session::close);
 
@@ -127,12 +128,12 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
 
     @Override
     public FeatureStream<FeatureConsumer> getFeatureStream(FeatureQuery query) {
-        return featureConsumer -> createFeatureStream(query, featureConsumer);
+        return (featureConsumer, timer) -> createFeatureStream(query, featureConsumer);
     }
 
     @Override
     public FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query) {
-        return featureTransformer -> createFeatureStream(query, new FeatureTransformerFromSql(data.getMappings()
+        return (featureTransformer, timer) -> createFeatureStream(query, new FeatureTransformerFromSql(data.getMappings()
                                                                                                   .get(query.getType()), featureTransformer, query.getFields()));
     }
 
@@ -242,8 +243,13 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     @Override
     public void deleteFeature(String featureType, String id) {
         featureRemover.remove(featureType, id, Optional.ofNullable(data.getTrigger())
-                                                   .map(featureActionTrigger -> featureActionTrigger.getOnDelete(id))
+                                                   .map(featureActionTrigger -> ((FeatureActionTrigger)featureActionTrigger).getOnDelete(id))
                                                    .orElse(ImmutableList.of()));
+    }
+
+    @Override
+    public boolean supportsCrs(EpsgCrs crs) {
+        return data.getNativeCrs().equals(crs);
     }
 
     @Override
@@ -264,7 +270,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
                             .runQuery(query, featureConsumer);
     }
 
-    private Config createSlickConfig(ConnectionInfo connectionInfo) {
+    private Config createSlickConfig(ConnectionInfoPgis connectionInfo) {
         String password = connectionInfo.getPassword();
         try {
             password = new String(Base64.getDecoder()

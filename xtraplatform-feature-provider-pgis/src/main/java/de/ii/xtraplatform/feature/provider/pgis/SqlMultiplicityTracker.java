@@ -7,6 +7,9 @@
  */
 package de.ii.xtraplatform.feature.provider.pgis;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,6 +24,9 @@ import java.util.stream.Collectors;
  * @author zahnen
  */
 public class SqlMultiplicityTracker {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlMultiplicityTracker.class);
+
     private final Map<String, String> currentIds;
     private final Map<String, Integer> currentMultiplicities;
     private final Map<String, Set<String>> children;
@@ -59,6 +65,7 @@ public class SqlMultiplicityTracker {
             String table = element.substring(element.indexOf("]") + 1);
 
             if (currentIds.containsKey(table)) {
+                LOGGER.debug("TRACKER {} {} {}", table, multiplicityIndex, ids);
                 String id = ids.get(multiplicityIndex + 1);
                 if (increased) {
                     currentIds.put(table, id);

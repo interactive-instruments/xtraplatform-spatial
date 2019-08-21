@@ -30,10 +30,6 @@ public interface FeatureProvider<T extends FeatureConsumer> {
         void getMetadata(FeatureProviderMetadataConsumer metadataConsumer);
     }
 
-    interface DataGenerator<U extends FeatureProviderData> {
-        FeatureProviderMetadataConsumer getDataGenerator(U data);
-    }
-
     //TODO
     /*interface Queries {
         FeatureStream<T> getFeatureStream(FeatureQuery query);

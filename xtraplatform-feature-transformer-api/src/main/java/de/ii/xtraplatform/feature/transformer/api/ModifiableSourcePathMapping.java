@@ -146,9 +146,9 @@ public final class ModifiableSourcePathMapping
    * Converts to {@link ImmutableSourcePathMapping ImmutableSourcePathMapping}.
    * @return An immutable instance of SourcePathMapping
    */
-  public final ImmutableSourcePathMapping toImmutable() {
+  /*public final ImmutableSourcePathMapping toImmutable() {
     return ImmutableSourcePathMapping.copyOf(this);
-  }
+  }*/
 
   /**
    * This instance is equal to all instances of {@code ModifiableSourcePathMapping} that have equal attribute values.

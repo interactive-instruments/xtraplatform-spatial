@@ -29,11 +29,14 @@ public class BufferedTransformingCoordinatesWriter extends DefaultCoordinatesWri
     private final CrsTransformer transformer;
     private final boolean swap;
     private final boolean reversepolygon;
+    private final int precision;
 
     private int zCounter = 0;
     private boolean continuing;
 
-    public BufferedTransformingCoordinatesWriter(CoordinateFormatter formatter, int srsDimension, CrsTransformer transformer, boolean swap, boolean reversepolygon) {
+    public BufferedTransformingCoordinatesWriter(CoordinateFormatter formatter, int srsDimension,
+                                                 CrsTransformer transformer, boolean swap, boolean reversepolygon,
+                                                 int precision) {
         super(formatter, srsDimension);
         this.transformer = transformer;
         //this.tupleBuffer = new LazyStringCoordinateTuple();
@@ -41,6 +44,7 @@ public class BufferedTransformingCoordinatesWriter extends DefaultCoordinatesWri
         this.swap = swap;
         this.reversepolygon = reversepolygon;
         this.reversePolygonBuffer = new ArrayList<>();
+        this.precision = precision;
     }
 
     @Override
@@ -152,6 +156,13 @@ public class BufferedTransformingCoordinatesWriter extends DefaultCoordinatesWri
             for (int i = 0; i < numPts * 2; i += 2) {
                 out[i] = out2[i + 1];
                 out[i + 1] = out2[i];
+            }
+        }
+
+        if (precision > 0) {
+            double factor = Math.pow(10, precision);
+            for(int i = 0; i < numPts * 2; i++){
+                out[i] = (double)Math.round(out[i]* factor) / factor;
             }
         }
 

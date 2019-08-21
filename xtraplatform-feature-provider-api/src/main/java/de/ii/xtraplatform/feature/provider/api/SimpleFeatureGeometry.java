@@ -18,6 +18,7 @@ public enum SimpleFeatureGeometry {
     POLYGON,
     MULTI_POLYGON,
     GEOMETRY_COLLECTION,
+    ANY,
     NONE;
 
     public boolean isValid() {
