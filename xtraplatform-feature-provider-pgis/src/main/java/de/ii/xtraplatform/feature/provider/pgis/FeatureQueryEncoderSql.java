@@ -23,6 +23,8 @@ import org.opengis.filter.PropertyIsLike;
 import org.opengis.filter.expression.Expression;
 import org.opengis.filter.expression.PropertyName;
 import org.opengis.filter.spatial.BBOX;
+import org.opengis.filter.temporal.After;
+import org.opengis.filter.temporal.Before;
 import org.opengis.filter.temporal.During;
 import org.opengis.filter.temporal.TEquals;
 import org.opengis.temporal.Instant;
@@ -168,6 +170,32 @@ public class FeatureQueryEncoderSql {
                     conditions.add("{{prop}} = '" + localDateTime.toInstant()
                                                                  .toString() + "'");
                     return super.visit(equals, extraData);
+                }
+
+                @Override
+                public Object visit(After after, Object extraData) {
+
+                    DateTimeFormatter dateTimeFormatter = DateTimeFormatter
+                            .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXX");
+                    ZonedDateTime localDateTime = ZonedDateTime.parse(toInstant(after.getExpression2()).getPosition()
+                                                                                                        .getDateTime(), dateTimeFormatter);
+                    conditions.add("{{prop}} AFTER '" + localDateTime.toInstant()
+                                                                 .toString() + "'");
+
+                    return super.visit(after, extraData);
+                }
+
+                @Override
+                public Object visit(Before before, Object extraData) {
+
+                    DateTimeFormatter dateTimeFormatter = DateTimeFormatter
+                            .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXX");
+                    ZonedDateTime localDateTime = ZonedDateTime.parse(toInstant(before.getExpression2()).getPosition()
+                                                                                                       .getDateTime(), dateTimeFormatter);
+                    conditions.add("{{prop}} BEFORE '" + localDateTime.toInstant()
+                                                                     .toString() + "'");
+
+                    return super.visit(before, extraData);
                 }
 
                 protected Instant toInstant(Expression e) {
