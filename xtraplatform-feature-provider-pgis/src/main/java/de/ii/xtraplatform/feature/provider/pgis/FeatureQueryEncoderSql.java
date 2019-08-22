@@ -179,7 +179,7 @@ public class FeatureQueryEncoderSql {
                             .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXX");
                     ZonedDateTime localDateTime = ZonedDateTime.parse(toInstant(after.getExpression2()).getPosition()
                                                                                                         .getDateTime(), dateTimeFormatter);
-                    conditions.add("{{prop}} AFTER '" + localDateTime.toInstant()
+                    conditions.add("{{prop}} > '" + localDateTime.toInstant()
                                                                  .toString() + "'");
 
                     return super.visit(after, extraData);
@@ -192,7 +192,7 @@ public class FeatureQueryEncoderSql {
                             .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXX");
                     ZonedDateTime localDateTime = ZonedDateTime.parse(toInstant(before.getExpression2()).getPosition()
                                                                                                        .getDateTime(), dateTimeFormatter);
-                    conditions.add("{{prop}} BEFORE '" + localDateTime.toInstant()
+                    conditions.add("{{prop}} < '" + localDateTime.toInstant()
                                                                      .toString() + "'");
 
                     return super.visit(before, extraData);
