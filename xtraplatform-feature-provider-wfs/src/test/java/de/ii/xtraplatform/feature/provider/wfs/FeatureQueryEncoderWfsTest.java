@@ -1,6 +1,6 @@
 /**
  * Copyright 2019 interactive instruments GmbH
- * <p>
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -56,10 +56,10 @@ public class FeatureQueryEncoderWfsTest {
     private static final String FEATURETYPE_NAMESPACE = "urn:inspire:au";
     private static final FeatureTypeMapping FEATURETYPE_MAPPING = new ImmutableFeatureTypeMapping.Builder()
             .mappings(ImmutableMap.of(
-                    "urn:inspire:au:nested/urn:inspire:au:name", ImmutableSourcePathMapping.builder()
+                    "urn:inspire:au:nested/urn:inspire:au:name", new ImmutableSourcePathMapping.Builder()
                                                                                            .mappings(ImmutableMap.of(TargetMapping.BASE_TYPE, new MockMapping("name")))
                                                                                            .build(),
-                    "urn:inspire:au:pos", ImmutableSourcePathMapping.builder()
+                    "urn:inspire:au:pos", new ImmutableSourcePathMapping.Builder()
                                                                     .mappings(ImmutableMap.of(TargetMapping.BASE_TYPE, new MockMapping("pos")))
                                                                     .build()))
             .build();

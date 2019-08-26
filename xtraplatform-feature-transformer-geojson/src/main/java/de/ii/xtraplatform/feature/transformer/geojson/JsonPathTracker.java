@@ -1,13 +1,9 @@
 /**
  * Copyright 2019 interactive instruments GmbH
- * <p>
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- * <p>
- * bla
- * <p>
- * bla
  */
 /**
  * bla
@@ -69,11 +65,13 @@ public class JsonPathTracker {
     @Override
     public String toString() {
         //return JOINER.join(localPath.build());
+        if (length == 0) return "";
         return Arrays.stream(localPath, 0, length - 1)
                      .collect(Collectors.joining("."));
     }
 
     public List<String> asList() {
+        if (length == 0) return ImmutableList.of();
         return Arrays.stream(localPath, 0, length - 1)
                      .collect(ImmutableList.toImmutableList());
     }

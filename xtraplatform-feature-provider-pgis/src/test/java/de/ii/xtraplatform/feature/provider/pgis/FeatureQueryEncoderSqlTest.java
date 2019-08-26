@@ -22,7 +22,7 @@ import static org.testng.Assert.*;
 public class FeatureQueryEncoderSqlTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderSqlTest.class);
 
-    FeatureTypeMapping mappings = ImmutableFeatureTypeMapping.builder().build();
+    FeatureTypeMapping mappings = new ImmutableFeatureTypeMapping.Builder().build();
 
     ///fundorttiere/[id=id]artbeobachtung/[id=artbeobachtung_id]artbeobachtung_2_erfasser/[erfasser_id=id]erfasser/name LIKE '*Mat*'
     //fundorttiere.id IN (SELECT artbeobachtung_2_erfasser.artbeobachtung_id FROM artbeobachtung_2_erfasser JOIN erfasser ON artbeobachtung_2_erfasser.erfasser_id=erfasser.id WHERE erfasser.name ILIKE '%Mat%' )

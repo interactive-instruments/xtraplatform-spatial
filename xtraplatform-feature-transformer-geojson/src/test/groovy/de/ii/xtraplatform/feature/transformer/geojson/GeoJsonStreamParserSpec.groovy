@@ -15,6 +15,7 @@ import akka.util.ByteString
 import com.google.common.collect.ImmutableList
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import spock.lang.Ignore
 import spock.lang.Issue
 import spock.lang.Narrative
 import spock.lang.See
@@ -36,6 +37,7 @@ So that bar
 @See("http://spockframework.org/spec")
 @Issue("http://my.issues.org/FOO-1")
 @Unroll
+@Ignore//TODO
 class GeoJsonStreamParserSpec extends Specification {
 
     static final Logger LOGGER = LoggerFactory.getLogger(GeoJsonStreamParserSpec.class)

@@ -66,26 +66,26 @@ public class GeoJsonStreamParserTest {
     @Test
     public void test2() {
 
-        ImmutableFeatureTypeMapping mapping = ImmutableFeatureTypeMapping.builder()
+        ImmutableFeatureTypeMapping mapping = new ImmutableFeatureTypeMapping.Builder()
                                                                          .putMappings("erfasser/name",
-                                                                                 ImmutableSourcePathMapping.builder()
+                                                                                 new ImmutableSourcePathMapping.Builder()
                                                                                                            .putMappings("SQL", new MappingSwapper.MappingReadFromWrite("/fundortpflanzen/[id=id]artbeobachtung/[id=artbeobachtung_id]artbeobachtung_2_erfasser/[erfasser_id=id]erfasser[erfasser]/name", null))
                                                                                                            .build())
                                                                          .putMappings("foto/hauptfoto",
-                                                                                 ImmutableSourcePathMapping.builder()
+                                                                                 new ImmutableSourcePathMapping.Builder()
                                                                                                            .putMappings("SQL", new MappingSwapper.MappingReadFromWrite("/fundortpflanzen/[id=id]osirisobjekt/[id=osirisobjekt_id]osirisobjekt_2_foto/[foto_id=id]foto/hauptfoto", null))
                                                                                                            .build())
                                                                          .putMappings("geometry",
-                                                                                 ImmutableSourcePathMapping.builder()
+                                                                                 new ImmutableSourcePathMapping.Builder()
                                                                                                            .putMappings("SQL", new MappingSwapper.MappingReadFromWrite("/fundortpflanzen/[id=id]artbeobachtung/[geom=id]geom/geom", null))
                                                                                                            .build())
 
                                                                          .putMappings("raumreferenz/ortsangabe/kreisschluessel",
-                                                                                 ImmutableSourcePathMapping.builder()
+                                                                                 new ImmutableSourcePathMapping.Builder()
                                                                                                            .putMappings("SQL", new MappingSwapper.MappingReadFromWrite("/fundortpflanzen/[id=id]osirisobjekt/[id=osirisobjekt_id]osirisobjekt_2_raumreferenz/[raumreferenz_id=id]raumreferenz/[id=raumreferenz_id]raumreferenz_2_ortsangabe/[ortsangabe_id=id]ortsangaben/kreisschluessel", null))
                                                                                                            .build())
                                                                          .putMappings("raumreferenz/ortsangabe/flurstueckskennzeichen",
-                                                                                 ImmutableSourcePathMapping.builder()
+                                                                                 new ImmutableSourcePathMapping.Builder()
                                                                                                            .putMappings("SQL", new MappingSwapper.MappingReadFromWrite("/fundortpflanzen/[id=id]osirisobjekt/[id=osirisobjekt_id]osirisobjekt_2_raumreferenz/[raumreferenz_id=id]raumreferenz/[id=raumreferenz_id]raumreferenz_2_ortsangabe/[ortsangabe_id=id]ortsangaben/[id=ortsangaben_id]ortsangaben_flurstueckskennzeichen/flurstueckskennzeichen", null))
                                                                                                            .build())
                                                                          .build();
