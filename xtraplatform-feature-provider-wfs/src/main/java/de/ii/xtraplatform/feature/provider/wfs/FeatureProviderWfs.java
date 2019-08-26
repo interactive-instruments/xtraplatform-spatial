@@ -335,10 +335,13 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
                 }
             }
 
-            BadRequest pe = new BadRequest("Parsing of GetCapabilities response failed.");
+            BadRequest pe = new BadRequest("Retrieving or parsing of GetCapabilities failed.");
             pe.addDetail(ex.getMsg());
             for (String det : ex.getDetails()) {
                 pe.addDetail(det);
+            }
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Retrieving or parsing of GetCapabilities failed: {}", ex.getMessage(), ex.getCause());
             }
             throw pe;
         }

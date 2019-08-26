@@ -28,6 +28,11 @@ public abstract class MappingStatus {
 
     public abstract boolean getSupported();
 
+    @Value.Default
+    public boolean getRefined() {
+        return false;
+    }
+
     @JsonIgnore
     @Value.Derived
     public boolean getLoading() {

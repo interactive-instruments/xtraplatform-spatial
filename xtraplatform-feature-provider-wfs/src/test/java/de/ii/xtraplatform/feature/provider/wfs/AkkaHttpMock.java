@@ -27,11 +27,6 @@ public class AkkaHttpMock extends AkkaHttp {
     }
 
     @Override
-    public ActorMaterializer getMaterializer() {
-        return materializer;
-    }
-
-    @Override
     public Source<ByteString, NotUsed> get(String url) {
         return Source.from(ImmutableList.of(byteString));
     }

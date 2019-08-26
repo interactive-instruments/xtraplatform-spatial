@@ -38,4 +38,10 @@ public class WFSException extends XtraserverFrameworkException {
         this();
         this.msg = msg;
     }
+
+    public WFSException(String msg, Throwable cause) {
+        this();
+        this.msg = msg;
+        this.initCause(cause);
+    }
 }

@@ -1,5 +1,7 @@
 language:
 - java
+jdk:
+- openjdk8
 before_cache:
 - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
 - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
@@ -12,8 +14,7 @@ install:
 script:
 - "./gradlew check -PbintrayUser=$BINTRAY_USER -PbintrayApiKey=$BINTRAY_PASS"
 after_success:
-- if [[ -n "$TRAVIS_TAG" ]]; then ./gradlew bintrayUpload --continue -PbintrayUser=$BINTRAY_USER
-  -PbintrayApiKey=$BINTRAY_PASS; fi
+- if [[ -n "$TRAVIS_TAG" ]]; then ./gradlew bintrayUpload --continue -PbintrayUser=$BINTRAY_USER -PbintrayApiKey=$BINTRAY_PASS; fi
 env:
   global:
   - secure: BazmN4DpQNBqMCPKxC1QgFwFYJc41WwD3TG5mLT3Rg6AJlFO3McsjiDnc8/PJIACqaOtEPfcclvvUmQuTRVguZ5pnQWrQvKlxxcslmWB+QIYP9BD2KRoGgPob0Y/V8RCveWd4HzptDP6wqnIBEHphj/yGfAO6RJpw8PLId+4Dt4hRv2NRE4b21MKueKJj/+8Kg7SocNDSwLVLqExa4vZNSLwFod3ws2Q10iXmDVw3FvH1qV1p0SwKq+34cKTt3SXccD/oy6EIKSEo9dsZqpKXw8miGRfZiiwYG1I72nbYmFDxqRGj0SfzjzFmNsRs4NoKgqyBSQ28Qca6a1ceNmqtVOn1AA09HiUKTmzg/WZrKxWXVjDOd8S4BUVmRcq2ONkkiBw7GT2Hv80X8uyoBtH4MNsLr0c2j4Kd+lA7nABdXLrwqL6KN2zeAhyXWmQ+xQuvXQV7tweBusuKh5ATqut5+iro24aUmPicfmOEz9N4itatYXV9U9r165QPhR4kDufP4zMlcfx5iztneNIXvQb1WsqEXCX2onVkjLqpVF1nXBTQttyQnzOssx/ACW3VJrMK7uuOWMHp4H/nVg3a4J6O950RGhugUDpJYE/PBAkCuXcochv3BJdz5bgr+/OB8uBsdq/l6+JruJY1PQDntVO0TAU5UhO7iOUjuCiR21zoCw=

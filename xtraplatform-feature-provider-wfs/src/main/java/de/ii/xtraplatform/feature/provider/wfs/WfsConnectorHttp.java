@@ -8,16 +8,12 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import akka.Done;
-import akka.NotUsed;
 import akka.japi.Pair;
-import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import akka.stream.javadsl.StreamConverters;
 import akka.util.ByteString;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import de.ii.xtraplatform.akka.http.AkkaHttp;
+import de.ii.xtraplatform.akka.http.Http;
+import de.ii.xtraplatform.akka.http.HttpClient;
 import de.ii.xtraplatform.dropwizard.api.Dropwizard;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
@@ -32,11 +28,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-
-import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * @author zahnen
@@ -52,26 +47,29 @@ public class WfsConnectorHttp implements WfsConnector {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WfsConnectorHttp.class);
 
-    @Requires
-    private AkkaHttp akkaHttp;
+    //@Requires
+    //private AkkaHttp akkaHttp;
 
     private FeatureQueryEncoderWfs queryEncoder;
     private WfsRequestEncoder requestEncoder;
     private final MetricRegistry metricRegistry;
-
+    private final HttpClient httpClient;
     private final boolean useHttpPost;
 
-    WfsConnectorHttp(@Property(name = ".data") FeatureProviderDataTransformer data, @Requires Dropwizard dropwizard) {
-        this.useHttpPost = Optional.ofNullable((ConnectionInfoWfsHttp) data.getConnectionInfo())
-                                   .map(connectionInfo ->
-                                           connectionInfo.getMethod() == ConnectionInfoWfsHttp.METHOD.POST)
-                                   .orElse(false);
+    WfsConnectorHttp(@Property(name = ".data") FeatureProviderDataTransformer data, @Requires Dropwizard dropwizard,
+                     @Requires Http http) {
+        this.useHttpPost = ((ConnectionInfoWfsHttp) data.getConnectionInfo()).getMethod() == ConnectionInfoWfsHttp.METHOD.POST;
         this.metricRegistry = dropwizard.getEnvironment()
                                         .metrics();
 
-        Optional.ofNullable((ConnectionInfoWfsHttp) data.getConnectionInfo()).ifPresent(connectionInfoWfsHttp -> {
+        URI host = ((ConnectionInfoWfsHttp) data.getConnectionInfo()).getUri();
+
+        //TODO: get maxParallelRequests and idleTimeout from connectionInfo
+        this.httpClient = http.getHostClient(host, 16, 30);
+
+        /*Optional.ofNullable((ConnectionInfoWfsHttp) data.getConnectionInfo()).ifPresent(connectionInfoWfsHttp -> {
             akkaHttp.registerHost(connectionInfoWfsHttp.getUri());
-        });
+        });*/
     }
 
     @Override
@@ -83,22 +81,18 @@ public class WfsConnectorHttp implements WfsConnector {
     @Override
     public CompletionStage<Done> runQuery(FeatureQuery query, Sink<ByteString, CompletionStage<Done>> transformer,
                                           Map<String, String> additionalQueryParameters) {
-        final Source<ByteString, NotUsed> source;
 
-        Timer.Context timer2 = metricRegistry.timer(name(WfsConnectorHttp.class, "encode"))
-                                            .time();
         if (useHttpPost) {
             final Pair<String, String> requestUrlAndBody = queryEncoder.encodeFeatureQueryPost(query, additionalQueryParameters);
 
-            source = akkaHttp.postXml(requestUrlAndBody.first(), requestUrlAndBody.second());
+            return httpClient.postXml(requestUrlAndBody.first(), requestUrlAndBody.second(), transformer);
         } else {
             final String requestUrl = queryEncoder.encodeFeatureQuery(query, additionalQueryParameters);
 
-            timer2.stop();
-            source = akkaHttp.get(requestUrl);
+            return httpClient.get(requestUrl, transformer);
         }
 
-        Timer.Context timer = metricRegistry.timer(name(WfsConnectorHttp.class, "stream"))
+        /*Timer.Context timer = metricRegistry.timer(name(WfsConnectorHttp.class, "stream"))
                                             .time();
 
         return source.runWith(transformer, akkaHttp.getMaterializer())
@@ -112,13 +106,14 @@ public class WfsConnectorHttp implements WfsConnector {
                          return Done.getInstance();
                      })
                      .whenComplete((done, throwable) -> timer.stop());
+
+         */
     }
 
     @Override
     public InputStream runWfsOperation(final WfsOperation wfsOperation) {
         final String requestUrl = requestEncoder.getAsUrl(wfsOperation);
 
-        return akkaHttp.get(requestUrl)
-                       .runWith(StreamConverters.asInputStream(), akkaHttp.getMaterializer());
+        return httpClient.getAsInputStream(requestUrl);
     }
 }

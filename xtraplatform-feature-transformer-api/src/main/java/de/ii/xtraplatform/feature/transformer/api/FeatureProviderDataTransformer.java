@@ -34,7 +34,7 @@ import java.util.Optional;
 //@Value.Style(validationMethod = Value.Style.ValidationMethod.NONE)
 @Value.Immutable
 //@Value.Modifiable
-@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true, validationMethod = Value.Style.ValidationMethod.NONE)
+@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
 @ValueBuilderMapEncodingEnabled
 //@Value.Style(deepImmutablesDetection = true)
 @JsonDeserialize(builder = ImmutableFeatureProviderDataTransformer.Builder.class)
@@ -72,6 +72,7 @@ public abstract class FeatureProviderDataTransformer extends FeatureProviderData
         return new ImmutableMappingStatus.Builder()
                 .enabled(true)
                 .supported(true)
+                .refined(true)
                 .build();
     }
 
