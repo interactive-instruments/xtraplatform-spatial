@@ -134,5 +134,10 @@ public class BoundingBoxTransformerTest {
         public double getTargetUnitEquivalentInMeters() {
             return 0;
         }
+
+        @Override
+        public boolean needsCoordinateSwap() {
+            return false;
+        }
     }
 }
