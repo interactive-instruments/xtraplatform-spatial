@@ -44,6 +44,12 @@ import java.util.stream.Stream;
 //@JsonDeserialize(as = ModifiableFeatureTypeMappingAnySetter.class)
 public abstract class FeatureTypeMapping implements ValueInstance {
 
+    private static final Splitter SPLITTER_NS_HTTP = Splitter.onPattern("\\/(?=http)");
+    private static final Splitter SPLITTER_NS_HTTPS = Splitter.onPattern("\\/(?=https)");
+    private static final Splitter SPLITTER_DEFAULT = Splitter.on("/");
+    public static final String NS_HTTP = "http://";
+    public static final String NS_HTTPS = "https://";
+
     abstract static class Builder implements ValueBuilder<FeatureTypeMapping> {
         //@JsonAnySetter
         //public abstract ImmutableFeatureTypeMapping.Builder putMappings(String key, SourcePathMapping value);
@@ -78,7 +84,7 @@ public abstract class FeatureTypeMapping implements ValueInstance {
 
     // TODO: use prefixes for gml paths, split on / only
     private List<String> splitPath(String path) {
-        Splitter splitter = path.contains("http://") ? Splitter.onPattern("\\/(?=http)") : Splitter.on("/");
+            Splitter splitter = path.contains(NS_HTTP) ? SPLITTER_NS_HTTP : path.contains(NS_HTTPS) ? SPLITTER_NS_HTTPS : SPLITTER_DEFAULT;
         return splitter.omitEmptyStrings()
                        .splitToList(path);
     }

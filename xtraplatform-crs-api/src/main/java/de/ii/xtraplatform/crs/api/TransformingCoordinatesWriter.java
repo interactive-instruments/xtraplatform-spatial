@@ -40,7 +40,7 @@ public class TransformingCoordinatesWriter extends DefaultCoordinatesWriter {
 
     private void writeCoordinates() throws IOException {       
         if (transformer != null) {
-            CoordinateTuple c = transformer.transform(coordinateBuffer);
+            CoordinateTuple c = transformer.transform(coordinateBuffer, true);
 
             formatter.value(c.getXasString());
             formatter.value(c.getYasString());

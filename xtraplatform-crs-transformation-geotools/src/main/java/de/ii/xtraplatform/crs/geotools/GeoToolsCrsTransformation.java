@@ -16,15 +16,10 @@ import de.ii.xtraplatform.crs.api.EpsgCrs;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
-import org.geotools.filter.text.ecql.ECQL;
 import org.geotools.referencing.CRS;
-import org.opengis.filter.Filter;
 import org.opengis.referencing.FactoryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
 
 /**
  *
@@ -41,7 +36,7 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
         LOGGER.debug("warming up GeoTools ...");
 
         try {
-            new GeoToolsCrsTransformer(CRS.decode("EPSG:4326"), CRS.decode("EPSG:4258"), new EpsgCrs(4258));
+            new GeoToolsCrsTransformer(CRS.decode("EPSG:4326"), CRS.decode("EPSG:4258"), new EpsgCrs(4326), new EpsgCrs(4258));
         } catch (Throwable ex) {
             //ignore
         }
@@ -75,7 +70,7 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
     @Override
     public CrsTransformer getTransformer(String sourceCrs, String targetCrs) {
         try {
-            return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs)), CRS.decode(applyWorkarounds(targetCrs)), new EpsgCrs(targetCrs));
+            return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs)), CRS.decode(applyWorkarounds(targetCrs)), new EpsgCrs(sourceCrs), new EpsgCrs(targetCrs));
         } catch (FactoryException ex) {
             LOGGER.debug("GeoTools error", ex);
         }
@@ -85,7 +80,7 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
     @Override
     public CrsTransformer getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
         try {
-            return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs.getAsSimple()), sourceCrs.isForceLongitudeFirst()), CRS.decode(applyWorkarounds(targetCrs.getAsSimple()), targetCrs.isForceLongitudeFirst()), targetCrs);
+            return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs.getAsSimple()), sourceCrs.isForceLongitudeFirst()), CRS.decode(applyWorkarounds(targetCrs.getAsSimple()), targetCrs.isForceLongitudeFirst()), sourceCrs, targetCrs);
         } catch (FactoryException ex) {
             LOGGER.debug("GeoTools error", ex);
         }

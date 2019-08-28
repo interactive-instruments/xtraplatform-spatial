@@ -24,13 +24,15 @@ public interface CrsTransformer {
 
     CoordinateTuple transform(double x, double y);
 
-    CoordinateTuple transform(CoordinateTuple coordinateTuple);
+    CoordinateTuple transform(CoordinateTuple coordinateTuple, boolean swap);
 
-    double[] transform(double[] coordinates, int numberOfPoints);
+    double[] transform(double[] coordinates, int numberOfPoints, boolean swap);
     
     BoundingBox transformBoundingBox(BoundingBox boundingBox) throws CrsTransformationException;
 
     double getSourceUnitEquivalentInMeters();
 
     double getTargetUnitEquivalentInMeters();
+
+    boolean needsCoordinateSwap();
 }

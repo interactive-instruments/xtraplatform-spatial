@@ -134,7 +134,7 @@ public class BufferedTransformingCoordinatesWriter extends DefaultCoordinatesWri
     protected double[] postProcessCoordinates(double[] in, int numPts) {
         double[] out;
         if (transformer != null) {
-            out = transformer.transform(in, numPts);
+            out = transformer.transform(in, numPts, true);
         } else {
             if (this.swap) {
                 out = new double[numPts * 2];

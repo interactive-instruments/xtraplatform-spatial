@@ -38,7 +38,7 @@ public class GeoToolsCrsTransformerTest {
         CoordinateReferenceSystem scrs = CRS.decode("EPSG:4326");
         CoordinateReferenceSystem tcrs = CRS.decode("EPSG:3857");
 
-        GeoToolsCrsTransformer gct = new GeoToolsCrsTransformer(scrs,tcrs, new EpsgCrs(3857));
+        GeoToolsCrsTransformer gct = new GeoToolsCrsTransformer(scrs,tcrs, sourceCrs, new EpsgCrs(3857));
         
         double x = 50.7164;
         double y = 7.086;
@@ -55,7 +55,7 @@ public class GeoToolsCrsTransformerTest {
         Assert.assertEquals( t.getY(), ry );    
         
         CoordinateTuple tup = new CoordinateTuple(x, y);
-        t = gct.transform(tup);
+        t = gct.transform(tup, false);
         
         Assert.assertEquals( t.getXasString(), String.valueOf(rx));
         Assert.assertEquals( t.getYasString(), String.valueOf(ry) );
@@ -69,7 +69,7 @@ public class GeoToolsCrsTransformerTest {
             ra[i+1] = y;
         }
         
-        double [] re = gct.transform(ra, 5);
+        double [] re = gct.transform(ra, 5, false);
         
         for ( int i = 0; i < 10; i += 2){
             Assert.assertEquals( re[i], rx);
