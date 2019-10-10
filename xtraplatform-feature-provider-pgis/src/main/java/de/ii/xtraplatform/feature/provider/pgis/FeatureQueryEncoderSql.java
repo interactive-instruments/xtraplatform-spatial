@@ -119,7 +119,7 @@ public class FeatureQueryEncoderSql {
                 public Object visit(BBOX filter, Object extraData) {
                     LOGGER.debug("BBOX {} | {}, {}, {}, {}", filter.getPropertyName(), filter.getMinX(), filter.getMinY(), filter.getMaxX(), filter.getMaxY());
 
-                    conditions.add(String.format(Locale.US, "ST_Intersects({{prop}}, ST_GeomFromText('POLYGON((%1$.3f %2$.3f,%3$.3f %2$.3f,%3$.3f %4$.3f,%1$.3f %4$.3f,%1$.3f %2$.3f))',%5$s)) = 'TRUE'", filter.getMinX(), filter.getMinY(), filter.getMaxX(), filter.getMaxY(), new EpsgCrs(filter.getSRS()).getCode()));
+                    conditions.add(String.format(Locale.US, "ST_Intersects({{prop}}, ST_GeomFromText('POLYGON((%1$f %2$f,%3$f %2$f,%3$f %4$f,%1$f %4$f,%1$f %2$f))',%5$s)) = 'TRUE'", filter.getMinX(), filter.getMinY(), filter.getMaxX(), filter.getMaxY(), new EpsgCrs(filter.getSRS()).getCode()));
                     return super.visit(filter, extraData);
                 }
 
