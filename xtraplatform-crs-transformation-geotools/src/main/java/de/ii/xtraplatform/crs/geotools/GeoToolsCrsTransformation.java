@@ -83,8 +83,8 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
             return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs.getAsSimple()), sourceCrs.isForceLongitudeFirst()), CRS.decode(applyWorkarounds(targetCrs.getAsSimple()), targetCrs.isForceLongitudeFirst()), sourceCrs, targetCrs);
         } catch (FactoryException ex) {
             LOGGER.debug("GeoTools error", ex);
+            throw new IllegalArgumentException(ex.getMessage(), ex);
         }
-        return null;
     }
 
     private String applyWorkarounds(String code) {

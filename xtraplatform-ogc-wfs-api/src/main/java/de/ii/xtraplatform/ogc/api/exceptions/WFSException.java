@@ -25,6 +25,12 @@ public class WFSException extends XtraserverFrameworkException {
     }
 
     public WFSException() {
+        super();
+        this.init();
+    }
+
+    public WFSException(Throwable cause) {
+        super(cause);
         this.init();
     }
 
@@ -40,8 +46,7 @@ public class WFSException extends XtraserverFrameworkException {
     }
 
     public WFSException(String msg, Throwable cause) {
-        this();
+        this(cause);
         this.msg = msg;
-        this.initCause(cause);
     }
 }
