@@ -82,6 +82,7 @@ public class GMLDictionaryParser {
                     // ignore
                 }
             }
+            analyzer.analyzeEnd();
         }
     }
 
