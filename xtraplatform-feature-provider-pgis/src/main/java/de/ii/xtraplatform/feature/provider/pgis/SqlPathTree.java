@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 interactive instruments GmbH
+ * Copyright 2019 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -179,14 +179,12 @@ public abstract class SqlPathTree {
             TYPE type = null;
 
             if ((parentType == TYPE.MAIN || parentType == TYPE.MERGED) && node.getPath()
-                                                                              .startsWith("/[id=id]")) {
+                                                                              .startsWith("/[id=id]") && !node.getPath().contains("_2_")) {
                 type = TYPE.MERGED;
             } else {
                 List<Pair<String, Optional<List<String>>>> joinPathElements = getJoinPathElements(node.getPath());
 
-                if (joinPathElements.get(0)
-                                    .first()
-                                    .contains("_2_")) {
+                if (joinPathElements.stream().anyMatch(stringOptionalPair -> stringOptionalPair.first().contains("_2_"))) {
                     if (joinPathElements.size() == 1) {
                         type = TYPE.ID_1_N;
                     } else {
