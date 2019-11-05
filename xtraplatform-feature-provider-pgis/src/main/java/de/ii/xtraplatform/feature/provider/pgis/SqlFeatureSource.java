@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
+import de.ii.xtraplatform.feature.provider.sql.SqlPathTable;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import org.geotools.filter.text.cql2.CQLException;
 import org.slf4j.Logger;
@@ -512,7 +513,7 @@ public class SqlFeatureSource {
         for (int i = 0; i < queries1.size(); i++) {
             SqlFeatureQuery q = queries1.get(i);
             if (q.getSqlPath()
-                 .getType() == SqlPathTree.TYPE.ID_M_N) {
+                 .getType() == SqlPathTable.TYPE.ID_M_N) {
                 //all.remove(i);
                 //dependencies.put(i, new ArrayList<>());
                 parents.putIfAbsent(q.getSqlPath()
@@ -521,7 +522,7 @@ public class SqlFeatureSource {
             if (q.getSqlPathParent()
                  .isPresent() && q.getSqlPathParent()
                                   .get()
-                                  .getType() == SqlPathTree.TYPE.ID_M_N) {
+                                  .getType() == SqlPathTable.TYPE.ID_M_N) {
                 pdependencies.putIfAbsent(q.getSqlPathParent()
                                            .get()
                                            .getPath(), new ArrayList<>());

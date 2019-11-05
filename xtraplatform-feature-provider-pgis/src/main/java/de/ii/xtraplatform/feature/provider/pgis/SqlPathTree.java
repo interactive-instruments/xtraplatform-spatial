@@ -12,6 +12,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import de.ii.xtraplatform.feature.provider.sql.SqlPathTable;
 import org.immutables.value.Value;
 
 import java.util.ArrayDeque;
@@ -39,17 +40,8 @@ import java.util.stream.Stream;
  */
 @Value.Immutable
 public abstract class SqlPathTree {
-    enum TYPE {
-        MAIN,
-        MERGED,
-        ID_1_1,
-        ID_M_N,
-        ID_1_N,
-        REF,
-        UNDECIDED
-    }
 
-    abstract TYPE getType();
+    abstract SqlPathTable.TYPE getType();
 
     abstract List<String> getParentPaths();
 
@@ -173,22 +165,22 @@ public abstract class SqlPathTree {
                                 .build();
         }
 
-        private ImmutableSqlPathTree determineType(ImmutableSqlPathTree node, TYPE parentType) {
-            if (node.getType() != TYPE.UNDECIDED) return node;
+        private ImmutableSqlPathTree determineType(ImmutableSqlPathTree node, SqlPathTable.TYPE parentType) {
+            if (node.getType() != SqlPathTable.TYPE.UNDECIDED) return node;
 
-            TYPE type = null;
+            SqlPathTable.TYPE type = null;
 
-            if ((parentType == TYPE.MAIN || parentType == TYPE.MERGED) && node.getPath()
-                                                                              .startsWith("/[id=id]") && !node.getPath().contains("_2_")) {
-                type = TYPE.MERGED;
+            if ((parentType == SqlPathTable.TYPE.MAIN || parentType == SqlPathTable.TYPE.MERGED) && node.getPath()
+                                                                                                        .startsWith("/[id=id]") && !node.getPath().contains("_2_")) {
+                type = SqlPathTable.TYPE.MERGED;
             } else {
                 List<Pair<String, Optional<List<String>>>> joinPathElements = getJoinPathElements(node.getPath());
 
                 if (joinPathElements.stream().anyMatch(stringOptionalPair -> stringOptionalPair.first().contains("_2_"))) {
                     if (joinPathElements.size() == 1) {
-                        type = TYPE.ID_1_N;
+                        type = SqlPathTable.TYPE.ID_1_N;
                     } else {
-                        type = TYPE.ID_M_N;
+                        type = SqlPathTable.TYPE.ID_M_N;
                     }
                 } else if (joinPathElements.get(0)
                                            .second()
@@ -197,9 +189,9 @@ public abstract class SqlPathTree {
                                                                            .get()
                                                                            .get(0)
                                                                            .equals("id")) {
-                    type = TYPE.ID_1_N;
+                    type = SqlPathTable.TYPE.ID_1_N;
                 } else {
-                    type = TYPE.ID_1_1;
+                    type = SqlPathTable.TYPE.ID_1_1;
                 }
             }
 
@@ -296,15 +288,15 @@ public abstract class SqlPathTree {
                                .startsWith(sortedPaths.get(0) + "/[id=id]") && columnsPaths.stream()
                                                                                            .anyMatch(col -> col.endsWith("/id"))) {
                     isMain = false;
-                    node.type(TYPE.MAIN);
+                    node.type(SqlPathTable.TYPE.MAIN);
                 } else {
-                    node.type(TYPE.UNDECIDED);
+                    node.type(SqlPathTable.TYPE.UNDECIDED);
                 }
 
                 root.addChildren(node.buildNested());
             }
 
-            root.type(isMain ? TYPE.MAIN : TYPE.MERGED);
+            root.type(isMain ? SqlPathTable.TYPE.MAIN : SqlPathTable.TYPE.MERGED);
 
             return root;
         }
@@ -419,7 +411,7 @@ public abstract class SqlPathTree {
         SqlPathTree last = null;
         List<SqlPathTree> trail = findChild(path);
         for (SqlPathTree next: trail) {
-            if (next.getType() == SqlPathTree.TYPE.ID_M_N || next.getType() == SqlPathTree.TYPE.ID_1_N) {
+            if (next.getType() == SqlPathTable.TYPE.ID_M_N || next.getType() == SqlPathTable.TYPE.ID_1_N) {
                 if (!hasMultiParent) {
                     hasMultiParent = true;
                 } else {

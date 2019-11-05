@@ -152,9 +152,11 @@ public class SqlFeatureCreator {
     public CompletionStage<String> runQueries(String id) {
         //TODO
         Optional<String> idPath = inserts.getSqlPaths()
+                                         //TODO: find by type MAIN?
                                         .findChildEndsWith("/[id=id]osirisobjekt")
                                         .getColumnPaths()
                                         .stream()
+                                         //TODO: mark as instance id?
                                         .filter(p -> p.endsWith("/id"))
                                         .findFirst();
         if (!idPath.isPresent()) {

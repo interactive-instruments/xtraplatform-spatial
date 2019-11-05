@@ -4,6 +4,7 @@ version = '2.2.0'
 
 dependencies {
     provided project(':xtraplatform-feature-provider-api')
+    provided project(':xtraplatform-feature-transformer-api')
 
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
 
