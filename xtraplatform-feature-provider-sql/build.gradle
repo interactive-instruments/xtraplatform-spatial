@@ -2,9 +2,18 @@ apply plugin: 'scala'
 
 version = '2.2.0'
 
+sourceSets {
+    String sharedTestDir = project(':xtraplatform-feature-transformer-api').file("src/test/java")
+    test {
+        java.srcDir sharedTestDir
+    }
+}
+
 dependencies {
+    provided project(':xtraplatform-crs-api')
     provided project(':xtraplatform-feature-provider-api')
     provided project(':xtraplatform-feature-transformer-api')
+    provided project(':xtraplatform-geotools')
 
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
 
@@ -16,6 +25,7 @@ dependencies {
         exclude  group: 'org.slf4j', module: 'slf4j-api'
     }
 
+    testCompile project(':xtraplatform-feature-transformer-api')
     testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.18'
 }
 

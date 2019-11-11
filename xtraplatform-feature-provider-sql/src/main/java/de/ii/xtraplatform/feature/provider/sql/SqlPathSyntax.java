@@ -15,7 +15,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -363,6 +362,16 @@ public interface SqlPathSyntax {
     interface Options {
 
         @Value.Default
+        default String getDefaultPrimaryKey() {
+            return "id";
+        }
+
+        @Value.Default
+        default String getDefaultSortKey() {
+            return getDefaultPrimaryKey();
+        }
+
+        @Value.Default
         default String getJunctionTablePattern() {
             return ".+_2_.+";
         }
@@ -448,8 +457,13 @@ public interface SqlPathSyntax {
     }
 
     @Value.Derived
-    default String getTablePattern() {
+    default String getTablePatternString() {
         return "(?:" + getJoinConditionPattern() + ")?" + "(?<" + MatcherGroups.TABLE + ">" + getIdentifierPattern() + ")";
+    }
+
+    @Value.Derived
+    default Pattern getTablePattern() {
+        return Pattern.compile(getTablePatternString());
     }
 
     @Value.Derived
@@ -459,7 +473,7 @@ public interface SqlPathSyntax {
 
     @Value.Derived
     default Pattern getColumnPathPattern() {
-        return Pattern.compile("(?<" + MatcherGroups.PATH + ">" + "(?:" + getPathSeparator() + getTablePattern() + ")+)" + getPathSeparator() + "(?<" + MatcherGroups.COLUMNS + ">" + getColumnPattern() + ")" + "(?<" + MatcherGroups.FLAGS + ">" + getFlagsPattern() + ")?");
+        return Pattern.compile("(?<" + MatcherGroups.PATH + ">" + "(?:" + getPathSeparator() + getTablePatternString() + ")+)" + getPathSeparator() + "(?<" + MatcherGroups.COLUMNS + ">" + getColumnPattern() + ")" + "(?<" + MatcherGroups.FLAGS + ">" + getFlagsPattern() + ")?");
     }
 
     @Value.Default

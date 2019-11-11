@@ -7,7 +7,6 @@ dependencies {
     provided project(':xtraplatform-feature-transformer-api')
     provided project(':xtraplatform-ogc-wfs-api')
     provided project(':xtraplatform-feature-provider-sql')
-    provided project(':xtraplatform-geotools')
 
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
     //TODO: create own ActorSystemProvider, remove this dep

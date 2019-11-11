@@ -10,6 +10,7 @@ package de.ii.xtraplatform.feature.provider.pgis;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.dropwizard.api.JacksonSubTypeIds;
 import de.ii.xtraplatform.feature.provider.sql.SqlConnectorSlick;
+import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
@@ -27,7 +28,7 @@ public class FeatureProviderRegisterPgis implements JacksonSubTypeIds {
     public Map<Class<?>, String> getMapping() {
         return new ImmutableMap.Builder<Class<?>, String>()
                 .put(FeatureProviderDataPgis.class, FeatureProviderPgis.PROVIDER_TYPE)
-                .put(ConnectionInfoPgis.class, SqlConnectorSlick.CONNECTOR_TYPE)
+                .put(ConnectionInfoSql.class, SqlConnectorSlick.CONNECTOR_TYPE)
                 .build();
     }
 }

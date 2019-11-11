@@ -1,0 +1,10 @@
+package de.ii.xtraplatform.feature.provider.sql.domain;
+
+import java.util.stream.Stream;
+
+public interface FeatureStoreQueryGenerator<T> {
+
+    T getMetaQuery(FeatureStoreInstanceContainer instanceContainer, int limit, int offset, String filter, boolean computeNumberMatched);
+
+    Stream<T> getInstanceQueries(FeatureStoreInstanceContainer instanceContainer, String featureFilter, long minKey, long maxKey);
+}

@@ -30,6 +30,7 @@ import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
@@ -110,7 +111,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
                                              .getClassLoader();
             Thread.currentThread()
                   .setContextClassLoader(classLoader);
-            DatabaseConfig<JdbcProfile> databaseConfig = DatabaseConfig$.MODULE$.forConfig("", createSlickConfig((ConnectionInfoPgis) data.getConnectionInfo()), classLoader, ClassTag$.MODULE$.apply(JdbcProfile.class));
+            DatabaseConfig<JdbcProfile> databaseConfig = DatabaseConfig$.MODULE$.forConfig("", createSlickConfig((ConnectionInfoSql) data.getConnectionInfo()), classLoader, ClassTag$.MODULE$.apply(JdbcProfile.class));
             this.session = SlickSession.forConfig(databaseConfig);
             system.registerOnTermination(session::close);
 
@@ -270,7 +271,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
                             .runQuery(query, featureConsumer);
     }
 
-    private Config createSlickConfig(ConnectionInfoPgis connectionInfo) {
+    private Config createSlickConfig(ConnectionInfoSql connectionInfo) {
         String password = connectionInfo.getPassword();
         try {
             password = new String(Base64.getDecoder()

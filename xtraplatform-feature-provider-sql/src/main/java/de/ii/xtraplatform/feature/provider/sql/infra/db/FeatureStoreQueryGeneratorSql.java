@@ -1,0 +1,219 @@
+package de.ii.xtraplatform.feature.provider.sql.infra.db;
+
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttributesContainer;
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreQueryGenerator;
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreRelatedContainer;
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreRelation;
+import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSql;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator<String> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureStoreQueryGeneratorSql.class);
+
+    private final FilterEncoderSql filterEncoder;
+
+    public FeatureStoreQueryGeneratorSql(FilterEncoderSql filterEncoder) {
+        this.filterEncoder = filterEncoder;
+    }
+
+    //TODO: filters on related tables
+    @Override
+    public String getMetaQuery(FeatureStoreInstanceContainer instanceContainer, int limit, int offset, String filter,
+                               boolean computeNumberMatched) {
+        String limitSql = limit > 0 ? String.format(" LIMIT %d", limit) : "";
+        String offsetSql = offset > 0 ? String.format(" OFFSET %d", offset) : "";
+        String where = !Strings.isNullOrEmpty(filter) ? String.format(" WHERE %s", filterEncoder.encode(filter)) : "";
+
+        String numberReturned = String.format("SELECT MIN(SKEY) AS col1, MAX(SKEY) AS col2, count(*) AS col3 FROM (SELECT %2$s AS SKEY FROM %1$s%5$s ORDER BY 1%3$s%4$s) AS A", instanceContainer.getName(), instanceContainer.getSortKey(), limitSql, offsetSql, where);
+
+        if (computeNumberMatched) {
+            String numberMatched = String.format("SELECT count(*) AS col4 FROM (SELECT %2$s AS SKEY FROM %1$s%3$s ORDER BY 1) AS B", instanceContainer.getName(), instanceContainer.getSortKey(), where);
+            return String.format("SELECT * FROM (%s) AS C, (%s) AS D", numberReturned, numberMatched);
+        } else {
+            return String.format("SELECT *,-1 FROM (%s) AS B", numberReturned);
+        }
+    }
+
+    //TODO: filters on related tables
+    @Override
+    public Stream<String> getInstanceQueries(FeatureStoreInstanceContainer instanceContainer, String featureFilter,
+                                             long minKey, long maxKey) {
+
+        Optional<String> filter = Optional.ofNullable(Strings.emptyToNull(featureFilter));
+        boolean isIdFilter = filter.isPresent() && isIdFilter(filter.get());
+        List<String> aliases = getAliases(instanceContainer);
+        Optional<String> sqlFilter = filter.map(filterEncoder::encode);
+
+        Optional<String> whereClause = isIdFilter
+                ? sqlFilter
+                : Optional.of(toWhereClause(aliases.get(0), instanceContainer.getSortKey(), minKey, maxKey, sqlFilter));
+
+        return instanceContainer.getAllAttributesContainers()
+                                .stream()
+                                .map(attributeContainer -> getTableQuery(attributeContainer, whereClause));
+    }
+
+    //TODO: functions, st_astext
+    //TODO: double columns
+    //TODO: SqlFeatureQuery.toSimpleSql
+    private String getTableQuery(FeatureStoreAttributesContainer attributeContainer, Optional<String> whereClause) {
+        List<String> aliases = getAliases(attributeContainer);
+        String attributeContainerAlias = aliases.get(aliases.size() - 1);
+
+        String mainTable = String.format("%s %s", attributeContainer.getInstanceContainerName(), aliases.get(0));
+        List<String> sortFields = getSortFields(attributeContainer, aliases);
+
+        String columns = Stream.concat(sortFields.stream(), attributeContainer.getAttributes()
+                                                                              .stream()
+                                                                              .map((String column) -> getQualifiedColumn(attributeContainerAlias, column)))
+                               .collect(Collectors.joining(", "));
+
+        String join = getJoins(attributeContainer, aliases);
+
+        //String limit2 = limit > 0 ? " LIMIT " + limit : "";
+        //String offset2 = offset > 0 ? " OFFSET " + offset : "";
+        String where = whereClause.map(w -> " WHERE " + w)
+                                  .orElse("");
+        String orderBy = IntStream.rangeClosed(1, sortFields.size())
+                                  .boxed()
+                                  .map(String::valueOf)
+                                  .collect(Collectors.joining(","));
+
+        return String.format("SELECT %s FROM %s%s%s%s ORDER BY %s", columns, mainTable, join.isEmpty() ? "" : " ", join, where, orderBy);
+    }
+
+    private List<String> getAliases(FeatureStoreAttributesContainer attributeContainer) {
+        char alias = 'A';
+
+        if (!(attributeContainer instanceof FeatureStoreRelatedContainer)) {
+            return ImmutableList.of(String.valueOf(alias));
+        }
+
+        FeatureStoreRelatedContainer relatedContainer = (FeatureStoreRelatedContainer) attributeContainer;
+        ImmutableList.Builder<String> aliases = new ImmutableList.Builder<>();
+
+        for (FeatureStoreRelation relation : relatedContainer.getInstanceConnection()) {
+            aliases.add(String.valueOf(alias++));
+            if (relation.isM2N()) {
+                aliases.add(String.valueOf(alias++));
+            }
+        }
+
+        aliases.add(String.valueOf(alias++));
+
+        return aliases.build();
+    }
+
+    private String getJoins(FeatureStoreAttributesContainer attributeContainer, List<String> aliases) {
+
+        if (!(attributeContainer instanceof FeatureStoreRelatedContainer)) {
+            return "";
+        }
+
+        FeatureStoreRelatedContainer relatedContainer = (FeatureStoreRelatedContainer) attributeContainer;
+
+        ListIterator<String> aliasesIterator = aliases.listIterator();
+        return relatedContainer.getInstanceConnection()
+                               .stream()
+                               .flatMap(relation -> toJoins(relation, aliasesIterator))
+                               .collect(Collectors.joining(" "));
+    }
+
+    private Stream<String> toJoins(FeatureStoreRelation relation, ListIterator<String> aliases) {
+        List<String> joins = new ArrayList<>();
+
+        if (relation.isM2N()) {
+            String sourceAlias = aliases.next();
+            String junctionAlias = aliases.next();
+            String targetAlias = aliases.next();
+            aliases.previous();
+
+            joins.add(toJoin(relation.getJunction()
+                                     .get(), junctionAlias, relation.getJunctionSource()
+                                                                    .get(), sourceAlias, relation.getSourceField()));
+            joins.add(toJoin(relation.getTargetContainer(), targetAlias, relation.getTargetField(), junctionAlias, relation.getJunctionTarget()
+                                                                                                                           .get()));
+
+        } else {
+            String sourceAlias = aliases.next();
+            String targetAlias = aliases.next();
+            aliases.previous();
+
+            joins.add(toJoin(relation.getTargetContainer(), targetAlias, relation.getTargetField(), sourceAlias, relation.getSourceField()));
+        }
+
+        return joins.stream();
+    }
+
+    private String toJoin(String targetContainer, String targetAlias, String targetField, String sourceContainer,
+                          String sourceField) {
+        return String.format("JOIN %1$s %2$s ON %4$s.%5$s=%2$s.%3$s", targetContainer, targetAlias, targetField, sourceContainer, sourceField);
+    }
+
+    //TODO: sort is pretty slow, can we optimize it
+    //TODO: try to avoid sort combined with limit/offset
+    private List<String> getSortFields(FeatureStoreAttributesContainer attributesContainer, List<String> aliases) {
+        if (!(attributesContainer instanceof FeatureStoreRelatedContainer)) {
+            return ImmutableList.of(String.format("%s.%s AS SKEY", aliases.get(0), attributesContainer.getSortKey()));
+        } else {
+            FeatureStoreRelatedContainer relatedContainer = (FeatureStoreRelatedContainer) attributesContainer;
+            ListIterator<String> aliasesIterator = aliases.listIterator();
+
+            return relatedContainer.getSortKeys(aliasesIterator);
+        }
+    }
+
+    private String getQualifiedColumn(String table, String column) {
+        return column.contains("(")
+                ? column.replaceAll("((?:\\w+\\()+)(\\w+)((?:\\))+)", "$1" + table + ".$2$3 AS $2")
+                : String.format("%s.%s", table, column);
+    }
+
+    private boolean isIdFilter(String filter) {
+        return Strings.nullToEmpty(filter)
+                      .startsWith("IN ('");// TODO: matcher
+    }
+
+    //TODO: if main filter, use keyField IN (SELECT mainFilter) instead of gte and lte expressions
+    private String toWhereClause(String alias, String keyField, long minKey, long maxKey,
+                                 Optional<String> additionalFilter) {
+        StringBuilder filter = new StringBuilder()
+                .append("(")
+                .append(alias)
+                .append(".")
+                .append(keyField)
+                .append(" >= ")
+                .append(minKey)
+                .append(" AND ")
+                .append(alias)
+                .append(".")
+                .append(keyField)
+                .append(" <= ")
+                .append(maxKey)
+                .append(")");
+
+        if (additionalFilter.isPresent()) {
+            filter.append(" AND ")
+                  .append(additionalFilter.get());
+        }
+
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("SUB FILTER: {}", filter);
+        }
+
+        return filter.toString();
+    }
+}

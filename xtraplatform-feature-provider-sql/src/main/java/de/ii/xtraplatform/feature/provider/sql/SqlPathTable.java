@@ -93,7 +93,7 @@ public abstract class SqlPathTable {
 
     //TODO: only used in SqlFeatureInserts, save derived path list there?
     @Value.Derived
-    List<String> getTrail() {
+    public List<String> getTrail() {
         return new ImmutableList.Builder<String>()
                 .addAll(getParentPaths())
                 .add(getPath())

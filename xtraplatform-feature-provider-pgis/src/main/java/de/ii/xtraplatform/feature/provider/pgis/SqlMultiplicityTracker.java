@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.pgis;
 
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreMultiplicityTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 /**
  * @author zahnen
  */
-public class SqlMultiplicityTracker {
+public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlMultiplicityTracker.class);
 
@@ -42,6 +43,7 @@ public class SqlMultiplicityTracker {
         });
     }
 
+    @Override
     public void reset() {
         currentMultiplicities.clear();
         children.clear();
@@ -54,6 +56,7 @@ public class SqlMultiplicityTracker {
 
     //TODO test [..., reset all children (ortsangaben -> ortsangaben_flurstueckskennzeichen), ...]
 
+    @Override
     public void track(List<String> path, List<String> ids) {
         int multiplicityIndex = 0;
         boolean increased = false;
@@ -65,7 +68,10 @@ public class SqlMultiplicityTracker {
             String table = element.substring(element.indexOf("]") + 1);
 
             if (currentIds.containsKey(table)) {
-                LOGGER.debug("TRACKER {} {} {}", table, multiplicityIndex, ids);
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("TRACKER {} {} {}", table, multiplicityIndex, ids);
+                }
+
                 String id = ids.get(multiplicityIndex + 1);
                 if (increased) {
                     currentIds.put(table, id);
@@ -100,6 +106,7 @@ public class SqlMultiplicityTracker {
         }
     }
 
+    @Override
     public List<Integer> getMultiplicitiesForPath(List<String> path) {
         return path.stream()
                    .map(element -> element.substring(element.indexOf("]") + 1))

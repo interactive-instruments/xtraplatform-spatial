@@ -25,8 +25,11 @@ import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathTable;
+import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableMetaQueryResult;
+import de.ii.xtraplatform.feature.provider.sql.domain.MetaQueryResult;
+import de.ii.xtraplatform.feature.provider.sql.infra.db.FeatureQueryEncoderSql;
+import de.ii.xtraplatform.feature.provider.sql.infra.db.FeatureStoreQueryGeneratorSql;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
-import org.geotools.filter.text.cql2.CQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,14 +65,16 @@ public class SqlFeatureSource {
     private final SqlFeatureQueries queries;
     private final ActorMaterializer materializer;
     private final FeatureQueryEncoderSql queryEncoder;
-    private final boolean numberMatched;
+    private final boolean computeNumberMatched;
+    private final FeatureStoreQueryGeneratorSql queryGeneratorSql;
 
-    public SqlFeatureSource(SlickSession session, SqlFeatureQueries queries, ActorMaterializer materializer, boolean numberMatched, FeatureTypeMapping mappings) {
+    public SqlFeatureSource(SlickSession session, SqlFeatureQueries queries, ActorMaterializer materializer, boolean computeNumberMatched, FeatureTypeMapping mappings) {
         this.session = session;
         this.queries = queries;
         this.materializer = materializer;
-        this.queryEncoder = new FeatureQueryEncoderSql(queries, mappings);
-        this.numberMatched = numberMatched;
+        this.queryEncoder = new FeatureQueryEncoderSql(queries.getMainQuery(), mappings);
+        this.computeNumberMatched = computeNumberMatched;
+        this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(queryEncoder);
     }
 
     public CompletionStage<Done> runQuery(FeatureQuery query, FeatureConsumer consumer) {
@@ -79,13 +84,11 @@ public class SqlFeatureSource {
         String[] currentId = {null};
         int[] rowCount = {0};
         final Map<Integer, List<String>> previousPath = Maps.newHashMap(ImmutableMap.of(0, new ArrayList<>()));
-        //Map<String, List<Integer>> previousMultiplicities = new LinkedHashMap<>();
-        //Map<String, Set<String>> children = new LinkedHashMap<>();
 
         //TODO
         String mainTable = query.getType();
         List<String> mainTablePath = ImmutableList.of(mainTable);
-        //Map<String, List<Integer>> multiplicities = new HashMap<>();
+
         SqlMultiplicityTracker multiplicityTracker = new SqlMultiplicityTracker(queries.getMultiTables());
 
         return createRowStream(query)
@@ -99,119 +102,9 @@ public class SqlFeatureSource {
 
                         multiplicityTracker.track(slickRowInfo.getPath(), slickRowInfo.getIds());
 
-                        /*if (same) {
-                            List<Integer> multi = multiplicities.get(slickRowInfo.getName());
-                            multi.set(multi.size() - 1, multi.get(multi.size() - 1) + 1);
-                            multiplicities.put(slickRowInfo.getName(), multi);
 
-                            String table = slickRowInfo.getPath()
-                                                       .get(slickRowInfo.getPath()
-                                                                        .size() - 1)
-                                                       .substring(slickRowInfo.getPath()
-                                                                              .get(slickRowInfo.getPath()
-                                                                                               .size() - 1)
-                                                                              .indexOf("]") + 1);
-                            children.getOrDefault(table, new HashSet<>())
-                                    .forEach(c -> {
-                                        List<Integer> multi2 = multiplicities.get(c);
-                                        if (multi2 != null) {
-                                            multi2.set(multi2.size() - 1, 0);
-                                            multiplicities.put(c, multi2);
-                                        }
-                                    });
-                        } else {
-                            //TODO
-                            List<Integer> multi = new ArrayList<>();
-                            List<String> parentTables = new ArrayList<>();
-                            String child = null;
-                            boolean increased = false;
-                            int increasedMultiplicity = 0;
-                            for (int i = 0; i < slickRowInfo.getPath()
-                                                            .size(); i++) {
-                                String table = slickRowInfo.getPath()
-                                                           .get(i)
-                                                           .substring(slickRowInfo.getPath()
-                                                                                  .get(i)
-                                                                                  .indexOf("]") + 1);
-                                if (queries.getMultiTables()
-                                           .contains(table)) {
-                                    if (multiplicities.containsKey(table)) {
-
-                                        //path is not the same as last, but was seen before
-
-
-
-                                        if (i == slickRowInfo.getPath()
-                                                             .size() - 1) {
-                                            int m = multiplicities.get(table)
-                                                                  .get(multiplicities.get(table)
-                                                                                     .size() - 1);
-
-                                            int mp = increased ? multiplicities.get(table)
-                                                                               .get(increasedMultiplicity) : -1;
-
-
-
-                                            if (!increased || mp < multi.get(increasedMultiplicity)) {
-                                                m++;
-                                                LOGGER.debug("CURR_MULTI_INC {} {}", table, m);
-                                            } else {
-                                                int m2 = multi.remove(increasedMultiplicity);
-                                                multi.add(increasedMultiplicity, m2 + 1);
-                                                LOGGER.debug("PREV_MULTI_INC {} {}", increasedMultiplicity, m2);
-                                                if (m==0) m = 1;
-                                            }
-                                            increased = false;
-                                            increasedMultiplicity = -1;
-
-                                            multi.add(m);
-                                            child = table;
-
-                                            children.getOrDefault(table, new HashSet<>())
-                                                    .forEach(c -> {
-                                                        List<Integer> multi2 = multiplicities.get(c);
-                                                        if (multi2 != null) {
-                                                            multi2.set(multi2.size() - 1, 0);
-                                                            multiplicities.put(c, multi2);
-                                                        }
-                                                    });
-                                        } else {
-                                            int m = multiplicities.get(table)
-                                                                  .get(multiplicities.get(table)
-                                                                                     .size() - 1);
-                                            if (i == previousPath.get(0).size()-1 && previousPath.get(0).get(i).equals(slickRowInfo.getPath().get(i))) {
-                                                //m++;
-                                                increased = true;
-                                                //LOGGER.debug("PREV_MULTI_INC {} {}", table, m);
-                                                increasedMultiplicity = multi.size();
-                                            }
-
-                                            multi.add(m);
-                                            parentTables.add(table);
-                                        }
-                                    } else {
-                                        multi.add(1);
-                                        if (i == slickRowInfo.getPath()
-                                                             .size() - 1) {
-                                            child = table;
-                                        } else {
-                                            parentTables.add(table);
-                                        }
-                                    }
-                                }
-                            }
-                            multiplicities.put(slickRowInfo.getName(), multi);
-
-                            if (child != null) {
-                                for (String parent : parentTables) {
-                                    children.putIfAbsent(parent, new HashSet<>());
-                                    children.get(parent)
-                                            .add(child);
-                                }
-                            }
-                        }*/
                     }
-                    //LOGGER.debug("MULTI {}", multiplicities.get(slickRowInfo.getName()));
+
                     if (LOGGER.isTraceEnabled()) {
                         LOGGER.trace("MULTI2 {}", multiplicityTracker.getMultiplicitiesForPath(slickRowInfo.getPath()));
                     }
@@ -307,6 +200,34 @@ public class SqlFeatureSource {
                 });
     }
 
+    private MetaQueryResult runMetaQuery(String metaQuery) {
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("META QUERY: {}", metaQuery);
+        }
+
+        final ImmutableMetaQueryResult.Builder resultBuilder = ImmutableMetaQueryResult.builder();
+
+        Slick.source(session, metaQuery, slickRow -> {
+            resultBuilder.minKey(slickRow.nextLong()).maxKey(slickRow.nextLong()).numberReturned(slickRow.nextLong()).numberMatched(slickRow.nextLong());
+            return slickRow;
+        })
+             .runWith(Sink.ignore(), materializer)
+             .exceptionally(throwable -> {
+                 resultBuilder.minKey(0).maxKey(0).numberReturned(0).numberMatched(0);
+                 return Done.getInstance();
+             })
+             .toCompletableFuture()
+             .join();
+
+        ImmutableMetaQueryResult metaQueryResult = resultBuilder.build();
+
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("META QUERY RESULT: {}", metaQueryResult);
+        }
+
+        return metaQueryResult;
+    }
+
     private Source<SlickRowCustom, NotUsed> createRowStream(FeatureQuery request) {
         // TODO: if limit and or offset, get min max ids: SELECT MIN(SKEY) AS col1, MAX(SKEY) AS col2 FROM (SELECT fundorttiere.id AS SKEY FROM fundorttiere ORDER BY 1 LIMIT 3) AS A
         // TODO: then add or append to whereClause for all queries: WHERE (fundorttiere.id >= col1 AND fundorttiere.id <= col2)
@@ -320,130 +241,62 @@ public class SqlFeatureSource {
 
         FeatureQuery mainQuery = null;
         FeatureQuery subQuery = null;
+        String mainFilter = null;
         String subFilter = null;
-        long count = 0;
-        long count2 = 0;
+        long numberReturned = 0;
+        long numberMatched = 0;
 
-        if (!Strings.isNullOrEmpty(request.getFilter())) {
-            if (!isIdFilter(request.getFilter())) {
-                try {
-                    String filter = queryEncoder.encodeFilter(request.getFilter());
+        boolean hasFilter = !Strings.isNullOrEmpty(request.getFilter());
+        boolean hasIdFilter = hasFilter && isIdFilter(request.getFilter());
+        boolean hasConstraints = hasFilter || request.getLimit() > 0 || request.getOffset() > 0;
 
-                    FeatureQuery request2 = ImmutableFeatureQuery.builder()
-                                                                 .type(request.getType())
-                                                                 .limit(request.getLimit())
-                                                                 .offset(request.getOffset())
-                                                                 .filter(filter)
-                                                                 .build();
+        if (hasFilter) {
+            mainFilter = queryEncoder.encode(request.getFilter());
 
-                    //TODO can be min or max or both
-                    String query = createMetaQuery(request2);
-                    if (LOGGER.isTraceEnabled()) {
-                        LOGGER.trace("META QUERY {}", query);
-                    }
-                    final long[] minKey = new long[1];
-                    final long[] maxKey = new long[1];
-                    final long[] numberReturned = new long[1];
-                    final long[] numberMatched = new long[1];
-                    Slick.source(session, query, slickRow -> {
-                        minKey[0] = slickRow.nextLong();
-                        maxKey[0] = slickRow.nextLong();
-                        numberReturned[0] = slickRow.nextLong();
-                        numberMatched[0] = slickRow.nextLong();
-                        return slickRow;
-                    })
-                         .runWith(Sink.ignore(), materializer)
-                         .exceptionally(throwable -> {
-                             minKey[0] = 0;
-                             maxKey[0] = 0;
-                             numberReturned[0] = 0;
-                             numberMatched[0] = 0;
-                             return Done.getInstance();
-                         })
-                         .toCompletableFuture()
-                         .join();
-                    if (LOGGER.isTraceEnabled()) {
-                        LOGGER.trace("META INFO {} {} {} {}", minKey[0], maxKey[0], numberReturned[0], numberMatched[0]);
-                    }
+            mainQuery = ImmutableFeatureQuery.builder()
+                                             .type(request.getType())
+                                             .limit(request.getLimit())
+                                             .offset(request.getOffset())
+                                             .filter(mainFilter)
+                                             .build();
+        }
 
-                    count = numberReturned[0];
-                    count2 = numberMatched[0];
-                    subFilter = createSubFilter(request, queries.getMainQuery()
-                                                                .getSortColumn(), OptionalLong.of(minKey[0]), OptionalLong.of(maxKey[0])) + " AND " + filter;
-
-
-                    if (LOGGER.isTraceEnabled()) {
-                        LOGGER.trace("META CLAUSE {}", subFilter);
-                    }
-
-                    mainQuery = ImmutableFeatureQuery.builder()
-                                                     .type(request.getType())
-                                                     .limit(request.getLimit())
-                                                     .offset(request.getOffset())
-                                                     .filter(filter)
-                                                     .build();
-
-                    subQuery = ImmutableFeatureQuery.builder()
-                                                    .type(request.getType())
-                                                    .filter(subFilter)
-                                                    .build();
-                } catch (CQLException e) {
-                    throw new RuntimeException(e);
-                }
-            } else {
-                mainQuery = subQuery = request;
-            }
-        } else if (request.getLimit() > 0 || request.getOffset() > 0) {
+        if (hasIdFilter) {
+            subQuery = mainQuery;
+        } else if (hasConstraints) {
+            mainQuery = request;
             //TODO can be min or max or both
-            String query = createMetaQuery(request);
-            if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("META QUERY {}", query);
-            }
-            final long[] minKey = new long[1];
-            final long[] maxKey = new long[1];
-            final long[] numberReturned = new long[1];
-            final long[] numberMatched = new long[1];
-            Slick.source(session, query, slickRow -> {
-                minKey[0] = slickRow.nextLong();
-                maxKey[0] = slickRow.nextLong();
-                numberReturned[0] = slickRow.nextLong();
-                numberMatched[0] = slickRow.nextLong();
-                return slickRow;
-            })
-                 .runWith(Sink.ignore(), materializer)
-                 .exceptionally(throwable -> {
-                     minKey[0] = 0;
-                     maxKey[0] = 0;
-                     numberReturned[0] = 0;
-                     numberMatched[0] = 0;
-                     return Done.getInstance();
-                 })
-                 .toCompletableFuture()
-                 .join();
-            if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("META INFO {} {} {} {}", minKey[0], maxKey[0], numberReturned[0], numberMatched[0]);
-            }
+            String metaQuery = queryGeneratorSql.getMetaQuery(queries.getMainQuery(), mainQuery.getLimit(), mainQuery.getOffset(), mainQuery.getFilter(), computeNumberMatched);
+            MetaQueryResult metaQueryResult = runMetaQuery(metaQuery);
 
-            count = numberReturned[0];
-            count2 = numberMatched[0];
+            numberReturned = metaQueryResult.getNumberReturned();
+            numberMatched = metaQueryResult.getNumberMatched();
             subFilter = createSubFilter(request, queries.getMainQuery()
-                                                        .getSortColumn(), OptionalLong.of(minKey[0]), OptionalLong.of(maxKey[0]));
+                                                        .getSortColumn(), OptionalLong.of(metaQueryResult.getMinKey()), OptionalLong.of(metaQueryResult.getMaxKey()));
+            if (hasFilter) {
+                subFilter += " AND " + mainFilter;
+            }
 
 
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("META CLAUSE {}", subFilter);
             }
 
-            mainQuery = subQuery = ImmutableFeatureQuery.builder()
-                                                        .type(request.getType())
-                                                        .filter(subFilter)
-                                                        .build();
+            subQuery = ImmutableFeatureQuery.builder()
+                                            .type(request.getType())
+                                            .filter(subFilter)
+                                            .build();
+
+            if (!hasFilter) {
+                mainQuery = subQuery;
+            }
+
         } else {
             mainQuery = subQuery = request;
         }
 
         if (request.hitsOnly()) {
-            return Source.single(new SlickRowMeta(count2));
+            return Source.single(new SlickRowMeta(numberMatched));
         } else {
             FeatureQuery finalSubQuery = subQuery;
             FeatureQuery finalMainQuery = mainQuery;
@@ -457,17 +310,25 @@ public class SqlFeatureSource {
                     9, matchRows(),
                     2, matchRows()
             );*/
+
+            List<String> collect = queries.getQueries()
+                                          .stream()
+                                          .map(query -> query.toSql(finalSubQuery.getFilter(), finalSubQuery.getLimit(), finalSubQuery.getOffset()))
+                                          .map(query -> String.format("'%s'", query))
+                                          .collect(Collectors.toList());
+            LOGGER.debug("QUERIES: {}", collect);
+
             int[] i = {0};
             Source<SlickRowCustom, NotUsed>[] slickRows = queries.getQueries()
                                                                  .stream()
-                                                                 .map(query -> Slick.source(session, query.equals(queries.getMainQuery()) ? query.toSql(finalMainQuery.getFilter(), finalMainQuery.getLimit(), finalMainQuery.getOffset()) : query.toSql(finalSubQuery.getFilter(), finalSubQuery.getLimit(), finalSubQuery.getOffset()), toSlickRowInfo(query, i[0]++)))
+                                                                 .map(query -> Slick.source(session, query.toSql(finalSubQuery.getFilter(), finalSubQuery.getLimit(), finalSubQuery.getOffset()), toSlickRowInfo(query, i[0]++)))
                                                                  .toArray((IntFunction<Source<SlickRowCustom, NotUsed>[]>) Source[]::new);
 
             int mainQueryIndex = queries.getQueries()
                                         .indexOf(queries.getMainQuery());
 
             return mergeAndSort(slickRows)
-                    .prepend(Source.single(new SlickRowMeta(count, count2)));
+                    .prepend(Source.single(new SlickRowMeta(numberReturned, numberMatched)));
 
             //return MixAndMatch.create(dependencies, matchers, mainQueryIndex, slickRows)
             //                  .prepend(Source.single(new SlickRowMeta(count, count2)));
@@ -562,25 +423,6 @@ public class SqlFeatureSource {
             filter += keyField + " <= " + maxKey.getAsLong();
         }
         return "(" + filter + ")";
-    }
-
-    private String createMetaQuery(FeatureQuery request) {
-        String limit2 = request.getLimit() > 0 ? " LIMIT " + request.getLimit() : "";
-        String offset2 = request.getOffset() > 0 ? " OFFSET " + request.getOffset() : "";
-        String where = !Strings.isNullOrEmpty(request.getFilter()) ? " WHERE " + request.getFilter() : "";
-
-        String nr = String.format("SELECT MIN(SKEY) AS col1, MAX(SKEY) AS col2, count(*) AS col3 FROM (SELECT %2$s AS SKEY FROM %1$s%5$s ORDER BY 1%3$s%4$s) AS A", queries.getMainQuery()
-                                                                                                                                                                           .getTableName(), queries.getMainQuery()
-                                                                                                                                                                                                   .getSortColumn(), limit2, offset2, where);
-
-        if (!numberMatched) {
-            return String.format("SELECT *,-1 FROM (%s) AS B", nr);
-        } else {
-            String nm = String.format("SELECT count(*) AS col4 FROM (SELECT %2$s AS SKEY FROM %1$s%3$s ORDER BY 1) AS B", queries.getMainQuery()
-                                                                                                                                 .getTableName(), queries.getMainQuery()
-                                                                                                                                                         .getSortColumn(), where);
-            return String.format("SELECT * FROM (%s) AS C, (%s) AS D", nr, nm);
-        }
     }
 
     private boolean isIdFilter(String filter) {
