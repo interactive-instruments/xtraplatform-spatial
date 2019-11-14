@@ -8,8 +8,10 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.japi.Pair;
 import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import com.codahale.metrics.MetricRegistry;
 import de.ii.xtraplatform.akka.http.Http;
@@ -79,17 +81,17 @@ public class WfsConnectorHttp implements WfsConnector {
     }
 
     @Override
-    public CompletionStage<Done> runQuery(FeatureQuery query, Sink<ByteString, CompletionStage<Done>> transformer,
+    public CompletionStage<Done> runQuery(FeatureQuery query, Sink<ByteString, CompletionStage<Done>> consumer,
                                           Map<String, String> additionalQueryParameters) {
 
         if (useHttpPost) {
             final Pair<String, String> requestUrlAndBody = queryEncoder.encodeFeatureQueryPost(query, additionalQueryParameters);
 
-            return httpClient.postXml(requestUrlAndBody.first(), requestUrlAndBody.second(), transformer);
+            return httpClient.postXml(requestUrlAndBody.first(), requestUrlAndBody.second(), consumer);
         } else {
             final String requestUrl = queryEncoder.encodeFeatureQuery(query, additionalQueryParameters);
 
-            return httpClient.get(requestUrl, transformer);
+            return httpClient.get(requestUrl, consumer);
         }
 
         /*Timer.Context timer = metricRegistry.timer(name(WfsConnectorHttp.class, "stream"))
@@ -108,6 +110,11 @@ public class WfsConnectorHttp implements WfsConnector {
                      .whenComplete((done, throwable) -> timer.stop());
 
          */
+    }
+
+    @Override
+    public Source<ByteString, NotUsed> getSourceStream(String query, QueryOptions options) {
+        return null;
     }
 
     @Override

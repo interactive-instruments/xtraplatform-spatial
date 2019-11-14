@@ -3,9 +3,11 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPath;
 import de.ii.xtraplatform.feature.provider.sql.SqlPath;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreRelation.CARDINALITY;
+import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableFeatureStoreAttribute;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableFeatureStoreInstanceContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableFeatureStoreRelatedContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableFeatureStoreRelation;
@@ -73,6 +75,8 @@ public class FeatureStorePathParser {
             List<String> tablePathAsList = syntax.asList(tablePath);
             boolean isRoot = tablePathAsList.size() == 1;
             boolean isJunction = syntax.isJunctionTable(tablePathAsList.get(tablePathAsList.size() - 1));
+            Optional<String> queryable = syntax.getQueryableFlag(flags);
+            boolean isSpatial = syntax.getSpatialFlag(flags);
 
             return Optional.of(ImmutableSqlPath.builder()
                                                .tablePath(tablePath)
@@ -81,6 +85,8 @@ public class FeatureStorePathParser {
                                                .sortPriority(priority)
                                                .isRoot(isRoot)
                                                .isJunction(isJunction)
+                                               .queryable(queryable)
+                                               .isSpatial(isSpatial)
                                                .build());
         }
 
@@ -103,11 +109,23 @@ public class FeatureStorePathParser {
                     //                                               .size()))
                     .forEach(entry -> {
                         String tablePath = entry.getKey();
+                        List<String> tablePathAsList = syntax.asList(tablePath);
                         List<SqlPath> columnPaths = entry.getValue();
                         List<String> columns = columnPaths.stream()
                                                           .flatMap(sqlPath -> sqlPath.getColumns()
                                                                                      .stream())
                                                           .collect(Collectors.toList());
+                        List<FeatureStoreAttribute> attributes = columnPaths.stream()
+                                                                            .flatMap(sqlPath -> sqlPath.getColumns()
+                                                                                                       .stream()
+                                                                                                       .map(name -> ImmutableFeatureStoreAttribute.builder()
+                                                                                                                                                  .name(name)
+                                                                                                                                                  .path(tablePathAsList)
+                                                                                                                                                  .addPath(name)
+                                                                                                                                                  .queryable(sqlPath.getQueryable())
+                                                                                                                                                  .isSpatial(sqlPath.isSpatial())
+                                                                                                                                                  .build()))
+                                                                            .collect(Collectors.toList());
                         boolean hasOid = columnPaths.stream()
                                                     .anyMatch(SqlPath::hasOid);
                         OptionalInt priority = columnPaths.stream()
@@ -118,7 +136,6 @@ public class FeatureStorePathParser {
                                                           .findFirst();
                         boolean isRoot = columnPaths.stream()
                                                     .anyMatch(SqlPath::isRoot);
-                        List<String> tablePathAsList = syntax.asList(tablePath);
                         Matcher instanceContainerNameMatcher = syntax.getTablePattern()
                                                                      .matcher(tablePathAsList.get(0));
                         if (!instanceContainerNameMatcher.find()) {
@@ -142,7 +159,7 @@ public class FeatureStorePathParser {
                                                      .path(tablePathAsList)
                                                      //TODO: default id field from syntax options, optional id flag
                                                      .sortKey("id")
-                                                     .addAllAttributes(columns)
+                                                     .attributes(attributes)
                                                      .attributesPosition(instancePos[0]);
                             instancePos[0] = 0;
                         } else {
@@ -161,7 +178,7 @@ public class FeatureStorePathParser {
                                                                                                                              //TODO
                                                                                                                              .sortKey(sortKey)
                                                                                                                              .instanceConnection(instanceConnection)
-                                                                                                                             .addAllAttributes(columns)
+                                                                                                                             .attributes(attributes)
                                                                                                                              .build();
 
                             instanceContainerBuilders.get(instanceContainerName)
@@ -214,6 +231,7 @@ public class FeatureStorePathParser {
         return Stream.of(toRelation(source, link), toRelation(link, target));
     }
 
+    //TODO: support sortKey flag on table instead of getDefaultPrimaryKey
     private FeatureStoreRelation toRelation(String source, String target) {
         Matcher sourceMatcher = syntax.getTablePattern()
                                       .matcher(source);
@@ -222,14 +240,15 @@ public class FeatureStorePathParser {
         if (sourceMatcher.find() && targetMatcher.find()) {
             String sourceField = targetMatcher.group(SqlPathSyntax.MatcherGroups.SOURCE_FIELD);
             String targetField = targetMatcher.group(SqlPathSyntax.MatcherGroups.TARGET_FIELD);
-            boolean isOne2One = Objects.equals(sourceField, syntax.getOptions()
-                                                                  .getDefaultPrimaryKey()) && Objects.equals(targetField, syntax.getOptions()
-                                                                                                                                .getDefaultPrimaryKey());
+            boolean isOne2One = Objects.equals(targetField, syntax.getOptions()
+                                                                  .getDefaultPrimaryKey());
 
             return ImmutableFeatureStoreRelation.builder()
                                                 .cardinality(isOne2One ? CARDINALITY.ONE_2_ONE : CARDINALITY.ONE_2_N)
                                                 .sourceContainer(sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .sourceField(sourceField)
+                                                .sourceSortKey(syntax.getOptions()
+                                                                     .getDefaultPrimaryKey())
                                                 .targetContainer(targetMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .targetField(targetField)
                                                 .build();
@@ -250,6 +269,8 @@ public class FeatureStorePathParser {
                                                 .cardinality(CARDINALITY.M_2_N)
                                                 .sourceContainer(sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .sourceField(junctionMatcher.group(SqlPathSyntax.MatcherGroups.SOURCE_FIELD))
+                                                .sourceSortKey(syntax.getOptions()
+                                                                     .getDefaultPrimaryKey())
                                                 .junctionSource(junctionMatcher.group(SqlPathSyntax.MatcherGroups.TARGET_FIELD))
                                                 .junction(junctionMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .junctionTarget(targetMatcher.group(SqlPathSyntax.MatcherGroups.SOURCE_FIELD))

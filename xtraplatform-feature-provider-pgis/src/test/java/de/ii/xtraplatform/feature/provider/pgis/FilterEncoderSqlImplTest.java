@@ -19,8 +19,8 @@ import static org.testng.Assert.*;
 /**
  * @author zahnen
  */
-public class FeatureQueryEncoderSqlTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderSqlTest.class);
+public class FilterEncoderSqlImplTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FilterEncoderSqlImplTest.class);
 
     FeatureTypeMapping mappings = new ImmutableFeatureTypeMapping.Builder().build();
 

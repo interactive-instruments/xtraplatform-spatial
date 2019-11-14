@@ -13,23 +13,21 @@ public interface FeatureStoreAttributesContainer {
 
     String getSortKey();
 
-    //TODO
+    //TODO: implement predicates
     //Optional<FeatureStorePredicate> getPredicate();
 
     String getInstanceContainerName();
 
-    //TODO
+    //TODO: needed for inserts
     //boolean shouldAutoGenerateId();
 
-    List<String> getAttributes();
+    List<FeatureStoreAttribute> getAttributes();
 
     @Value.Derived
     @Value.Auxiliary
     default List<List<String>> getAttributePaths() {
         return getAttributes().stream()
-                              .map(attribute -> new ImmutableList.Builder<String>().addAll(getPath())
-                                                                                   .add(attribute)
-                                                                                   .build())
+                              .map(FeatureStoreAttribute::getPath)
                               .collect(ImmutableList.toImmutableList());
     }
 

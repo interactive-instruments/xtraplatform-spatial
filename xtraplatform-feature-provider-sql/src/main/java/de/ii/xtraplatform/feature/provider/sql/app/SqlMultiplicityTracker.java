@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.feature.provider.pgis;
+package de.ii.xtraplatform.feature.provider.sql.app;
 
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreMultiplicityTracker;
 import org.slf4j.Logger;
@@ -32,7 +32,7 @@ public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
     private final Map<String, Integer> currentMultiplicities;
     private final Map<String, Set<String>> children;
 
-    public SqlMultiplicityTracker(Set<String> multiTables) {
+    public SqlMultiplicityTracker(List<String> multiTables) {
         this.currentIds = new HashMap<>();
         this.currentMultiplicities = new HashMap<>();
         this.children = new LinkedHashMap<>();
@@ -53,8 +53,6 @@ public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
                       currentIds.put(table, null);
                   });
     }
-
-    //TODO test [..., reset all children (ortsangaben -> ortsangaben_flurstueckskennzeichen), ...]
 
     @Override
     public void track(List<String> path, List<String> ids) {

@@ -1,17 +1,15 @@
 /**
  * Copyright 2019 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.feature.provider.sql.infra.db;
+package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSql;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
@@ -40,11 +38,9 @@ import org.xml.sax.helpers.NamespaceSupport;
 import javax.ws.rs.BadRequestException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -52,28 +48,32 @@ import java.util.stream.Collectors;
 /**
  * @author zahnen
  */
-public class FeatureQueryEncoderSql implements FilterEncoderSql {
+public class FilterEncoderSqlImpl implements FilterEncoderSql {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderSql.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FilterEncoderSqlImpl.class);
 
-    private final FeatureStoreInstanceContainer typeInfo;
-    private final Map<String, String> propertiesToPaths;
+    //private final FeatureStoreInstanceContainer typeInfo;
+    //private final Map<String, String> propertiesToPaths;
 
-    public FeatureQueryEncoderSql(FeatureStoreInstanceContainer typeInfo, FeatureTypeMapping featureTypeMapping) {
-        this.typeInfo = typeInfo;
+    //TODO: add property name to FeatureStoreAttributesContainer, remove need for mapping here
+    //TODO: make typeInfo runtime parameter
+    //TODO: get expressions from SqlDialect
+    public FilterEncoderSqlImpl(FeatureStoreInstanceContainer typeInfo, FeatureTypeMapping featureTypeMapping) {
+        //this.typeInfo = typeInfo;
         //LOGGER.debug("PATHS {}", queries.getPaths());
-        this.propertiesToPaths = featureTypeMapping.findMappings(TargetMapping.BASE_TYPE)
+        /*this.propertiesToPaths = featureTypeMapping.findMappings(TargetMapping.BASE_TYPE)
                                                    .entrySet()
                                                    .stream()
-                                                   .filter(entry -> Objects.nonNull(entry.getValue().getName()))
+                                                   .filter(entry -> Objects.nonNull(entry.getValue()
+                                                                                         .getName()))
                                                    .map(entry -> new AbstractMap.SimpleEntry<>(entry.getValue()
                                                                                                     .getName(), entry.getKey()))
-                                                   .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+                                                   .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));*/
     }
 
     ///fundorttiere/[id=id]artbeobachtung/[id=artbeobachtung_id]artbeobachtung_2_erfasser/[erfasser_id=id]erfasser/name LIKE '*Mat*'
     //fundorttiere.id IN (SELECT artbeobachtung_2_erfasser.artbeobachtung_id FROM artbeobachtung_2_erfasser JOIN erfasser ON artbeobachtung_2_erfasser.erfasser_id=erfasser.id WHERE erfasser.name ILIKE '%Mat%' )
-    public String encode(final String filter) {
+    public String encode(final String cqlFilter, FeatureStoreInstanceContainer typeInfo) {
 
         StringBuilder encoded = new StringBuilder();
         List<String> properties = new ArrayList<>();
@@ -81,7 +81,7 @@ public class FeatureQueryEncoderSql implements FilterEncoderSql {
         List<String> conditionProperties = new ArrayList<>();
 
         try {
-            ECQL.toFilter(filter)
+            ECQL.toFilter(cqlFilter)
                 .accept(new DuplicatingFilterVisitor() {
                     final FilterFactory2 filterFactory = new FilterFactoryImpl();
                     final NamespaceSupport namespaceSupport = new NamespaceSupport();
@@ -95,7 +95,22 @@ public class FeatureQueryEncoderSql implements FilterEncoderSql {
 
                     @Override
                     public Object visit(PropertyName expression, Object extraData) {
-                        Optional<String> pathForProperty = Optional.ofNullable(propertiesToPaths.getOrDefault(expression.getPropertyName(), null)).map(path -> propertyPathsToSelect(path));
+
+                        //TODO: fast enough? maybe pass all typeInfos to constructor and create map?
+                        //TODO: remove propertyPathsToSelect, use queryGenerator instead
+                        Optional<String> pathForProperty = typeInfo.getAllAttributesContainers()
+                                                                   .stream()
+                                                                   .flatMap(attributesContainer -> attributesContainer.getAttributes()
+                                                                                                                  .stream())
+                                                                   .filter(attribute -> attribute.getQueryable()
+                                                                                                 .isPresent() && Objects.equals(expression.getPropertyName(), attribute.getQueryable()
+                                                                                                                                                                       .get()))
+                                                                   .findFirst()
+                                                                   .map(attributesContainer -> propertyPathsToSelect(attributesContainer.getPath()));
+
+                        //Optional<String> pathForProperty = Optional.ofNullable(propertiesToPaths.getOrDefault(expression.getPropertyName(), null))
+                        //                                           .map(path -> propertyPathsToSelect(path));
+
                         if (!pathForProperty.isPresent()) {
                             throw new BadRequestException("Filter invalid");
                         }
@@ -105,11 +120,11 @@ public class FeatureQueryEncoderSql implements FilterEncoderSql {
                                                        .map(p -> propertyPathsToSelect(p))
                                                        .findFirst();*/
                         String path2 = pathForProperty.get()
-                                           .substring(0, pathForProperty.get()
-                                                             .lastIndexOf(" ") + 1);
+                                                      .substring(0, pathForProperty.get()
+                                                                                   .lastIndexOf(" ") + 1);
                         String cp = pathForProperty.get()
-                                        .substring(pathForProperty.get()
-                                                       .lastIndexOf(" ") + 1);
+                                                   .substring(pathForProperty.get()
+                                                                             .lastIndexOf(" ") + 1);
 
                         LOGGER.debug("PROP {} {}", expression.getPropertyName(), pathForProperty.get());
                         properties.add(path2);
@@ -183,7 +198,7 @@ public class FeatureQueryEncoderSql implements FilterEncoderSql {
                         DateTimeFormatter dateTimeFormatter = DateTimeFormatter
                                 .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXX");
                         ZonedDateTime localDateTime = ZonedDateTime.parse(toInstant(after.getExpression2()).getPosition()
-                                                                                                            .getDateTime(), dateTimeFormatter);
+                                                                                                           .getDateTime(), dateTimeFormatter);
                         conditions.add("{{prop}} > '" + localDateTime.toInstant()
                                                                      .toString() + "'");
 
@@ -196,9 +211,9 @@ public class FeatureQueryEncoderSql implements FilterEncoderSql {
                         DateTimeFormatter dateTimeFormatter = DateTimeFormatter
                                 .ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXX");
                         ZonedDateTime localDateTime = ZonedDateTime.parse(toInstant(before.getExpression2()).getPosition()
-                                                                                                           .getDateTime(), dateTimeFormatter);
+                                                                                                            .getDateTime(), dateTimeFormatter);
                         conditions.add("{{prop}} < '" + localDateTime.toInstant()
-                                                                         .toString() + "'");
+                                                                     .toString() + "'");
 
                         return super.visit(before, extraData);
                     }
@@ -206,7 +221,8 @@ public class FeatureQueryEncoderSql implements FilterEncoderSql {
                     @Override
                     public Object visit(Id filter, Object extraData) {
 
-                        String ids = Joiner.on(',').join(filter.getIDs());
+                        String ids = Joiner.on(',')
+                                           .join(filter.getIDs());
 
                         //properties.add(queries.getMainQuery().getDefaultSortKey());
                         //conditionProperties.add(queries.getMainQuery().getDefaultSortKey());
@@ -225,7 +241,7 @@ public class FeatureQueryEncoderSql implements FilterEncoderSql {
 
                 }, null);
         } catch (CQLException e) {
-            throw new IllegalArgumentException("filter not valid: " + filter, e);
+            throw new IllegalArgumentException("filter not valid: " + cqlFilter, e);
         }
 
         encoded.append("(");
@@ -259,9 +275,9 @@ public class FeatureQueryEncoderSql implements FilterEncoderSql {
         return propertyPath.replaceAll("(?:(?:(^| |\\()/)|(/))(?:\\[\\w+=\\w+\\])?(?:\\w+\\()*(\\w+)(?:\\)(?:,| |\\)))*", "$1$2$3");
     }
 
-    //TODO: to SqlFeatureQuery?
-    private String propertyPathsToSelect(String propertyPath) {
-        List<String> pathElements = getPathElements(propertyPath);
+    //TODO: PathParser + QueryGenerator
+    private String propertyPathsToSelect(List<String> pathElements) {
+        //List<String> pathElements = getPathElements(propertyPath);
         String parentTable = toTable(pathElements.get(0));
         String parentColumn = toCondition(pathElements.get(1))[0];
         String mainTable = toTable(pathElements.get(pathElements.size() - 3));

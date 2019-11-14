@@ -8,7 +8,9 @@
 package de.ii.xtraplatform.feature.provider.api;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
@@ -22,7 +24,12 @@ import java.util.concurrent.CompletionStage;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "connectorType", visible = true)
 @JsonTypeIdResolver(JacksonProvider.DynamicTypeIdResolver.class)
-public interface FeatureProviderConnector {
+public interface FeatureProviderConnector<T,U,V extends FeatureProviderConnector.QueryOptions> {
 
-    CompletionStage<Done> runQuery(final FeatureQuery query, final Sink<ByteString, CompletionStage<Done>> transformer, final Map<String, String> additionalQueryParameters);
+    interface QueryOptions {}
+
+    //TODO: refactor FeatureProviderWfs to use getSourceStream, remove this
+    CompletionStage<Done> runQuery(final FeatureQuery query, final Sink<T, CompletionStage<Done>> consumer, final Map<String, String> additionalQueryParameters);
+
+    Source<T, NotUsed> getSourceStream(U query, V options);
 }

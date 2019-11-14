@@ -30,7 +30,9 @@ import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.sql.app.FeatureTransformerFromSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
@@ -68,14 +70,13 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static de.ii.xtraplatform.feature.provider.pgis.FeatureProviderPgis.PROVIDER_TYPE;
 import static de.ii.xtraplatform.feature.provider.api.TargetMapping.BASE_TYPE;
 
 /**
  * @author zahnen
  */
-@Component
-@Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = PROVIDER_TYPE)})
+//@Component
+//@Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = FeatureProviderPgis.PROVIDER_TYPE)})
 public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureTransformer, FeatureConsumer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderPgis.class);
@@ -88,6 +89,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     private final ActorSystem system;
     private final ActorMaterializer materializer;
     private final FeatureProviderDataTransformer data;
+    private final SqlConnector connector;
     private SlickSession session;
     private Map<String, SqlFeatureSource> featureSources;
     private Map<String, SqlFeatureInserts> featureAddSinks;
@@ -96,11 +98,12 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     private Map<String, String> extentQueries;
 
 
-    FeatureProviderPgis(@Context BundleContext context, @Requires ActorSystemProvider actorSystemProvider, @Requires CrsTransformation crsTransformation, @Property(name = ".data") FeatureProviderDataTransformer data) {
+    FeatureProviderPgis(@Context BundleContext context, @Requires ActorSystemProvider actorSystemProvider, @Requires CrsTransformation crsTransformation, @Property(name = ".data") FeatureProviderDataTransformer data, @Property(name = ".connector") SqlConnector connector) {
         //TODO: starts akka for every instance, move to singleton
         this.system = actorSystemProvider.getActorSystem(context, config);
         this.materializer = ActorMaterializer.create(system);
         this.data = data;
+        this.connector = connector;
 
         LOGGER.debug("CREATED PGIS: {}"/*, data*/);
 
@@ -135,7 +138,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     @Override
     public FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query) {
         return (featureTransformer, timer) -> createFeatureStream(query, new FeatureTransformerFromSql(data.getMappings()
-                                                                                                  .get(query.getType()), featureTransformer, query.getFields()));
+                                                                                                           .get(query.getType()), featureTransformer, query.getFields()));
     }
 
     @Override

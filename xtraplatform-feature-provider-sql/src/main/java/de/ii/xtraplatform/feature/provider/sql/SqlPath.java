@@ -4,6 +4,7 @@ import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 @Value.Immutable
@@ -33,4 +34,11 @@ public interface SqlPath {
     }
 
     OptionalInt getSortPriority();
+
+    Optional<String> getQueryable();
+
+    @Value.Default
+    default boolean isSpatial() {
+        return false;
+    }
 }

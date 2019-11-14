@@ -5,14 +5,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.feature.provider.pgis;
+package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.base.Splitter;
+import de.ii.xtraplatform.api.functional.LambdaWithException;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.StreamTokenizer;
@@ -22,12 +25,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.OptionalLong;
 
-import static de.ii.xtraplatform.util.functional.LambdaWithException.consumerMayThrow;
-
 /**
  * @author zahnen
  */
 public class FeatureTransformerFromSql implements FeatureConsumer {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureTransformerFromSql.class);
 
     private final FeatureTypeMapping featureTypeMapping;
     protected final FeatureTransformer featureTransformer;
@@ -74,11 +77,14 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
         }
 
         featureTypeMapping.findMappings(path, outputFormat)
-                          .ifPresent(consumerMayThrow(mapping -> {
+                          .ifPresent(LambdaWithException.consumerMayThrow(mapping -> {
                               inProperty = true;
                               if (mapping.isSpatial()) {
                                   geometryMapping = mapping;
                               } else {
+                                  if (LOGGER.isTraceEnabled()) {
+                                      LOGGER.trace("transforming property: {} {} {}", path, multiplicities, mapping);
+                                  }
                                   featureTransformer.onPropertyStart(mapping, multiplicities);
                               }
                           }));
@@ -105,10 +111,10 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
                          });
     }
 
+    //TODO: extract wkt parser
     @Override
     public void onPropertyText(String text) throws Exception {
         if (geometryMapping != null) {
-            //TODO: parse wkt
             StreamTokenizer tokenizer = new StreamTokenizer(new StringReader(text));
             final int char128 = 128;
             final int skip32 = 32;
@@ -222,7 +228,7 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
                     .omitEmptyStrings()
                     .trimResults()
                     .splitToList(nextToken)
-                    .forEach(consumerMayThrow(point -> {
+                    .forEach(LambdaWithException.consumerMayThrow(point -> {
                         featureTransformer.onGeometryCoordinates(point);
                     }));
             featureTransformer.onGeometryNestedEnd();
@@ -265,7 +271,6 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
     }
 
     private void readCoordinates(StreamTokenizer tokenizer) throws Exception {
-        //TODO
         String nextToken = getNextEmptyOrOpener(tokenizer);
         if (!Objects.equals(nextToken, EMPTY)) {
             nextToken = getNextWord(tokenizer);

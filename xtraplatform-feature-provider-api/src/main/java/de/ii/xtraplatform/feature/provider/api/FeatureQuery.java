@@ -1,6 +1,6 @@
 /**
  * Copyright 2019 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -13,6 +13,7 @@ import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author zahnen
@@ -26,19 +27,29 @@ public abstract class FeatureQuery {
     public abstract EpsgCrs getCrs();
 
     @Value.Default
-    public int getLimit() {return 0;}
+    public int getLimit() {
+        return 0;
+    }
 
     @Value.Default
-    public int getOffset() {return 0;};
+    public int getOffset() {
+        return 0;
+    }
+
+    ;
 
     @Nullable
     public abstract String getFilter();
 
     @Value.Default
-    public boolean hitsOnly() {return false;}
+    public boolean hitsOnly() {
+        return false;
+    }
 
     @Value.Default
-    public boolean propertyOnly() {return false;}
+    public boolean propertyOnly() {
+        return false;
+    }
 
     @Value.Default
     public double getMaxAllowableOffset() {
@@ -53,5 +64,12 @@ public abstract class FeatureQuery {
     @Value.Default
     public List<String> getFields() {
         return ImmutableList.of("*");
+    }
+
+    @Value.Derived
+    public boolean hasIdFilter() {
+        return Optional.ofNullable(getFilter())
+                       .filter(filter -> filter.matches("IN ('.+?')"))
+                       .isPresent();
     }
 }

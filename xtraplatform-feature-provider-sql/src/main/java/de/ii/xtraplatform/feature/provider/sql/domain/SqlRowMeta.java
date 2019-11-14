@@ -26,11 +26,11 @@ public class SqlRowMeta implements SqlRow {
     public Optional<SqlColumn> next() {
         if (!done) {
             this.done = true;
-            return noNumberReturned ? Optional.empty() : Optional.of(new SqlColumn(ImmutableList.of(), "numberReturned", Long.toString(count)));
+            return noNumberReturned ? Optional.empty() : Optional.of(new SqlColumn(ImmutableList.of(), Long.toString(count)));
         }
         if (!done2) {
             this.done2 = true;
-            return Optional.of(new SqlColumn(ImmutableList.of(), "numberMatched", Long.toString(count2)));
+            return Optional.of(new SqlColumn(ImmutableList.of(), Long.toString(count2)));
         }
         return Optional.empty();
     }
@@ -41,7 +41,7 @@ public class SqlRowMeta implements SqlRow {
     }
 
     @Override
-    public int compareTo(SqlRow slickRowCustom) {
-        return 0;
+    public int compareTo(SqlRow row) {
+        return -1;
     }
 }

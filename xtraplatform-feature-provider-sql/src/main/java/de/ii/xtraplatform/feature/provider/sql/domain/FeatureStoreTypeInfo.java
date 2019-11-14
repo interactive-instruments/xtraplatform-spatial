@@ -4,7 +4,6 @@ import org.immutables.value.Value;
 
 import java.util.List;
 
-//TODO a feature type may have multiple main tables, ergo multiple FeatureStoreTypeInfo
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true)
 public interface FeatureStoreTypeInfo {

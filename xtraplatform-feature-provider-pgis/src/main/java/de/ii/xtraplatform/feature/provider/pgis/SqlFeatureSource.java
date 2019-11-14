@@ -24,11 +24,12 @@ import com.google.common.collect.Maps;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
-import de.ii.xtraplatform.feature.provider.sql.SqlPathTable;
+import de.ii.xtraplatform.feature.provider.sql.SQL_PATH_TYPE_DEPRECATED;
+import de.ii.xtraplatform.feature.provider.sql.app.SqlMultiplicityTracker;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableMetaQueryResult;
 import de.ii.xtraplatform.feature.provider.sql.domain.MetaQueryResult;
-import de.ii.xtraplatform.feature.provider.sql.infra.db.FeatureQueryEncoderSql;
-import de.ii.xtraplatform.feature.provider.sql.infra.db.FeatureStoreQueryGeneratorSql;
+import de.ii.xtraplatform.feature.provider.sql.app.FilterEncoderSqlImpl;
+import de.ii.xtraplatform.feature.provider.sql.app.FeatureStoreQueryGeneratorSql;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +65,7 @@ public class SqlFeatureSource {
     private final SlickSession session;
     private final SqlFeatureQueries queries;
     private final ActorMaterializer materializer;
-    private final FeatureQueryEncoderSql queryEncoder;
+    private final FilterEncoderSqlImpl queryEncoder;
     private final boolean computeNumberMatched;
     private final FeatureStoreQueryGeneratorSql queryGeneratorSql;
 
@@ -72,9 +73,9 @@ public class SqlFeatureSource {
         this.session = session;
         this.queries = queries;
         this.materializer = materializer;
-        this.queryEncoder = new FeatureQueryEncoderSql(queries.getMainQuery(), mappings);
+        this.queryEncoder = new FilterEncoderSqlImpl(queries.getMainQuery(), mappings);
         this.computeNumberMatched = computeNumberMatched;
-        this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(queryEncoder);
+        this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(null);
     }
 
     public CompletionStage<Done> runQuery(FeatureQuery query, FeatureConsumer consumer) {
@@ -89,7 +90,7 @@ public class SqlFeatureSource {
         String mainTable = query.getType();
         List<String> mainTablePath = ImmutableList.of(mainTable);
 
-        SqlMultiplicityTracker multiplicityTracker = new SqlMultiplicityTracker(queries.getMultiTables());
+        SqlMultiplicityTracker multiplicityTracker = new SqlMultiplicityTracker(ImmutableList.copyOf(queries.getMultiTables()));
 
         return createRowStream(query)
                 .runForeach(slickRowInfo -> {
@@ -106,8 +107,14 @@ public class SqlFeatureSource {
                     }
 
                     if (LOGGER.isTraceEnabled()) {
+                        LOGGER.trace("Sql row: {}", slickRowInfo);
+                    }
+
+                    if (LOGGER.isTraceEnabled()) {
                         LOGGER.trace("MULTI2 {}", multiplicityTracker.getMultiplicitiesForPath(slickRowInfo.getPath()));
                     }
+
+
 
                     if (!slickRowInfo.getName()
                                      .equals("META")) {
@@ -251,7 +258,7 @@ public class SqlFeatureSource {
         boolean hasConstraints = hasFilter || request.getLimit() > 0 || request.getOffset() > 0;
 
         if (hasFilter) {
-            mainFilter = queryEncoder.encode(request.getFilter());
+            mainFilter = queryEncoder.encode(request.getFilter(), null);
 
             mainQuery = ImmutableFeatureQuery.builder()
                                              .type(request.getType())
@@ -321,7 +328,14 @@ public class SqlFeatureSource {
             int[] i = {0};
             Source<SlickRowCustom, NotUsed>[] slickRows = queries.getQueries()
                                                                  .stream()
-                                                                 .map(query -> Slick.source(session, query.toSql(finalSubQuery.getFilter(), finalSubQuery.getLimit(), finalSubQuery.getOffset()), toSlickRowInfo(query, i[0]++)))
+                                                                 .map(query -> {
+                                                                     String query2 = query.toSql(finalSubQuery.getFilter(), finalSubQuery.getLimit(), finalSubQuery.getOffset());
+                                                                     if (LOGGER.isTraceEnabled()) {
+                                                                         LOGGER.trace("Values query: {}", query2);
+                                                                     }
+
+                                                                     return Slick.source(session, query2, toSlickRowInfo(query, i[0]++));
+                                                                 })
                                                                  .toArray((IntFunction<Source<SlickRowCustom, NotUsed>[]>) Source[]::new);
 
             int mainQueryIndex = queries.getQueries()
@@ -374,7 +388,7 @@ public class SqlFeatureSource {
         for (int i = 0; i < queries1.size(); i++) {
             SqlFeatureQuery q = queries1.get(i);
             if (q.getSqlPath()
-                 .getType() == SqlPathTable.TYPE.ID_M_N) {
+                 .getType() == SQL_PATH_TYPE_DEPRECATED.ID_M_N) {
                 //all.remove(i);
                 //dependencies.put(i, new ArrayList<>());
                 parents.putIfAbsent(q.getSqlPath()
@@ -383,7 +397,7 @@ public class SqlFeatureSource {
             if (q.getSqlPathParent()
                  .isPresent() && q.getSqlPathParent()
                                   .get()
-                                  .getType() == SqlPathTable.TYPE.ID_M_N) {
+                                  .getType() == SQL_PATH_TYPE_DEPRECATED.ID_M_N) {
                 pdependencies.putIfAbsent(q.getSqlPathParent()
                                            .get()
                                            .getPath(), new ArrayList<>());
@@ -557,13 +571,15 @@ public class SqlFeatureSource {
                 }
                 size = i + 1;
             }
-            //int size = Math.min(ids.size(), row.ids.size());
-            //if (ids.size() != row.ids.size() && size > 1)
-            //    size = size -1;
-            int result = compareIdLists(ids.subList(0, size), row.ids.subList(0, size));
 
+            int result2 = compareIdLists(ids.subList(0, size), row.ids.subList(0, size));
+            int result = result2 == 0 ? priority - row.priority : result2;
 
-            return result == 0 ? priority - row.priority : result;
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("Compare: {}[{}{}] <=> {}[{}{}] -> {}({})", name, idNames, ids, row.name, row.idNames, row.ids, result, result2);
+            }
+
+            return result;
         }
 
 

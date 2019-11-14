@@ -9,7 +9,7 @@ import java.util.List;
 @Value.Style(deepImmutablesDetection = true)
 public interface FeatureStoreInstanceContainer extends FeatureStoreAttributesContainer {
 
-    //TODO
+    //TODO: find a better way to handle this
     @Value.Default
     default int getAttributesPosition() {
         return 0;
@@ -26,7 +26,7 @@ public interface FeatureStoreInstanceContainer extends FeatureStoreAttributesCon
     @Value.Auxiliary
     default List<FeatureStoreAttributesContainer> getAllAttributesContainers() {
         return new ImmutableList.Builder<FeatureStoreAttributesContainer>()
-                .addAll(getRelatedContainers().subList(0,getAttributesPosition()))
+                .addAll(getRelatedContainers().subList(0, getAttributesPosition()))
                 .add(this)
                 .addAll(getRelatedContainers().subList(getAttributesPosition(), getRelatedContainers().size()))
                 .build();
@@ -36,6 +36,19 @@ public interface FeatureStoreInstanceContainer extends FeatureStoreAttributesCon
     @Value.Derived
     default String getInstanceContainerName() {
         return getName();
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
+    default List<String> getMultiContainerNames() {
+        return getRelatedContainers()
+                .stream()
+                .flatMap(relatedContainer -> relatedContainer.getInstanceConnection()
+                                                             .stream())
+                .filter(relation -> relation.isOne2N() || relation.isM2N())
+                .map(FeatureStoreRelation::getTargetContainer)
+                .distinct()
+                .collect(ImmutableList.toImmutableList());
     }
 
 }

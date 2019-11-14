@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs;
 
+import akka.japi.Pair;
 import akka.util.ByteString;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector;
 import de.ii.xtraplatform.ogc.api.wfs.WfsOperation;
@@ -16,7 +17,7 @@ import java.io.InputStream;
 /**
  * @author zahnen
  */
-public interface WfsConnector extends FeatureProviderConnector<ByteString, String, FeatureProviderConnector.QueryOptions> {
+public interface WfsConnectorPost extends FeatureProviderConnector<ByteString, Pair<String,String>, FeatureProviderConnector.QueryOptions> {
 
     void setQueryEncoder(final FeatureQueryEncoderWfs queryEncoder);
 

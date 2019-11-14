@@ -9,7 +9,7 @@ package de.ii.xtraplatform.feature.provider.pgis;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.provider.sql.SqlPathTable;
+import de.ii.xtraplatform.feature.provider.sql.SQL_PATH_TYPE_DEPRECATED;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
@@ -79,12 +79,12 @@ sqlPathTree.findChild("/[id=ortsangaben_id]ortsangaben_flurstueckskennzeichen").
         for (int i = 0; i < queries1.size(); i++) {
             SqlFeatureQuery q = queries1.get(i);
             if (q.getSqlPath()
-                 .getType() == SqlPathTable.TYPE.ID_M_N) {
+                 .getType() == SQL_PATH_TYPE_DEPRECATED.ID_M_N) {
                 //all.remove(i);
                 //dependencies.put(i, new ArrayList<>());
                 parents.putIfAbsent(q.getSqlPath().getPath(), i);
             }
-            if (q.getSqlPathParent().isPresent() && q.getSqlPathParent().get().getType() == SqlPathTable.TYPE.ID_M_N) {
+            if (q.getSqlPathParent().isPresent() && q.getSqlPathParent().get().getType() == SQL_PATH_TYPE_DEPRECATED.ID_M_N) {
                 pdependencies.putIfAbsent(q.getSqlPathParent().get().getPath(), new ArrayList<>());
                 pdependencies.get(q.getSqlPathParent().get().getPath()).add(i);
             }

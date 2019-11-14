@@ -38,12 +38,20 @@ public class SqlMappingParser {
                                       .map(enumValue -> enumValue.toString()
                                                                  .equals("ID"))
                                       .orElse(false);
+        Optional<String> queryableName = generalMapping.flatMap(targetMapping -> Optional.ofNullable(targetMapping.getName()));
+        boolean isSpatial = generalMapping.map(TargetMapping::isSpatial).orElse(false);
 
         if (isOid) {
             path = syntax.setOidFlag(path);
         }
         if (sortPriority.isPresent()) {
             path = syntax.setPriorityFlag(path, sortPriority.get());
+        }
+        if (queryableName.isPresent()) {
+            path = syntax.setQueryableFlag(path, queryableName.get());
+        }
+        if (isSpatial) {
+            path = syntax.setSpatialFlag(path);
         }
 
         return path;

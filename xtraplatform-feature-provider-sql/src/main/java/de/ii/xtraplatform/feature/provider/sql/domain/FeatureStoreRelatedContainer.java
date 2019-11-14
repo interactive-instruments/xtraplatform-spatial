@@ -30,12 +30,12 @@ public interface FeatureStoreRelatedContainer extends FeatureStoreAttributesCont
             FeatureStoreRelation relation = getInstanceConnection().get(i);
             // add keys only for main table and target tables of M:N or 1:N relations
             if (i == 0 || previousRelation.isM2N() || previousRelation.isOne2N()) {
-                keys.add(relation.getSourceSortKey());
+                keys.add(String.format("%s.%s", relation.getSourceContainer(), relation.getSourceSortKey()));
             }
             previousRelation = relation;
         }
 
-        keys.add(getSortKey());
+        keys.add(String.format("%s.%s", getName(), getSortKey()));
 
         return keys.build();
     }

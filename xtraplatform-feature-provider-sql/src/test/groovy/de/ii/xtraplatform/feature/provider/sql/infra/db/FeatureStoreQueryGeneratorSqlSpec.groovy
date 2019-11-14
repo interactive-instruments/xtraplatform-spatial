@@ -3,9 +3,9 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax
 import de.ii.xtraplatform.feature.provider.sql.SqlMappingParser
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureStorePathParser
+import de.ii.xtraplatform.feature.provider.sql.app.FeatureStoreQueryGeneratorSql
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSql
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableFeatureStoreInstanceContainer
-import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableMetaQueryResult
 import de.ii.xtraplatform.feature.transformer.api.MappingTestUtil
 import spock.lang.Shared
 import spock.lang.Specification
