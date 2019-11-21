@@ -7,6 +7,7 @@ import de.ii.xtraplatform.feature.provider.sql.app.FeatureStoreQueryGeneratorSql
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableFeatureStoreInstanceContainer
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlCondition
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis
 import de.ii.xtraplatform.feature.transformer.api.MappingTestUtil
 import spock.lang.Shared
 import spock.lang.Specification
@@ -44,6 +45,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
                      .build()]
         }
         expectedFilter = "(A.id IN (SELECT AA.id FROM biotop AA  WHERE AA.COLUMN = 'TEST'))"
+
+        def sqlDialect = new SqlDialectPostGis()
 
         queryGenerator = new FeatureStoreQueryGeneratorSql(filterEncoder, sqlDialect);
 

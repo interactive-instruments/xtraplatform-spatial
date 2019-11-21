@@ -46,6 +46,11 @@ dependencies {
         exclude  group: 'org.slf4j', module: 'slf4j-api'
     }
 
+    embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.2'
+
+    embedded group: 'us.fatehi', name: 'schemacrawler-api', version: '16.2.5'
+    embedded group: 'us.fatehi', name: 'schemacrawler-tools', version: '16.2.5'
+
     testCompile project(':xtraplatform-feature-transformer-api')
     testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.18'
 }
