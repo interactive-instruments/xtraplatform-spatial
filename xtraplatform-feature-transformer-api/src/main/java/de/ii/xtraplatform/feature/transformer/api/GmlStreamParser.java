@@ -18,6 +18,8 @@ import akka.stream.stage.GraphStageWithMaterializedValue;
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -38,12 +40,12 @@ import java.util.regex.Pattern;
 public class GmlStreamParser {
 
     public static Sink<ByteString, CompletionStage<Done>> consume(final QName featureType,
-                                                                  final GmlConsumer gmlConsumer) {
+                                                                  final FeatureConsumer gmlConsumer) {
         return consume(ImmutableList.of(featureType), gmlConsumer);
     }
 
     public static Sink<ByteString, CompletionStage<Done>> consume(final List<QName> featureTypes,
-                                                                  final GmlConsumer gmlConsumer) {
+                                                                  final FeatureConsumer gmlConsumer) {
         return Sink.fromGraph(new FeatureSinkFromGml(featureTypes, gmlConsumer));
     }
 
@@ -73,12 +75,12 @@ public class GmlStreamParser {
         private final SinkShape<ByteString> shape = SinkShape.of(in);
 
         private final List<QName> featureTypes;
-        private final GmlConsumer gmlConsumer;
+        private final FeatureConsumer gmlConsumer;
         private String bufferOpening = null;
         private String bufferMembers = null;
         private String bufferAdditional = null;
 
-        FeatureSinkFromGml(List<QName> featureTypes, GmlConsumer gmlConsumer) {
+        FeatureSinkFromGml(List<QName> featureTypes, FeatureConsumer gmlConsumer) {
             this.featureTypes = featureTypes;
             this.gmlConsumer = gmlConsumer;
         }

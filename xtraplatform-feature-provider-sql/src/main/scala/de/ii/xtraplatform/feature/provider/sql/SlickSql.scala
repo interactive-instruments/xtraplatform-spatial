@@ -8,12 +8,12 @@
 
 package de.ii.xtraplatform.feature.provider.sql
 
-import java.util.function.{Function => JFunction, BiFunction => JBiFunction}
+import java.util.function.{BiFunction => JBiFunction, Function => JFunction}
 import java.util.{List => JList}
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.alpakka.slick.javadsl.{SlickSession}
+import akka.stream.alpakka.slick.javadsl.SlickSession
 import akka.stream.alpakka.slick.scaladsl.{Slick => ScalaSlick}
 import akka.stream.javadsl._
 import slick.dbio.{DBIOAction, Effect, Streaming}
@@ -25,6 +25,18 @@ import scala.collection.immutable.Vector
 import scala.concurrent.ExecutionContext
 
 object SlickSql {
+
+  def source[T](
+                 session: SlickSession,
+                 query: String,
+                 mapper: JFunction[PositionedResult, T]
+               ): Source[T, NotUsed] = {
+    val streamingAction = SQLActionBuilder(query, SetParameter.SetUnit).as[T](toSlick(mapper))
+
+    ScalaSlick
+      .source[T](streamingAction)(session)
+      .asJava
+  }
 
 
   def source[T >: Null,U](
@@ -65,22 +77,43 @@ object SlickSql {
   private def toSlick[T >: Null](mapper: JBiFunction[SlickRow, T, T]): GetResult[T] =
     GetResult(pr => mapper(new SlickRow(pr), null))
 
+  private def toSlick[T](mapper: JFunction[PositionedResult, T]): GetResult[T] =
+    GetResult(pr => mapper(pr))
+
+  //TODO: remove
   final class SlickRow (delegate: PositionedResult) {
-    final def nextBoolean(): java.lang.Boolean = delegate.nextBoolean()
-    final def nextBigDecimal(): java.math.BigDecimal = delegate.nextBigDecimal().bigDecimal
-    final def nextBlob(): java.sql.Blob = delegate.nextBlob()
-    final def nextByte(): java.lang.Byte = delegate.nextByte()
-    final def nextBytes(): Array[java.lang.Byte] = delegate.nextBytes().map(Byte.box(_))
-    final def nextClob(): java.sql.Clob = delegate.nextClob()
-    final def nextDate(): java.sql.Date = delegate.nextDate()
-    final def nextDouble(): java.lang.Double = delegate.nextDouble()
-    final def nextFloat(): java.lang.Float = delegate.nextFloat()
-    final def nextInt(): java.lang.Integer = delegate.nextInt()
-    final def nextLong(): java.lang.Long = delegate.nextLong()
-    final def nextObject(): java.lang.Object = delegate.nextObject()
-    final def nextShort(): java.lang.Short = delegate.nextShort()
-    final def nextString(): java.lang.String = delegate.nextString()
-    final def nextTime(): java.sql.Time = delegate.nextTime()
-    final def nextTimestamp(): java.sql.Timestamp = delegate.nextTimestamp()
+    def nextBoolean(): java.lang.Boolean = delegate.nextBoolean()
+
+    def nextBigDecimal(): java.math.BigDecimal = delegate.nextBigDecimal().bigDecimal
+
+    def nextBlob(): java.sql.Blob = delegate.nextBlob()
+
+    def nextByte(): java.lang.Byte = delegate.nextByte()
+
+    //def nextBytes(): Array[java.lang.Byte] = delegate.nextBytes()
+
+    def nextBytes(): Array[Byte] = delegate.nextBytes()
+
+    def nextClob(): java.sql.Clob = delegate.nextClob()
+
+    def nextDate(): java.sql.Date = delegate.nextDate()
+
+    def nextDouble(): java.lang.Double = delegate.nextDouble()
+
+    def nextFloat(): java.lang.Float = delegate.nextFloat()
+
+    def nextInt(): java.lang.Integer = delegate.nextInt()
+
+    def nextLong(): java.lang.Long = delegate.nextLong()
+
+    def nextObject(): java.lang.Object = delegate.nextObject()
+
+    def nextShort(): java.lang.Short = delegate.nextShort()
+
+    def nextString(): java.lang.String = delegate.nextString()
+
+    def nextTime(): java.sql.Time = delegate.nextTime()
+
+    def nextTimestamp(): java.sql.Timestamp = delegate.nextTimestamp()
   }
 }

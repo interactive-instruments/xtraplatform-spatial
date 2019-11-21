@@ -2,6 +2,7 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreQueryGenerator;
@@ -9,6 +10,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreRelatedContain
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlCondition;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,9 +27,12 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureStoreQueryGeneratorSql.class);
 
     private final FilterEncoderSqlNew filterEncoder;
+    private final SqlDialect sqlDialect;
 
-    public FeatureStoreQueryGeneratorSql(FilterEncoderSqlNew filterEncoder) {
+    public FeatureStoreQueryGeneratorSql(FilterEncoderSqlNew filterEncoder,
+                                         SqlDialect sqlDialect) {
         this.filterEncoder = filterEncoder;
+        this.sqlDialect = sqlDialect;
     }
 
     @Override
@@ -37,10 +42,10 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         String offsetSql = offset > 0 ? String.format(" OFFSET %d", offset) : "";
         String where = !Strings.isNullOrEmpty(filter) ? String.format(" WHERE %s", getFilter(instanceContainer, filter)) : "";
 
-        String numberReturned = String.format("SELECT MIN(SKEY) AS col1, MAX(SKEY) AS col2, count(*) AS col3 FROM (SELECT A.%2$s AS SKEY FROM %1$s A%5$s ORDER BY 1%3$s%4$s) AS NR", instanceContainer.getName(), instanceContainer.getSortKey(), limitSql, offsetSql, where);
+        String numberReturned = String.format("SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.%2$s AS SKEY FROM %1$s A%5$s ORDER BY 1%3$s%4$s) AS NR", instanceContainer.getName(), instanceContainer.getSortKey(), limitSql, offsetSql, where);
 
         if (computeNumberMatched) {
-            String numberMatched = String.format("SELECT count(*) AS col4 FROM (SELECT A.%2$s AS SKEY FROM %1$s A%3$s ORDER BY 1) AS NM", instanceContainer.getName(), instanceContainer.getSortKey(), where);
+            String numberMatched = String.format("SELECT count(*) AS numberMatched FROM (SELECT A.%2$s AS SKEY FROM %1$s A%3$s ORDER BY 1) AS NM", instanceContainer.getName(), instanceContainer.getSortKey(), where);
             return String.format("SELECT * FROM (%s) AS NR2, (%s) AS NM2", numberReturned, numberMatched);
         } else {
             return String.format("SELECT *,-1 FROM (%s) AS META", numberReturned);
@@ -65,6 +70,23 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
                                 .map(attributeContainer -> getTableQuery(attributeContainer, whereClause));
     }
 
+    @Override
+    public String getExtentQuery(FeatureStoreAttributesContainer attributesContainer) {
+
+        List<String> aliases = getAliases(attributesContainer);
+        String attributeContainerAlias = aliases.get(aliases.size() - 1);
+
+        String mainTable = String.format("%s %s", attributesContainer.getInstanceContainerName(), aliases.get(0));
+
+        String column = attributesContainer.getSpatialAttribute()
+                                            .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(attributeContainerAlias, attribute.getName())))
+                                            .get();
+
+        String join = getJoins(attributesContainer, aliases);
+
+        return String.format("SELECT %s FROM %s%s%s", column, mainTable, join.isEmpty() ? "" : " ", join);
+    }
+
     private String getTableQuery(FeatureStoreAttributesContainer attributeContainer, Optional<String> whereClause) {
         List<String> aliases = getAliases(attributeContainer);
         String attributeContainerAlias = aliases.get(aliases.size() - 1);
@@ -76,7 +98,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
                                                                               .stream()
                                                                               .map(column -> {
                                                                                   String name = getQualifiedColumn(attributeContainerAlias, column.getName());
-                                                                                  return column.isSpatial() ? geometryToWkt(name) : name;
+                                                                                  return column.isSpatial() ? sqlDialect.applyToWkt(name) : name;
                                                                               }))
                                .collect(Collectors.joining(", "));
 
@@ -166,16 +188,19 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         List<SqlCondition> sqlConditions = filterEncoder.encode(cqlFilter, instanceContainer);
 
         String sqlFilter = sqlConditions.stream()
-                                  .map(sqlCondition -> {
+                                        .map(sqlCondition -> {
 
-                                      List<String> aliases = getAliases(sqlCondition.getTable()).stream().map(s -> "A" + s).collect(Collectors.toList());
-                                      String join = getJoins(sqlCondition.getTable(), aliases);
-                                      String property = String.format("%s.%s", aliases.get(aliases.size()-1), sqlCondition.getColumn());
-                                      String expression = sqlCondition.getExpression().replace("{{prop}}", property);
+                                            List<String> aliases = getAliases(sqlCondition.getTable()).stream()
+                                                                                                      .map(s -> "A" + s)
+                                                                                                      .collect(Collectors.toList());
+                                            String join = getJoins(sqlCondition.getTable(), aliases);
+                                            String property = String.format("%s.%s", aliases.get(aliases.size() - 1), sqlCondition.getColumn());
+                                            String expression = sqlCondition.getExpression()
+                                                                            .replace("{{prop}}", property);
 
-                                      return String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %5$s)", instanceContainer.getName(), aliases.get(0), instanceContainer.getSortKey(), join, expression);
-                                  })
-                                  .collect(Collectors.joining(") AND (", "(", ")"));
+                                            return String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %5$s)", instanceContainer.getName(), aliases.get(0), instanceContainer.getSortKey(), join, expression);
+                                        })
+                                        .collect(Collectors.joining(") AND (", "(", ")"));
 
         return sqlFilter;
     }
@@ -230,11 +255,5 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         }
 
         return filter.toString();
-    }
-
-    //TODO: overridable for dialects
-    // composition: SqlDialect interface, pass into query generator
-    private String geometryToWkt(String column) {
-        return String.format("ST_AsText(ST_ForcePolygonCCW(%s))", column);
     }
 }

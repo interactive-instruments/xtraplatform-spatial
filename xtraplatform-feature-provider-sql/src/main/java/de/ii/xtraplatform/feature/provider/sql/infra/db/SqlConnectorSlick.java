@@ -9,7 +9,6 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import akka.Done;
 import akka.NotUsed;
-import akka.stream.alpakka.slick.javadsl.Slick;
 import akka.stream.alpakka.slick.javadsl.SlickSession;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -18,11 +17,12 @@ import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
+import de.ii.xtraplatform.feature.provider.sql.SlickSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowValues;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
@@ -56,12 +56,15 @@ import java.util.concurrent.CompletionStage;
 public class SqlConnectorSlick implements SqlConnector {
 
     public static final String CONNECTOR_TYPE = "SLICK";
+    //TODO
+    private static final SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlConnectorSlick.class);
 
     private final ClassLoader classLoader;
     private final ConnectionInfoSql connectionInfo;
 
     private SlickSession session;
+    private SqlClient sqlClient;
 
     public SqlConnectorSlick(@Context BundleContext context,
                              @Property(name = ".data") FeatureProviderDataTransformer data) {
@@ -81,6 +84,7 @@ public class SqlConnectorSlick implements SqlConnector {
             DatabaseConfig<JdbcProfile> databaseConfig = DatabaseConfig$.MODULE$.forConfig("", createSlickConfig(connectionInfo), classLoader, ClassTag$.MODULE$.apply(JdbcProfile.class));
 
             this.session = SlickSession.forConfig(databaseConfig);
+            this.sqlClient = new SqlClientSlick(session);
 
         } catch (Throwable e) {
             //TODO: handle properly, service start should fail with error message, show in manager
@@ -90,21 +94,39 @@ public class SqlConnectorSlick implements SqlConnector {
 
     @Invalidate
     private void onStop() {
+        this.sqlClient = null;
         if (Objects.nonNull(session)) {
             session.close();
         }
     }
 
     @Override
+    public SqlClient getSqlClient() {
+        if (Objects.isNull(sqlClient)) {
+            throw new IllegalStateException("not connected to database");
+        }
+
+        return sqlClient;
+    }
+
+    /*@Override
     public CompletionStage<Done> runQuery(FeatureQuery query, Sink<SqlRow, CompletionStage<Done>> consumer,
                                           Map<String, String> additionalQueryParameters) {
         return null;
     }
 
     @Override
-    public Source<SqlRow, NotUsed> getSourceStream(String query, SqlQueryOptions options) {
-        return Slick.source(session, query, slickRow -> new SqlRowValues(slickRow, options.getAttributesContainer(), options.getContainerPriority()));
+    public Source<SqlRow, NotUsed> getSourceStream(String query) {
+        return getSourceStream(query, NO_OPTIONS);
     }
+
+    @Override
+    public Source<SqlRow, NotUsed> getSourceStream(String query, SqlQueryOptions options) {
+        return SlickSql.source(session, query, positionedResult -> new SqlRowSlick().read(positionedResult, options));
+
+
+        //return Slick.source(session, query, slickRow -> options.isPlain() ? ModifiableSqlRowPlain.create(). : new SqlRowValues(slickRow, options.getAttributesContainer().get(), options.getContainerPriority()));
+    }*/
 
     //TODO: to SlickConfig.create
     private static Config createSlickConfig(ConnectionInfoSql connectionInfo) {

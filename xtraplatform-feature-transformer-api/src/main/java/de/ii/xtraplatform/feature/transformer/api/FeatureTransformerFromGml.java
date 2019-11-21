@@ -10,6 +10,8 @@ package de.ii.xtraplatform.feature.transformer.api;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
@@ -24,13 +26,14 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Predicate;
 
+import static de.ii.xtraplatform.util.functional.LambdaWithException.biConsumerMayThrow;
 import static de.ii.xtraplatform.util.functional.LambdaWithException.consumerMayThrow;
 import static de.ii.xtraplatform.util.functional.LambdaWithException.mayThrow;
 
 /**
  * @author zahnen
  */
-class FeatureTransformerFromGml implements GmlConsumer {
+class FeatureTransformerFromGml implements FeatureConsumer {
 
     static final List<String> GEOMETRY_PARTS = new ImmutableList.Builder<String>()
             .add("exterior")
@@ -82,7 +85,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
         if (featureTypeMapping == null) {
             this.onTheFly = true;
             try {
-                FeatureTransformer.OnTheFly onTheFly = (FeatureTransformer.OnTheFly) featureTransformer;
+                OnTheFly onTheFly = (OnTheFly) featureTransformer;
                 this.onTheFlyMapping = onTheFly.getOnTheFlyMapping();
             } catch (ClassCastException e) {
                 this.onTheFlyMapping = null;
@@ -148,8 +151,11 @@ class FeatureTransformerFromGml implements GmlConsumer {
     }
 
     @Override
-    public void onStart(OptionalLong numberReturned, OptionalLong numberMatched) throws Exception {
+    public void onStart(OptionalLong numberReturned, OptionalLong numberMatched,
+                        Map<String, String> additionalInfos) throws Exception {
         featureTransformer.onStart(numberReturned, numberMatched);
+
+        additionalInfos.forEach(biConsumerMayThrow((key,value) -> onGmlAttribute(key, value, ImmutableList.of(), ImmutableList.of())));
     }
 
     @Override
@@ -197,7 +203,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
     FeatureProperty currentProperty;
 
     @Override
-    public void onFeatureStart(List<String> path) throws Exception {
+    public void onFeatureStart(List<String> path, Map<String, String> additionalInfos) throws Exception {
         //TODO maybe flag resolve and mainType is enough?
         if (resolvableTypes.containsKey(path.get(0))) {
             doBuffer = true;
@@ -206,6 +212,8 @@ class FeatureTransformerFromGml implements GmlConsumer {
             final TargetMapping mapping = getMapping(path.get(0)).orElse(getMapping(path.get(0), TargetMapping.BASE_TYPE).orElse(null));
             featureTransformer.onFeatureStart(mapping);
         }
+
+        additionalInfos.forEach(biConsumerMayThrow((key,value) -> onGmlAttribute(key, value, ImmutableList.of(), ImmutableList.of())));
     }
 
     @Override
@@ -220,7 +228,11 @@ class FeatureTransformerFromGml implements GmlConsumer {
         }
     }
 
-    @Override
+    private void onGmlAttribute(String name, String value, List<String> path, List<Integer> multiplicities) throws Exception {
+        onGmlAttribute(getNamespaceUri(name), getLocalName(name), path, value, multiplicities);
+    }
+
+    //@Override
     public void onGmlAttribute(String namespace, String localName, List<String> path, String value,
                                List<Integer> multiplicities) {
         if (transformGeometry != null) {
@@ -286,7 +298,7 @@ class FeatureTransformerFromGml implements GmlConsumer {
                                                                                .build();
                     onPropertyStart(propertyPath, ImmutableList.<Integer>builder().addAll(multiplicities)
                                                                                   .addAll(property.multiplicities)
-                                                                                  .build());
+                                                                                  .build(), ImmutableMap.of());
                     onPropertyText(property.value);
                     onPropertyEnd(propertyPath);
                 }
@@ -310,7 +322,8 @@ class FeatureTransformerFromGml implements GmlConsumer {
 
     //TODO: on-the-fly mappings
     @Override
-    public void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception {
+    public void onPropertyStart(List<String> path, List<Integer> multiplicities,
+                                Map<String, String> additionalInfos) throws Exception {
         boolean mapped = false;
 
         //TODO
@@ -368,6 +381,8 @@ class FeatureTransformerFromGml implements GmlConsumer {
                 inGeometry = ImmutableList.copyOf(path);
             }
         }
+
+        additionalInfos.forEach(biConsumerMayThrow((key,value) -> onGmlAttribute(key, value, path, multiplicities)));
     }
 
     private Predicate<TargetMapping> isSpatial() {
@@ -451,10 +466,10 @@ class FeatureTransformerFromGml implements GmlConsumer {
         }
     }
 
-    @Override
+    /*@Override
     public void onNamespaceRewrite(QName featureType, String namespace) {
 
-    }
+    }*/
 
     private void onGeometryPart(final String localName) throws Exception {
         if (transformGeometry == null) return;
@@ -504,8 +519,18 @@ class FeatureTransformerFromGml implements GmlConsumer {
     }
 
     private String getLocalName(List<String> path) {
-        return path.isEmpty() ? null : path.get(path.size() - 1)
-                                           .substring(path.get(path.size() - 1)
-                                                          .lastIndexOf(":") + 1);
+        return path.isEmpty() ? null : getLocalName(path.get(path.size() - 1));
+    }
+
+    private String getLocalName(String name) {
+        return name.substring(name.lastIndexOf(":") + 1);
+    }
+
+    private String getNamespaceUri(List<String> path) {
+        return path.isEmpty() ? null : getNamespaceUri(path.get(path.size()-1));
+    }
+
+    private String getNamespaceUri(String name) {
+        return name.substring(0, name.lastIndexOf(":"));
     }
 }

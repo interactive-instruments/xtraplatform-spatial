@@ -11,11 +11,12 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -96,7 +97,8 @@ public class FeatureTransformerFromGeoJson implements FeatureConsumer {
 
 
     @Override
-    public void onStart(OptionalLong numberReturned, OptionalLong numberMatched) throws Exception {
+    public void onStart(OptionalLong numberReturned, OptionalLong numberMatched,
+                        Map<String, String> additionalInfos) throws Exception {
         featureTransformer.onStart(numberReturned, numberMatched);
     }
 
@@ -106,7 +108,7 @@ public class FeatureTransformerFromGeoJson implements FeatureConsumer {
     }
 
     @Override
-    public void onFeatureStart(List<String> path) throws Exception {
+    public void onFeatureStart(List<String> path, Map<String, String> additionalInfos) throws Exception {
         final TargetMapping mapping = featureTypeMapping.findMappings(path, outputFormat)
                                                         .orElse(null);
         featureTransformer.onFeatureStart(mapping);
@@ -121,7 +123,8 @@ public class FeatureTransformerFromGeoJson implements FeatureConsumer {
     }
 
     @Override
-    public void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception {
+    public void onPropertyStart(List<String> path, List<Integer> multiplicities,
+                                Map<String, String> additionalInfos) throws Exception {
         if (path.size() >= 2 && path.get(0)
                                     .equals("geometry")) {
             if (geometryMapping == null) {

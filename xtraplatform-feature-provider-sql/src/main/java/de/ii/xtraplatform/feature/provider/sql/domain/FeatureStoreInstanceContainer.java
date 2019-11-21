@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import java.util.List;
+import java.util.Optional;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true)
@@ -49,6 +50,15 @@ public interface FeatureStoreInstanceContainer extends FeatureStoreAttributesCon
                 .map(FeatureStoreRelation::getTargetContainer)
                 .distinct()
                 .collect(ImmutableList.toImmutableList());
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
+    default Optional<FeatureStoreAttributesContainer> getSpatialAttributesContainer() {
+        return getAllAttributesContainers()
+                .stream()
+                .filter(FeatureStoreAttributesContainer::isSpatial)
+                .findFirst();
     }
 
 }

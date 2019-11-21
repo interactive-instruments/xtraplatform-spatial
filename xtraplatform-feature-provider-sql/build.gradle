@@ -7,9 +7,30 @@ sourceSets {
     test {
         java.srcDir sharedTestDir
     }
+    main {
+        scala {
+            outputDir = file("$buildDir/classes/scala/main")
+        }
+        java {
+            outputDir = file("$buildDir/classes/java/main")
+        }
+    }
+    /*main {
+        scala {
+            srcDirs = ['src/main/scala', 'src/main/java']
+        }
+        java {
+            srcDirs = []
+        }
+    }*/
 }
 
+tasks.compileJava.dependsOn compileScala
+tasks.compileScala.dependsOn.remove("compileJava")
+
 dependencies {
+    compile files("$sourceSets.main.scala.outputDir")
+
     provided project(':xtraplatform-crs-api')
     provided project(':xtraplatform-feature-provider-api')
     provided project(':xtraplatform-feature-transformer-api')

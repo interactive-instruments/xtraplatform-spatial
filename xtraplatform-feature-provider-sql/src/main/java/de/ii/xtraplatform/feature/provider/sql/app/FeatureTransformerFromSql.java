@@ -12,7 +12,7 @@ import de.ii.xtraplatform.api.functional.LambdaWithException;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +22,7 @@ import java.io.StreamTokenizer;
 import java.io.StringReader;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
 
@@ -49,7 +50,8 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
 
 
     @Override
-    public void onStart(OptionalLong numberReturned, OptionalLong numberMatched) throws Exception {
+    public void onStart(OptionalLong numberReturned, OptionalLong numberMatched,
+                        Map<String, String> additionalInfos) throws Exception {
         featureTransformer.onStart(numberReturned, numberMatched);
     }
 
@@ -59,7 +61,7 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
     }
 
     @Override
-    public void onFeatureStart(List<String> path) throws Exception {
+    public void onFeatureStart(List<String> path, Map<String, String> additionalInfos) throws Exception {
         final TargetMapping mapping = featureTypeMapping.findMappings(path, outputFormat)
                                                         .orElse(null);
         featureTransformer.onFeatureStart(mapping);
@@ -71,7 +73,8 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
     }
 
     @Override
-    public void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception {
+    public void onPropertyStart(List<String> path, List<Integer> multiplicities,
+                                Map<String, String> additionalInfos) throws Exception {
         if (shouldIgnoreProperty(path)) {
             return;
         }

@@ -8,33 +8,39 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import akka.Done;
-import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.util.ByteString;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.api.exceptions.BadRequest;
-import de.ii.xtraplatform.crs.api.CrsTransformer;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
-import de.ii.xtraplatform.feature.provider.api.FeatureProvider;
+import de.ii.xtraplatform.feature.provider.api.Feature;
+import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
+import de.ii.xtraplatform.feature.provider.api.FeatureMetadata;
+import de.ii.xtraplatform.feature.provider.api.FeatureProvider2;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderMetadataConsumer;
+import de.ii.xtraplatform.feature.provider.api.FeatureQueries;
+import de.ii.xtraplatform.feature.provider.api.FeatureQueriesPassThrough;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
+import de.ii.xtraplatform.feature.provider.api.FeatureSchema;
+import de.ii.xtraplatform.feature.provider.api.FeatureSourceStream;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream;
+import de.ii.xtraplatform.feature.provider.api.FeatureStream2;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
-import de.ii.xtraplatform.feature.transformer.api.FeatureProviderSchemaConsumer;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
+import de.ii.xtraplatform.feature.transformer.api.FeatureProviderGenerator;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
-import de.ii.xtraplatform.feature.transformer.api.GmlConsumer;
 import de.ii.xtraplatform.feature.transformer.api.GmlStreamParser;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping;
 import de.ii.xtraplatform.feature.transformer.api.MappingStatus;
+import de.ii.xtraplatform.feature.transformer.api.OnTheFly;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
-import de.ii.xtraplatform.feature.transformer.api.TransformingFeatureProvider;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ParseError;
 import de.ii.xtraplatform.ogc.api.exceptions.WFSException;
@@ -51,6 +57,7 @@ import org.codehaus.staxmate.SMInputFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.MediaType;
 import javax.xml.namespace.QName;
 import java.io.InputStream;
 import java.net.URI;
@@ -64,7 +71,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,11 +81,12 @@ import static de.ii.xtraplatform.feature.provider.wfs.FeatureProviderWfs.PROVIDE
  */
 @Component
 @Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = PROVIDER_TYPE)})
-public class FeatureProviderWfs implements GmlProvider, FeatureProvider.MetadataAware, TransformingFeatureProvider.SchemaAware, TransformingFeatureProvider.DataGenerator {
+public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, FeatureQueriesPassThrough, FeatureMetadata, FeatureSchema, FeatureProviderGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
 
     private static final String SOURCE_FORMAT = "application/gml+xml";
+    private static final MediaType MEDIA_TYPE = new MediaType("application", "gml+xml");
 
     static final String PROVIDER_TYPE = "WFS";
 
@@ -142,8 +149,8 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
         this.data = data;
     }
 
-    @Override
-    public FeatureStream<GmlConsumer> getFeatureStream(FeatureQuery query) {
+    //@Override
+    public FeatureStream<FeatureConsumer> getFeatureStream(FeatureQuery query) {
         if (!queryEncoder.isValid(query)) {
             throw new IllegalArgumentException("Feature type '" + query.getType() + "' not found");
         }
@@ -172,7 +179,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     }
 
     //TODO interface ResolveRelations
-    @Override
+    //@Override
     public FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query) {
         // if query crs is native or not supported by provider, remove from query
         boolean useProviderDefaultCrs = data.getNativeCrs()
@@ -190,7 +197,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
 
             if (!featureTypeMapping.isPresent()) {
                 try {
-                    FeatureTransformer.OnTheFly onTheFly = (FeatureTransformer.OnTheFly) featureTransformer;
+                    OnTheFly onTheFly = (OnTheFly) featureTransformer;
                 } catch (ClassCastException e) {
 
                     CompletableFuture<Done> promise = new CompletableFuture<>();
@@ -272,23 +279,6 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     }
 
     @Override
-    public List<String> addFeaturesFromStream(String featureType, CrsTransformer crsTransformer,
-                                              Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream) {
-        return ImmutableList.of();
-    }
-
-    @Override
-    public void updateFeatureFromStream(String featureType, String id, CrsTransformer crsTransformer,
-                                        Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream) {
-
-    }
-
-    @Override
-    public void deleteFeature(String featureType, String id) {
-
-    }
-
-    @Override
     public boolean supportsCrs(EpsgCrs crs) {
         return data.getNativeCrs()
                    .getCode() == crs.getCode()
@@ -297,6 +287,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
                        .anyMatch(epsgCrs -> epsgCrs.getCode() == crs.getCode());
     }
 
+    //TODO: can't the crs transformer handle the swapping, then we can remove this
     @Override
     public boolean shouldSwapCoordinates(EpsgCrs crs) {
         return supportsCrs(crs) && Stream.concat(Stream.of(data.getNativeCrs()), data.getOtherCrs()
@@ -307,7 +298,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
                                          .orElse(false);
     }
 
-    @Override
+    //@Override
     public String getSourceFormat() {
         return SOURCE_FORMAT;
     }
@@ -429,5 +420,108 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
             ImmutableFeatureProviderDataTransformer.Builder dataBuilder,
             List<TargetMappingProviderFromGml> mappingProviders) {
         return new FeatureProviderDataWfsFromSchema(data, dataBuilder, mappingProviders);
+    }
+
+    //TODO interface FeatureRelations
+    @Override
+    public FeatureStream2 getFeatureStream2(FeatureQuery query) {
+        return new FeatureStream2() {
+            @Override
+            public CompletionStage<Result> runWith(FeatureTransformer featureTransformer) {
+                // if query crs is native or not supported by provider, remove from query
+                boolean useProviderDefaultCrs = data.getNativeCrs()
+                                                    .getCode() == query.getCrs()
+                                                                       .getCode()
+                        || !supportsCrs(query.getCrs());
+
+                FeatureQuery finalQuery = useProviderDefaultCrs ? ImmutableFeatureQuery.builder()
+                                                                                       .from(query)
+                                                                                       .crs(null)
+                                                                                       .build() : query;
+                    Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(finalQuery.getType());
+
+                    if (!featureTypeMapping.isPresent()) {
+                        try {
+                            OnTheFly onTheFly = (OnTheFly) featureTransformer;
+                        } catch (ClassCastException e) {
+                            //TODO: put error message into Result, complete successfully
+                            CompletableFuture<Result> promise = new CompletableFuture<>();
+                            promise.completeExceptionally(new IllegalStateException("No features available for type"));
+                            return promise;
+                        }
+                    }
+
+                    Map<QName, List<String>> resolvableTypes = getResolvableTypes(featureTypeMapping.get());
+
+
+                    Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(queryEncoder.getFeatureTypeName(finalQuery), featureTypeMapping.orElse(null), featureTransformer, finalQuery.getFields(), resolvableTypes);
+
+                    Map<String, String> additionalQueryParameters;
+
+                    if (!resolvableTypes.isEmpty()) {
+                        //TODO depth???
+                        additionalQueryParameters = ImmutableMap.of("resolve", "local", "resolvedepth", "1");
+                    } else {
+                        additionalQueryParameters = ImmutableMap.of();
+                    }
+
+
+
+                    return connector.runQuery(finalQuery, transformer, additionalQueryParameters).thenApply(done -> () -> true);
+
+            }
+
+            @Override
+            public CompletionStage<Result> runWith(Sink<Feature, CompletionStage<Result>> transformer) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public long getFeatureCount(FeatureQuery featureQuery) {
+        return 0;
+    }
+
+    @Override
+    public MediaType getMediaType() {
+        return MEDIA_TYPE;
+    }
+
+    @Override
+    public FeatureSourceStream getFeatureSourceStream(FeatureQuery query) {
+        return new FeatureSourceStream() {
+            @Override
+            public CompletionStage<FeatureStream2.Result> runWith(FeatureConsumer featureConsumer) {
+                if (!queryEncoder.isValid(query)) {
+                    throw new IllegalArgumentException("Feature type '" + query.getType() + "' not found");
+                }
+
+                    Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(query.getType());
+                    Map<QName, List<String>> resolvableTypes = featureTypeMapping.isPresent() ? getResolvableTypes(featureTypeMapping.get()) : ImmutableMap.of();
+
+                    List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(queryEncoder.getFeatureTypeName(query)) : ImmutableList.<QName>builder().add(queryEncoder.getFeatureTypeName(query))
+                                                                                                                                                                    .addAll(resolvableTypes.keySet())
+                                                                                                                                                                    .build();
+
+                    Sink<ByteString, CompletionStage<Done>> parser = GmlStreamParser.consume(featureTypes, featureConsumer);//TODO
+
+                    Map<String, String> additionalQueryParameters;
+
+                    if (!resolvableTypes.isEmpty()) {
+                        //TODO depth???
+                        additionalQueryParameters = ImmutableMap.of("resolve", "local", "resolvedepth", "1");
+                    } else {
+                        additionalQueryParameters = ImmutableMap.of();
+                    }
+
+                    return connector.runQuery(query, parser, additionalQueryParameters).thenApply(done -> () -> true);
+            }
+
+            @Override
+            public CompletionStage<FeatureStream2.Result> runWith2(Sink consumer) {
+                return null;
+            }
+        };
     }
 }

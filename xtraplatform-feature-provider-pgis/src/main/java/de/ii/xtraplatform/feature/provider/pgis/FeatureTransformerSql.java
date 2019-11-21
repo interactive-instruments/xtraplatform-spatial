@@ -16,7 +16,7 @@ import de.ii.xtraplatform.crs.api.WktCoordinatesFormatter;
 import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.provider.sql.app.SimpleFeatureGeometryFromToWkt;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 
 import java.io.StringWriter;
 import java.io.Writer;

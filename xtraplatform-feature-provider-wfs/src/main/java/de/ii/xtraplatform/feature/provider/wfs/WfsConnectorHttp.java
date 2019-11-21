@@ -113,6 +113,11 @@ public class WfsConnectorHttp implements WfsConnector {
     }
 
     @Override
+    public Source<ByteString, NotUsed> getSourceStream(String query) {
+        return null;
+    }
+
+    @Override
     public Source<ByteString, NotUsed> getSourceStream(String query, QueryOptions options) {
         return null;
     }

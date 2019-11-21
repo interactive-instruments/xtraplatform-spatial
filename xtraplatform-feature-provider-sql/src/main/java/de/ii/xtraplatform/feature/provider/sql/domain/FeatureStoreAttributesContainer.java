@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface FeatureStoreAttributesContainer {
 
@@ -34,6 +35,23 @@ public interface FeatureStoreAttributesContainer {
     @Value.Derived
     @Value.Auxiliary
     default List<String> getSortKeys() {
-        return ImmutableList.of(getSortKey());
+        return ImmutableList.of(String.format("%s.%s", getName(), getSortKey()));
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isSpatial() {
+        return getAttributes()
+                .stream()
+                .anyMatch(FeatureStoreAttribute::isSpatial);
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
+    default Optional<FeatureStoreAttribute> getSpatialAttribute() {
+        return getAttributes()
+                .stream()
+                .filter(FeatureStoreAttribute::isSpatial)
+                .findFirst();
     }
 }

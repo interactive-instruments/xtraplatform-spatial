@@ -1,6 +1,6 @@
 package de.ii.xtraplatform.feature.provider.api;
 
-import akka.Done;
+import akka.stream.javadsl.Sink;
 
 import java.util.concurrent.CompletionStage;
 
@@ -10,7 +10,7 @@ public interface FeatureStream2 {
         boolean isSuccess();
     }
 
-    CompletionStage<Result> runWith(FeatureConsumer consumer);
+    CompletionStage<Result> runWith(FeatureTransformer transformer);
 
-    CompletionStage<Result> runWith(FeatureTrans consumer);
+    CompletionStage<Result> runWith(Sink<Feature, CompletionStage<Result>> transformer);
 }

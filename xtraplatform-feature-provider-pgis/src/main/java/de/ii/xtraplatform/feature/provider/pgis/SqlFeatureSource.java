@@ -75,7 +75,7 @@ public class SqlFeatureSource {
         this.materializer = materializer;
         this.queryEncoder = new FilterEncoderSqlImpl(queries.getMainQuery(), mappings);
         this.computeNumberMatched = computeNumberMatched;
-        this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(null);
+        this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(null, null);
     }
 
     public CompletionStage<Done> runQuery(FeatureQuery query, FeatureConsumer consumer) {
@@ -101,7 +101,7 @@ public class SqlFeatureSource {
                         boolean same = slickRowInfo.getPath()
                                                    .equals(previousPath.get(0));
 
-                        multiplicityTracker.track(slickRowInfo.getPath(), slickRowInfo.getIds());
+                        multiplicityTracker.track(slickRowInfo.getPath(), slickRowInfo.getIds().stream().map(s -> Long.parseLong(s)).collect(Collectors.toList()));
 
 
                     }
@@ -135,7 +135,7 @@ public class SqlFeatureSource {
                         OptionalLong numberMatched = count2.isPresent() && !count2.get()
                                                                                   .equals("-1") ? OptionalLong.of(Long.valueOf(count2.get())) : OptionalLong.empty();
 
-                        consumer.onStart(numberReturned, numberMatched);
+                        consumer.onStart(numberReturned, numberMatched, ImmutableMap.of());
                         meta[0] = true;
                     } else if (started[0] && opened[0] && !Objects.equals(slickRowInfo.getIds()
                                                                                       .get(0), currentId[0])) {
@@ -148,14 +148,14 @@ public class SqlFeatureSource {
                     }
                     if (!Objects.equals(slickRowInfo.getIds()
                                                     .get(0), currentId[0])) {
-                        consumer.onFeatureStart(mainTablePath);
+                        consumer.onFeatureStart(mainTablePath, ImmutableMap.of());
                         opened[0] = true;
                     }
 
                     Optional<ColumnValueInfo> columnValueInfo = slickRowInfo.next();
                     while (columnValueInfo.isPresent()) {
                         if (Objects.nonNull(columnValueInfo.get().value)) {
-                            consumer.onPropertyStart(columnValueInfo.get().path, multiplicityTracker.getMultiplicitiesForPath(slickRowInfo.getPath()));
+                            consumer.onPropertyStart(columnValueInfo.get().path, multiplicityTracker.getMultiplicitiesForPath(slickRowInfo.getPath()), ImmutableMap.of());
                             consumer.onPropertyText(columnValueInfo.get().value);
                             consumer.onPropertyEnd(columnValueInfo.get().path);
                         }
@@ -184,7 +184,7 @@ public class SqlFeatureSource {
 
                     try {
                         if (!meta[0]) {
-                            consumer.onStart(OptionalLong.of(0), OptionalLong.empty());
+                            consumer.onStart(OptionalLong.of(0), OptionalLong.empty(), ImmutableMap.of());
                         }
                     } catch (Exception e) {
                         //ignore

@@ -28,7 +28,7 @@ public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlMultiplicityTracker.class);
 
-    private final Map<String, String> currentIds;
+    private final Map<String, Long> currentIds;
     private final Map<String, Integer> currentMultiplicities;
     private final Map<String, Set<String>> children;
 
@@ -55,7 +55,7 @@ public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
     }
 
     @Override
-    public void track(List<String> path, List<String> ids) {
+    public void track(List<String> path, List<Long> ids) {
         int multiplicityIndex = 0;
         boolean increased = false;
         String increasedMultiplicityKey = null;
@@ -70,7 +70,7 @@ public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
                     LOGGER.trace("TRACKER {} {} {}", table, multiplicityIndex, ids);
                 }
 
-                String id = ids.get(multiplicityIndex + 1);
+                Long id = ids.get(multiplicityIndex + 1);
                 if (increased) {
                     currentIds.put(table, id);
                     currentMultiplicities.put(table, 1);

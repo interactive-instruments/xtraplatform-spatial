@@ -8,21 +8,24 @@
 package de.ii.xtraplatform.feature.provider.api;
 
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalLong;
 
 /**
  * @author zahnen
  */
 public interface FeatureConsumer {
-    void onStart(OptionalLong numberReturned, OptionalLong numberMatched) throws Exception;
+    void onStart(OptionalLong numberReturned, OptionalLong numberMatched,
+                 Map<String, String> additionalInfos) throws Exception;
 
     void onEnd() throws Exception;
 
-    void onFeatureStart(List<String> path) throws Exception;
+    void onFeatureStart(List<String> path, Map<String, String> additionalInfos) throws Exception;
 
     void onFeatureEnd(List<String> path) throws Exception;
 
-    void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception;
+    void onPropertyStart(List<String> path, List<Integer> multiplicities,
+                         Map<String, String> additionalInfos) throws Exception;
 
     void onPropertyText(String text) throws Exception;
 

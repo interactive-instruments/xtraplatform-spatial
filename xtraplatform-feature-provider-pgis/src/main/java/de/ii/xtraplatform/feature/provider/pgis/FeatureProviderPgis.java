@@ -29,21 +29,19 @@ import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransactions;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureTransformerFromSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
 import de.ii.xtraplatform.feature.transformer.api.TransformingFeatureProvider;
-import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Property;
-import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
-import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.wiring.BundleWiring;
 import org.slf4j.Logger;
@@ -77,7 +75,7 @@ import static de.ii.xtraplatform.feature.provider.api.TargetMapping.BASE_TYPE;
  */
 //@Component
 //@Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = FeatureProviderPgis.PROVIDER_TYPE)})
-public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureTransformer, FeatureConsumer> {
+public class FeatureProviderPgis implements FeatureTransactions, TransformingFeatureProvider<FeatureTransformer, FeatureConsumer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderPgis.class);
 

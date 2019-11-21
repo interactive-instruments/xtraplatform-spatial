@@ -1,14 +1,42 @@
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface SqlRow extends Comparable<SqlRow> {
 
-    Optional<SqlColumn> next();
+    List<Object> getValues();
+
+    default String getName() {
+        return "unknown";
+    }
+
+    default List<String> getPath() {
+        return ImmutableList.of();
+    }
+
+    default List<Long> getIds() {
+        return ImmutableList.of();
+    }
+
+    default List<String> getIdColumnNames() {
+        return ImmutableList.of();
+    }
+
+    default int getPriority() {
+        return 0;
+    }
+
+    default List<List<String>> getColumnPaths() {
+        return ImmutableList.of();
+    }
+
+    @Override
+    default int compareTo(SqlRow sqlRow) {
+        return 0;
+    }
+    /*Optional<SqlColumn> next();
 
     default List<String> getIds() {
         return Lists.newArrayList((String) null);
@@ -18,7 +46,7 @@ public interface SqlRow extends Comparable<SqlRow> {
 
     default List<String> getPath() {
         return ImmutableList.of();
-    }
+    }*/
 
     class SqlColumn {
         private final List<String> path;

@@ -26,23 +26,4 @@ public interface FeatureProvider<T extends FeatureConsumer> {
         return new BoundingBox(-180.0D, -90.0D, 180.0D, 90.0D, new EpsgCrs(4326));
     }
 
-    interface MetadataAware {
-        void getMetadata(FeatureProviderMetadataConsumer metadataConsumer);
-    }
-
-    //TODO
-    /*interface Queries {
-        FeatureStream<T> getFeatureStream(FeatureQuery query);
-        Optional<ListenableFuture<HttpEntity>> getFeatureCount(FeatureQuery query);
-    }
-
-    interface Transformations {
-        FeatureStream<FeatureTransformer> getFeatureTransformationStream(FeatureQuery query);
-    }
-
-    interface Transactions {
-        void addFeaturesFromStream(FeatureStream<FeatureTransformer>);
-        void updateFeaturesFromStream();
-        void deleteFeature(String id);
-    }*/
 }

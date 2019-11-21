@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.api.FeatureProvider;
+import de.ii.xtraplatform.feature.provider.api.FeatureProvider2;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderRegistry;
@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Instantiate
 @Whiteboards(whiteboards = {
         @Wbp(
-                filter = "(&(objectClass=org.apache.felix.ipojo.Factory)(component.providedServiceSpecifications=de.ii.xtraplatform.feature.provider.api.FeatureProvider))",
+                filter = "(&(objectClass=org.apache.felix.ipojo.Factory)(component.providedServiceSpecifications=de.ii.xtraplatform.feature.provider.api.FeatureProvider2))",
                 onArrival = "onFactoryArrival",
                 onDeparture = "onFactoryDeparture"),
         @Wbp(
@@ -74,7 +74,7 @@ public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {
     }
 
     @Override
-    public FeatureProvider createFeatureProvider(FeatureProviderData featureProviderData) {
+    public FeatureProvider2 createFeatureProvider(FeatureProviderData featureProviderData) {
         if (!isSupported(featureProviderData.getProviderType(), featureProviderData.getConnectorType())) {
             throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getProviderType() + " and connector " + featureProviderData.getConnectorType() + " is not supported");
         }
@@ -87,8 +87,8 @@ public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {
 
             ComponentInstance instance =  providerFactories.get(featureProviderData.getProviderType()).createComponentInstance(new Hashtable<>(ImmutableMap.of(".data", featureProviderData, ".connector", connector)));
 
-            ServiceReference[] refs = context.getServiceReferences(FeatureProvider.class.getName(), "(instance.name=" + instance.getInstanceName() +")");
-            FeatureProvider featureProvider = (FeatureProvider) context.getService(refs[0]);
+            ServiceReference[] refs = context.getServiceReferences(FeatureProvider2.class.getName(), "(instance.name=" + instance.getInstanceName() +")");
+            FeatureProvider2 featureProvider = (FeatureProvider2) context.getService(refs[0]);
 
             return featureProvider;
 

@@ -60,6 +60,11 @@ public class SqlRowValues implements SqlRow {
     }
 
     @Override
+    public List<Object> getValues() {
+        return null;
+    }
+
+    @Override
     public int compareTo(SqlRow row) {
         if (row instanceof SqlRowMeta) {
             return 1;
@@ -86,22 +91,18 @@ public class SqlRowValues implements SqlRow {
     }
 
 
-    @Override
-    public List<String> getIds() {
-        return ids;
+    public List<Long> getIds() {
+        return ids.stream().map(s -> Long.parseLong(s)).collect(Collectors.toList());
     }
 
-    @Override
     public List<String> getPath() {
         return path;
     }
 
-    @Override
     public String getName() {
         return name;
     }
 
-    @Override
     public Optional<SqlColumn> next() {
         if (columnCount >= columnPaths.size()) {
             return Optional.empty();

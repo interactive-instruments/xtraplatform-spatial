@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.async.ByteArrayFeeder;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,7 +125,7 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
                         increaseMultiplicity(pathTracker.toString());
                     } else if (depth == featureDepth - 1 && inFeature) {
                         //inFeature = false;
-                        featureConsumer.onFeatureStart(pathTracker.asList());
+                        featureConsumer.onFeatureStart(pathTracker.asList(), ImmutableMap.of());
                         this.multiplicities = new LinkedHashMap<>();
                     }
                     if (Objects.nonNull(currentName) || lastNameIsArrayDepth == 0)
@@ -147,7 +148,7 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
                         depth += 1;
                         nesting += 1;
                         if (nesting < 3)
-                        featureConsumer.onPropertyStart(pathTracker.asList(), ImmutableList.of());
+                        featureConsumer.onPropertyStart(pathTracker.asList(), ImmutableList.of(), ImmutableMap.of());
                     }
                     break;
 
@@ -220,7 +221,7 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
                                 if (!currentName.equals("id")) break;
 
                                 pathTracker.track(currentName, 1);
-                                featureConsumer.onPropertyStart(pathTracker.asList(), multiplicities.getOrDefault(pathTracker.toString(), ImmutableList.of()));
+                                featureConsumer.onPropertyStart(pathTracker.asList(), multiplicities.getOrDefault(pathTracker.toString(), ImmutableList.of()), ImmutableMap.of());
                                 featureConsumer.onPropertyText(parser.getValueAsString());
                                 featureConsumer.onPropertyEnd(pathTracker.asList());
                                 break;
@@ -233,7 +234,7 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
                         if (inProperties) {
                             increaseMultiplicity(pathTracker.toString());
                         }
-                        featureConsumer.onPropertyStart(pathTracker.asList(), multiplicities.getOrDefault(pathTracker.toString(), ImmutableList.of()));
+                        featureConsumer.onPropertyStart(pathTracker.asList(), multiplicities.getOrDefault(pathTracker.toString(), ImmutableList.of()), ImmutableMap.of());
                         featureConsumer.onPropertyText(parser.getValueAsString());
                         featureConsumer.onPropertyEnd(pathTracker.asList());
                         if (Objects.equals(currentName, "id"))
@@ -297,14 +298,14 @@ public abstract class AbstractStreamingGeoJsonGraphStage extends GraphStageLogic
 
     private void startIfNecessary(boolean isCollection) throws Exception {
         if (!started) {
-            featureConsumer.onStart(numberReturned, numberMatched);
+            featureConsumer.onStart(numberReturned, numberMatched, ImmutableMap.of());
             started = true;
             inFeature = true;
             if (isCollection) {
                 featureDepth = 1;
             } else {
                 singleFeature = true;
-                featureConsumer.onFeatureStart(pathTracker.asList());
+                featureConsumer.onFeatureStart(pathTracker.asList(), ImmutableMap.of());
             }
         }
     }

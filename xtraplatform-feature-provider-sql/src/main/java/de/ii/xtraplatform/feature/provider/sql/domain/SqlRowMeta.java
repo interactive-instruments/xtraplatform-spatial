@@ -1,47 +1,28 @@
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
-import com.google.common.collect.ImmutableList;
+import org.immutables.value.Value;
 
-import java.util.Optional;
+import java.math.BigDecimal;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.OptionalLong;
 
-public class SqlRowMeta implements SqlRow {
-    private final long count;
-    private final long count2;
-    private boolean done;
-    private boolean done2;
-    private boolean noNumberReturned;
+@Value.Immutable
+public interface SqlRowMeta extends SqlRow {
 
-    public SqlRowMeta(long count, long count2) {
-        this.count = count;
-        this.count2 = count2;
-    }
+    long getMinKey();
 
-    SqlRowMeta(long count2) {
-        this.noNumberReturned = true;
-        this.count = 0;
-        this.count2 = count2;
-    }
+    long getMaxKey();
 
-    @Override
-    public Optional<SqlColumn> next() {
-        if (!done) {
-            this.done = true;
-            return noNumberReturned ? Optional.empty() : Optional.of(new SqlColumn(ImmutableList.of(), Long.toString(count)));
-        }
-        if (!done2) {
-            this.done2 = true;
-            return Optional.of(new SqlColumn(ImmutableList.of(), Long.toString(count2)));
-        }
-        return Optional.empty();
-    }
+    long getNumberReturned();
+
+    OptionalLong getNumberMatched();
 
     @Override
-    public String getName() {
-        return "META";
-    }
-
-    @Override
-    public int compareTo(SqlRow row) {
+    default int compareTo(SqlRow row) {
         return -1;
     }
 }

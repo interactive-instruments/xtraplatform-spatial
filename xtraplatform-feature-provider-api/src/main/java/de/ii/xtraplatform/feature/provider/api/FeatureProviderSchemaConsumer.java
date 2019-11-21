@@ -8,7 +8,7 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.feature.transformer.api;
+package de.ii.xtraplatform.feature.provider.api;
 
 /**
  *

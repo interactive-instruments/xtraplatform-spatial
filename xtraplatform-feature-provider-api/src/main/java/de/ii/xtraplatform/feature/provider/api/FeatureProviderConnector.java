@@ -21,6 +21,11 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * @author zahnen
+ *
+ *
+ * @param <T> query result type
+ * @param <U> query type
+ * @param <V> options type
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "connectorType", visible = true)
 @JsonTypeIdResolver(JacksonProvider.DynamicTypeIdResolver.class)
@@ -30,6 +35,8 @@ public interface FeatureProviderConnector<T,U,V extends FeatureProviderConnector
 
     //TODO: refactor FeatureProviderWfs to use getSourceStream, remove this
     CompletionStage<Done> runQuery(final FeatureQuery query, final Sink<T, CompletionStage<Done>> consumer, final Map<String, String> additionalQueryParameters);
+
+    Source<T, NotUsed> getSourceStream(U query);
 
     Source<T, NotUsed> getSourceStream(U query, V options);
 }

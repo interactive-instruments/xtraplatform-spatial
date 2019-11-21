@@ -9,7 +9,7 @@ package de.ii.xtraplatform.feature.transformer.geojson;
 
 import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 
 import java.util.List;
 import java.util.Objects;

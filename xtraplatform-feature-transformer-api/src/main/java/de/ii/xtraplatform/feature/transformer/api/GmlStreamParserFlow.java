@@ -8,7 +8,10 @@
 package de.ii.xtraplatform.feature.transformer.api;
 
 import akka.Done;
-import akka.stream.*;
+import akka.stream.Attributes;
+import akka.stream.FlowShape;
+import akka.stream.Inlet;
+import akka.stream.Outlet;
 import akka.stream.javadsl.Flow;
 import akka.stream.stage.AbstractInHandler;
 import akka.stream.stage.AbstractOutHandler;
@@ -17,6 +20,8 @@ import akka.stream.stage.GraphStageWithMaterializedValue;
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 import scala.Tuple2;
 
 import javax.xml.namespace.QName;
@@ -54,7 +59,7 @@ public class GmlStreamParserFlow {
         }
     }
 
-    public interface GmlConsumerFlow extends GmlConsumer {
+    public interface GmlConsumerFlow extends FeatureConsumer {
         void initialize(Consumer<ByteString> push, Consumer<Throwable> failStage);
     }
 

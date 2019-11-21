@@ -10,6 +10,7 @@ package de.ii.xtraplatform.feature.transformer.geojson;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalLong;
 
 /**
@@ -19,7 +20,8 @@ class FeatureConsumerToString implements FeatureConsumer {
     public StringBuilder log = new StringBuilder();
 
     @Override
-    public void onStart(OptionalLong numberReturned, OptionalLong numberMatched) throws Exception {
+    public void onStart(OptionalLong numberReturned, OptionalLong numberMatched,
+                        Map<String, String> additionalInfos) throws Exception {
         log.append(String.format("START: %d %d\n", numberReturned.orElse(-1), numberMatched.orElse(-1)));
     }
 
@@ -29,7 +31,7 @@ class FeatureConsumerToString implements FeatureConsumer {
     }
 
     @Override
-    public void onFeatureStart(List<String> path) throws Exception {
+    public void onFeatureStart(List<String> path, Map<String, String> additionalInfos) throws Exception {
         log.append(path);
         log.append("{\n");
     }
@@ -40,7 +42,8 @@ class FeatureConsumerToString implements FeatureConsumer {
     }
 
     @Override
-    public void onPropertyStart(List<String> path, List<Integer> multiplicities) throws Exception {
+    public void onPropertyStart(List<String> path, List<Integer> multiplicities,
+                                Map<String, String> additionalInfos) throws Exception {
         log.append("    ");
         log.append(path);
         log.append(": ");

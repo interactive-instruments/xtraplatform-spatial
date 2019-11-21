@@ -157,25 +157,22 @@ public class FeatureStorePathParser {
                             instanceContainerBuilders.get(instanceContainerName)
                                                      .name(instanceContainerName)
                                                      .path(tablePathAsList)
-                                                     //TODO: default id field from syntax options, optional id flag
-                                                     .sortKey("id")
+                                                     .sortKey(syntax.getOptions().getDefaultSortKey())
                                                      .attributes(attributes)
                                                      .attributesPosition(instancePos[0]);
                             instancePos[0] = 0;
                         } else {
                             List<FeatureStoreRelation> instanceConnection = toRelations(tablePathAsList);
-                            //TODO: default id field from syntax options, optional id flag
                             String sortKey = syntax.isJunctionTable(attributesContainerName)
                                     //TODO: oneo uses columns.get(columns.size()-1) instead, thats not a good default value
                                     //TODO: support flag {orderBy=btkomplex_id}{orderDir=ASC}
                                     ? instanceConnection.get(instanceConnection.size() - 1)
                                                         .getTargetField()
-                                    : "id";
+                                    : syntax.getOptions().getDefaultSortKey();
 
                             ImmutableFeatureStoreRelatedContainer attributesContainer = ImmutableFeatureStoreRelatedContainer.builder()
                                                                                                                              .name(attributesContainerName)
                                                                                                                              .path(tablePathAsList)
-                                                                                                                             //TODO
                                                                                                                              .sortKey(sortKey)
                                                                                                                              .instanceConnection(instanceConnection)
                                                                                                                              .attributes(attributes)

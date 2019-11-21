@@ -17,7 +17,7 @@ import akka.stream.stage.GraphStageLogic;
 import akka.stream.stage.GraphStageWithMaterializedValue;
 import akka.util.ByteString;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

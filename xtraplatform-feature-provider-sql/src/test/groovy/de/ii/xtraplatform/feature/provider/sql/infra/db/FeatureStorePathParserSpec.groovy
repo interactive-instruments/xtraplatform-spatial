@@ -45,8 +45,8 @@ class FeatureStorePathParserSpec extends Specification {
         ]
         description << [
                 '1:1',
-                '1:n',
-                '1:1 + 1:n',
+                'n:1',
+                '1:1 + n:1',
                 'm:n',
                 'm:n + 1:n',
                 '1:1 + m:n + m:n',
@@ -54,7 +54,7 @@ class FeatureStorePathParserSpec extends Specification {
         ]
         expected << [
                 [ImmutableFeatureStoreRelation.builder()
-                .cardinality(ONE_2_ONE)
+                         .cardinality(ONE_2_ONE)
                          .sourceContainer('biotop')
                          .sourceField('id')
                          .targetContainer('osirisobjekt')
@@ -62,9 +62,10 @@ class FeatureStorePathParserSpec extends Specification {
                          .build()
                 ],
                 [ImmutableFeatureStoreRelation.builder()
-                .cardinality(ONE_2_N)
+                         .cardinality(ONE_2_ONE)
                          .sourceContainer('biotop')
                          .sourceField('geom')
+                         .sourceSortKey("id")
                          .targetContainer('geom')
                          .targetField('id')
                          .build()
@@ -77,9 +78,10 @@ class FeatureStorePathParserSpec extends Specification {
                          .targetField('id')
                          .build(),
                  ImmutableFeatureStoreRelation.builder()
-                         .cardinality(ONE_2_N)
+                         .cardinality(ONE_2_ONE)
                          .sourceContainer('osirisobjekt')
                          .sourceField('geom')
+                         .sourceSortKey("id")
                          .targetContainer('geom')
                          .targetField('id')
                          .build()
