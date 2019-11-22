@@ -1,6 +1,8 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.feature.provider.api.Feature;
+import de.ii.xtraplatform.feature.provider.api.FeatureProperty;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureType;
 import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureProperty;
@@ -8,6 +10,7 @@ import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureType;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import schemacrawler.schema.Catalog;
 import schemacrawler.schema.Column;
+import schemacrawler.schema.ColumnDataType;
 import schemacrawler.schema.Schema;
 import schemacrawler.schema.Table;
 import schemacrawler.schema.View;
@@ -46,10 +49,14 @@ public class SqlSchemaCrawler {
         // - create a FeatureProperty for every Column using ImmutableFeatureProperty.builder() and add it to FeatureType
         // - map every possible type of column.getColumnDataType() to FeatureProperty.Type
 
+        ImmutableList.Builder<FeatureType> featureTypes = new ImmutableList.Builder<>();
+
         for (final Schema schema : catalog.getSchemas()) {
             System.out.println(schema);
             for (final Table table : catalog.getTables(schema)) {
                 System.out.print("o--> " + table);
+                ImmutableFeatureType.Builder featureType = ImmutableFeatureType.builder()
+                                                                    .name(table.getName());
                 if (table instanceof View) {
                     System.out.println(" (VIEW)");
                 } else {
@@ -57,13 +64,46 @@ public class SqlSchemaCrawler {
                 }
 
                 for (final Column column : table.getColumns()) {
+                    ImmutableFeatureProperty featureProperty = ImmutableFeatureProperty.builder()
+                            .name(column.getName())
+                            .type(getFeaturePropertyType(column.getColumnDataType()))
+                            .build();
+                    featureType.addProperties(featureProperty);
                     System.out.println(
                             "     o--> " + column + " (" + column.getColumnDataType() + ")");
                 }
+                featureTypes.add(featureType.build());
             }
         }
 
-        return ImmutableList.of();
+        return featureTypes.build();
+    }
+
+    private FeatureProperty.Type getFeaturePropertyType(ColumnDataType columnDataType) {
+
+        switch (columnDataType.getName().replace("_", "")) {
+
+            case "int4":
+            case "serial":
+                return FeatureProperty.Type.INTEGER;
+
+            case "bool":
+                return FeatureProperty.Type.BOOLEAN;
+
+            case "numeric":
+            case "float8":
+                return FeatureProperty.Type.FLOAT;
+
+            case "geometry":
+                return FeatureProperty.Type.GEOMETRY;
+
+            case "varchar":
+            case "name":
+            case "text":
+            default:
+                return FeatureProperty.Type.STRING;
+        }
+
     }
 
     private Catalog getCatalog(String schemaNames) throws SchemaCrawlerException {
