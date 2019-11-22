@@ -1,6 +1,6 @@
 /**
  * Copyright 2019 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -438,36 +438,36 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
                                                                                        .from(query)
                                                                                        .crs(null)
                                                                                        .build() : query;
-                    Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(finalQuery.getType());
+                Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(finalQuery.getType());
 
-                    if (!featureTypeMapping.isPresent()) {
-                        try {
-                            OnTheFly onTheFly = (OnTheFly) featureTransformer;
-                        } catch (ClassCastException e) {
-                            //TODO: put error message into Result, complete successfully
-                            CompletableFuture<Result> promise = new CompletableFuture<>();
-                            promise.completeExceptionally(new IllegalStateException("No features available for type"));
-                            return promise;
-                        }
+                if (!featureTypeMapping.isPresent()) {
+                    try {
+                        OnTheFly onTheFly = (OnTheFly) featureTransformer;
+                    } catch (ClassCastException e) {
+                        //TODO: put error message into Result, complete successfully
+                        CompletableFuture<Result> promise = new CompletableFuture<>();
+                        promise.completeExceptionally(new IllegalStateException("No features available for type"));
+                        return promise;
                     }
+                }
 
-                    Map<QName, List<String>> resolvableTypes = getResolvableTypes(featureTypeMapping.get());
-
-
-                    Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(queryEncoder.getFeatureTypeName(finalQuery), featureTypeMapping.orElse(null), featureTransformer, finalQuery.getFields(), resolvableTypes);
-
-                    Map<String, String> additionalQueryParameters;
-
-                    if (!resolvableTypes.isEmpty()) {
-                        //TODO depth???
-                        additionalQueryParameters = ImmutableMap.of("resolve", "local", "resolvedepth", "1");
-                    } else {
-                        additionalQueryParameters = ImmutableMap.of();
-                    }
+                Map<QName, List<String>> resolvableTypes = getResolvableTypes(featureTypeMapping.get());
 
 
+                Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(queryEncoder.getFeatureTypeName(finalQuery), featureTypeMapping.orElse(null), featureTransformer, finalQuery.getFields(), resolvableTypes);
 
-                    return connector.runQuery(finalQuery, transformer, additionalQueryParameters).thenApply(done -> () -> true);
+                Map<String, String> additionalQueryParameters;
+
+                if (!resolvableTypes.isEmpty()) {
+                    //TODO depth???
+                    additionalQueryParameters = ImmutableMap.of("resolve", "local", "resolvedepth", "1");
+                } else {
+                    additionalQueryParameters = ImmutableMap.of();
+                }
+
+
+                return connector.runQuery(finalQuery, transformer, additionalQueryParameters)
+                                .thenApply(done -> () -> true);
 
             }
 
@@ -497,25 +497,37 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
                     throw new IllegalArgumentException("Feature type '" + query.getType() + "' not found");
                 }
 
-                    Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(query.getType());
-                    Map<QName, List<String>> resolvableTypes = featureTypeMapping.isPresent() ? getResolvableTypes(featureTypeMapping.get()) : ImmutableMap.of();
+                // if query crs is native or not supported by provider, remove from query
+                boolean useProviderDefaultCrs = data.getNativeCrs()
+                                                    .getCode() == query.getCrs()
+                                                                       .getCode()
+                        || !supportsCrs(query.getCrs());
 
-                    List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(queryEncoder.getFeatureTypeName(query)) : ImmutableList.<QName>builder().add(queryEncoder.getFeatureTypeName(query))
-                                                                                                                                                                    .addAll(resolvableTypes.keySet())
-                                                                                                                                                                    .build();
+                FeatureQuery finalQuery = useProviderDefaultCrs ? ImmutableFeatureQuery.builder()
+                                                                                       .from(query)
+                                                                                       .crs(null)
+                                                                                       .build() : query;
 
-                    Sink<ByteString, CompletionStage<Done>> parser = GmlStreamParser.consume(featureTypes, featureConsumer);//TODO
+                Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(finalQuery.getType());
+                Map<QName, List<String>> resolvableTypes = featureTypeMapping.isPresent() ? getResolvableTypes(featureTypeMapping.get()) : ImmutableMap.of();
 
-                    Map<String, String> additionalQueryParameters;
+                List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(queryEncoder.getFeatureTypeName(finalQuery)) : ImmutableList.<QName>builder().add(queryEncoder.getFeatureTypeName(finalQuery))
+                                                                                                                                                                .addAll(resolvableTypes.keySet())
+                                                                                                                                                                .build();
 
-                    if (!resolvableTypes.isEmpty()) {
-                        //TODO depth???
-                        additionalQueryParameters = ImmutableMap.of("resolve", "local", "resolvedepth", "1");
-                    } else {
-                        additionalQueryParameters = ImmutableMap.of();
-                    }
+                Sink<ByteString, CompletionStage<Done>> parser = GmlStreamParser.consume(featureTypes, featureConsumer);//TODO
 
-                    return connector.runQuery(query, parser, additionalQueryParameters).thenApply(done -> () -> true);
+                Map<String, String> additionalQueryParameters;
+
+                if (!resolvableTypes.isEmpty()) {
+                    //TODO depth???
+                    additionalQueryParameters = ImmutableMap.of("resolve", "local", "resolvedepth", "1");
+                } else {
+                    additionalQueryParameters = ImmutableMap.of();
+                }
+
+                return connector.runQuery(finalQuery, parser, additionalQueryParameters)
+                                .thenApply(done -> () -> true);
             }
 
             @Override
