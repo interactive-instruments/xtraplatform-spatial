@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttribute;
@@ -44,6 +43,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * @author zahnen
@@ -214,8 +214,19 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
                     @Override
                     public Object visit(Id filter, Object extraData) {
 
-                        String ids = Joiner.on(',')
-                                           .join(filter.getIDs());
+                        String ids = filter.getIDs()
+                                           .stream()
+                                           .map(id -> {
+                                               try {
+                                                   long longId = Long.parseLong((String) id);
+                                               } catch (Throwable e) {
+                                                   // not a number
+                                                   return String.format("'%s'", id);
+                                               }
+
+                                               return (String) id;
+                                           })
+                                           .collect(Collectors.joining(","));
 
                         tables.add(typeInfo);
                         columns.add(typeInfo.getIdField());

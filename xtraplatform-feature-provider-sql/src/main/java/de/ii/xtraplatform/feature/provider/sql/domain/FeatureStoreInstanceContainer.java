@@ -16,9 +16,15 @@ public interface FeatureStoreInstanceContainer extends FeatureStoreAttributesCon
         return 0;
     }
 
+    //TODO: 
     @Value.Default
     default String getIdField() {
-        return getSortKey();
+        return getAttributes().stream()
+                              .filter(FeatureStoreAttribute::isId)
+                              .map(FeatureStoreAttribute::getName)
+                              .findFirst()
+                              .orElse(getSortKey());
+        //return getSortKey();
     }
 
     List<FeatureStoreRelatedContainer> getRelatedContainers();

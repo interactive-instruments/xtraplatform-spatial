@@ -15,6 +15,11 @@ public interface FeatureStoreAttribute {
     Optional<String> getQueryable();
 
     @Value.Default
+    default boolean isId() {
+        return false;
+    }
+
+    @Value.Default
     default boolean isSpatial() {
         return false;
     }

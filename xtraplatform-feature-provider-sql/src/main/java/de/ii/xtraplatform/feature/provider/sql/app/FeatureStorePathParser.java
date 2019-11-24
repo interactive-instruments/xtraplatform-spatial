@@ -123,6 +123,7 @@ public class FeatureStorePathParser {
                                                                                                                                                   .path(tablePathAsList)
                                                                                                                                                   .addPath(name)
                                                                                                                                                   .queryable(sqlPath.getQueryable())
+                                                                                                                                                  .isId(sqlPath.hasOid())
                                                                                                                                                   .isSpatial(sqlPath.isSpatial())
                                                                                                                                                   .build()))
                                                                             .collect(Collectors.toList());
