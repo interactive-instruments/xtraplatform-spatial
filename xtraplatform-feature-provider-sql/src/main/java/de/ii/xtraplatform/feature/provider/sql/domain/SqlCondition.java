@@ -10,4 +10,9 @@ public interface SqlCondition {
     FeatureStoreAttributesContainer getTable();
 
     String getExpression();
+
+    @Value.Default
+    default boolean isOr() {
+        return false;
+    }
 }

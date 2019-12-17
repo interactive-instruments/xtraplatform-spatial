@@ -187,8 +187,8 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     private String getFilter(FeatureStoreInstanceContainer instanceContainer, String cqlFilter) {
         List<SqlCondition> sqlConditions = filterEncoder.encode(cqlFilter, instanceContainer);
 
-        String sqlFilter = sqlConditions.stream()
-                                        .map(sqlCondition -> {
+        List<String> sqlFilters = sqlConditions.stream()
+                                              .map(sqlCondition -> {
 
                                             List<String> aliases = getAliases(sqlCondition.getTable()).stream()
                                                                                                       .map(s -> "A" + s)
@@ -200,7 +200,29 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
                                             return String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %5$s)", instanceContainer.getName(), aliases.get(0), instanceContainer.getSortKey(), join, expression);
                                         })
-                                        .collect(Collectors.joining(") AND (", "(", ")"));
+                                              .collect(Collectors.toList());
+        String sqlFilter = "(";
+
+        for (int i = 0; i < sqlConditions.size(); i++) {
+            if (i == 0) {
+                sqlFilter += "(";
+            }
+            sqlFilter += sqlFilters.get(i);
+
+            if (i < sqlConditions.size()-1) {
+                if (sqlConditions.get(i).isOr()) {
+                    sqlFilter += ") OR (";
+                } else {
+                    sqlFilter += ") AND (";
+                }
+            } else {
+                sqlFilter += ")";
+            }
+        }
+
+        sqlFilter += ")";
+
+                                        //.collect(Collectors.joining(") AND (", "(", ")"));
 
         return sqlFilter;
     }

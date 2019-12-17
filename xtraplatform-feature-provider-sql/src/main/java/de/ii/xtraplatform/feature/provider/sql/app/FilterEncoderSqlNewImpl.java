@@ -20,8 +20,16 @@ import org.geotools.filter.text.ecql.ECQL;
 import org.geotools.filter.visitor.DuplicatingFilterVisitor;
 import org.opengis.filter.And;
 import org.opengis.filter.Id;
+import org.opengis.filter.Not;
+import org.opengis.filter.Or;
 import org.opengis.filter.PropertyIsEqualTo;
+import org.opengis.filter.PropertyIsGreaterThan;
+import org.opengis.filter.PropertyIsGreaterThanOrEqualTo;
+import org.opengis.filter.PropertyIsLessThan;
+import org.opengis.filter.PropertyIsLessThanOrEqualTo;
 import org.opengis.filter.PropertyIsLike;
+import org.opengis.filter.PropertyIsNotEqualTo;
+import org.opengis.filter.PropertyIsNull;
 import org.opengis.filter.expression.Expression;
 import org.opengis.filter.expression.PropertyName;
 import org.opengis.filter.spatial.BBOX;
@@ -38,8 +46,10 @@ import javax.ws.rs.BadRequestException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -63,6 +73,8 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
 
         List<String> columns = new ArrayList<>();
         List<String> conditions = new ArrayList<>();
+        Map<Integer, Boolean> nots = new HashMap<>();
+        Map<Integer, Boolean> ors = new HashMap<>();
         List<FeatureStoreAttributesContainer> tables = new ArrayList<>();
 
         try {
@@ -235,6 +247,107 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
                         return super.visit(filter, extraData);
                     }
 
+                    @Override
+                    protected Expression visit(Expression expression, Object extraData) {
+                        if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("Expression {} {}", expression, extraData);
+                        }
+
+                        //conditions.add("{{prop}} = '" + filter.getExpression2() + "'");
+
+                        return super.visit(expression, extraData);
+                    }
+
+                    @Override
+                    public Object visit(Not filter, Object extraData) {
+                        if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("Not {}", filter);
+                        }
+
+                        nots.put(conditions.size(), true);
+                        //conditions.add("{{prop}} = '" + filter.getExpression2() + "'");
+
+                        return super.visit(filter, extraData);
+                    }
+
+                    @Override
+                    public Object visit(Or filter, Object extraData) {
+                        if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("Or {} {} {}", filter, extraData, filter.getChildren().size());
+                        }
+
+                        ors.put(conditions.size(), true);
+                        //conditions.add("{{prop}} = '" + filter.getExpression2() + "'");
+
+                        return super.visit(filter, extraData);
+                    }
+
+                    @Override
+                    public Object visit(PropertyIsNotEqualTo filter, Object extraData) {
+                        if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("PropertyIsNotEqualTo {}", filter);
+                        }
+
+                        conditions.add("{{prop}} != '" + filter.getExpression2() + "'");
+
+                        return super.visit(filter, extraData);
+                    }
+
+                    @Override
+                    public Object visit(PropertyIsGreaterThan filter, Object extraData) {
+                        if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("PropertyIsGreaterThan {}", filter);
+                        }
+
+                        conditions.add("{{prop}} > '" + filter.getExpression2() + "'");
+
+                        return super.visit(filter, extraData);
+                    }
+
+                    @Override
+                    public Object visit(PropertyIsGreaterThanOrEqualTo filter, Object extraData) {
+                        if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("PropertyIsGreaterThanOrEqualTo {}", filter);
+                        }
+
+                        conditions.add("{{prop}} >= '" + filter.getExpression2() + "'");
+
+                        return super.visit(filter, extraData);
+                    }
+
+                    @Override
+                    public Object visit(PropertyIsLessThan filter, Object extraData) {
+                        if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("PropertyIsLessThan {}", filter);
+                        }
+
+                        conditions.add("{{prop}} < '" + filter.getExpression2() + "'");
+
+                        return super.visit(filter, extraData);
+                    }
+
+                    @Override
+                    public Object visit(PropertyIsLessThanOrEqualTo filter, Object extraData) {
+                        if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("PropertyIsLessThanOrEqualTo {}", filter);
+                        }
+
+                        conditions.add("{{prop}} <= '" + filter.getExpression2() + "'");
+
+                        return super.visit(filter, extraData);
+                    }
+
+                    @Override
+                    public Object visit(PropertyIsNull filter, Object extraData) {
+                        if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("PropertyIsNull {}", filter);
+                        }
+
+                        conditions.add("{{prop}} = NULL");
+
+                        return super.visit(filter, extraData);
+                    }
+
                     private Instant toInstant(Expression e) {
                         return e.evaluate(null, Instant.class);
                     }
@@ -251,11 +364,20 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
         ImmutableList.Builder<SqlCondition> sqlConditions = ImmutableList.builder();
 
         for (int i = 0; i < columns.size(); i++) {
+            String expression = conditions.get(i);
+            if (nots.containsKey(i) && nots.get(i)) {
+                expression = "NOT " + expression;
+            }
             sqlConditions.add(ImmutableSqlCondition.builder()
                                                    .column(columns.get(i))
                                                    .table(tables.get(i))
-                                                   .expression(conditions.get(i))
+                                                   .expression(expression)
+                                                   .isOr(ors.containsKey(i) && ors.get(i))
                                                    .build());
+        }
+
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("SQL Filter {}", sqlConditions.build());
         }
 
         return sqlConditions.build();

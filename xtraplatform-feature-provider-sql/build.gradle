@@ -1,6 +1,6 @@
 apply plugin: 'scala'
 
-version = '3.0.1'
+version = '3.0.2'
 
 sourceSets {
     String sharedTestDir = project(':xtraplatform-feature-transformer-api').file("src/test/java")
@@ -37,6 +37,7 @@ dependencies {
     provided project(':xtraplatform-geotools')
 
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-entity-api'
 
     embedded (group: 'com.lightbend.akka', name: 'akka-stream-alpakka-slick_2.12', version: '0.19') {
         exclude  group: 'com.typesafe.akka', module: 'akka-stream_2.12'

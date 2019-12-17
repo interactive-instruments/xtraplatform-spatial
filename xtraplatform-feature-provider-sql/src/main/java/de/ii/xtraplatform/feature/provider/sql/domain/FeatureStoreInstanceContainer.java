@@ -16,7 +16,7 @@ public interface FeatureStoreInstanceContainer extends FeatureStoreAttributesCon
         return 0;
     }
 
-    //TODO: 
+    //TODO:
     @Value.Default
     default String getIdField() {
         return getAttributes().stream()

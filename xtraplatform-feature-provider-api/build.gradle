@@ -5,4 +5,5 @@ dependencies {
     provided project(':xtraplatform-crs-api')
 
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-scheduler-api'
 }
