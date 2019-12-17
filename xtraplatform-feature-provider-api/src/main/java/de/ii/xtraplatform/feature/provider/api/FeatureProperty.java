@@ -13,7 +13,8 @@ public interface FeatureProperty {
         STRING,
         BOOLEAN,
         DATETIME,
-        GEOMETRY
+        GEOMETRY,
+        UNKNOWN
     }
 
     String getName();

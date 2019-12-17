@@ -1,7 +1,6 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.provider.api.Feature;
 import de.ii.xtraplatform.feature.provider.api.FeatureProperty;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureType;
@@ -13,7 +12,6 @@ import schemacrawler.schema.Column;
 import schemacrawler.schema.ColumnDataType;
 import schemacrawler.schema.Schema;
 import schemacrawler.schema.Table;
-import schemacrawler.schema.View;
 import schemacrawler.schemacrawler.RegularExpressionInclusionRule;
 import schemacrawler.schemacrawler.SchemaCrawlerException;
 import schemacrawler.schemacrawler.SchemaCrawlerOptions;
@@ -43,35 +41,30 @@ public class SqlSchemaCrawler {
             e.printStackTrace();
             throw new IllegalStateException("could not parse schema");
         }
+        return getFeatureTypes(catalog);
 
-        //TODO:
-        // - create a FeatureType for every Table using ImmutableFeatureType.builder()
-        // - create a FeatureProperty for every Column using ImmutableFeatureProperty.builder() and add it to FeatureType
-        // - map every possible type of column.getColumnDataType() to FeatureProperty.Type
+    }
 
+    private List<FeatureType> getFeatureTypes(Catalog catalog) {
         ImmutableList.Builder<FeatureType> featureTypes = new ImmutableList.Builder<>();
 
         for (final Schema schema : catalog.getSchemas()) {
-            System.out.println(schema);
+
             for (final Table table : catalog.getTables(schema)) {
-                System.out.print("o--> " + table);
                 ImmutableFeatureType.Builder featureType = ImmutableFeatureType.builder()
                                                                     .name(table.getName());
-                if (table instanceof View) {
-                    System.out.println(" (VIEW)");
-                } else {
-                    System.out.println();
-                }
 
                 for (final Column column : table.getColumns()) {
-                    ImmutableFeatureProperty featureProperty = ImmutableFeatureProperty.builder()
-                            .name(column.getName())
-                            .type(getFeaturePropertyType(column.getColumnDataType()))
-                            .build();
-                    featureType.addProperties(featureProperty);
-                    System.out.println(
-                            "     o--> " + column + " (" + column.getColumnDataType() + ")");
+                    FeatureProperty.Type featurePropertyType = getFeaturePropertyType(column.getColumnDataType());
+                    if (featurePropertyType != FeatureProperty.Type.UNKNOWN) {
+                        ImmutableFeatureProperty featureProperty = ImmutableFeatureProperty.builder()
+                                .name(column.getName())
+                                .type(featurePropertyType)
+                                .build();
+                        featureType.addProperties(featureProperty);
+                    }
                 }
+
                 featureTypes.add(featureType.build());
             }
         }
@@ -81,27 +74,23 @@ public class SqlSchemaCrawler {
 
     private FeatureProperty.Type getFeaturePropertyType(ColumnDataType columnDataType) {
 
-        switch (columnDataType.getName().replace("_", "")) {
+        if ("geometry".equals(columnDataType.getName())) {
+            return FeatureProperty.Type.GEOMETRY;
+        }
 
-            case "int4":
-            case "serial":
-                return FeatureProperty.Type.INTEGER;
-
-            case "bool":
+        switch (columnDataType.getJavaSqlType().getJavaSqlTypeGroup()) {
+            case bit:
                 return FeatureProperty.Type.BOOLEAN;
-
-            case "numeric":
-            case "float8":
-                return FeatureProperty.Type.FLOAT;
-
-            case "geometry":
-                return FeatureProperty.Type.GEOMETRY;
-
-            case "varchar":
-            case "name":
-            case "text":
-            default:
+            case character:
                 return FeatureProperty.Type.STRING;
+            case integer:
+                return FeatureProperty.Type.INTEGER;
+            case real:
+                return FeatureProperty.Type.FLOAT;
+            case temporal:
+                return FeatureProperty.Type.DATETIME;
+            default:
+                return FeatureProperty.Type.UNKNOWN;
         }
 
     }
