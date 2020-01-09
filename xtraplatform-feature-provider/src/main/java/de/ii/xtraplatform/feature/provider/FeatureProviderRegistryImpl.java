@@ -70,7 +70,7 @@ public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {
 
     @Override
     public boolean isSupported(String providerType, String connectorType) {
-        return providerFactories.containsKey(providerType) && connectorFactories.containsKey(providerType) && connectorFactories.get(providerType).containsKey(connectorType);
+        return /*providerFactories.containsKey(providerType) &&*/ connectorFactories.containsKey(providerType) && connectorFactories.get(providerType).containsKey(connectorType);
     }
 
     @Override
@@ -94,6 +94,25 @@ public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {
 
         } catch (UnacceptableConfiguration | MissingHandlerException | ConfigurationException | InvalidSyntaxException | NullPointerException e) {
             throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getProviderType() + " could not be created", e);
+        }
+    }
+
+    @Override
+    public FeatureProviderConnector createConnector(FeatureProviderData featureProviderData) {
+        if (!isSupported(featureProviderData.getFeatureProviderType(), featureProviderData.getConnectionInfo().getConnectorType())) {
+            throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getFeatureProviderType() + " and connector " + featureProviderData.getConnectionInfo().getConnectorType() + " is not supported");
+        }
+
+        try {
+            ComponentInstance connectorInstance =  connectorFactories.get(featureProviderData.getFeatureProviderType()).get(featureProviderData.getConnectionInfo().getConnectorType()).createComponentInstance(new Hashtable<>(ImmutableMap.of(".data", featureProviderData)));
+
+            ServiceReference[] connectorRefs = context.getServiceReferences(FeatureProviderConnector.class.getName(), "(instance.name=" + connectorInstance.getInstanceName() +")");
+            FeatureProviderConnector connector = (FeatureProviderConnector) context.getService(connectorRefs[0]);
+
+            return connector;
+
+        } catch (UnacceptableConfiguration | MissingHandlerException | ConfigurationException | InvalidSyntaxException | NullPointerException e) {
+            throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getFeatureProviderType() + " could not be created", e);
         }
     }
 

@@ -7,23 +7,16 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
-import akka.Done;
-import akka.NotUsed;
 import akka.stream.alpakka.slick.javadsl.SlickSession;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
-import de.ii.xtraplatform.feature.provider.sql.SlickSql;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
-import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Invalidate;
@@ -41,9 +34,7 @@ import slick.basic.DatabaseConfig$;
 import slick.jdbc.JdbcProfile;
 
 import java.util.Base64;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletionStage;
 
 /**
  * @author zahnen
@@ -67,7 +58,7 @@ public class SqlConnectorSlick implements SqlConnector {
     private SqlClient sqlClient;
 
     public SqlConnectorSlick(@Context BundleContext context,
-                             @Property(name = ".data") FeatureProviderDataTransformer data) {
+                             @Property(name = ".data") FeatureProviderData data) {
         // bundle class loader has to be passed to Slick for initialization
         this.classLoader = context.getBundle()
                                   .adapt(BundleWiring.class)

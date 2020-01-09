@@ -11,34 +11,36 @@ import akka.Done;
 import akka.stream.javadsl.Sink;
 import akka.util.ByteString;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.api.exceptions.BadRequest;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.feature.provider.api.AbstractFeatureProvider;
 import de.ii.xtraplatform.feature.provider.api.Feature;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureMetadata;
+import de.ii.xtraplatform.feature.provider.api.FeatureProperty;
 import de.ii.xtraplatform.feature.provider.api.FeatureProvider2;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderMetadataConsumer;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQueries;
 import de.ii.xtraplatform.feature.provider.api.FeatureQueriesPassThrough;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureSchema;
 import de.ii.xtraplatform.feature.provider.api.FeatureSourceStream;
-import de.ii.xtraplatform.feature.provider.api.FeatureStream;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream2;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer2;
+import de.ii.xtraplatform.feature.provider.api.FeatureType;
 import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.feature.provider.api.MappingStatus;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderGenerator;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.GmlStreamParser;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping;
-import de.ii.xtraplatform.feature.transformer.api.MappingStatus;
 import de.ii.xtraplatform.feature.transformer.api.OnTheFly;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
 import de.ii.xtraplatform.ogc.api.WFS;
@@ -66,7 +68,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -81,7 +82,7 @@ import static de.ii.xtraplatform.feature.provider.wfs.FeatureProviderWfs.PROVIDE
  */
 @Component
 @Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = PROVIDER_TYPE)})
-public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, FeatureQueriesPassThrough, FeatureMetadata, FeatureSchema, FeatureProviderGenerator {
+public class FeatureProviderWfs extends AbstractFeatureProvider implements FeatureProvider2, FeatureQueries, FeatureQueriesPassThrough, FeatureMetadata, FeatureSchema, FeatureProviderGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
 
@@ -92,8 +93,9 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
 
     private final WfsConnector connector;
     private final WfsRequestEncoder wfsRequestEncoder;
-    private final Map<String, QName> featureTypes;
+    private final Map<String, QName> featureTypeNames;
     private final Map<String, FeatureTypeMapping> featureTypeMappings;
+    private final Map<String, FeatureType> featureTypes;
     private final FeatureQueryEncoderWfs queryEncoder;
     private final MappingStatus mappingStatus;
     private final FeatureProviderDataTransformer data;
@@ -108,26 +110,28 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
         wfsRequestEncoder.setUrls(ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri()))));
         wfsRequestEncoder.setNsStore(new XMLNamespaceNormalizer(connectionInfo.getNamespaces()));
 
-        this.featureTypes = !data.getLocalFeatureTypeNames()
-                                 .isEmpty() ? data.getLocalFeatureTypeNames() : data.getMappings()
-                                                                                    .entrySet()
-                                                                                    .stream()
-                                                                                    .map(entry -> {
-                                                                                        //TODO
-                                                                                        String featureTypePath = entry.getValue()
-                                                                                                                      .getMappings()
-                                                                                                                      .keySet()
-                                                                                                                      .iterator()
-                                                                                                                      .next();
-                                                                                        String localName = featureTypePath.substring(featureTypePath.lastIndexOf(":") + 1);
-                                                                                        String namespace = featureTypePath.substring(0, featureTypePath.lastIndexOf(":"));
+        this.featureTypeNames = !data.getLocalFeatureTypeNames()
+                                     .isEmpty() ? data.getLocalFeatureTypeNames() : data.getMappings()
+                                                                                        .entrySet()
+                                                                                        .stream()
+                                                                                        .map(entry -> {
+                                                                                            //TODO
+                                                                                            String featureTypePath = entry.getValue()
+                                                                                                                          .getMappings()
+                                                                                                                          .keySet()
+                                                                                                                          .iterator()
+                                                                                                                          .next();
+                                                                                            String localName = featureTypePath.substring(featureTypePath.lastIndexOf(":") + 1);
+                                                                                            String namespace = featureTypePath.substring(0, featureTypePath.lastIndexOf(":"));
 
 
-                                                                                        return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), new QName(namespace, localName));
-                                                                                    })
-                                                                                    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+                                                                                            return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), new QName(namespace, localName));
+                                                                                        })
+                                                                                        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
         this.featureTypeMappings = data.getMappings();
+        //TODO
+        this.featureTypes = new HashMap<>();
 
         Map<String, FeatureTypeMapping> queryMappings;
         if (data.getMappingStatus()
@@ -139,7 +143,7 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
         }
 
         //TODO: if mapping disabled, create dummy mappings for gml:id, depending on version (TODO: set gmlVersion depending on wfsVersion)
-        this.queryEncoder = new FeatureQueryEncoderWfs(featureTypes, queryMappings, wfsRequestEncoder.getNsStore(), wfsRequestEncoder);
+        this.queryEncoder = new FeatureQueryEncoderWfs(featureTypeNames, queryMappings, wfsRequestEncoder.getNsStore(), wfsRequestEncoder);
 
         this.connector = connector;
         connector.setQueryEncoder(queryEncoder);
@@ -150,7 +154,7 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
     }
 
     //@Override
-    public FeatureStream<FeatureConsumer> getFeatureStream(FeatureQuery query) {
+    /*public FeatureStream<FeatureConsumer> getFeatureStream(FeatureQuery query) {
         if (!queryEncoder.isValid(query)) {
             throw new IllegalArgumentException("Feature type '" + query.getType() + "' not found");
         }
@@ -225,7 +229,7 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
 
             return connector.runQuery(finalQuery, transformer, additionalQueryParameters);
         };
-    }
+    }*/
 
     private Map<String, FeatureTypeMapping> getOnTheFlyMappings(Set<String> featureTypes) {
         return featureTypes.stream()
@@ -236,46 +240,49 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
                            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private Map<QName, List<String>> getResolvableTypes(FeatureTypeMapping featureTypeMapping) {
+    private Map<QName, List<String>> getResolvableTypes(FeatureType featureType) {
         // TODO factor out, move into derived in FeatureTypeMapping
-        List<List<String>> embedRefs = featureTypeMapping.getMappingsWithPathAsList()
-                                                         .entrySet()
-                                                         .stream()
-                                                         .filter(entry -> entry.getValue()
-                                                                               .hasMappingForType(TargetMapping.BASE_TYPE) && entry.getValue()
-                                                                                                                                   .getMappingForType(TargetMapping.BASE_TYPE)
-                                                                                                                                   /*TODO*/
-                                                                                                                                   .isReferenceEmbed())
-                                                         .map(Map.Entry::getKey)
-                                                         .collect(Collectors.toList());
+        List<List<String>> embedRefs = featureType.getProperties()
+                                                  .values()
+                                                  .stream()
+                                                  .filter(FeatureProperty::isReferenceEmbed)
+                                                  //TODO
+                                                  .map(featureProperty -> Splitter.on('/')
+                                                                                  .omitEmptyStrings()
+                                                                                  .splitToList(featureProperty.getPath()))
+                                                  .collect(Collectors.toList());
 
         List<List<String>> embedRoots = embedRefs.stream()
                                                  .map(path -> path.subList(0, path.size() - 1))
                                                  .collect(Collectors.toList());
 
-        return featureTypeMapping.getMappingsWithPathAsList()
-                                 .keySet()
-                                 .stream()
-                                 .filter(path -> embedRoots.stream()
-                                                           .anyMatch(root -> path.subList(0, root.size())
-                                                                                 .equals(root)) && embedRefs.stream()
-                                                                                                            .noneMatch(ref -> ref.equals(path)))
-                                 .map(path -> embedRoots.stream()
-                                                        .filter(root -> path.subList(0, root.size())
-                                                                            .equals(root))
-                                                        .findFirst()
-                                                        .map(root -> path.subList(0, root.size() + 1))
-                                                        .get())
-                                 .distinct()
-                                 .map(path -> {
-                                     String type = path.get(path.size() - 1);
-                                     QName qn = new QName(type.substring(0, type.lastIndexOf(":")), type.substring(type.lastIndexOf(":") + 1));
-                                     return new AbstractMap.SimpleImmutableEntry<>(qn, path);
-                                 })
-                                 .filter(entry -> featureTypes.values()
-                                                              .stream()
-                                                              .anyMatch(ft -> ft.equals(entry.getKey())))
-                                 .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+        return featureType.getProperties()
+                          .values()
+                          .stream()
+                          //TODO
+                          .map(featureProperty -> Splitter.on('/')
+                                                          .omitEmptyStrings()
+                                                          .splitToList(featureProperty.getPath()))
+                          .filter(path -> embedRoots.stream()
+                                                    .anyMatch(root -> path.subList(0, root.size())
+                                                                          .equals(root)) && embedRefs.stream()
+                                                                                                     .noneMatch(ref -> ref.equals(path)))
+                          .map(path -> embedRoots.stream()
+                                                 .filter(root -> path.subList(0, root.size())
+                                                                     .equals(root))
+                                                 .findFirst()
+                                                 .map(root -> path.subList(0, root.size() + 1))
+                                                 .get())
+                          .distinct()
+                          .map(path -> {
+                              String type = path.get(path.size() - 1);
+                              QName qn = new QName(type.substring(0, type.lastIndexOf(":")), type.substring(type.lastIndexOf(":") + 1));
+                              return new AbstractMap.SimpleImmutableEntry<>(qn, path);
+                          })
+                          .filter(entry -> featureTypeNames.values()
+                                                           .stream()
+                                                           .anyMatch(ft -> ft.equals(entry.getKey())))
+                          .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
@@ -427,7 +434,7 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
     public FeatureStream2 getFeatureStream2(FeatureQuery query) {
         return new FeatureStream2() {
             @Override
-            public CompletionStage<Result> runWith(FeatureTransformer featureTransformer) {
+            public CompletionStage<Result> runWith(FeatureTransformer2 featureTransformer) {
                 // if query crs is native or not supported by provider, remove from query
                 boolean useProviderDefaultCrs = data.getNativeCrs()
                                                     .getCode() == query.getCrs()
@@ -438,9 +445,10 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
                                                                                        .from(query)
                                                                                        .crs(null)
                                                                                        .build() : query;
-                Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(finalQuery.getType());
+                //Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(finalQuery.getType());
+                Optional<FeatureType> featureType = Optional.ofNullable(featureTypes.get(finalQuery.getType()));
 
-                if (!featureTypeMapping.isPresent()) {
+                if (!featureType.isPresent()) {
                     try {
                         OnTheFly onTheFly = (OnTheFly) featureTransformer;
                     } catch (ClassCastException e) {
@@ -451,10 +459,10 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
                     }
                 }
 
-                Map<QName, List<String>> resolvableTypes = getResolvableTypes(featureTypeMapping.get());
+                Map<QName, List<String>> resolvableTypes = getResolvableTypes(featureType.get());
 
 
-                Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(queryEncoder.getFeatureTypeName(finalQuery), featureTypeMapping.orElse(null), featureTransformer, finalQuery.getFields(), resolvableTypes);
+                Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(queryEncoder.getFeatureTypeName(finalQuery), featureType.orElse(null), featureTransformer, finalQuery.getFields(), resolvableTypes);
 
                 Map<String, String> additionalQueryParameters;
 
@@ -508,12 +516,13 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
                                                                                        .crs(null)
                                                                                        .build() : query;
 
-                Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(finalQuery.getType());
-                Map<QName, List<String>> resolvableTypes = featureTypeMapping.isPresent() ? getResolvableTypes(featureTypeMapping.get()) : ImmutableMap.of();
+                Optional<FeatureType> featureType = Optional.ofNullable(featureTypes.get(finalQuery.getType()));
+
+                Map<QName, List<String>> resolvableTypes = featureType.isPresent() ? getResolvableTypes(featureType.get()) : ImmutableMap.of();
 
                 List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(queryEncoder.getFeatureTypeName(finalQuery)) : ImmutableList.<QName>builder().add(queryEncoder.getFeatureTypeName(finalQuery))
-                                                                                                                                                                .addAll(resolvableTypes.keySet())
-                                                                                                                                                                .build();
+                                                                                                                                                                     .addAll(resolvableTypes.keySet())
+                                                                                                                                                                     .build();
 
                 Sink<ByteString, CompletionStage<Done>> parser = GmlStreamParser.consume(featureTypes, featureConsumer);//TODO
 

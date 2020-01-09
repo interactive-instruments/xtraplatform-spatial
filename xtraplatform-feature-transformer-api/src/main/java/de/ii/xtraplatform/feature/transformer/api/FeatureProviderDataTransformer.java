@@ -10,13 +10,13 @@ package de.ii.xtraplatform.feature.transformer.api;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
 import de.ii.xtraplatform.feature.provider.api.ConnectionInfo;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
+import de.ii.xtraplatform.feature.provider.api.ImmutableMappingStatus;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import org.immutables.value.Value;
 
@@ -39,7 +39,7 @@ import java.util.Optional;
 //@Value.Style(deepImmutablesDetection = true)
 @JsonDeserialize(builder = ImmutableFeatureProviderDataTransformer.Builder.class)
 //@JsonDeserialize(as = ModifiableFeatureProviderDataWfs.class)
-public abstract class FeatureProviderDataTransformer extends FeatureProviderData {
+public abstract class FeatureProviderDataTransformer implements FeatureProviderData {
 
     //@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     @Override
@@ -62,7 +62,7 @@ public abstract class FeatureProviderDataTransformer extends FeatureProviderData
     //@JsonMerge
     //public abstract Map<String, FeatureTypeMapping> getMappings();
 
-    //behaves exactly like Map<String, FeatureTypeConfigurationOgcApi>, but supports mergeable builder deserialization
+    //behaves exactly like Map<String, FeatureTypeMapping>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonMerge
     public abstract ValueBuilderMap<FeatureTypeMapping, ImmutableFeatureTypeMapping.Builder> getMappings();

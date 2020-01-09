@@ -9,10 +9,10 @@ package de.ii.xtraplatform.feature.provider.pgis;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.feature.provider.api.ImmutableMappingStatus;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlConnectorSlick;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
-import de.ii.xtraplatform.feature.transformer.api.ImmutableMappingStatus;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;

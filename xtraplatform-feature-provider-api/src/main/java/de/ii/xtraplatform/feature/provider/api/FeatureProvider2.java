@@ -1,11 +1,32 @@
 package de.ii.xtraplatform.feature.provider.api;
 
 import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.entity.api.PersistentEntity;
 
 import javax.ws.rs.core.MediaType;
 import java.util.Optional;
 
-public interface FeatureProvider2 {
+public interface FeatureProvider2 extends PersistentEntity {
+
+    String ENTITY_TYPE = "providers";
+
+    @Override
+    default String getType() {
+        return ENTITY_TYPE;
+    }
+
+    default String getProviderType() {
+        return getData().getProviderType();
+    }
+
+    default String getFeatureProviderType() {
+        return getData().getFeatureProviderType();
+    }
+
+    @Override
+    FeatureProviderData getData();
+
+
 
     //TODO: FeatureCrs???
     //TODO: is there a way to move the whole crs transformation stuff to the provider?

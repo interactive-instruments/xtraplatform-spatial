@@ -14,4 +14,6 @@ public interface FeatureProviderRegistry {
     boolean isSupported(String providerType, String connectorType);
 
     FeatureProvider2 createFeatureProvider(FeatureProviderData featureProviderData);
+
+    FeatureProviderConnector createConnector(FeatureProviderData featureProviderData);
 }

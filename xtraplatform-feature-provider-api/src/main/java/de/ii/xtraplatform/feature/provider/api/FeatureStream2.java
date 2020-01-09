@@ -10,7 +10,7 @@ public interface FeatureStream2 {
         boolean isSuccess();
     }
 
-    CompletionStage<Result> runWith(FeatureTransformer transformer);
+    CompletionStage<Result> runWith(FeatureTransformer2 transformer);
 
     CompletionStage<Result> runWith(Sink<Feature, CompletionStage<Result>> transformer);
 }

@@ -12,14 +12,20 @@ import de.ii.xtraplatform.akka.ActorSystemProvider;
 import de.ii.xtraplatform.crs.api.BoundingBox;
 import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.entity.api.EntityComponent;
+import de.ii.xtraplatform.entity.api.handler.Entity;
+import de.ii.xtraplatform.feature.provider.api.AbstractFeatureProvider;
 import de.ii.xtraplatform.feature.provider.api.Feature;
 import de.ii.xtraplatform.feature.provider.api.FeatureExtents;
 import de.ii.xtraplatform.feature.provider.api.FeatureProvider2;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
 import de.ii.xtraplatform.feature.provider.api.FeatureQueries;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream2;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer2;
+import de.ii.xtraplatform.feature.provider.api.FeatureType;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
+import de.ii.xtraplatform.feature.provider.sql.SqlFeatureTypeParser;
 import de.ii.xtraplatform.feature.provider.sql.SqlMappingParser;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
@@ -30,14 +36,10 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
-import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
-import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Property;
-import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
-import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +51,11 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-@Component
-@Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = FeatureProviderSql.PROVIDER_TYPE)})
-public class FeatureProviderSql implements FeatureProvider2, FeatureQueries, FeatureExtents {
+//@Component
+//@Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = FeatureProviderSql.PROVIDER_TYPE)})
+@EntityComponent
+@Entity(entityType = FeatureProvider2.class, dataType = FeatureProviderData.class, type = "providers")
+public class FeatureProviderSql extends AbstractFeatureProvider implements FeatureProvider2, FeatureQueries, FeatureExtents {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
 
@@ -62,7 +66,6 @@ public class FeatureProviderSql implements FeatureProvider2, FeatureQueries, Fea
 
     private final ActorSystem system;
     private final ActorMaterializer materializer;
-    private final FeatureProviderDataTransformer data;
     private final SqlConnector connector;
     private final Map<String, FeatureStoreTypeInfo> typeInfos;
     private final FeatureStoreQueryGeneratorSql queryGeneratorSql;
@@ -70,22 +73,27 @@ public class FeatureProviderSql implements FeatureProvider2, FeatureQueries, Fea
     private final FeatureNormalizerSql featureNormalizer;
     private final ExtentReaderSql extentReader;
 
-    FeatureProviderSql(@Context BundleContext context, @Requires ActorSystemProvider actorSystemProvider,
+    public FeatureProviderSql(@Context BundleContext context,
+                       @Requires ActorSystemProvider actorSystemProvider,
                        @Requires CrsTransformation crsTransformation,
-                       @Property(name = ".data") FeatureProviderDataTransformer data,
+                       @Property(name = "data") FeatureProviderData data,
                        @Property(name = ".connector") SqlConnector sqlConnector) {
         //TODO: starts akka for every instance, move to singleton
         this.system = actorSystemProvider.getActorSystem(context, config);
         this.materializer = ActorMaterializer.create(system);
-        this.data = data;
         this.connector = sqlConnector;
-        this.typeInfos = getTypeInfos(data.getMappings());
+        this.typeInfos = getTypeInfos2(data.getTypes());
         //TODO: from config
         SqlDialect sqlDialect = new SqlDialectPostGis();
         this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new FilterEncoderSqlNewImpl(), sqlDialect);
-        this.queryTransformer = new FeatureQueryTransformerSql(typeInfos, queryGeneratorSql, data.computeNumberMatched());
-        this.featureNormalizer = new FeatureNormalizerSql(typeInfos, data.getMappings());
-        this.extentReader = new ExtentReaderSql(sqlConnector, queryGeneratorSql, sqlDialect, data.getNativeCrs());
+        this.queryTransformer = new FeatureQueryTransformerSql(typeInfos, queryGeneratorSql, true/*data.computeNumberMatched()*/);
+        this.featureNormalizer = new FeatureNormalizerSql(typeInfos, data.getTypes());
+        this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect, data.getNativeCrs());
+    }
+
+    @Override
+    public FeatureProviderData getData() {
+        return super.getData();
     }
 
     @Override
@@ -93,7 +101,7 @@ public class FeatureProviderSql implements FeatureProvider2, FeatureQueries, Fea
         return new FeatureStream2() {
 
             @Override
-            public CompletionStage<Result> runWith(FeatureTransformer transformer) {
+            public CompletionStage<Result> runWith(FeatureTransformer2 transformer) {
                 Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(typeInfos.get(query.getType()));
 
                 if (!typeInfo.isPresent()) {
@@ -127,11 +135,11 @@ public class FeatureProviderSql implements FeatureProvider2, FeatureQueries, Fea
 
     @Override
     public boolean supportsCrs(EpsgCrs crs) {
-        return data.getNativeCrs()
+        return getData().getNativeCrs()
                    .equals(crs);
     }
 
-
+    //TODO: from data.getTypes()
     //TODO: move to derived in data?
     private Map<String, FeatureStoreTypeInfo> getTypeInfos(Map<String, FeatureTypeMapping> mappings) {
         //TODO: options from data
@@ -145,6 +153,28 @@ public class FeatureProviderSql implements FeatureProvider2, FeatureQueries, Fea
                        .map(entry -> {
                            List<String> paths = mappingParser.parse(entry.getValue()
                                                                          .getMappings());
+                           List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(paths);
+                           FeatureStoreTypeInfo typeInfo = ImmutableFeatureStoreTypeInfo.builder()
+                                                                                        .name(entry.getKey())
+                                                                                        .instanceContainers(instanceContainers)
+                                                                                        .build();
+
+                           return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), typeInfo);
+                       })
+                       .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private Map<String, FeatureStoreTypeInfo> getTypeInfos2(Map<String, FeatureType> featureTypes) {
+        //TODO: options from data
+        SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
+                                                     .build();
+        SqlFeatureTypeParser mappingParser = new SqlFeatureTypeParser(syntax);
+        FeatureStorePathParser pathParser = new FeatureStorePathParser(syntax);
+
+        return featureTypes.entrySet()
+                       .stream()
+                       .map(entry -> {
+                           List<String> paths = mappingParser.parse(entry.getValue());
                            List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(paths);
                            FeatureStoreTypeInfo typeInfo = ImmutableFeatureStoreTypeInfo.builder()
                                                                                         .name(entry.getKey())

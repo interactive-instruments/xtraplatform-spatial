@@ -9,12 +9,16 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.feature.provider.api.Feature;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureNormalizer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream2;
 import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer2;
+import de.ii.xtraplatform.feature.provider.api.FeatureType;
+import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureType;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreMultiplicityTracker;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreTypeInfo;
@@ -38,24 +42,32 @@ import java.util.concurrent.CompletionStage;
 public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
     private final Map<String, FeatureStoreTypeInfo> typeInfos;
-    private final Map<String, FeatureTypeMapping> mappings;
+    //private final Map<String, FeatureTypeMapping> mappings;
+    private final Map<String, FeatureType> types;
 
-    public FeatureNormalizerSql(
+    /*public FeatureNormalizerSql(
             Map<String, FeatureStoreTypeInfo> typeInfos,
             Map<String, FeatureTypeMapping> mappings) {
         this.typeInfos = typeInfos;
         this.mappings = mappings;
+    }*/
+
+    public FeatureNormalizerSql(Map<String, FeatureStoreTypeInfo> typeInfos, Map<String, FeatureType> types) {
+        this.typeInfos = typeInfos;
+        this.types = types;
     }
 
     @Override
     public Sink<SqlRow, CompletionStage<FeatureStream2.Result>> normalizeAndTransform(
-            FeatureTransformer featureTransformer, FeatureQuery featureQuery) {
+            FeatureTransformer2 featureTransformer, FeatureQuery featureQuery) {
 
         FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());
-        FeatureTypeMapping mapping = mappings.get(featureQuery.getType());
+        //FeatureTypeMapping mapping = mappings.get(featureQuery.getType());
+        FeatureType featureType = types.get(featureQuery.getType());
 
         //TODO: consumer to transformer is generic code, but this also contains WKT parser, factor out
-        FeatureTransformerFromSql consumer = new FeatureTransformerFromSql(mapping, featureTransformer, featureQuery.getFields());
+        //FeatureTransformerFromSql consumer = new FeatureTransformerFromSql(mapping, featureTransformer, featureQuery.getFields());
+        FeatureTransformerFromSql2 consumer = new FeatureTransformerFromSql2(featureType, featureTransformer, featureQuery.getFields());
 
 
         return consume(typeInfo, consumer, featureQuery);

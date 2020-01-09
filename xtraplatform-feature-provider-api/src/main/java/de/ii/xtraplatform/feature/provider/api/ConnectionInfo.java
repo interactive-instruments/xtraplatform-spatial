@@ -25,22 +25,21 @@ import com.fasterxml.jackson.databind.jsontype.impl.AsPropertyTypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 import de.ii.xtraplatform.dropwizard.cfg.JacksonProvider;
+import org.immutables.value.Value;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Optional;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "connectorType", visible = false)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "connectorType", visible = true)
 @JsonTypeIdResolver(JacksonProvider.DynamicTypeIdResolver.class)
-@JsonTypeResolver(ConnectionInfo.CustomTypeResolver.class)
+//@JsonTypeResolver(ConnectionInfo.CustomTypeResolver.class)
 public interface ConnectionInfo {
 
     Optional<String> getConnectionUri();
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
-    default String getConnectorType() {
-        return "HTTP";
-    }
+    String getConnectorType();
 
     class CustomTypeResolver extends StdTypeResolverBuilder {
         @Override

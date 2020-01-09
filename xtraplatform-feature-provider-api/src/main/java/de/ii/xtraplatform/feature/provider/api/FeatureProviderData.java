@@ -8,23 +8,148 @@
 package de.ii.xtraplatform.feature.provider.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import de.ii.xtraplatform.dropwizard.cfg.JacksonProvider;
+import com.fasterxml.jackson.annotation.JsonMerge;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.entity.api.EntityData;
+import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
+import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
+import de.ii.xtraplatform.event.store.EntityDataBuilder;
+import org.immutables.value.Value;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * @author zahnen
  */
 //@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "providerType", visible = true)
 //@JsonTypeIdResolver(JacksonProvider.DynamicTypeIdResolver.class)
-public abstract class FeatureProviderData {
+@Value.Immutable
+@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
+@ValueBuilderMapEncodingEnabled
+@JsonDeserialize(builder = ImmutableFeatureProviderData.Builder.class)
+public interface FeatureProviderData extends EntityData {
 
-    public abstract String getProviderType();
+    abstract class Builder implements EntityDataBuilder<FeatureProviderData> {
+        public abstract ImmutableFeatureProviderData.Builder putTypes(String key, ImmutableFeatureType.Builder builder);
 
-    public abstract String getConnectorType();
+        @JsonProperty(value = "types")
+        public ImmutableFeatureProviderData.Builder putTypes2(String key, ImmutableFeatureType.Builder builder) {
+            return putTypes(key, builder.name(key));
+        }
 
+        @JsonIgnore
+        public abstract Map<String, ImmutableFeatureType.Builder> getTypes();
+
+        @JsonProperty(value = "types")
+        public Map<String, ImmutableFeatureType.Builder> getTypes2() {
+            Map<String, ImmutableFeatureType.Builder> types = getTypes();
+
+            return new Map<String, ImmutableFeatureType.Builder>() {
+                @Override
+                public int size() {
+                    return types.size();
+                }
+
+                @Override
+                public boolean isEmpty() {
+                    return types.isEmpty();
+                }
+
+                @Override
+                public boolean containsKey(Object o) {
+                    return types.containsKey(o);
+                }
+
+                @Override
+                public boolean containsValue(Object o) {
+                    return types.containsValue(o);
+                }
+
+                @Override
+                public ImmutableFeatureType.Builder get(Object o) {
+                    return types.get(o);
+                }
+
+                @Override
+                public ImmutableFeatureType.Builder put(String s, ImmutableFeatureType.Builder builder) {
+                    return types.put(s, builder.name(s));
+                }
+
+                @Override
+                public ImmutableFeatureType.Builder remove(Object o) {
+                    return types.remove(o);
+                }
+
+                @Override
+                public void putAll(Map<? extends String, ? extends ImmutableFeatureType.Builder> map) {
+                    types.putAll(map);
+                }
+
+                @Override
+                public void clear() {
+                    types.clear();
+                }
+
+                @Override
+                public Set<String> keySet() {
+                    return types.keySet();
+                }
+
+                @Override
+                public Collection<ImmutableFeatureType.Builder> values() {
+                    return types.values();
+                }
+
+                @Override
+                public Set<Entry<String, ImmutableFeatureType.Builder>> entrySet() {
+                    return types.entrySet();
+                }
+            };
+
+            //return new LinkedHashMap<String, ImmutableFeatureType.Builder>(types){};
+        }
+    }
+
+    String getProviderType();
+
+    String getFeatureProviderType();
+
+    ConnectionInfo getConnectionInfo();
+
+    //behaves exactly like Map<String, FeatureTypeMapping>, but supports mergeable builder deserialization
+    // (immutables attributeBuilder does not work with maps yet)
+    @JsonMerge
+    ValueBuilderMap<FeatureType, ImmutableFeatureType.Builder> getTypes();
+
+    @Value.Default
+    default ImmutableMappingStatus getMappingStatus() {
+        return new ImmutableMappingStatus.Builder()
+                .enabled(true)
+                .supported(true)
+                .refined(true)
+                .build();
+    }
+
+    EpsgCrs getNativeCrs();
+
+
+
+    //TODO
+    @Value.Default
+    default String getConnectorType() {
+        return getConnectionInfo().getConnectorType();
+    }
+
+    //TODO
     @JsonIgnore
-    public abstract Optional<String> getDataSourceUrl();
+    @Value.Default
+    default Optional<String> getDataSourceUrl() {
+        return getConnectionInfo().getConnectionUri();
+    }
 }

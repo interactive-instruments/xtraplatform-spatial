@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionStage;
 
 public interface FeatureNormalizer<T> {
 
-    Sink<T, CompletionStage<FeatureStream2.Result>> normalizeAndTransform(FeatureTransformer featureTransformer, FeatureQuery featureQuery);
+    Sink<T, CompletionStage<FeatureStream2.Result>> normalizeAndTransform(FeatureTransformer2 featureTransformer, FeatureQuery featureQuery);
 
     Source<Feature, NotUsed> normalize(Source<T, NotUsed> sourceStream);
 

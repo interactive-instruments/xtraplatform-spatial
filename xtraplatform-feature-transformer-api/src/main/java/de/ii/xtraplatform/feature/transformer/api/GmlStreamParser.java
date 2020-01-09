@@ -19,7 +19,8 @@ import akka.util.ByteString;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer2;
+import de.ii.xtraplatform.feature.provider.api.FeatureType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -49,22 +50,22 @@ public class GmlStreamParser {
         return Sink.fromGraph(new FeatureSinkFromGml(featureTypes, gmlConsumer));
     }
 
-    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureType,
-                                                                    final FeatureTypeMapping featureTypeMapping,
-                                                                    final FeatureTransformer featureTransformer,
+    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureTypeName,
+                                                                    final FeatureType featureType,
+                                                                    final FeatureTransformer2 featureTransformer,
                                                                     List<String> fields) {
-        return transform(featureType, featureTypeMapping, featureTransformer, fields, ImmutableMap.of());
+        return transform(featureTypeName, featureType, featureTransformer, fields, ImmutableMap.of());
     }
 
-    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureType,
-                                                                    final FeatureTypeMapping featureTypeMapping,
-                                                                    final FeatureTransformer featureTransformer,
+    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureTypeName,
+                                                                    final FeatureType featureType,
+                                                                    final FeatureTransformer2 featureTransformer,
                                                                     List<String> fields,
                                                                     Map<QName, List<String>> resolvableTypes) {
-        List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(featureType) : ImmutableList.<QName>builder().add(featureType)
+        List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(featureTypeName) : ImmutableList.<QName>builder().add(featureTypeName)
                                                                                                                              .addAll(resolvableTypes.keySet())
                                                                                                                              .build();
-        return GmlStreamParser.consume(featureTypes, new FeatureTransformerFromGml(featureTypeMapping, featureTransformer, fields, resolvableTypes));
+        return GmlStreamParser.consume(featureTypes, new FeatureTransformerFromGml2(featureType, featureTransformer, fields, resolvableTypes));
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GmlStreamParser.class);

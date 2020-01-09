@@ -7,10 +7,10 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs;
 
-import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
+import de.ii.xtraplatform.feature.provider.api.ImmutableMappingStatus;
+import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureProviderDataTransformer;
-import de.ii.xtraplatform.feature.transformer.api.ImmutableMappingStatus;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
 import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
 

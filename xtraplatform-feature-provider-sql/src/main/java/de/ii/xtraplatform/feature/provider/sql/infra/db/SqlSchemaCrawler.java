@@ -51,17 +51,17 @@ public class SqlSchemaCrawler {
         for (final Schema schema : catalog.getSchemas()) {
 
             for (final Table table : catalog.getTables(schema)) {
-                ImmutableFeatureType.Builder featureType = ImmutableFeatureType.builder()
+                ImmutableFeatureType.Builder featureType = new ImmutableFeatureType.Builder()
                                                                     .name(table.getName());
 
                 for (final Column column : table.getColumns()) {
                     FeatureProperty.Type featurePropertyType = getFeaturePropertyType(column.getColumnDataType());
                     if (featurePropertyType != FeatureProperty.Type.UNKNOWN) {
-                        ImmutableFeatureProperty featureProperty = ImmutableFeatureProperty.builder()
+                        ImmutableFeatureProperty featureProperty = new ImmutableFeatureProperty.Builder()
                                 .name(column.getName())
                                 .type(featurePropertyType)
                                 .build();
-                        featureType.addProperties(featureProperty);
+                        featureType.putProperties(featureProperty.getName(), featureProperty);
                     }
                 }
 
