@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
 import java.text.ParseException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,6 +42,7 @@ public class FeatureTransformerFromSql2 implements FeatureConsumer {
     private boolean inProperty = false;
     private FeatureProperty geometry;
     private final List<String> fields;
+    private final Map<List<String>, Integer> pathVisitCounter;
 
     public FeatureTransformerFromSql2(FeatureType featureType, FeatureTransformer2 featureTransformer,
                                       List<String> fields) {
@@ -48,6 +50,7 @@ public class FeatureTransformerFromSql2 implements FeatureConsumer {
         this.featureTransformer = featureTransformer;
         this.outputFormat = featureTransformer.getTargetFormat();
         this.fields = fields;
+        this.pathVisitCounter = new HashMap<>();
     }
 
 
@@ -65,6 +68,7 @@ public class FeatureTransformerFromSql2 implements FeatureConsumer {
     @Override
     public void onFeatureStart(List<String> path, Map<String, String> additionalInfos) throws Exception {
         featureTransformer.onFeatureStart(featureType);
+        this.pathVisitCounter.clear();
     }
 
     @Override
@@ -80,18 +84,28 @@ public class FeatureTransformerFromSql2 implements FeatureConsumer {
         }
 
         //TODO: save properties and text, run in loop in onPropertyEnd
-        featureType.findPropertiesForPath(path)
-                   .forEach(LambdaWithException.consumerMayThrow(featureProperty -> {
-                       inProperty = true;
-                       if (featureProperty.isSpatial()) {
-                           geometry = featureProperty;
-                       } else {
-                           if (LOGGER.isTraceEnabled()) {
-                               LOGGER.trace("transforming property: {} {} {}", path, multiplicities, featureProperty);
-                           }
-                           featureTransformer.onPropertyStart(featureProperty, multiplicities);
-                       }
-                   }));
+        List<FeatureProperty> propertiesForPath = featureType.findPropertiesForPath(path);
+        int propertyIndex = 0;
+
+        if (propertiesForPath.size() > 1) {
+            pathVisitCounter.putIfAbsent(path, -1);
+            pathVisitCounter.compute(path, (path2, counter) -> counter + 1);
+            propertyIndex = pathVisitCounter.get(path);
+        }
+
+        if (propertiesForPath.size() > propertyIndex) {
+            FeatureProperty featureProperty = propertiesForPath.get(propertyIndex);
+
+            inProperty = true;
+            if (featureProperty.isSpatial()) {
+                geometry = featureProperty;
+            } else {
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("transforming property: {} {} {}", path, multiplicities, featureProperty);
+                }
+                featureTransformer.onPropertyStart(featureProperty, multiplicities);
+            }
+        }
     }
 
     private boolean shouldIgnoreProperty(List<String> path) {

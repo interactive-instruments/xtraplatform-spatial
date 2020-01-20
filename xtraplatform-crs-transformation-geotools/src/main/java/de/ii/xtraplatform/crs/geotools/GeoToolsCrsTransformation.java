@@ -21,6 +21,11 @@ import org.opengis.referencing.FactoryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
 /**
  *
  * @author zahnen
@@ -32,7 +37,11 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GeoToolsCrsTransformation.class);
 
+    private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
+
     public GeoToolsCrsTransformation() {
+        this.transformerCache = new HashMap<>();
+
         LOGGER.debug("warming up GeoTools ...");
 
         try {
@@ -68,17 +77,19 @@ public class GeoToolsCrsTransformation implements CrsTransformation {
     }
 
     @Override
-    public CrsTransformer getTransformer(String sourceCrs, String targetCrs) {
-        try {
-            return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs)), CRS.decode(applyWorkarounds(targetCrs)), new EpsgCrs(sourceCrs), new EpsgCrs(targetCrs));
-        } catch (FactoryException ex) {
-            LOGGER.debug("GeoTools error", ex);
+    public Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
+        if (Objects.isNull(sourceCrs) || Objects.isNull(targetCrs) || Objects.equals(sourceCrs, targetCrs)) {
+            return Optional.empty();
         }
-        return null;
+
+        transformerCache.computeIfAbsent(sourceCrs, ignore -> new HashMap<>());
+        Map<EpsgCrs, CrsTransformer> transformerCacheForSourceCrs = transformerCache.get(sourceCrs);
+        transformerCacheForSourceCrs.computeIfAbsent(targetCrs, ignore -> createCrsTransformer(sourceCrs, targetCrs));
+
+        return Optional.ofNullable(transformerCacheForSourceCrs.get(targetCrs));
     }
 
-    @Override
-    public CrsTransformer getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
+    private CrsTransformer createCrsTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
         try {
             return new GeoToolsCrsTransformer(CRS.decode(applyWorkarounds(sourceCrs.getAsSimple()), sourceCrs.isForceLongitudeFirst()), CRS.decode(applyWorkarounds(targetCrs.getAsSimple()), targetCrs.isForceLongitudeFirst()), sourceCrs, targetCrs);
         } catch (FactoryException ex) {
