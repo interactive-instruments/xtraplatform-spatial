@@ -51,7 +51,7 @@ public interface FeatureType extends ValueInstance {
     @JsonMerge
     ValueBuilderMap<FeatureProperty, ImmutableFeatureProperty.Builder> getProperties();
 
-    @Nullable
+    @JsonIgnore
     String getName();
 
     //TODO

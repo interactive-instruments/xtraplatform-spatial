@@ -31,15 +31,18 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Optional;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "connectorType", visible = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "connectorType", visible = true)
 @JsonTypeIdResolver(JacksonProvider.DynamicTypeIdResolver.class)
-//@JsonTypeResolver(ConnectionInfo.CustomTypeResolver.class)
+@JsonTypeResolver(ConnectionInfo.CustomTypeResolver.class)
 public interface ConnectionInfo {
 
     Optional<String> getConnectionUri();
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
-    String getConnectorType();
+    //@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @Value.Default
+    default String getConnectorType() {
+        return "SLICK";
+    }
 
     class CustomTypeResolver extends StdTypeResolverBuilder {
         @Override

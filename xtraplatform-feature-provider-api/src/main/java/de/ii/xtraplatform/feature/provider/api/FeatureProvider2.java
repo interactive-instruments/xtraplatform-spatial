@@ -3,9 +3,6 @@ package de.ii.xtraplatform.feature.provider.api;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.entity.api.PersistentEntity;
 
-import javax.ws.rs.core.MediaType;
-import java.util.Optional;
-
 public interface FeatureProvider2 extends PersistentEntity {
 
     String ENTITY_TYPE = "providers";
@@ -24,7 +21,7 @@ public interface FeatureProvider2 extends PersistentEntity {
     }
 
     @Override
-    FeatureProviderData getData();
+    FeatureProviderDataV1 getData();
 
 
 

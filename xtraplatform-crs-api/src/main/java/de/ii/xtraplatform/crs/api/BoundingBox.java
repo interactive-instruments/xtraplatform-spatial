@@ -10,6 +10,8 @@
  */
 package de.ii.xtraplatform.crs.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 /**
  *
  * @author fischer
@@ -42,7 +44,8 @@ public class BoundingBox {
 
         this.spatialReference = sr;
     }
-    
+
+    @JsonIgnore
     public double [] getCoords(){
         double [] out = {xmin, ymin, xmax, ymax};
         return out;

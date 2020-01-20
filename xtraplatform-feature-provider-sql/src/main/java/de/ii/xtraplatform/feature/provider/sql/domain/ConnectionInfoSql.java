@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.provider.api.ConnectionInfo;
 import org.immutables.value.Value;
@@ -34,6 +35,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
         return Dialect.PGIS;
     }
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     @Value.Default
     default int getMaxThreads() {
         return 16;

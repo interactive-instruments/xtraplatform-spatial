@@ -13,7 +13,7 @@ package de.ii.xtraplatform.feature.provider.api;
 public interface FeatureProviderRegistry {
     boolean isSupported(String providerType, String connectorType);
 
-    FeatureProvider2 createFeatureProvider(FeatureProviderData featureProviderData);
+    FeatureProvider2 createFeatureProvider(FeatureProviderDataV1 featureProviderData);
 
-    FeatureProviderConnector createConnector(FeatureProviderData featureProviderData);
+    FeatureProviderConnector createConnector(FeatureProviderDataV1 featureProviderData);
 }

@@ -10,7 +10,7 @@ package de.ii.xtraplatform.feature.provider;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.api.FeatureProvider2;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderDataV1;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderRegistry;
 import org.apache.felix.ipojo.ComponentInstance;
 import org.apache.felix.ipojo.ConfigurationException;
@@ -74,7 +74,7 @@ public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {
     }
 
     @Override
-    public FeatureProvider2 createFeatureProvider(FeatureProviderData featureProviderData) {
+    public FeatureProvider2 createFeatureProvider(FeatureProviderDataV1 featureProviderData) {
         if (!isSupported(featureProviderData.getProviderType(), featureProviderData.getConnectorType())) {
             throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getProviderType() + " and connector " + featureProviderData.getConnectorType() + " is not supported");
         }
@@ -98,7 +98,7 @@ public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {
     }
 
     @Override
-    public FeatureProviderConnector createConnector(FeatureProviderData featureProviderData) {
+    public FeatureProviderConnector createConnector(FeatureProviderDataV1 featureProviderData) {
         if (!isSupported(featureProviderData.getFeatureProviderType(), featureProviderData.getConnectionInfo().getConnectorType())) {
             throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getFeatureProviderType() + " and connector " + featureProviderData.getConnectionInfo().getConnectorType() + " is not supported");
         }

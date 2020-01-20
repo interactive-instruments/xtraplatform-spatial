@@ -12,7 +12,7 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderDataV1;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
@@ -41,7 +41,7 @@ import java.util.Objects;
  */
 @Component
 @Provides(properties = {
-        @StaticServiceProperty(name = "providerType", type = "java.lang.String", value = "PGIS"),
+        @StaticServiceProperty(name = "providerType", type = "java.lang.String", value = "SQL"),
         @StaticServiceProperty(name = "connectorType", type = "java.lang.String", value = SqlConnectorSlick.CONNECTOR_TYPE)
 })
 public class SqlConnectorSlick implements SqlConnector {
@@ -58,7 +58,7 @@ public class SqlConnectorSlick implements SqlConnector {
     private SqlClient sqlClient;
 
     public SqlConnectorSlick(@Context BundleContext context,
-                             @Property(name = ".data") FeatureProviderData data) {
+                             @Property(name = ".data") FeatureProviderDataV1 data) {
         // bundle class loader has to be passed to Slick for initialization
         this.classLoader = context.getBundle()
                                   .adapt(BundleWiring.class)

@@ -18,7 +18,7 @@ import de.ii.xtraplatform.feature.provider.api.AbstractFeatureProvider;
 import de.ii.xtraplatform.feature.provider.api.Feature;
 import de.ii.xtraplatform.feature.provider.api.FeatureExtents;
 import de.ii.xtraplatform.feature.provider.api.FeatureProvider2;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderDataV1;
 import de.ii.xtraplatform.feature.provider.api.FeatureQueries;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream2;
@@ -54,7 +54,7 @@ import java.util.concurrent.CompletionStage;
 //@Component
 //@Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = FeatureProviderSql.PROVIDER_TYPE)})
 @EntityComponent
-@Entity(entityType = FeatureProvider2.class, dataType = FeatureProviderData.class, type = "providers")
+@Entity(entityType = FeatureProvider2.class, dataType = FeatureProviderDataV1.class, type = "providers")
 public class FeatureProviderSql extends AbstractFeatureProvider implements FeatureProvider2, FeatureQueries, FeatureExtents {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
@@ -76,7 +76,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
     public FeatureProviderSql(@Context BundleContext context,
                        @Requires ActorSystemProvider actorSystemProvider,
                        @Requires CrsTransformation crsTransformation,
-                       @Property(name = "data") FeatureProviderData data,
+                       @Property(name = "data") FeatureProviderDataV1 data,
                        @Property(name = ".connector") SqlConnector sqlConnector) {
         //TODO: starts akka for every instance, move to singleton
         this.system = actorSystemProvider.getActorSystem(context, config);
@@ -92,7 +92,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
     }
 
     @Override
-    public FeatureProviderData getData() {
+    public FeatureProviderDataV1 getData() {
         return super.getData();
     }
 

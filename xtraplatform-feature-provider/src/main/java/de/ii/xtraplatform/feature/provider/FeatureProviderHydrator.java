@@ -10,9 +10,8 @@ package de.ii.xtraplatform.feature.provider;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.api.CrsTransformation;
 import de.ii.xtraplatform.event.store.EntityHydrator;
-import de.ii.xtraplatform.feature.provider.api.FeatureProvider2;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderDataV1;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderRegistry;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
@@ -30,7 +29,7 @@ import java.util.Map;
         @StaticServiceProperty(name = "entityType", type = "java.lang.String", value = "providers")
 })
 @Instantiate
-public class FeatureProviderHydrator implements EntityHydrator<FeatureProviderData> {
+public class FeatureProviderHydrator implements EntityHydrator<FeatureProviderDataV1> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderHydrator.class);
 
@@ -41,7 +40,7 @@ public class FeatureProviderHydrator implements EntityHydrator<FeatureProviderDa
     private CrsTransformation crsTransformerFactory;
 
     @Override
-    public Map<String, Object> getInstanceConfiguration(FeatureProviderData data) {
+    public Map<String, Object> getInstanceConfiguration(FeatureProviderDataV1 data) {
         try {
             FeatureProviderConnector connector = featureProviderFactory.createConnector(data);
 

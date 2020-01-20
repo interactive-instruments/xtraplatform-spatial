@@ -8,6 +8,7 @@ import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Optional;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
@@ -16,6 +17,9 @@ public interface FeatureProperty extends ValueInstance {
 
     //TODO: Role with ID, SPATIAL, TEMPORAL, REFERENCE, REFERENCE_EMBED
     //TODO: more specific types, in addition or instead of Type
+    enum Role {
+        ID
+    }
 
     enum Type {
         INTEGER,
@@ -36,6 +40,7 @@ public interface FeatureProperty extends ValueInstance {
     }
 
     //@Nullable
+    @JsonIgnore
     String getName();
 
     String getPath();
@@ -45,23 +50,28 @@ public interface FeatureProperty extends ValueInstance {
         return Type.STRING;
     }
 
+    Optional<Role> getRole();
+
     Map<String, String> getAdditionalInfo();
 
     //TODO
     @JsonIgnore
     @Value.Derived
+    @Value.Auxiliary
     default boolean isId() {
-        return "id".equalsIgnoreCase(getName());
+        return getRole().filter(role -> role == Role.ID).isPresent();
     }
 
     @JsonIgnore
     @Value.Derived
+    @Value.Auxiliary
     default boolean isSpatial() {
         return getType() == Type.GEOMETRY;
     }
 
     @JsonIgnore
     @Value.Derived
+    @Value.Auxiliary
     default boolean isTemporal() {
         return getType() == Type.DATETIME;
     }
@@ -69,6 +79,7 @@ public interface FeatureProperty extends ValueInstance {
     //TODO
     @JsonIgnore
     @Value.Derived
+    @Value.Auxiliary
     default boolean isReference() {
         return false;
     }
@@ -76,6 +87,7 @@ public interface FeatureProperty extends ValueInstance {
     //TODO
     @JsonIgnore
     @Value.Derived
+    @Value.Auxiliary
     default boolean isReferenceEmbed() {
         return false;
     }
@@ -83,6 +95,7 @@ public interface FeatureProperty extends ValueInstance {
     //TODO
     @JsonIgnore
     @Value.Derived
+    @Value.Auxiliary
     default boolean isForceReversePolygon() {
         return false;
     }

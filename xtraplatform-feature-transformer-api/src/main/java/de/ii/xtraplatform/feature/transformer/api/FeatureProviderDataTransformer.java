@@ -30,16 +30,12 @@ import java.util.Optional;
 /**
  * @author zahnen
  */
-//TODO
-//@Value.Style(validationMethod = Value.Style.ValidationMethod.NONE)
+@Deprecated
 @Value.Immutable
-//@Value.Modifiable
 @Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
 @ValueBuilderMapEncodingEnabled
-//@Value.Style(deepImmutablesDetection = true)
 @JsonDeserialize(builder = ImmutableFeatureProviderDataTransformer.Builder.class)
-//@JsonDeserialize(as = ModifiableFeatureProviderDataWfs.class)
-public abstract class FeatureProviderDataTransformer implements FeatureProviderData {
+public abstract class FeatureProviderDataTransformer extends FeatureProviderData {
 
     //@JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     @Override
