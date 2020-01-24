@@ -57,7 +57,7 @@ class CqlPredicateExamples {
 
 
     static final CqlPredicate EXAMPLE_7 = new ImmutableCqlPredicate.Builder()
-            .and(And.of(true, ImmutableList.of(
+            .and(And.of(ImmutableList.of(
                     EXAMPLE_1,
                     new ImmutableCqlPredicate.Builder()
                             .eq(new ImmutableEq.Builder()
@@ -69,7 +69,7 @@ class CqlPredicateExamples {
             .build()
 
     static final CqlPredicate EXAMPLE_8 = new ImmutableCqlPredicate.Builder()
-            .and(And.of(true, ImmutableList.of(
+            .and(And.of(ImmutableList.of(
                     EXAMPLE_6,
                     new ImmutableCqlPredicate.Builder()
                             .or(Or.of(ImmutableList.of(
@@ -92,7 +92,7 @@ class CqlPredicateExamples {
             .build()
 
     static final CqlPredicate EXAMPLE_9 = new ImmutableCqlPredicate.Builder()
-            .or(Or.of(true, ImmutableList.of(
+            .or(Or.of(ImmutableList.of(
                     new ImmutableCqlPredicate.Builder()
                             .and(And.of(ImmutableList.of(
                                     EXAMPLE_1,
@@ -108,7 +108,7 @@ class CqlPredicateExamples {
             .build()
 
     static final CqlPredicate EXAMPLE_10 = new ImmutableCqlPredicate.Builder()
-            .or(Or.of(true, ImmutableList.of(
+            .or(Or.of(ImmutableList.of(
                     new ImmutableCqlPredicate.Builder()
                             .not(Not.of(Collections.singletonList(new ImmutableCqlPredicate.Builder()
                                     .lt(new ImmutableLt.Builder()
@@ -123,7 +123,7 @@ class CqlPredicateExamples {
             .build()
 
     static final CqlPredicate EXAMPLE_11 = new ImmutableCqlPredicate.Builder()
-            .and(And.of(true, ImmutableList.of(
+            .and(And.of(ImmutableList.of(
                     new ImmutableCqlPredicate.Builder()
                             .or(Or.of(ImmutableList.of(
                                     new ImmutableCqlPredicate.Builder()
@@ -195,7 +195,7 @@ class CqlPredicateExamples {
             .build()
 
     static final CqlPredicate EXAMPLE_17 = new ImmutableCqlPredicate.Builder()
-            .and(And.of(true, ImmutableList.of(
+            .and(And.of(ImmutableList.of(
                     EXAMPLE_1,
                     new ImmutableCqlPredicate.Builder()
                             .within(new ImmutableWithin.Builder()

@@ -103,7 +103,6 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                  .accept(this);
 
         if (Objects.nonNull(ctx.OR())) {
-            boolean isTopLevel = Objects.isNull(ctx.getParent().getParent());
             CqlPredicate predicate1 = wrapInPredicate(ctx.booleanValueExpression().accept(this));
             CqlPredicate predicate2 = wrapInPredicate(booleanTerm);
 
@@ -112,12 +111,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 List<CqlPredicate> predicates = predicate1.getOr()
                         .get()
                         .getPredicates();
-                result = Or.of(isTopLevel, new ImmutableList.Builder<CqlPredicate>()
+                result = Or.of(new ImmutableList.Builder<CqlPredicate>()
                         .addAll(predicates)
                         .add(predicate2)
                         .build());
             } else {
-                result = Or.of(isTopLevel, ImmutableList.of(predicate1, predicate2));
+                result = Or.of(ImmutableList.of(predicate1, predicate2));
             }
             return result;
         }
@@ -132,7 +131,6 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         // create And
         if (Objects.nonNull(ctx.AND())) {
-            boolean isTopLevel = Objects.isNull(ctx.getParent().getParent().getParent());
             CqlPredicate predicate1 = wrapInPredicate(ctx.booleanTerm()
                                                          .accept(this));
             CqlPredicate predicate2 = wrapInPredicate(booleanFactor);
@@ -142,12 +140,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 List<CqlPredicate> predicates = predicate1.getAnd()
                         .get()
                         .getPredicates();
-                result = And.of(isTopLevel, new ImmutableList.Builder<CqlPredicate>()
+                result = And.of(new ImmutableList.Builder<CqlPredicate>()
                         .addAll(predicates)
                         .add(predicate2)
                         .build());
             } else {
-                result = And.of(isTopLevel, ImmutableList.of(predicate1, predicate2));
+                result = And.of(ImmutableList.of(predicate1, predicate2));
             }
 
             return result;

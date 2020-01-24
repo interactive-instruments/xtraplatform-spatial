@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,17 +63,9 @@ public interface Geometry<T> extends CqlNode {
             return Type.bbox;
         }
 
-//        @JsonProperty("bbox")
-//        default List<Double> getBbox() {
-//            return getCoordinates().stream()
-//                    .flatMap(Collection::stream)
-//                    .collect(Collectors.toList());
-//        }
-
         @Override
         default String toCqlText() {
             return String.format("ENVELOPE%s", getCoordinates().stream()
-//                    .flatMap(Collection::stream)
                     .map(String::valueOf)
                     .collect(Collectors.joining(",", "(", ")")));
         }

@@ -69,4 +69,10 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
         return getExpressions().get(0)
                                .toCqlText();
     }
+
+    @Override
+    default String toCqlTextTopLevel() {
+        return getExpressions().get(0)
+                .toCqlTextTopLevel();
+    }
 }

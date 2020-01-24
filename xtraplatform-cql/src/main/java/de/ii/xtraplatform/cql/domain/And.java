@@ -16,13 +16,13 @@ public interface And extends LogicalOperation, CqlNode {
         return new ImmutableAnd.Builder().predicates(predicates).build();
     }
 
-    @JsonCreator
-    static And of(@JsonProperty("isTopLevel") boolean isTopLevel, @JsonProperty("predicates") List<CqlPredicate> predicates) {
-        return new ImmutableAnd.Builder().predicates(predicates).isTopLevel(isTopLevel).build();
-    }
-
     @Override
     default String toCqlText() {
         return LogicalOperation.super.toCqlText("AND");
+    }
+
+    @Override
+    default String toCqlTextTopLevel() {
+        return LogicalOperation.super.toCqlTextTopLevel("AND");
     }
 }

@@ -64,7 +64,7 @@ public class CqlImpl implements Cql {
         switch (format) {
 
             case TEXT:
-                return cql.toCqlText();
+                return cql.toCqlTextTopLevel();
             case JSON:
                 try {
                     return cqlJsonMapper.writeValueAsString(cql);

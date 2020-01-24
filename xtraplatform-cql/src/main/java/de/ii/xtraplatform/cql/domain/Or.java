@@ -18,16 +18,13 @@ public interface Or extends LogicalOperation, CqlNode {
                 .build();
     }
 
-    @JsonCreator
-    static Or of(@JsonProperty("isTopLevel") boolean isTopLevel, @JsonProperty("predicates") List<CqlPredicate> predicates) {
-        return new ImmutableOr.Builder()
-                .predicates(predicates)
-                .isTopLevel(isTopLevel)
-                .build();
-    }
-
     @Override
     default String toCqlText() {
         return LogicalOperation.super.toCqlText("OR");
+    }
+
+    @Override
+    default String toCqlTextTopLevel() {
+        return LogicalOperation.super.toCqlTextTopLevel("OR");
     }
 }

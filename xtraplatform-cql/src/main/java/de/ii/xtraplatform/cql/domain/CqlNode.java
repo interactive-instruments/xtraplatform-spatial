@@ -5,4 +5,9 @@ public interface CqlNode {
     default String toCqlText() {
         return "";
     }
+
+    default String toCqlTextTopLevel() {
+        return toCqlText();
+    }
+
 }

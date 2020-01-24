@@ -1,24 +1,16 @@
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Preconditions;
 import org.immutables.value.Value;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public interface LogicalOperation {
 
     @JsonValue
     List<CqlPredicate> getPredicates();
-
-    @Value.Default
-    @JsonIgnore
-    default boolean isTopLevel() {
-        return false;
-    }
 
     @Value.Check
     default void check() {
@@ -27,13 +19,14 @@ public interface LogicalOperation {
     }
 
     default String toCqlText(String operator) {
-        if (isTopLevel()) {
-            return getPredicates().stream()
-                    .map(CqlPredicate::toCqlText)
-                    .collect(Collectors.joining(String.format(" %s ", operator)));
-        }
         return getPredicates().stream()
                 .map(CqlPredicate::toCqlText)
                 .collect(Collectors.joining(String.format(" %s ", operator), "(", ")"));
+    }
+
+    default String toCqlTextTopLevel(String operator) {
+        return getPredicates().stream()
+                .map(CqlPredicate::toCqlText)
+                .collect(Collectors.joining(String.format(" %s ", operator)));
     }
 }
