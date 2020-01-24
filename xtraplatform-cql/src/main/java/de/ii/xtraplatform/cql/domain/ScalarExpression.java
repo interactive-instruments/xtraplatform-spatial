@@ -4,21 +4,20 @@ import java.util.Optional;
 
 public interface ScalarExpression {
 
-    //TODO: implement missing operations, see Eq and Gt
-
     Optional<Eq> getEq();
 
-    //Optional<Lt> getLt();
+    Optional<Lt> getLt();
 
     Optional<Gt> getGt();
 
-    //Optional<Lte> getLte();
+    Optional<Lte> getLte();
 
-    //Optional<Gte> getGte();
+    Optional<Gte> getGte();
 
-    //Optional<Between> getBetween();
+    Optional<Neq> getNeq();
 
-    //Optional<Like> getLike();
+    Optional<Between> getBetween();
 
-    //Optional<In> getIn();
+    Optional<Like> getLike();
+
 }

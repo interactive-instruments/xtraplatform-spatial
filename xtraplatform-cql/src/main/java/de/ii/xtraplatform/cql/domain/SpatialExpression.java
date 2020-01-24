@@ -4,22 +4,20 @@ import java.util.Optional;
 
 public interface SpatialExpression {
 
-    //TODO: implement missing operations, see Intersects
+    Optional<Equals> getEquals();
 
-    //Optional<Equals> getEquals();
+    Optional<Disjoint> getDisjoint();
 
-    //Optional<Disjoint> getDisjoint();
+    Optional<Touches> getTouches();
 
-    //Optional<Touches> getTouches();
+    Optional<Within> getWithin();
 
-    //Optional<Within> getWithin();
+    Optional<Overlaps> getOverlaps();
 
-    //Optional<Overlaps> getOverlaps();
-
-    //Optional<Crosses> getCrosses();
+    Optional<Crosses> getCrosses();
 
     Optional<Intersects> getIntersects();
 
-    //Optional<Contains> getContains();
+    Optional<Contains> getContains();
 
 }

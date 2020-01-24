@@ -6,10 +6,8 @@ public interface LogicalExpression {
 
     Optional<And> getAnd();
 
-    //TODO
-    //Optional<Or> getOr();
+    Optional<Or> getOr();
 
-    //TODO
-    //Optional<Not> getNot();
+    Optional<Not> getNot();
 
 }

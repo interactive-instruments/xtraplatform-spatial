@@ -25,12 +25,38 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
     @Value.Auxiliary
     default List<CqlNode> getExpressions() {
         return ImmutableList.of(
-                //TODO: add all possible expressions when implemented
                 getAnd(),
+                getOr(),
+                getNot(),
                 getEq(),
+                getNeq(),
                 getGt(),
+                getGte(),
+                getLt(),
+                getLte(),
+                getLike(),
+                getBetween(),
+                getEquals(),
+                getDisjoint(),
+                getTouches(),
+                getWithin(),
+                getOverlaps(),
+                getCrosses(),
                 getIntersects(),
-                getDuring()
+                getContains(),
+                getAfter(),
+                getBefore(),
+                getBegins(),
+                getBegunBy(),
+                getTContains(),
+                getDuring(),
+                getEndedBy(),
+                getEnds(),
+                getTEquals(),
+                getMeets(),
+                getMetBy(),
+                getTOverlaps(),
+                getOverlappedBy()
         )
                             .stream()
                             .filter(Optional::isPresent)

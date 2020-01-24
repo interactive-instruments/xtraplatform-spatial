@@ -15,8 +15,49 @@ class CqlPredicateExamples {
                     .build())
             .build()
 
+    static final CqlPredicate EXAMPLE_2 = new ImmutableCqlPredicate.Builder()
+            .lte(new ImmutableLte.Builder()
+                    .property(Property.of("taxes"))
+                    .value(ScalarLiteral.of(500))
+                    .build())
+            .build()
+
+    static final CqlPredicate EXAMPLE_3 = new ImmutableCqlPredicate.Builder()
+            .like(new ImmutableLike.Builder()
+                    .property("owner")
+                    .value(ScalarLiteral.of("% Jones %"))
+                    .build())
+            .build()
+
+    static final CqlPredicate EXAMPLE_4 = new ImmutableCqlPredicate.Builder()
+            .like(new ImmutableLike.Builder()
+                    .property("owner")
+                    .value(ScalarLiteral.of("Mike%"))
+                    .wildCards("%")
+                    .build())
+            .build()
+
+    static final CqlPredicate EXAMPLE_5 = new ImmutableCqlPredicate.Builder()
+            .not(Not.of(ImmutableList.of(
+                    new ImmutableCqlPredicate.Builder()
+                            .like(new ImmutableLike.Builder()
+                                    .property("owner")
+                                    .value(ScalarLiteral.of("% Mike %"))
+                                    .build())
+                            .build()
+            )))
+            .build()
+
+    static final CqlPredicate EXAMPLE_6 = new ImmutableCqlPredicate.Builder()
+            .eq(new ImmutableEq.Builder()
+                    .property("swimming_pool")
+                    .value(ScalarLiteral.of(Boolean.TRUE))
+                    .build())
+            .build()
+
+
     static final CqlPredicate EXAMPLE_7 = new ImmutableCqlPredicate.Builder()
-            .and(And.of(ImmutableList.of(
+            .and(And.of(true, ImmutableList.of(
                     EXAMPLE_1,
                     new ImmutableCqlPredicate.Builder()
                             .eq(new ImmutableEq.Builder()
@@ -27,10 +68,115 @@ class CqlPredicateExamples {
             )))
             .build()
 
+    static final CqlPredicate EXAMPLE_8 = new ImmutableCqlPredicate.Builder()
+            .and(And.of(true, ImmutableList.of(
+                    EXAMPLE_6,
+                    new ImmutableCqlPredicate.Builder()
+                            .or(Or.of(ImmutableList.of(
+                                    EXAMPLE_1,
+                                    new ImmutableCqlPredicate.Builder()
+                                            .like(new ImmutableLike.Builder()
+                                                    .property("material")
+                                                    .value(ScalarLiteral.of("brick%"))
+                                                    .build())
+                                            .build(),
+                                    new ImmutableCqlPredicate.Builder()
+                                            .like(new ImmutableLike.Builder()
+                                                    .property("material")
+                                                    .value(ScalarLiteral.of("%brick"))
+                                                    .build())
+                                            .build()
+                            )))
+                            .build()
+            )))
+            .build()
+
+    static final CqlPredicate EXAMPLE_9 = new ImmutableCqlPredicate.Builder()
+            .or(Or.of(true, ImmutableList.of(
+                    new ImmutableCqlPredicate.Builder()
+                            .and(And.of(ImmutableList.of(
+                                    EXAMPLE_1,
+                                    new ImmutableCqlPredicate.Builder()
+                                            .eq(new ImmutableEq.Builder()
+                                                    .property("material")
+                                                    .value(ScalarLiteral.of("brick"))
+                                                    .build())
+                                            .build()
+                            )))
+                            .build(),
+                    EXAMPLE_6)))
+            .build()
+
+    static final CqlPredicate EXAMPLE_10 = new ImmutableCqlPredicate.Builder()
+            .or(Or.of(true, ImmutableList.of(
+                    new ImmutableCqlPredicate.Builder()
+                            .not(Not.of(Collections.singletonList(new ImmutableCqlPredicate.Builder()
+                                    .lt(new ImmutableLt.Builder()
+                                            .property("floors")
+                                            .value(ScalarLiteral.of(5))
+                                            .build())
+                                    .build()
+                            )))
+                            .build(),
+                    EXAMPLE_6
+            )))
+            .build()
+
+    static final CqlPredicate EXAMPLE_11 = new ImmutableCqlPredicate.Builder()
+            .and(And.of(true, ImmutableList.of(
+                    new ImmutableCqlPredicate.Builder()
+                            .or(Or.of(ImmutableList.of(
+                                    new ImmutableCqlPredicate.Builder()
+                                            .like(new ImmutableLike.Builder()
+                                                    .property("owner")
+                                                    .value(ScalarLiteral.of("mike%"))
+                                                    .build())
+                                            .build(),
+                                    new ImmutableCqlPredicate.Builder()
+                                            .like(new ImmutableLike.Builder()
+                                                    .property("owner")
+                                                    .value(ScalarLiteral.of("Mike%"))
+                                                    .build())
+                                            .build()
+                            )))
+                            .build(),
+                    new ImmutableCqlPredicate.Builder()
+                            .lt(new ImmutableLt.Builder()
+                                    .property("floors")
+                                    .value(ScalarLiteral.of(4))
+                                    .build())
+                            .build()
+            )))
+            .build()
+
+    static final CqlPredicate EXAMPLE_12 = new ImmutableCqlPredicate.Builder()
+            .before(new ImmutableBefore.Builder()
+                    .property("built")
+                    .value(TemporalLiteral.of(Instant.parse("2015-01-01T00:00:00Z")))
+                    .build())
+            .build()
+
+    static final CqlPredicate EXAMPLE_13 = new ImmutableCqlPredicate.Builder()
+            .after(new ImmutableAfter.Builder()
+                    .property("built")
+                    .value(TemporalLiteral.of(Instant.parse("2012-06-05T00:00:00Z")))
+                    .build())
+            .build()
+
+
     static final CqlPredicate EXAMPLE_14 = new ImmutableCqlPredicate.Builder()
             .during(new ImmutableDuring.Builder()
                     .property(Property.of('updated'))
                     .value(TemporalLiteral.of(Interval.of(Instant.parse("2017-06-10T07:30:00Z"), Instant.parse("2017-06-11T10:30:00Z"))))
+                    .build())
+            .build()
+
+    static final CqlPredicate EXAMPLE_15 = new ImmutableCqlPredicate.Builder()
+            .within(new ImmutableWithin.Builder()
+                    .property(Property.of('location'))
+                    .value(SpatialLiteral.of(new ImmutableEnvelope.Builder()
+                            .coordinates(ImmutableList.of(new Double(33.8), new Double(-118.0), new Double(34.0), new Double(-117.9)))
+                            .build()))
                     .build())
             .build()
 
@@ -46,6 +192,19 @@ class CqlPredicateExamples {
                             )))
                             .build()))
                     .build())
+            .build()
+
+    static final CqlPredicate EXAMPLE_17 = new ImmutableCqlPredicate.Builder()
+            .and(And.of(true, ImmutableList.of(
+                    EXAMPLE_1,
+                    new ImmutableCqlPredicate.Builder()
+                            .within(new ImmutableWithin.Builder()
+                                    .property("geometry")
+                                    .value(SpatialLiteral.of(new ImmutableEnvelope.Builder()
+                                            .coordinates(ImmutableList.of(new Double(33.8), new Double(-118.0), new Double(34.0), new Double(-117.9)))
+                                            .build()))
+                                    .build())
+                            .build())))
             .build()
 
 }

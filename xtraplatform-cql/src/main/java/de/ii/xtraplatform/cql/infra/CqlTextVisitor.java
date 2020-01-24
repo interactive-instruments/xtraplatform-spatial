@@ -1,15 +1,7 @@
 package de.ii.xtraplatform.cql.infra;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.cql.domain.And;
-import de.ii.xtraplatform.cql.domain.ComparisonOperator;
-import de.ii.xtraplatform.cql.domain.CqlNode;
-import de.ii.xtraplatform.cql.domain.CqlParseException;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
-import de.ii.xtraplatform.cql.domain.During;
-import de.ii.xtraplatform.cql.domain.Eq;
-import de.ii.xtraplatform.cql.domain.Geometry;
-import de.ii.xtraplatform.cql.domain.Gt;
+import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.cql.domain.ImmutableCqlPredicate;
 import de.ii.xtraplatform.cql.domain.ImmutableDuring;
 import de.ii.xtraplatform.cql.domain.ImmutableEq;
@@ -17,19 +9,6 @@ import de.ii.xtraplatform.cql.domain.ImmutableGt;
 import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
 import de.ii.xtraplatform.cql.domain.ImmutableLineString;
 import de.ii.xtraplatform.cql.domain.ImmutablePolygon;
-import de.ii.xtraplatform.cql.domain.Intersects;
-import de.ii.xtraplatform.cql.domain.Property;
-import de.ii.xtraplatform.cql.domain.Scalar;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
-import de.ii.xtraplatform.cql.domain.ScalarOperation;
-import de.ii.xtraplatform.cql.domain.Spatial;
-import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.SpatialOperator;
-import de.ii.xtraplatform.cql.domain.Temporal;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
-import de.ii.xtraplatform.cql.domain.TemporalOperator;
 
 import java.util.List;
 import java.util.Objects;
@@ -43,14 +22,68 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         //TODO: add all expressions when implemented
         if (node instanceof And) {
             builder.and((And) node);
-        } else if (node instanceof Eq) {
+        } else if (node instanceof Or) {
+            builder.or((Or) node);
+        }  else if (node instanceof Not) {
+            builder.not((Not) node);
+        }  else if (node instanceof Eq) {
             builder.eq((Eq) node);
+        } else if (node instanceof Neq) {
+            builder.neq((Neq) node);
         } else if (node instanceof Gt) {
             builder.gt((Gt) node);
+        } else if (node instanceof Gte) {
+            builder.gte((Gte) node);
+        } else if (node instanceof Lt) {
+            builder.lt((Lt) node);
+        } else if (node instanceof Lte) {
+            builder.lte((Lte) node);
+        } else if (node instanceof Between) {
+            builder.between((Between) node);
+        } else if (node instanceof Like) {
+            builder.like((Like) node);
+        } else if (node instanceof After) {
+            builder.after((After) node);
+        } else if (node instanceof Before) {
+            builder.before((Before) node);
+        } else if (node instanceof Begins) {
+            builder.begins((Begins) node);
+        } else if (node instanceof BegunBy) {
+            builder.begunBy((BegunBy) node);
+        } else if (node instanceof TContains) {
+            builder.tContains((TContains) node);
         } else if (node instanceof During) {
             builder.during((During) node);
+        } else if (node instanceof EndedBy) {
+            builder.endedBy((EndedBy) node);
+        } else if (node instanceof Ends) {
+            builder.ends((Ends) node);
+        } else if (node instanceof TEquals) {
+            builder.tEquals((TEquals) node);
+        } else if (node instanceof Meets) {
+            builder.meets((Meets) node);
+        } else if (node instanceof MetBy) {
+            builder.metBy((MetBy) node);
+        } else if (node instanceof TOverlaps) {
+            builder.tOverlaps((TOverlaps) node);
+        } else if (node instanceof OverlappedBy) {
+            builder.overlappedBy((OverlappedBy) node);
+        } else if (node instanceof Equals) {
+            builder.within((Within) node);
+        } else if (node instanceof Disjoint) {
+            builder.disjoint((Disjoint) node);
+        } else if (node instanceof Touches) {
+            builder.touches((Touches) node);
+        } else if (node instanceof Within) {
+            builder.within((Within) node);
+        } else if (node instanceof Overlaps) {
+            builder.overlaps((Overlaps) node);
+        } else if (node instanceof Crosses) {
+            builder.crosses((Crosses) node);
         } else if (node instanceof Intersects) {
             builder.intersects((Intersects) node);
+        } else if (node instanceof Contains) {
+            builder.contains((Contains) node);
         }
 
         return builder.build();
@@ -69,9 +102,24 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         CqlNode booleanTerm = ctx.booleanTerm()
                                  .accept(this);
 
-        //TODO: create Or
         if (Objects.nonNull(ctx.OR())) {
+            boolean isTopLevel = Objects.isNull(ctx.getParent().getParent());
+            CqlPredicate predicate1 = wrapInPredicate(ctx.booleanValueExpression().accept(this));
+            CqlPredicate predicate2 = wrapInPredicate(booleanTerm);
 
+            Or result;
+            if (predicate1.getOr().isPresent()) {
+                List<CqlPredicate> predicates = predicate1.getOr()
+                        .get()
+                        .getPredicates();
+                result = Or.of(isTopLevel, new ImmutableList.Builder<CqlPredicate>()
+                        .addAll(predicates)
+                        .add(predicate2)
+                        .build());
+            } else {
+                result = Or.of(isTopLevel, ImmutableList.of(predicate1, predicate2));
+            }
+            return result;
         }
 
         return booleanTerm;
@@ -84,11 +132,25 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         // create And
         if (Objects.nonNull(ctx.AND())) {
+            boolean isTopLevel = Objects.isNull(ctx.getParent().getParent().getParent());
             CqlPredicate predicate1 = wrapInPredicate(ctx.booleanTerm()
                                                          .accept(this));
             CqlPredicate predicate2 = wrapInPredicate(booleanFactor);
 
-            return And.of(ImmutableList.of(predicate1, predicate2));
+            And result;
+            if (predicate1.getAnd().isPresent()) {
+                List<CqlPredicate> predicates = predicate1.getAnd()
+                        .get()
+                        .getPredicates();
+                result = And.of(isTopLevel, new ImmutableList.Builder<CqlPredicate>()
+                        .addAll(predicates)
+                        .add(predicate2)
+                        .build());
+            } else {
+                result = And.of(isTopLevel, ImmutableList.of(predicate1, predicate2));
+            }
+
+            return result;
         }
 
         return booleanFactor;
@@ -98,10 +160,14 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     public CqlNode visitBooleanFactor(CqlParser.BooleanFactorContext ctx) {
         CqlNode booleanPrimary = ctx.booleanPrimary()
                                     .accept(this);
-
-        //TODO: create Not
+        if (Objects.nonNull(ctx.booleanPrimary().LEFTPAREN())) {
+            booleanPrimary = ctx.booleanPrimary()
+                    .booleanValueExpression()
+                    .accept(this);
+        }
         if (Objects.nonNull(ctx.NOT())) {
-
+            CqlPredicate predicate = wrapInPredicate(booleanPrimary);
+            return Not.of(ImmutableList.of(predicate));
         }
 
         return booleanPrimary;
@@ -122,11 +188,26 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         //TODO: add all comparison/scalar expressions when implemented
 
         switch (comparisonOperator) {
+            case EQ:
+                builder = new ImmutableEq.Builder();
+                break;
+            case NEQ:
+                builder = new ImmutableNeq.Builder();
+                break;
             case GT:
                 builder = new ImmutableGt.Builder();
                 break;
-            case EQ:
-                builder = new ImmutableEq.Builder();
+            case GTEQ:
+                builder = new ImmutableGte.Builder();
+                break;
+            case LT:
+                builder = new ImmutableLt.Builder();
+                break;
+            case LTEQ:
+                builder = new ImmutableLte.Builder();
+                break;
+            case BETWEEN:
+                builder = new ImmutableBetween.Builder();
                 break;
             default:
                 throw new IllegalStateException("unknown comparison operator: " + comparisonOperator);
@@ -140,8 +221,18 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitPropertyIsLikePredicate(CqlParser.PropertyIsLikePredicateContext ctx) {
 
-        //TODO
+        if (Objects.nonNull(ctx.LIKE())) {
 
+            Scalar scalar1 = (Scalar) ctx.scalarExpression()
+                    .accept(this);
+            Scalar scalar2 = (Scalar) ctx.regularExpression()
+                    .accept(this);
+
+            return new ImmutableLike.Builder()
+                    .operand1(scalar1)
+                    .operand2(scalar2)
+                    .build();
+        }
         return null;
     }
 
@@ -173,11 +264,45 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         TemporalOperation.Builder<? extends TemporalOperation> builder;
 
-        //TODO: add all temporal expressions when implemented
-
         switch (temporalOperator) {
+            case AFTER:
+                builder = new ImmutableAfter.Builder();
+                break;
+            case BEFORE:
+                builder = new ImmutableBefore.Builder();
+                break;
+            case BEGINS:
+                builder = new ImmutableBegins.Builder();
+                break;
+            case BEGUNBY:
+                builder = new ImmutableBegunBy.Builder();
+                break;
+            case TCONTAINS:
+                builder = new ImmutableTContains.Builder();
+                break;
             case DURING:
                 builder = new ImmutableDuring.Builder();
+                break;
+            case ENDEDBY:
+                builder = new ImmutableEndedBy.Builder();
+                break;
+            case ENDS:
+                builder = new ImmutableEnds.Builder();
+                break;
+            case TEQUALS:
+                builder = new ImmutableTEquals.Builder();
+                break;
+            case MEETS:
+                builder = new ImmutableMeets.Builder();
+                break;
+            case METBY:
+                builder = new ImmutableMetBy.Builder();
+                break;
+            case TOVERLAPS:
+                builder = new ImmutableTOverlaps.Builder();
+                break;
+            case OVERLAPPEDBY:
+                builder = new ImmutableOverlappedBy.Builder();
                 break;
             default:
                 throw new IllegalStateException("unknown temporal operator: " + temporalOperator);
@@ -202,11 +327,30 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         SpatialOperation.Builder<? extends SpatialOperation> builder;
 
-        //TODO: add all spatial expressions when implemented
-
         switch (spatialOperator) {
+            case EQUALS:
+                builder = new ImmutableEquals.Builder();
+                break;
+            case DISJOINT:
+                builder = new ImmutableDisjoint.Builder();
+                break;
+            case TOUCHES:
+                builder = new ImmutableTouches.Builder();
+                break;
+            case WITHIN:
+                builder = new ImmutableWithin.Builder();
+                break;
+            case OVERLAPS:
+                builder = new ImmutableOverlaps.Builder();
+                break;
+            case CROSSES:
+                builder = new ImmutableCrosses.Builder();
+                break;
             case INTERSECTS:
                 builder = new ImmutableIntersects.Builder();
+                break;
+            case CONTAINS:
+                builder = new ImmutableContains.Builder();
                 break;
             default:
                 throw new IllegalStateException("unknown spatial operator: " + spatialOperator);
@@ -229,7 +373,6 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     public CqlNode visitInPredicate(CqlParser.InPredicateContext ctx) {
 
         //TODO
-
         return null;
     }
 
@@ -280,6 +423,27 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         return new ImmutablePolygon.Builder().coordinates(coordinates)
                                              .build();
+    }
+
+    @Override
+    public CqlNode visitEnvelope(CqlParser.EnvelopeContext ctx) {
+        List<Double> coordinates;
+        Double eastBoundLon = Double.valueOf(ctx.eastBoundLon().NumericLiteral().getText());
+        Double westBoundLon = Double.valueOf(ctx.westBoundLon().NumericLiteral().getText());
+        Double northBoundLat = Double.valueOf(ctx.northBoundLat().NumericLiteral().getText());
+        Double southBoundLat = Double.valueOf(ctx.southBoundLat().NumericLiteral().getText());
+
+        if (Objects.nonNull(ctx.minElev()) && Objects.nonNull(ctx.maxElev())) {
+            Double minElev = Double.valueOf(ctx.minElev().NumericLiteral().getText());
+            Double maxElev = Double.valueOf(ctx.maxElev().NumericLiteral().getText());
+            coordinates = ImmutableList.of(southBoundLat, westBoundLon, minElev, northBoundLat, eastBoundLon, maxElev);
+        } else {
+            coordinates = ImmutableList.of(westBoundLon, eastBoundLon, northBoundLat, southBoundLat);
+        }
+
+        return new ImmutableEnvelope.Builder()
+                .coordinates(coordinates)
+                .build();
     }
 
     @Override

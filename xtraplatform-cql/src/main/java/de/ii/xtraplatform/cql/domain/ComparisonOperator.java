@@ -1,9 +1,16 @@
 package de.ii.xtraplatform.cql.domain;
 
 public enum ComparisonOperator implements CqlNode {
-    //TODO: add LT, NEQ, LTEQ, GTEQ
+
+    EQ("="),
+    NEQ("<>"),
     GT(">"),
-    EQ("=");
+    GTEQ(">="),
+    LT("<"),
+    LTEQ("<="),
+    LIKE("LIKE"),
+    BETWEEN("BETWEEN"),
+    IN("IN");
 
     private final String cqlText;
 
