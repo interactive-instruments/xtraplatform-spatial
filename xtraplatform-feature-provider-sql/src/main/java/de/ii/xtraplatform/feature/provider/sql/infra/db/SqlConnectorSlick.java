@@ -9,6 +9,7 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import akka.stream.alpakka.slick.javadsl.SlickSession;
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -22,6 +23,7 @@ import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Invalidate;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Provides;
+import org.apache.felix.ipojo.annotations.ServiceController;
 import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.apache.felix.ipojo.annotations.Validate;
 import org.osgi.framework.BundleContext;
@@ -35,6 +37,7 @@ import slick.jdbc.JdbcProfile;
 
 import java.util.Base64;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @author zahnen
@@ -56,6 +59,10 @@ public class SqlConnectorSlick implements SqlConnector {
 
     private SlickSession session;
     private SqlClient sqlClient;
+    private Throwable connectionError;
+
+    @ServiceController(value=false)
+    private boolean controller;
 
     public SqlConnectorSlick(@Context BundleContext context,
                              @Property(name = ".data") FeatureProviderDataV1 data) {
@@ -77,9 +84,14 @@ public class SqlConnectorSlick implements SqlConnector {
             this.session = SlickSession.forConfig(databaseConfig);
             this.sqlClient = new SqlClientSlick(session);
 
+            this.controller = true;
+
         } catch (Throwable e) {
             //TODO: handle properly, service start should fail with error message, show in manager
-            LOGGER.error("CONNECTING TO DB FAILED", e);
+            //LOGGER.error("CONNECTING TO DB FAILED", e);
+            this.connectionError = e;
+
+            this.controller = true;
         }
     }
 
@@ -89,6 +101,16 @@ public class SqlConnectorSlick implements SqlConnector {
         if (Objects.nonNull(session)) {
             session.close();
         }
+    }
+
+    @Override
+    public boolean isConnected() {
+        return Objects.nonNull(sqlClient);
+    }
+
+    @Override
+    public Optional<Throwable> getConnectionError() {
+        return Optional.ofNullable(connectionError);
     }
 
     @Override
@@ -121,17 +143,25 @@ public class SqlConnectorSlick implements SqlConnector {
 
     //TODO: to SlickConfig.create
     private static Config createSlickConfig(ConnectionInfoSql connectionInfo) {
+        ImmutableMap.Builder<String, Object> databaseConfig = ImmutableMap.<String, Object>builder()
+                .put("user", connectionInfo.getUser())
+                .put("password", getPassword(connectionInfo))
+                .put("dataSourceClass", getDataSourceClass(connectionInfo))
+                .put("properties.serverName", connectionInfo.getHost())
+                .put("properties.databaseName", connectionInfo.getDatabase())
+                .put("numThreads", connectionInfo.getMaxThreads())
+                .put("initializationFailFast", true);
+
+        //TODO: test multiple
+        /*if (connectionInfo.getSchemas().size() == 1) {
+            databaseConfig.put("schema", connectionInfo.getSchemas().get(0));
+        } else*/ if (!connectionInfo.getSchemas().isEmpty()) {
+            databaseConfig.put("connectionInitSql", String.format("SET search_path TO %s,public;", Joiner.on(',').join(connectionInfo.getSchemas())));
+        }
+
         return ConfigFactory.parseMap(ImmutableMap.<String, Object>builder()
                 .put("profile", getProfile(connectionInfo))
-                .put("db", ImmutableMap.<String, Object>builder()
-                        .put("user", connectionInfo.getUser())
-                        .put("password", getPassword(connectionInfo))
-                        .put("dataSourceClass", getDataSourceClass(connectionInfo))
-                        .put("properties.serverName", connectionInfo.getHost())
-                        .put("properties.databaseName", connectionInfo.getDatabase())
-                        .put("numThreads", connectionInfo.getMaxThreads())
-                        .put("initializationFailFast", true)
-                        .build())
+                .put("db", databaseConfig.build())
                 .build());
     }
 

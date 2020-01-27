@@ -12,6 +12,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.provider.api.ConnectionInfo;
 import org.immutables.value.Value;
 
+import java.util.List;
+import java.util.Optional;
+
 /**
  * @author zahnen
  */
@@ -29,6 +32,8 @@ public interface ConnectionInfoSql extends ConnectionInfo {
     String getUser();
 
     String getPassword();
+
+    List<String> getSchemas();
 
     @Value.Default
     default Dialect getDialect() {

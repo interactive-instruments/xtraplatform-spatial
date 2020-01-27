@@ -1,8 +1,10 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
@@ -23,6 +25,7 @@ import de.ii.xtraplatform.feature.provider.api.FeatureQueries;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream2;
 import de.ii.xtraplatform.feature.provider.api.FeatureTransformer2;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer3;
 import de.ii.xtraplatform.feature.provider.api.FeatureType;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlFeatureTypeParser;
@@ -74,10 +77,10 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
     private final ExtentReaderSql extentReader;
 
     public FeatureProviderSql(@Context BundleContext context,
-                       @Requires ActorSystemProvider actorSystemProvider,
-                       @Requires CrsTransformation crsTransformation,
-                       @Property(name = "data") FeatureProviderDataV1 data,
-                       @Property(name = ".connector") SqlConnector sqlConnector) {
+                              @Requires ActorSystemProvider actorSystemProvider,
+                              @Requires CrsTransformation crsTransformation,
+                              @Property(name = "data") FeatureProviderDataV1 data,
+                              @Property(name = ".connector") SqlConnector sqlConnector) {
         //TODO: starts akka for every instance, move to singleton
         this.system = actorSystemProvider.getActorSystem(context, config);
         this.materializer = ActorMaterializer.create(system);
@@ -89,6 +92,25 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
         this.queryTransformer = new FeatureQueryTransformerSql(typeInfos, queryGeneratorSql, false/*TODO data.computeNumberMatched()*/);
         this.featureNormalizer = new FeatureNormalizerSql(typeInfos, data.getTypes());
         this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect, data.getNativeCrs());
+    }
+
+    @Override
+    protected boolean shouldRegister() {
+        return connector.isConnected();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        if (!connector.isConnected()) {
+            Optional<Throwable> connectionError = connector.getConnectionError();
+            String message = connectionError.map(Throwable::getMessage).orElse("unknown reason");
+            LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), message);
+            if (connectionError.isPresent() && LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Stacktrace:", connectionError.get());
+            }
+        }
     }
 
     @Override
@@ -121,8 +143,56 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
             }
 
             @Override
-            public CompletionStage<Result> runWith(Sink<Feature, CompletionStage<Result>> transformer) {
+            public CompletionStage<Result> runWith(Sink<Feature<?>, CompletionStage<Done>> transformer) {
+                /*Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(typeInfos.get(query.getType()));
+
+                if (!typeInfo.isPresent()) {
+                    //TODO: put error message into Result, complete successfully
+                    CompletableFuture<Result> promise = new CompletableFuture<>();
+                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
+                    return promise;
+                }
+
+                SqlQueries sqlQueries = queryTransformer.transformQuery(query);
+
+                Source<SqlRow, NotUsed> rowStream = connector.getSourceStream(sqlQueries);
+
+                Source<Feature<?>, CompletionStage<Result>> featureStream = featureNormalizer.normalize(rowStream, query);
+
+                return featureStream.toMat(transformer, Keep.left())
+                                    .run(materializer);*/
+
                 return null;
+            }
+
+            @Override
+            public <T extends de.ii.xtraplatform.feature.provider.api.Property<?>,U extends Feature<T>> CompletionStage<Result> runWith(FeatureTransformer3<T, U> transformer) {
+                Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(typeInfos.get(query.getType()));
+
+                if (!typeInfo.isPresent()) {
+                    //TODO: put error message into Result, complete successfully
+                    CompletableFuture<Result> promise = new CompletableFuture<>();
+                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
+                    return promise;
+                }
+
+                SqlQueries sqlQueries = queryTransformer.transformQuery(query);
+
+                Source<SqlRow, NotUsed> rowStream = connector.getSourceStream(sqlQueries);
+
+                Source<U, CompletionStage<Result>> featureStream = featureNormalizer.normalize(rowStream, query, transformer::createFeature, transformer::createProperty);
+
+                Sink<U, CompletionStage<Done>> sink = Sink.foreach(feature -> {
+
+            /*if (!numberReturned.isDone() && feature.getProperties().containsKey(ImmutableList.of("numberReturned"))) {
+                numberReturned.complete(Long.getLong(feature.getProperties().get(ImmutableList.of("numberReturned"))));
+            }*/
+
+                    transformer.processFeature(feature);
+                });
+
+                return featureStream.toMat(sink, Keep.left())
+                                    .run(materializer);
             }
         };
     }
@@ -136,7 +206,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
     @Override
     public boolean supportsCrs(EpsgCrs crs) {
         return getData().getNativeCrs()
-                   .equals(crs);
+                        .equals(crs);
     }
 
     //TODO: from data.getTypes()
@@ -172,18 +242,18 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
         FeatureStorePathParser pathParser = new FeatureStorePathParser(syntax);
 
         return featureTypes.entrySet()
-                       .stream()
-                       .map(entry -> {
-                           List<String> paths = mappingParser.parse(entry.getValue());
-                           List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(paths);
-                           FeatureStoreTypeInfo typeInfo = ImmutableFeatureStoreTypeInfo.builder()
-                                                                                        .name(entry.getKey())
-                                                                                        .instanceContainers(instanceContainers)
-                                                                                        .build();
+                           .stream()
+                           .map(entry -> {
+                               List<String> paths = mappingParser.parse(entry.getValue());
+                               List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(paths);
+                               FeatureStoreTypeInfo typeInfo = ImmutableFeatureStoreTypeInfo.builder()
+                                                                                            .name(entry.getKey())
+                                                                                            .instanceContainers(instanceContainers)
+                                                                                            .build();
 
-                           return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), typeInfo);
-                       })
-                       .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+                               return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), typeInfo);
+                           })
+                           .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     //TODO: crs as second param, transform here? yup

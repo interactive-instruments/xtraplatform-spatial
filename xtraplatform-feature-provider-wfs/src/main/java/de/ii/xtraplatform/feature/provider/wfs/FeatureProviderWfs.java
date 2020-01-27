@@ -480,7 +480,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
             }
 
             @Override
-            public CompletionStage<Result> runWith(Sink<Feature, CompletionStage<Result>> transformer) {
+            public CompletionStage<Result> runWith(Sink<Feature<?>, CompletionStage<Done>> transformer) {
                 return null;
             }
         };

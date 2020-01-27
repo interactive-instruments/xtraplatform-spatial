@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import de.ii.xtraplatform.dropwizard.cfg.JacksonProvider;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -32,6 +33,10 @@ import java.util.concurrent.CompletionStage;
 public interface FeatureProviderConnector<T,U,V extends FeatureProviderConnector.QueryOptions> {
 
     interface QueryOptions {}
+
+    boolean isConnected();
+
+    Optional<Throwable> getConnectionError();
 
     //TODO: refactor FeatureProviderWfs to use getSourceStream, remove this
     CompletionStage<Done> runQuery(final FeatureQuery query, final Sink<T, CompletionStage<Done>> consumer, final Map<String, String> additionalQueryParameters);

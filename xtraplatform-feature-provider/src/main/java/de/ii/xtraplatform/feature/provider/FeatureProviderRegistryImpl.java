@@ -15,6 +15,7 @@ import de.ii.xtraplatform.feature.provider.api.FeatureProviderRegistry;
 import org.apache.felix.ipojo.ComponentInstance;
 import org.apache.felix.ipojo.ConfigurationException;
 import org.apache.felix.ipojo.Factory;
+import org.apache.felix.ipojo.InstanceStateListener;
 import org.apache.felix.ipojo.MissingHandlerException;
 import org.apache.felix.ipojo.UnacceptableConfiguration;
 import org.apache.felix.ipojo.annotations.Component;
@@ -106,8 +107,8 @@ public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {
         try {
             ComponentInstance connectorInstance =  connectorFactories.get(featureProviderData.getFeatureProviderType()).get(featureProviderData.getConnectionInfo().getConnectorType()).createComponentInstance(new Hashtable<>(ImmutableMap.of(".data", featureProviderData)));
 
-            ServiceReference[] connectorRefs = context.getServiceReferences(FeatureProviderConnector.class.getName(), "(instance.name=" + connectorInstance.getInstanceName() +")");
-            FeatureProviderConnector connector = (FeatureProviderConnector) context.getService(connectorRefs[0]);
+            ServiceReference<?>[] connectorRefs = context.getServiceReferences(FeatureProviderConnector.class.getName(), "(instance.name=" + connectorInstance.getInstanceName() +")");
+            FeatureProviderConnector<?,?,?> connector = (FeatureProviderConnector<?,?,?>) context.getService(connectorRefs[0]);
 
             return connector;
 

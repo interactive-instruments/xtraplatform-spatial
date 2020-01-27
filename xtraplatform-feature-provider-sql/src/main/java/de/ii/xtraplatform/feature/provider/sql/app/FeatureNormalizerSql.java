@@ -4,27 +4,29 @@ import akka.Done;
 import akka.NotUsed;
 import akka.japi.function.Function;
 import akka.japi.function.Function2;
+import akka.japi.function.Predicate;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import akka.stream.javadsl.SubSource;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.feature.provider.api.Feature;
+import de.ii.xtraplatform.feature.provider.api.FeatureCollection;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureNormalizer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream2;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.provider.api.FeatureTransformer2;
 import de.ii.xtraplatform.feature.provider.api.FeatureType;
-import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureType;
+import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureCollection;
+import de.ii.xtraplatform.feature.provider.api.Property;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreMultiplicityTracker;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowMeta;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
@@ -74,16 +77,88 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
     }
 
     @Override
-    public Source<Feature, NotUsed> normalize(Source<SqlRow, NotUsed> sourceStream) {
-        return null;
+    public <U extends Property<?>,V extends Feature<U>> Source<V, CompletionStage<FeatureStream2.Result>> normalize(Source<SqlRow, NotUsed> sourceStream, FeatureQuery featureQuery, Supplier<V> featureCreator, Supplier<U> propertyCreator) {
+
+        Long[] featureId = {null};
+        final FeatureCollection[] collection = new FeatureCollection[1];
+
+        //TODO: support multiple typeInfos
+        FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());
+        FeatureType featureType = types.get(featureQuery.getType());
+        //TODO: support multiple main tables
+        FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
+                                                                  .get(0);
+        List<String> multiTables = instanceContainer.getMultiContainerNames();
+
+        FeatureStoreMultiplicityTracker multiplicityTracker = new SqlMultiplicityTracker(multiTables);//getMultiplicityTracker(typeInfo)
+
+        ReadContext readContext = ImmutableReadContext.builder()
+                                                      .mainTablePath(typeInfo.getInstanceContainers()
+                                                                             .get(0)
+                                                                             .getPath())
+                                                      .multiTables(multiTables)
+                                                      .multiplicityTracker(multiplicityTracker)
+                                                      .isIdFilter(featureQuery.hasIdFilter())
+                                                      .readState(ModifiableReadState.create())
+                                                      .build();
+
+        SubSource<SqlRow, NotUsed> subSource = sourceStream.splitWhen(hasDifferentFeatureId(readContext.getReadState()));
+
+        SubSource<V, NotUsed> folded = subSource.fold(featureCreator.get(), handleRow(readContext, propertyCreator));
+
+        Source<V, CompletionStage<FeatureStream2.Result>> featureSource = folded.concatSubstreams()
+                                                                                      .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
+                                                                                          boolean success = true;
+                                                                                          if (Objects.nonNull(throwable)) {
+                                                                                              //handleException(throwable, readContext);
+                                                                                              success = false;
+                                                                                          }
+
+                                                                                          //handleCompletion(readContext);
+                                                                                          boolean finalSuccess = success;
+                                                                                          return () -> finalSuccess;
+                                                                                      }));
+
+        return featureSource;
     }
 
+    private Predicate<SqlRow> hasDifferentFeatureId(ModifiableReadState readState) {
+        return sqlRow -> {
+            Long currentId = sqlRow.getIds()
+                                   .get(0);
+
+            if (!Objects.equals(readState.getCurrentId(), currentId)) {
+                boolean isFirstFeature = Objects.isNull(readState.getCurrentId());
+                readState.setCurrentId(currentId);
+                return !isFirstFeature;
+                //return true;
+            }
+
+            return false;
+        };
+    }
+
+    private <U extends Property<?>,V extends Feature<U>> Function2<V, SqlRow, V> handleRow(ReadContext readContext, Supplier<U> propertyCreator) {
+        return (feature, sqlRow) -> {
+
+            boolean stop = true;
+
+
+            if (sqlRow instanceof SqlRowMeta) {
+                handleMetaRow2((SqlRowMeta) sqlRow, readContext);
+            } else {
+                handleValueRow2(feature, sqlRow, readContext, propertyCreator);
+            }
+
+            return feature;
+        };
+    }
 
 
     //TODO: query only needed for IdFilter exceptions, should happen further up
     private static Sink<SqlRow, CompletionStage<FeatureStream2.Result>> consume(FeatureStoreTypeInfo typeInfo,
-                                                                               FeatureConsumer consumer,
-                                                                               FeatureQuery query) {
+                                                                                FeatureConsumer consumer,
+                                                                                FeatureQuery query) {
         return consume(ImmutableList.of(typeInfo), consumer, query);
     }
 
@@ -94,21 +169,22 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
         //TODO: support multiple typeInfos
         FeatureStoreTypeInfo typeInfo = typeInfos.get(0);
         //TODO: support multiple main tables
-        FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers().get(0);
+        FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
+                                                                  .get(0);
         List<String> multiTables = instanceContainer.getMultiContainerNames();
 
         FeatureStoreMultiplicityTracker multiplicityTracker = new SqlMultiplicityTracker(multiTables);//getMultiplicityTracker(typeInfo)
 
         ReadContext readContext = ImmutableReadContext.builder()
-                                                                   .featureConsumer(consumer)
-                                                                   .mainTablePath(typeInfo.getInstanceContainers()
-                                                                                          .get(0)
-                                                                                          .getPath())
-                                                                   .multiTables(multiTables)
-                                                                   .multiplicityTracker(multiplicityTracker)
-                                                                   .isIdFilter(query.hasIdFilter())
-                                                                   .readState(ModifiableReadState.create())
-                                                                   .build();
+                                                      .featureConsumer(consumer)
+                                                      .mainTablePath(typeInfo.getInstanceContainers()
+                                                                             .get(0)
+                                                                             .getPath())
+                                                      .multiTables(multiTables)
+                                                      .multiplicityTracker(multiplicityTracker)
+                                                      .isIdFilter(query.hasIdFilter())
+                                                      .readState(ModifiableReadState.create())
+                                                      .build();
 
         //TODO: cleanup
         Flow<SqlRow, NotUsed, CompletionStage<FeatureStream2.Result>> consumerFlow =
@@ -151,6 +227,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
     @Value.Immutable
     interface ReadContext {
+        @Nullable
         FeatureConsumer getFeatureConsumer();
 
         List<String> getMainTablePath();
@@ -180,6 +257,14 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
         Long getCurrentId();
 
         boolean isAtLeastOneFeatureWritten();
+
+        @Nullable
+        FeatureCollection getFeatureCollection();
+
+        @Value.Default
+        default long getIndex() {
+            return 0;
+        }
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureNormalizerSql.class);
@@ -187,7 +272,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
     private static void handleRow(SqlRow sqlRow, ReadContext readContext) throws Exception {
 
         if (sqlRow instanceof SqlRowMeta) {
-            handleMetaRow((SqlRowMeta)sqlRow, readContext);
+            handleMetaRow((SqlRowMeta) sqlRow, readContext);
             return;
         }
 
@@ -208,6 +293,14 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
         readContext.getFeatureConsumer()
                    .onStart(OptionalLong.of(sqlRow.getNumberReturned()), sqlRow.getNumberMatched(), ImmutableMap.of());
+
+        readContext.getReadState()
+                   .setIsStarted(true);
+    }
+
+    private static void handleMetaRow2(SqlRowMeta sqlRow, ReadContext readContext) throws Exception {
+
+        readContext.getReadState().setFeatureCollection(ImmutableFeatureCollection.of(OptionalLong.of(sqlRow.getNumberReturned()), sqlRow.getNumberMatched()));
 
         readContext.getReadState()
                    .setIsStarted(true);
@@ -256,10 +349,37 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
         handleColumns(sqlRow, consumer, multiplicityTracker.getMultiplicitiesForPath(sqlRow.getPath()));
     }
 
+    private static <U extends Property<?>,V extends Feature<U>> void handleValueRow2(V feature, SqlRow sqlRow, ReadContext readContext, Supplier<U> propertyCreator) throws Exception {
+        feature.setFeatureCollection(readContext.getReadState()
+                                                .getFeatureCollection());
+
+        for (int i = 0; i < sqlRow.getValues()
+                                  .size() && i < sqlRow.getColumnPaths()
+                                                       .size(); i++) {
+            if (Objects.nonNull(sqlRow.getValues()
+                                      .get(i))) {
+
+                U property = propertyCreator.get();
+                property.setName(Joiner.on('.')
+                                       .join(sqlRow.getColumnPaths()
+                                                   .get(i)));
+                property.setValue((String) sqlRow.getValues()
+                                                 .get(i));
+                feature.addProperties(property);
+
+                    /*feature.putProperties(sqlRow.getColumnPaths()
+                                                .get(i), (String) sqlRow.getValues()
+                                                                        .get(i));*/
+            }
+        }
+    }
+
     private static void handleColumns(SqlRow sqlRow, FeatureConsumer consumer,
                                       List<Integer> multiplicities) throws Exception {
 
-        for (int i = 0; i < sqlRow.getValues().size() && i < sqlRow.getColumnPaths().size(); i++) {
+        for (int i = 0; i < sqlRow.getValues()
+                                  .size() && i < sqlRow.getColumnPaths()
+                                                       .size(); i++) {
             if (Objects.nonNull(sqlRow.getValues()
                                       .get(i))) {
                 consumer.onPropertyStart(sqlRow.getColumnPaths()

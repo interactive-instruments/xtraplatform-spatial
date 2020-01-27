@@ -75,6 +75,17 @@ public class WfsConnectorHttp implements WfsConnector {
     }
 
     @Override
+    public boolean isConnected() {
+        //TODO: test request
+        return true;
+    }
+
+    @Override
+    public Optional<Throwable> getConnectionError() {
+        return Optional.empty();
+    }
+
+    @Override
     public void setQueryEncoder(FeatureQueryEncoderWfs queryEncoder) {
         this.queryEncoder = queryEncoder;
         this.requestEncoder = queryEncoder.getWfsRequestEncoder();
