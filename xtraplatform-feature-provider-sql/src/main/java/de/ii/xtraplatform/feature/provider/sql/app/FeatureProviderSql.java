@@ -31,6 +31,7 @@ import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlFeatureTypeParser;
 import de.ii.xtraplatform.feature.provider.sql.SqlMappingParser;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
+import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableFeatureStoreTypeInfo;
@@ -85,7 +86,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
         this.system = actorSystemProvider.getActorSystem(context, config);
         this.materializer = ActorMaterializer.create(system);
         this.connector = sqlConnector;
-        this.typeInfos = getTypeInfos2(data.getTypes());
+        this.typeInfos = getTypeInfos2(data.getTypes(), ((ConnectionInfoSql)data.getConnectionInfo()).getPathSyntax());
         //TODO: from config
         SqlDialect sqlDialect = new SqlDialectPostGis();
         this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new FilterEncoderSqlNewImpl(), sqlDialect);
@@ -234,9 +235,9 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
                        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private Map<String, FeatureStoreTypeInfo> getTypeInfos2(Map<String, FeatureType> featureTypes) {
-        //TODO: options from data
+    private Map<String, FeatureStoreTypeInfo> getTypeInfos2(Map<String, FeatureType> featureTypes, SqlPathSyntax.Options syntaxOptions) {
         SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
+                                                     .options(syntaxOptions)
                                                      .build();
         SqlFeatureTypeParser mappingParser = new SqlFeatureTypeParser(syntax);
         FeatureStorePathParser pathParser = new FeatureStorePathParser(syntax);

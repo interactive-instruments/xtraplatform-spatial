@@ -318,12 +318,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
         Long featureId = sqlRow.getIds()
                                .get(0);
 
-        //TODO: tracker knows multitables, move there
-        //TODO: tables may occur more than once in path, so we need multiPaths instead of multiTables
-        if (readContext.getMultiTables()
-                       .contains(sqlRow.getName())) {
-            multiplicityTracker.track(sqlRow.getPath(), sqlRow.getIds());
-        }
+        multiplicityTracker.track(sqlRow.getPath(), sqlRow.getIds());
 
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("Multiplicities {} {}", sqlRow.getPath(), multiplicityTracker.getMultiplicitiesForPath(sqlRow.getPath()));

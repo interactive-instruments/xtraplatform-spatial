@@ -10,6 +10,8 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.provider.api.ConnectionInfo;
+import de.ii.xtraplatform.feature.provider.sql.ImmutableOptions;
+import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -38,6 +40,11 @@ public interface ConnectionInfoSql extends ConnectionInfo {
     @Value.Default
     default Dialect getDialect() {
         return Dialect.PGIS;
+    }
+
+    @Value.Default
+    default SqlPathSyntax.Options getPathSyntax() {
+        return new ImmutableOptions.Builder().build();
     }
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json

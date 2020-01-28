@@ -1,5 +1,6 @@
 package de.ii.xtraplatform.feature.provider.sql;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
@@ -129,6 +130,8 @@ public interface SqlPathSyntax {
     }
 
     @Value.Immutable
+    @Value.Style(builder = "new")
+    @JsonDeserialize(builder = ImmutableOptions.Builder.class)
     interface Options {
 
         @Value.Default
@@ -249,7 +252,7 @@ public interface SqlPathSyntax {
 
     @Value.Default
     default Options getOptions() {
-        return ImmutableOptions.builder()
+        return new ImmutableOptions.Builder()
                                .build();
     }
 

@@ -61,10 +61,7 @@ public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
         String increasedMultiplicityKey = null;
         List<String> parentTables = new ArrayList<>();
 
-        for (int i = 0; i < path.size(); i++) {
-            String element = path.get(i);
-            String table = element.substring(element.indexOf("]") + 1);
-
+        for (String table : path) {
             if (currentIds.containsKey(table)) {
                 if (LOGGER.isTraceEnabled()) {
                     LOGGER.trace("TRACKER {} {} {}", table, multiplicityIndex, ids);
@@ -107,7 +104,6 @@ public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
     @Override
     public List<Integer> getMultiplicitiesForPath(List<String> path) {
         return path.stream()
-                   .map(element -> element.substring(element.indexOf("]") + 1))
                    .filter(currentIds::containsKey)
                    .map(table -> currentMultiplicities.getOrDefault(table, 1))
                    .collect(Collectors.toList());

@@ -44,7 +44,7 @@ class SqlRowSlick implements SqlRow {
     @Override
     public String getName() {
         if (Objects.nonNull(attributesContainer)) {
-            return attributesContainer.getName();
+            return attributesContainer.getPath().get(attributesContainer.getPath().size()-1);
         }
         return null;
     }

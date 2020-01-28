@@ -42,7 +42,7 @@ public class FeatureTransformerFromSql2 implements FeatureConsumer {
     private boolean inProperty = false;
     private FeatureProperty geometry;
     private final List<String> fields;
-    private final Map<List<String>, Integer> pathVisitCounter;
+    private final Map<List<String>, Map<List<Integer>, Integer>> pathVisitCounter;
 
     public FeatureTransformerFromSql2(FeatureType featureType, FeatureTransformer2 featureTransformer,
                                       List<String> fields) {
@@ -88,9 +88,11 @@ public class FeatureTransformerFromSql2 implements FeatureConsumer {
         int propertyIndex = 0;
 
         if (propertiesForPath.size() > 1) {
-            pathVisitCounter.putIfAbsent(path, -1);
-            pathVisitCounter.compute(path, (path2, counter) -> counter + 1);
-            propertyIndex = pathVisitCounter.get(path);
+            pathVisitCounter.putIfAbsent(path, new HashMap<>());
+            Map<List<Integer>, Integer> multiPathVisitCounter = pathVisitCounter.get(path);
+            multiPathVisitCounter.putIfAbsent(multiplicities, -1);
+            multiPathVisitCounter.compute(multiplicities, (multiplicities2, counter) -> counter + 1);
+            propertyIndex = multiPathVisitCounter.get(multiplicities);
         }
 
         if (propertiesForPath.size() > propertyIndex) {

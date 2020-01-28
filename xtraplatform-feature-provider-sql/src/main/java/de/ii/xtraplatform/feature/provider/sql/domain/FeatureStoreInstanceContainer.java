@@ -53,7 +53,7 @@ public interface FeatureStoreInstanceContainer extends FeatureStoreAttributesCon
                 .flatMap(relatedContainer -> relatedContainer.getInstanceConnection()
                                                              .stream())
                 .filter(relation -> relation.isOne2N() || relation.isM2N())
-                .map(FeatureStoreRelation::getTargetContainer)
+                .map(featureStoreRelation -> String.format("[%s=%s]%s", featureStoreRelation.getJunctionTarget().orElse(featureStoreRelation.getSourceField()), featureStoreRelation.getTargetField(), featureStoreRelation.getTargetContainer()))
                 .distinct()
                 .collect(ImmutableList.toImmutableList());
     }
