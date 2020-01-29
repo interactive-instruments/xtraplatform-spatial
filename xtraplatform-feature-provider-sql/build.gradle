@@ -1,7 +1,5 @@
 apply plugin: 'scala'
 
-version = '3.0.2'
-
 sourceSets {
     String sharedTestDir = project(':xtraplatform-feature-transformer-api').file("src/test/java")
     test {
