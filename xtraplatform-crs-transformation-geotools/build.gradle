@@ -1,6 +1,4 @@
 
-version = '2.2.4'
-
 dependencies {
     provided project(':xtraplatform-crs-api')
     provided project(':xtraplatform-geotools')    

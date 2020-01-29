@@ -1,6 +1,4 @@
 
-version = '3.0.0'
-
 dependencies {
     provided project(':xtraplatform-feature-provider-api')
     // xml path tracker
