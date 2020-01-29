@@ -14,7 +14,6 @@ public interface LogicalOperation {
 
     @Value.Check
     default void check() {
-        // TODO: double check
         Preconditions.checkState(getPredicates().size() > 1, "a boolean operation must have at least two children, found %s", getPredicates().size());
     }
 

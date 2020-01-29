@@ -8,9 +8,7 @@ public enum ComparisonOperator implements CqlNode {
     GTEQ(">="),
     LT("<"),
     LTEQ("<="),
-    LIKE("LIKE"),
-    BETWEEN("BETWEEN"),
-    IN("IN");
+    LIKE("LIKE");
 
     private final String cqlText;
 

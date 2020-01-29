@@ -1,6 +1,5 @@
 package de.ii.xtraplatform.cql.app
 
-
 import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.CqlPredicate
 import org.skyscreamer.jsonassert.JSONAssert
@@ -122,6 +121,37 @@ class CqlJsonSpec extends Specification {
 
         when: 'writing json'
         String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_4, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'Owner name does not contain "Mike"'() {
+
+        given:
+        String cqlJson = """
+        {
+            "not": [
+                {
+                    "like": {
+                        "property": "owner",
+                        "value": "% Mike %"
+                    }
+                }
+            ]
+        }
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_5
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_5, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -469,13 +499,10 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "within": {
+             "within": {
                 "property": "location",
-                "value": {
-                    "type": "bbox",
-                    "coordinates": [ 33.8, -118, 34, -117.9 ]
-                }
-            }
+                "value": { "bbox": [33.8,-118,34,-117.9] }
+              }
         }
         """
 
@@ -538,13 +565,10 @@ class CqlJsonSpec extends Specification {
                     }
                 },
                 {
-                    "within": {
-                        "property": "geometry",
-                        "value": {
-                            "type": "bbox",
-                            "coordinates": [ 33.8, -118, 34, -117.9 ]
-                        }
-                    }
+                   "within": {
+                      "property": "geometry",
+                      "value": { "bbox": [33.8,-118,34,-117.9] }
+                   }
                 }
             ]
         }
@@ -560,6 +584,174 @@ class CqlJsonSpec extends Specification {
 
         when: 'writing json'
         String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_17, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'Number of floors between 4 and 8'() {
+
+        given:
+        String cqlJson = """
+        {
+            "between": {
+                "property": "floors",
+                "lower": 4,
+                "upper": 8
+            }
+        }
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_18
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_18, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'Owner name is either Mike, John or Tom'() {
+
+        given:
+        String cqlJson = """
+        {
+            "in": {
+                "property": "owner",
+                "values": [ "Mike", "John", "Tom" ],
+                "nocase" : true
+            }
+        }
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_19
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_19, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'owner is NULL'() {
+
+        given:
+        String cqlJson = """
+        {
+            "isNull": {
+                "property": "owner"
+            }
+        }
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_20
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_20, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'owner is not NULL'() {
+
+        given:
+        String cqlJson = """
+        {
+            "not": [
+                {
+                    "isNull": {
+                        "property": "owner"
+                    }
+                }
+            ]
+        }
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_21
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_21, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'Property "owner" exists'() {
+
+        given:
+        String cqlJson = """
+        {
+            "exists": {
+                "property": "owner"
+            }
+        }
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_22
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_22, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'Property "owner" does not exist'() {
+
+        given:
+        String cqlJson = """
+        {
+            "not": [
+                {
+                    "exists": {
+                        "property": "owner"
+                    }
+                }
+            ]
+        }
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_23
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_23, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)

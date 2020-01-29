@@ -2,14 +2,8 @@ package de.ii.xtraplatform.cql.infra;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.*;
-import de.ii.xtraplatform.cql.domain.ImmutableCqlPredicate;
-import de.ii.xtraplatform.cql.domain.ImmutableDuring;
-import de.ii.xtraplatform.cql.domain.ImmutableEq;
-import de.ii.xtraplatform.cql.domain.ImmutableGt;
-import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
-import de.ii.xtraplatform.cql.domain.ImmutableLineString;
-import de.ii.xtraplatform.cql.domain.ImmutablePolygon;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -19,7 +13,6 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     private CqlPredicate wrapInPredicate(CqlNode node) {
         ImmutableCqlPredicate.Builder builder = new ImmutableCqlPredicate.Builder();
 
-        //TODO: add all expressions when implemented
         if (node instanceof And) {
             builder.and((And) node);
         } else if (node instanceof Or) {
@@ -40,8 +33,14 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             builder.lte((Lte) node);
         } else if (node instanceof Between) {
             builder.between((Between) node);
+        } else if (node instanceof In) {
+            builder.inOperator((In) node);
         } else if (node instanceof Like) {
             builder.like((Like) node);
+        } else if (node instanceof IsNull) {
+            builder.isNull((IsNull) node);
+        } else if (node instanceof Exists) {
+            builder.exists((Exists) node);
         } else if (node instanceof After) {
             builder.after((After) node);
         } else if (node instanceof Before) {
@@ -204,9 +203,6 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             case LTEQ:
                 builder = new ImmutableLte.Builder();
                 break;
-            case BETWEEN:
-                builder = new ImmutableBetween.Builder();
-                break;
             default:
                 throw new IllegalStateException("unknown comparison operator: " + comparisonOperator);
         }
@@ -226,10 +222,16 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             Scalar scalar2 = (Scalar) ctx.regularExpression()
                     .accept(this);
 
-            return new ImmutableLike.Builder()
+            CqlNode like = new ImmutableLike.Builder()
                     .operand1(scalar1)
                     .operand2(scalar2)
                     .build();
+
+            if (Objects.nonNull(ctx.NOT()) ) {
+                return Not.of(ImmutableList.of(wrapInPredicate(like)));
+            }
+
+            return like;
         }
         return null;
     }
@@ -237,17 +239,36 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitPropertyIsBetweenPredicate(CqlParser.PropertyIsBetweenPredicateContext ctx) {
 
-        //TODO
-
-        return null;
+        CqlNode property = ctx.scalarExpression(0).accept(this);
+        ScalarLiteral lowerValue = (ScalarLiteral) ctx.scalarExpression(1).accept(this);
+        ScalarLiteral upperValue = (ScalarLiteral) ctx.scalarExpression(2).accept(this);
+        return new ImmutableBetween.Builder()
+                .property(property.toCqlText())
+                .lower(lowerValue)
+                .upper(upperValue)
+                .build();
     }
 
     @Override
     public CqlNode visitPropertyIsNullPredicate(CqlParser.PropertyIsNullPredicateContext ctx) {
 
-        //TODO
+        if (Objects.nonNull(ctx.IS())) {
+            CqlNode property = ctx.scalarExpression()
+                    .accept(this);
+            String propName = property.toCqlText();
 
+            IsNull isNull = new ImmutableIsNull.Builder().property(propName).build();
+            if (Objects.nonNull(ctx.NOT())) {
+                return Not.of(ImmutableList.of(new ImmutableCqlPredicate.Builder()
+                        .isNull(isNull)
+                        .build()));
+            }
+
+            return isNull;
+
+        }
         return null;
+
     }
 
     @Override
@@ -362,7 +383,17 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitExistencePredicate(CqlParser.ExistencePredicateContext ctx) {
 
-        //TODO
+        if (Objects.nonNull(ctx.EXISTS())) {
+            return new ImmutableExists.Builder()
+                    .property(ctx.PropertyName().getText())
+                    .build();
+        } else if (Objects.nonNull(ctx.DOES()) && Objects.nonNull(ctx.NOT()) && Objects.nonNull(ctx.EXIST())) {
+            return Not.of(ImmutableList.of(new ImmutableCqlPredicate.Builder()
+                    .exists(new ImmutableExists.Builder()
+                            .property(ctx.PropertyName().getText())
+                            .build())
+                    .build()));
+        }
 
         return null;
     }
@@ -370,8 +401,15 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitInPredicate(CqlParser.InPredicateContext ctx) {
 
-        //TODO
-        return null;
+        List<ScalarLiteral> values = ImmutableList.of(ctx.characterLiteral(), ctx.numericLiteral())
+                .stream()
+                .flatMap(Collection::stream)
+                .map(v -> (ScalarLiteral) v.accept(this))
+                .collect(Collectors.toList());
+        return new ImmutableIn.Builder()
+                .property(ctx.PropertyName().getText())
+                .values(values)
+                .build();
     }
 
     @Override
@@ -408,8 +446,8 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
     @Override
     public CqlNode visitGeomLiteral(CqlParser.GeomLiteralContext ctx) {
-        return SpatialLiteral.of((Geometry<?>) ctx.getChild(0)
-                                                  .accept(this));
+        CqlNode geomLiteral = ctx.getChild(0).accept(this);
+        return SpatialLiteral.of((Geometry<?>) geomLiteral);
     }
 
     @Override

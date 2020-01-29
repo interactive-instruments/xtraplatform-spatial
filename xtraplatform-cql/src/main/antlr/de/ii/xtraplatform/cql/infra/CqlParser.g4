@@ -41,7 +41,7 @@ comparisonPredicate : binaryComparisonPredicate
 
 binaryComparisonPredicate : scalarExpression ComparisonOperator scalarExpression;
 
-propertyIsLikePredicate :  scalarExpression LIKE regularExpression;
+propertyIsLikePredicate :  scalarExpression (NOT)? LIKE regularExpression;
 
 propertyIsBetweenPredicate : scalarExpression BETWEEN
                              scalarExpression AND scalarExpression;
@@ -178,7 +178,7 @@ temporalLiteral: TemporalLiteral;
 */
 
 existencePredicate : PropertyName EXISTS
-                   | PropertyName DOES NOT EXIST;
+                   | PropertyName DOES MINUS NOT MINUS EXIST;
 
 /*
 #=============================================================================#
@@ -190,7 +190,11 @@ inPredicate : PropertyName IN LEFTPAREN ( characterLiteral |
                                             numericLiteral |
                                             geomLiteral |
                                             temporalLiteral /*|
-                                            function*/ )+ RIGHTPAREN;
+                                            function*/ ) ( COMMA characterLiteral |
+                                                              numericLiteral |
+                                                              geomLiteral |
+                                                              temporalLiteral /*|
+                                                              function*/ )* RIGHTPAREN;
 
 /*
 #=============================================================================#

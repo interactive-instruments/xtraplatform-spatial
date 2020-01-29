@@ -38,14 +38,12 @@ class CqlPredicateExamples {
             .build()
 
     static final CqlPredicate EXAMPLE_5 = new ImmutableCqlPredicate.Builder()
-            .not(Not.of(ImmutableList.of(
-                    new ImmutableCqlPredicate.Builder()
-                            .like(new ImmutableLike.Builder()
-                                    .property("owner")
-                                    .value(ScalarLiteral.of("% Mike %"))
-                                    .build())
-                            .build()
-            )))
+            .not(Not.of(ImmutableList.of(new ImmutableCqlPredicate.Builder()
+                    .like(new ImmutableLike.Builder()
+                            .property("owner")
+                            .value(ScalarLiteral.of("% Mike %"))
+                            .build())
+                    .build())))
             .build()
 
     static final CqlPredicate EXAMPLE_6 = new ImmutableCqlPredicate.Builder()
@@ -110,13 +108,12 @@ class CqlPredicateExamples {
     static final CqlPredicate EXAMPLE_10 = new ImmutableCqlPredicate.Builder()
             .or(Or.of(ImmutableList.of(
                     new ImmutableCqlPredicate.Builder()
-                            .not(Not.of(Collections.singletonList(new ImmutableCqlPredicate.Builder()
+                            .not(Not.of(ImmutableList.of(new ImmutableCqlPredicate.Builder()
                                     .lt(new ImmutableLt.Builder()
                                             .property("floors")
                                             .value(ScalarLiteral.of(5))
                                             .build())
-                                    .build()
-                            )))
+                                    .build())))
                             .build(),
                     EXAMPLE_6
             )))
@@ -205,6 +202,49 @@ class CqlPredicateExamples {
                                             .build()))
                                     .build())
                             .build())))
+            .build()
+
+    static final CqlPredicate EXAMPLE_18 = new ImmutableCqlPredicate.Builder()
+            .between(new ImmutableBetween.Builder()
+                    .property("floors")
+                    .lower(ScalarLiteral.of(4))
+                    .upper(ScalarLiteral.of(8))
+                    .build())
+            .build()
+
+    static final CqlPredicate EXAMPLE_19 = new ImmutableCqlPredicate.Builder()
+            .inOperator(new ImmutableIn.Builder()
+                    .property("owner")
+                    .values(ImmutableList.of(ScalarLiteral.of("Mike"), ScalarLiteral.of("John"), ScalarLiteral.of("Tom")))
+                    .build())
+            .build()
+
+    static final CqlPredicate EXAMPLE_20 = new ImmutableCqlPredicate.Builder()
+            .isNull(new ImmutableIsNull.Builder()
+                    .property("owner")
+                    .build())
+            .build()
+
+    static final CqlPredicate EXAMPLE_21 = new ImmutableCqlPredicate.Builder()
+            .not(Not.of(ImmutableList.of(new ImmutableCqlPredicate.Builder()
+                    .isNull(new ImmutableIsNull.Builder()
+                            .property("owner")
+                            .build())
+                    .build())))
+            .build()
+
+    static final CqlPredicate EXAMPLE_22 = new ImmutableCqlPredicate.Builder()
+            .exists(new ImmutableExists.Builder()
+                    .property("owner")
+                    .build())
+            .build()
+
+    static final CqlPredicate EXAMPLE_23 = new ImmutableCqlPredicate.Builder()
+            .not(Not.of(ImmutableList.of(new ImmutableCqlPredicate.Builder()
+                    .exists(new ImmutableExists.Builder()
+                            .property("owner")
+                            .build())
+                    .build())))
             .build()
 
 }

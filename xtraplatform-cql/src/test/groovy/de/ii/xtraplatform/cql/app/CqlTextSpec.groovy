@@ -1,6 +1,5 @@
 package de.ii.xtraplatform.cql.app
 
-
 import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.CqlPredicate
 import spock.lang.Shared
@@ -80,14 +79,13 @@ class CqlTextSpec extends Specification {
         given:
         String cqlText = "owner LIKE 'Mike%'"
 
-        // TODO: Object comparison fails equal because CQL Text parser doesn't set the 'wildcards' variable
-//        when: 'reading text'
-//        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
-//
-//        then:
-//        actual == CqlPredicateExamples.EXAMPLE_4
-//
-//        and:
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_4
+
+        and:
 
         when: 'writing text'
         String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_4, Cql.Format.TEXT)
@@ -102,14 +100,13 @@ class CqlTextSpec extends Specification {
         given:
         String cqlText = "owner NOT LIKE '% Mike %'"
 
-        //TODO: parser error
-//        when: 'reading text'
-//        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
-//
-//        then:
-//        actual == CqlPredicateExamples.EXAMPLE_5
-//
-//        and:
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_5
+
+        and:
 
         when: 'writing text'
         String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_5, Cql.Format.TEXT)
@@ -363,5 +360,119 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
+    def 'Number of floors between 4 and 8'() {
+        given:
+        String cqlText = "floors BETWEEN 4 AND 8"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_18
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_18, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Owner name is either Mike, John or Tom'() {
+        given:
+        String cqlText = "owner IN ('Mike', 'John', 'Tom')"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_19
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_19, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'owner is NULL'() {
+        given:
+        String cqlText = "owner IS NULL"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_20
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_20, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'owner is not NULL'() {
+        given:
+        String cqlText = "owner IS NOT NULL"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_21
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_21, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+
+    def 'Property "owner" exists'() {
+        given:
+        String cqlText = "owner EXISTS"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_22
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_22, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Property "owner" does not exist'() {
+        given:
+        String cqlText = "owner DOES-NOT-EXIST"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlPredicateExamples.EXAMPLE_23
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_23, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
 
 }
