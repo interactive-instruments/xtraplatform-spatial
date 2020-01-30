@@ -1,5 +1,7 @@
 package de.ii.xtraplatform.cql.domain;
 
+import de.ii.xtraplatform.cql.infra.CqlObjectVisitor;
+
 public interface CqlNode {
 
     default String toCqlText() {
@@ -20,6 +22,10 @@ public interface CqlNode {
      */
     default String toCqlTextNot() {
         return String.format("NOT (%s)", toCqlText());
+    }
+
+    default <T> T accept(CqlObjectVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
 }
