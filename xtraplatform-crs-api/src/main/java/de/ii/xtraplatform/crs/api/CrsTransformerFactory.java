@@ -16,12 +16,15 @@ import java.util.Optional;
  *
  * @author zahnen
  */
-public interface CrsTransformation {
+public interface CrsTransformerFactory {
 
     Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs);
 
-    boolean isCrsAxisOrderEastNorth(String crs);
-
     boolean isCrsSupported(String crs);
-    
+
+    boolean isCrsSupported(EpsgCrs crs);
+
+    boolean isCrs3d(EpsgCrs crs);
+
+    boolean isCrsAxisOrderEastNorth(String crs);
 }

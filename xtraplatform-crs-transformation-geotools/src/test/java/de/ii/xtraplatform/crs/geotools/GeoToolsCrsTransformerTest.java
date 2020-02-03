@@ -15,9 +15,13 @@ import de.ii.xtraplatform.crs.api.EpsgCrs;
 import org.geotools.referencing.CRS;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.operation.MathTransform;
+import org.opengis.referencing.operation.TransformException;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.util.Arrays;
 
 /**
  *
@@ -33,12 +37,34 @@ public class GeoToolsCrsTransformerTest {
     }
 
     @Test(groups = {"default"})
+    public void test3d() throws FactoryException, TransformException {
+
+        CoordinateReferenceSystem sourceCrs = CRS.decode("EPSG:5555");
+        CoordinateReferenceSystem targetCrs = CRS.decode("EPSG:4979", true);
+
+        //CoordinateReferenceSystem sourceCrs = CRS.decode("EPSG:4979");
+        //CoordinateReferenceSystem targetCrs = CRS.decode("EPSG:4979", true);
+
+        MathTransform mathTransform = CRS.findMathTransform(sourceCrs, targetCrs, true);
+
+        System.out.println("BLA: " + mathTransform.toWKT());
+
+        double[] src = {420735.071, 5392914.343, 131.96};
+        double[] trg = new double[3];
+        mathTransform.transform(src, 0, trg, 0, 1);
+
+        System.out.println("SOURCE: " + Arrays.toString(src));
+        System.out.println("TARGET: " + Arrays.toString(trg));
+
+    }
+
+    @Test(groups = {"default"})
     public void testSomeMethod() throws FactoryException  {
         
         CoordinateReferenceSystem scrs = CRS.decode("EPSG:4326");
         CoordinateReferenceSystem tcrs = CRS.decode("EPSG:3857");
 
-        GeoToolsCrsTransformer gct = new GeoToolsCrsTransformer(scrs,tcrs, new EpsgCrs(4326), new EpsgCrs(3857));
+        GeoToolsCrsTransformer gct = new GeoToolsCrsTransformer(scrs,tcrs, new EpsgCrs(4326), new EpsgCrs(3857), preserveHeight);
         
         double x = 50.7164;
         double y = 7.086;

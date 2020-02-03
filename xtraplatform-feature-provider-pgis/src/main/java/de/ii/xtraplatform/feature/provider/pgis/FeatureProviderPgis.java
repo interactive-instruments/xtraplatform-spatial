@@ -23,7 +23,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.akka.ActorSystemProvider;
 import de.ii.xtraplatform.crs.api.BoundingBox;
-import de.ii.xtraplatform.crs.api.CrsTransformation;
+import de.ii.xtraplatform.crs.api.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
@@ -96,7 +96,7 @@ public class FeatureProviderPgis implements FeatureTransactions, TransformingFea
     private Map<String, String> extentQueries;
 
 
-    FeatureProviderPgis(@Context BundleContext context, @Requires ActorSystemProvider actorSystemProvider, @Requires CrsTransformation crsTransformation, @Property(name = ".data") FeatureProviderDataTransformer data, @Property(name = ".connector") SqlConnector connector) {
+    FeatureProviderPgis(@Context BundleContext context, @Requires ActorSystemProvider actorSystemProvider, @Requires CrsTransformerFactory crsTransformerFactory, @Property(name = ".data") FeatureProviderDataTransformer data, @Property(name = ".connector") SqlConnector connector) {
         //TODO: starts akka for every instance, move to singleton
         this.system = actorSystemProvider.getActorSystem(context, config);
         this.materializer = ActorMaterializer.create(system);

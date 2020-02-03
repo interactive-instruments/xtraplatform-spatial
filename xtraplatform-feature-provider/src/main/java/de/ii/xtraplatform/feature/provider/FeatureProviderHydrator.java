@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.crs.api.CrsTransformation;
+import de.ii.xtraplatform.crs.api.CrsTransformerFactory;
 import de.ii.xtraplatform.event.store.EntityHydrator;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderDataV1;
@@ -37,7 +37,7 @@ public class FeatureProviderHydrator implements EntityHydrator<FeatureProviderDa
     private FeatureProviderRegistry featureProviderFactory;
 
     @Requires
-    private CrsTransformation crsTransformerFactory;
+    private CrsTransformerFactory crsTransformerFactory;
 
     @Override
     public Map<String, Object> getInstanceConfiguration(FeatureProviderDataV1 data) {

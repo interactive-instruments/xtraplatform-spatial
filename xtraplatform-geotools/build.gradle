@@ -1,6 +1,6 @@
 
 ext {
-    geotoolsVersion = '19.2'
+    geotoolsVersion = '22.2'
 }
 
 configurations {
@@ -19,8 +19,10 @@ configurations {
 }
 
 dependencies {
+    //embedded group: 'org.geotools', name: 'gt-metadata', version: geotoolsVersion
     embedded group: 'org.geotools', name: 'gt-cql', version: geotoolsVersion
     embedded group: 'org.geotools', name: 'gt-xml', version: geotoolsVersion
+    embedded group: 'org.geotools.xsd', name: 'gt-xsd-wfs', version: geotoolsVersion
     embedded group: 'org.geotools', name: 'gt-referencing', version: geotoolsVersion
     embedded group: 'org.geotools', name: 'gt-epsg-hsql', version: geotoolsVersion
     embedded group: 'org.geotools', name: 'gt-epsg-extension', version: geotoolsVersion
@@ -28,6 +30,7 @@ dependencies {
 
 jar {
     manifest {
+
 /*
         instructionFirst 'Import-Package', 'javax.xml.transform'
         instructionFirst 'Import-Package', 'javax.sql'

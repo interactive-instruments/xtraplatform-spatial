@@ -12,12 +12,13 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.akka.ActorSystemProvider;
 import de.ii.xtraplatform.crs.api.BoundingBox;
-import de.ii.xtraplatform.crs.api.CrsTransformation;
+import de.ii.xtraplatform.crs.api.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.entity.api.EntityComponent;
 import de.ii.xtraplatform.entity.api.handler.Entity;
 import de.ii.xtraplatform.feature.provider.api.AbstractFeatureProvider;
 import de.ii.xtraplatform.feature.provider.api.Feature;
+import de.ii.xtraplatform.feature.provider.api.FeatureCrs;
 import de.ii.xtraplatform.feature.provider.api.FeatureExtents;
 import de.ii.xtraplatform.feature.provider.api.FeatureProvider2;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderDataV1;
@@ -59,17 +60,16 @@ import java.util.concurrent.CompletionStage;
 //@Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = FeatureProviderSql.PROVIDER_TYPE)})
 @EntityComponent
 @Entity(entityType = FeatureProvider2.class, dataType = FeatureProviderDataV1.class, type = "providers")
-public class FeatureProviderSql extends AbstractFeatureProvider implements FeatureProvider2, FeatureQueries, FeatureExtents {
+public class FeatureProviderSql extends AbstractFeatureProvider implements FeatureProvider2, FeatureQueries, FeatureExtents, FeatureCrs {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
-
-    static final String PROVIDER_TYPE = "PGIS";
 
     private static final Config config = ConfigFactory.parseMap(new ImmutableMap.Builder<String, Object>()
             .build());
 
     private final ActorSystem system;
     private final ActorMaterializer materializer;
+    private final CrsTransformerFactory crsTransformerFactory;
     private final SqlConnector connector;
     private final Map<String, FeatureStoreTypeInfo> typeInfos;
     private final FeatureStoreQueryGeneratorSql queryGeneratorSql;
@@ -79,12 +79,13 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
 
     public FeatureProviderSql(@Context BundleContext context,
                               @Requires ActorSystemProvider actorSystemProvider,
-                              @Requires CrsTransformation crsTransformation,
+                              @Requires CrsTransformerFactory crsTransformerFactory,
                               @Property(name = "data") FeatureProviderDataV1 data,
                               @Property(name = ".connector") SqlConnector sqlConnector) {
         //TODO: starts akka for every instance, move to singleton
         this.system = actorSystemProvider.getActorSystem(context, config);
         this.materializer = ActorMaterializer.create(system);
+        this.crsTransformerFactory = crsTransformerFactory;
         this.connector = sqlConnector;
         this.typeInfos = getTypeInfos2(data.getTypes(), ((ConnectionInfoSql)data.getConnectionInfo()).getPathSyntax());
         //TODO: from config
@@ -205,9 +206,14 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
     }
 
     @Override
-    public boolean supportsCrs(EpsgCrs crs) {
+    public boolean isCrsSupported(EpsgCrs crs) {
         return getData().getNativeCrs()
-                        .equals(crs);
+                        .equals(crs) || crsTransformerFactory.isCrsSupported(crs);
+    }
+
+    @Override
+    public boolean is3dSupported() {
+        return crsTransformerFactory.isCrs3d(getData().getNativeCrs());
     }
 
     //TODO: from data.getTypes()

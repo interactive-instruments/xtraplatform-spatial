@@ -12,6 +12,10 @@ public interface FeatureProvider2 extends PersistentEntity {
         return ENTITY_TYPE;
     }
 
+    @Override
+    FeatureProviderDataV1 getData();
+
+/*
     default String getProviderType() {
         return getData().getProviderType();
     }
@@ -19,22 +23,7 @@ public interface FeatureProvider2 extends PersistentEntity {
     default String getFeatureProviderType() {
         return getData().getFeatureProviderType();
     }
-
-    @Override
-    FeatureProviderDataV1 getData();
-
-
-
-    //TODO: FeatureCrs???
-    //TODO: is there a way to move the whole crs transformation stuff to the provider?
-    // as the crs is part of the query, crs transformation should be part of the normalization
-    boolean supportsCrs(EpsgCrs crs);
-
-    //TODO: let transformer handle swapping again
-    @Deprecated
-    default boolean shouldSwapCoordinates(EpsgCrs crs) {
-        return false;
-    }
+*/
 
 
 
@@ -80,5 +69,16 @@ public interface FeatureProvider2 extends PersistentEntity {
             throw new UnsupportedOperationException();
         }
         return (FeatureTransactions) this;
+    }
+
+    default boolean supportsCrs() {
+        return this instanceof FeatureCrs;
+    }
+
+    default FeatureCrs crs() {
+        if (!supportsCrs()) {
+            throw new UnsupportedOperationException();
+        }
+        return (FeatureCrs) this;
     }
 }

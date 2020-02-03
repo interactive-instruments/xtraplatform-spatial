@@ -125,13 +125,14 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
                         return super.visit(expression, extraData);
                     }
 
+                    //TODO: test if still works
                     @Override
                     public Object visit(BBOX filter, Object extraData) {
                         if (LOGGER.isTraceEnabled()) {
-                            LOGGER.trace("BBOX {} | {}, {}, {}, {}", filter.getPropertyName(), filter.getMinX(), filter.getMinY(), filter.getMaxX(), filter.getMaxY());
+                            LOGGER.trace("BBOX {} | {}, {}, {}, {}", filter.getExpression1(), filter.getBounds().getMinX(), filter.getBounds().getMinY(), filter.getBounds().getMaxX(), filter.getBounds().getMaxY());
                         }
 
-                        conditions.add(String.format(Locale.US, "ST_Intersects({{prop}}, ST_GeomFromText('POLYGON((%1$f %2$f,%3$f %2$f,%3$f %4$f,%1$f %4$f,%1$f %2$f))',%5$s)) = 'TRUE'", filter.getMinX(), filter.getMinY(), filter.getMaxX(), filter.getMaxY(), new EpsgCrs(filter.getSRS()).getCode()));
+                        conditions.add(String.format(Locale.US, "ST_Intersects({{prop}}, ST_GeomFromText('POLYGON((%1$f %2$f,%3$f %2$f,%3$f %4$f,%1$f %4$f,%1$f %2$f))',%5$s)) = 'TRUE'", filter.getBounds().getMinX(), filter.getBounds().getMinY(), filter.getBounds().getMaxX(), filter.getBounds().getMaxY(), new EpsgCrs(filter.getBounds().getCoordinateReferenceSystem().toString()).getCode()));
 
                         return super.visit(filter, extraData);
                     }

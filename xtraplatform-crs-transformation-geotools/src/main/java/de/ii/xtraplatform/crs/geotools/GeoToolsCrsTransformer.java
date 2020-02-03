@@ -24,9 +24,9 @@ import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import si.uom.SI;
 
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 
 /**
  *
@@ -43,17 +43,20 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
     private final double sourceUnitEquivalentInMeters;
     private final double targetUnitEquivalentInMeters;
     private final boolean needsAxisSwap;
+    //TODO
+    private final boolean preserveHeight;
 
     GeoToolsCrsTransformer(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
-                           EpsgCrs origSourceCrs, EpsgCrs origTargetCrs) throws FactoryException {
+                           EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, boolean preserveHeight) throws FactoryException {
         this.sourceCrs = new EpsgCrs(sourceCrs.getIdentifiers().iterator().next().toString());
         this.targetCrs = origTargetCrs;
         this.mathTransform = CRS.findMathTransform(sourceCrs, targetCrs, true);
 
-        Unit sourceUnit = CRS.getHorizontalCRS(sourceCrs).getCoordinateSystem().getAxis(0).getUnit();
-        Unit targetUnit = CRS.getHorizontalCRS(targetCrs).getCoordinateSystem().getAxis(0).getUnit();
-        boolean isSourceMetric = sourceUnit == SI.METER;
-        this.isTargetMetric = targetUnit == SI.METER;//targetCrs instanceof ProjectedCRS;
+        Unit<?> sourceUnit = CRS.getHorizontalCRS(sourceCrs).getCoordinateSystem().getAxis(0).getUnit();
+        Unit<?> targetUnit = CRS.getHorizontalCRS(targetCrs).getCoordinateSystem().getAxis(0).getUnit();
+        //TODO: test if METRE is really returned
+        boolean isSourceMetric = sourceUnit == SI.METRE;
+        this.isTargetMetric = targetUnit == SI.METRE;//targetCrs instanceof ProjectedCRS;
         this.sourceUnitEquivalentInMeters = isSourceMetric ? 1 : (Math.PI/180.00) * CRS.getEllipsoid(sourceCrs).getSemiMajorAxis();
         this.targetUnitEquivalentInMeters = isTargetMetric ? 1 : (Math.PI/180.00) * CRS.getEllipsoid(targetCrs).getSemiMajorAxis();
 
@@ -73,6 +76,8 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
         boolean sourceNeedsAxisSwap = origSourceCrs.isForceLongitudeFirst() && sourceDirection == sourceOrigDirection;
         boolean targetNeedsAxisSwap = origTargetCrs.isForceLongitudeFirst() && targetDirection == targetOrigDirection;
         this.needsAxisSwap = sourceNeedsAxisSwap != targetNeedsAxisSwap;
+        this.preserveHeight = preserveHeight;
+
         //LOGGER.debug("AXIS SWAP: {} {} {} {}, {} {} {}", needsAxisSwap, origSourceCrs.getCode(), sourceNeedsAxisSwap, sourceDirection, origTargetCrs.getCode(), targetNeedsAxisSwap, targetDirection);
     }
 

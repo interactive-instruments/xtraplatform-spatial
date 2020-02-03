@@ -19,6 +19,7 @@ import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.AbstractFeatureProvider;
 import de.ii.xtraplatform.feature.provider.api.Feature;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
+import de.ii.xtraplatform.feature.provider.api.FeatureCrs;
 import de.ii.xtraplatform.feature.provider.api.FeatureMetadata;
 import de.ii.xtraplatform.feature.provider.api.FeatureProperty;
 import de.ii.xtraplatform.feature.provider.api.FeatureProvider2;
@@ -82,7 +83,7 @@ import static de.ii.xtraplatform.feature.provider.wfs.FeatureProviderWfs.PROVIDE
  */
 @Component
 @Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = PROVIDER_TYPE)})
-public class FeatureProviderWfs extends AbstractFeatureProvider implements FeatureProvider2, FeatureQueries, FeatureQueriesPassThrough, FeatureMetadata, FeatureSchema, FeatureProviderGenerator {
+public class FeatureProviderWfs extends AbstractFeatureProvider implements FeatureProvider2, FeatureQueries, FeatureQueriesPassThrough, FeatureCrs, FeatureMetadata, FeatureSchema, FeatureProviderGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
 
@@ -286,7 +287,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
     }
 
     @Override
-    public boolean supportsCrs(EpsgCrs crs) {
+    public boolean isCrsSupported(EpsgCrs crs) {
         return data.getNativeCrs()
                    .getCode() == crs.getCode()
                 || data.getOtherCrs()
@@ -297,12 +298,12 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
     //TODO: can't the crs transformer handle the swapping, then we can remove this
     @Override
     public boolean shouldSwapCoordinates(EpsgCrs crs) {
-        return supportsCrs(crs) && Stream.concat(Stream.of(data.getNativeCrs()), data.getOtherCrs()
-                                                                                     .stream())
-                                         .filter(epsgCrs -> epsgCrs.getCode() == crs.getCode())
-                                         .findFirst()
-                                         .map(epsgCrs -> epsgCrs.isForceLongitudeFirst() != crs.isForceLongitudeFirst())
-                                         .orElse(false);
+        return isCrsSupported(crs) && Stream.concat(Stream.of(data.getNativeCrs()), data.getOtherCrs()
+                                                                                        .stream())
+                                            .filter(epsgCrs -> epsgCrs.getCode() == crs.getCode())
+                                            .findFirst()
+                                            .map(epsgCrs -> epsgCrs.isForceLongitudeFirst() != crs.isForceLongitudeFirst())
+                                            .orElse(false);
     }
 
     //@Override
@@ -439,7 +440,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
                 boolean useProviderDefaultCrs = data.getNativeCrs()
                                                     .getCode() == query.getCrs()
                                                                        .getCode()
-                        || !supportsCrs(query.getCrs());
+                        || !isCrsSupported(query.getCrs());
 
                 FeatureQuery finalQuery = useProviderDefaultCrs ? ImmutableFeatureQuery.builder()
                                                                                        .from(query)
@@ -509,7 +510,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
                 boolean useProviderDefaultCrs = data.getNativeCrs()
                                                     .getCode() == query.getCrs()
                                                                        .getCode()
-                        || !supportsCrs(query.getCrs());
+                        || !isCrsSupported(query.getCrs());
 
                 FeatureQuery finalQuery = useProviderDefaultCrs ? ImmutableFeatureQuery.builder()
                                                                                        .from(query)
