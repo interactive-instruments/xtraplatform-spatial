@@ -1,4 +1,4 @@
-package de.ii.xtraplatform.crs.app;
+package de.ii.xtraplatform.crs.infra;
 
 import org.geotools.factory.Hints;
 import org.geotools.referencing.factory.epsg.CoordinateOperationFactoryUsingWKT;
@@ -12,14 +12,14 @@ import java.net.URL;
  *
  * @author Oscar Fonts
  */
-public class CustomTransformations extends CoordinateOperationFactoryUsingWKT
+public class GeoToolsCustomTransformations extends CoordinateOperationFactoryUsingWKT
         implements CoordinateOperationAuthorityFactory {
 
-    public CustomTransformations() {
+    public GeoToolsCustomTransformations() {
         super(null, MAXIMUM_PRIORITY);
     }
 
-    public CustomTransformations(Hints userHints) {
+    public GeoToolsCustomTransformations(Hints userHints) {
         super(userHints, MAXIMUM_PRIORITY);
     }
 
@@ -30,6 +30,6 @@ public class CustomTransformations extends CoordinateOperationFactoryUsingWKT
      * @return The URL, or {@code null} if none.
      */
     protected URL getDefinitionsURL() {
-        return CustomTransformations.class.getResource("/" + FILENAME);
+        return GeoToolsCustomTransformations.class.getResource("/" + FILENAME);
     }
 }

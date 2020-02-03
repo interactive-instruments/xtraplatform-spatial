@@ -8,7 +8,7 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.crs.app;
+package de.ii.xtraplatform.crs.infra;
 
 import de.ii.xtraplatform.geometries.domain.CoordinateTuple;
 import de.ii.xtraplatform.geometries.domain.EpsgCrs;
