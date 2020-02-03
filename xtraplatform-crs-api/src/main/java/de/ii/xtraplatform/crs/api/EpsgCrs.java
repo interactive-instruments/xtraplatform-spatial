@@ -5,14 +5,12 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 import java.util.Objects;
+import java.util.Optional;
 
 @Value.Immutable
 @Value.Style(builder = "new")
 @JsonDeserialize(builder = ImmutableEpsgCrs.Builder.class)
 public interface EpsgCrs {
-
-    String CRS84 = "http://www.opengis.net/def/crs/OGC/1.3/CRS84";
-    String CRS84h = "http://www.opengis.net/def/crs/OGC/0/CRS84h";
 
     enum Force {LON_LAT, LAT_LON}
 
@@ -28,11 +26,9 @@ public interface EpsgCrs {
     }
 
     static EpsgCrs fromString(String prefixedCode) {
-        if (Objects.equals(prefixedCode, CRS84)) {
-            return of(4326, Force.LON_LAT);
-        }
-        if (Objects.equals(prefixedCode, CRS84h)) {
-            return of(4979, Force.LON_LAT);
+        Optional<EpsgCrs> ogcCrs = OgcCrs.fromString(prefixedCode);
+        if (ogcCrs.isPresent()) {
+            return ogcCrs.get();
         }
 
         int code;
@@ -78,11 +74,11 @@ public interface EpsgCrs {
 
     @Value.Lazy
     default String toUriString() {
-        if (getCode() == 4326 && getForceLonLat()) {
-            return CRS84;
+        if (Objects.equals(this, OgcCrs.CRS84)) {
+            return OgcCrs.CRS84_URI;
         }
-        if (getCode() == 4979 && getForceLonLat()) {
-            return CRS84h;
+        if (Objects.equals(this, OgcCrs.CRS84h)) {
+            return OgcCrs.CRS84h_URI;
         }
         return String.format("http://www.opengis.net/def/crs/EPSG/0/%d", getCode());
     }
