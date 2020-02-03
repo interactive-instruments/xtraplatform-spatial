@@ -53,9 +53,9 @@ public class OGCPolygonFilterExpression extends OGCFilterExpression {
         intersects.appendChild(polygon);
 
         if (version.isGreaterOrEqual(FES.VERSION._2_0_0)) {
-            polygon.setAttribute(GML.getWord(version.getGmlVersion(), GML.VOCABULARY.SRSNAME), poly.getSpatialReference().getAsUrn());
+            polygon.setAttribute(GML.getWord(version.getGmlVersion(), GML.VOCABULARY.SRSNAME), poly.getCrs().toUrnString());
         } else {
-            polygon.setAttribute(GML.getWord(version.getGmlVersion(), GML.VOCABULARY.SRSNAME), poly.getSpatialReference().getAsSimple());
+            polygon.setAttribute(GML.getWord(version.getGmlVersion(), GML.VOCABULARY.SRSNAME), poly.getCrs().toSimpleString());
         }
         polygon.setAttribute(GML.getWord(version.getGmlVersion(), GML.VOCABULARY.SRSDIMENSION), "2");
 

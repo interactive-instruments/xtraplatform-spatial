@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.ogc.api.wfs;
 
-import org.locationtech.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Envelope;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.WFS;
@@ -22,8 +22,8 @@ import org.geotools.geometry.jts.LiteCoordinateSequence;
 import org.geotools.gml2.SrsSyntax;
 import org.geotools.gml3.v3_2.GML;
 import org.geotools.gml3.v3_2.bindings.EnvelopeTypeBinding;
-import org.geotools.xsd.Configuration;
-import org.geotools.xsd.Encoder;
+import org.geotools.xml.Configuration;
+import org.geotools.xml.Encoder;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory;
 import org.opengis.filter.expression.Literal;
@@ -116,7 +116,7 @@ public class FilterEncoder {
             if (box.getCoordinateReferenceSystem() != null) {
                 env = new CrsEnvelope(box.getMinX(), box.getMaxX(), box.getMinY(), box.getMaxY(), box.getCoordinateReferenceSystem().toString());
             } else {
-                env = new CrsEnvelope(box.getMinX(), box.getMaxX(), box.getMinY(), box.getMaxY(), new EpsgCrs(4326).getAsUri());
+                env = new CrsEnvelope(box.getMinX(), box.getMaxX(), box.getMinY(), box.getMaxY(), EpsgCrs.of(4326).toUriString());
             }
 
             properties.add(new Object[]{ENVELOPE_PARTICLE2, env});

@@ -270,7 +270,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
         //TODO: immutable
         //TODO: really provide fallback, or better move to caller?
         //TODO: has to be in native crs, otherwise it will not work
-        BoundingBox boundingBoxFallback = new BoundingBox(-180.0D, -90.0D, 180.0D, 90.0D, new EpsgCrs(4326));
+        BoundingBox boundingBoxFallback = new BoundingBox(-180.0D, -90.0D, 180.0D, 90.0D, EpsgCrs.of(4326));
 
         if (!typeInfo.isPresent()) {
             return boundingBoxFallback;

@@ -16,18 +16,18 @@ package de.ii.xtraplatform.crs.api;
  */
 public abstract class Geometry {
 
-    protected EpsgCrs spatialReference;
+    protected EpsgCrs crs;
     protected double[] coordinates;
 
-    public double[] getCoords() {
+    public double[] getCoordinates() {
         return coordinates;
     }
 
-    public EpsgCrs getSpatialReference() {
-        return spatialReference;
+    public EpsgCrs getCrs() {
+        return crs;
     }
 
-    public void setSpatialReference(EpsgCrs spatialReference) {
-        this.spatialReference = spatialReference;
+    public void setCrs(EpsgCrs crs) {
+        this.crs = crs;
     }
 }

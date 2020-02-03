@@ -1,9 +1,11 @@
 /**
  * Copyright 2019 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * bla
  */
 /**
  * bla
@@ -16,38 +18,39 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  *
  * @author fischer
  */
+//TODO: immutable
 public class BoundingBox {
     private double xmin;
     private double ymin;
     private double xmax;
     private double ymax;
-    private EpsgCrs spatialReference;
+    private EpsgCrs crs;
 
     public BoundingBox() {
-        this(-180.0, -90.0, 180.0, 90.0, new EpsgCrs(4326));
+        this(-180.0, -90.0, 180.0, 90.0, EpsgCrs.of(4326));
     }
 
-    public BoundingBox(double xmin, double ymin, double xmax, double ymax, EpsgCrs sr) {
+    public BoundingBox(double xmin, double ymin, double xmax, double ymax, EpsgCrs crs) {
         this.xmin = xmin;
         this.xmax = xmax;
         this.ymin = ymin;
         this.ymax = ymax;
 
-        this.spatialReference = sr;
+        this.crs = crs;
     }
-    
-    public BoundingBox(double [] coords, EpsgCrs sr) {
+
+    public BoundingBox(double[] coords, EpsgCrs crs) {
         this.xmin = coords[0];
         this.ymin = coords[1];
         this.xmax = coords[2];
         this.ymax = coords[3];
 
-        this.spatialReference = sr;
+        this.crs = crs;
     }
 
     @JsonIgnore
-    public double [] getCoords(){
-        double [] out = {xmin, ymin, xmax, ymax};
+    public double[] getCoords() {
+        double[] out = {xmin, ymin, xmax, ymax};
         return out;
     }
 
@@ -76,7 +79,7 @@ public class BoundingBox {
     }
 
     public double getYmax() {
-         return ymax;
+        return ymax;
     }
 
     public void setYmax(double ymax) {
@@ -84,17 +87,17 @@ public class BoundingBox {
     }
 
     public EpsgCrs getEpsgCrs() {
-        return spatialReference;
+        return crs;
     }
 
-    public void setEpsgCrs(EpsgCrs spatialReference) {
-        this.spatialReference = spatialReference;
+    public void setEpsgCrs(EpsgCrs crs) {
+        this.crs = crs;
     }
 
     @Override
     public String toString() {
-        return "(" + xmin + ", " + ymin + ", " + xmax + ", " + ymax + ", " + spatialReference.getAsSimple() + ')';
+        return "(" + xmin + ", " + ymin + ", " + xmax + ", " + ymax + ", " + crs.toSimpleString() + ')';
     }
-    
-    
+
+
 }

@@ -302,7 +302,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
                                                                                         .stream())
                                             .filter(epsgCrs -> epsgCrs.getCode() == crs.getCode())
                                             .findFirst()
-                                            .map(epsgCrs -> epsgCrs.isForceLongitudeFirst() != crs.isForceLongitudeFirst())
+                                            .map(epsgCrs -> epsgCrs.getForceLonLat() != crs.getForceLonLat())
                                             .orElse(false);
     }
 

@@ -69,7 +69,7 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
     @Override
     public void analyzeFeatureTypeDefaultCrs(String featureTypeName, String crs) {
         //TODO usage with Immutable Builder
-        featureProviderDataBuilder.nativeCrs(new EpsgCrs(crs));
+        featureProviderDataBuilder.nativeCrs(EpsgCrs.fromString(crs));
     }
 
     @Override

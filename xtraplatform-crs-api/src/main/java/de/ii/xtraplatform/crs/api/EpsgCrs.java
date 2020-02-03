@@ -1,121 +1,89 @@
-/**
- * Copyright 2019 interactive instruments GmbH
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-/**
- * bla
- */
 package de.ii.xtraplatform.crs.api;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.immutables.value.Value;
 
-/**
- *
- * @author zahnen
- */
-public class EpsgCrs {
+import java.util.Objects;
 
-    private static final String SIMPLE_PREFIX = "EPSG:";
-    private static final String URN_PREFIX = "urn:ogc:def:crs:EPSG::";
-    private static final String URI_PREFIX = "http://www.opengis.net/def/crs/EPSG/0/";
-    private static final String CRS84 = "http://www.opengis.net/def/crs/OGC/1.3/CRS84";
-    private int code;
-    private boolean forceLongitudeFirst = false;
+@Value.Immutable
+@Value.Style(builder = "new")
+@JsonDeserialize(builder = ImmutableEpsgCrs.Builder.class)
+public interface EpsgCrs {
 
-    public EpsgCrs() {
-        this.code = -1;
-        this.forceLongitudeFirst = false;
+    String CRS84 = "http://www.opengis.net/def/crs/OGC/1.3/CRS84";
+    String CRS84h = "http://www.opengis.net/def/crs/OGC/0/CRS84h";
+
+    enum Force {LON_LAT, LAT_LON}
+
+    static EpsgCrs of(int code) {
+        return ImmutableEpsgCrs.of(code);
     }
 
-    public EpsgCrs(int code) {
-        this();
-        this.code = code;
+    static EpsgCrs of(int code, Force force) {
+        return new ImmutableEpsgCrs.Builder().code(code)
+                                             .forceLonLat(force == Force.LON_LAT)
+                                             .forceLatLon(force == Force.LAT_LON)
+                                             .build();
     }
 
-    public EpsgCrs(int code, boolean forceLongitudeFirst) {
-        this(code);
-        this.forceLongitudeFirst = forceLongitudeFirst;
-    }
-
-    public EpsgCrs(String prefixedCode) {
-        this(parsePrefixedCode(prefixedCode));
-    }
-
-    public int getCode() {
-        return code;
-    }
-
-    public void setCode(int code) {
-        this.code = code;
-    }
-
-    public boolean isForceLongitudeFirst() {
-        return forceLongitudeFirst;
-    }
-
-    public void setForceLongiduteFirst(boolean forceLongitudeFirst) {
-        this.forceLongitudeFirst = forceLongitudeFirst;
-    }
-
-    @JsonIgnore
-    public String getAsSimple() {
-        return SIMPLE_PREFIX.concat(Integer.toString(code));
-    }
-
-    @JsonIgnore
-    public String getAsUrn() {
-        return URN_PREFIX.concat(Integer.toString(code));
-    }
-
-    @JsonIgnore
-    public String getAsUri() {
-        if (code == 4326 && forceLongitudeFirst) {
-            return CRS84;
+    static EpsgCrs fromString(String prefixedCode) {
+        if (Objects.equals(prefixedCode, CRS84)) {
+            return of(4326, Force.LON_LAT);
         }
-        return URI_PREFIX.concat(Integer.toString(code));
-    }
+        if (Objects.equals(prefixedCode, CRS84h)) {
+            return of(4979, Force.LON_LAT);
+        }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        final EpsgCrs other = (EpsgCrs) obj;
-        if (code != other.getCode() || forceLongitudeFirst != other.isForceLongitudeFirst())
-            return false;
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = code;
-        result = 31 * result + (forceLongitudeFirst ? 1 : 0);
-        return result;
-    }
-
-    private static int parsePrefixedCode(String prefixedCode) {
-        int code = -1;
-
+        int code;
         try {
-            code = Integer.valueOf(prefixedCode.substring(prefixedCode.lastIndexOf(":") + 1));
+            code = Integer.parseInt(prefixedCode.substring(prefixedCode.lastIndexOf(":") + 1));
         } catch (NumberFormatException e) {
             try {
-                code = Integer.valueOf(prefixedCode.substring(prefixedCode.lastIndexOf("/") + 1));
+                code = Integer.parseInt(prefixedCode.substring(prefixedCode.lastIndexOf("/") + 1));
             } catch (NumberFormatException e2) {
                 try {
-                    code = Integer.valueOf(prefixedCode);
+                    code = Integer.parseInt(prefixedCode);
                 } catch (NumberFormatException e3) {
-                    // ignore
+                    throw new IllegalArgumentException("Could not parse CRS: " + prefixedCode);
                 }
             }
         }
+        return ImmutableEpsgCrs.of(code);
+    }
 
-        return code;
+    @Value.Parameter
+    int getCode();
+
+    @JsonAlias("forceLongitudeFirst")
+    @Value.Default
+    default boolean getForceLonLat() {
+        return false;
+    }
+
+    @Value.Default
+    default boolean getForceLatLon() {
+        return false;
+    }
+
+    @Value.Lazy
+    default String toSimpleString() {
+        return String.format("EPSG:%d", getCode());
+    }
+
+    @Value.Lazy
+    default String toUrnString() {
+        return String.format("urn:ogc:def:crs:EPSG::%d", getCode());
+    }
+
+    @Value.Lazy
+    default String toUriString() {
+        if (getCode() == 4326 && getForceLonLat()) {
+            return CRS84;
+        }
+        if (getCode() == 4979 && getForceLonLat()) {
+            return CRS84h;
+        }
+        return String.format("http://www.opengis.net/def/crs/EPSG/0/%d", getCode());
     }
 }

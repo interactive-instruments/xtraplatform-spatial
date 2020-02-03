@@ -10,8 +10,9 @@
  */
 package de.ii.xtraplatform.crs.api;
 
-import java.util.Random;
 import junit.framework.Assert;
+
+import java.util.Random;
 
 /**
  *
@@ -31,7 +32,7 @@ public class BoundingBoxTransformerTest {
 
         BBT bbt = new BBT();
 
-        EpsgCrs crs = new EpsgCrs();
+        EpsgCrs crs = EpsgCrs.of(4326);
 
         // test equality
         BoundingBox b = new BoundingBox(1, 2, 3, 4, crs);

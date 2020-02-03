@@ -24,9 +24,9 @@ import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import si.uom.SI;
 
-import javax.measure.Unit;
+import javax.measure.unit.SI;
+import javax.measure.unit.Unit;
 
 /**
  *
@@ -48,33 +48,33 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
 
     GeoToolsCrsTransformer(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
                            EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, boolean preserveHeight) throws FactoryException {
-        this.sourceCrs = new EpsgCrs(sourceCrs.getIdentifiers().iterator().next().toString());
+        this.sourceCrs = EpsgCrs.fromString(sourceCrs.getIdentifiers().iterator().next().toString());
         this.targetCrs = origTargetCrs;
         this.mathTransform = CRS.findMathTransform(sourceCrs, targetCrs, true);
 
         Unit<?> sourceUnit = CRS.getHorizontalCRS(sourceCrs).getCoordinateSystem().getAxis(0).getUnit();
         Unit<?> targetUnit = CRS.getHorizontalCRS(targetCrs).getCoordinateSystem().getAxis(0).getUnit();
         //TODO: test if METRE is really returned
-        boolean isSourceMetric = sourceUnit == SI.METRE;
-        this.isTargetMetric = targetUnit == SI.METRE;//targetCrs instanceof ProjectedCRS;
+        boolean isSourceMetric = sourceUnit == SI.METER;
+        this.isTargetMetric = targetUnit == SI.METER;//targetCrs instanceof ProjectedCRS;
         this.sourceUnitEquivalentInMeters = isSourceMetric ? 1 : (Math.PI/180.00) * CRS.getEllipsoid(sourceCrs).getSemiMajorAxis();
         this.targetUnitEquivalentInMeters = isTargetMetric ? 1 : (Math.PI/180.00) * CRS.getEllipsoid(targetCrs).getSemiMajorAxis();
 
         AxisDirection sourceDirection = sourceCrs.getCoordinateSystem()
                                            .getAxis(0)
                                            .getDirection();
-        AxisDirection sourceOrigDirection = CRS.decode(this.sourceCrs.getAsSimple()).getCoordinateSystem()
+        AxisDirection sourceOrigDirection = CRS.decode(this.sourceCrs.toSimpleString()).getCoordinateSystem()
                                                  .getAxis(0)
                                                  .getDirection();
         AxisDirection targetDirection = targetCrs.getCoordinateSystem()
                                                  .getAxis(0)
                                                  .getDirection();
 
-        AxisDirection targetOrigDirection = CRS.decode(new EpsgCrs(targetCrs.getIdentifiers().iterator().next().toString()).getAsSimple()).getCoordinateSystem()
+        AxisDirection targetOrigDirection = CRS.decode(EpsgCrs.fromString(targetCrs.getIdentifiers().iterator().next().toString()).toSimpleString()).getCoordinateSystem()
                                                .getAxis(0)
                                                .getDirection();
-        boolean sourceNeedsAxisSwap = origSourceCrs.isForceLongitudeFirst() && sourceDirection == sourceOrigDirection;
-        boolean targetNeedsAxisSwap = origTargetCrs.isForceLongitudeFirst() && targetDirection == targetOrigDirection;
+        boolean sourceNeedsAxisSwap = origSourceCrs.getForceLonLat() && sourceDirection == sourceOrigDirection;
+        boolean targetNeedsAxisSwap = origTargetCrs.getForceLonLat() && targetDirection == targetOrigDirection;
         this.needsAxisSwap = sourceNeedsAxisSwap != targetNeedsAxisSwap;
         this.preserveHeight = preserveHeight;
 

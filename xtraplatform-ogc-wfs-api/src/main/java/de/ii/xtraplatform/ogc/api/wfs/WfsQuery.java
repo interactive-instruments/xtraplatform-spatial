@@ -116,7 +116,7 @@ public class WfsQuery {
 
     private String getCrs(WFS.VERSION version) {
         if (this.crs != null) {
-            return crs.getAsSimple();
+            return crs.toSimpleString();
         }
         return null;
     }

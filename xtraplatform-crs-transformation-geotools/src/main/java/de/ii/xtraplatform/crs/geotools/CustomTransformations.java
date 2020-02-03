@@ -1,12 +1,10 @@
 package de.ii.xtraplatform.crs.geotools;
 
-import java.io.File;
-import java.net.URL;
-import java.util.logging.Level;
+import org.geotools.factory.Hints;
 import org.geotools.referencing.factory.epsg.CoordinateOperationFactoryUsingWKT;
-import org.geotools.util.URLs;
-import org.geotools.util.factory.Hints;
 import org.opengis.referencing.operation.CoordinateOperationAuthorityFactory;
+
+import java.net.URL;
 
 /**
  * Authority allowing users to define their own CoordinateOperations in a separate file. Will

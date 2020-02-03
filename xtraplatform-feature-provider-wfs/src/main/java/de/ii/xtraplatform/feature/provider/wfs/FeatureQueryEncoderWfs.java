@@ -8,10 +8,7 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import akka.japi.Pair;
-import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
-import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
@@ -57,7 +54,6 @@ import org.w3c.dom.Element;
 import org.xml.sax.helpers.NamespaceSupport;
 
 import javax.xml.namespace.QName;
-import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;

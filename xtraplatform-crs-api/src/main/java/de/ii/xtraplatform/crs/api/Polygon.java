@@ -26,7 +26,7 @@ public class Polygon extends Geometry {
     public Polygon(double[] coordinates, EpsgCrs sr) {
         this();
         this.coordinates = coordinates;
-        this.spatialReference = sr;
+        this.crs = sr;
     }
 
 
@@ -35,7 +35,7 @@ public class Polygon extends Geometry {
     }
 
     public Polygon(String[] coordinates, String srs) {
-        this(coordinates, new EpsgCrs(Integer.parseInt(srs)));
+        this(coordinates, EpsgCrs.of(Integer.parseInt(srs)));
     }
 
     public void setRings(List<List<List<Double>>> rings) {

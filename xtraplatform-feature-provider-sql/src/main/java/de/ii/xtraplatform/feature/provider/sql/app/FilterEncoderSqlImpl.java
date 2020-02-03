@@ -140,7 +140,9 @@ public class FilterEncoderSqlImpl implements FilterEncoderSql {
                     public Object visit(BBOX filter, Object extraData) {
                         LOGGER.debug("BBOX {} | {}, {}, {}, {}", filter.getExpression1(), filter.getBounds().getMinX(), filter.getBounds().getMinY(), filter.getBounds().getMaxX(), filter.getBounds().getMaxY());
 
-                        conditions.add(String.format(Locale.US, "ST_Intersects({{prop}}, ST_GeomFromText('POLYGON((%1$f %2$f,%3$f %2$f,%3$f %4$f,%1$f %4$f,%1$f %2$f))',%5$s)) = 'TRUE'", filter.getBounds().getMinX(), filter.getBounds().getMinY(), filter.getBounds().getMaxX(), filter.getBounds().getMaxY(), new EpsgCrs(filter.getBounds().getCoordinateReferenceSystem().toString()).getCode()));
+                        conditions.add(String.format(Locale.US, "ST_Intersects({{prop}}, ST_GeomFromText('POLYGON((%1$f %2$f,%3$f %2$f,%3$f %4$f,%1$f %4$f,%1$f %2$f))',%5$s)) = 'TRUE'", filter.getBounds().getMinX(), filter.getBounds().getMinY(), filter.getBounds().getMaxX(), filter.getBounds().getMaxY(), EpsgCrs.fromString(filter.getBounds()
+                                                                                                                                                                                                                                                                                                                                           .getCoordinateReferenceSystem()
+                                                                                                                                                                                                                                                                                                                                           .toString()).getCode()));
                         return super.visit(filter, extraData);
                     }
 

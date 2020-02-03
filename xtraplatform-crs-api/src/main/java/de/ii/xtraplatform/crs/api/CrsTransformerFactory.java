@@ -20,11 +20,8 @@ public interface CrsTransformerFactory {
 
     Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs);
 
-    boolean isCrsSupported(String crs);
-
     boolean isCrsSupported(EpsgCrs crs);
 
     boolean isCrs3d(EpsgCrs crs);
 
-    boolean isCrsAxisOrderEastNorth(String crs);
 }

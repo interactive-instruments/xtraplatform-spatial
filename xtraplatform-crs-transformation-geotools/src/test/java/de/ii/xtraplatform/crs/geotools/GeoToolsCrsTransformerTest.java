@@ -64,7 +64,7 @@ public class GeoToolsCrsTransformerTest {
         CoordinateReferenceSystem scrs = CRS.decode("EPSG:4326");
         CoordinateReferenceSystem tcrs = CRS.decode("EPSG:3857");
 
-        GeoToolsCrsTransformer gct = new GeoToolsCrsTransformer(scrs,tcrs, new EpsgCrs(4326), new EpsgCrs(3857), preserveHeight);
+        GeoToolsCrsTransformer gct = new GeoToolsCrsTransformer(scrs,tcrs, EpsgCrs.of(4326), EpsgCrs.of(3857), false);
         
         double x = 50.7164;
         double y = 7.086;

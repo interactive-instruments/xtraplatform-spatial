@@ -23,19 +23,19 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.akka.ActorSystemProvider;
 import de.ii.xtraplatform.crs.api.BoundingBox;
-import de.ii.xtraplatform.crs.api.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
+import de.ii.xtraplatform.crs.api.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream;
 import de.ii.xtraplatform.feature.provider.api.FeatureTransactions;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureTransformerFromSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
 import de.ii.xtraplatform.feature.transformer.api.TransformingFeatureProvider;
@@ -143,7 +143,7 @@ public class FeatureProviderPgis implements FeatureTransactions, TransformingFea
     public BoundingBox getSpatialExtent(String featureTypeId) {
         Optional<String> query = Optional.ofNullable(extentQueries.get(featureTypeId));
 
-        BoundingBox[] boundingBox = {new BoundingBox(-180.0D, -90.0D, 180.0D, 90.0D, new EpsgCrs(4326))};
+        BoundingBox[] boundingBox = {new BoundingBox(-180.0D, -90.0D, 180.0D, 90.0D, EpsgCrs.of(4326))};
 
         if (!query.isPresent()) {
             return boundingBox[0];

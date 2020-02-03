@@ -10,9 +10,10 @@
  */
 package de.ii.xtraplatform.crs.geotools;
 
-import de.ii.xtraplatform.crs.api.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
+import de.ii.xtraplatform.crs.api.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.crs.api.ImmutableEpsgCrs;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
@@ -64,14 +65,9 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
     }
 
     @Override
-    public boolean isCrsSupported(String crs) {
-        return isCrsSupported(new EpsgCrs(crs));
-    }
-
-    @Override
     public boolean isCrsSupported(EpsgCrs crs) {
         try {
-            crsCache.computeIfAbsent(crs, mayThrow(ignore -> CRS.decode(applyWorkarounds(crs).getAsSimple(), crs.isForceLongitudeFirst())));
+            crsCache.computeIfAbsent(crs, mayThrow(ignore -> CRS.decode(applyWorkarounds(crs).toSimpleString(), crs.getForceLonLat())));
         } catch (Throwable e) {
             return false;
         }
@@ -84,24 +80,16 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
         return isCrsSupported(crs) && Objects.nonNull(CRS.getVerticalCRS(crsCache.get(crs)));
     }
 
-    //TODO
-    @Override
-    public boolean isCrsAxisOrderEastNorth(String crs) {
-        EpsgCrs epsgCrs = new EpsgCrs(crs);
-
-        return isCrsSupported(epsgCrs) && CRS.getAxisOrder(crsCache.get(epsgCrs)) == CRS.AxisOrder.EAST_NORTH;
-    }
-
     @Override
     public Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
         if (Objects.equals(sourceCrs, targetCrs)) {
             return Optional.empty();
         }
         if (!isCrsSupported(sourceCrs)) {
-            throw new IllegalArgumentException(String.format("CRS %s is not supported.", sourceCrs.getAsSimple()));
+            throw new IllegalArgumentException(String.format("CRS %s is not supported.", sourceCrs.toSimpleString()));
         }
         if (!isCrsSupported(targetCrs)) {
-            throw new IllegalArgumentException(String.format("CRS %s is not supported.", targetCrs.getAsSimple()));
+            throw new IllegalArgumentException(String.format("CRS %s is not supported.", targetCrs.toSimpleString()));
         }
 
         transformerCache.computeIfAbsent(sourceCrs, ignore -> new HashMap<>());
@@ -137,7 +125,7 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
     private EpsgCrs applyWorkarounds(EpsgCrs crs) {
         // ArcGIS still uses code 102100, but GeoTools does not support it anymore
         if (crs.getCode() == 102100) {
-            return new EpsgCrs(3857, crs.isForceLongitudeFirst());
+            return new ImmutableEpsgCrs.Builder().from(crs).code(3857).build();
         }
         return crs;
     }

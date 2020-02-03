@@ -10,13 +10,9 @@ package de.ii.xtraplatform.feature.transformer.api;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureProvider;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderMetadataConsumer;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream;
 import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
-
-import java.util.List;
 
 /**
  * @author zahnen
