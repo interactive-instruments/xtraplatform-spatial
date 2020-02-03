@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.feature.transformer.api;
 
-import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.geometries.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureProvider;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;

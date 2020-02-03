@@ -1,8 +1,8 @@
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.google.common.base.Splitter;
-import de.ii.xtraplatform.crs.api.BoundingBox;
-import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.geometries.domain.BoundingBox;
+import de.ii.xtraplatform.geometries.domain.EpsgCrs;
 
 import java.util.List;
 import java.util.Optional;

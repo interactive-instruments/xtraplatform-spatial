@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.ogc.api.wfs;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.geometries.domain.EpsgCrs;
 import org.opengis.filter.Filter;
 
 import java.util.ArrayList;

@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.crs.api.CrsTransformerFactory;
+import de.ii.xtraplatform.geometries.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.event.store.EntityHydrator;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderDataV1;

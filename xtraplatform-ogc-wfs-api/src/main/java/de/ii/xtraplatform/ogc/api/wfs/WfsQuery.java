@@ -12,7 +12,7 @@ package de.ii.xtraplatform.ogc.api.wfs;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.geometries.domain.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;

@@ -10,7 +10,7 @@
  */
 package de.ii.xtraplatform.ogc.api.filter;
 
-import de.ii.xtraplatform.crs.api.BoundingBox;
+import de.ii.xtraplatform.geometries.domain.BoundingBox;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.util.xml.XMLDocument;

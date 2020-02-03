@@ -1,6 +1,6 @@
 package de.ii.xtraplatform.feature.provider.api;
 
-import de.ii.xtraplatform.crs.api.BoundingBox;
+import de.ii.xtraplatform.geometries.domain.BoundingBox;
 
 public interface FeatureExtents {
 
