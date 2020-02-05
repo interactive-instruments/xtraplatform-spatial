@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.geometries.domain;
 
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

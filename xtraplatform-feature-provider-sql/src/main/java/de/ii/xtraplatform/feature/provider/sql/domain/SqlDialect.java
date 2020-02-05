@@ -1,7 +1,7 @@
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
-import de.ii.xtraplatform.geometries.domain.BoundingBox;
-import de.ii.xtraplatform.geometries.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.BoundingBox;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 
 import java.util.Optional;
 

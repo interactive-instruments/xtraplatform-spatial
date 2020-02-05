@@ -1,5 +1,6 @@
 package de.ii.xtraplatform.geometries.domain;
 
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import org.immutables.value.Value;
 
 import java.io.IOException;
@@ -13,8 +14,14 @@ public abstract class CrsTransform implements CoordinatesTransformation {
     @Override
     public void onCoordinates(double[] coordinates, int length, int dimension) throws IOException {
 
-        double[] transformed = getCrsTransformer().transform(coordinates, length / dimension, /*TODO*/false);
+        //TODO: transform in place???
+        double[] transformed;
+        if (dimension == 3) {
+            transformed = getCrsTransformer().transform3d(coordinates, length / dimension, /*TODO*/false);
+        } else {
+            transformed = getCrsTransformer().transform(coordinates, length / dimension, /*TODO*/false);
+        }
 
-        getNext().onCoordinates(transformed, transformed.length, dimension);
+        getNext().onCoordinates(transformed, length, dimension);
     }
 }

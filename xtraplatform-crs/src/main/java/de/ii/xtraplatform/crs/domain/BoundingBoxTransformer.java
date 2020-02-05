@@ -8,7 +8,7 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.geometries.domain;
+package de.ii.xtraplatform.crs.domain;
 
 /**
  *

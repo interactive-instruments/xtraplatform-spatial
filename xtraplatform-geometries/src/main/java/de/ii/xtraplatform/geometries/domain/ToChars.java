@@ -9,6 +9,8 @@ import java.math.RoundingMode;
 @Value.Immutable
 public abstract class ToChars implements DoubleArrayProcessor {
 
+    private boolean isFirst = true;
+
     @Value.Parameter
     protected abstract SeperateStringsProcessor getCoordinatesProcessor();
 
@@ -34,6 +36,11 @@ public abstract class ToChars implements DoubleArrayProcessor {
 
             switch (axis) {
                 case X:
+                    if (isFirst) {
+                        this.isFirst = false;
+                    } else {
+                        getCoordinatesProcessor().onSeparator();
+                    }
                     getCoordinatesProcessor().onX(value.toCharArray(), 0, value.length());
                     break;
                 case Y:

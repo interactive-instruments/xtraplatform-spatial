@@ -10,13 +10,13 @@ package de.ii.xtraplatform.feature.provider.pgis;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.geometries.domain.CoordinatesWriterType;
-import de.ii.xtraplatform.geometries.domain.CrsTransformer;
-import de.ii.xtraplatform.geometries.domain.WktCoordinatesFormatter;
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
+import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.provider.api.TargetMapping;
 import de.ii.xtraplatform.feature.provider.sql.app.SimpleFeatureGeometryFromToWkt;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
+import de.ii.xtraplatform.geometries.domain.ImmutableCoordinatesTransformer;
+import de.ii.xtraplatform.geometries.domain.ImmutableCoordinatesWriterWkt;
 
 import java.io.StringWriter;
 import java.io.Writer;
@@ -42,7 +42,7 @@ public class FeatureTransformerSql implements FeatureTransformer {
     private String currentRowPath;
     private Map<String,List<Integer>> lastMultiplicities = new LinkedHashMap<>();
     private final CrsTransformer crsTransformer;
-    private CoordinatesWriterType.Builder cwBuilder;
+    private ImmutableCoordinatesTransformer.Builder coordinatesTransformerBuilder;
     private StringWriter geometry = new StringWriter();
     private String currentFormat;
     private final List<String> ids;
@@ -185,15 +185,16 @@ public class FeatureTransformerSql implements FeatureTransformer {
         SimpleFeatureGeometryFromToWkt wktType = SimpleFeatureGeometryFromToWkt.fromSimpleFeatureGeometry(type);
         geometry.append(wktType.toString());
 
-        cwBuilder = CoordinatesWriterType.builder();
-        cwBuilder.format(new WktCoordinatesFormatter(geometry));
+        coordinatesTransformerBuilder = ImmutableCoordinatesTransformer.builder();
+        coordinatesTransformerBuilder.coordinatesWriter(ImmutableCoordinatesWriterWkt.of(geometry, Optional.ofNullable(dimension).orElse(2)));
 
         if (crsTransformer != null) {
-            cwBuilder.transformer(crsTransformer);
+            coordinatesTransformerBuilder.crsTransformer(crsTransformer);
         }
 
         if (dimension != null) {
-            cwBuilder.dimension(dimension);
+            coordinatesTransformerBuilder.sourceDimension(dimension);
+            coordinatesTransformerBuilder.targetDimension(dimension);
         }
         geometry.append("(");
     }
@@ -209,7 +210,7 @@ public class FeatureTransformerSql implements FeatureTransformer {
 
     @Override
     public void onGeometryCoordinates(String text) throws Exception {
-        Writer coordinatesWriter = cwBuilder.build();
+        Writer coordinatesWriter = coordinatesTransformerBuilder.build();
         coordinatesWriter.write(text);
         coordinatesWriter.close();
 

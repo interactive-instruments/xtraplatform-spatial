@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.geometries.domain;
 
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
+
 /**
  *
  * @author zahnen

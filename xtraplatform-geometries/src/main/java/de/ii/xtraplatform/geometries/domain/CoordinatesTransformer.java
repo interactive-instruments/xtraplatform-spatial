@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.geometries.domain;
 
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import org.immutables.value.Value;
 
 import java.io.IOException;
@@ -114,7 +115,7 @@ public abstract class CoordinatesTransformer extends Writer {
 
     @Value.Derived
     protected CoordinatesParser getCoordinatesParser() {
-        return new CoordinatesParser(getCoordinatesWriter(), getSourceDimension(), getTargetDimension());
+        return new CoordinatesParser(getCoordinatesProcessor(), getSourceDimension(), getTargetDimension());
     }
 
 

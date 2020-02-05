@@ -1,8 +1,8 @@
 package de.ii.xtraplatform.crs.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.geometries.domain.ImmutableEpsgCrs;
 import org.immutables.value.Value;
 
 import java.util.Objects;
@@ -11,9 +11,11 @@ import java.util.Optional;
 @Value.Immutable
 @Value.Style(builder = "new")
 @JsonDeserialize(builder = ImmutableEpsgCrs.Builder.class)
+//TODO: test
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public interface EpsgCrs {
 
-    enum Force {LON_LAT, LAT_LON}
+    enum Force {NONE, LON_LAT, LAT_LON}
 
     static EpsgCrs of(int code) {
         return ImmutableEpsgCrs.of(code);
@@ -21,8 +23,7 @@ public interface EpsgCrs {
 
     static EpsgCrs of(int code, Force force) {
         return new ImmutableEpsgCrs.Builder().code(code)
-                                             .forceLonLat(force == Force.LON_LAT)
-                                             .forceLatLon(force == Force.LAT_LON)
+                                             .forceAxisOrder(force)
                                              .build();
     }
 
@@ -52,15 +53,18 @@ public interface EpsgCrs {
     @Value.Parameter
     int getCode();
 
-    @JsonAlias("forceLongitudeFirst")
+    //TODO: migrate
+    @Deprecated
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Value.Default
-    default boolean getForceLonLat() {
+    @Value.Auxiliary
+    default boolean getForceLongitudeFirst() {
         return false;
     }
 
     @Value.Default
-    default boolean getForceLatLon() {
-        return false;
+    default Force getForceAxisOrder() {
+        return getForceLongitudeFirst() ? Force.LON_LAT : Force.NONE;
     }
 
     @Value.Lazy

@@ -10,6 +10,8 @@
  */
 package de.ii.xtraplatform.geometries.domain;
 
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
+
 import java.util.List;
 
 /**

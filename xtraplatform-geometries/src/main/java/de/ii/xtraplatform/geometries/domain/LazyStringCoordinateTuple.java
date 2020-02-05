@@ -10,6 +10,8 @@
  */
 package de.ii.xtraplatform.geometries.domain;
 
+import de.ii.xtraplatform.crs.domain.CoordinateTuple;
+
 /**
  *
  * @author zahnen

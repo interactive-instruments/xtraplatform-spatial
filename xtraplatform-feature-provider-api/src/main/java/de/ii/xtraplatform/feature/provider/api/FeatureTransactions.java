@@ -2,7 +2,7 @@ package de.ii.xtraplatform.feature.provider.api;
 
 import akka.Done;
 import akka.stream.javadsl.RunnableGraph;
-import de.ii.xtraplatform.geometries.domain.CrsTransformer;
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
 
 import java.util.List;
 import java.util.concurrent.CompletionStage;

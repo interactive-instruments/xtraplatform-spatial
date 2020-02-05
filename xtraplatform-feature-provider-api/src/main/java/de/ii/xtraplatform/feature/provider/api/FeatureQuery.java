@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider.api;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.geometries.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;

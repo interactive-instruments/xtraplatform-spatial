@@ -1,20 +1,24 @@
 /**
  * Copyright 2019 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * bla
+ * <p>
+ * bla
  */
 /**
  * bla
  */
 package de.ii.xtraplatform.crs.infra;
 
-import de.ii.xtraplatform.geometries.domain.BoundingBoxTransformer;
-import de.ii.xtraplatform.geometries.domain.CoordinateTuple;
-import de.ii.xtraplatform.geometries.domain.CoordinateTupleWithPrecision;
-import de.ii.xtraplatform.geometries.domain.CrsTransformer;
-import de.ii.xtraplatform.geometries.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.BoundingBoxTransformer;
+import de.ii.xtraplatform.crs.domain.CoordinateTuple;
+import de.ii.xtraplatform.crs.domain.CoordinateTupleWithPrecision;
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.geotools.referencing.CRS;
 import org.opengis.geometry.MismatchedDimensionException;
 import org.opengis.referencing.FactoryException;
@@ -32,7 +36,7 @@ import javax.measure.unit.Unit;
  *
  * @author zahnen
  */
-public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements CrsTransformer  {
+public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements CrsTransformer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GeoToolsCrsTransformer.class);
 
@@ -44,39 +48,64 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
     private final double targetUnitEquivalentInMeters;
     private final boolean needsAxisSwap;
     //TODO
+    private final int sourceDimension;
+    private final int targetDimension;
     private final boolean preserveHeight;
 
     GeoToolsCrsTransformer(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
-                           EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, boolean preserveHeight) throws FactoryException {
-        this.sourceCrs = EpsgCrs.fromString(sourceCrs.getIdentifiers().iterator().next().toString());
+                           EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, int sourceDimension,
+                           int targetDimension) throws FactoryException {
+        this.sourceCrs = EpsgCrs.fromString(sourceCrs.getIdentifiers()
+                                                     .iterator()
+                                                     .next()
+                                                     .toString());
         this.targetCrs = origTargetCrs;
         this.mathTransform = CRS.findMathTransform(sourceCrs, targetCrs, true);
 
-        Unit<?> sourceUnit = CRS.getHorizontalCRS(sourceCrs).getCoordinateSystem().getAxis(0).getUnit();
-        Unit<?> targetUnit = CRS.getHorizontalCRS(targetCrs).getCoordinateSystem().getAxis(0).getUnit();
+        Unit<?> sourceUnit = CRS.getHorizontalCRS(sourceCrs)
+                                .getCoordinateSystem()
+                                .getAxis(0)
+                                .getUnit();
+        Unit<?> targetUnit = CRS.getHorizontalCRS(targetCrs)
+                                .getCoordinateSystem()
+                                .getAxis(0)
+                                .getUnit();
         //TODO: test if METRE is really returned
         boolean isSourceMetric = sourceUnit == SI.METER;
         this.isTargetMetric = targetUnit == SI.METER;//targetCrs instanceof ProjectedCRS;
-        this.sourceUnitEquivalentInMeters = isSourceMetric ? 1 : (Math.PI/180.00) * CRS.getEllipsoid(sourceCrs).getSemiMajorAxis();
-        this.targetUnitEquivalentInMeters = isTargetMetric ? 1 : (Math.PI/180.00) * CRS.getEllipsoid(targetCrs).getSemiMajorAxis();
-
+        this.sourceUnitEquivalentInMeters = isSourceMetric ? 1 : (Math.PI / 180.00) * CRS.getEllipsoid(sourceCrs)
+                                                                                         .getSemiMajorAxis();
+        this.targetUnitEquivalentInMeters = isTargetMetric ? 1 : (Math.PI / 180.00) * CRS.getEllipsoid(targetCrs)
+                                                                                         .getSemiMajorAxis();
+/*
         AxisDirection sourceDirection = sourceCrs.getCoordinateSystem()
-                                           .getAxis(0)
-                                           .getDirection();
-        AxisDirection sourceOrigDirection = CRS.decode(this.sourceCrs.toSimpleString()).getCoordinateSystem()
                                                  .getAxis(0)
                                                  .getDirection();
+        AxisDirection sourceOrigDirection = CRS.decode(this.sourceCrs.toSimpleString())
+                                               .getCoordinateSystem()
+                                               .getAxis(0)
+                                               .getDirection();
         AxisDirection targetDirection = targetCrs.getCoordinateSystem()
                                                  .getAxis(0)
                                                  .getDirection();
 
-        AxisDirection targetOrigDirection = CRS.decode(EpsgCrs.fromString(targetCrs.getIdentifiers().iterator().next().toString()).toSimpleString()).getCoordinateSystem()
+        AxisDirection targetOrigDirection = CRS.decode(EpsgCrs.fromString(targetCrs.getIdentifiers()
+                                                                                   .iterator()
+                                                                                   .next()
+                                                                                   .toString())
+                                                              .toSimpleString())
+                                               .getCoordinateSystem()
                                                .getAxis(0)
                                                .getDirection();
         boolean sourceNeedsAxisSwap = origSourceCrs.getForceLonLat() && sourceDirection == sourceOrigDirection;
         boolean targetNeedsAxisSwap = origTargetCrs.getForceLonLat() && targetDirection == targetOrigDirection;
-        this.needsAxisSwap = sourceNeedsAxisSwap != targetNeedsAxisSwap;
-        this.preserveHeight = preserveHeight;
+
+ */
+        //TODO
+        this.needsAxisSwap = false; //sourceNeedsAxisSwap != targetNeedsAxisSwap;
+        this.sourceDimension = sourceDimension;
+        this.targetDimension = targetDimension;
+        this.preserveHeight = sourceDimension == 3 && targetDimension == 3;
 
         //LOGGER.debug("AXIS SWAP: {} {} {} {}, {} {} {}", needsAxisSwap, origSourceCrs.getCode(), sourceNeedsAxisSwap, sourceDirection, origTargetCrs.getCode(), targetNeedsAxisSwap, targetDirection);
     }
@@ -119,10 +148,40 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
                     source[i + 1] = coordinates[i];
                 }
             }
-            double[] target = new double[2* numberOfPoints];
+            double[] target = new double[2 * numberOfPoints];
             mathTransform.transform(source, 0, target, 0, numberOfPoints);
 
             return target;
+        } catch (MismatchedDimensionException | TransformException ex) {
+            LOGGER.error("GeoTools error", ex);
+        }
+
+        return null;
+    }
+
+    @Override
+    public double[] transform3d(double[] coordinates, int numberOfPoints, boolean swap) {
+        try {
+            double[] coordinates2D = new double[numberOfPoints * 2];
+            int j = 0;
+            for (int i = 0; i < numberOfPoints * 3; i += 3) {
+                if (swap && this.needsAxisSwap) {
+                    coordinates2D[j++] = coordinates[i + 1];
+                    coordinates2D[j++] = coordinates[i];
+                } else {
+                    coordinates2D[j++] = coordinates[i];
+                    coordinates2D[j++] = coordinates[i + 1];
+                }
+            }
+            mathTransform.transform(coordinates2D, 0, coordinates2D, 0, numberOfPoints);
+
+            j = 0;
+            for (int i = 0; i < numberOfPoints * 3; i += 3) {
+                coordinates[i] = coordinates2D[j++];
+                coordinates[i + 1] = coordinates2D[j++];
+            }
+
+            return coordinates;
         } catch (MismatchedDimensionException | TransformException ex) {
             LOGGER.error("GeoTools error", ex);
         }
@@ -143,5 +202,15 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
     @Override
     public boolean needsCoordinateSwap() {
         return needsAxisSwap;
+    }
+
+    @Override
+    public int getSourceDimension() {
+        return sourceDimension;
+    }
+
+    @Override
+    public int getTargetDimension() {
+        return targetDimension;
     }
 }

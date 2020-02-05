@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.geometries.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;

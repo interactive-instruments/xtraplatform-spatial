@@ -1,6 +1,5 @@
 
 dependencies {
-    provided project(':xtraplatform-crs-api')
     provided project(':xtraplatform-geotools')    
 }
 

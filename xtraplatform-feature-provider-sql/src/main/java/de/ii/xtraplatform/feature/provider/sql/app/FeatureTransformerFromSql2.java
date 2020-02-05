@@ -151,6 +151,8 @@ public class FeatureTransformerFromSql2 implements FeatureConsumer {
             //tokenizer.commentChar('#');
 
             String type = getNextWord(tokenizer);
+            int dimension = type.contains(" Z ") ? 3 : 2;
+            type = type.replace(" Z ", "");
             SimpleFeatureGeometry geometryType = SimpleFeatureGeometryFromToWkt.fromString(type)
                                                                                .toSimpleFeatureGeometry();
 
@@ -159,7 +161,7 @@ public class FeatureTransformerFromSql2 implements FeatureConsumer {
                 return;
             }
 
-            featureTransformer.onGeometryStart(geometry, geometryType, 2);
+            featureTransformer.onGeometryStart(geometry, geometryType, dimension);
 
             switch (geometryType) {
                 case POINT:

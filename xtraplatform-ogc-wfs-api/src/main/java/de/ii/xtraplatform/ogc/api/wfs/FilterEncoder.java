@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.ogc.api.wfs;
 
 import com.vividsolutions.jts.geom.Envelope;
-import de.ii.xtraplatform.geometries.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.WFS;
 import org.eclipse.xsd.XSDElementDeclaration;

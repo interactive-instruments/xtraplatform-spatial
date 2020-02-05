@@ -44,10 +44,6 @@ public class CoordinatesParser {
         boolean endOfChunk = false;
         int read = 0;
 
-        if (!started) {
-            onStart();
-        }
-
         // iterate over chunk
         for (int j = offset; j < offset + length; j++) {
             endOfChunk = j == offset + length - 1;
@@ -79,6 +75,9 @@ public class CoordinatesParser {
     }
 
     public void close() throws IOException {
+        if (!started) {
+            onStart();
+        }
         if (!lastCharWasSeparator) {
             onValue(new char[0], 0, 0);
         }
@@ -129,8 +128,17 @@ public class CoordinatesParser {
     }
 
     private void formatValue(char[] chars, int offset, int length) throws IOException {
+        boolean writeSeparator = true;
+        if (!started) {
+            onStart();
+            writeSeparator = false;
+        }
+
         switch (axis) {
             case X:
+                if (writeSeparator) {
+                    coordinatesProcessor.onSeparator();
+                }
                 coordinatesProcessor.onX(chars, offset, length);
                 break;
             case Y:

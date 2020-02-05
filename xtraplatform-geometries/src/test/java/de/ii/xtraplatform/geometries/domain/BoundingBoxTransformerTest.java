@@ -10,6 +10,7 @@
  */
 package de.ii.xtraplatform.geometries.domain;
 
+import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import junit.framework.Assert;
 
 import java.util.Random;

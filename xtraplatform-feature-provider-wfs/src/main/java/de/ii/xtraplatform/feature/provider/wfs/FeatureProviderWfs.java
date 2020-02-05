@@ -15,7 +15,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.api.exceptions.BadRequest;
-import de.ii.xtraplatform.geometries.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.AbstractFeatureProvider;
 import de.ii.xtraplatform.feature.provider.api.Feature;
 import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
@@ -302,7 +302,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
                                                                                         .stream())
                                             .filter(epsgCrs -> epsgCrs.getCode() == crs.getCode())
                                             .findFirst()
-                                            .map(epsgCrs -> epsgCrs.getForceLonLat() != crs.getForceLonLat())
+                                            .map(epsgCrs -> epsgCrs.getForceAxisOrder() != crs.getForceAxisOrder())
                                             .orElse(false);
     }
 

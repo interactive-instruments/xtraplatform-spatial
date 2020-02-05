@@ -1,6 +1,7 @@
 
 dependencies {
-    provided project(':xtraplatform-crs-api')
+    provided project(':xtraplatform-geometries')
+    provided project(':xtraplatform-crs')
     provided project(':xtraplatform-feature-provider-api')
     provided project(':xtraplatform-ogc-wfs-api')
 

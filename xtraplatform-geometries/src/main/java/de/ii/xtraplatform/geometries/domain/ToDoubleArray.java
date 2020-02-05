@@ -17,6 +17,11 @@ public abstract class ToDoubleArray implements CoordinatesWriter<DoubleArrayProc
     }
 
     @Override
+    public void onSeparator() throws IOException {
+
+    }
+
+    @Override
     public void onX(char[] chars, int offset, int length) throws IOException {
         addToBuffer(chars, offset, length);
     }

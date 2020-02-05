@@ -10,10 +10,11 @@
  */
 package de.ii.xtraplatform.crs.infra;
 
-import de.ii.xtraplatform.geometries.domain.CrsTransformer;
-import de.ii.xtraplatform.geometries.domain.CrsTransformerFactory;
-import de.ii.xtraplatform.geometries.domain.EpsgCrs;
-import de.ii.xtraplatform.geometries.domain.ImmutableEpsgCrs;
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
+import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
+import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
@@ -67,7 +68,7 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
     @Override
     public boolean isCrsSupported(EpsgCrs crs) {
         try {
-            crsCache.computeIfAbsent(crs, mayThrow(ignore -> CRS.decode(applyWorkarounds(crs).toSimpleString(), crs.getForceLonLat())));
+            crsCache.computeIfAbsent(crs, mayThrow(ignore -> CRS.decode(applyWorkarounds(crs).toSimpleString(), crs.getForceAxisOrder() == Force.LON_LAT)));
         } catch (Throwable e) {
             return false;
         }
@@ -77,7 +78,7 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
 
     @Override
     public boolean isCrs3d(EpsgCrs crs) {
-        return isCrsSupported(crs) && Objects.nonNull(CRS.getVerticalCRS(crsCache.get(crs)));
+        return isCrsSupported(crs) && crsCache.get(crs).getCoordinateSystem().getDimension() == 3;
     }
 
     @Override
@@ -101,13 +102,25 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
 
     private CrsTransformer createCrsTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
         boolean preserveHeight = isCrs3d(sourceCrs) && isCrs3d(targetCrs);
+        boolean dropHeight = isCrs3d(sourceCrs) && !isCrs3d(targetCrs);
 
         if (preserveHeight) {
             SingleCRS horizontalSourceCrs = CRS.getHorizontalCRS(crsCache.get(sourceCrs));
             SingleCRS horizontalTargetCrs = CRS.getHorizontalCRS(crsCache.get(targetCrs));
 
             try {
-                return new GeoToolsCrsTransformer(horizontalSourceCrs, horizontalTargetCrs, sourceCrs, targetCrs, true);
+                return new GeoToolsCrsTransformer(horizontalSourceCrs, horizontalTargetCrs, sourceCrs, targetCrs, 3, 3);
+            } catch (FactoryException ex) {
+                LOGGER.debug("GeoTools error", ex);
+                throw new IllegalArgumentException(ex.getMessage(), ex);
+            }
+        }
+
+        if (dropHeight) {
+            SingleCRS horizontalSourceCrs = CRS.getHorizontalCRS(crsCache.get(sourceCrs));
+
+            try {
+                return new GeoToolsCrsTransformer(horizontalSourceCrs, crsCache.get(targetCrs), sourceCrs, targetCrs, 3, 2);
             } catch (FactoryException ex) {
                 LOGGER.debug("GeoTools error", ex);
                 throw new IllegalArgumentException(ex.getMessage(), ex);
@@ -115,7 +128,7 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
         }
 
         try {
-            return new GeoToolsCrsTransformer(crsCache.get(sourceCrs), crsCache.get(targetCrs), sourceCrs, targetCrs, false);
+            return new GeoToolsCrsTransformer(crsCache.get(sourceCrs), crsCache.get(targetCrs), sourceCrs, targetCrs, 2, 2);
         } catch (FactoryException ex) {
             LOGGER.debug("GeoTools error", ex);
             throw new IllegalArgumentException(ex.getMessage(), ex);

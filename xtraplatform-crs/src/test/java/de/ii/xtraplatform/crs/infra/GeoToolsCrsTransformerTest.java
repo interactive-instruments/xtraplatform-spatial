@@ -10,7 +10,7 @@
  */
 package de.ii.xtraplatform.crs.infra;
 
-import de.ii.xtraplatform.geometries.domain.CoordinateTuple;
+import de.ii.xtraplatform.crs.domain.CoordinateTuple;
 import de.ii.xtraplatform.geometries.domain.EpsgCrs;
 import org.geotools.referencing.CRS;
 import org.opengis.referencing.FactoryException;

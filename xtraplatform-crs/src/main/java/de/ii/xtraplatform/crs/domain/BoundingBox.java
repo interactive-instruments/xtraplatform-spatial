@@ -10,7 +10,7 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.geometries.domain;
+package de.ii.xtraplatform.crs.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

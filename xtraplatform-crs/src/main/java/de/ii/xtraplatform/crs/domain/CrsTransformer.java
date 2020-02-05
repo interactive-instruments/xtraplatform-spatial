@@ -10,10 +10,6 @@
  */
 package de.ii.xtraplatform.crs.domain;
 
-import de.ii.xtraplatform.geometries.domain.BoundingBox;
-import de.ii.xtraplatform.geometries.domain.CoordinateTuple;
-import de.ii.xtraplatform.geometries.domain.CrsTransformationException;
-
 /**
  *
  * @author zahnen
@@ -31,6 +27,8 @@ public interface CrsTransformer {
     CoordinateTuple transform(CoordinateTuple coordinateTuple, boolean swap);
 
     double[] transform(double[] coordinates, int numberOfPoints, boolean swap);
+
+    double[] transform3d(double[] coordinates, int numberOfPoints, boolean swap);
     
     BoundingBox transformBoundingBox(BoundingBox boundingBox) throws CrsTransformationException;
 
@@ -39,4 +37,8 @@ public interface CrsTransformer {
     double getTargetUnitEquivalentInMeters();
 
     boolean needsCoordinateSwap();
+
+    int getSourceDimension();
+
+    int getTargetDimension();
 }

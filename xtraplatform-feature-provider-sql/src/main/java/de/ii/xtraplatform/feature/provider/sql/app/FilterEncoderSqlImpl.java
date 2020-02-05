@@ -9,7 +9,7 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
-import de.ii.xtraplatform.geometries.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSql;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
