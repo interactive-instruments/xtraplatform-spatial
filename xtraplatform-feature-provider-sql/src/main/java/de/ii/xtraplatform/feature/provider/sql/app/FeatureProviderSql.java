@@ -90,7 +90,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
         this.typeInfos = getTypeInfos2(data.getTypes(), ((ConnectionInfoSql)data.getConnectionInfo()).getPathSyntax());
         //TODO: from config
         SqlDialect sqlDialect = new SqlDialectPostGis();
-        this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new FilterEncoderSqlNewImpl(), sqlDialect);
+        this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new FilterEncoderSqlNewImpl(data.getNativeCrs()), sqlDialect);
         this.queryTransformer = new FeatureQueryTransformerSql(typeInfos, queryGeneratorSql, false/*TODO data.computeNumberMatched()*/);
         this.featureNormalizer = new FeatureNormalizerSql(typeInfos, data.getTypes());
         this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect, data.getNativeCrs());

@@ -101,10 +101,24 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
     }
 
     private CrsTransformer createCrsTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
-        boolean preserveHeight = isCrs3d(sourceCrs) && isCrs3d(targetCrs);
-        boolean dropHeight = isCrs3d(sourceCrs) && !isCrs3d(targetCrs);
+        boolean is3dTo3d = isCrs3d(sourceCrs) && isCrs3d(targetCrs);
+        boolean is3dTo2d = isCrs3d(sourceCrs) && !isCrs3d(targetCrs);
+        boolean is2dTo3d = !isCrs3d(sourceCrs) && isCrs3d(targetCrs);
+        int sourceDimension = isCrs3d(sourceCrs) ? 3 : 2;
+        int targetDimension = is3dTo3d ? 3 : 2;
+        CoordinateReferenceSystem geotoolsSourceCrs = isCrs3d(sourceCrs) ? CRS.getHorizontalCRS(crsCache.get(sourceCrs)) : crsCache.get(sourceCrs);
+        CoordinateReferenceSystem geotoolsTargetCrs = is3dTo3d || is2dTo3d ? CRS.getHorizontalCRS(crsCache.get(targetCrs)) : crsCache.get(targetCrs);
+        EpsgCrs epsgTargetCrs = is2dTo3d ? EpsgCrs.fromString(geotoolsTargetCrs.getIdentifiers().iterator().next().toString()) : targetCrs;
 
-        if (preserveHeight) {
+        try {
+            return new GeoToolsCrsTransformer(geotoolsSourceCrs, geotoolsTargetCrs, sourceCrs, epsgTargetCrs, sourceDimension, targetDimension);
+        } catch (FactoryException ex) {
+            LOGGER.debug("GeoTools error", ex);
+            throw new IllegalArgumentException(ex.getMessage(), ex);
+        }
+
+
+        /*if (preserveHeight) {
             SingleCRS horizontalSourceCrs = CRS.getHorizontalCRS(crsCache.get(sourceCrs));
             SingleCRS horizontalTargetCrs = CRS.getHorizontalCRS(crsCache.get(targetCrs));
 
@@ -132,7 +146,7 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
         } catch (FactoryException ex) {
             LOGGER.debug("GeoTools error", ex);
             throw new IllegalArgumentException(ex.getMessage(), ex);
-        }
+        }*/
     }
 
     private EpsgCrs applyWorkarounds(EpsgCrs crs) {

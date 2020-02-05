@@ -191,7 +191,7 @@ public class FeatureQueryEncoderWfs {
         //TODO: test if still works
         @Override
         public Object visit(BBOX filter, Object extraData) {
-            LOGGER.debug("BBOX {} | {} | {}", filter.getExpression1(), filter.getBounds().getCoordinateReferenceSystem(), extraData);
+            LOGGER.debug("BBOX {} | {} | {}", filter.getExpression1(), filter.getSRS(), extraData);
 
             Optional<String> property = getPrefixedPropertyName(filter.getExpression1()
                                                                       .toString());
@@ -199,24 +199,24 @@ public class FeatureQueryEncoderWfs {
             if (!property.isPresent() && filter.getExpression1()
                                                .toString()
                                                .equals("NOT_AVAILABLE")) {
-                if (filter.getBounds().getCoordinateReferenceSystem() != null) {
+                if (filter.getSRS() != null) {
                     return new BBOXImpl(null, filter.getBounds()
                                                     .getMinX(), filter.getBounds()
                                                                       .getMinY(), filter.getBounds()
                                                                                         .getMaxX(), filter.getBounds()
-                                                                                                          .getMaxY(), filter.getBounds().getCoordinateReferenceSystem().toString());
+                                                                                                          .getMaxY(), filter.getSRS());
                 }
                 return filterFactory.bbox(null, filter.getBounds());
             }
 
             if (property.isPresent()) {
                 LOGGER.debug("PROP {}", property.get());
-                if (filter.getBounds().getCoordinateReferenceSystem() != null) {
+                if (filter.getSRS() != null) {
                     return new BBOXImpl(filterFactory.property(property.get(), namespaceSupport), filter.getBounds()
                                                                                                         .getMinX(), filter.getBounds()
                                                                                                                           .getMinY(), filter.getBounds()
                                                                                                                                             .getMaxX(), filter.getBounds()
-                                                                                                                                                              .getMaxY(), filter.getBounds().getCoordinateReferenceSystem().toString());
+                                                                                                                                                              .getMaxY(), filter.getSRS());
                 }
                 return filterFactory.bbox(filterFactory.property(property.get(), namespaceSupport), filter.getBounds());
             }
