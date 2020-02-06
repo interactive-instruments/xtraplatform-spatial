@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.feature.provider.wfs;
+package de.ii.xtraplatform.feature.provider.wfs.infra;
 
 import akka.Done;
 import akka.NotUsed;
@@ -18,6 +18,10 @@ import de.ii.xtraplatform.akka.http.Http;
 import de.ii.xtraplatform.akka.http.HttpClient;
 import de.ii.xtraplatform.dropwizard.api.Dropwizard;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
+import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderWfs;
+import de.ii.xtraplatform.feature.provider.wfs.FeatureQueryEncoderWfs;
+import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
+import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.ogc.api.wfs.WfsOperation;
 import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder;
@@ -45,7 +49,7 @@ import java.util.concurrent.CompletionStage;
 })
 public class WfsConnectorHttp implements WfsConnector {
 
-    static final String CONNECTOR_TYPE = "HTTP";
+    public static final String CONNECTOR_TYPE = "HTTP";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WfsConnectorHttp.class);
 
@@ -80,6 +84,7 @@ public class WfsConnectorHttp implements WfsConnector {
         return true;
     }
 
+    //TODO
     @Override
     public Optional<Throwable> getConnectionError() {
         return Optional.empty();

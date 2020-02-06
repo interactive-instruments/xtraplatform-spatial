@@ -2,12 +2,11 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureQueryTransformer;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlQueries;
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowMeta;
+import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
+import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

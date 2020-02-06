@@ -2,6 +2,7 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import akka.stream.alpakka.slick.javadsl.SlickRow;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

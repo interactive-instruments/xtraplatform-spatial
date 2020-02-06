@@ -7,13 +7,13 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttributesContainer;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
+import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
+import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
+import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;

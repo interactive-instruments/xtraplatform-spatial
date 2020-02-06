@@ -1,9 +1,9 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
+import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import slick.jdbc.PositionedResult;

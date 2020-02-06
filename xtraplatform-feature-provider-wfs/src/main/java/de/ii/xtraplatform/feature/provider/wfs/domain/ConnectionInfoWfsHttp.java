@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.feature.provider.wfs;
+package de.ii.xtraplatform.feature.provider.wfs.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.provider.api.ConnectionInfo;
@@ -19,18 +19,22 @@ import java.util.Optional;
  * @author zahnen
  */
 @Value.Immutable
-//@Value.Modifiable
-//@JsonDeserialize(as = ModifiableConnectionInfoWfs.class)
 @Value.Style(builder = "new")
-//@Value.Style(deepImmutablesDetection = true)
 @JsonDeserialize(builder = ImmutableConnectionInfoWfsHttp.Builder.class)
-public abstract class ConnectionInfoWfsHttp extends WfsInfo implements ConnectionInfo {
+public interface ConnectionInfoWfsHttp extends ConnectionInfo, WfsInfo {
 
-    public enum METHOD {GET,POST}
+    enum METHOD {GET,POST}
 
-    public abstract URI getUri();
-    public abstract METHOD getMethod();
-    public abstract Optional<String> getUser();
-    public abstract Optional<String> getPassword();
-    public abstract Map<String,String> getOtherUrls();
+    URI getUri();
+
+    @Value.Default
+    default METHOD getMethod() {
+        return METHOD.GET;
+    }
+
+    Optional<String> getUser();
+
+    Optional<String> getPassword();
+
+    Map<String,String> getOtherUrls();
 }

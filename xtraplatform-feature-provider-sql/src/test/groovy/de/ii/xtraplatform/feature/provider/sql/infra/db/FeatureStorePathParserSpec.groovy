@@ -2,13 +2,10 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db
 
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureStorePathParser
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreRelation
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableFeatureStoreRelation
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll
-
-import static de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreRelation.CARDINALITY.*
 
 class FeatureStorePathParserSpec extends Specification {
 

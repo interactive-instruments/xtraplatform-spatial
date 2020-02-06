@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.ii.xtraplatform.feature.provider.wfs.infra.WfsConnectorHttp;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import org.immutables.value.Value;
 

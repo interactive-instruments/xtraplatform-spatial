@@ -2,15 +2,14 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttribute;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttributesContainer;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreQueryGenerator;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreRelatedContainer;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlCondition;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
+import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
+import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
+import de.ii.xtraplatform.features.domain.FeatureStoreQueryGenerator;
+import de.ii.xtraplatform.features.domain.FeatureStoreRelatedContainer;
+import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -35,6 +35,8 @@ import de.ii.xtraplatform.feature.provider.api.FeatureTransformer2;
 import de.ii.xtraplatform.feature.provider.api.FeatureType;
 import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.MappingStatus;
+import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
+import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderGenerator;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
@@ -90,7 +92,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
     private static final String SOURCE_FORMAT = "application/gml+xml";
     private static final MediaType MEDIA_TYPE = new MediaType("application", "gml+xml");
 
-    static final String PROVIDER_TYPE = "WFS";
+    public static final String PROVIDER_TYPE = "WFS";
 
     private final WfsConnector connector;
     private final WfsRequestEncoder wfsRequestEncoder;

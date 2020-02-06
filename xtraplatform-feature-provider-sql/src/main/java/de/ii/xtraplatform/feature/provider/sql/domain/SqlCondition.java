@@ -1,5 +1,6 @@
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
+import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import org.immutables.value.Value;
 
 @Value.Immutable

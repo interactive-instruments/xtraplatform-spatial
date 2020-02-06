@@ -7,6 +7,8 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector;
 import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
+import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
+import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 
 import java.util.Arrays;
 import java.util.Comparator;

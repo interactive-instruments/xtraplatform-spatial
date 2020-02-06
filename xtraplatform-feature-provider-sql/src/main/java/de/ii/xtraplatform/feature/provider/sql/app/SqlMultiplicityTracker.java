@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreMultiplicityTracker;
+import de.ii.xtraplatform.features.domain.FeatureStoreMultiplicityTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

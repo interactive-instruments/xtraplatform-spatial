@@ -1,6 +1,7 @@
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector;
+import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import org.immutables.value.Value;
 
 import java.util.Arrays;

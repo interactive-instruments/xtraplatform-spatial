@@ -1,4 +1,4 @@
-package de.ii.xtraplatform.feature.provider.sql.domain;
+package de.ii.xtraplatform.features.domain;
 
 import com.google.common.base.Preconditions;
 import org.immutables.value.Value;

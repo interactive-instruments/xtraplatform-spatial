@@ -9,12 +9,12 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttribute;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreAttributesContainer;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlCondition;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlCondition;
+import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
+import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
+import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import org.geotools.filter.text.cql2.CQLException;
 import org.geotools.filter.text.ecql.ECQL;
 import org.geotools.filter.visitor.DuplicatingFilterVisitor;

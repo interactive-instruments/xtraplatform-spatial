@@ -1,4 +1,4 @@
-package de.ii.xtraplatform.feature.provider.sql.domain;
+package de.ii.xtraplatform.features.domain;
 
 import java.util.stream.Stream;
 

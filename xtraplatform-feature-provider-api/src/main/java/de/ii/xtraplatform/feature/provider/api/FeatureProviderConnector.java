@@ -39,6 +39,7 @@ public interface FeatureProviderConnector<T,U,V extends FeatureProviderConnector
     Optional<Throwable> getConnectionError();
 
     //TODO: refactor FeatureProviderWfs to use getSourceStream, remove this
+    @Deprecated
     CompletionStage<Done> runQuery(final FeatureQuery query, final Sink<T, CompletionStage<Done>> consumer, final Map<String, String> additionalQueryParameters);
 
     Source<T, NotUsed> getSourceStream(U query);

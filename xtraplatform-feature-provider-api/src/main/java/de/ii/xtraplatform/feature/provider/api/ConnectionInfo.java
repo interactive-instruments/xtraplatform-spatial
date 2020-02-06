@@ -44,6 +44,7 @@ public interface ConnectionInfo {
         return "SLICK";
     }
 
+    //TODO: do we need this for backwards compatibility?
     class CustomTypeResolver extends StdTypeResolverBuilder {
         @Override
         public StdTypeResolverBuilder init(JsonTypeInfo.Id idType, TypeIdResolver idRes) {
