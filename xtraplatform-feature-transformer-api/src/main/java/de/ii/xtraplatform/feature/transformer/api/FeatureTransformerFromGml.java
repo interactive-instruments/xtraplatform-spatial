@@ -10,10 +10,10 @@ package de.ii.xtraplatform.feature.transformer.api;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
-import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
+import de.ii.xtraplatform.features.domain.FeatureTransformer;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
 
 import javax.xml.namespace.QName;

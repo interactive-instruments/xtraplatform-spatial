@@ -1,6 +1,6 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db
 
-import de.ii.xtraplatform.feature.provider.api.FeatureProperty
+import de.ii.xtraplatform.features.domain.FeatureProperty
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableConnectionInfoSql
 import schemacrawler.crawl.MutableCatalog
 import schemacrawler.crawl.MutableColumn

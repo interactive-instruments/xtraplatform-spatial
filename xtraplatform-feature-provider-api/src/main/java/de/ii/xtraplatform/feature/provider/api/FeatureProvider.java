@@ -9,6 +9,8 @@ package de.ii.xtraplatform.feature.provider.api;
 
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
 
 /**
  * @author zahnen

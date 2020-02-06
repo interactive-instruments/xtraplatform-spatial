@@ -1,12 +1,12 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.provider.api.FeatureProperty;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
-import de.ii.xtraplatform.feature.provider.api.FeatureType;
-import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureProperty;
-import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureType;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
+import de.ii.xtraplatform.features.domain.FeatureProperty;
+import de.ii.xtraplatform.features.domain.FeatureType;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureProperty;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureType;
 import schemacrawler.schema.Catalog;
 import schemacrawler.schema.Column;
 import schemacrawler.schema.ColumnDataType;

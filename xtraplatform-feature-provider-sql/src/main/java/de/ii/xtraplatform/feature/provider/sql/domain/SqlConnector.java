@@ -5,8 +5,8 @@ import akka.NotUsed;
 import akka.japi.pf.PFBuilder;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector;
-import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 

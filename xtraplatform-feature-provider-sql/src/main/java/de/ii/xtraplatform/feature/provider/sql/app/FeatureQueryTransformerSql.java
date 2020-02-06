@@ -1,7 +1,7 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
-import de.ii.xtraplatform.feature.provider.api.FeatureQueryTransformer;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
+import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowMeta;

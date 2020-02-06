@@ -9,12 +9,11 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.base.Splitter;
 import de.ii.xtraplatform.api.functional.LambdaWithException;
-import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
-import de.ii.xtraplatform.feature.provider.api.FeatureProperty;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer2;
-import de.ii.xtraplatform.feature.provider.api.FeatureType;
-import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
+import de.ii.xtraplatform.features.domain.FeatureProperty;
+import de.ii.xtraplatform.features.domain.FeatureTransformer2;
+import de.ii.xtraplatform.features.domain.FeatureType;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

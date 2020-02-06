@@ -1,6 +1,9 @@
 package de.ii.xtraplatform.feature.provider.api;
 
-import static de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector.QueryOptions;
+
+import de.ii.xtraplatform.features.domain.FeatureNormalizer;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
+import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 
 /**
  * @author zahnen
@@ -12,7 +15,7 @@ import static de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector.Q
  * @param <U> query type
  * @param <V> options type
  */
-public interface FeatureProviderFactory<T,U,V extends QueryOptions> {
+public interface FeatureProviderFactory<T,U,V extends FeatureProviderConnector.QueryOptions> {
 
     FeatureQueryTransformer<U> getFeatureQueryTransformer();
 

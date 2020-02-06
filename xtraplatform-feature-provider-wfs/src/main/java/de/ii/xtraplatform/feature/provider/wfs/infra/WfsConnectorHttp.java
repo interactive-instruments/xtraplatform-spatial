@@ -17,7 +17,7 @@ import com.codahale.metrics.MetricRegistry;
 import de.ii.xtraplatform.akka.http.Http;
 import de.ii.xtraplatform.akka.http.HttpClient;
 import de.ii.xtraplatform.dropwizard.api.Dropwizard;
-import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderWfs;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureQueryEncoderWfs;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;

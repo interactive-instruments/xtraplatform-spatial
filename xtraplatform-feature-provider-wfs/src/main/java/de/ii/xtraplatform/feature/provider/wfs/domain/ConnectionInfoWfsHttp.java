@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider.wfs.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.feature.provider.api.ConnectionInfo;
+import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import org.immutables.value.Value;
 
 import java.net.URI;

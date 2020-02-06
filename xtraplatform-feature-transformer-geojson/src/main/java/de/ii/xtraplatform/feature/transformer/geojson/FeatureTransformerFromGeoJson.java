@@ -8,10 +8,10 @@
 package de.ii.xtraplatform.feature.transformer.geojson;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
-import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
+import de.ii.xtraplatform.features.domain.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 
 import java.util.ArrayList;

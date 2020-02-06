@@ -26,12 +26,8 @@ import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
-import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.api.FeatureStream;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransactions;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureTransformerFromSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
@@ -39,6 +35,10 @@ import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
 import de.ii.xtraplatform.feature.transformer.api.TransformingFeatureProvider;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
+import de.ii.xtraplatform.features.domain.FeatureTransactions;
+import de.ii.xtraplatform.features.domain.FeatureTransformer;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -68,7 +68,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static de.ii.xtraplatform.feature.provider.api.TargetMapping.BASE_TYPE;
+import static de.ii.xtraplatform.features.domain.legacy.TargetMapping.BASE_TYPE;
 
 /**
  * @author zahnen

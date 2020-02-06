@@ -7,27 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.pgis;
 
-import akka.Done;
-import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.alpakka.slick.javadsl.SlickSession;
-import akka.testkit.javadsl.TestKit;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
 import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
-import java.util.List;
-import java.util.OptionalLong;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * @author zahnen

@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import org.immutables.value.Value;
 
 import java.util.Map;

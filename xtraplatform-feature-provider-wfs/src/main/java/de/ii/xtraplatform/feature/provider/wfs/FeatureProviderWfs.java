@@ -16,25 +16,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.api.exceptions.BadRequest;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.feature.provider.api.AbstractFeatureProvider;
-import de.ii.xtraplatform.feature.provider.api.Feature;
-import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
-import de.ii.xtraplatform.feature.provider.api.FeatureCrs;
-import de.ii.xtraplatform.feature.provider.api.FeatureMetadata;
-import de.ii.xtraplatform.feature.provider.api.FeatureProperty;
-import de.ii.xtraplatform.feature.provider.api.FeatureProvider2;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderMetadataConsumer;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
-import de.ii.xtraplatform.feature.provider.api.FeatureQueries;
-import de.ii.xtraplatform.feature.provider.api.FeatureQueriesPassThrough;
-import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
-import de.ii.xtraplatform.feature.provider.api.FeatureSchema;
-import de.ii.xtraplatform.feature.provider.api.FeatureSourceStream;
-import de.ii.xtraplatform.feature.provider.api.FeatureStream2;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer2;
-import de.ii.xtraplatform.feature.provider.api.FeatureType;
-import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
-import de.ii.xtraplatform.feature.provider.api.MappingStatus;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
@@ -46,6 +29,27 @@ import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping;
 import de.ii.xtraplatform.feature.transformer.api.OnTheFly;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
+import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
+import de.ii.xtraplatform.features.domain.Feature;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
+import de.ii.xtraplatform.features.domain.FeatureCrs;
+import de.ii.xtraplatform.features.domain.FeatureMetadata;
+import de.ii.xtraplatform.features.domain.FeatureNormalizer;
+import de.ii.xtraplatform.features.domain.FeatureProperty;
+import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
+import de.ii.xtraplatform.features.domain.FeatureQueries;
+import de.ii.xtraplatform.features.domain.FeatureQueriesPassThrough;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
+import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.FeatureSourceStream;
+import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
+import de.ii.xtraplatform.features.domain.FeatureStream2;
+import de.ii.xtraplatform.features.domain.FeatureTransformer2;
+import de.ii.xtraplatform.features.domain.FeatureType;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery;
+import de.ii.xtraplatform.features.domain.MappingStatus;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ParseError;
 import de.ii.xtraplatform.ogc.api.exceptions.WFSException;
@@ -105,6 +109,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
 
     FeatureProviderWfs(@Property(name = ".data") FeatureProviderDataTransformer data,
                        @Property(name = ".connector") WfsConnector connector) {
+        super(null);
         ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
 
         this.wfsRequestEncoder = new WfsRequestEncoder();
@@ -317,7 +322,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
         return Optional.ofNullable(featureTypeMappings.get(typeName));
     }
 
-    @Override
+    //@Override
     public void getMetadata(FeatureProviderMetadataConsumer metadataConsumer) {
         analyzeCapabilities(metadataConsumer);
     }
@@ -375,7 +380,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
         return new FeatureProviderDataWfsFromMetadata(data, dataBuilder);
     }
 
-    @Override
+    //@Override
     public void getSchema(FeatureProviderSchemaConsumer schemaConsumer, Map<String, QName> featureTypes,
                           TaskProgress taskProgress) {
         analyzeFeatureTypes(schemaConsumer, featureTypes, taskProgress);
@@ -430,6 +435,26 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
             ImmutableFeatureProviderDataTransformer.Builder dataBuilder,
             List<TargetMappingProviderFromGml> mappingProviders) {
         return new FeatureProviderDataWfsFromSchema(data, dataBuilder, mappingProviders);
+    }
+
+    @Override
+    protected FeatureStorePathParser getPathParser() {
+        return null;
+    }
+
+    @Override
+    protected FeatureQueryTransformer getQueryTransformer() {
+        return null;
+    }
+
+    @Override
+    protected FeatureProviderConnector getConnector() {
+        return null;
+    }
+
+    @Override
+    protected FeatureNormalizer getNormalizer() {
+        return null;
     }
 
     //TODO interface FeatureRelations

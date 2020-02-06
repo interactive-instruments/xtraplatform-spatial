@@ -14,7 +14,7 @@ import com.fasterxml.aalto.AsyncXMLInputFactory;
 import com.fasterxml.aalto.AsyncXMLStreamReader;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
 import de.ii.xtraplatform.util.xml.XMLPathTracker;
 
 import javax.xml.namespace.QName;

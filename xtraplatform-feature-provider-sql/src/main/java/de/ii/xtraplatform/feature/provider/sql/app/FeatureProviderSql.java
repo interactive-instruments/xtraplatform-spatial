@@ -1,12 +1,7 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import akka.Done;
-import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-import akka.stream.javadsl.Keep;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -16,18 +11,16 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.entity.api.EntityComponent;
 import de.ii.xtraplatform.entity.api.handler.Entity;
-import de.ii.xtraplatform.feature.provider.api.AbstractFeatureProvider;
-import de.ii.xtraplatform.feature.provider.api.Feature;
-import de.ii.xtraplatform.feature.provider.api.FeatureCrs;
-import de.ii.xtraplatform.feature.provider.api.FeatureExtents;
-import de.ii.xtraplatform.feature.provider.api.FeatureProvider2;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderDataV1;
-import de.ii.xtraplatform.feature.provider.api.FeatureQueries;
-import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
-import de.ii.xtraplatform.feature.provider.api.FeatureStream2;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer2;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer3;
-import de.ii.xtraplatform.feature.provider.api.FeatureType;
+import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
+import de.ii.xtraplatform.features.domain.FeatureCrs;
+import de.ii.xtraplatform.features.domain.FeatureExtents;
+import de.ii.xtraplatform.features.domain.FeatureNormalizer;
+import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
+import de.ii.xtraplatform.features.domain.FeatureQueries;
+import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
+import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlFeatureTypeParser;
 import de.ii.xtraplatform.feature.provider.sql.SqlMappingParser;
@@ -37,9 +30,11 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
+import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreTypeInfo;
 import org.apache.felix.ipojo.annotations.Context;
@@ -53,14 +48,12 @@ import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 
 //@Component
 //@Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = FeatureProviderSql.PROVIDER_TYPE)})
 @EntityComponent
 @Entity(entityType = FeatureProvider2.class, dataType = FeatureProviderDataV1.class, type = "providers")
-public class FeatureProviderSql extends AbstractFeatureProvider implements FeatureProvider2, FeatureQueries, FeatureExtents, FeatureCrs {
+public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueries, SqlQueryOptions> implements FeatureProvider2, FeatureQueries, FeatureExtents, FeatureCrs {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
 
@@ -71,6 +64,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
     private final ActorMaterializer materializer;
     private final CrsTransformerFactory crsTransformerFactory;
     private final SqlConnector connector;
+    private final FeatureStorePathParser pathParser;
     private final Map<String, FeatureStoreTypeInfo> typeInfos;
     private final FeatureStoreQueryGeneratorSql queryGeneratorSql;
     private final FeatureQueryTransformerSql queryTransformer;
@@ -83,10 +77,19 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
                               @Property(name = "data") FeatureProviderDataV1 data,
                               @Property(name = ".connector") SqlConnector sqlConnector) {
         //TODO: starts akka for every instance, move to singleton
+        super(null);
         this.system = actorSystemProvider.getActorSystem(context, config);
         this.materializer = ActorMaterializer.create(system);
         this.crsTransformerFactory = crsTransformerFactory;
         this.connector = sqlConnector;
+
+        SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
+                                                     .options(((ConnectionInfoSql)data.getConnectionInfo()).getPathSyntax())
+                                                     .build();
+        //TODO: merge
+        SqlFeatureTypeParser mappingParser = new SqlFeatureTypeParser(syntax);
+        this.pathParser = new FeatureStorePathParserSql(syntax);
+
         this.typeInfos = getTypeInfos2(data.getTypes(), ((ConnectionInfoSql)data.getConnectionInfo()).getPathSyntax());
         //TODO: from config
         SqlDialect sqlDialect = new SqlDialectPostGis();
@@ -97,112 +100,23 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
     }
 
     @Override
-    protected boolean shouldRegister() {
-        return connector.isConnected();
+    protected FeatureStorePathParser getPathParser() {
+        return pathParser;
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-
-        if (!connector.isConnected()) {
-            Optional<Throwable> connectionError = connector.getConnectionError();
-            String message = connectionError.map(Throwable::getMessage).orElse("unknown reason");
-            LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), message);
-            if (connectionError.isPresent() && LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Stacktrace:", connectionError.get());
-            }
-        }
+    protected FeatureQueryTransformer<SqlQueries> getQueryTransformer() {
+        return queryTransformer;
     }
 
     @Override
-    public FeatureProviderDataV1 getData() {
-        return super.getData();
+    protected FeatureProviderConnector<SqlRow, SqlQueries, SqlQueryOptions> getConnector() {
+        return connector;
     }
 
     @Override
-    public FeatureStream2 getFeatureStream2(FeatureQuery query) {
-        return new FeatureStream2() {
-
-            @Override
-            public CompletionStage<Result> runWith(FeatureTransformer2 transformer) {
-                Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(typeInfos.get(query.getType()));
-
-                if (!typeInfo.isPresent()) {
-                    //TODO: put error message into Result, complete successfully
-                    CompletableFuture<Result> promise = new CompletableFuture<>();
-                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
-                    return promise;
-                }
-
-                SqlQueries sqlQueries = queryTransformer.transformQuery(query);
-
-                Source<SqlRow, NotUsed> rowStream = connector.getSourceStream(sqlQueries);
-
-                Sink<SqlRow, CompletionStage<Result>> sink = featureNormalizer.normalizeAndTransform(transformer, query);
-
-                return rowStream.runWith(sink, materializer);
-            }
-
-            @Override
-            public CompletionStage<Result> runWith(Sink<Feature<?>, CompletionStage<Done>> transformer) {
-                /*Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(typeInfos.get(query.getType()));
-
-                if (!typeInfo.isPresent()) {
-                    //TODO: put error message into Result, complete successfully
-                    CompletableFuture<Result> promise = new CompletableFuture<>();
-                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
-                    return promise;
-                }
-
-                SqlQueries sqlQueries = queryTransformer.transformQuery(query);
-
-                Source<SqlRow, NotUsed> rowStream = connector.getSourceStream(sqlQueries);
-
-                Source<Feature<?>, CompletionStage<Result>> featureStream = featureNormalizer.normalize(rowStream, query);
-
-                return featureStream.toMat(transformer, Keep.left())
-                                    .run(materializer);*/
-
-                return null;
-            }
-
-            @Override
-            public <T extends de.ii.xtraplatform.feature.provider.api.Property<?>,U extends Feature<T>> CompletionStage<Result> runWith(FeatureTransformer3<T, U> transformer) {
-                Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(typeInfos.get(query.getType()));
-
-                if (!typeInfo.isPresent()) {
-                    //TODO: put error message into Result, complete successfully
-                    CompletableFuture<Result> promise = new CompletableFuture<>();
-                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
-                    return promise;
-                }
-
-                SqlQueries sqlQueries = queryTransformer.transformQuery(query);
-
-                Source<SqlRow, NotUsed> rowStream = connector.getSourceStream(sqlQueries);
-
-                Source<U, CompletionStage<Result>> featureStream = featureNormalizer.normalize(rowStream, query, transformer::createFeature, transformer::createProperty);
-
-                Sink<U, CompletionStage<Done>> sink = Sink.foreach(feature -> {
-
-            /*if (!numberReturned.isDone() && feature.getProperties().containsKey(ImmutableList.of("numberReturned"))) {
-                numberReturned.complete(Long.getLong(feature.getProperties().get(ImmutableList.of("numberReturned"))));
-            }*/
-
-                    transformer.processFeature(feature);
-                });
-
-                return featureStream.toMat(sink, Keep.left())
-                                    .run(materializer);
-            }
-        };
-    }
-
-    //TODO
-    @Override
-    public long getFeatureCount(FeatureQuery featureQuery) {
-        return 0;
+    protected FeatureNormalizer<SqlRow> getNormalizer() {
+        return featureNormalizer;
     }
 
     @Override
@@ -223,7 +137,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
         SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
                                                      .build();
         SqlMappingParser mappingParser = new SqlMappingParser(syntax);
-        FeatureStorePathParser pathParser = new FeatureStorePathParser(syntax);
+        FeatureStorePathParser pathParser = new FeatureStorePathParserSql(syntax);
 
         return mappings.entrySet()
                        .stream()
@@ -246,7 +160,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider implements Featu
                                                      .options(syntaxOptions)
                                                      .build();
         SqlFeatureTypeParser mappingParser = new SqlFeatureTypeParser(syntax);
-        FeatureStorePathParser pathParser = new FeatureStorePathParser(syntax);
+        FeatureStorePathParser pathParser = new FeatureStorePathParserSql(syntax);
 
         return featureTypes.entrySet()
                            .stream()

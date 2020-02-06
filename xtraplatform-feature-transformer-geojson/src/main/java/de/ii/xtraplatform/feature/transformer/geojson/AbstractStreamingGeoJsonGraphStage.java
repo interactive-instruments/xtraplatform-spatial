@@ -15,7 +15,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.async.ByteArrayFeeder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

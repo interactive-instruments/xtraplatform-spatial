@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider.wfs.domain;
 
 import akka.util.ByteString;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureQueryEncoderWfs;
 import de.ii.xtraplatform.ogc.api.wfs.WfsOperation;
 

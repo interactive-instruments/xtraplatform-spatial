@@ -2,7 +2,7 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db
 
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax
 import de.ii.xtraplatform.feature.provider.sql.SqlMappingParser
-import de.ii.xtraplatform.feature.provider.sql.app.FeatureStorePathParser
+import de.ii.xtraplatform.feature.provider.sql.app.FeatureStorePathParserSql
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureStoreQueryGeneratorSql
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableFeatureStoreInstanceContainer
@@ -56,7 +56,7 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
         def sqlPaths = mappingParser.parse(featureTypeMappings.get(featureTypeToTest).getMappings())
 
-        def pathParser = new FeatureStorePathParser(syntax)
+        def pathParser = new FeatureStorePathParserSql(syntax)
 
         instanceContainer = pathParser.parse(sqlPaths).get(0)
     }

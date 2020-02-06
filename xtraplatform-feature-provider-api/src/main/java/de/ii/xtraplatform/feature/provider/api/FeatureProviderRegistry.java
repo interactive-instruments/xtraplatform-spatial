@@ -7,6 +7,10 @@
  */
 package de.ii.xtraplatform.feature.provider.api;
 
+import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
+
 /**
  * @author zahnen
  */

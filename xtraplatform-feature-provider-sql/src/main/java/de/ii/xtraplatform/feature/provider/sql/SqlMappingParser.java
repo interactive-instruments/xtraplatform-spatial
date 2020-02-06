@@ -1,7 +1,7 @@
 package de.ii.xtraplatform.feature.provider.sql;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
 
 import java.util.List;

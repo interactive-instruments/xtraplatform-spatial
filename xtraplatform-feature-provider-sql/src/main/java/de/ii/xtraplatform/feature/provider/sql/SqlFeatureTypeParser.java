@@ -1,14 +1,10 @@
 package de.ii.xtraplatform.feature.provider.sql;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.provider.api.FeatureProperty;
-import de.ii.xtraplatform.feature.provider.api.FeatureType;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
-import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
+import de.ii.xtraplatform.features.domain.FeatureProperty;
+import de.ii.xtraplatform.features.domain.FeatureType;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 public class SqlFeatureTypeParser {
 

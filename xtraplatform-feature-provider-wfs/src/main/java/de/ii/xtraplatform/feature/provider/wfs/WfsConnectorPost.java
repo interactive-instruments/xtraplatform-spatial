@@ -9,7 +9,7 @@ package de.ii.xtraplatform.feature.provider.wfs;
 
 import akka.japi.Pair;
 import akka.util.ByteString;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.ogc.api.wfs.WfsOperation;
 
 import java.io.InputStream;

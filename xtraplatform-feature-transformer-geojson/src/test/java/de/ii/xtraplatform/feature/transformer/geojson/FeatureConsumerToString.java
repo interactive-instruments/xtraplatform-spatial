@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.feature.transformer.geojson;
 
-import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
 
 import java.util.List;
 import java.util.Map;

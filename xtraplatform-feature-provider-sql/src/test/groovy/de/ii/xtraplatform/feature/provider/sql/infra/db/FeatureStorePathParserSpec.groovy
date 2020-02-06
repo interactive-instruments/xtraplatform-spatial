@@ -1,7 +1,7 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db
 
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax
-import de.ii.xtraplatform.feature.provider.sql.app.FeatureStorePathParser
+import de.ii.xtraplatform.feature.provider.sql.app.FeatureStorePathParserSql
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableFeatureStoreRelation
 import spock.lang.Shared
 import spock.lang.Specification
@@ -15,7 +15,7 @@ class FeatureStorePathParserSpec extends Specification {
     def setupSpec() {
         def syntax = ImmutableSqlPathSyntax.builder().build()
 
-        pathParser = new FeatureStorePathParser(syntax)
+        pathParser = new FeatureStorePathParserSql(syntax)
     }
 
     @Unroll

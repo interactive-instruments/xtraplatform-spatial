@@ -3,7 +3,7 @@ package de.ii.xtraplatform.feature.transformer.api;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import io.dropwizard.jackson.Jackson;
 
 import javax.annotation.Nullable;

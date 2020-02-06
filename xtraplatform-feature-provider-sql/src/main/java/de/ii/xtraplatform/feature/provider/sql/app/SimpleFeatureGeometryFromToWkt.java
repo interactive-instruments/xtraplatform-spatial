@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
 
-import de.ii.xtraplatform.feature.provider.api.SimpleFeatureGeometry;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.transformer.api.SimpleFeatureGeometryFrom;
 
 /**

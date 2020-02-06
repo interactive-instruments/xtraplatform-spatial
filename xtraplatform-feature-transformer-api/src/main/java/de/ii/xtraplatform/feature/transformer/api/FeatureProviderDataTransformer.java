@@ -14,10 +14,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
-import de.ii.xtraplatform.feature.provider.api.ConnectionInfo;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
-import de.ii.xtraplatform.feature.provider.api.ImmutableMappingStatus;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
+import de.ii.xtraplatform.features.domain.ConnectionInfo;
+import de.ii.xtraplatform.features.domain.ImmutableMappingStatus;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;

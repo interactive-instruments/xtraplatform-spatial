@@ -20,8 +20,8 @@ import akka.stream.stage.GraphStageWithMaterializedValue;
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.api.FeatureConsumer;
-import de.ii.xtraplatform.feature.provider.api.FeatureTransformer;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
+import de.ii.xtraplatform.features.domain.FeatureTransformer;
 import scala.Tuple2;
 
 import javax.xml.namespace.QName;
