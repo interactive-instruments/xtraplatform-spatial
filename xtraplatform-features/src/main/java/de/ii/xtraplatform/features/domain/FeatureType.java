@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
@@ -63,7 +64,23 @@ public interface FeatureType extends ValueInstance {
                            //TODO
                            List<String> path = Splitter.on('/')
                                                        .omitEmptyStrings()
-                                                       .splitToList(featureProperty.getPath());
+                                                       .splitToList(featureProperty.getPath())
+                                   .stream()
+                                   .map(element ->  {
+                                       String resolvedElement = element;
+
+                                       for (Map.Entry<String, String> entry : getAdditionalInfo().entrySet()) {
+                                           String prefix = entry.getKey();
+                                           String uri = entry.getValue();
+                                           resolvedElement = resolvedElement.replaceAll(prefix, uri);
+                                       }
+
+                                       return resolvedElement;
+                                   })
+                                   .collect(Collectors.toList());
+
+
+
                            builder.putIfAbsent(path, new ArrayList<>());
 
                            builder.get(path).add(featureProperty);

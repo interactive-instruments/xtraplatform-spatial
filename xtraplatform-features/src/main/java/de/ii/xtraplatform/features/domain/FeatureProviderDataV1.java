@@ -119,6 +119,12 @@ public interface FeatureProviderDataV1 extends EntityData {
 
     String getFeatureProviderType();
 
+    @Value.Derived
+    @Override
+    default Optional<String> getEntitySubType() {
+        return Optional.of(String.format("%s/%s", getProviderType(), getFeatureProviderType()).toLowerCase());
+    }
+
     ConnectionInfo getConnectionInfo();
 
     EpsgCrs getNativeCrs();

@@ -11,6 +11,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
+import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
@@ -18,7 +19,7 @@ import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
-class ExtentReaderSql {
+class ExtentReaderSql implements ExtentReader {
 
     private final SqlConnector sqlConnector;
     private final FeatureStoreQueryGeneratorSql queryGenerator;
@@ -34,6 +35,7 @@ class ExtentReaderSql {
     }
 
 
+    @Override
     public RunnableGraph<CompletionStage<Optional<BoundingBox>>> getExtent(FeatureStoreTypeInfo typeInfo) {
         //TODO: multiple main tables
         FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()

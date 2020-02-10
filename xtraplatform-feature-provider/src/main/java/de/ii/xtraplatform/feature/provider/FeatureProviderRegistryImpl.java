@@ -44,11 +44,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Instantiate
 @Whiteboards(whiteboards = {
         @Wbp(
-                filter = "(&(objectClass=org.apache.felix.ipojo.Factory)(component.providedServiceSpecifications=de.ii.xtraplatform.feature.provider.api.FeatureProvider2))",
+                filter = "(&(objectClass=org.apache.felix.ipojo.Factory)(component.providedServiceSpecifications=de.ii.xtraplatform.features.domain.FeatureProvider2))",
                 onArrival = "onFactoryArrival",
                 onDeparture = "onFactoryDeparture"),
         @Wbp(
-                filter = "(&(objectClass=org.apache.felix.ipojo.Factory)(component.providedServiceSpecifications=de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector))",
+                filter = "(&(objectClass=org.apache.felix.ipojo.Factory)(component.providedServiceSpecifications=de.ii.xtraplatform.features.domain.FeatureProviderConnector))",
                 onArrival = "onFactoryArrival",
                 onDeparture = "onFactoryDeparture")
 })
@@ -73,7 +73,7 @@ public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {
         return /*providerFactories.containsKey(providerType) &&*/ connectorFactories.containsKey(providerType) && connectorFactories.get(providerType).containsKey(connectorType);
     }
 
-    @Override
+    /*@Override
     public FeatureProvider2 createFeatureProvider(FeatureProviderDataV1 featureProviderData) {
         if (!isSupported(featureProviderData.getProviderType(), featureProviderData.getConnectorType())) {
             throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getProviderType() + " and connector " + featureProviderData.getConnectorType() + " is not supported");
@@ -95,7 +95,7 @@ public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {
         } catch (UnacceptableConfiguration | MissingHandlerException | ConfigurationException | InvalidSyntaxException | NullPointerException e) {
             throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getProviderType() + " could not be created", e);
         }
-    }
+    }*/
 
     @Override
     public FeatureProviderConnector createConnector(FeatureProviderDataV1 featureProviderData) {

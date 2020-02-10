@@ -17,12 +17,12 @@ import com.codahale.metrics.MetricRegistry;
 import de.ii.xtraplatform.akka.http.Http;
 import de.ii.xtraplatform.akka.http.HttpClient;
 import de.ii.xtraplatform.dropwizard.api.Dropwizard;
-import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderWfs;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureQueryEncoderWfs;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
-import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.ogc.api.wfs.WfsOperation;
 import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder;
 import org.apache.felix.ipojo.annotations.Component;
@@ -62,7 +62,7 @@ public class WfsConnectorHttp implements WfsConnector {
     private final HttpClient httpClient;
     private final boolean useHttpPost;
 
-    WfsConnectorHttp(@Property(name = ".data") FeatureProviderDataTransformer data, @Requires Dropwizard dropwizard,
+    WfsConnectorHttp(@Property(name = ".data") FeatureProviderDataV1 data, @Requires Dropwizard dropwizard,
                      @Requires Http http) {
         this.useHttpPost = ((ConnectionInfoWfsHttp) data.getConnectionInfo()).getMethod() == ConnectionInfoWfsHttp.METHOD.POST;
         this.metricRegistry = dropwizard.getEnvironment()
@@ -130,7 +130,7 @@ public class WfsConnectorHttp implements WfsConnector {
 
     @Override
     public Source<ByteString, NotUsed> getSourceStream(String query) {
-        return null;
+        return httpClient.get(query);
     }
 
     @Override

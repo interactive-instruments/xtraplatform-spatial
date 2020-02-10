@@ -1,6 +1,7 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPath;
+import de.ii.xtraplatform.feature.provider.sql.SqlFeatureTypeParser;
 import de.ii.xtraplatform.feature.provider.sql.SqlPath;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
@@ -8,6 +9,7 @@ import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation.CARDINALITY;
+import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelatedContainer;
@@ -27,22 +29,24 @@ import java.util.stream.Stream;
 public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
     private final SqlPathSyntax syntax;
+    private final SqlFeatureTypeParser mappingParser;
 
     public FeatureStorePathParserSql(SqlPathSyntax syntax) {
         this.syntax = syntax;
+        this.mappingParser = new SqlFeatureTypeParser(syntax);
     }
 
     @Override
-    public List<FeatureStoreInstanceContainer> parse(List<String> paths) {
+    public List<FeatureStoreInstanceContainer> parse(FeatureType featureType) {
 
+        List<String> paths = mappingParser.parse(featureType);
 
-        List<SqlPath> sortedPaths = paths
-                .stream()
-                .sorted(this::sortByPriority)
-                .map(this::toSqlPath)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
+        List<SqlPath> sortedPaths = paths.stream()
+                                         .sorted(this::sortByPriority)
+                                         .map(this::toSqlPath)
+                                         .filter(Optional::isPresent)
+                                         .map(Optional::get)
+                                         .collect(Collectors.toList());
 
         List<FeatureStoreInstanceContainer> mergedPaths = toInstanceContainers(sortedPaths);
 
@@ -160,7 +164,8 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                             instanceContainerBuilders.get(instanceContainerName)
                                                      .name(instanceContainerName)
                                                      .path(tablePathAsList)
-                                                     .sortKey(syntax.getOptions().getDefaultSortKey())
+                                                     .sortKey(syntax.getOptions()
+                                                                    .getDefaultSortKey())
                                                      .attributes(attributes)
                                                      .attributesPosition(instancePos[0]);
                             instancePos[0] = 0;
@@ -171,7 +176,8 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                     //TODO: support flag {orderBy=btkomplex_id}{orderDir=ASC}
                                     ? instanceConnection.get(instanceConnection.size() - 1)
                                                         .getTargetField()
-                                    : syntax.getOptions().getDefaultSortKey();
+                                    : syntax.getOptions()
+                                            .getDefaultSortKey();
 
                             ImmutableFeatureStoreRelatedContainer attributesContainer = ImmutableFeatureStoreRelatedContainer.builder()
                                                                                                                              .name(attributesContainerName)

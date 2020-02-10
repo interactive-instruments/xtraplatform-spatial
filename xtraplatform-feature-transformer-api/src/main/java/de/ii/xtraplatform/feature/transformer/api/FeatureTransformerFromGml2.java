@@ -10,6 +10,7 @@ package de.ii.xtraplatform.feature.transformer.api;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
 import de.ii.xtraplatform.features.domain.FeatureConsumer;
@@ -142,7 +143,10 @@ class FeatureTransformerFromGml2 implements FeatureConsumer {
                                   .findFirst();
             }
 
-            return featureType.findPropertiesForPath(path)
+            //TODO
+            List<String> fullPath = new ImmutableList.Builder<String>().add(featureType.getAdditionalInfo().get("featureTypePath")).addAll(path).build();
+
+            return featureType.findPropertiesForPath(fullPath)
                               .stream()
                               .findFirst();
         }

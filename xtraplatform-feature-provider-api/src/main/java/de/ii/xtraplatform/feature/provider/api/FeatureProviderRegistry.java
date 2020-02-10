@@ -17,7 +17,7 @@ import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 public interface FeatureProviderRegistry {
     boolean isSupported(String providerType, String connectorType);
 
-    FeatureProvider2 createFeatureProvider(FeatureProviderDataV1 featureProviderData);
+    //FeatureProvider2 createFeatureProvider(FeatureProviderDataV1 featureProviderData);
 
     FeatureProviderConnector createConnector(FeatureProviderDataV1 featureProviderData);
 }
