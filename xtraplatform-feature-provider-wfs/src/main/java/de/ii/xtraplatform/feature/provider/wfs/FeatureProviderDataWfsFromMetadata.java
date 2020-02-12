@@ -97,7 +97,7 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
         throw new WFSException(ex.getMessage(), ex);
     }
 
-    static URI parseAndCleanWfsUrl(URI inUri) {
+    public static URI parseAndCleanWfsUrl(URI inUri) {
         URIBuilder outUri = new URIBuilder(inUri).removeQuery();
 
         if (inUri.getQuery() != null && !inUri.getQuery()

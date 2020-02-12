@@ -12,7 +12,7 @@ import java.util.concurrent.CompletionStage;
 
 public class ExtentReaderWfs implements ExtentReader {
 
-    public ExtentReaderWfs(WfsConnector connector, FeatureStoreQueryGeneratorWfs queryGenerator, EpsgCrs nativeCrs) {
+    public ExtentReaderWfs(WfsConnector connector, EpsgCrs nativeCrs) {
 
     }
 

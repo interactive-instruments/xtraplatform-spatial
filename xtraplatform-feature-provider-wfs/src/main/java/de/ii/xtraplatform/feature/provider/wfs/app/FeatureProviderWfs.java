@@ -41,7 +41,6 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     private final CrsTransformerFactory crsTransformerFactory;
     private final WfsConnector connector;
     private FeatureStorePathParserWfs pathParser;
-    private FeatureStoreQueryGeneratorWfs queryGenerator;
     private FeatureQueryTransformerWfs queryTransformer;
     private FeatureNormalizerWfs featureNormalizer;
 
@@ -72,8 +71,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
             }
         } else {
             this.pathParser = new FeatureStorePathParserWfs(((ConnectionInfoWfsHttp)getData().getConnectionInfo()).getNamespaces());
-            this.queryGenerator = new FeatureStoreQueryGeneratorWfs(new FilterEncoderWfs(getData().getNativeCrs()));
-            this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), queryGenerator, false/*TODO data.computeNumberMatched()*/);
+            this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), getData().getTypes(), (ConnectionInfoWfsHttp)getData().getConnectionInfo(), getData().getNativeCrs());
             this.featureNormalizer = new FeatureNormalizerWfs(getTypeInfos(), getData().getTypes(), ((ConnectionInfoWfsHttp)getData().getConnectionInfo()).getNamespaces());
         }
     }

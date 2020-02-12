@@ -72,7 +72,7 @@ public interface FeatureType extends ValueInstance {
                                        for (Map.Entry<String, String> entry : getAdditionalInfo().entrySet()) {
                                            String prefix = entry.getKey();
                                            String uri = entry.getValue();
-                                           resolvedElement = resolvedElement.replaceAll(prefix, uri);
+                                           resolvedElement = resolvedElement.replaceAll(prefix + ":", uri + ":");
                                        }
 
                                        return resolvedElement;

@@ -112,7 +112,8 @@ class FeatureQueryTransformerSql implements FeatureQueryTransformer<SqlQueries> 
     //TODO: rest of code in this class, so mainly the query multiplexing, goes to SqlConnector
     //TODO: should merge QueryTransformer with QueryGenerator
     @Override
-    public SqlQueries transformQuery(FeatureQuery featureQuery) {
+    public SqlQueries transformQuery(FeatureQuery featureQuery,
+                                     Map<String, String> additionalQueryParameters) {
         //TODO: either pass as parameter, or check for null here
         FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());
 

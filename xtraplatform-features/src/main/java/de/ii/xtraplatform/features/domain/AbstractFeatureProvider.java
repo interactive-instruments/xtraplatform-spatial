@@ -109,7 +109,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                     return promise;
                 }
 
-                U transformedQuery = getQueryTransformer().transformQuery(query);
+                U transformedQuery = getQueryTransformer().transformQuery(query, ImmutableMap.of());
 
                 Source<T, NotUsed> sourceStream = getConnector().getSourceStream(transformedQuery);
 
@@ -152,7 +152,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                     return promise;
                 }
 
-                U sqlQueries = getQueryTransformer().transformQuery(query);
+                U sqlQueries = getQueryTransformer().transformQuery(query, ImmutableMap.of());
 
                 Source<T, NotUsed> rowStream = getConnector().getSourceStream(sqlQueries);
 

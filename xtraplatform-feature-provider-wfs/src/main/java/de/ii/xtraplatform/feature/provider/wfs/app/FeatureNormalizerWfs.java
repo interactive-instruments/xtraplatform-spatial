@@ -21,6 +21,7 @@ import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProperty;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureType;
 import de.ii.xtraplatform.features.domain.Property;
+import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 
 import javax.xml.namespace.QName;
 import java.util.Map;
@@ -33,12 +34,14 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
     private final Map<String, FeatureStoreTypeInfo> typeInfos;
     private final Map<String, FeatureType> types;
     private final Map<String, String> namespaces;
+    private final XMLNamespaceNormalizer namespaceNormalizer;
 
     public FeatureNormalizerWfs(Map<String, FeatureStoreTypeInfo> typeInfos, Map<String, FeatureType> types,
                                 Map<String, String> namespaces) {
         this.typeInfos = typeInfos;
         this.types = types;
         this.namespaces = namespaces;
+        this.namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
     }
 
     private String resolveNamespaces(String path) {
@@ -61,17 +64,22 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
         FeatureType featureType = types.get(featureQuery.getType());
         FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());
 
+        String name = typeInfo.getInstanceContainers()
+                               .get(0)
+                               .getPath()
+                               .get(0);
+
+        QName qualifiedName = new QName(namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)), namespaceNormalizer.getLocalName(name));
+        String featureTypePath = qualifiedName.getNamespaceURI() + ":" + qualifiedName.getLocalPart();
+
         //TODO
         ImmutableFeatureType featureType1 = new ImmutableFeatureType.Builder().from(featureType)
                                                                               .additionalInfo(namespaces)
-                                                                              .putAdditionalInfo("featureTypePath", typeInfo.getInstanceContainers()
-                                                                                                                            .get(0)
-                                                                                                                            .getPath()
-                                                                                                                            .get(0))
+                                                                              .putAdditionalInfo("featureTypePath", featureTypePath)
                                                                               .build();
 
 
-        Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(new QName("http://repository.gdi-de.org/schemas/adv/produkt/alkis-vereinfacht/2.0", "Flurstueck"), featureType1, featureTransformer, ImmutableList.of("id"), ImmutableMap.of());
+        Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(qualifiedName, featureType1, featureTransformer, featureQuery.getFields(), ImmutableMap.of());
 
         return transformer.mapMaterializedValue((Function<CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (completionStage) -> completionStage.handle((done, throwable) -> {
             boolean success = true;
