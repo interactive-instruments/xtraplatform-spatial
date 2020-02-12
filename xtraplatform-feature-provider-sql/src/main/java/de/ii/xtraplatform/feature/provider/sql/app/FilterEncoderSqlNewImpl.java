@@ -102,8 +102,8 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
 
                         //TODO: fast enough? maybe pass all typeInfos to constructor and create map?
                         Predicate<FeatureStoreAttribute> propertyMatches = attribute -> attribute.getQueryable()
-                                                                                                 .isPresent() && Objects.equals(expression.getPropertyName().replaceAll("/", "."), attribute.getQueryable()
-                                                                                                                                                                       .get());
+                                                                                                 .isPresent() && (Objects.equals(expression.getPropertyName().replaceAll("/", "."), attribute.getQueryable()
+                                                                                                                                                                       .get()) || (Objects.equals(expression.getPropertyName(), "_ID_") && attribute.isId()));
                         Optional<FeatureStoreAttributesContainer> table = typeInfo.getAllAttributesContainers()
                                                                                   .stream()
                                                                                   .filter(attributesContainer -> attributesContainer.getAttributes()
