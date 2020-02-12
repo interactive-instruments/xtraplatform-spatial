@@ -1,0 +1,42 @@
+
+plugins {
+    id 'antlr'
+}
+
+version = '3.0.0'
+
+dependencies {
+    antlr "org.antlr:antlr4:4.7.2"
+
+    embeddedFlat 'org.antlr:antlr4-runtime:4.7.2'
+
+    testImplementation 'org.skyscreamer:jsonassert:1.5.0'
+}
+
+ext {
+    antlrOutDir = new File(buildDir, "/generated/src/main/antlr")
+    javaOutDir = new File(buildDir, "/generated/src/main/java/de/ii/xtraplatform/cql/infra")
+}
+
+//sourceSets.main.java.srcDirs += antlrOutDir
+
+generateGrammarSource {
+    outputDirectory = antlrOutDir
+    outputs.dir(javaOutDir)
+    arguments += [
+            '-visitor',
+            '-no-listener',
+            '-package', 'de.ii.xtraplatform.cql.infra',
+            '-Xexact-output-dir'
+    ]
+    doLast {
+
+        javaOutDir.mkdirs()
+        copy {
+            from antlrOutDir
+            into javaOutDir
+        }
+        println javaOutDir
+        println outputs.files.files
+    }
+}
