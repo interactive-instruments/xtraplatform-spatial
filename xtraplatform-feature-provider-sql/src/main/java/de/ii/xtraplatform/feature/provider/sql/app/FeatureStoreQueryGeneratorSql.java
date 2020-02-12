@@ -2,6 +2,7 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlCondition;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
@@ -35,11 +36,11 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     }
 
     @Override
-    public String getMetaQuery(FeatureStoreInstanceContainer instanceContainer, int limit, int offset, String filter,
+    public String getMetaQuery(FeatureStoreInstanceContainer instanceContainer, int limit, int offset, Optional<CqlPredicate> filter,
                                boolean computeNumberMatched) {
         String limitSql = limit > 0 ? String.format(" LIMIT %d", limit) : "";
         String offsetSql = offset > 0 ? String.format(" OFFSET %d", offset) : "";
-        String where = !Strings.isNullOrEmpty(filter) ? String.format(" WHERE %s", getFilter(instanceContainer, filter)) : "";
+        String where = filter.isPresent() ? String.format(" WHERE %s", getFilter(instanceContainer, filter.get())) : "";
 
         String numberReturned = String.format("SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.%2$s AS SKEY FROM %1$s A%5$s ORDER BY 1%3$s%4$s) AS NR", instanceContainer.getName(), instanceContainer.getSortKey(), limitSql, offsetSql, where);
 
@@ -52,13 +53,12 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     }
 
     @Override
-    public Stream<String> getInstanceQueries(FeatureStoreInstanceContainer instanceContainer, String cqlFilter,
+    public Stream<String> getInstanceQueries(FeatureStoreInstanceContainer instanceContainer, Optional<CqlPredicate> cqlFilter,
                                              long minKey, long maxKey) {
 
-        Optional<String> filter = Optional.ofNullable(Strings.emptyToNull(cqlFilter));
-        boolean isIdFilter = filter.isPresent() && isIdFilter(filter.get());
+        boolean isIdFilter = cqlFilter.flatMap(CqlPredicate::getInOperator).isPresent();
         List<String> aliases = getAliases(instanceContainer);
-        Optional<String> sqlFilter = filter.map(f -> getFilter(instanceContainer, f));
+        Optional<String> sqlFilter = cqlFilter.map(f -> getFilter(instanceContainer, f));
 
         Optional<String> whereClause = isIdFilter
                 ? sqlFilter
@@ -183,7 +183,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         return String.format("JOIN %1$s %2$s ON %4$s.%5$s=%2$s.%3$s", targetContainer, targetAlias, targetField, sourceContainer, sourceField);
     }
 
-    private String getFilter(FeatureStoreInstanceContainer instanceContainer, String cqlFilter) {
+    private String getFilter(FeatureStoreInstanceContainer instanceContainer, CqlPredicate cqlFilter) {
         List<SqlCondition> sqlConditions = filterEncoder.encode(cqlFilter, instanceContainer);
 
         List<String> sqlFilters = sqlConditions.stream()
@@ -243,11 +243,6 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
                 : String.format("%s.%s", table, column);
     }
 
-    //TODO: test after encoding on List<SqlCondition> instead
-    private boolean isIdFilter(String filter) {
-        return Strings.nullToEmpty(filter)
-                      .startsWith("IN ('");
-    }
 
     private String toWhereClause(String alias, String keyField, long minKey, long maxKey,
                                  Optional<String> additionalFilter) {

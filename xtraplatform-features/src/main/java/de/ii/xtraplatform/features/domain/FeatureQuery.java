@@ -8,6 +8,8 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.cql.domain.ScalarExpression;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.immutables.value.Value;
 
@@ -23,8 +25,7 @@ public abstract class FeatureQuery {
 
     public abstract String getType();
 
-    @Nullable
-    public abstract EpsgCrs getCrs();
+    public abstract Optional<EpsgCrs> getCrs();
 
     @Value.Default
     public int getLimit() {
@@ -36,10 +37,7 @@ public abstract class FeatureQuery {
         return 0;
     }
 
-    ;
-
-    @Nullable
-    public abstract String getFilter();
+    public abstract Optional<CqlPredicate> getFilter();
 
     @Value.Default
     public boolean hitsOnly() {
@@ -68,8 +66,7 @@ public abstract class FeatureQuery {
 
     @Value.Derived
     public boolean hasIdFilter() {
-        return Optional.ofNullable(getFilter())
-                       .filter(filter -> filter.matches("IN ('.+?')"))
+        return getFilter().flatMap(ScalarExpression::getInOperator)
                        .isPresent();
     }
 }

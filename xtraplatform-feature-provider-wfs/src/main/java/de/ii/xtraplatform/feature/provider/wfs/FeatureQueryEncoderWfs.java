@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import akka.japi.Pair;
+import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
@@ -127,7 +128,7 @@ public class FeatureQueryEncoderWfs {
         final String featureTypeName = namespaceNormalizer.getQualifiedName(featureType.getNamespaceURI(), featureType.getLocalPart());
 
         final WfsQuery wfsQuery = new WfsQueryBuilder().typeName(featureTypeName)
-                                                       .crs(query.getCrs())
+                                                       .crs(query.getCrs().get())
                                                        .filter(encodeFilter(query.getFilter(), featureTypeMapping))
                                                        .build();
         final GetFeatureBuilder getFeature = new GetFeatureBuilder();
@@ -151,12 +152,12 @@ public class FeatureQueryEncoderWfs {
         return getFeature.build();
     }
 
-    private Filter encodeFilter(final String filter, final FeatureTypeMapping featureTypeMapping) throws CQLException {
-        if (Objects.isNull(filter) || Objects.isNull(featureTypeMapping)) {
+    private Filter encodeFilter(final Optional<CqlPredicate> filter, final FeatureTypeMapping featureTypeMapping) throws CQLException {
+        if (!filter.isPresent() || Objects.isNull(featureTypeMapping)) {
             return null;
         }
 
-        return (Filter) ECQL.toFilter(filter)
+        return (Filter) ECQL.toFilter(filter.get().toCqlTextTopLevel())
                             .accept(new ResolvePropertyNamesFilterVisitor(featureTypeMapping, namespaceNormalizer), null);
     }
 

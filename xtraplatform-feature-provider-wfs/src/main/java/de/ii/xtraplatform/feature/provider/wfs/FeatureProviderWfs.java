@@ -465,14 +465,15 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
             @Override
             public CompletionStage<Result> runWith(FeatureTransformer2 featureTransformer) {
                 // if query crs is native or not supported by provider, remove from query
-                boolean useProviderDefaultCrs = data.getNativeCrs()
-                                                    .getCode() == query.getCrs()
+                boolean useProviderDefaultCrs = !query.getCrs().isPresent()
+                        || data.getNativeCrs()
+                                                    .getCode() == query.getCrs().get()
                                                                        .getCode()
-                        || !isCrsSupported(query.getCrs());
+                        || !isCrsSupported(query.getCrs().get());
 
                 FeatureQuery finalQuery = useProviderDefaultCrs ? ImmutableFeatureQuery.builder()
                                                                                        .from(query)
-                                                                                       .crs(null)
+                                                                                       .crs(Optional.empty())
                                                                                        .build() : query;
                 //Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(finalQuery.getType());
                 Optional<FeatureType> featureType = Optional.ofNullable(featureTypes.get(finalQuery.getType()));
@@ -535,14 +536,15 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
                 }
 
                 // if query crs is native or not supported by provider, remove from query
-                boolean useProviderDefaultCrs = data.getNativeCrs()
-                                                    .getCode() == query.getCrs()
+                boolean useProviderDefaultCrs = !query.getCrs().isPresent()
+                        || data.getNativeCrs()
+                                                    .getCode() == query.getCrs().get()
                                                                        .getCode()
-                        || !isCrsSupported(query.getCrs());
+                        || !isCrsSupported(query.getCrs().get());
 
                 FeatureQuery finalQuery = useProviderDefaultCrs ? ImmutableFeatureQuery.builder()
                                                                                        .from(query)
-                                                                                       .crs(null)
+                                                                                       .crs(Optional.empty())
                                                                                        .build() : query;
 
                 Optional<FeatureType> featureType = Optional.ofNullable(featureTypes.get(finalQuery.getType()));

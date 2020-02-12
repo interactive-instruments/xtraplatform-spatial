@@ -4,6 +4,8 @@ plugins {
 }
 
 dependencies {
+    provided project(":xtraplatform-crs")
+
     antlr "org.antlr:antlr4:4.7.2"
 
     embeddedFlat 'org.antlr:antlr4-runtime:4.7.2'

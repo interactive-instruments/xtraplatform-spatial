@@ -6,10 +6,13 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
+import de.ii.xtraplatform.crs.domain.BoundingBox;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.immutables.value.Value;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -29,6 +32,8 @@ public interface Geometry<T> extends CqlNode {
     Type getType();
 
     List<T> getCoordinates();
+
+    Optional<EpsgCrs> getCrs();
 
     @Value.Immutable
     @JsonDeserialize(builder = ImmutablePoint.Builder.class)
@@ -152,6 +157,10 @@ public interface Geometry<T> extends CqlNode {
     @Value.Immutable
     @JsonDeserialize(builder = ImmutableEnvelope.Builder.class)
     interface Envelope extends Geometry<Double> {
+
+        static Envelope of(BoundingBox boundingBox) {
+            return new ImmutableEnvelope.Builder().addCoordinates(boundingBox.getXmin(), boundingBox.getYmin(), boundingBox.getXmax(), boundingBox.getYmax()).crs(boundingBox.getEpsgCrs()).build();
+        }
 
         @JsonIgnore
         @Override

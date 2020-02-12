@@ -7,6 +7,10 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableEq.Builder.class)
 public interface Eq extends ScalarOperation, CqlNode {
 
+    static Eq of (String property, String literal) {
+        return new ImmutableEq.Builder().property(property).value(ScalarLiteral.of(literal)).build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<Eq> {
     }
 

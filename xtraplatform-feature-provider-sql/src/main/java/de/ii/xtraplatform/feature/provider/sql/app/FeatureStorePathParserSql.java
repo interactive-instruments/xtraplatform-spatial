@@ -81,7 +81,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
             List<String> tablePathAsList = syntax.asList(tablePath);
             boolean isRoot = tablePathAsList.size() == 1;
             boolean isJunction = syntax.isJunctionTable(tablePathAsList.get(tablePathAsList.size() - 1));
-            Optional<String> queryable = syntax.getQueryableFlag(flags);
+            Optional<String> queryable = syntax.getQueryableFlag(flags).map(q -> q.replaceAll("\\[", "").replaceAll("]", ""));
             boolean isSpatial = syntax.getSpatialFlag(flags);
 
             return Optional.of(ImmutableSqlPath.builder()

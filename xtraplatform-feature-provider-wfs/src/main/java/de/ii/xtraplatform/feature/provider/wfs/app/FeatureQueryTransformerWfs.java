@@ -2,6 +2,7 @@ package de.ii.xtraplatform.feature.provider.wfs.app;
 
 import akka.japi.Pair;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderDataWfsFromMetadata;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureQueryEncoderWfs;
@@ -170,12 +171,12 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
         return getFeature.build();
     }
 
-    private Filter encodeFilter(final String filter, final FeatureType featureType) throws CQLException {
-        if (Objects.isNull(filter) || Objects.isNull(featureType)) {
+    private Filter encodeFilter(final Optional<CqlPredicate> filter, final FeatureType featureType) throws CQLException {
+        if (!filter.isPresent() || Objects.isNull(featureType)) {
             return null;
         }
 
-        return (Filter) ECQL.toFilter(filter)
+        return (Filter) ECQL.toFilter(filter.get().toCqlTextTopLevel())
                             .accept(new FeatureQueryTransformerWfs.ResolvePropertyNamesFilterVisitor(featureType, namespaceNormalizer), null);
     }
 

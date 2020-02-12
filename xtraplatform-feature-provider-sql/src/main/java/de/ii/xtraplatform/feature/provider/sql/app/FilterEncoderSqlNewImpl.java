@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlCondition;
@@ -72,7 +73,7 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
     //TODO: implement own CQL parser
     // currently we hijack the transformation from cql to ogc filter to get a sql filter
     // that's pretty dirty and also not very fast
-    public List<SqlCondition> encode(final String cqlFilter, FeatureStoreInstanceContainer typeInfo) {
+    public List<SqlCondition> encode(final CqlPredicate cqlFilter, FeatureStoreInstanceContainer typeInfo) {
 
         List<String> columns = new ArrayList<>();
         List<String> conditions = new ArrayList<>();
@@ -80,8 +81,11 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
         Map<Integer, Boolean> ors = new HashMap<>();
         List<FeatureStoreAttributesContainer> tables = new ArrayList<>();
 
+        //TODO: replace with CqlObjectVisitor
         try {
-            ECQL.toFilter(cqlFilter)
+            LOGGER.debug("CQL Filter: {}", cqlFilter.toCqlTextTopLevel());
+
+            ECQL.toFilter(cqlFilter.toCqlTextTopLevel())
                 .accept(new DuplicatingFilterVisitor() {
 
                     @Override
@@ -98,7 +102,7 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
 
                         //TODO: fast enough? maybe pass all typeInfos to constructor and create map?
                         Predicate<FeatureStoreAttribute> propertyMatches = attribute -> attribute.getQueryable()
-                                                                                                 .isPresent() && Objects.equals(expression.getPropertyName(), attribute.getQueryable()
+                                                                                                 .isPresent() && Objects.equals(expression.getPropertyName().replaceAll("/", "."), attribute.getQueryable()
                                                                                                                                                                        .get());
                         Optional<FeatureStoreAttributesContainer> table = typeInfo.getAllAttributesContainers()
                                                                                   .stream()
