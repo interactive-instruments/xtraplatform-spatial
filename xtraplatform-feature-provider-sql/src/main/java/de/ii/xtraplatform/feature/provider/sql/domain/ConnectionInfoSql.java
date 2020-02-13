@@ -15,6 +15,7 @@ import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
 import org.immutables.value.Value;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author zahnen
@@ -42,13 +43,26 @@ public interface ConnectionInfoSql extends ConnectionInfo {
     }
 
     @Value.Default
+    default boolean getComputeNumberMatched() {
+        return true;
+    }
+
+    @Value.Default
     default SqlPathSyntax.Options getPathSyntax() {
         return new ImmutableOptions.Builder().build();
     }
+
+    Optional<FeatureActionTrigger> getTriggers();
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     @Value.Default
     default int getMaxThreads() {
         return 16;
+    }
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @Value.Default
+    default boolean getInitFailFast() {
+        return true;
     }
 }

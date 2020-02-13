@@ -103,7 +103,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
             //TODO: from config
             SqlDialect sqlDialect = new SqlDialectPostGis();
             this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new FilterEncoderSqlNewImpl(getData().getNativeCrs()), sqlDialect);
-            this.queryTransformer = new FeatureQueryTransformerSql(getTypeInfos(), queryGeneratorSql, false/*TODO data.computeNumberMatched()*/);
+            this.queryTransformer = new FeatureQueryTransformerSql(getTypeInfos(), queryGeneratorSql, ((ConnectionInfoSql) getData().getConnectionInfo()).getComputeNumberMatched());
             this.featureNormalizer = new FeatureNormalizerSql(getTypeInfos(), getData().getTypes());
             this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect, getData().getNativeCrs());
         }

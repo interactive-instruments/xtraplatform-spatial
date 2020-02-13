@@ -150,7 +150,7 @@ public class SqlConnectorSlick implements SqlConnector {
                 .put("properties.serverName", connectionInfo.getHost())
                 .put("properties.databaseName", connectionInfo.getDatabase())
                 .put("numThreads", connectionInfo.getMaxThreads())
-                .put("initializationFailFast", true);
+                .put("initializationFailFast", connectionInfo.getInitFailFast());
 
         if (!connectionInfo.getSchemas().isEmpty()) {
             databaseConfig.put("connectionInitSql", String.format("SET search_path TO %s,public;", Joiner.on(',').join(connectionInfo.getSchemas())));

@@ -30,11 +30,11 @@ public abstract class SimplifyLine implements CoordinatesTransformation {
         boolean[] keepPoints = new boolean[numberOfPoints];
         Arrays.fill(keepPoints, true);
 
-        if (getMinNumberOfPoints() > 0) {
+        if (getMinNumberOfPoints() > 2) {
             int split = Math.max(getMinNumberOfPoints() - 1, numberOfPoints / getMinNumberOfPoints());
 
             for (int i = 0; i < numberOfPoints; i = i + split) {
-                simplifySection(points, dimension, i, Math.min(i + split, numberOfPoints - 1), keepPoints);
+                simplifySection(points, dimension, i, Math.min(i + split - 1, numberOfPoints - 1), keepPoints);
             }
             /*
             simplifySection(points, dimension, 0, split, keepPoints);
