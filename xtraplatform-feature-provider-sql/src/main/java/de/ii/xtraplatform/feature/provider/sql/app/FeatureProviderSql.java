@@ -5,6 +5,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.akka.ActorSystemProvider;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
+import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.entity.api.EntityComponent;
@@ -84,14 +85,15 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     protected void onStart() {
         if (!getConnector().isConnected()) {
             Optional<Throwable> connectionError = getConnector().getConnectionError();
-            String message = connectionError.map(Throwable::getMessage).orElse("unknown reason");
+            String message = connectionError.map(Throwable::getMessage)
+                                            .orElse("unknown reason");
             LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), message);
             if (connectionError.isPresent() && LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Stacktrace:", connectionError.get());
             }
         } else {
             SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-                                                         .options(((ConnectionInfoSql)getData().getConnectionInfo()).getPathSyntax())
+                                                         .options(((ConnectionInfoSql) getData().getConnectionInfo()).getPathSyntax())
                                                          .build();
             //TODO: merge
 
@@ -185,24 +187,30 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }*/
 
-    //TODO: crs as second param, transform here? yup
     @Override
-    public BoundingBox getSpatialExtent(String typeName) {
+    public Optional<BoundingBox> getSpatialExtent(String typeName) {
         Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
-        //TODO: immutable
-        //TODO: really provide fallback, or better move to caller?
-        //TODO: has to be in native crs, otherwise it will not work
-        BoundingBox boundingBoxFallback = new BoundingBox(-180.0D, -90.0D, 180.0D, 90.0D, EpsgCrs.of(4326));
 
         if (!typeInfo.isPresent()) {
-            return boundingBoxFallback;
+            return Optional.empty();
         }
 
         return extentReader.getExtent(typeInfo.get())
                            .run(getMaterializer())
-                           .exceptionally(throwable -> Optional.of(boundingBoxFallback))
+                           .exceptionally(throwable -> Optional.empty())
                            .toCompletableFuture()
-                           .join()
-                           .orElse(boundingBoxFallback);
+                           .join();
+    }
+
+    @Override
+    public Optional<BoundingBox> getSpatialExtent(String typeName, EpsgCrs crs) {
+        return getSpatialExtent(typeName).flatMap(boundingBox -> crsTransformerFactory.getTransformer(getData().getNativeCrs(), crs)
+                                                                                      .flatMap(crsTransformer -> {
+                                                                                          try {
+                                                                                              return Optional.of(crsTransformer.transformBoundingBox(boundingBox));
+                                                                                          } catch (CrsTransformationException e) {
+                                                                                              return Optional.empty();
+                                                                                          }
+                                                                                      }));
     }
 }
