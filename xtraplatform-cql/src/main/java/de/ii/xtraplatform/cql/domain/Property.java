@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Splitter;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -33,5 +34,10 @@ public interface Property extends Scalar, Spatial, Temporal, Operand, CqlNode {
     @Override
     default String toCqlText() {
         return getName();
+    }
+
+    @Override
+    default <T> T accept(ObjectVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

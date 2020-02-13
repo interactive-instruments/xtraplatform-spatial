@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -77,5 +78,15 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
     default String toCqlTextTopLevel() {
         return getExpressions().get(0)
                 .toCqlTextTopLevel();
+    }
+
+    @Override
+    default <T> T accept(ObjectVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
+
+    @Override
+    default <T> T acceptTopLevel(ObjectVisitor<T> visitor) {
+        return visitor.visitTopLevel(this);
     }
 }

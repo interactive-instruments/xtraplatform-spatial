@@ -2,6 +2,7 @@ package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -39,5 +40,10 @@ public interface SpatialLiteral extends Spatial, Literal, CqlNode {
     @Override
     default String toCqlText() {
         return ((CqlNode)getValue()).toCqlText();
+    }
+
+    @Override
+    default <T> T accept(ObjectVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

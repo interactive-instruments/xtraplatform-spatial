@@ -1,6 +1,6 @@
 package de.ii.xtraplatform.cql.domain;
 
-import de.ii.xtraplatform.cql.infra.CqlObjectVisitor;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 
 public interface CqlNode {
 
@@ -24,8 +24,12 @@ public interface CqlNode {
         return String.format("NOT (%s)", toCqlText());
     }
 
-    default <T> T accept(CqlObjectVisitor<T> visitor) {
+    default <T> T accept(ObjectVisitor<T> visitor) {
         return visitor.visit(this);
+    }
+
+    default <T> T acceptTopLevel(ObjectVisitor<T> visitor) {
+        return accept(visitor);
     }
 
 }

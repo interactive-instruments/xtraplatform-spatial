@@ -1,6 +1,7 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -15,4 +16,8 @@ public interface After extends TemporalOperation, CqlNode {
         return TemporalOperation.super.toCqlText("AFTER");
     }
 
+    @Override
+    default <T> T accept(ObjectVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 }

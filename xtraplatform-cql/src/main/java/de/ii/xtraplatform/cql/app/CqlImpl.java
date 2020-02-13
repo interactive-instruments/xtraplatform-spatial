@@ -11,6 +11,7 @@ import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.infra.CqlTextParser;
+import de.ii.xtraplatform.cql.infra.ObjectToCqlVisitor;
 import io.dropwizard.jackson.Jackson;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
@@ -64,7 +65,7 @@ public class CqlImpl implements Cql {
         switch (format) {
 
             case TEXT:
-                return cql.toCqlTextTopLevel();
+                return cql.acceptTopLevel(new ObjectToCqlVisitor());
             case JSON:
                 try {
                     return cqlJsonMapper.writeValueAsString(cql);
