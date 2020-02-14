@@ -104,12 +104,6 @@ public interface ObjectVisitor<T> {
 
     T visit(SpatialLiteral spatialLiteral);
 
-//    T visit(ComparisonOperator comparisonOperator);
-//
-//    T visit(SpatialOperator spatialOperator);
-//
-//    T visit(TemporalOperator temporalOperator);
-
     T visit(CqlNode cqlNode);
 
     T visit(Operand operand);

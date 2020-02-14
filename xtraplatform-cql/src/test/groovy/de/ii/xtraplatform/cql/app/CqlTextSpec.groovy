@@ -1,7 +1,10 @@
 package de.ii.xtraplatform.cql.app
 
+import com.google.common.collect.ImmutableList
 import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.CqlPredicate
+import de.ii.xtraplatform.cql.infra.PropertyCheckVisitor
+
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -473,6 +476,33 @@ class CqlTextSpec extends Specification {
 
         then:
         actual2 == cqlText
+    }
+
+    def 'Test the property-checking visitor'() {
+        given:
+        // run the test on 2 different queries to make sure that old properties are removed
+        String cqlTextDoors = "NOT (floors < 5) OR swimming_pool = true"
+        String cqlTextOwner = "owner DOES-NOT-EXIST"
+        def allowedProperties = ImmutableList.of("doors", "floors")
+        PropertyCheckVisitor visitor = new PropertyCheckVisitor(allowedProperties)
+
+        when: 'writing text'
+        String actual = CqlPredicateExamples.EXAMPLE_10.acceptTopLevel(visitor)
+
+        then:
+        actual == cqlTextDoors
+        visitor.getNotAllowedProperties().size() == 1
+        visitor.getNotAllowedProperties().get(0) == "swimming_pool"
+
+        and:
+
+        when: 'writing text'
+        String actual2 = CqlPredicateExamples.EXAMPLE_23.acceptTopLevel(visitor)
+
+        then:
+        actual2 == cqlTextOwner
+        visitor.getNotAllowedProperties().size() == 1
+        visitor.getNotAllowedProperties().get(0) == "owner"
     }
 
 }
