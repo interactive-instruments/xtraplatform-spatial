@@ -2,6 +2,7 @@ package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 
 import java.util.Arrays;
@@ -42,5 +43,10 @@ public interface In extends CqlNode, ScalarOperation {
                         .stream()
                         .map(Literal::toCqlText)
                         .collect(Collectors.joining(", ")));
+    }
+
+    @Override
+    default <T> T accept(ObjectVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.immutables.value.Value;
@@ -54,6 +55,11 @@ public interface Geometry<T> extends CqlNode {
             return String.format("POINT(%s)", getCoordinates().get(0).toCqlText());
         }
 
+        @Override
+        default <T> T accept(ObjectVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+
     }
 
     @Value.Immutable
@@ -70,6 +76,11 @@ public interface Geometry<T> extends CqlNode {
             return String.format("LINESTRING%s", getCoordinates().stream()
                     .map(Coordinate::toCqlText)
                     .collect(Collectors.joining(",", "(", ")")));
+        }
+
+        @Override
+        default <T> T accept(ObjectVisitor<T> visitor) {
+            return visitor.visit(this);
         }
     }
 
@@ -90,6 +101,11 @@ public interface Geometry<T> extends CqlNode {
                                                                                        .collect(Collectors.joining(",", "(", ")"))))
                                                               .collect(Collectors.joining(",", "(", ")")));
         }
+
+        @Override
+        default <T> T accept(ObjectVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
     }
 
     @Value.Immutable
@@ -107,6 +123,11 @@ public interface Geometry<T> extends CqlNode {
                     .flatMap(point -> point.getCoordinates().stream())
                     .map(Coordinate::toCqlText)
                     .collect(Collectors.joining(",", "(", ")")));
+        }
+
+        @Override
+        default <T> T accept(ObjectVisitor<T> visitor) {
+            return visitor.visit(this);
         }
 
     }
@@ -130,6 +151,11 @@ public interface Geometry<T> extends CqlNode {
                     .collect(Collectors.joining(",", "(", ")")));
         }
 
+        @Override
+        default <T> T accept(ObjectVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
+
     }
 
     @Value.Immutable
@@ -150,6 +176,11 @@ public interface Geometry<T> extends CqlNode {
                                     .collect(Collectors.joining(",", "(", ")"))))
                             .collect(Collectors.joining(",", "(", ")"))))
                     .collect(Collectors.joining(",", "(", ")")));
+        }
+
+        @Override
+        default <T> T accept(ObjectVisitor<T> visitor) {
+            return visitor.visit(this);
         }
 
     }
@@ -178,6 +209,11 @@ public interface Geometry<T> extends CqlNode {
                     .map(String::valueOf)
                     .collect(Collectors.joining(",", "(", ")")));
         }
+
+        @Override
+        default <T> T accept(ObjectVisitor<T> visitor) {
+            return visitor.visit(this);
+        }
     }
 
     class Coordinate extends ArrayList<Double> implements CqlNode {
@@ -199,6 +235,11 @@ public interface Geometry<T> extends CqlNode {
         @Override
         public String toCqlText() {
             return stream().map(Object::toString).collect(Collectors.joining(" "));
+        }
+
+        @Override
+        public <T> T accept(ObjectVisitor<T> visitor) {
+            return visitor.visit(this);
         }
     }
 

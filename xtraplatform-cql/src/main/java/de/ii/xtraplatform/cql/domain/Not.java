@@ -3,6 +3,7 @@ package de.ii.xtraplatform.cql.domain;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -32,5 +33,10 @@ public interface Not extends LogicalOperation, CqlNode {
                 .getExpressions()
                 .get(0)
                 .toCqlTextNot();
+    }
+
+    @Override
+    default <T> T accept(ObjectVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

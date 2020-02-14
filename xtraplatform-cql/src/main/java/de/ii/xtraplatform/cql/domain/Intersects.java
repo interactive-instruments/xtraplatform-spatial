@@ -1,6 +1,7 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.immutables.value.Value;
@@ -27,5 +28,10 @@ public interface Intersects extends SpatialOperation, CqlNode {
         }
 
         return SpatialOperation.super.toCqlText("INTERSECTS");
+    }
+
+    @Override
+    default <T> T accept(ObjectVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

@@ -4,13 +4,19 @@ import de.ii.xtraplatform.cql.domain.*;
 
 import java.util.List;
 
-public interface CqlObjectVisitor<T> {
+public interface ObjectVisitor<T> {
 
-    T visit(CqlNode node);
+    T visit(CqlPredicate cqlPredicate);
+
+    T visitTopLevel(CqlPredicate cqlPredicate);
 
     T visit(And and, List<T> children);
 
+    T visitTopLevel(And and, List<T> children);
+
     T visit(Or or, List<T> children);
+
+    T visitTopLevel(Or or, List<T> children);
 
     T visit(Not not);
 
@@ -78,6 +84,30 @@ public interface CqlObjectVisitor<T> {
 
     T visit(Contains contains);
 
-    T visit(Geometry geometry);
+    T visit(Geometry.Coordinate coordinate);
+
+    T visit(Geometry.Point point);
+
+    T visit(Geometry.LineString lineString);
+
+    T visit(Geometry.Polygon polygon);
+
+    T visit(Geometry.MultiPoint multiPoint);
+
+    T visit(Geometry.MultiLineString multiLineString);
+
+    T visit(Geometry.MultiPolygon multiPolygon);
+
+    T visit(Geometry.Envelope envelope);
+
+    T visit(Literal literal);
+
+    T visit(SpatialLiteral spatialLiteral);
+
+    T visit(CqlNode cqlNode);
+
+    T visit(Operand operand);
+
+    T visit(Property property);
 
 }

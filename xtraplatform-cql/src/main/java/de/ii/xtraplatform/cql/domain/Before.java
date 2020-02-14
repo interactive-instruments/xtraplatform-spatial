@@ -1,6 +1,7 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 
 import java.time.Instant;
@@ -19,6 +20,11 @@ public interface Before extends TemporalOperation, CqlNode {
     @Override
     default String toCqlText() {
         return TemporalOperation.super.toCqlText("BEFORE");
+    }
+
+    @Override
+    default <T> T accept(ObjectVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 
 }

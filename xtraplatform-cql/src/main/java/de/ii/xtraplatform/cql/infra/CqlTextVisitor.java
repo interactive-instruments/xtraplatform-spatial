@@ -239,11 +239,11 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitPropertyIsBetweenPredicate(CqlParser.PropertyIsBetweenPredicateContext ctx) {
 
-        CqlNode property = ctx.scalarExpression(0).accept(this);
+        Property property = (Property) ctx.scalarExpression(0).accept(this);
         ScalarLiteral lowerValue = (ScalarLiteral) ctx.scalarExpression(1).accept(this);
         ScalarLiteral upperValue = (ScalarLiteral) ctx.scalarExpression(2).accept(this);
         return new ImmutableBetween.Builder()
-                .property(property.toCqlText())
+                .property(property.getName())
                 .lower(lowerValue)
                 .upper(upperValue)
                 .build();
@@ -253,11 +253,11 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     public CqlNode visitPropertyIsNullPredicate(CqlParser.PropertyIsNullPredicateContext ctx) {
 
         if (Objects.nonNull(ctx.IS())) {
-            CqlNode property = ctx.scalarExpression()
-                    .accept(this);
-            String propName = property.toCqlText();
+            Property property = (Property) ctx.scalarExpression().accept(this);
 
-            IsNull isNull = new ImmutableIsNull.Builder().property(propName).build();
+            IsNull isNull = new ImmutableIsNull.Builder()
+                    .property(property.getName())
+                    .build();
             if (Objects.nonNull(ctx.NOT())) {
                 return Not.of(ImmutableList.of(new ImmutableCqlPredicate.Builder()
                         .isNull(isNull)

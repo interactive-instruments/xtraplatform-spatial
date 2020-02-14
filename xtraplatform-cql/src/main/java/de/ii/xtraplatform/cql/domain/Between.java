@@ -2,6 +2,7 @@ package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 
 import java.util.Optional;
@@ -27,5 +28,10 @@ public interface Between extends ScalarOperation, CqlNode {
     default String toCqlText() {
         return String.format("%s BETWEEN %s AND %s", getProperty().get().toCqlText(),
                 getLower().get().toCqlText(), getUpper().get().toCqlText());
+    }
+
+    @Override
+    default <T> T accept(ObjectVisitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

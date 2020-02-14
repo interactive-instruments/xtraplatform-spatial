@@ -3,6 +3,7 @@ package de.ii.xtraplatform.cql.domain;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Joiner;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 import org.threeten.extra.Interval;
 
@@ -31,6 +32,11 @@ public interface TemporalLiteral extends Temporal, Literal, CqlNode {
     }
 
     Joiner INTERVAL_JOINER = Joiner.on('/').skipNulls();
+
+    @Override
+    default <T> T accept(ObjectVisitor<T> visitor) {
+        return visitor.visit(this);
+    }
 
     class Builder extends ImmutableTemporalLiteral.Builder {
         public Builder() {

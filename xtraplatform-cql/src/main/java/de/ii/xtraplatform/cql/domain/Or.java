@@ -2,7 +2,7 @@ package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.cql.infra.CqlObjectVisitor;
+import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -30,10 +30,20 @@ public interface Or extends LogicalOperation, CqlNode {
     }
 
     @Override
-    default <T> T accept(CqlObjectVisitor<T> visitor) {
-        List<T> children = getPredicates().stream()
+    default <T> T accept(ObjectVisitor<T> visitor) {
+        List<T> children = getPredicates()
+                .stream()
                 .map(predicate -> predicate.accept(visitor))
                 .collect(Collectors.toList());
         return visitor.visit(this, children);
+    }
+
+    @Override
+    default <T> T acceptTopLevel(ObjectVisitor<T> visitor) {
+        List<T> children = getPredicates()
+                .stream()
+                .map(predicate -> predicate.accept(visitor))
+                .collect(Collectors.toList());
+        return visitor.visitTopLevel(this, children);
     }
 }
