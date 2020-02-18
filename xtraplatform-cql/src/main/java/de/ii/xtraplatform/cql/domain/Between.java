@@ -2,11 +2,12 @@ package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
-import de.ii.xtraplatform.cql.infra.ObjectVisitor;
+import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
 import java.util.Optional;
 
+//TODO: not a Binary-/ScalarOperation, either remove extends or allow more operands in Binary-/ScalarOperation
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableBetween.Builder.class)
 public interface Between extends ScalarOperation, CqlNode {
@@ -15,6 +16,7 @@ public interface Between extends ScalarOperation, CqlNode {
     }
 
     Optional<ScalarLiteral> getLower();
+
     Optional<ScalarLiteral> getUpper();
 
     @Value.Check
@@ -25,13 +27,14 @@ public interface Between extends ScalarOperation, CqlNode {
     }
 
     @Override
-    default String toCqlText() {
-        return String.format("%s BETWEEN %s AND %s", getProperty().get().toCqlText(),
-                getLower().get().toCqlText(), getUpper().get().toCqlText());
-    }
+    default <U> U accept(CqlVisitor<U> visitor) {
+        U property = getProperty().get()
+                                  .accept(visitor);
+        U lower = getLower().get()
+                            .accept(visitor);
+        U upper = getUpper().get()
+                            .accept(visitor);
 
-    @Override
-    default <T> T accept(ObjectVisitor<T> visitor) {
-        return visitor.visit(this);
+        return visitor.visit(this, Lists.newArrayList(property, lower, upper));
     }
 }

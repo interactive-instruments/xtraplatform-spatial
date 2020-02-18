@@ -3,12 +3,13 @@ package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
-import de.ii.xtraplatform.cql.infra.ObjectVisitor;
+import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
+//TODO: not a Binary-/ScalarOperation, either remove extends or allow less operands in Binary-/ScalarOperation
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableExists.Builder.class)
-public interface Exists extends CqlNode, ScalarOperation {
+public interface Exists extends ScalarOperation, CqlNode {
 
     abstract class Builder extends ScalarOperation.Builder<Exists> {
     }
@@ -16,22 +17,13 @@ public interface Exists extends CqlNode, ScalarOperation {
     @Value.Check
     @Override
     default void check() {
-        int count = getOperands().size();
-        Preconditions.checkState(count == 1, "EXISTS operation must have exactly one operand, found %s", count);
+        Preconditions.checkState(getProperty().isPresent(), "EXISTS operation must have exactly one operand, found 0");
     }
 
     @Override
-    default String toCqlText() {
-        return String.format("%s EXISTS", getProperty().get().toCqlText());
-    }
-
-    @Override
-    default String toCqlTextNot() {
-        return String.format("%s DOES-NOT-EXIST", getProperty().get().toCqlText());
-    }
-
-    @Override
-    default <T> T accept(ObjectVisitor<T> visitor) {
-        return visitor.visit(this);
+    default <T> T accept(CqlVisitor<T> visitor) {
+        T property = getProperty().get()
+                                  .accept(visitor);
+        return visitor.visit(this, Lists.newArrayList(property));
     }
 }

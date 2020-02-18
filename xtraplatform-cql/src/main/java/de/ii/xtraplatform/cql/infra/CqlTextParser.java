@@ -1,5 +1,6 @@
 package de.ii.xtraplatform.cql.infra;
 
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import org.antlr.v4.runtime.BaseErrorListener;
@@ -25,15 +26,15 @@ public class CqlTextParser {
         return parser.cqlFilter();
     }
 
-    public CqlPredicate parse(String cql) throws CqlParseException {
+    public CqlFilter parse(String cql) throws CqlParseException {
         return parse(cql, new CqlTextVisitor());
     }
 
-    public CqlPredicate parse(String cql, CqlTextVisitor visitor) throws CqlParseException {
+    public CqlFilter parse(String cql, CqlTextVisitor visitor) throws CqlParseException {
         try {
             CqlParser.CqlFilterContext cqlFilterContext = parseToTree(cql);
 
-            return (CqlPredicate) visitor.visit(cqlFilterContext);
+            return (CqlFilter) visitor.visit(cqlFilterContext);
         } catch (ParseCancellationException e) {
             throw new CqlParseException(e.getMessage());
         }

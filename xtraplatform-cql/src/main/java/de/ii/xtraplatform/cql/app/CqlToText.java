@@ -1,60 +1,119 @@
-package de.ii.xtraplatform.cql.infra;
+package de.ii.xtraplatform.cql.app;
 
-import de.ii.xtraplatform.cql.domain.After;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.And;
-import de.ii.xtraplatform.cql.domain.Before;
-import de.ii.xtraplatform.cql.domain.Begins;
-import de.ii.xtraplatform.cql.domain.BegunBy;
 import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.Contains;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
-import de.ii.xtraplatform.cql.domain.Crosses;
-import de.ii.xtraplatform.cql.domain.Disjoint;
-import de.ii.xtraplatform.cql.domain.During;
-import de.ii.xtraplatform.cql.domain.EndedBy;
-import de.ii.xtraplatform.cql.domain.Ends;
-import de.ii.xtraplatform.cql.domain.Eq;
-import de.ii.xtraplatform.cql.domain.Equals;
+import de.ii.xtraplatform.cql.domain.CqlVisitor;
 import de.ii.xtraplatform.cql.domain.Exists;
 import de.ii.xtraplatform.cql.domain.Geometry;
-import de.ii.xtraplatform.cql.domain.Gt;
-import de.ii.xtraplatform.cql.domain.Gte;
+import de.ii.xtraplatform.cql.domain.ImmutableAfter;
+import de.ii.xtraplatform.cql.domain.ImmutableAnd;
+import de.ii.xtraplatform.cql.domain.ImmutableBefore;
+import de.ii.xtraplatform.cql.domain.ImmutableBegins;
+import de.ii.xtraplatform.cql.domain.ImmutableBegunBy;
+import de.ii.xtraplatform.cql.domain.ImmutableBetween;
+import de.ii.xtraplatform.cql.domain.ImmutableContains;
+import de.ii.xtraplatform.cql.domain.ImmutableCrosses;
+import de.ii.xtraplatform.cql.domain.ImmutableDisjoint;
+import de.ii.xtraplatform.cql.domain.ImmutableDuring;
+import de.ii.xtraplatform.cql.domain.ImmutableEndedBy;
+import de.ii.xtraplatform.cql.domain.ImmutableEnds;
+import de.ii.xtraplatform.cql.domain.ImmutableEq;
+import de.ii.xtraplatform.cql.domain.ImmutableEquals;
+import de.ii.xtraplatform.cql.domain.ImmutableExists;
+import de.ii.xtraplatform.cql.domain.ImmutableGt;
+import de.ii.xtraplatform.cql.domain.ImmutableGte;
+import de.ii.xtraplatform.cql.domain.ImmutableIn;
+import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
+import de.ii.xtraplatform.cql.domain.ImmutableIsNull;
+import de.ii.xtraplatform.cql.domain.ImmutableLike;
+import de.ii.xtraplatform.cql.domain.ImmutableLt;
+import de.ii.xtraplatform.cql.domain.ImmutableLte;
+import de.ii.xtraplatform.cql.domain.ImmutableMeets;
+import de.ii.xtraplatform.cql.domain.ImmutableMetBy;
+import de.ii.xtraplatform.cql.domain.ImmutableNeq;
+import de.ii.xtraplatform.cql.domain.ImmutableNot;
+import de.ii.xtraplatform.cql.domain.ImmutableOr;
+import de.ii.xtraplatform.cql.domain.ImmutableOverlappedBy;
+import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
+import de.ii.xtraplatform.cql.domain.ImmutableTContains;
+import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
+import de.ii.xtraplatform.cql.domain.ImmutableTOverlaps;
+import de.ii.xtraplatform.cql.domain.ImmutableTouches;
+import de.ii.xtraplatform.cql.domain.ImmutableWithin;
 import de.ii.xtraplatform.cql.domain.In;
-import de.ii.xtraplatform.cql.domain.Intersects;
 import de.ii.xtraplatform.cql.domain.IsNull;
 import de.ii.xtraplatform.cql.domain.Like;
-import de.ii.xtraplatform.cql.domain.Literal;
-import de.ii.xtraplatform.cql.domain.Lt;
-import de.ii.xtraplatform.cql.domain.Lte;
-import de.ii.xtraplatform.cql.domain.Meets;
-import de.ii.xtraplatform.cql.domain.MetBy;
-import de.ii.xtraplatform.cql.domain.Neq;
+import de.ii.xtraplatform.cql.domain.LogicalOperation;
 import de.ii.xtraplatform.cql.domain.Not;
-import de.ii.xtraplatform.cql.domain.Operand;
 import de.ii.xtraplatform.cql.domain.Or;
-import de.ii.xtraplatform.cql.domain.OverlappedBy;
-import de.ii.xtraplatform.cql.domain.Overlaps;
 import de.ii.xtraplatform.cql.domain.Property;
+import de.ii.xtraplatform.cql.domain.ScalarLiteral;
 import de.ii.xtraplatform.cql.domain.ScalarOperation;
 import de.ii.xtraplatform.cql.domain.SpatialLiteral;
 import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.TContains;
-import de.ii.xtraplatform.cql.domain.TEquals;
-import de.ii.xtraplatform.cql.domain.TOverlaps;
+import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.cql.domain.TemporalOperation;
-import de.ii.xtraplatform.cql.domain.Touches;
-import de.ii.xtraplatform.cql.domain.Within;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class CqlToText implements CqlVisitor<String> {
 
+    private final static Map<Class<?>, String> LOGICAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
+            .put(ImmutableAnd.class, "AND")
+            .put(ImmutableOr.class, "OR")
+            .put(ImmutableNot.class, "NOT")
+            .build();
+
+    private final static Map<Class<?>, String> SCALAR_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
+            .put(ImmutableEq.class, "=")
+            .put(ImmutableNeq.class, "<>")
+            .put(ImmutableGt.class, ">")
+            .put(ImmutableGte.class, ">=")
+            .put(ImmutableLt.class, "<")
+            .put(ImmutableLte.class, "<=")
+            .put(ImmutableLike.class, "LIKE")
+            .put(ImmutableBetween.class, "BETWEEN")
+            .put(ImmutableIn.class, "IN")
+            .put(ImmutableIsNull.class, "IS NULL")
+            .put(ImmutableExists.class, "EXISTS")
+            .build();
+
+    private final static Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
+            .put(ImmutableAfter.class, "AFTER")
+            .put(ImmutableBefore.class, "BEFORE")
+            .put(ImmutableBegins.class, "BEGINS")
+            .put(ImmutableBegunBy.class, "BEGUNBY")
+            .put(ImmutableTContains.class, "TCONTAINS")
+            .put(ImmutableDuring.class, "DURING")
+            .put(ImmutableEndedBy.class, "ENDEDBY")
+            .put(ImmutableEnds.class, "ENDS")
+            .put(ImmutableTEquals.class, "TEQUALS")
+            .put(ImmutableMeets.class, "MEETS")
+            .put(ImmutableMetBy.class, "METBY")
+            .put(ImmutableTOverlaps.class, "TOVERLAPS")
+            .put(ImmutableOverlappedBy.class, "OVERLAPPEDBY")
+            .build();
+
+    private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
+            .put(ImmutableEquals.class, "EQUALS")
+            .put(ImmutableDisjoint.class, "DISJOINT")
+            .put(ImmutableTouches.class, "TOUCHES")
+            .put(ImmutableWithin.class, "WITHIN")
+            .put(ImmutableOverlaps.class, "OVERLAPS")
+            .put(ImmutableCrosses.class, "CROSSES")
+            .put(ImmutableIntersects.class, "INTERSECTS")
+            .put(ImmutableContains.class, "CONTAINS")
+            .build();
+
     @Override
-    public String visit(CqlFilter cqlFilter) {
+    public String visit(CqlFilter cqlFilter, List<String> children) {
         CqlNode node = cqlFilter.getExpressions()
                                 .get(0);
         String text = node.accept(this);
@@ -67,26 +126,22 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(CqlPredicate cqlPredicate) {
+    public String visit(CqlPredicate cqlPredicate, List<String> children) {
         return cqlPredicate.getExpressions()
                            .get(0)
                            .accept(this);
     }
 
     @Override
-    public String visit(And and, List<String> children) {
+    public String visit(LogicalOperation logicalOperation, List<String> children) {
+        String operator = LOGICAL_OPERATORS.get(logicalOperation.getClass());
+
         return children.stream()
-                       .collect(Collectors.joining(" AND ", "(", ")"));
+                       .collect(Collectors.joining(String.format(" %s ", operator), "(", ")"));
     }
 
     @Override
-    public String visit(Or or, List<String> children) {
-        return children.stream()
-                       .collect(Collectors.joining(" OR ", "(", ")"));
-    }
-
-    @Override
-    public String visit(Not not) {
+    public String visit(Not not, List<String> children) {
         CqlNode operation = not.getPredicates()
                                .get(0)
                                .getExpressions()
@@ -112,199 +167,50 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(Eq eq) {
-        return getScalarOperationCql(eq, "=");
+    public String visit(ScalarOperation scalarOperation, List<String> children) {
+        String operator = SCALAR_OPERATORS.get(scalarOperation.getClass());
+
+        if (scalarOperation instanceof Between) {
+            return String.format("%s %s %s AND %s", children.get(0), operator, children.get(1), children.get(2));
+        } else if (scalarOperation instanceof In) {
+            return String.format("%s %s (%s)", children.get(0), operator, String.join(", ", children.subList(1, children.size())));
+        } else if (scalarOperation instanceof IsNull || scalarOperation instanceof Exists) {
+            return String.format("%s %s", children.get(0), operator);
+        }
+
+        return String.format("%s %s %s", children.get(0), operator, children.get(1));
     }
 
     @Override
-    public String visit(Neq neq) {
-        return getScalarOperationCql(neq, "<>");
+    public String visit(TemporalOperation temporalOperation, List<String> children) {
+        String operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
+
+        return String.format("%s %s %s", children.get(0), operator, children.get(1));
     }
 
     @Override
-    public String visit(Gt gt) {
-        return getScalarOperationCql(gt, ">");
+    public String visit(SpatialOperation spatialOperation, List<String> children) {
+        String operator = SPATIAL_OPERATORS.get(spatialOperation.getClass());
+
+        return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
     }
 
     @Override
-    public String visit(Gte gte) {
-        return getScalarOperationCql(gte, ">=");
-    }
-
-    @Override
-    public String visit(Lt lt) {
-        return getScalarOperationCql(lt, "<");
-    }
-
-    @Override
-    public String visit(Lte lte) {
-        return getScalarOperationCql(lte, "<=");
-    }
-
-    @Override
-    public String visit(Like like) {
-        return getScalarOperationCql(like, "LIKE");
-    }
-
-    @Override
-    public String visit(Between between) {
-        return String.format("%s BETWEEN %s AND %s", between.getProperty()
-                                                            .get()
-                                                            .accept(this),
-                between.getLower()
-                       .get()
-                       .accept(this), between.getUpper()
-                                             .get()
-                                             .accept(this));
-    }
-
-    @Override
-    public String visit(In in) {
-        return String.format("%s IN (%s)", in.getProperty()
-                                             .get()
-                                             .accept(this),
-                in.getValues()
-                  .stream()
-                  .map(literal -> literal.accept(this))
-                  .collect(Collectors.joining(", ")));
-    }
-
-    @Override
-    public String visit(IsNull isNull) {
-        return String.format("%s IS NULL", isNull.getOperands()
-                                                 .get(0)
-                                                 .accept(this));
-    }
-
-    @Override
-    public String visit(Exists exists) {
-        return String.format("%s EXISTS", exists.getOperands()
-                                                .get(0)
-                                                .accept(this));
-    }
-
-    @Override
-    public String visit(After after) {
-        return getTemporalOperationCql(after, "AFTER");
-    }
-
-    @Override
-    public String visit(Before before) {
-        return getTemporalOperationCql(before, "BEFORE");
-    }
-
-    @Override
-    public String visit(Begins begins) {
-        return getTemporalOperationCql(begins, "BEGINS");
-    }
-
-    @Override
-    public String visit(BegunBy begunBy) {
-        return getTemporalOperationCql(begunBy, "BEGUNBY");
-    }
-
-    @Override
-    public String visit(TContains tContains) {
-        return getTemporalOperationCql(tContains, "TCONTAINS");
-    }
-
-    @Override
-    public String visit(During during) {
-        return getTemporalOperationCql(during, "DURING");
-    }
-
-    @Override
-    public String visit(EndedBy endedBy) {
-        return getTemporalOperationCql(endedBy, "ENDEDBY");
-    }
-
-    @Override
-    public String visit(Ends ends) {
-        return getTemporalOperationCql(ends, "ENDS");
-    }
-
-    @Override
-    public String visit(TEquals tEquals) {
-        return getTemporalOperationCql(tEquals, "TEQUALS");
-    }
-
-    @Override
-    public String visit(Meets meets) {
-        return getTemporalOperationCql(meets, "MEETS");
-
-    }
-
-    @Override
-    public String visit(MetBy metBy) {
-        return getTemporalOperationCql(metBy, "METBY");
-    }
-
-    @Override
-    public String visit(TOverlaps tOverlaps) {
-        return getTemporalOperationCql(tOverlaps, "TOVERLAPS");
-    }
-
-    @Override
-    public String visit(OverlappedBy overlappedBy) {
-        return getTemporalOperationCql(overlappedBy, "OVERLAPPEDBY");
-    }
-
-    @Override
-    public String visit(Equals equals) {
-        return getSpatialOperationCql(equals, "EQUALS");
-    }
-
-    @Override
-    public String visit(Disjoint disjoint) {
-        return getSpatialOperationCql(disjoint, "DISJOINT");
-    }
-
-    @Override
-    public String visit(Touches touches) {
-        return getSpatialOperationCql(touches, "TOUCHES");
-    }
-
-    @Override
-    public String visit(Within within) {
-        return getSpatialOperationCql(within, "WITHIN");
-    }
-
-    @Override
-    public String visit(Overlaps overlaps) {
-        return getSpatialOperationCql(overlaps, "OVERLAPS");
-    }
-
-    @Override
-    public String visit(Crosses crosses) {
-        return getSpatialOperationCql(crosses, "CROSSES");
-    }
-
-    @Override
-    public String visit(Intersects intersects) {
-        return getSpatialOperationCql(intersects, "INTERSECTS");
-    }
-
-    @Override
-    public String visit(Contains contains) {
-        return getSpatialOperationCql(contains, "CONTAINS");
-    }
-
-    @Override
-    public String visit(Geometry.Coordinate coordinate) {
+    public String visit(Geometry.Coordinate coordinate, List<String> children) {
         return coordinate.stream()
                          .map(Object::toString)
                          .collect(Collectors.joining(" "));
     }
 
     @Override
-    public String visit(Geometry.Point point) {
+    public String visit(Geometry.Point point, List<String> children) {
         return String.format("POINT(%s)", point.getCoordinates()
                                                .get(0)
                                                .accept(this));
     }
 
     @Override
-    public String visit(Geometry.LineString lineString) {
+    public String visit(Geometry.LineString lineString, List<String> children) {
         return String.format("LINESTRING%s", lineString.getCoordinates()
                                                        .stream()
                                                        .map(coordinate -> coordinate.accept(this))
@@ -312,7 +218,7 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(Geometry.Polygon polygon) {
+    public String visit(Geometry.Polygon polygon, List<String> children) {
         return String.format("POLYGON%s", polygon.getCoordinates()
                                                  .stream()
                                                  .flatMap(l -> Stream.of(l.stream()
@@ -322,7 +228,7 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(Geometry.MultiPoint multiPoint) {
+    public String visit(Geometry.MultiPoint multiPoint, List<String> children) {
         return String.format("MULTIPOINT%s", multiPoint.getCoordinates()
                                                        .stream()
                                                        .flatMap(point -> point.getCoordinates()
@@ -332,7 +238,7 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(Geometry.MultiLineString multiLineString) {
+    public String visit(Geometry.MultiLineString multiLineString, List<String> children) {
         return String.format("MULTILINESTRING%s", multiLineString.getCoordinates()
                                                                  .stream()
                                                                  .flatMap(ls -> Stream.of(ls.getCoordinates()
@@ -343,7 +249,7 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(Geometry.MultiPolygon multiPolygon) {
+    public String visit(Geometry.MultiPolygon multiPolygon, List<String> children) {
         return String.format("MULTIPOLYGON%s", multiPolygon.getCoordinates()
                                                            .stream()
                                                            .flatMap(p -> Stream.of(p.getCoordinates()
@@ -356,7 +262,7 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(Geometry.Envelope envelope) {
+    public String visit(Geometry.Envelope envelope, List<String> children) {
         return String.format("ENVELOPE%s", envelope.getCoordinates()
                                                    .stream()
                                                    .map(String::valueOf)
@@ -364,54 +270,27 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(Literal literal) {
-        if (literal.getType() == String.class) {
-            return String.format("'%s'", ((String) literal.getValue()).replaceAll("'", "''"));
+    public String visit(ScalarLiteral scalarLiteral, List<String> children) {
+        if (scalarLiteral.getType() == String.class) {
+            return String.format("'%s'", ((String) scalarLiteral.getValue()).replaceAll("'", "''"));
         }
-        return literal.getValue()
-                      .toString();
+        return scalarLiteral.getValue()
+                            .toString();
     }
 
     @Override
-    public String visit(SpatialLiteral spatialLiteral) {
+    public String visit(TemporalLiteral temporalLiteral, List<String> children) {
+        return temporalLiteral.getValue().toString();
+    }
+
+    @Override
+    public String visit(SpatialLiteral spatialLiteral, List<String> children) {
         return ((CqlNode) spatialLiteral.getValue()).accept(this);
     }
 
     @Override
-    public String visit(Operand operand) {
-        return operand.toString();
-    }
-
-    @Override
-    public String visit(Property property) {
+    public String visit(Property property, List<String> children) {
         return property.getName();
-    }
-
-    private String getScalarOperationCql(ScalarOperation operation, String operator) {
-        return String.format("%s %s %s", operation.getOperands()
-                                                  .get(0)
-                                                  .accept(this), operator,
-                operation.getOperands()
-                         .get(1)
-                         .accept(this));
-    }
-
-    private String getTemporalOperationCql(TemporalOperation operation, String operator) {
-        return String.format("%s %s %s", operation.getOperands()
-                                                  .get(0)
-                                                  .accept(this), operator,
-                operation.getOperands()
-                         .get(1)
-                         .accept(this));
-    }
-
-    private String getSpatialOperationCql(SpatialOperation operation, String operator) {
-        return String.format("%s(%s, %s)", operator, operation.getOperands()
-                                                              .get(0)
-                                                              .accept(this),
-                operation.getOperands()
-                         .get(1)
-                         .accept(this));
     }
 
 }

@@ -1,39 +1,36 @@
-package de.ii.xtraplatform.cql.infra;
+package de.ii.xtraplatform.cql.app;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.Property;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CqlPropertyChecker extends CqlToText {
+public class CqlPropertyChecker extends CqlVisitorBase<List<String>> {
 
     private final List<String> allowedProperties;
-    private final List<String> notAllowedProperties = new ArrayList<>();
+    private final List<String> invalidProperties = new ArrayList<>();
 
     public CqlPropertyChecker(List<String> allowedProperties) {
         this.allowedProperties = allowedProperties;
     }
 
     @Override
-    public String visit(CqlFilter cqlFilter) {
-        notAllowedProperties.clear();
-        return cqlFilter.getExpressions()
-                        .get(0)
-                        .accept(this);
+    public List<String> visit(CqlFilter cqlFilter, List<List<String>> children) {
+        ImmutableList<String> result = ImmutableList.copyOf(invalidProperties);
+        invalidProperties.clear();
+        return result;
     }
 
     @Override
-    public String visit(Property property) {
+    public List<String> visit(Property property, List<List<String>> children) {
         String propertyName = property.getName();
         if (!allowedProperties.contains(propertyName)) {
-            notAllowedProperties.add(propertyName);
+            invalidProperties.add(propertyName);
         }
-        return propertyName;
-    }
-
-    public List<String> getNotAllowedProperties() {
-        return notAllowedProperties;
+        return Lists.newArrayList();
     }
 
 }

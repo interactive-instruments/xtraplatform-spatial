@@ -8,11 +8,12 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import akka.japi.Pair;
+import de.ii.xtraplatform.cql.app.CqlToText;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
-import de.ii.xtraplatform.features.domain.FeatureQuery;
-import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.wfs.FilterEncoder;
 import de.ii.xtraplatform.ogc.api.wfs.GetFeature;
@@ -157,7 +158,7 @@ public class FeatureQueryEncoderWfs {
             return null;
         }
 
-        return (Filter) ECQL.toFilter(filter.get().toCqlTextTopLevel())
+        return (Filter) ECQL.toFilter(filter.get().accept(new CqlToText()))
                             .accept(new ResolvePropertyNamesFilterVisitor(featureTypeMapping, namespaceNormalizer), null);
     }
 

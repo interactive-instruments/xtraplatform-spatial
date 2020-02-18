@@ -2,20 +2,22 @@ package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
-import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-
+//TODO: not a Binary-/ScalarOperation, either remove extends or allow more operands in Binary-/ScalarOperation
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableIn.Builder.class)
 public interface In extends CqlNode, ScalarOperation {
 
     static In of(ScalarLiteral... values) {
-        return new ImmutableIn.Builder().property("_ID_").values(Arrays.asList(values)).build();
+        return new ImmutableIn.Builder().property("_ID_")
+                                        .values(Arrays.asList(values))
+                                        .build();
     }
 
     abstract class Builder extends ScalarOperation.Builder<In> {
@@ -37,16 +39,12 @@ public interface In extends CqlNode, ScalarOperation {
     List<ScalarLiteral> getValues();
 
     @Override
-    default String toCqlText() {
-        return String.format("%s IN (%s)", getProperty().get().toCqlText(),
-                getValues()
-                        .stream()
-                        .map(Literal::toCqlText)
-                        .collect(Collectors.joining(", ")));
-    }
+    default <T> T accept(CqlVisitor<T> visitor) {
+        List<T> children = Stream.concat(Stream.of(getProperty().get()), getValues().stream())
+                                .map(value -> value.accept(visitor))
+                                .collect(Collectors.toList());
 
-    @Override
-    default <T> T accept(ObjectVisitor<T> visitor) {
-        return visitor.visit(this);
+
+        return visitor.visit(this, children);
     }
 }

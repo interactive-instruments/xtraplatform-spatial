@@ -25,9 +25,4 @@ public enum ComparisonOperator implements CqlNode {
         return null;
     }
 
-
-    @Override
-    public String toCqlText() {
-        return cqlText;
-    }
 }

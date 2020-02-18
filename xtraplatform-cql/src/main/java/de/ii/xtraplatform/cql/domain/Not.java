@@ -3,7 +3,7 @@ package de.ii.xtraplatform.cql.domain;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
-import de.ii.xtraplatform.cql.infra.ObjectVisitor;
+import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -12,13 +12,6 @@ import java.util.List;
 @JsonDeserialize(as = Not.class)
 public interface Not extends LogicalOperation, CqlNode {
 
-    @Value.Check
-    @Override
-    default void check() {
-        Preconditions.checkState(getPredicates().size() == 1, "a NOT operation must have one child, found %s",
-                getPredicates().size());
-    }
-
     @JsonCreator
     static Not of(List<CqlPredicate> predicates) {
         return new ImmutableNot.Builder()
@@ -26,17 +19,19 @@ public interface Not extends LogicalOperation, CqlNode {
                 .build();
     }
 
+    @Value.Check
     @Override
-    default String toCqlText() {
-        return getPredicates()
-                .get(0)
-                .getExpressions()
-                .get(0)
-                .toCqlTextNot();
+    default void check() {
+        Preconditions.checkState(getPredicates().size() == 1, "a NOT operation must have one child, found %s",
+                getPredicates().size());
     }
 
     @Override
-    default <T> T accept(ObjectVisitor<T> visitor) {
-        return visitor.visit(this);
+    default <T> T accept(CqlVisitor<T> visitor) {
+        T expression = getPredicates()
+                .get(0)
+                .accept(visitor);
+
+        return visitor.visit(this, Lists.newArrayList(expression));
     }
 }

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
-import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.immutables.value.Value;
@@ -50,16 +49,6 @@ public interface Geometry<T> extends CqlNode {
             return Type.Point;
         }
 
-        @Override
-        default String toCqlText() {
-            return String.format("POINT(%s)", getCoordinates().get(0).toCqlText());
-        }
-
-        @Override
-        default <T> T accept(ObjectVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-
     }
 
     @Value.Immutable
@@ -71,17 +60,6 @@ public interface Geometry<T> extends CqlNode {
             return Type.LineString;
         }
 
-        @Override
-        default String toCqlText() {
-            return String.format("LINESTRING%s", getCoordinates().stream()
-                    .map(Coordinate::toCqlText)
-                    .collect(Collectors.joining(",", "(", ")")));
-        }
-
-        @Override
-        default <T> T accept(ObjectVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
     }
 
     @Value.Immutable
@@ -93,19 +71,6 @@ public interface Geometry<T> extends CqlNode {
             return Type.Polygon;
         }
 
-        @Override
-        default String toCqlText() {
-            return String.format("POLYGON%s", getCoordinates().stream()
-                                                              .flatMap(l -> Stream.of(l.stream()
-                                                                                       .flatMap(c -> Stream.of(c.toCqlText()))
-                                                                                       .collect(Collectors.joining(",", "(", ")"))))
-                                                              .collect(Collectors.joining(",", "(", ")")));
-        }
-
-        @Override
-        default <T> T accept(ObjectVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
     }
 
     @Value.Immutable
@@ -115,19 +80,6 @@ public interface Geometry<T> extends CqlNode {
         @Override
         default Type getType() {
             return Type.MultiPoint;
-        }
-
-        @Override
-        default String toCqlText() {
-            return String.format("MULTIPOINT%s", getCoordinates().stream()
-                    .flatMap(point -> point.getCoordinates().stream())
-                    .map(Coordinate::toCqlText)
-                    .collect(Collectors.joining(",", "(", ")")));
-        }
-
-        @Override
-        default <T> T accept(ObjectVisitor<T> visitor) {
-            return visitor.visit(this);
         }
 
     }
@@ -141,21 +93,6 @@ public interface Geometry<T> extends CqlNode {
             return Type.MultiLineString;
         }
 
-        @Override
-        default String toCqlText() {
-            return String.format("MULTILINESTRING%s", getCoordinates().stream()
-                    .flatMap(ls -> Stream.of(ls.getCoordinates()
-                            .stream()
-                            .map(Coordinate::toCqlText)
-                            .collect(Collectors.joining(",", "(", ")"))))
-                    .collect(Collectors.joining(",", "(", ")")));
-        }
-
-        @Override
-        default <T> T accept(ObjectVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
-
     }
 
     @Value.Immutable
@@ -165,22 +102,6 @@ public interface Geometry<T> extends CqlNode {
         @Override
         default Type getType() {
             return Type.MultiPolygon;
-        }
-
-        @Override
-        default String toCqlText() {
-            return String.format("MULTIPOLYGON%s", getCoordinates().stream()
-                    .flatMap(p -> Stream.of(p.getCoordinates().stream()
-                            .flatMap(l -> Stream.of(l.stream()
-                                    .flatMap(c -> Stream.of(c.toCqlText()))
-                                    .collect(Collectors.joining(",", "(", ")"))))
-                            .collect(Collectors.joining(",", "(", ")"))))
-                    .collect(Collectors.joining(",", "(", ")")));
-        }
-
-        @Override
-        default <T> T accept(ObjectVisitor<T> visitor) {
-            return visitor.visit(this);
         }
 
     }
@@ -203,17 +124,6 @@ public interface Geometry<T> extends CqlNode {
         @Override
         List<Double> getCoordinates();
 
-        @Override
-        default String toCqlText() {
-            return String.format("ENVELOPE%s", getCoordinates().stream()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(",", "(", ")")));
-        }
-
-        @Override
-        default <T> T accept(ObjectVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
     }
 
     class Coordinate extends ArrayList<Double> implements CqlNode {
@@ -232,15 +142,6 @@ public interface Geometry<T> extends CqlNode {
             super();
         }
 
-        @Override
-        public String toCqlText() {
-            return stream().map(Object::toString).collect(Collectors.joining(" "));
-        }
-
-        @Override
-        public <T> T accept(ObjectVisitor<T> visitor) {
-            return visitor.visit(this);
-        }
     }
 
 }

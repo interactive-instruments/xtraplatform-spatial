@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.app.CqlToText;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew;
@@ -83,9 +84,9 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
 
         //TODO: replace with CqlObjectVisitor
         try {
-            LOGGER.debug("CQL Filter: {}", cqlFilter.toCqlTextTopLevel());
+            LOGGER.debug("CQL Filter: {}", cqlFilter.accept(new CqlToText()));
 
-            ECQL.toFilter(cqlFilter.toCqlTextTopLevel())
+            ECQL.toFilter(cqlFilter.accept(new CqlToText()))
                 .accept(new DuplicatingFilterVisitor() {
 
                     @Override

@@ -2,7 +2,6 @@ package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -19,31 +18,4 @@ public interface Or extends LogicalOperation, CqlNode {
                 .build();
     }
 
-    @Override
-    default String toCqlText() {
-        return LogicalOperation.super.toCqlText("OR");
-    }
-
-    @Override
-    default String toCqlTextTopLevel() {
-        return LogicalOperation.super.toCqlTextTopLevel("OR");
-    }
-
-    @Override
-    default <T> T accept(ObjectVisitor<T> visitor) {
-        List<T> children = getPredicates()
-                .stream()
-                .map(predicate -> predicate.accept(visitor))
-                .collect(Collectors.toList());
-        return visitor.visit(this, children);
-    }
-
-    @Override
-    default <T> T acceptTopLevel(ObjectVisitor<T> visitor) {
-        List<T> children = getPredicates()
-                .stream()
-                .map(predicate -> predicate.accept(visitor))
-                .collect(Collectors.toList());
-        return visitor.visitTopLevel(this, children);
-    }
 }

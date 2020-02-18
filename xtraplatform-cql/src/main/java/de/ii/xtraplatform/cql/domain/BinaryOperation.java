@@ -3,12 +3,14 @@ package de.ii.xtraplatform.cql.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public interface BinaryOperation<T extends Literal> {
+public interface BinaryOperation<T extends Literal> extends CqlNode {
 
     Optional<Property> getProperty();
 
@@ -63,9 +65,13 @@ public interface BinaryOperation<T extends Literal> {
         }
     }
 
-    default String toCqlText(String operator) {
-        return String.format("%s %s %s", getOperands().get(0)
-                                                      .toCqlText(), operator, getOperands().get(1)
-                                                                                           .toCqlText());
+    @Override
+    default <U> U accept(CqlVisitor<U> visitor) {
+        U operand1 = getOperands().get(0)
+                                .accept(visitor);
+        U operand2 = getOperands().get(1)
+                                  .accept(visitor);
+
+        return visitor.visit(this, Lists.newArrayList(operand1, operand2));
     }
 }

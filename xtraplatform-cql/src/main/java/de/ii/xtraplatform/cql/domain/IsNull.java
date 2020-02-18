@@ -2,9 +2,10 @@ package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
-import de.ii.xtraplatform.cql.infra.ObjectVisitor;
+import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
+//TODO: not a Binary-/ScalarOperation, either remove extends or allow less operands in Binary-/ScalarOperation
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableIsNull.Builder.class)
 public interface IsNull extends CqlNode, ScalarOperation {
@@ -20,17 +21,8 @@ public interface IsNull extends CqlNode, ScalarOperation {
     }
 
     @Override
-    default String toCqlText() {
-        return String.format("%s IS NULL", getProperty().get().toCqlText());
-    }
-
-    @Override
-    default String toCqlTextNot() {
-        return String.format("%s IS NOT NULL", getProperty().get().toCqlText());
-    }
-
-    @Override
-    default <T> T accept(ObjectVisitor<T> visitor) {
-        return visitor.visit(this);
+    default <T> T accept(CqlVisitor<T> visitor) {
+        return visitor.visit(this, Lists.newArrayList(getOperands().get(0)
+                                                                   .accept(visitor)));
     }
 }

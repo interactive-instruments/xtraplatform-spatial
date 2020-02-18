@@ -8,10 +8,9 @@ import com.fasterxml.jackson.databind.ser.std.StdDelegatingSerializer;
 import com.fasterxml.jackson.databind.util.StdConverter;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.infra.CqlTextParser;
-import de.ii.xtraplatform.cql.infra.ObjectToCqlVisitor;
 import io.dropwizard.jackson.Jackson;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
@@ -44,14 +43,14 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public CqlPredicate read(String cql, Format format) throws CqlParseException {
+    public CqlFilter read(String cql, Format format) throws CqlParseException {
         switch (format) {
 
             case TEXT:
                 return cqlTextParser.parse(cql);
             case JSON:
                 try {
-                    return cqlJsonMapper.readValue(cql, CqlPredicate.class);
+                    return cqlJsonMapper.readValue(cql, CqlFilter.class);
                 } catch (IOException e) {
                     throw new CqlParseException(e.getMessage());
                 }
@@ -61,11 +60,11 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public String write(CqlPredicate cql, Format format) {
+    public String write(CqlFilter cql, Format format) {
         switch (format) {
 
             case TEXT:
-                return cql.acceptTopLevel(new ObjectToCqlVisitor());
+                return cql.accept(new CqlToText());
             case JSON:
                 try {
                     return cqlJsonMapper.writeValueAsString(cql);

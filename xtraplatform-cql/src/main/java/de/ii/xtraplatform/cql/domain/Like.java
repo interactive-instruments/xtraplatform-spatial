@@ -1,7 +1,6 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.cql.infra.ObjectVisitor;
 import org.immutables.value.Value;
 
 import java.util.Optional;
@@ -19,20 +18,5 @@ public interface Like extends ScalarOperation, CqlNode {
 
     @Value.Auxiliary
     Optional<String> getWildCards();
-
-    @Override
-    default String toCqlText() {
-        return ScalarOperation.super.toCqlText("LIKE");
-    }
-
-    @Override
-    default String toCqlTextNot() {
-        return ScalarOperation.super.toCqlText("NOT LIKE");
-    }
-
-    @Override
-    default <T> T accept(ObjectVisitor<T> visitor) {
-        return visitor.visit(this);
-    }
 
 }
