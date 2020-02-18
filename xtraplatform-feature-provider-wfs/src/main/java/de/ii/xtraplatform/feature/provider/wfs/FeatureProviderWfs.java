@@ -105,7 +105,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
 
     FeatureProviderWfs(@Property(name = ".data") FeatureProviderDataTransformer data,
                        @Property(name = ".connector") WfsConnector connector) {
-        super(null, null);
+        super(null, null, null, null);
         ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
 
         this.wfsRequestEncoder = new WfsRequestEncoder();
@@ -436,11 +436,6 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
             ImmutableFeatureProviderDataTransformer.Builder dataBuilder,
             List<TargetMappingProviderFromGml> mappingProviders) {
         return new FeatureProviderDataWfsFromSchema(data, dataBuilder, mappingProviders);
-    }
-
-    @Override
-    protected FeatureStorePathParser getPathParser() {
-        return null;
     }
 
     @Override

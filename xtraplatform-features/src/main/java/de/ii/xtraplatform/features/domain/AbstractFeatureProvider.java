@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -33,12 +32,15 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             .build());
 
     private final ActorMaterializer materializer;
-    private Map<String, FeatureStoreTypeInfo> typeInfos;
+    private final Map<String, FeatureStoreTypeInfo> typeInfos;
 
     protected AbstractFeatureProvider(BundleContext context,
-                                      ActorSystemProvider actorSystemProvider) {
+                                      ActorSystemProvider actorSystemProvider,
+                                      FeatureProviderDataV1 data,
+                                      FeatureStorePathParser pathParser) {
         ActorSystem system = actorSystemProvider.getActorSystem(context, config);
         this.materializer = ActorMaterializer.create(system);
+        this.typeInfos = createTypeInfos(pathParser, data.getTypes());
     }
 
     @Override
@@ -56,10 +58,10 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             if (connectionError.isPresent() && LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Stacktrace:", connectionError.get());
             }
+        } else {
+            LOGGER.info("Feature provider with id '{}' started successfully.", getId());
         }
     }
-
-    protected abstract FeatureStorePathParser getPathParser();
 
     protected abstract FeatureQueryTransformer<U> getQueryTransformer();
 
@@ -68,10 +70,6 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
     protected abstract FeatureNormalizer<T> getNormalizer();
 
     protected Map<String, FeatureStoreTypeInfo> getTypeInfos() {
-        if (Objects.isNull(typeInfos)) {
-            this.typeInfos = createTypeInfos(getData().getTypes());
-        }
-
         return typeInfos;
     }
 
@@ -79,11 +77,12 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return materializer;
     }
 
-    private Map<String, FeatureStoreTypeInfo> createTypeInfos(Map<String, FeatureType> featureTypes) {
+    private Map<String, FeatureStoreTypeInfo> createTypeInfos(
+            FeatureStorePathParser pathParser, Map<String, FeatureType> featureTypes) {
         return featureTypes.entrySet()
                            .stream()
                            .map(entry -> {
-                               List<FeatureStoreInstanceContainer> instanceContainers = getPathParser().parse(entry.getValue());
+                               List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(entry.getValue());
                                FeatureStoreTypeInfo typeInfo = ImmutableFeatureStoreTypeInfo.builder()
                                                                                             .name(entry.getKey())
                                                                                             .instanceContainers(instanceContainers)

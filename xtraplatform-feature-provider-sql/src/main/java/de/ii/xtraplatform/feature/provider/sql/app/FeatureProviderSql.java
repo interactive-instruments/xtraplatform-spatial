@@ -1,8 +1,5 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import com.google.common.collect.ImmutableMap;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.akka.ActorSystemProvider;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
@@ -48,18 +45,12 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
 
-    private static final Config config = ConfigFactory.parseMap(new ImmutableMap.Builder<String, Object>()
-            .build());
-
-    //private final ActorSystem system;
-    //private final ActorMaterializer materializer;
     private final CrsTransformerFactory crsTransformerFactory;
     private final SqlConnector connector;
-    private FeatureStorePathParser pathParser;
-    private FeatureStoreQueryGeneratorSql queryGeneratorSql;
-    private FeatureQueryTransformerSql queryTransformer;
-    private FeatureNormalizerSql featureNormalizer;
-    private ExtentReader extentReader;
+    private final FeatureStoreQueryGeneratorSql queryGeneratorSql;
+    private final FeatureQueryTransformerSql queryTransformer;
+    private final FeatureNormalizerSql featureNormalizer;
+    private final ExtentReader extentReader;
 
     public FeatureProviderSql(@Context BundleContext context,
                               @Requires ActorSystemProvider actorSystemProvider,
@@ -67,51 +58,28 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                               @Property(name = "data") FeatureProviderDataV1 data,
                               @Property(name = ".connector") SqlConnector sqlConnector) {
         //TODO: starts akka for every instance, move to singleton
-        super(context, actorSystemProvider);
-        //this.system = actorSystemProvider.getActorSystem(context, config);
-        //this.materializer = ActorMaterializer.create(system);
+        super(context, actorSystemProvider, data, createPathParser((ConnectionInfoSql) data.getConnectionInfo()));
+
         this.crsTransformerFactory = crsTransformerFactory;
         this.connector = sqlConnector;
+        //TODO: from config
+        SqlDialect sqlDialect = new SqlDialectPostGis();
+        this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new FilterEncoderSqlNewImpl(data.getNativeCrs()), sqlDialect);
+        this.queryTransformer = new FeatureQueryTransformerSql(getTypeInfos(), queryGeneratorSql, ((ConnectionInfoSql) data.getConnectionInfo()).getComputeNumberMatched());
+        this.featureNormalizer = new FeatureNormalizerSql(getTypeInfos(), data.getTypes());
+        this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect, data.getNativeCrs());
+    }
 
-
+    private static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql) {
+        SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
+                                                     .options(connectionInfoSql.getPathSyntax())
+                                                     .build();
+        return new FeatureStorePathParserSql(syntax);
     }
 
     @Override
     public FeatureProviderDataV1 getData() {
         return super.getData();
-    }
-
-    @Override
-    protected void onStart() {
-        if (!getConnector().isConnected()) {
-            Optional<Throwable> connectionError = getConnector().getConnectionError();
-            String message = connectionError.map(Throwable::getMessage)
-                                            .orElse("unknown reason");
-            LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), message);
-            if (connectionError.isPresent() && LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Stacktrace:", connectionError.get());
-            }
-        } else {
-            SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-                                                         .options(((ConnectionInfoSql) getData().getConnectionInfo()).getPathSyntax())
-                                                         .build();
-            //TODO: merge
-
-            this.pathParser = new FeatureStorePathParserSql(syntax);
-
-            //this.typeInfos = getTypeInfos2(data.getTypes(), ((ConnectionInfoSql)data.getConnectionInfo()).getPathSyntax());
-            //TODO: from config
-            SqlDialect sqlDialect = new SqlDialectPostGis();
-            this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new FilterEncoderSqlNewImpl(getData().getNativeCrs()), sqlDialect);
-            this.queryTransformer = new FeatureQueryTransformerSql(getTypeInfos(), queryGeneratorSql, ((ConnectionInfoSql) getData().getConnectionInfo()).getComputeNumberMatched());
-            this.featureNormalizer = new FeatureNormalizerSql(getTypeInfos(), getData().getTypes());
-            this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect, getData().getNativeCrs());
-        }
-    }
-
-    @Override
-    protected FeatureStorePathParser getPathParser() {
-        return pathParser;
     }
 
     @Override
@@ -139,53 +107,6 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     public boolean is3dSupported() {
         return crsTransformerFactory.isCrs3d(getData().getNativeCrs());
     }
-
-    //TODO: from data.getTypes()
-    //TODO: move to derived in data?
-    /*private Map<String, FeatureStoreTypeInfo> getTypeInfos(Map<String, FeatureTypeMapping> mappings) {
-        //TODO: options from data
-        SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-                                                     .build();
-        SqlMappingParser mappingParser = new SqlMappingParser(syntax);
-        FeatureStorePathParser pathParser = new FeatureStorePathParserSql(syntax);
-
-        return mappings.entrySet()
-                       .stream()
-                       .map(entry -> {
-                           List<String> paths = mappingParser.parse(entry.getValue()
-                                                                         .getMappings());
-                           List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(paths);
-                           FeatureStoreTypeInfo typeInfo = ImmutableFeatureStoreTypeInfo.builder()
-                                                                                        .name(entry.getKey())
-                                                                                        .instanceContainers(instanceContainers)
-                                                                                        .build();
-
-                           return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), typeInfo);
-                       })
-                       .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-    }*/
-
-    /*private Map<String, FeatureStoreTypeInfo> getTypeInfos2(Map<String, FeatureType> featureTypes, SqlPathSyntax.Options syntaxOptions) {
-        SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-                                                     .options(syntaxOptions)
-                                                     .build();
-        SqlFeatureTypeParser mappingParser = new SqlFeatureTypeParser(syntax);
-        FeatureStorePathParser pathParser = new FeatureStorePathParserSql(syntax);
-
-        return featureTypes.entrySet()
-                           .stream()
-                           .map(entry -> {
-                               List<String> paths = mappingParser.parse(entry.getValue());
-                               List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(paths);
-                               FeatureStoreTypeInfo typeInfo = ImmutableFeatureStoreTypeInfo.builder()
-                                                                                            .name(entry.getKey())
-                                                                                            .instanceContainers(instanceContainers)
-                                                                                            .build();
-
-                               return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), typeInfo);
-                           })
-                           .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-    }*/
 
     @Override
     public Optional<BoundingBox> getSpatialExtent(String typeName) {
