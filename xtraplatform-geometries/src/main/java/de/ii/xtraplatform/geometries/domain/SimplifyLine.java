@@ -24,7 +24,7 @@ public abstract class SimplifyLine implements CoordinatesTransformation {
 
     private double[] simplify(double[] points, int numberOfPoints, int dimension) {
         if (getMinNumberOfPoints() > 0 && numberOfPoints <= getMinNumberOfPoints()) {
-            return points;
+            return Arrays.copyOf(points, numberOfPoints * dimension);
         }
 
         boolean[] keepPoints = new boolean[numberOfPoints];
