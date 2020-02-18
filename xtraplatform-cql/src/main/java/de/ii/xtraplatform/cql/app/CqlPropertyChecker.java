@@ -1,26 +1,26 @@
 package de.ii.xtraplatform.cql.infra;
 
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.Property;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class PropertyCheckVisitor extends ObjectToCqlVisitor {
+public class CqlPropertyChecker extends CqlToText {
 
     private final List<String> allowedProperties;
     private final List<String> notAllowedProperties = new ArrayList<>();
 
-    public PropertyCheckVisitor(List<String> allowedProperties) {
+    public CqlPropertyChecker(List<String> allowedProperties) {
         this.allowedProperties = allowedProperties;
     }
 
     @Override
-    public String visitTopLevel(CqlPredicate cqlPredicate) {
+    public String visit(CqlFilter cqlFilter) {
         notAllowedProperties.clear();
-        return cqlPredicate.getExpressions()
-                .get(0)
-                .acceptTopLevel(this);
+        return cqlFilter.getExpressions()
+                        .get(0)
+                        .accept(this);
     }
 
     @Override
