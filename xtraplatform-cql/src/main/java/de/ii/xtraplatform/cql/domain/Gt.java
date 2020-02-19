@@ -7,6 +7,12 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableGt.Builder.class)
 public interface Gt extends ScalarOperation, CqlNode {
 
+    static Gt of(String property, ScalarLiteral scalarLiteral) {
+        return new ImmutableGt.Builder().property(property)
+                                        .value(scalarLiteral)
+                                        .build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<Gt> {
     }
 

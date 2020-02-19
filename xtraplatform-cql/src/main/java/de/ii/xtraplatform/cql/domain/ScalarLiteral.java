@@ -11,6 +11,10 @@ public interface ScalarLiteral extends Scalar, Literal, CqlNode {
         return new Builder(literal).build();
     }
 
+    static ScalarLiteral of(Integer literal) {
+        return new Builder(literal).build();
+    }
+
     static ScalarLiteral of(Long literal) {
         return new Builder(literal).build();
     }
@@ -36,6 +40,12 @@ public interface ScalarLiteral extends Scalar, Literal, CqlNode {
             super();
             value(literal);
             type(Double.class);
+        }
+
+        public Builder(Integer literal) {
+            super();
+            value(literal);
+            type(Integer.class);
         }
 
         public Builder(Long literal) {
@@ -68,13 +78,17 @@ public interface ScalarLiteral extends Scalar, Literal, CqlNode {
 
         private Object castToType(String literal) {
             try {
-                return Long.valueOf(literal);
+                return Integer.valueOf(literal);
             } catch (NumberFormatException e) {
                 try {
-                    return Double.valueOf(literal);
+                    return Long.valueOf(literal);
                 } catch (NumberFormatException e2) {
-                    if (literal.equalsIgnoreCase("true") || literal.equalsIgnoreCase("false")) {
-                        return Boolean.valueOf(literal);
+                    try {
+                        return Double.valueOf(literal);
+                    } catch (NumberFormatException e3) {
+                        if (literal.equalsIgnoreCase("true") || literal.equalsIgnoreCase("false")) {
+                            return Boolean.valueOf(literal);
+                        }
                     }
                 }
             }

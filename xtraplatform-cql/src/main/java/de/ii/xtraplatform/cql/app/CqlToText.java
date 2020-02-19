@@ -60,6 +60,7 @@ import de.ii.xtraplatform.cql.domain.TemporalOperation;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,7 +72,7 @@ public class CqlToText implements CqlVisitor<String> {
             .put(ImmutableNot.class, "NOT")
             .build();
 
-    private final static Map<Class<?>, String> SCALAR_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
+    protected final static Map<Class<?>, String> SCALAR_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
             .put(ImmutableEq.class, "=")
             .put(ImmutableNeq.class, "<>")
             .put(ImmutableGt.class, ">")
@@ -136,34 +137,28 @@ public class CqlToText implements CqlVisitor<String> {
     public String visit(LogicalOperation logicalOperation, List<String> children) {
         String operator = LOGICAL_OPERATORS.get(logicalOperation.getClass());
 
+        if (Objects.equals(logicalOperation.getClass(), ImmutableNot.class)) {
+            String operation = children.get(0);
+
+            if (logicalOperation.getPredicates().get(0).getLike().isPresent()) {
+                String like = SCALAR_OPERATORS.get(ImmutableLike.class);
+
+                return operation.replace(like, String.format("%s %s", operator, like));
+            } else if (logicalOperation.getPredicates().get(0).getExists().isPresent()) {
+                String exists = SCALAR_OPERATORS.get(ImmutableExists.class);
+
+                return operation.replace(exists, "DOES-NOT-EXIST");
+            } else if (logicalOperation.getPredicates().get(0).getIsNull().isPresent()) {
+                String isNull = SCALAR_OPERATORS.get(ImmutableIsNull.class);
+
+                return operation.replace(isNull, "IS NOT NULL");
+            }
+
+            return String.format("NOT (%s)", operation);
+        }
+
         return children.stream()
                        .collect(Collectors.joining(String.format(" %s ", operator), "(", ")"));
-    }
-
-    @Override
-    public String visit(Not not, List<String> children) {
-        CqlNode operation = not.getPredicates()
-                               .get(0)
-                               .getExpressions()
-                               .get(0);
-
-        if (operation instanceof Like) {
-            return String.format("%s NOT LIKE %s", ((Like) operation).getOperands()
-                                                                     .get(0)
-                                                                     .accept(this),
-                    ((Like) operation).getOperands()
-                                      .get(1)
-                                      .accept(this));
-        } else if (operation instanceof Exists) {
-            return String.format("%s DOES-NOT-EXIST", ((Exists) operation).getOperands()
-                                                                          .get(0)
-                                                                          .accept(this));
-        } else if (operation instanceof IsNull) {
-            return String.format("%s IS NOT NULL", ((IsNull) operation).getOperands()
-                                                                       .get(0)
-                                                                       .accept(this));
-        }
-        return String.format("NOT (%s)", operation.accept(this));
     }
 
     @Override

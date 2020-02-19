@@ -77,10 +77,17 @@ SpatialOperator : 'EQUALS' | 'DISJOINT' | 'TOUCHES' | 'WITHIN' | 'OVERLAPS'
 #=============================================================================#
 */
 
+/*
+# only support the ones from original cql
+*/
+TemporalOperator : 'AFTER' | 'BEFORE' | 'DURING' | 'TEQUALS';
+
+/*
 TemporalOperator : 'AFTER' | 'BEFORE' | 'BEGINS' | 'BEGUNBY' | 'TCONTAINS'
                  | 'DURING' | 'ENDEDBY' | 'ENDS' | 'TEQUALS' | 'MEETS'
                  | 'METBY' | 'TOVERLAPS' | 'OVERLAPPEDBY' | 'ANYINTERACTS'
                  | 'TINTERSECTS';
+*/
 
 /*
 #=============================================================================#

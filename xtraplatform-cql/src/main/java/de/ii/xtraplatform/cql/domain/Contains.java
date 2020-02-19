@@ -7,6 +7,13 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableContains.Builder.class)
 public interface Contains extends SpatialOperation, CqlNode {
 
+    static Contains of(String property, SpatialLiteral spatialLiteral) {
+        return new ImmutableContains.Builder()
+                .property(property)
+                .value(spatialLiteral)
+                .build();
+    }
+
     abstract class Builder extends SpatialOperation.Builder<Contains> {
     }
 }

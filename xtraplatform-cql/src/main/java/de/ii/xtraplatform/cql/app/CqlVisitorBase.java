@@ -33,11 +33,6 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
     }
 
     @Override
-    public T visit(Not not, List<T> children) {
-        return null;
-    }
-
-    @Override
     public T visit(ScalarOperation scalarOperation, List<T> children) {
         return null;
     }

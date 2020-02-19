@@ -10,6 +10,10 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableIsNull.Builder.class)
 public interface IsNull extends CqlNode, ScalarOperation {
 
+    static IsNull of(String property) {
+        return new ImmutableIsNull.Builder().property(property).build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<IsNull> {
     }
 

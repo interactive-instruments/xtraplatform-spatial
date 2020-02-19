@@ -11,6 +11,12 @@ import java.util.stream.Collectors;
 @JsonDeserialize(as = Or.class)
 public interface Or extends LogicalOperation, CqlNode {
 
+    static Or of(CqlPredicate... predicates) {
+        return new ImmutableOr.Builder()
+                .addPredicates(predicates)
+                .build();
+    }
+
     @JsonCreator
     static Or of(List<CqlPredicate> predicates) {
         return new ImmutableOr.Builder()

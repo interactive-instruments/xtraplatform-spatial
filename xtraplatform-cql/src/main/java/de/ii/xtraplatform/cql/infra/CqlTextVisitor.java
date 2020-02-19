@@ -85,8 +85,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                     .accept(this);
         }
         if (Objects.nonNull(ctx.NOT())) {
-            CqlPredicate predicate = CqlPredicate.of(booleanPrimary);
-            return Not.of(ImmutableList.of(predicate));
+            return Not.of(ImmutableList.of(CqlPredicate.of(booleanPrimary)));
         }
 
         return booleanPrimary;
@@ -144,13 +143,13 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             Scalar scalar2 = (Scalar) ctx.regularExpression()
                     .accept(this);
 
-            CqlNode like = new ImmutableLike.Builder()
+            Like like = new ImmutableLike.Builder()
                     .operand1(scalar1)
                     .operand2(scalar2)
                     .build();
 
             if (Objects.nonNull(ctx.NOT()) ) {
-                return Not.of(ImmutableList.of(CqlPredicate.of(like)));
+                return Not.of(like);
             }
 
             return like;
@@ -181,9 +180,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                     .property(property.getName())
                     .build();
             if (Objects.nonNull(ctx.NOT())) {
-                return Not.of(ImmutableList.of(new ImmutableCqlPredicate.Builder()
-                        .isNull(isNull)
-                        .build()));
+                return Not.of(ImmutableList.of(CqlPredicate.of(isNull)));
             }
 
             return isNull;
@@ -310,11 +307,9 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                     .property(ctx.PropertyName().getText())
                     .build();
         } else if (Objects.nonNull(ctx.DOES()) && Objects.nonNull(ctx.NOT()) && Objects.nonNull(ctx.EXIST())) {
-            return Not.of(ImmutableList.of(new ImmutableCqlPredicate.Builder()
-                    .exists(new ImmutableExists.Builder()
+            return Not.of(ImmutableList.of(CqlPredicate.of(new ImmutableExists.Builder()
                             .property(ctx.PropertyName().getText())
-                            .build())
-                    .build()));
+                            .build())));
         }
 
         return null;

@@ -11,6 +11,11 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableExists.Builder.class)
 public interface Exists extends ScalarOperation, CqlNode {
 
+    static Exists of(String property) {
+        return new ImmutableExists.Builder().property(property)
+                                            .build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<Exists> {
     }
 

@@ -31,12 +31,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_1
+        actual == CqlFilterExamples.EXAMPLE_1
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_1, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_1, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -59,12 +59,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_2
+        actual == CqlFilterExamples.EXAMPLE_2
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_2, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_2, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -86,12 +86,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_3
+        actual == CqlFilterExamples.EXAMPLE_3
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_3, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_3, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -115,12 +115,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_4
+        actual == CqlFilterExamples.EXAMPLE_4
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_4, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_4, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -146,12 +146,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_5
+        actual == CqlFilterExamples.EXAMPLE_5
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_5, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_5, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -173,12 +173,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_6
+        actual == CqlFilterExamples.EXAMPLE_6
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_6, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_6, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -210,12 +210,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_7
+        actual == CqlFilterExamples.EXAMPLE_7
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_7, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_7, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -264,12 +264,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_8
+        actual == CqlFilterExamples.EXAMPLE_8
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_8, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_8, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -311,12 +311,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_9
+        actual == CqlFilterExamples.EXAMPLE_9
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_9, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_9, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -352,12 +352,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_10
+        actual == CqlFilterExamples.EXAMPLE_10
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_10, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_10, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -399,12 +399,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_11
+        actual == CqlFilterExamples.EXAMPLE_11
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_11, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_11, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -426,12 +426,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_12
+        actual == CqlFilterExamples.EXAMPLE_12
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_12, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_12, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -454,12 +454,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_13
+        actual == CqlFilterExamples.EXAMPLE_13
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_13, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -482,12 +482,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_14
+        actual == CqlFilterExamples.EXAMPLE_14
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_14, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_14, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -510,12 +510,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_15
+        actual == CqlFilterExamples.EXAMPLE_15
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_15, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_15, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -540,12 +540,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_16
+        actual == CqlFilterExamples.EXAMPLE_16
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_16, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_16, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -578,12 +578,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_17
+        actual == CqlFilterExamples.EXAMPLE_17
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_17, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_17, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -606,12 +606,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_18
+        actual == CqlFilterExamples.EXAMPLE_18
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_18, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_18, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -634,12 +634,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_19
+        actual == CqlFilterExamples.EXAMPLE_19
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_19, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_19, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -660,12 +660,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_20
+        actual == CqlFilterExamples.EXAMPLE_20
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_20, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_20, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -690,12 +690,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_21
+        actual == CqlFilterExamples.EXAMPLE_21
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_21, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_21, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -716,12 +716,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_22
+        actual == CqlFilterExamples.EXAMPLE_22
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_22, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_22, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
@@ -746,12 +746,12 @@ class CqlJsonSpec extends Specification {
         CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlPredicateExamples.EXAMPLE_23
+        actual == CqlFilterExamples.EXAMPLE_23
 
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlPredicateExamples.EXAMPLE_23, Cql.Format.JSON)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_23, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)

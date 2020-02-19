@@ -14,6 +14,12 @@ import java.util.stream.Stream;
 @JsonDeserialize(builder = ImmutableIn.Builder.class)
 public interface In extends CqlNode, ScalarOperation {
 
+    static In of(String property, ScalarLiteral... values) {
+        return new ImmutableIn.Builder().property(property)
+                                        .values(Arrays.asList(values))
+                                        .build();
+    }
+
     static In of(ScalarLiteral... values) {
         return new ImmutableIn.Builder().property("_ID_")
                                         .values(Arrays.asList(values))
@@ -41,8 +47,8 @@ public interface In extends CqlNode, ScalarOperation {
     @Override
     default <T> T accept(CqlVisitor<T> visitor) {
         List<T> children = Stream.concat(Stream.of(getProperty().get()), getValues().stream())
-                                .map(value -> value.accept(visitor))
-                                .collect(Collectors.toList());
+                                 .map(value -> value.accept(visitor))
+                                 .collect(Collectors.toList());
 
 
         return visitor.visit(this, children);

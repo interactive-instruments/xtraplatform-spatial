@@ -9,8 +9,6 @@ public interface CqlVisitor<T> {
             return visit((CqlFilter) node, children);
         } else if (node instanceof CqlPredicate) {
             return visit((CqlPredicate) node, children);
-        } else if (node instanceof Not) {
-            return visit((Not) node, children);
         } else if (node instanceof LogicalOperation) {
             return visit((LogicalOperation) node, children);
         } else if (node instanceof ScalarOperation) {
@@ -19,6 +17,12 @@ public interface CqlVisitor<T> {
             return visit((TemporalOperation) node, children);
         } else if (node instanceof SpatialOperation) {
             return visit((SpatialOperation) node, children);
+        } else if (node instanceof Property) {
+            return visit((Property) node, children);
+        } else if (node instanceof ScalarLiteral) {
+            return visit((ScalarLiteral) node, children);
+        } else if (node instanceof TemporalLiteral) {
+            return visit((TemporalLiteral) node, children);
         } else if (node instanceof Geometry.Coordinate) {
             return visit((Geometry.Coordinate) node, children);
         } else if (node instanceof Geometry.Point) {
@@ -35,14 +39,8 @@ public interface CqlVisitor<T> {
             return visit((Geometry.MultiPolygon) node, children);
         } else if (node instanceof Geometry.Envelope) {
             return visit((Geometry.Envelope) node, children);
-        } else if (node instanceof ScalarLiteral) {
-            return visit((ScalarLiteral) node, children);
-        } else if (node instanceof TemporalLiteral) {
-            return visit((TemporalLiteral) node, children);
         } else if (node instanceof SpatialLiteral) {
             return visit((SpatialLiteral) node, children);
-        } else if (node instanceof Property) {
-            return visit((Property) node, children);
         }
 
         throw new IllegalStateException();
@@ -54,15 +52,19 @@ public interface CqlVisitor<T> {
 
     T visit(LogicalOperation logicalOperation, List<T> children);
 
-    T visit(Not not, List<T> children);
-
-
     T visit(ScalarOperation scalarOperation, List<T> children);
 
     T visit(TemporalOperation temporalOperation, List<T> children);
 
     T visit(SpatialOperation spatialOperation, List<T> children);
 
+    T visit(Property property, List<T> children);
+
+    T visit(ScalarLiteral scalarLiteral, List<T> children);
+
+    T visit(TemporalLiteral temporalLiteral, List<T> children);
+
+    T visit(SpatialLiteral spatialLiteral, List<T> children);
 
     T visit(Geometry.Coordinate coordinate, List<T> children);
 
@@ -79,12 +81,4 @@ public interface CqlVisitor<T> {
     T visit(Geometry.MultiPolygon multiPolygon, List<T> children);
 
     T visit(Geometry.Envelope envelope, List<T> children);
-
-    T visit(ScalarLiteral scalarLiteral, List<T> children);
-
-    T visit(TemporalLiteral temporalLiteral, List<T> children);
-
-    T visit(SpatialLiteral spatialLiteral, List<T> children);
-
-    T visit(Property property, List<T> children);
 }

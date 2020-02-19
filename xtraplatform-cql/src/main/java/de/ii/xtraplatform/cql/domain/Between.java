@@ -12,6 +12,13 @@ import java.util.Optional;
 @JsonDeserialize(builder = ImmutableBetween.Builder.class)
 public interface Between extends ScalarOperation, CqlNode {
 
+    static Between of(String property, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
+        return new ImmutableBetween.Builder().property(property)
+                                             .lower(scalarLiteral1)
+                                             .upper(scalarLiteral2)
+                                             .build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<Between> {
     }
 

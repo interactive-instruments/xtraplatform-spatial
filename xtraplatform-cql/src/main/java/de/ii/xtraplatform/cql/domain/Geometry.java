@@ -13,8 +13,6 @@ import org.immutables.value.Value;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", defaultImpl = Geometry.Envelope.class)
 @JsonSubTypes({
@@ -39,6 +37,11 @@ public interface Geometry<T> extends CqlNode {
     @JsonDeserialize(builder = ImmutablePoint.Builder.class)
     interface Point extends Geometry<Coordinate> {
 
+        static Point of(double x, double y) {
+            return new ImmutablePoint.Builder().addCoordinates(Coordinate.of(x, y))
+                                               .build();
+        }
+
         @Value.Check
         default void check() {
             Preconditions.checkState(getCoordinates().size() == 1, "a point must have only one coordinate", getCoordinates().size());
@@ -55,6 +58,11 @@ public interface Geometry<T> extends CqlNode {
     @JsonDeserialize(builder = ImmutableLineString.Builder.class)
     interface LineString extends Geometry<Coordinate> {
 
+        static LineString of(Coordinate... coordinates) {
+            return new ImmutableLineString.Builder().addCoordinates(coordinates)
+                                                    .build();
+        }
+
         @Override
         default Type getType() {
             return Type.LineString;
@@ -65,6 +73,11 @@ public interface Geometry<T> extends CqlNode {
     @Value.Immutable
     @JsonDeserialize(builder = ImmutablePolygon.Builder.class)
     interface Polygon extends Geometry<List<Coordinate>> {
+
+        static Polygon of(List<Coordinate>... coordinates) {
+            return new ImmutablePolygon.Builder().addCoordinates(coordinates)
+                                                 .build();
+        }
 
         @Override
         default Type getType() {
@@ -77,6 +90,11 @@ public interface Geometry<T> extends CqlNode {
     @JsonDeserialize(builder = ImmutableMultiPoint.Builder.class)
     interface MultiPoint extends Geometry<Point> {
 
+        static MultiPoint of(Point... points) {
+            return new ImmutableMultiPoint.Builder().addCoordinates(points)
+                                                    .build();
+        }
+
         @Override
         default Type getType() {
             return Type.MultiPoint;
@@ -88,6 +106,11 @@ public interface Geometry<T> extends CqlNode {
     @JsonDeserialize(builder = ImmutableMultiLineString.Builder.class)
     interface MultiLineString extends Geometry<LineString> {
 
+        static MultiLineString of(LineString... lineStrings) {
+            return new ImmutableMultiLineString.Builder().addCoordinates(lineStrings)
+                                                         .build();
+        }
+
         @Override
         default Type getType() {
             return Type.MultiLineString;
@@ -98,6 +121,11 @@ public interface Geometry<T> extends CqlNode {
     @Value.Immutable
     @JsonDeserialize(builder = ImmutableMultiPolygon.Builder.class)
     interface MultiPolygon extends Geometry<Polygon> {
+
+        static MultiPolygon of(Polygon... polygons) {
+            return new ImmutableMultiPolygon.Builder().addCoordinates(polygons)
+                                                      .build();
+        }
 
         @Override
         default Type getType() {
@@ -111,7 +139,14 @@ public interface Geometry<T> extends CqlNode {
     interface Envelope extends Geometry<Double> {
 
         static Envelope of(BoundingBox boundingBox) {
-            return new ImmutableEnvelope.Builder().addCoordinates(boundingBox.getXmin(), boundingBox.getYmin(), boundingBox.getXmax(), boundingBox.getYmax()).crs(boundingBox.getEpsgCrs()).build();
+            return new ImmutableEnvelope.Builder().addCoordinates(boundingBox.getXmin(), boundingBox.getYmin(), boundingBox.getXmax(), boundingBox.getYmax())
+                                                  .crs(boundingBox.getEpsgCrs())
+                                                  .build();
+        }
+
+        static Envelope of(double xmin, double ymin, double xmax, double ymax) {
+            return new ImmutableEnvelope.Builder().addCoordinates(xmin, ymin, xmax, ymax)
+                                                  .build();
         }
 
         @JsonIgnore
@@ -127,6 +162,15 @@ public interface Geometry<T> extends CqlNode {
     }
 
     class Coordinate extends ArrayList<Double> implements CqlNode {
+
+        public static Coordinate of(double x, double y) {
+            return new Coordinate(x, y);
+        }
+
+        static Coordinate of(double x, double y, double z) {
+            return new Coordinate(x, y, z);
+        }
+
         public Coordinate(Double x, Double y) {
             super();
             add(x);
@@ -134,7 +178,7 @@ public interface Geometry<T> extends CqlNode {
         }
 
         public Coordinate(Double x, Double y, Double z) {
-            this(x,y);
+            this(x, y);
             add(z);
         }
 
