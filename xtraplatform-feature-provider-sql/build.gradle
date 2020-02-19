@@ -54,6 +54,10 @@ dependencies {
 
     testCompile project(':xtraplatform-feature-transformer-api')
     testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.18'
+
+    //TODO: gradle 6 fixtures
+    testImplementation(project(":xtraplatform-cql"))
+    //testImplementation(testFixtures(project(":xtraplatform-cql")))
 }
 
 jar {

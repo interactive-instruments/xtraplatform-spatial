@@ -2,7 +2,7 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db
 
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureStorePathParserSql
-import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableFeatureStoreRelation
+import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation
 import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Unroll

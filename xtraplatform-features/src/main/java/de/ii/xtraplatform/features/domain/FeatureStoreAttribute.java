@@ -12,7 +12,10 @@ public interface FeatureStoreAttribute {
 
     List<String> getPath();
 
-    Optional<String> getQueryable();
+    @Value.Default
+    default String getQueryable() {
+        return getName().replaceAll("\\[", "").replaceAll("\\]", "");
+    }
 
     @Value.Default
     default boolean isId() {

@@ -5,7 +5,7 @@ import de.ii.xtraplatform.feature.provider.sql.SqlMappingParser
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureStorePathParserSql
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureStoreQueryGeneratorSql
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew
-import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableFeatureStoreInstanceContainer
+import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreInstanceContainer
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlCondition
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis
 import de.ii.xtraplatform.feature.transformer.api.MappingTestUtil

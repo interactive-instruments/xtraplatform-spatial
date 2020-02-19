@@ -3,7 +3,9 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew;
+import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNewNew;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlCondition;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
@@ -27,12 +29,13 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureStoreQueryGeneratorSql.class);
 
     private final FilterEncoderSqlNew filterEncoder;
+    private final FilterEncoderSqlNewNew filterEncoder2;
     private final SqlDialect sqlDialect;
 
-    public FeatureStoreQueryGeneratorSql(FilterEncoderSqlNew filterEncoder,
-                                         SqlDialect sqlDialect) {
-        this.filterEncoder = filterEncoder;
+    public FeatureStoreQueryGeneratorSql(SqlDialect sqlDialect, EpsgCrs nativeCrs) {
+        this.filterEncoder = new FilterEncoderSqlNewImpl(nativeCrs);
         this.sqlDialect = sqlDialect;
+        this.filterEncoder2 = new FilterEncoderSqlNewNewImpl(this::getAliases, this::getJoins, nativeCrs, sqlDialect);
     }
 
     @Override

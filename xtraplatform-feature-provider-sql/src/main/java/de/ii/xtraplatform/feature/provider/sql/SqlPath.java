@@ -35,7 +35,7 @@ public interface SqlPath {
 
     OptionalInt getSortPriority();
 
-    Optional<String> getQueryable();
+    String getQueryable();
 
     @Value.Default
     default boolean isSpatial() {

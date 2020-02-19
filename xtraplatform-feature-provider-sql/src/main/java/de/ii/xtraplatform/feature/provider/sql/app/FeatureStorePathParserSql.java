@@ -91,7 +91,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                .sortPriority(priority)
                                                .isRoot(isRoot)
                                                .isJunction(isJunction)
-                                               .queryable(queryable)
+                                               .queryable(queryable.get())
                                                .isSpatial(isSpatial)
                                                .build());
         }
