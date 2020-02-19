@@ -150,7 +150,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 operator = CqlToText.SCALAR_OPERATORS.get(ImmutableIsNull.class);
             } else if (scalarOperation instanceof Like && !Objects.equals("%", ((Like) scalarOperation).getWildCard())) {
                 value = value.replaceAll("%", "\\%")
-                             .replaceAll(((Like) scalarOperation).getWildCard(), "%");
+                             .replaceAll(((Like) scalarOperation).getWildCard().replace("*", "\\*"), "%");
             }
 
             return String.format(expression, "", String.format(" %s %s", operator, value));

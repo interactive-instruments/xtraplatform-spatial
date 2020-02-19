@@ -28,14 +28,13 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureStoreQueryGeneratorSql.class);
 
-    private final FilterEncoderSqlNew filterEncoder;
-    private final FilterEncoderSqlNewNew filterEncoder2;
+    private final FilterEncoderSqlNewNew filterEncoder;
     private final SqlDialect sqlDialect;
 
     public FeatureStoreQueryGeneratorSql(SqlDialect sqlDialect, EpsgCrs nativeCrs) {
-        this.filterEncoder = new FilterEncoderSqlNewImpl(nativeCrs);
+        //this.filterEncoder = new FilterEncoderSqlNewImpl(nativeCrs);
         this.sqlDialect = sqlDialect;
-        this.filterEncoder2 = new FilterEncoderSqlNewNewImpl(this::getAliases, this::getJoins, nativeCrs, sqlDialect);
+        this.filterEncoder = new FilterEncoderSqlNewNewImpl(this::getAliases, this::getJoins, nativeCrs, sqlDialect);
     }
 
     @Override
@@ -187,7 +186,8 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     }
 
     private String getFilter(FeatureStoreInstanceContainer instanceContainer, CqlPredicate cqlFilter) {
-        List<SqlCondition> sqlConditions = filterEncoder.encode(cqlFilter, instanceContainer);
+        return filterEncoder.encode(cqlFilter, instanceContainer);
+        /*List<SqlCondition> sqlConditions = filterEncoder.encode(cqlFilter, instanceContainer);
 
         List<String> sqlFilters = sqlConditions.stream()
                                               .map(sqlCondition -> {
@@ -226,7 +226,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
                                         //.collect(Collectors.joining(") AND (", "(", ")"));
 
-        return sqlFilter;
+        return sqlFilter;*/
     }
 
     private List<String> getSortFields(FeatureStoreAttributesContainer attributesContainer, List<String> aliases) {
