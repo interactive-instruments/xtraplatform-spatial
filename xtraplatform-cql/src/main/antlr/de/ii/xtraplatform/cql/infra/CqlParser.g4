@@ -22,7 +22,7 @@ booleanPrimary : predicate
 predicate : comparisonPredicate
             | spatialPredicate
             | temporalPredicate
-            | existencePredicate
+//            | existencePredicate
             | inPredicate;
 
 /*
@@ -119,13 +119,15 @@ linestring : LINESTRING linestringDef;
 
 linestringDef: LEFTPAREN coordinate (COMMA coordinate)* RIGHTPAREN;
 
-polygon : POLYGON LEFTPAREN linestringDef (COMMA linestringDef)* RIGHTPAREN;
+polygon : POLYGON polygonDef;
 
-multiPoint : MULTIPOINT LEFTPAREN point (COMMA point)* RIGHTPAREN;
+polygonDef : LEFTPAREN linestringDef (COMMA linestringDef)* RIGHTPAREN;
 
-multiLinestring : MULTILINESTRING LEFTPAREN linestring (COMMA linestring)* RIGHTPAREN;
+multiPoint : MULTIPOINT LEFTPAREN coordinate (COMMA coordinate)* RIGHTPAREN;
 
-multiPolygon : MULTIPOLYGON LEFTPAREN polygon (COMMA polygon)* RIGHTPAREN;
+multiLinestring : MULTILINESTRING LEFTPAREN linestringDef (COMMA linestringDef)* RIGHTPAREN;
+
+multiPolygon : MULTIPOLYGON LEFTPAREN polygonDef (COMMA polygonDef)* RIGHTPAREN;
 
 geometryCollection : GEOMETRYCOLLECTION LEFTPAREN geomLiteral (COMMA geomLiteral)* RIGHTPAREN;
 
@@ -177,23 +179,25 @@ temporalLiteral: TemporalLiteral;
 #=============================================================================#
 */
 
-existencePredicate : PropertyName EXISTS
-                   | PropertyName DOES MINUS NOT MINUS EXIST;
+//DEACTIVATED, in ogcapi using a non-existing property is a 404
+//existencePredicate : PropertyName EXISTS
+//                   | PropertyName DOES MINUS NOT MINUS EXIST;
 
 /*
 #=============================================================================#
 # The IN predicate
 #=============================================================================#
 */
-//TODO: missing comma?
-inPredicate : PropertyName IN LEFTPAREN ( characterLiteral |
+//CHANGE: optional PropertyName for id filters
+//CHANGE: added missing comma
+inPredicate : (PropertyName)? IN LEFTPAREN ( characterLiteral |
                                             numericLiteral |
                                             geomLiteral |
                                             temporalLiteral /*|
-                                            function*/ ) ( COMMA characterLiteral |
+                                            function*/ ) ( COMMA (characterLiteral |
                                                               numericLiteral |
                                                               geomLiteral |
-                                                              temporalLiteral /*|
+                                                              temporalLiteral) /*|
                                                               function*/ )* RIGHTPAREN;
 
 /*

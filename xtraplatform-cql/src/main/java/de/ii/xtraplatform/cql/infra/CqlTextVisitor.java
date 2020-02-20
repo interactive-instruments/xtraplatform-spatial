@@ -2,10 +2,12 @@ package de.ii.xtraplatform.cql.infra;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.*;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements CqlParserVisitor<CqlNode> {
@@ -24,14 +26,16 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                  .accept(this);
 
         if (Objects.nonNull(ctx.OR())) {
-            CqlPredicate predicate1 = CqlPredicate.of(ctx.booleanValueExpression().accept(this));
+            CqlPredicate predicate1 = CqlPredicate.of(ctx.booleanValueExpression()
+                                                         .accept(this));
             CqlPredicate predicate2 = CqlPredicate.of(booleanTerm);
 
             Or result;
-            if (predicate1.getOr().isPresent()) {
+            if (predicate1.getOr()
+                          .isPresent()) {
                 List<CqlPredicate> predicates = predicate1.getOr()
-                        .get()
-                        .getPredicates();
+                                                          .get()
+                                                          .getPredicates();
                 result = Or.of(new ImmutableList.Builder<CqlPredicate>()
                         .addAll(predicates)
                         .add(predicate2)
@@ -57,10 +61,11 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             CqlPredicate predicate2 = CqlPredicate.of(booleanFactor);
 
             And result;
-            if (predicate1.getAnd().isPresent()) {
+            if (predicate1.getAnd()
+                          .isPresent()) {
                 List<CqlPredicate> predicates = predicate1.getAnd()
-                        .get()
-                        .getPredicates();
+                                                          .get()
+                                                          .getPredicates();
                 result = And.of(new ImmutableList.Builder<CqlPredicate>()
                         .addAll(predicates)
                         .add(predicate2)
@@ -79,10 +84,11 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     public CqlNode visitBooleanFactor(CqlParser.BooleanFactorContext ctx) {
         CqlNode booleanPrimary = ctx.booleanPrimary()
                                     .accept(this);
-        if (Objects.nonNull(ctx.booleanPrimary().LEFTPAREN())) {
+        if (Objects.nonNull(ctx.booleanPrimary()
+                               .LEFTPAREN())) {
             booleanPrimary = ctx.booleanPrimary()
-                    .booleanValueExpression()
-                    .accept(this);
+                                .booleanValueExpression()
+                                .accept(this);
         }
         if (Objects.nonNull(ctx.NOT())) {
             return Not.of(ImmutableList.of(CqlPredicate.of(booleanPrimary)));
@@ -139,16 +145,16 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         if (Objects.nonNull(ctx.LIKE())) {
 
             Scalar scalar1 = (Scalar) ctx.scalarExpression()
-                    .accept(this);
+                                         .accept(this);
             Scalar scalar2 = (Scalar) ctx.regularExpression()
-                    .accept(this);
+                                         .accept(this);
 
             Like like = new ImmutableLike.Builder()
                     .operand1(scalar1)
                     .operand2(scalar2)
                     .build();
 
-            if (Objects.nonNull(ctx.NOT()) ) {
+            if (Objects.nonNull(ctx.NOT())) {
                 return Not.of(like);
             }
 
@@ -160,9 +166,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitPropertyIsBetweenPredicate(CqlParser.PropertyIsBetweenPredicateContext ctx) {
 
-        Property property = (Property) ctx.scalarExpression(0).accept(this);
-        ScalarLiteral lowerValue = (ScalarLiteral) ctx.scalarExpression(1).accept(this);
-        ScalarLiteral upperValue = (ScalarLiteral) ctx.scalarExpression(2).accept(this);
+        Property property = (Property) ctx.scalarExpression(0)
+                                          .accept(this);
+        ScalarLiteral lowerValue = (ScalarLiteral) ctx.scalarExpression(1)
+                                                      .accept(this);
+        ScalarLiteral upperValue = (ScalarLiteral) ctx.scalarExpression(2)
+                                                      .accept(this);
         return new ImmutableBetween.Builder()
                 .property(property.getName())
                 .lower(lowerValue)
@@ -174,7 +183,8 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     public CqlNode visitPropertyIsNullPredicate(CqlParser.PropertyIsNullPredicateContext ctx) {
 
         if (Objects.nonNull(ctx.IS())) {
-            Property property = (Property) ctx.scalarExpression().accept(this);
+            Property property = (Property) ctx.scalarExpression()
+                                              .accept(this);
 
             IsNull isNull = new ImmutableIsNull.Builder()
                     .property(property.getName())
@@ -299,7 +309,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                       .build();
     }
 
-    @Override
+    /*@Override
     public CqlNode visitExistencePredicate(CqlParser.ExistencePredicateContext ctx) {
 
         if (Objects.nonNull(ctx.EXISTS())) {
@@ -313,18 +323,24 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         }
 
         return null;
-    }
+    }*/
 
     @Override
     public CqlNode visitInPredicate(CqlParser.InPredicateContext ctx) {
 
         List<ScalarLiteral> values = ImmutableList.of(ctx.characterLiteral(), ctx.numericLiteral())
-                .stream()
-                .flatMap(Collection::stream)
-                .map(v -> (ScalarLiteral) v.accept(this))
-                .collect(Collectors.toList());
+                                                  .stream()
+                                                  .flatMap(Collection::stream)
+                                                  .map(v -> (ScalarLiteral) v.accept(this))
+                                                  .collect(Collectors.toList());
+
+        if (Objects.isNull(ctx.PropertyName())) {
+            return In.of(values);
+        }
+
         return new ImmutableIn.Builder()
-                .property(ctx.PropertyName().getText())
+                .property(ctx.PropertyName()
+                             .getText())
                 .values(values)
                 .build();
     }
@@ -363,12 +379,55 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
     @Override
     public CqlNode visitGeomLiteral(CqlParser.GeomLiteralContext ctx) {
-        CqlNode geomLiteral = ctx.getChild(0).accept(this);
+        CqlNode geomLiteral = ctx.getChild(0)
+                                 .accept(this);
         return SpatialLiteral.of((Geometry<?>) geomLiteral);
     }
 
     @Override
-    public CqlNode visitPolygon(CqlParser.PolygonContext ctx) {
+    public CqlNode visitPoint(CqlParser.PointContext ctx) {
+        Geometry.Coordinate coordinate = (Geometry.Coordinate) ctx.coordinate()
+                                                                  .accept(this);
+
+        return new ImmutablePoint.Builder().addCoordinates(coordinate)
+                                           .build();
+    }
+
+    @Override
+    public CqlNode visitMultiPoint(CqlParser.MultiPointContext ctx) {
+        List<Geometry.Point> points = ctx.coordinate()
+                                                   .stream()
+                                                   .map(coordinateContext -> Geometry.Point.of((Geometry.Coordinate) coordinateContext.accept(this)))
+                                                   .collect(Collectors.toList());
+
+        return new ImmutableMultiPoint.Builder().coordinates(points)
+                                                     .build();
+    }
+
+    @Override
+    public CqlNode visitMultiLinestring(CqlParser.MultiLinestringContext ctx) {
+        List<Geometry.LineString> lineStrings = ctx.linestringDef()
+                                                         .stream()
+                                                         .map(linestringContext -> ((Geometry.LineString) linestringContext.accept(this)))
+                                                         .collect(Collectors.toList());
+
+        return new ImmutableMultiLineString.Builder().coordinates(lineStrings)
+                                             .build();
+    }
+
+    @Override
+    public CqlNode visitMultiPolygon(CqlParser.MultiPolygonContext ctx) {
+        List<Geometry.Polygon> polygons = ctx.polygonDef()
+                                                   .stream()
+                                                   .map(polygonDefContext -> ((Geometry.Polygon) polygonDefContext.accept(this)))
+                                                   .collect(Collectors.toList());
+
+        return new ImmutableMultiPolygon.Builder().coordinates(polygons)
+                                                     .build();
+    }
+
+    @Override
+    public CqlNode visitPolygonDef(CqlParser.PolygonDefContext ctx) {
         List<List<Geometry.Coordinate>> coordinates = ctx.linestringDef()
                                                          .stream()
                                                          .map(linestringContext -> ((Geometry.LineString) linestringContext.accept(this)).getCoordinates())
@@ -381,14 +440,26 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitEnvelope(CqlParser.EnvelopeContext ctx) {
         List<Double> coordinates;
-        Double eastBoundLon = Double.valueOf(ctx.eastBoundLon().NumericLiteral().getText());
-        Double westBoundLon = Double.valueOf(ctx.westBoundLon().NumericLiteral().getText());
-        Double northBoundLat = Double.valueOf(ctx.northBoundLat().NumericLiteral().getText());
-        Double southBoundLat = Double.valueOf(ctx.southBoundLat().NumericLiteral().getText());
+        Double eastBoundLon = Double.valueOf(ctx.eastBoundLon()
+                                                .NumericLiteral()
+                                                .getText());
+        Double westBoundLon = Double.valueOf(ctx.westBoundLon()
+                                                .NumericLiteral()
+                                                .getText());
+        Double northBoundLat = Double.valueOf(ctx.northBoundLat()
+                                                 .NumericLiteral()
+                                                 .getText());
+        Double southBoundLat = Double.valueOf(ctx.southBoundLat()
+                                                 .NumericLiteral()
+                                                 .getText());
 
         if (Objects.nonNull(ctx.minElev()) && Objects.nonNull(ctx.maxElev())) {
-            Double minElev = Double.valueOf(ctx.minElev().NumericLiteral().getText());
-            Double maxElev = Double.valueOf(ctx.maxElev().NumericLiteral().getText());
+            Double minElev = Double.valueOf(ctx.minElev()
+                                               .NumericLiteral()
+                                               .getText());
+            Double maxElev = Double.valueOf(ctx.maxElev()
+                                               .NumericLiteral()
+                                               .getText());
             coordinates = ImmutableList.of(southBoundLat, westBoundLon, minElev, northBoundLat, eastBoundLon, maxElev);
         } else {
             coordinates = ImmutableList.of(westBoundLon, eastBoundLon, northBoundLat, southBoundLat);

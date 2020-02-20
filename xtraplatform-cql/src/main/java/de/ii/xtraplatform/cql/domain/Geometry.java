@@ -42,6 +42,11 @@ public interface Geometry<T> extends CqlNode {
                                                .build();
         }
 
+        static Point of(Coordinate coordinate) {
+            return new ImmutablePoint.Builder().addCoordinates(coordinate)
+                                               .build();
+        }
+
         @Value.Check
         default void check() {
             Preconditions.checkState(getCoordinates().size() == 1, "a point must have only one coordinate", getCoordinates().size());

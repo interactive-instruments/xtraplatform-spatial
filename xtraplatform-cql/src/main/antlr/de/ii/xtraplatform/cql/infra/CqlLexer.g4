@@ -264,8 +264,13 @@ Sign : PLUS | MINUS;
 #=============================================================================#
 */
 
-//CHANGE: allow intervals with /
-TemporalLiteral : FullDate | FullDate 'T' UtcTime | FullDate 'T' UtcTime SOLIDUS FullDate 'T' UtcTime;
+TemporalLiteral : Instant | Interval;
+
+Instant : FullDate | FullDate 'T' UtcTime;
+
+Interval : (InstantInInterval)? SOLIDUS (InstantInInterval)?;
+
+InstantInInterval : '..' | Instant;
 
 FullDate : DateYear '-' DateMonth '-' DateDay;
 

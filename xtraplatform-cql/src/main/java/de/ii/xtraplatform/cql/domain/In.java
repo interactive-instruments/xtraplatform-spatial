@@ -22,7 +22,13 @@ public interface In extends CqlNode, ScalarOperation {
 
     static In of(ScalarLiteral... values) {
         return new ImmutableIn.Builder().property("_ID_")
-                                        .values(Arrays.asList(values))
+                                        .addValues(values)
+                                        .build();
+    }
+
+    static In of(List<ScalarLiteral> values) {
+        return new ImmutableIn.Builder().property("_ID_")
+                                        .values(values)
                                         .build();
     }
 

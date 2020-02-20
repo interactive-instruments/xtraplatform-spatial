@@ -2,6 +2,7 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.app.CqlToText;
+import de.ii.xtraplatform.cql.domain.Between;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.During;
 import de.ii.xtraplatform.cql.domain.Exists;
@@ -19,6 +20,7 @@ import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
 import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
 import de.ii.xtraplatform.cql.domain.ImmutableTouches;
 import de.ii.xtraplatform.cql.domain.ImmutableWithin;
+import de.ii.xtraplatform.cql.domain.In;
 import de.ii.xtraplatform.cql.domain.IsNull;
 import de.ii.xtraplatform.cql.domain.Like;
 import de.ii.xtraplatform.cql.domain.Property;
@@ -141,19 +143,26 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         //TODO: unary + nnary
         @Override
         public String visit(ScalarOperation scalarOperation, List<String> children) {
-            String expression = children.get(0);
-            String value = children.get(1);
+            String propertyExpression = children.get(0);
+            String value = children.size() > 1 ? children.get(1) : "";
             String operator = CqlToText.SCALAR_OPERATORS.get(scalarOperation.getClass());
+            String operation = String.format(" %s %s", operator, value);
 
-            //TODO: what is the difference between EXISTS and IS NULL? Postgres only knows the latter.
-            if (scalarOperation instanceof Exists) {
-                operator = CqlToText.SCALAR_OPERATORS.get(ImmutableIsNull.class);
+            if (scalarOperation instanceof Between) {
+                operation = String.format(" %s %s AND %s", operator, children.get(1), children.get(2));
+            } else if (scalarOperation instanceof In) {
+                operation = String.format(" %s (%s)", operator, String.join(", ", children.subList(1, children.size())));
+            } else if (scalarOperation instanceof IsNull /*|| scalarOperation instanceof Exists*/) {
+                //TODO: what is the difference between EXISTS and IS NULL? Postgres only knows the latter.
+                //operator = CqlToText.SCALAR_OPERATORS.get(ImmutableIsNull.class);
+                operation = String.format(" %s", operator);
             } else if (scalarOperation instanceof Like && !Objects.equals("%", ((Like) scalarOperation).getWildCard())) {
+                String wildCard = ((Like) scalarOperation).getWildCard().replace("*", "\\*");
                 value = value.replaceAll("%", "\\%")
-                             .replaceAll(((Like) scalarOperation).getWildCard().replace("*", "\\*"), "%");
+                             .replaceAll(wildCard, "%");
             }
 
-            return String.format(expression, "", String.format(" %s %s", operator, value));
+            return String.format(propertyExpression, "", operation);
         }
 
         @Override
@@ -161,10 +170,20 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String expression = children.get(0);
             String operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
 
-            //TODO: split and format interval
             if (temporalOperation instanceof During) {
-                String[] interval = children.get(1).split("/");
-                return String.format(expression, "", String.format(" %s %s' AND '%s", operator, interval[0], interval[1]));
+                Interval interval = (Interval) temporalOperation.getValue().get().getValue();
+                if (interval.isUnboundedStart() && interval.isUnboundedEnd()) {
+                    return "TRUE";
+                } else if (interval.isUnboundedStart()) {
+                    operator = TEMPORAL_OPERATORS.get(ImmutableBefore.class);
+                    return String.format(expression, "", String.format(" %s '%s'", operator, interval.getEnd().toString()));
+                } else if (interval.isUnboundedEnd()) {
+                    operator = TEMPORAL_OPERATORS.get(ImmutableAfter.class);
+                    return String.format(expression, "", String.format(" %s '%s'", operator, interval.getStart().toString()));
+                }
+
+                String[] interval2 = children.get(1).split("/");
+                return String.format(expression, "", String.format(" %s %s' AND '%s", operator, interval2[0], interval2[1]));
             }
 
             return String.format(expression, "", String.format(" %s %s", operator, children.get(1)));
