@@ -78,7 +78,7 @@ SpatialOperator : 'EQUALS' | 'DISJOINT' | 'TOUCHES' | 'WITHIN' | 'OVERLAPS'
 */
 
 /*
-# only support the ones from original cql
+# only support the ones from original cql for now
 */
 TemporalOperator : 'AFTER' | 'BEFORE' | 'DURING' | 'TEQUALS';
 

@@ -56,8 +56,8 @@ scalarExpression : propertyName
                     | characterLiteral
                     | numericLiteral
                     | booleanLiteral
-                    /*| function
-                    | arithmeticExpression*/;
+                    | function
+                    /*| arithmeticExpression*/;
 
 propertyName: PropertyName;
 
@@ -207,19 +207,20 @@ inPredicate : (PropertyName)? IN LEFTPAREN ( characterLiteral |
 #       In the OpenAPI document I suppose!
 #=============================================================================#
 */
-/* IGNORE FOR NOW
-function : identifier argumentList;
 
-argumentList : leftParen (positionalArgument)?  rightParen;
+function : Identifier argumentList;
+
+argumentList : LEFTPAREN (positionalArgument)?  RIGHTPAREN;
 
 positionalArgument : argument ( COMMA argument )*;
 
 argument : characterLiteral
          | numericLiteral
          | geomLiteral
+         | temporalLiteral
          | propertyName
-         | arithmeticExpression;
-*/
+         /*| arithmeticExpression*/;
+
 
 /*
 #=============================================================================#

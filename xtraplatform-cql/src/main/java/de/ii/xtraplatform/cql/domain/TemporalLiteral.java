@@ -40,6 +40,8 @@ public interface TemporalLiteral extends Temporal, Literal, CqlNode {
                                                                 .asPredicate();
     Predicate<String> DATE_INTERVAL_OPEN_END_PATTERN = Pattern.compile(String.format("^%s/%s$", DATE_REGEX, OPEN_REGEX))
                                                               .asPredicate();
+    Joiner INTERVAL_JOINER = Joiner.on('/')
+                                   .skipNulls();
 
 
     static TemporalLiteral of(Instant literal) {
@@ -57,9 +59,6 @@ public interface TemporalLiteral extends Temporal, Literal, CqlNode {
     static TemporalLiteral of(String literal) throws CqlParseException {
         return new TemporalLiteral.Builder(literal).build();
     }
-
-    Joiner INTERVAL_JOINER = Joiner.on('/')
-                                   .skipNulls();
 
     class Builder extends ImmutableTemporalLiteral.Builder {
         public Builder() {

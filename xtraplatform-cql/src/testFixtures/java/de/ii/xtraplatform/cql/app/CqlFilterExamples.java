@@ -79,12 +79,11 @@ public class CqlFilterExamples {
             CqlPredicate.of(Lt.of("floors", ScalarLiteral.of(4)))
     ));
 
-    public static final CqlFilter EXAMPLE_12 = CqlFilter.of(Before.of("built", TemporalLiteral.of(Instant.parse("2015-01-01T00:00:00Z"))));
+    public static final CqlFilter EXAMPLE_12 = CqlFilter.of(Before.of("built", TemporalLiteral.of("2015-01-01T00:00:00Z")));
 
-    static final CqlFilter EXAMPLE_13 = CqlFilter.of(After.of("built", TemporalLiteral.of(Instant.parse("2012-06-05T00:00:00Z"))));
+    static final CqlFilter EXAMPLE_13 = CqlFilter.of(After.of("built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
 
-
-    public static final CqlFilter EXAMPLE_14 = CqlFilter.of(During.of("updated", TemporalLiteral.of(Interval.of(Instant.parse("2017-06-10T07:30:00Z"), Instant.parse("2017-06-11T10:30:00Z")))));
+    public static final CqlFilter EXAMPLE_14 = CqlFilter.of(During.of("updated", TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z"))));
 
     public static final CqlFilter EXAMPLE_15 = CqlFilter.of(Within.of("location", SpatialLiteral.of(Geometry.Envelope.of(33.8, -118.0, 34.0, -117.9))));
 
