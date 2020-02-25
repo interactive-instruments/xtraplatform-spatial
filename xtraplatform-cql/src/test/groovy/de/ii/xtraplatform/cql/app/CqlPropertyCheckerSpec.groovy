@@ -30,7 +30,7 @@ class CqlPropertyCheckerSpec extends Specification {
         and:
 
         when:
-        def invalidProperties2 = CqlFilterExamples.EXAMPLE_23.accept(visitor)
+        def invalidProperties2 = CqlFilterExamples.EXAMPLE_21.accept(visitor)
 
         then:
         invalidProperties2.size() == 1

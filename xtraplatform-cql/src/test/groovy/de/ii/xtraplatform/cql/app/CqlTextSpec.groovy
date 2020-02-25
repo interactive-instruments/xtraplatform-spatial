@@ -438,7 +438,9 @@ class CqlTextSpec extends Specification {
     }
 
 
-    def 'Property "owner" exists'() {
+    // EXISTS and DOES-NOT-EXIST are deactivated in the parser
+
+    /*def 'Property "owner" exists'() {
         given:
         String cqlText = "owner EXISTS"
 
@@ -474,6 +476,6 @@ class CqlTextSpec extends Specification {
 
         then:
         actual2 == cqlText
-    }
+    }*/
 
 }

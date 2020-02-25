@@ -108,8 +108,9 @@ public class CqlFilterExamples {
 
     static final CqlFilter EXAMPLE_21 = CqlFilter.of(Not.of(IsNull.of("owner")));
 
-    static final CqlFilter EXAMPLE_22 = CqlFilter.of(Exists.of("owner"));
+    // EXISTS and DOES-NOT-EXIST are deactivated in the parser
+    //static final CqlFilter EXAMPLE_22 = CqlFilter.of(Exists.of("owner"));
 
-    static final CqlFilter EXAMPLE_23 = CqlFilter.of(Not.of(Exists.of("owner")));
+    //static final CqlFilter EXAMPLE_23 = CqlFilter.of(Not.of(Exists.of("owner")));
 
 }

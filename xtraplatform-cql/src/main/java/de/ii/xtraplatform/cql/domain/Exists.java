@@ -22,6 +22,9 @@ public interface Exists extends ScalarOperation, CqlNode {
     @Value.Check
     @Override
     default void check() {
+        // EXISTS/DOES-NOT-EXIST are deactivated for now
+        Preconditions.checkState(false, "EXISTS is not supported");
+
         Preconditions.checkState(getProperty().isPresent(), "EXISTS operation must have exactly one operand, found 0");
     }
 

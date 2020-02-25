@@ -701,7 +701,8 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    def 'Property "owner" exists'() {
+    //EXISTS and DOES-NOT-EXIST are deactivated in the parser
+    /*def 'Property "owner" exists'() {
 
         given:
         String cqlJson = """
@@ -755,6 +756,6 @@ class CqlJsonSpec extends Specification {
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
-    }
+    }*/
 
 }
