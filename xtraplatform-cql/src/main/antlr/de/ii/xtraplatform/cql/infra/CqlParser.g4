@@ -59,7 +59,8 @@ scalarExpression : propertyName
                     | function
                     /*| arithmeticExpression*/;
 
-propertyName: PropertyName;
+//CHANGE: support compound property names
+propertyName: Identifier (PERIOD Identifier)*;
 
 characterLiteral: CharacterStringLiteral
                    | BitStringLiteral

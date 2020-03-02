@@ -130,9 +130,6 @@ ENVELOPE: 'ENVELOPE';
 
 CharacterStringLiteralStart : QUOTE -> more, mode(STR);// (Character)* QUOTE;
 
-//CHANGE: support compound property names
-PropertyName : Identifier (PERIOD Identifier)*;
-
 /*CharacterLiteral : CharacterStringLiteral
                  | BitStringLiteral
                  | HexStringLiteral;*/
