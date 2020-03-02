@@ -9,7 +9,7 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.app.CqlToText;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlCondition;
@@ -74,7 +74,7 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
     //TODO: implement own CQL parser
     // currently we hijack the transformation from cql to ogc filter to get a sql filter
     // that's pretty dirty and also not very fast
-    public List<SqlCondition> encode(final CqlPredicate cqlFilter, FeatureStoreInstanceContainer typeInfo) {
+    public List<SqlCondition> encode(final CqlFilter cqlFilter, FeatureStoreInstanceContainer typeInfo) {
 
         List<String> columns = new ArrayList<>();
         List<String> conditions = new ArrayList<>();

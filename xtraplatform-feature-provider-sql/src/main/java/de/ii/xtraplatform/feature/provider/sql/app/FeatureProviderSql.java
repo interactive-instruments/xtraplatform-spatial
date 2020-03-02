@@ -1,6 +1,7 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
 import de.ii.xtraplatform.akka.ActorSystemProvider;
+import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -55,10 +56,11 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     public FeatureProviderSql(@Context BundleContext context,
                               @Requires ActorSystemProvider actorSystemProvider,
                               @Requires CrsTransformerFactory crsTransformerFactory,
+                              @Requires Cql cql,
                               @Property(name = "data") FeatureProviderDataV1 data,
                               @Property(name = ".connector") SqlConnector sqlConnector) {
         //TODO: starts akka for every instance, move to singleton
-        super(context, actorSystemProvider, data, createPathParser((ConnectionInfoSql) data.getConnectionInfo()));
+        super(context, actorSystemProvider, data, createPathParser((ConnectionInfoSql) data.getConnectionInfo(), cql));
 
         this.crsTransformerFactory = crsTransformerFactory;
         this.connector = sqlConnector;
@@ -70,11 +72,11 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect, data.getNativeCrs());
     }
 
-    private static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql) {
+    private static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql, Cql cql) {
         SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
                                                      .options(connectionInfoSql.getPathSyntax())
                                                      .build();
-        return new FeatureStorePathParserSql(syntax);
+        return new FeatureStorePathParserSql(syntax, cql);
     }
 
     @Override

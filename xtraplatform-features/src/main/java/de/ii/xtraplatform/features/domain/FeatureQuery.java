@@ -8,12 +8,11 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.ScalarExpression;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.immutables.value.Value;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,7 +36,7 @@ public abstract class FeatureQuery {
         return 0;
     }
 
-    public abstract Optional<CqlPredicate> getFilter();
+    public abstract Optional<CqlFilter> getFilter();
 
     @Value.Default
     public boolean hitsOnly() {

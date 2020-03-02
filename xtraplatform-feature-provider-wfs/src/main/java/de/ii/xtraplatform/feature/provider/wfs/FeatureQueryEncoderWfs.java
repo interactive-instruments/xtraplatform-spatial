@@ -9,7 +9,7 @@ package de.ii.xtraplatform.feature.provider.wfs;
 
 import akka.japi.Pair;
 import de.ii.xtraplatform.cql.app.CqlToText;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
@@ -153,7 +153,7 @@ public class FeatureQueryEncoderWfs {
         return getFeature.build();
     }
 
-    private Filter encodeFilter(final Optional<CqlPredicate> filter, final FeatureTypeMapping featureTypeMapping) throws CQLException {
+    private Filter encodeFilter(final Optional<CqlFilter> filter, final FeatureTypeMapping featureTypeMapping) throws CQLException {
         if (!filter.isPresent() || Objects.isNull(featureTypeMapping)) {
             return null;
         }

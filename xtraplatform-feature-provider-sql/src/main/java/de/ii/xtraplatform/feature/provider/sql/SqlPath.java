@@ -4,6 +4,7 @@ import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -41,4 +42,6 @@ public interface SqlPath {
     default boolean isSpatial() {
         return false;
     }
+
+    Map<String, String> getTableFlags();
 }

@@ -15,7 +15,7 @@ class FeatureStorePathParserSpec extends Specification {
     def setupSpec() {
         def syntax = ImmutableSqlPathSyntax.builder().build()
 
-        pathParser = new FeatureStorePathParserSql(syntax)
+        pathParser = new FeatureStorePathParserSql(syntax, cql)
     }
 
     @Unroll

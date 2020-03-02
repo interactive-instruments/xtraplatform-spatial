@@ -3,23 +3,14 @@ package de.ii.xtraplatform.feature.provider.sql;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.immutables.value.Value;
 
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true)
@@ -102,6 +93,17 @@ public interface SqlPathSyntax {
         return String.format("%s{queryable=%s}", path, queryable);
     }
 
+    default Optional<String> getFilterFlag(String flags) {
+        Matcher matcher = Pattern.compile(getFilterFlagPattern())
+                                 .matcher(flags);
+
+        if (matcher.find()) {
+            return Optional.of(matcher.group(MatcherGroups.FILTER));
+        }
+
+        return Optional.empty();
+    }
+
 
     //TODO: start end separator for flags
     @Value.Derived
@@ -122,6 +124,11 @@ public interface SqlPathSyntax {
     @Value.Derived
     default String getQueryableFlagPattern() {
         return "\\{queryable=" + "(?<" + MatcherGroups.QUERYABLE + ">.+?)\\}";
+    }
+
+    @Value.Derived
+    default String getFilterFlagPattern() {
+        return "\\{filter=" + "(?<" + MatcherGroups.FILTER + ">.+?)\\}";
     }
 
     @Value.Derived
@@ -163,8 +170,10 @@ public interface SqlPathSyntax {
         String SOURCE_FIELD = "sourceField";
         String TARGET_FIELD = "targetField";
         String PRIORITY = "priority";
-        String FLAGS = "flags";
+        String PATH_FLAGS = "pathFlags";
+        String TABLE_FLAGS = "tableFlags";
         String QUERYABLE = "queryable";
+        String FILTER = "filter";
     }
 
 
@@ -232,7 +241,7 @@ public interface SqlPathSyntax {
 
     @Value.Derived
     default String getTablePatternString() {
-        return "(?:" + getJoinConditionPattern() + ")?" + "(?<" + MatcherGroups.TABLE + ">" + getIdentifierPattern() + ")";
+        return "(?:" + getJoinConditionPattern() + ")?" + "(?<" + MatcherGroups.TABLE + ">" + getIdentifierPattern() + ")" + "(?<" + MatcherGroups.TABLE_FLAGS + ">" + getFlagsPattern() + ")?";
     }
 
     @Value.Derived
@@ -247,7 +256,7 @@ public interface SqlPathSyntax {
 
     @Value.Derived
     default Pattern getColumnPathPattern() {
-        return Pattern.compile("(?<" + MatcherGroups.PATH + ">" + "(?:" + getPathSeparator() + getTablePatternString() + ")+)" + getPathSeparator() + "(?<" + MatcherGroups.COLUMNS + ">" + getColumnPattern() + ")" + "(?<" + MatcherGroups.FLAGS + ">" + getFlagsPattern() + ")?");
+        return Pattern.compile("(?<" + MatcherGroups.PATH + ">" + "(?:" + getPathSeparator() + getTablePatternString() + ")+)" + getPathSeparator() + "(?<" + MatcherGroups.COLUMNS + ">" + getColumnPattern() + ")" + "(?<" + MatcherGroups.PATH_FLAGS + ">" + getFlagsPattern() + ")?");
     }
 
     @Value.Default

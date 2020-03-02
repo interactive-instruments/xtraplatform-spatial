@@ -1,12 +1,12 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.domain.And;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.cql.domain.ImmutableCqlPredicate;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNewNew;
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlCondition;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
@@ -38,11 +38,12 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     }
 
     @Override
-    public String getMetaQuery(FeatureStoreInstanceContainer instanceContainer, int limit, int offset, Optional<CqlPredicate> filter,
+    public String getMetaQuery(FeatureStoreInstanceContainer instanceContainer, int limit, int offset, Optional<CqlFilter> cqlFilter,
                                boolean computeNumberMatched) {
         String limitSql = limit > 0 ? String.format(" LIMIT %d", limit) : "";
         String offsetSql = offset > 0 ? String.format(" OFFSET %d", offset) : "";
-        String where = filter.isPresent() ? String.format(" WHERE %s", getFilter(instanceContainer, filter.get())) : "";
+        Optional<String> filter = getFilter(instanceContainer, cqlFilter);
+        String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
 
         String numberReturned = String.format("SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.%2$s AS SKEY FROM %1$s A%5$s ORDER BY 1%3$s%4$s) AS NR", instanceContainer.getName(), instanceContainer.getSortKey(), limitSql, offsetSql, where);
 
@@ -55,12 +56,12 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     }
 
     @Override
-    public Stream<String> getInstanceQueries(FeatureStoreInstanceContainer instanceContainer, Optional<CqlPredicate> cqlFilter,
+    public Stream<String> getInstanceQueries(FeatureStoreInstanceContainer instanceContainer, Optional<CqlFilter> cqlFilter,
                                              long minKey, long maxKey) {
 
-        boolean isIdFilter = cqlFilter.flatMap(CqlPredicate::getInOperator).isPresent();
+        boolean isIdFilter = cqlFilter.flatMap(CqlFilter::getInOperator).isPresent();
         List<String> aliases = getAliases(instanceContainer);
-        Optional<String> sqlFilter = cqlFilter.map(f -> getFilter(instanceContainer, f));
+        Optional<String> sqlFilter = getFilter(instanceContainer, cqlFilter);
 
         Optional<String> whereClause = isIdFilter
                 ? sqlFilter
@@ -185,48 +186,24 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         return String.format("JOIN %1$s %2$s ON %4$s.%5$s=%2$s.%3$s", targetContainer, targetAlias, targetField, sourceContainer, sourceField);
     }
 
-    private String getFilter(FeatureStoreInstanceContainer instanceContainer, CqlPredicate cqlFilter) {
-        return filterEncoder.encode(cqlFilter, instanceContainer);
-        /*List<SqlCondition> sqlConditions = filterEncoder.encode(cqlFilter, instanceContainer);
-
-        List<String> sqlFilters = sqlConditions.stream()
-                                              .map(sqlCondition -> {
-
-                                            List<String> aliases = getAliases(sqlCondition.getTable()).stream()
-                                                                                                      .map(s -> "A" + s)
-                                                                                                      .collect(Collectors.toList());
-                                            String join = getJoins(sqlCondition.getTable(), aliases);
-                                            String property = String.format("%s.%s", aliases.get(aliases.size() - 1), sqlCondition.getColumn());
-                                            String expression = sqlCondition.getExpression()
-                                                                            .replace("{{prop}}", property);
-
-                                            return String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %5$s)", instanceContainer.getName(), aliases.get(0), instanceContainer.getSortKey(), join, expression);
-                                        })
-                                              .collect(Collectors.toList());
-        String sqlFilter = "(";
-
-        for (int i = 0; i < sqlConditions.size(); i++) {
-            if (i == 0) {
-                sqlFilter += "(";
-            }
-            sqlFilter += sqlFilters.get(i);
-
-            if (i < sqlConditions.size()-1) {
-                if (sqlConditions.get(i).isOr()) {
-                    sqlFilter += ") OR (";
-                } else {
-                    sqlFilter += ") AND (";
-                }
-            } else {
-                sqlFilter += ")";
-            }
+    private Optional<String> getFilter(FeatureStoreInstanceContainer instanceContainer, Optional<CqlFilter> cqlFilter) {
+        if (!instanceContainer.getFilter().isPresent() && !cqlFilter.isPresent()) {
+            return Optional.empty();
+        }
+        if (instanceContainer.getFilter().isPresent() && !cqlFilter.isPresent()) {
+            return Optional.of(filterEncoder.encode(instanceContainer.getFilter().get(), instanceContainer));
+        }
+        if (!instanceContainer.getFilter().isPresent() && cqlFilter.isPresent()) {
+            return Optional.of(filterEncoder.encode(cqlFilter.get(), instanceContainer));
         }
 
-        sqlFilter += ")";
+        CqlFilter mergedFilter = CqlFilter.of(And.of(
+                ImmutableCqlPredicate.copyOf(instanceContainer.getFilter()
+                                                              .get()),
+                ImmutableCqlPredicate.copyOf(cqlFilter.get())
+        ));
 
-                                        //.collect(Collectors.joining(") AND (", "(", ")"));
-
-        return sqlFilter;*/
+        return Optional.of(filterEncoder.encode(mergedFilter, instanceContainer));
     }
 
     private List<String> getSortFields(FeatureStoreAttributesContainer attributesContainer, List<String> aliases) {

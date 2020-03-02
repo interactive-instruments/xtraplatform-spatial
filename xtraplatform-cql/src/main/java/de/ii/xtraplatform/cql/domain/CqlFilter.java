@@ -9,6 +9,14 @@ import org.immutables.value.Value;
 public interface CqlFilter extends CqlPredicate {
 
     static CqlFilter of(CqlNode node) {
+        if (node instanceof CqlFilter) {
+            return of(((CqlFilter) node).getExpressions()
+                                        .get(0));
+        } else if (node instanceof CqlPredicate) {
+            return of(((CqlPredicate) node).getExpressions()
+                                           .get(0));
+        }
+
         ImmutableCqlFilter.Builder builder = new ImmutableCqlFilter.Builder();
 
         if (node instanceof And) {

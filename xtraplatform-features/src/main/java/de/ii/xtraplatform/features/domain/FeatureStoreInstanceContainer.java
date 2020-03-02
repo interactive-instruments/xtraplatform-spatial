@@ -1,6 +1,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -9,6 +10,8 @@ import java.util.Optional;
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true)
 public interface FeatureStoreInstanceContainer extends FeatureStoreAttributesContainer {
+
+    Optional<CqlFilter> getFilter();
 
     //TODO: find a better way to handle this
     @Value.Default

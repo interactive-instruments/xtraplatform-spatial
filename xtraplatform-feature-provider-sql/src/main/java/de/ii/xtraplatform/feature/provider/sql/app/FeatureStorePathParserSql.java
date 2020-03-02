@@ -1,5 +1,7 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
+import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPath;
 import de.ii.xtraplatform.feature.provider.sql.SqlFeatureTypeParser;
 import de.ii.xtraplatform.feature.provider.sql.SqlPath;
@@ -17,6 +19,7 @@ import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -30,10 +33,12 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
     private final SqlPathSyntax syntax;
     private final SqlFeatureTypeParser mappingParser;
+    private final Cql cql;
 
-    public FeatureStorePathParserSql(SqlPathSyntax syntax) {
+    public FeatureStorePathParserSql(SqlPathSyntax syntax, Cql cql) {
         this.syntax = syntax;
         this.mappingParser = new SqlFeatureTypeParser(syntax);
+        this.cql = cql;
     }
 
     @Override
@@ -73,19 +78,35 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
         if (matcher.find()) {
             String tablePath = matcher.group(SqlPathSyntax.MatcherGroups.PATH);
+
+            //TODO: full parent path?
+            Map<String, String> tableFlags = new LinkedHashMap<>();
+            Matcher tableMatcher = syntax.getTablePattern()
+                                         .matcher(tablePath);
+            while (tableMatcher.find()) {
+                String flags = tableMatcher.group(SqlPathSyntax.MatcherGroups.TABLE_FLAGS);
+                tablePath = tablePath.replace(flags, "");
+                String pathWithoutFlags = tableMatcher.group(0)
+                                                      .replace(flags, "");
+                tableFlags.putIfAbsent(pathWithoutFlags, flags);
+            }
+
             List<String> columns = syntax.getMultiColumnSplitter()
                                          .splitToList(matcher.group(SqlPathSyntax.MatcherGroups.COLUMNS));
-            String flags = matcher.group(SqlPathSyntax.MatcherGroups.FLAGS);
+            String flags = matcher.group(SqlPathSyntax.MatcherGroups.PATH_FLAGS);
             OptionalInt priority = syntax.getPriorityFlag(flags);
             boolean hasOid = syntax.getOidFlag(flags);
             List<String> tablePathAsList = syntax.asList(tablePath);
             boolean isRoot = tablePathAsList.size() == 1;
             boolean isJunction = syntax.isJunctionTable(tablePathAsList.get(tablePathAsList.size() - 1));
-            Optional<String> queryable = syntax.getQueryableFlag(flags).map(q -> q.replaceAll("\\[", "").replaceAll("]", ""));
+            Optional<String> queryable = syntax.getQueryableFlag(flags)
+                                               .map(q -> q.replaceAll("\\[", "")
+                                                          .replaceAll("]", ""));
             boolean isSpatial = syntax.getSpatialFlag(flags);
 
             return Optional.of(ImmutableSqlPath.builder()
                                                .tablePath(tablePath)
+                                               .tableFlags(tableFlags)
                                                .columns(columns)
                                                .hasOid(hasOid)
                                                .sortPriority(priority)
@@ -161,13 +182,28 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                         }
 
                         if (isRoot) {
-                            instanceContainerBuilders.get(instanceContainerName)
-                                                     .name(instanceContainerName)
-                                                     .path(tablePathAsList)
-                                                     .sortKey(syntax.getOptions()
-                                                                    .getDefaultSortKey())
-                                                     .attributes(attributes)
-                                                     .attributesPosition(instancePos[0]);
+                            ImmutableFeatureStoreInstanceContainer.Builder instanceContainerBuilder = instanceContainerBuilders.get(instanceContainerName);
+
+                            //TODO: if multiple it should be different instance containers
+                            Optional<CqlFilter> filter = columnPaths.stream()
+                                                                    .flatMap(sqlPath -> sqlPath.getTableFlags()
+                                                                                               .values()
+                                                                                               .stream())
+                                                                    .map(syntax::getFilterFlag)
+                                                                    .filter(Optional::isPresent)
+                                                                    .map(Optional::get)
+                                                                    .distinct()
+                                                                    .map(filterText -> cql.read(filterText, Cql.Format.TEXT))
+                                                                    .findFirst();
+
+                            instanceContainerBuilder.name(instanceContainerName)
+                                                    .path(tablePathAsList)
+                                                    .sortKey(syntax.getOptions()
+                                                                   .getDefaultSortKey())
+                                                    .attributes(attributes)
+                                                    .attributesPosition(instancePos[0])
+                                                    .filter(filter);
+
                             instancePos[0] = 0;
                         } else {
                             List<FeatureStoreRelation> instanceConnection = toRelations(tablePathAsList);
@@ -178,6 +214,11 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                         .getTargetField()
                                     : syntax.getOptions()
                                             .getDefaultSortKey();
+
+
+                            //TODO: get tableFlags/filters; since right now we can only filter on mapped attributes, we might put the filter on the attributesContainer
+                            //TODO: better would be to put the filter(s) on FeatureStoreRelation, so pass them to toRelations
+                            //TODO: that would make them part of the join conditions, which should be easier/cleaner
 
                             ImmutableFeatureStoreRelatedContainer attributesContainer = ImmutableFeatureStoreRelatedContainer.builder()
                                                                                                                              .name(attributesContainerName)

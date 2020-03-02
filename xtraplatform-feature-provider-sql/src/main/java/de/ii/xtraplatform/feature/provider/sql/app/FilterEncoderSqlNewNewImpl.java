@@ -3,9 +3,8 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.app.CqlToText;
 import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.During;
-import de.ii.xtraplatform.cql.domain.Exists;
 import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.ImmutableAfter;
 import de.ii.xtraplatform.cql.domain.ImmutableBefore;
@@ -15,7 +14,6 @@ import de.ii.xtraplatform.cql.domain.ImmutableDisjoint;
 import de.ii.xtraplatform.cql.domain.ImmutableDuring;
 import de.ii.xtraplatform.cql.domain.ImmutableEquals;
 import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
-import de.ii.xtraplatform.cql.domain.ImmutableIsNull;
 import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
 import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
 import de.ii.xtraplatform.cql.domain.ImmutableTouches;
@@ -39,11 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
 import javax.ws.rs.BadRequestException;
-import java.time.Instant;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -91,7 +85,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
     }
 
     @Override
-    public String encode(CqlPredicate cqlFilter, FeatureStoreInstanceContainer typeInfo) {
+    public String encode(CqlFilter cqlFilter, FeatureStoreInstanceContainer typeInfo) {
         return cqlFilter.accept(new CqlToSql(typeInfo));
     }
 

@@ -56,7 +56,7 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
         def sqlPaths = mappingParser.parse(featureTypeMappings.get(featureTypeToTest).getMappings())
 
-        def pathParser = new FeatureStorePathParserSql(syntax)
+        def pathParser = new FeatureStorePathParserSql(syntax, cql)
 
         instanceContainer = pathParser.parse(sqlPaths).get(0)
     }

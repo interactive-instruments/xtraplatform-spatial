@@ -1,8 +1,8 @@
 package de.ii.xtraplatform.features.domain;
 
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 
 public interface FilterEncoder<T> {
 
-    T encode(CqlPredicate cqlFilter, FeatureStoreInstanceContainer typeInfo);
+    T encode(CqlFilter cqlFilter, FeatureStoreInstanceContainer typeInfo);
 }

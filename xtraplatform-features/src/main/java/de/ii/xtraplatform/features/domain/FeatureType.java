@@ -65,25 +65,25 @@ public interface FeatureType extends ValueInstance {
                            List<String> path = Splitter.on('/')
                                                        .omitEmptyStrings()
                                                        .splitToList(featureProperty.getPath())
-                                   .stream()
-                                   .map(element ->  {
-                                       String resolvedElement = element;
+                                                       .stream()
+                                                       .map(element -> {
+                                                           String resolvedElement = element.replaceAll("\\{.*?\\}", "");
 
-                                       for (Map.Entry<String, String> entry : getAdditionalInfo().entrySet()) {
-                                           String prefix = entry.getKey();
-                                           String uri = entry.getValue();
-                                           resolvedElement = resolvedElement.replaceAll(prefix + ":", uri + ":");
-                                       }
+                                                           for (Map.Entry<String, String> entry : getAdditionalInfo().entrySet()) {
+                                                               String prefix = entry.getKey();
+                                                               String uri = entry.getValue();
+                                                               resolvedElement = resolvedElement.replaceAll(prefix + ":", uri + ":");
+                                                           }
 
-                                       return resolvedElement;
-                                   })
-                                   .collect(Collectors.toList());
-
+                                                           return resolvedElement;
+                                                       })
+                                                       .collect(Collectors.toList());
 
 
                            builder.putIfAbsent(path, new ArrayList<>());
 
-                           builder.get(path).add(featureProperty);
+                           builder.get(path)
+                                  .add(featureProperty);
                        });
 
         return builder;
