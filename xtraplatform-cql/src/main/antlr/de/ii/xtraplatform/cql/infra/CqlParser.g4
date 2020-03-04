@@ -191,7 +191,7 @@ temporalLiteral: TemporalLiteral;
 */
 //CHANGE: optional PropertyName for id filters
 //CHANGE: added missing comma
-inPredicate : (PropertyName)? IN LEFTPAREN ( characterLiteral |
+inPredicate : (propertyName)? IN LEFTPAREN ( characterLiteral |
                                             numericLiteral |
                                             geomLiteral |
                                             temporalLiteral /*|

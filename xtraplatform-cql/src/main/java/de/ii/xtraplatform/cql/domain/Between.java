@@ -19,6 +19,13 @@ public interface Between extends ScalarOperation, CqlNode {
                                              .build();
     }
 
+    static Between ofFunction(Function function, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
+        return new ImmutableBetween.Builder().function(function)
+                                             .lower(scalarLiteral1)
+                                             .upper(scalarLiteral2)
+                                             .build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<Between> {
     }
 

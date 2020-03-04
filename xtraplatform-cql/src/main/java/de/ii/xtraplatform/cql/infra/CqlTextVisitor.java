@@ -2,12 +2,10 @@ package de.ii.xtraplatform.cql.infra;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.*;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements CqlParserVisitor<CqlNode> {
@@ -334,12 +332,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                   .map(v -> (ScalarLiteral) v.accept(this))
                                                   .collect(Collectors.toList());
 
-        if (Objects.isNull(ctx.PropertyName())) {
+        if (Objects.isNull(ctx.propertyName())) {
             return In.of(values);
         }
 
         return new ImmutableIn.Builder()
-                .property(ctx.PropertyName()
+                .property(ctx.propertyName()
                              .getText())
                 .values(values)
                 .build();
@@ -495,6 +493,21 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         }
 
         return new Geometry.Coordinate(x, y);
+    }
+
+    @Override
+    public CqlNode visitFunction(CqlParser.FunctionContext ctx) {
+        String functionName = ctx.Identifier().getText();
+        if (Objects.isNull(ctx.argumentList().positionalArgument())) {
+            return Function.of(functionName, ImmutableList.of());
+        }
+        List<Operand> args = ctx.argumentList().positionalArgument()
+                .argument()
+                .stream()
+                .map(arg -> (Operand) arg.accept(this))
+                .collect(Collectors.toList());
+        return Function.of(functionName, args);
+
     }
 
 }

@@ -13,6 +13,12 @@ public interface Eq extends ScalarOperation, CqlNode {
                                         .build();
     }
 
+    static Eq ofFunction(Function function, ScalarLiteral scalarLiteral) {
+        return new ImmutableEq.Builder().function(function)
+                .value(scalarLiteral)
+                .build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<Eq> {
     }
 

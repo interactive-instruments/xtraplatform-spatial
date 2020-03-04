@@ -19,6 +19,9 @@ import java.util.regex.Pattern;
 @JsonDeserialize(builder = TemporalLiteral.Builder.class)
 public interface TemporalLiteral extends Temporal, Literal, CqlNode {
 
+    Instant MIN_DATE = Instant.parse("0000-01-01T00:00:00Z");
+    Instant MAX_DATE = Instant.parse("9999-12-31T23:59:59Z");
+
     String DATE_REGEX = "([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])";
     String TIMESTAMP_REGEX = "([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\\.[0-9]+)?(([Zz])|([\\+|\\-]([01][0-9]|2[0-3]):[0-5][0-9]))";
     String OPEN_REGEX = "(\\.\\.)?";
@@ -42,7 +45,6 @@ public interface TemporalLiteral extends Temporal, Literal, CqlNode {
                                                               .asPredicate();
     Joiner INTERVAL_JOINER = Joiner.on('/')
                                    .skipNulls();
-
 
     static TemporalLiteral of(Instant literal) {
         return new TemporalLiteral.Builder(literal).build();
@@ -119,15 +121,15 @@ public interface TemporalLiteral extends Temporal, Literal, CqlNode {
                                     .toInstant(ZoneOffset.UTC);
                 } else if (INTERVAL_OPEN_PATTERN.test(literal)) {
                     // open start and end
-                    return Interval.of(Instant.MIN, Instant.MAX);
+                    return Interval.of(MIN_DATE, MAX_DATE);
                 } else if (INTERVAL_OPEN_END_PATTERN.test(literal)) {
                     // start datetime instant, end open
                     Instant start = Instant.parse(literal.substring(0, literal.indexOf("/")));
-                    return Interval.of(start, Instant.MAX);
+                    return Interval.of(start, MAX_DATE);
                 } else if (INTERVAL_OPEN_START_PATTERN.test(literal)) {
                     // start open, end datetime instant
                     Instant end = Instant.parse(literal.substring(literal.indexOf("/") + 1));
-                    return Interval.of(Instant.MIN, end);
+                    return Interval.of(MIN_DATE, end);
                 } else if (DATE_INTERVAL_PATTERN.test(literal)) {
                     // start date instant, end date instant
                     Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(0, literal.indexOf("/"))))
@@ -142,13 +144,13 @@ public interface TemporalLiteral extends Temporal, Literal, CqlNode {
                     Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(0, literal.indexOf("/"))))
                                              .atStartOfDay()
                                              .toInstant(ZoneOffset.UTC);
-                    return Interval.of(start, Instant.MAX);
+                    return Interval.of(start, MAX_DATE);
                 } else if (DATE_INTERVAL_OPEN_START_PATTERN.test(literal)) {
                     // start open, end date instant
                     Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(literal.indexOf("/") + 1)))
                                            .atStartOfDay()
                                            .toInstant(ZoneOffset.UTC);
-                    return Interval.of(Instant.MIN, end);
+                    return Interval.of(MIN_DATE, end);
                 }
             } catch (DateTimeParseException e) {
                 //ignore

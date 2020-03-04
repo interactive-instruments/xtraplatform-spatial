@@ -23,6 +23,19 @@ public interface Like extends ScalarOperation, CqlNode {
                                           .build();
     }
 
+    static Like ofFunction(Function function, ScalarLiteral scalarLiteral) {
+        return new ImmutableLike.Builder().function(function)
+                .value(scalarLiteral)
+                .build();
+    }
+
+    static Like ofFunction(Function function, ScalarLiteral scalarLiteral, String wildCard) {
+        return new ImmutableLike.Builder().function(function)
+                .value(scalarLiteral)
+                .wildCards(wildCard)
+                .build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<Like> {
     }
 

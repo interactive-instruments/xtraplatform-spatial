@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Value.Immutable
 @JsonDeserialize(as = Or.class)

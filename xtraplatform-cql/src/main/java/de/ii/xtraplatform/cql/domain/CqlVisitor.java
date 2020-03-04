@@ -41,6 +41,8 @@ public interface CqlVisitor<T> {
             return visit((Geometry.Envelope) node, children);
         } else if (node instanceof SpatialLiteral) {
             return visit((SpatialLiteral) node, children);
+        } else if (node instanceof Function) {
+            return visit((Function) node, children);
         }
 
         throw new IllegalStateException();
@@ -81,4 +83,6 @@ public interface CqlVisitor<T> {
     T visit(Geometry.MultiPolygon multiPolygon, List<T> children);
 
     T visit(Geometry.Envelope envelope, List<T> children);
+
+    T visit(Function function, List<T> children);
 }

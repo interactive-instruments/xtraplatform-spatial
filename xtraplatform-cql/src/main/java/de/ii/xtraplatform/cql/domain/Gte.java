@@ -13,6 +13,12 @@ public interface Gte extends ScalarOperation, CqlNode {
                                          .build();
     }
 
+    static Gte ofFunction(Function function, ScalarLiteral scalarLiteral) {
+        return new ImmutableGte.Builder().function(function)
+                .value(scalarLiteral)
+                .build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<Gte> {
     }
 

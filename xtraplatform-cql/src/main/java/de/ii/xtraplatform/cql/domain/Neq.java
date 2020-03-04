@@ -13,6 +13,12 @@ public interface Neq extends ScalarOperation, CqlNode {
                                          .build();
     }
 
+    static Neq ofFunction(Function function, ScalarLiteral scalarLiteral) {
+        return new ImmutableNeq.Builder().function(function)
+                .value(scalarLiteral)
+                .build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<Neq> {
     }
 

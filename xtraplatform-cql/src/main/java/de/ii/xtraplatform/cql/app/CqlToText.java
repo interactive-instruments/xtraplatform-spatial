@@ -1,62 +1,8 @@
 package de.ii.xtraplatform.cql.app;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.cql.domain.And;
-import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlNode;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
-import de.ii.xtraplatform.cql.domain.CqlVisitor;
-import de.ii.xtraplatform.cql.domain.Exists;
-import de.ii.xtraplatform.cql.domain.Geometry;
-import de.ii.xtraplatform.cql.domain.ImmutableAfter;
-import de.ii.xtraplatform.cql.domain.ImmutableAnd;
-import de.ii.xtraplatform.cql.domain.ImmutableBefore;
-import de.ii.xtraplatform.cql.domain.ImmutableBegins;
-import de.ii.xtraplatform.cql.domain.ImmutableBegunBy;
-import de.ii.xtraplatform.cql.domain.ImmutableBetween;
-import de.ii.xtraplatform.cql.domain.ImmutableContains;
-import de.ii.xtraplatform.cql.domain.ImmutableCrosses;
-import de.ii.xtraplatform.cql.domain.ImmutableDisjoint;
-import de.ii.xtraplatform.cql.domain.ImmutableDuring;
-import de.ii.xtraplatform.cql.domain.ImmutableEndedBy;
-import de.ii.xtraplatform.cql.domain.ImmutableEnds;
-import de.ii.xtraplatform.cql.domain.ImmutableEq;
-import de.ii.xtraplatform.cql.domain.ImmutableEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableExists;
-import de.ii.xtraplatform.cql.domain.ImmutableGt;
-import de.ii.xtraplatform.cql.domain.ImmutableGte;
-import de.ii.xtraplatform.cql.domain.ImmutableIn;
-import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
-import de.ii.xtraplatform.cql.domain.ImmutableIsNull;
-import de.ii.xtraplatform.cql.domain.ImmutableLike;
-import de.ii.xtraplatform.cql.domain.ImmutableLt;
-import de.ii.xtraplatform.cql.domain.ImmutableLte;
-import de.ii.xtraplatform.cql.domain.ImmutableMeets;
-import de.ii.xtraplatform.cql.domain.ImmutableMetBy;
-import de.ii.xtraplatform.cql.domain.ImmutableNeq;
-import de.ii.xtraplatform.cql.domain.ImmutableNot;
-import de.ii.xtraplatform.cql.domain.ImmutableOr;
-import de.ii.xtraplatform.cql.domain.ImmutableOverlappedBy;
-import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
-import de.ii.xtraplatform.cql.domain.ImmutableTContains;
-import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableTOverlaps;
-import de.ii.xtraplatform.cql.domain.ImmutableTouches;
-import de.ii.xtraplatform.cql.domain.ImmutableWithin;
-import de.ii.xtraplatform.cql.domain.In;
-import de.ii.xtraplatform.cql.domain.IsNull;
-import de.ii.xtraplatform.cql.domain.Like;
-import de.ii.xtraplatform.cql.domain.LogicalOperation;
-import de.ii.xtraplatform.cql.domain.Not;
-import de.ii.xtraplatform.cql.domain.Or;
-import de.ii.xtraplatform.cql.domain.Property;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
-import de.ii.xtraplatform.cql.domain.ScalarOperation;
-import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
+import de.ii.xtraplatform.cql.domain.*;
+import org.threeten.extra.Interval;
 
 import java.util.List;
 import java.util.Map;
@@ -275,6 +221,18 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(TemporalLiteral temporalLiteral, List<String> children) {
+        if (Objects.equals(temporalLiteral.getType(), Interval.class)) {
+            Interval interval = (Interval) temporalLiteral.getValue();
+            if (interval.equals(Interval.of(TemporalLiteral.MIN_DATE, TemporalLiteral.MAX_DATE))) {
+                return "../..";
+            }
+            if (interval.getStart().equals(TemporalLiteral.MIN_DATE)) {
+                return String.join("/", "..", interval.getEnd().toString());
+            }
+            if (interval.getEnd().equals(TemporalLiteral.MAX_DATE)) {
+                return String.join("/", interval.getStart().toString(), "..");
+            }
+        }
         return temporalLiteral.getValue().toString();
     }
 
@@ -286,6 +244,15 @@ public class CqlToText implements CqlVisitor<String> {
     @Override
     public String visit(Property property, List<String> children) {
         return property.getName();
+    }
+
+    @Override
+    public String visit(Function function, List<String> children) {
+        return function.getName() +
+                function.getArguments()
+                        .stream()
+                        .map(argument -> argument.accept(this))
+                        .collect(Collectors.joining(",", "(", ")"));
     }
 
 }

@@ -2,33 +2,9 @@ package de.ii.xtraplatform.cql.app;
 
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.cql.domain.After;
-import de.ii.xtraplatform.cql.domain.And;
-import de.ii.xtraplatform.cql.domain.Before;
-import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
-import de.ii.xtraplatform.cql.domain.During;
-import de.ii.xtraplatform.cql.domain.Eq;
-import de.ii.xtraplatform.cql.domain.Exists;
-import de.ii.xtraplatform.cql.domain.Geometry;
-import de.ii.xtraplatform.cql.domain.Gt;
-import de.ii.xtraplatform.cql.domain.In;
-import de.ii.xtraplatform.cql.domain.Intersects;
-import de.ii.xtraplatform.cql.domain.IsNull;
-import de.ii.xtraplatform.cql.domain.Like;
-import de.ii.xtraplatform.cql.domain.Lt;
-import de.ii.xtraplatform.cql.domain.Lte;
-import de.ii.xtraplatform.cql.domain.Not;
-import de.ii.xtraplatform.cql.domain.Or;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.Within;
-import de.ii.xtraplatform.crs.domain.OgcCrs;
-import org.threeten.extra.Interval;
+import de.ii.xtraplatform.cql.domain.*;
 
-import java.time.Instant;
+import java.util.Objects;
 
 public class CqlFilterExamples {
 
@@ -111,5 +87,39 @@ public class CqlFilterExamples {
     //static final CqlFilter EXAMPLE_22 = CqlFilter.of(Exists.of("owner"));
 
     //static final CqlFilter EXAMPLE_23 = CqlFilter.of(Not.of(Exists.of("owner")));
+
+    static final CqlFilter EXAMPLE_24 = CqlFilter.of(Before.of("built", getTemporalLiteral("2015-01-01")));
+
+    static final CqlFilter EXAMPLE_25 = CqlFilter.of(During.of("updated",
+            Objects.requireNonNull(getTemporalLiteral("2017-06-10/2017-06-11"))));
+
+    static final CqlFilter EXAMPLE_26 = CqlFilter.of(During.of("updated",
+            Objects.requireNonNull(getTemporalLiteral("2017-06-10T07:30:00Z/.."))));
+
+    static final CqlFilter EXAMPLE_27 = CqlFilter.of(During.of("updated",
+            Objects.requireNonNull(getTemporalLiteral("../2017-06-11T10:30:00Z"))));
+
+    static final CqlFilter EXAMPLE_28 = CqlFilter.of(During.of("updated",
+            Objects.requireNonNull(getTemporalLiteral("../.."))));
+
+    static final CqlFilter EXAMPLE_29 = CqlFilter.of(Eq.ofFunction(
+            Function.of("pos", ImmutableList.of()), ScalarLiteral.of(1)));
+
+    static final CqlFilter EXAMPLE_30 = CqlFilter.of(Gte.ofFunction(
+            Function.of("indexOf", ImmutableList.of(Property.of("names"), ScalarLiteral.of("Mike"))), ScalarLiteral.of(5)));
+
+    static final CqlFilter EXAMPLE_31 = CqlFilter.of(Eq.ofFunction(
+            Function.of("year", ImmutableList.of(Objects.requireNonNull(getTemporalLiteral("2012-06-05T00:00:00Z")))), ScalarLiteral.of(2012)));
+
+
+    private static TemporalLiteral getTemporalLiteral(String temporalData) {
+        try {
+            return TemporalLiteral.of(temporalData);
+        } catch (CqlParseException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
 }

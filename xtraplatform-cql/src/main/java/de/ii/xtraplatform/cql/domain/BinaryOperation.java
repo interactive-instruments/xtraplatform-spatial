@@ -6,7 +6,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,6 +14,8 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
     Optional<Property> getProperty();
 
     Optional<T> getValue();
+
+    Optional<Function> getFunction();
 
     @Value.Check
     default void check() {
@@ -28,6 +29,7 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
     @Value.Auxiliary
     default List<Operand> getOperands() {
         return ImmutableList.of(
+                getFunction(),
                 getProperty(),
                 getValue()
         )
@@ -42,6 +44,8 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
         public abstract Builder<T,U> property(Property property);
 
         public abstract Builder<T,U> value(T literal);
+
+        public abstract Builder<T,U> function(Function function);
 
         public abstract U build();
 
@@ -61,6 +65,8 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
                 property((Property) literal);
             } else if (literal instanceof Literal) {
                 value((T)literal);
+            } else if (literal instanceof Function) {
+                function((Function) literal);
             }
         }
     }

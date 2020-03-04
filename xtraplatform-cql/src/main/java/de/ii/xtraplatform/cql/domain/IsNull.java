@@ -14,6 +14,10 @@ public interface IsNull extends CqlNode, ScalarOperation {
         return new ImmutableIsNull.Builder().property(property).build();
     }
 
+    static IsNull of(Function function) {
+        return new ImmutableIsNull.Builder().function(function).build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<IsNull> {
     }
 

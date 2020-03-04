@@ -13,6 +13,12 @@ public interface Lt extends ScalarOperation, CqlNode {
                                         .build();
     }
 
+    static Lt ofFunction(Function function, ScalarLiteral scalarLiteral) {
+        return new ImmutableLt.Builder().function(function)
+                .value(scalarLiteral)
+                .build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<Lt> {
     }
 

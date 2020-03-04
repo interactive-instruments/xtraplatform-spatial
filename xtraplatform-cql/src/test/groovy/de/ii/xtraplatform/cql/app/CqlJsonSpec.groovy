@@ -758,4 +758,240 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }*/
 
+    def 'Built before 2015 (only date, no time information)'() {
+
+        given:
+        String cqlJson = """
+        {
+            "before": {
+                "property": "built",
+                "value": "2015-01-01"
+            }
+        }
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_24
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_24, Cql.Format.JSON)
+
+        then:
+        String cqlJson2 = """
+        {
+            "before": {
+                "property": "built",
+                "value": "2015-01-01T00:00:00Z"
+            }
+        }
+        """
+        JSONAssert.assertEquals(cqlJson2, actual2, true)
+    }
+
+    def 'Updated between June 10, 2017 and June 11, 2017'() {
+
+        given:
+        String cqlJson = """
+            {
+                "during": {
+                    "property": "updated",
+                    "value": ["2017-06-10","2017-06-11"]
+                }
+            }
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_25
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_25, Cql.Format.JSON)
+
+        then:
+        String cqlJson2 = """
+            {
+                "during": {
+                    "property": "updated",
+                    "value": ["2017-06-10T00:00:00Z","2017-06-11T00:00:00Z"]
+                }
+            }
+        """
+        JSONAssert.assertEquals(cqlJson2, actual2, true)
+
+    }
+
+    def 'Updated between 7:30am June 10, 2017 and an open end date'() {
+        given:
+        String cqlJson = """
+            {
+                "during": {
+                    "property": "updated",
+                    "value": ["2017-06-10T07:30:00Z","9999-12-31T23:59:59Z"]
+                }
+            }
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_26
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_26, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'Updated between an open start date and 10:30am June 11, 2017'() {
+        given:
+        String cqlJson = """
+            {
+                "during": {
+                    "property": "updated",
+                    "value": ["0000-01-01T00:00:00Z","2017-06-11T10:30:00Z"]
+                }
+            }
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_27
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_27, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'Open interval on both ends'() {
+        given:
+        String cqlJson = """
+            {
+                "during": {
+                    "property": "updated",
+                    "value": ["0000-01-01T00:00:00Z","9999-12-31T23:59:59Z"]
+                }
+            }
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_28
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_28, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'Function with no arguments'() {
+        given:
+        String cqlJson = """
+            {
+                "eq": {
+                    "function": {
+                        "name": "pos",
+                        "arguments": []
+                    },
+                    "value": 1
+                }
+            } 
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_29
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_29, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'Function with multiple arguments'() {
+        given:
+        String cqlJson = """
+            {
+                "gte": {
+                    "function": {
+                        "name": "indexOf",
+                        "arguments": ["names", "Mike"]
+                    },
+                    "value": 5
+                }
+            } 
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_30
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_30, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'Function with a temporal argument'() {
+        given:
+        String cqlJson = """
+            {
+                "eq": {
+                    "function": {
+                        "name": "year",
+                        "arguments": ["2012-06-05T00:00:00Z"]
+                    },
+                    "value": 2012
+                }
+            } 
+        """
+
+        when: 'reading json'
+        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_31
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_31, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
 }

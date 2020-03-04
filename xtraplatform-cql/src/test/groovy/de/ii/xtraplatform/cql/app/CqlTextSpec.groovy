@@ -478,4 +478,156 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }*/
 
+    def 'Built before 2015 (only date, no time information)'() {
+        given:
+        String cqlText = "built BEFORE 2015-01-01"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_24
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_24, Cql.Format.TEXT)
+
+        then:
+        actual2 == "built BEFORE 2015-01-01T00:00:00Z"
+    }
+
+    def 'Updated between June 10, 2017 and June 11, 2017'() {
+        given:
+        String cqlText = "updated DURING 2017-06-10/2017-06-11"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_25
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_25, Cql.Format.TEXT)
+
+        then:
+        actual2 == "updated DURING 2017-06-10T00:00:00Z/2017-06-11T00:00:00Z"
+    }
+
+    def 'Updated between 7:30am June 10, 2017 and open end date'() {
+        given:
+        String cqlText = "updated DURING 2017-06-10T07:30:00Z/.."
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_26
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_26, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Updated between open start date and 10:30am June 11, 2017'() {
+        given:
+        String cqlText = "updated DURING ../2017-06-11T10:30:00Z"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_27
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_27, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Open interval on both ends'() {
+        given:
+        String cqlText = "updated DURING ../.."
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_28
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_28, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Function with no arguments'() {
+        given:
+        String cqlText = "pos() = 1"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_29
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_29, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Function with multiple arguments'() {
+        given:
+        String cqlText = "indexOf(names,'Mike') >= 5"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_30
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_30, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Function with a temporal argument'() {
+        given:
+        String cqlText = "year(2012-06-05T00:00:00Z) = 2012"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_31
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_31, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
 }
