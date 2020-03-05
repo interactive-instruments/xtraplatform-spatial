@@ -943,7 +943,7 @@ class CqlJsonSpec extends Specification {
                 "gte": {
                     "function": {
                         "name": "indexOf",
-                        "arguments": ["names", "Mike"]
+                        "arguments": ["names", "'Mike'"]
                     },
                     "value": 5
                 }

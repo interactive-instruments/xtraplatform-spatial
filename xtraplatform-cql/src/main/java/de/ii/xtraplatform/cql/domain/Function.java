@@ -1,16 +1,18 @@
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +24,7 @@ public interface Function extends CqlNode, Scalar, Operand {
     String getName();
 
     @JsonDeserialize(using = OperandDeserializer.class)
+    @JsonSerialize(using = OperandSerializer.class)
     List<Operand> getArguments();
 
     static Function of(String name, List<Operand> arguments) {
@@ -52,15 +55,34 @@ public interface Function extends CqlNode, Scalar, Operand {
             while (nodes.hasNext()) {
                 String element = nodes.next().asText();
                 try {
-                    TemporalLiteral temporalLiteral = TemporalLiteral.of(element);
+                    Operand temporalLiteral = TemporalLiteral.of(element);
                     operands.add(temporalLiteral);
                 } catch (CqlParseException e) {
-                    ScalarLiteral scalarLiteral = ScalarLiteral.of(element);
-                    operands.add(scalarLiteral);
+                    if (element.startsWith("'") && element.endsWith("'")) {
+                        operands.add(ScalarLiteral.of(element.substring(1, element.length() - 1)));
+                    } else {
+                        operands.add(Property.of(element));
+                    }
                 }
             }
 
             return operands.build();
+        }
+    }
+
+    class OperandSerializer extends JsonSerializer<List<Operand>> {
+
+        @Override
+        public void serialize(List<Operand> value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeStartArray();
+            for (Operand operand : value) {
+                if (operand instanceof ScalarLiteral) {
+                    gen.writeString(String.format("'%s'", ((ScalarLiteral) operand).getValue().toString()));
+                } else {
+                    gen.writeObject(operand);
+                }
+            }
+            gen.writeEndArray();
         }
     }
 }
