@@ -59,8 +59,23 @@ scalarExpression : propertyName
                     | function
                     /*| arithmeticExpression*/;
 
+//CHANGE: add extra definitions for nested filters, scalar expression, property and binary comparison to avoid recursion in nested filters
+scalarExpressionNested : propertyNameNested
+                    | characterLiteral
+                    | numericLiteral
+                    | booleanLiteral
+                    | function
+                    /*| arithmeticExpression*/;
+
+propertyNameNested: Identifier (PERIOD Identifier)*;
+
+binaryComparisonPredicateNested : scalarExpressionNested ComparisonOperator scalarExpressionNested;
+
+nestedFilter: LEFTSQUAREBRACKET binaryComparisonPredicateNested RIGHTSQUAREBRACKET;
+
 //CHANGE: support compound property names
-propertyName: Identifier (PERIOD Identifier)*;
+//CHANGE: support nested filters
+propertyName: Identifier nestedFilter? (PERIOD Identifier nestedFilter?)*;
 
 characterLiteral: CharacterStringLiteral
                    | BitStringLiteral

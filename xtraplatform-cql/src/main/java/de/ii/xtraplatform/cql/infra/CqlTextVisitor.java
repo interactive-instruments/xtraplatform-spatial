@@ -2,9 +2,12 @@ package de.ii.xtraplatform.cql.infra;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.*;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -171,7 +174,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         ScalarLiteral upperValue = (ScalarLiteral) ctx.scalarExpression(2)
                                                       .accept(this);
         return new ImmutableBetween.Builder()
-                .property(property.getName())
+                .property(property)
                 .lower(lowerValue)
                 .upper(upperValue)
                 .build();
@@ -185,7 +188,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                               .accept(this);
 
             IsNull isNull = new ImmutableIsNull.Builder()
-                    .property(property.getName())
+                    .property(property)
                     .build();
             if (Objects.nonNull(ctx.NOT())) {
                 return Not.of(ImmutableList.of(CqlPredicate.of(isNull)));
@@ -337,14 +340,72 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         }
 
         return new ImmutableIn.Builder()
-                .property(ctx.propertyName()
-                             .getText())
+                .property((Property) ctx.propertyName().accept(this))
                 .values(values)
                 .build();
     }
 
     @Override
     public CqlNode visitPropertyName(CqlParser.PropertyNameContext ctx) {
+        if (!ctx.nestedFilter().isEmpty()) {
+            Map<String, CqlFilter> nestedFilters = new HashMap<>();
+            for (int i = 0; i < ctx.nestedFilter().size(); i++) {
+                nestedFilters.put(ctx.Identifier(i).getText(), CqlFilter.of(ctx.nestedFilter(i).accept(this)));
+            }
+            String path = ctx.Identifier().stream()
+                    .map(ParseTree::getText)
+                    .collect(Collectors.joining("."));
+            return Property.of(path, nestedFilters);
+        } else {
+            return Property.of(ctx.getText());
+        }
+    }
+
+    @Override
+    public CqlNode visitNestedFilter(CqlParser.NestedFilterContext ctx) {
+        return CqlFilter.of(ctx.binaryComparisonPredicateNested().accept(this));
+    }
+
+    @Override
+    public CqlNode visitBinaryComparisonPredicateNested(CqlParser.BinaryComparisonPredicateNestedContext ctx) {
+        Scalar scalar1 = (Scalar) ctx.scalarExpressionNested(0)
+                .accept(this);
+        Scalar scalar2 = (Scalar) ctx.scalarExpressionNested(1)
+                .accept(this);
+        ComparisonOperator comparisonOperator = ComparisonOperator.valueOfCqlText(ctx.ComparisonOperator()
+                .getText());
+
+        ScalarOperation.Builder<? extends ScalarOperation> builder;
+        switch (comparisonOperator) {
+            case EQ:
+                builder = new ImmutableEq.Builder();
+                break;
+            case NEQ:
+                builder = new ImmutableNeq.Builder();
+                break;
+            case GT:
+                builder = new ImmutableGt.Builder();
+                break;
+            case GTEQ:
+                builder = new ImmutableGte.Builder();
+                break;
+            case LT:
+                builder = new ImmutableLt.Builder();
+                break;
+            case LTEQ:
+                builder = new ImmutableLte.Builder();
+                break;
+            default:
+                throw new IllegalStateException("unknown comparison operator: " + comparisonOperator);
+        }
+
+        return builder.operand1(scalar1)
+                .operand2(scalar2)
+                .build();
+    }
+
+    @Override
+    public CqlNode visitPropertyNameNested(CqlParser.PropertyNameNestedContext ctx) {
         return Property.of(ctx.getText());
     }
 

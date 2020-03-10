@@ -7,6 +7,7 @@ import org.threeten.extra.Interval;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -243,7 +244,20 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(Property property, List<String> children) {
-        return property.getName();
+        if (property.getNestedFilters().isPresent()) {
+            Map<String, CqlFilter> nestedFilters = property.getNestedFilters().get();
+            StringJoiner sj = new StringJoiner(".");
+            for (String element : property.getPath()) {
+                if (nestedFilters.containsKey(element)) {
+                    sj.add(String.format("%s[%s]", element, nestedFilters.get(element).accept(this)));
+                } else {
+                    sj.add(element);
+                }
+            }
+            return sj.toString();
+        } else {
+            return property.getName();
+        }
     }
 
     @Override

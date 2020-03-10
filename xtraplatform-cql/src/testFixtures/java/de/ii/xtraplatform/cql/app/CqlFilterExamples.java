@@ -2,9 +2,11 @@ package de.ii.xtraplatform.cql.app;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.*;
 
 import java.util.Objects;
+import java.util.Properties;
 
 public class CqlFilterExamples {
 
@@ -110,6 +112,17 @@ public class CqlFilterExamples {
 
     static final CqlFilter EXAMPLE_31 = CqlFilter.of(Eq.ofFunction(
             Function.of("year", ImmutableList.of(Objects.requireNonNull(getTemporalLiteral("2012-06-05T00:00:00Z")))), ScalarLiteral.of(2012)));
+
+    static final CqlFilter EXAMPLE_32 = CqlFilter.of(
+            Gt.of(Property.of("filterValues.measure",
+                            ImmutableMap.of("filterValues", CqlFilter.of(Eq.of("property", ScalarLiteral.of("d30"))))),
+                    ScalarLiteral.of(0.1)));
+
+    static final CqlFilter EXAMPLE_33 = CqlFilter.of(
+            Gt.of(Property.of("filterValues1.filterValues2.measure",
+                            ImmutableMap.of("filterValues1", CqlFilter.of(Eq.of("property1", ScalarLiteral.of("d30"))),
+                                    "filterValues2", CqlFilter.of(Lte.of("property2", ScalarLiteral.of(100))))),
+                    ScalarLiteral.of(0.1)));
 
 
     private static TemporalLiteral getTemporalLiteral(String temporalData) {

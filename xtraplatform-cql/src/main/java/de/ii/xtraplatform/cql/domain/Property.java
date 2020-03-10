@@ -7,6 +7,8 @@ import com.google.common.base.Splitter;
 import org.immutables.value.Value;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Value.Immutable
 @Value.Style(of = "new")
@@ -14,12 +16,24 @@ import java.util.List;
 public interface Property extends Scalar, Spatial, Temporal, Operand, CqlNode {
 
     static Property of(String name) {
-        return new ImmutableProperty(name);
+        return ImmutableProperty.builder()
+                .name(name)
+                .build();
+    }
+
+    static Property of(String name, Map<String, CqlFilter> nestedFilters) {
+        return ImmutableProperty.builder()
+                .name(name)
+                .nestedFilters(nestedFilters)
+                .build();
     }
 
     @JsonValue
     @Value.Parameter
     String getName();
+
+    @JsonIgnore
+    Optional<Map<String, CqlFilter>> getNestedFilters();
 
     Splitter PATH_SPLITTER = Splitter.on('.')
                                      .omitEmptyStrings();

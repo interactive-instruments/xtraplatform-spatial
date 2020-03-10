@@ -201,6 +201,10 @@ LEFTPAREN : '(';
 
 RIGHTPAREN : ')';
 
+LEFTSQUAREBRACKET : '[';
+
+RIGHTSQUAREBRACKET : ']';
+
 ASTERISK : '*';
 
 PLUS : '+';

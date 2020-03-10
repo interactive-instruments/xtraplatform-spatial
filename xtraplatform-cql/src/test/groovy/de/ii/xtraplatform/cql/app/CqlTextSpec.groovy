@@ -630,4 +630,42 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
+    def 'Property with a nested filter'() {
+        given:
+        String cqlText = "filterValues[property = 'd30'].measure > 0.1"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_32
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_32, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Property with two nested filters'() {
+        given:
+        String cqlText = "filterValues1[property1 = 'd30'].filterValues2[property2 <= 100].measure > 0.1"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_33
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_33, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
 }
