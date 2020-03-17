@@ -3,7 +3,6 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.And;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.ImmutableCqlPredicate;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNewNew;
@@ -34,7 +33,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     public FeatureStoreQueryGeneratorSql(SqlDialect sqlDialect, EpsgCrs nativeCrs) {
         //this.filterEncoder = new FilterEncoderSqlNewImpl(nativeCrs);
         this.sqlDialect = sqlDialect;
-        this.filterEncoder = new FilterEncoderSqlNewNewImpl(this::getAliases, this::getJoins, nativeCrs, sqlDialect);
+        this.filterEncoder = new FilterEncoderSqlNewNewImpl(this::getAliases, (attributeContainer, aliases) -> userFilter -> getJoins(attributeContainer, aliases, userFilter), nativeCrs, sqlDialect);
     }
 
     @Override
@@ -84,7 +83,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
                                             .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(attributeContainerAlias, attribute.getName())))
                                             .get();
 
-        String join = getJoins(attributesContainer, aliases);
+        String join = getJoins(attributesContainer, aliases, Optional.empty());
 
         return String.format("SELECT %s FROM %s%s%s", column, mainTable, join.isEmpty() ? "" : " ", join);
     }
@@ -104,7 +103,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
                                                                               }))
                                .collect(Collectors.joining(", "));
 
-        String join = getJoins(attributeContainer, aliases);
+        String join = getJoins(attributeContainer, aliases, Optional.empty());
 
         //String limit2 = limit > 0 ? " LIMIT " + limit : "";
         //String offset2 = offset > 0 ? " OFFSET " + offset : "";
@@ -140,7 +139,8 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         return aliases.build();
     }
 
-    private String getJoins(FeatureStoreAttributesContainer attributeContainer, List<String> aliases) {
+    private String getJoins(FeatureStoreAttributesContainer attributeContainer, List<String> aliases,
+                            Optional<CqlFilter> userFilter) {
 
         if (!(attributeContainer instanceof FeatureStoreRelatedContainer)) {
             return "";
@@ -151,11 +151,12 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         ListIterator<String> aliasesIterator = aliases.listIterator();
         return relatedContainer.getInstanceConnection()
                                .stream()
-                               .flatMap(relation -> toJoins(relation, aliasesIterator))
+                               .flatMap(relation -> toJoins(relation, aliasesIterator, getFilter(attributeContainer, relation, userFilter)))
                                .collect(Collectors.joining(" "));
     }
 
-    private Stream<String> toJoins(FeatureStoreRelation relation, ListIterator<String> aliases) {
+    private Stream<String> toJoins(FeatureStoreRelation relation, ListIterator<String> aliases,
+                                   Optional<String> sqlFilter) {
         List<String> joins = new ArrayList<>();
 
         if (relation.isM2N()) {
@@ -166,24 +167,26 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
             joins.add(toJoin(relation.getJunction()
                                      .get(), junctionAlias, relation.getJunctionSource()
-                                                                    .get(), sourceAlias, relation.getSourceField()));
+                                                                    .get(), sourceAlias, relation.getSourceField(), sqlFilter));
             joins.add(toJoin(relation.getTargetContainer(), targetAlias, relation.getTargetField(), junctionAlias, relation.getJunctionTarget()
-                                                                                                                           .get()));
+                                                                                                                           .get(), sqlFilter));
 
         } else {
             String sourceAlias = aliases.next();
             String targetAlias = aliases.next();
             aliases.previous();
 
-            joins.add(toJoin(relation.getTargetContainer(), targetAlias, relation.getTargetField(), sourceAlias, relation.getSourceField()));
+            joins.add(toJoin(relation.getTargetContainer(), targetAlias, relation.getTargetField(), sourceAlias, relation.getSourceField(), sqlFilter));
         }
 
         return joins.stream();
     }
 
     private String toJoin(String targetContainer, String targetAlias, String targetField, String sourceContainer,
-                          String sourceField) {
-        return String.format("JOIN %1$s %2$s ON %4$s.%5$s=%2$s.%3$s", targetContainer, targetAlias, targetField, sourceContainer, sourceField);
+                          String sourceField, Optional<String> sqlFilter) {
+        String additionalFilter = sqlFilter.map(s -> " AND " + s)
+                                           .orElse("");
+        return String.format("JOIN %1$s %2$s ON %4$s.%5$s=%2$s.%3$s%6$s", targetContainer, targetAlias, targetField, sourceContainer, sourceField, additionalFilter);
     }
 
     private Optional<String> getFilter(FeatureStoreInstanceContainer instanceContainer, Optional<CqlFilter> cqlFilter) {
@@ -204,6 +207,26 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         ));
 
         return Optional.of(filterEncoder.encode(mergedFilter, instanceContainer));
+    }
+
+    private Optional<String> getFilter(FeatureStoreAttributesContainer attributesContainer, FeatureStoreRelation relation, Optional<CqlFilter> cqlFilter) {
+        if (!relation.getFilter().isPresent() && !cqlFilter.isPresent()) {
+            return Optional.empty();
+        }
+        if (relation.getFilter().isPresent() && !cqlFilter.isPresent()) {
+            return Optional.of(filterEncoder.encodeNested(relation.getFilter().get(), attributesContainer, false));
+        }
+        if (!relation.getFilter().isPresent() && cqlFilter.isPresent()) {
+            return Optional.of(filterEncoder.encodeNested(cqlFilter.get(), attributesContainer, true));
+        }
+
+        CqlFilter mergedFilter = CqlFilter.of(And.of(
+                ImmutableCqlPredicate.copyOf(relation.getFilter()
+                                                              .get()),
+                ImmutableCqlPredicate.copyOf(cqlFilter.get())
+        ));
+
+        return Optional.of(filterEncoder.encodeNested(mergedFilter, attributesContainer, true));
     }
 
     private List<String> getSortFields(FeatureStoreAttributesContainer attributesContainer, List<String> aliases) {

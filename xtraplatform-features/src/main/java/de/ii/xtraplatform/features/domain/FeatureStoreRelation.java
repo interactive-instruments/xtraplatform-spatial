@@ -1,6 +1,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.base.Preconditions;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import org.immutables.value.Value;
 
 import java.util.Optional;
@@ -56,4 +57,6 @@ public interface FeatureStoreRelation {
     default boolean isM2N() {
         return getCardinality() == CARDINALITY.M_2_N;
     }
+
+    Optional<CqlFilter> getFilter();
 }

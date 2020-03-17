@@ -1,5 +1,6 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPath;
@@ -17,6 +18,7 @@ import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreInstanceContainer
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelatedContainer;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation;
 
+import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -181,6 +183,18 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                             instanceContainerBuilders.put(instanceContainerName, ImmutableFeatureStoreInstanceContainer.builder());
                         }
 
+                        Map<String, CqlFilter> filters = columnPaths.stream()
+                                                                    .flatMap(sqlPath -> sqlPath.getTableFlags()
+                                                                                               .entrySet()
+                                                                                               .stream())
+                                                                    .filter(entry2 -> syntax.getFilterFlag(entry2.getValue())
+                                                                                            .isPresent())
+                                                                    .map(entry2 -> new AbstractMap.SimpleImmutableEntry<>(entry2.getKey(), syntax.getFilterFlag(entry2.getValue())
+                                                                                                                                                 .get()))
+                                                                    .distinct()
+                                                                    .map(entry2 -> new AbstractMap.SimpleImmutableEntry<>(entry2.getKey(), cql.read(entry2.getValue(), Cql.Format.TEXT)))
+                                                                    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
                         if (isRoot) {
                             ImmutableFeatureStoreInstanceContainer.Builder instanceContainerBuilder = instanceContainerBuilders.get(instanceContainerName);
 
@@ -206,7 +220,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
                             instancePos[0] = 0;
                         } else {
-                            List<FeatureStoreRelation> instanceConnection = toRelations(tablePathAsList);
+                            List<FeatureStoreRelation> instanceConnection = toRelations(tablePathAsList, filters);
                             String sortKey = syntax.isJunctionTable(attributesContainerName)
                                     //TODO: oneo uses columns.get(columns.size()-1) instead, thats not a good default value
                                     //TODO: support flag {orderBy=btkomplex_id}{orderDir=ASC}
@@ -241,7 +255,8 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                         .collect(Collectors.toList());
     }
 
-    private List<FeatureStoreRelation> toRelations(List<String> path) {
+    private List<FeatureStoreRelation> toRelations(List<String> path,
+                                                   Map<String, CqlFilter> filters) {
 
         if (path.size() < 2) {
             throw new IllegalArgumentException(String.format("not a valid relation path: %s", path));
@@ -249,37 +264,39 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
         if (path.size() > 2) {
             return IntStream.range(2, path.size())
-                            .mapToObj(i -> toRelations(path.get(i - 2), path.get(i - 1), path.get(i), i == path.size() - 1))
+                            .mapToObj(i -> toRelations(path.get(i - 2), path.get(i - 1), path.get(i), i == path.size() - 1, filters))
                             .flatMap(Function.identity())
                             .collect(Collectors.toList());
         }
 
         return IntStream.range(1, path.size())
-                        .mapToObj(i -> toRelation(path.get(i - 1), path.get(i)))
+                        .mapToObj(i -> toRelation(path.get(i - 1), path.get(i), filters))
                         .collect(Collectors.toList());
     }
 
-    private Stream<FeatureStoreRelation> toRelations(String source, String link, String target, boolean isLast) {
+    private Stream<FeatureStoreRelation> toRelations(String source, String link, String target, boolean isLast,
+                                                     Map<String, CqlFilter> filters) {
         if (syntax.isJunctionTable(source)) {
             if (isLast) {
-                return Stream.of(toRelation(link, target));
+                return Stream.of(toRelation(link, target, filters));
             } else {
                 return Stream.empty();
             }
         }
         if (syntax.isJunctionTable(target) && !isLast) {
-            return Stream.of(toRelation(source, link));
+            return Stream.of(toRelation(source, link, filters));
         }
 
         if (syntax.isJunctionTable(link)) {
             return Stream.of(toRelation(source, link, target));
         }
 
-        return Stream.of(toRelation(source, link), toRelation(link, target));
+        return Stream.of(toRelation(source, link, filters), toRelation(link, target, filters));
     }
 
     //TODO: support sortKey flag on table instead of getDefaultPrimaryKey
-    private FeatureStoreRelation toRelation(String source, String target) {
+    private FeatureStoreRelation toRelation(String source, String target,
+                                            Map<String, CqlFilter> filters) {
         Matcher sourceMatcher = syntax.getTablePattern()
                                       .matcher(source);
         Matcher targetMatcher = syntax.getJoinedTablePattern()
@@ -290,6 +307,8 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
             boolean isOne2One = Objects.equals(targetField, syntax.getOptions()
                                                                   .getDefaultPrimaryKey());
 
+            Optional<CqlFilter> filter = Optional.ofNullable(filters.get(target));
+
             return ImmutableFeatureStoreRelation.builder()
                                                 .cardinality(isOne2One ? CARDINALITY.ONE_2_ONE : CARDINALITY.ONE_2_N)
                                                 .sourceContainer(sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
@@ -298,6 +317,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                                      .getDefaultPrimaryKey())
                                                 .targetContainer(targetMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .targetField(targetField)
+                                                .filter(filter)
                                                 .build();
         }
 

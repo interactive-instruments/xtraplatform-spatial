@@ -70,13 +70,13 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             .build();
 
     private final Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator;
-    private final BiFunction<FeatureStoreAttributesContainer, List<String>, String> joinsGenerator;
+    private final BiFunction<FeatureStoreAttributesContainer, List<String>, Function<Optional<CqlFilter>, String>> joinsGenerator;
     private final EpsgCrs nativeCrs;
     private final SqlDialect sqlDialect;
 
     public FilterEncoderSqlNewNewImpl(
             Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator,
-            BiFunction<FeatureStoreAttributesContainer, List<String>, String> joinsGenerator,
+            BiFunction<FeatureStoreAttributesContainer, List<String>, Function<Optional<CqlFilter>, String>> joinsGenerator,
             EpsgCrs nativeCrs, SqlDialect sqlDialect) {
         this.aliasesGenerator = aliasesGenerator;
         this.joinsGenerator = joinsGenerator;
@@ -87,6 +87,46 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
     @Override
     public String encode(CqlFilter cqlFilter, FeatureStoreInstanceContainer typeInfo) {
         return cqlFilter.accept(new CqlToSql(typeInfo));
+    }
+
+    @Override
+    public String encodeNested(CqlFilter cqlFilter, FeatureStoreAttributesContainer typeInfo, boolean isUserFilter) {
+        return cqlFilter.accept(new CqlToSqlJoin(typeInfo, isUserFilter));
+    }
+
+    private class CqlToSqlJoin extends CqlToSql {
+
+        private final FeatureStoreAttributesContainer attributesContainer;
+        private final boolean isUserFilter;
+
+        private CqlToSqlJoin(FeatureStoreAttributesContainer attributesContainer, boolean isUserFilter) {
+            super(null);
+            this.attributesContainer = attributesContainer;
+            this.isUserFilter = isUserFilter;
+        }
+
+        @Override
+        public String visit(Property property, List<String> children) {
+            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), "_ID_") && attribute.isId());
+            Optional<String> column = attributesContainer.getAttributes()
+                                                         .stream()
+                                                         .filter(propertyMatches)
+                                                         .findFirst()
+                                                         .map(FeatureStoreAttribute::getName);
+
+            if (!column.isPresent()) {
+                throw new BadRequestException(String.format("Filter is invalid. Unknown property: %s", property.getName()));
+            }
+
+            List<String> aliases = isUserFilter ? aliasesGenerator.apply(attributesContainer)
+                                                                  .stream()
+                                                                  .map(s -> "A" + s)
+                                                                  .collect(Collectors.toList()) : aliasesGenerator.apply(attributesContainer);
+
+            String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column.get());
+
+            return String.format("%%1$s%1$s%%2$s", qualifiedColumn);
+        }
     }
 
     private class CqlToSql extends CqlToText {
@@ -123,12 +163,20 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                 .getName(), column.get());
             }
 
+            Optional<CqlFilter> userFilter;
+            if (property.getNestedFilters().isPresent() && !property.getNestedFilters().get().isEmpty())  {
+                Map<String, CqlFilter> userFilters = property.getNestedFilters()
+                                                                    .get();
+                userFilter = userFilters.values().stream().findFirst();
+            } else {
+                userFilter = Optional.empty();
+            }
 
             List<String> aliases = aliasesGenerator.apply(table.get())
                                                    .stream()
                                                    .map(s -> "A" + s)
                                                    .collect(Collectors.toList());
-            String join = joinsGenerator.apply(table.get(), aliases);
+            String join = joinsGenerator.apply(table.get(), aliases).apply(userFilter);
             String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column.get());
 
             return String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %%1$s%5$s%%2$s)", instanceContainer.getName(), aliases.get(0), instanceContainer.getSortKey(), join, qualifiedColumn);
@@ -151,7 +199,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 //operator = CqlToText.SCALAR_OPERATORS.get(ImmutableIsNull.class);
                 operation = String.format(" %s", operator);
             } else if (scalarOperation instanceof Like && !Objects.equals("%", ((Like) scalarOperation).getWildCard())) {
-                String wildCard = ((Like) scalarOperation).getWildCard().replace("*", "\\*");
+                String wildCard = ((Like) scalarOperation).getWildCard()
+                                                          .replace("*", "\\*");
                 value = value.replaceAll("%", "\\%")
                              .replaceAll(wildCard, "%");
             }
@@ -165,18 +214,23 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
 
             if (temporalOperation instanceof During) {
-                Interval interval = (Interval) temporalOperation.getValue().get().getValue();
+                Interval interval = (Interval) temporalOperation.getValue()
+                                                                .get()
+                                                                .getValue();
                 if (interval.isUnboundedStart() && interval.isUnboundedEnd()) {
                     return "TRUE";
                 } else if (interval.isUnboundedStart()) {
                     operator = TEMPORAL_OPERATORS.get(ImmutableBefore.class);
-                    return String.format(expression, "", String.format(" %s '%s'", operator, interval.getEnd().toString()));
+                    return String.format(expression, "", String.format(" %s '%s'", operator, interval.getEnd()
+                                                                                                     .toString()));
                 } else if (interval.isUnboundedEnd()) {
                     operator = TEMPORAL_OPERATORS.get(ImmutableAfter.class);
-                    return String.format(expression, "", String.format(" %s '%s'", operator, interval.getStart().toString()));
+                    return String.format(expression, "", String.format(" %s '%s'", operator, interval.getStart()
+                                                                                                     .toString()));
                 }
 
-                String[] interval2 = children.get(1).split("/");
+                String[] interval2 = children.get(1)
+                                             .split("/");
                 return String.format(expression, "", String.format(" %s %s' AND '%s", operator, interval2[0], interval2[1]));
             }
 
@@ -200,7 +254,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(Geometry.Point point, List<String> children) {
             //TODO: has to be in nativeCrs, transform it not
             EpsgCrs crs = point.getCrs()
-                                  .orElse(nativeCrs);
+                               .orElse(nativeCrs);
             return String.format("ST_GeomFromText('%s',%s)", super.visit(point, children), crs.getCode());
         }
 
@@ -208,7 +262,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(Geometry.LineString lineString, List<String> children) {
             //TODO: has to be in nativeCrs, transform it not
             EpsgCrs crs = lineString.getCrs()
-                                  .orElse(nativeCrs);
+                                    .orElse(nativeCrs);
             return String.format("ST_GeomFromText('%s',%s)", super.visit(lineString, children), crs.getCode());
         }
 
@@ -216,7 +270,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(Geometry.Polygon polygon, List<String> children) {
             //TODO: has to be in nativeCrs, transform it not
             EpsgCrs crs = polygon.getCrs()
-                                  .orElse(nativeCrs);
+                                 .orElse(nativeCrs);
             return String.format("ST_GeomFromText('%s',%s)", super.visit(polygon, children), crs.getCode());
         }
 
@@ -224,7 +278,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(Geometry.MultiPoint multiPoint, List<String> children) {
             //TODO: has to be in nativeCrs, transform it not
             EpsgCrs crs = multiPoint.getCrs()
-                                  .orElse(nativeCrs);
+                                    .orElse(nativeCrs);
             return String.format("ST_GeomFromText('%s',%s)", super.visit(multiPoint, children), crs.getCode());
         }
 
@@ -232,7 +286,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(Geometry.MultiLineString multiLineString, List<String> children) {
             //TODO: has to be in nativeCrs, transform it not
             EpsgCrs crs = multiLineString.getCrs()
-                                  .orElse(nativeCrs);
+                                         .orElse(nativeCrs);
             return String.format("ST_GeomFromText('%s',%s)", super.visit(multiLineString, children), crs.getCode());
         }
 
@@ -240,7 +294,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(Geometry.MultiPolygon multiPolygon, List<String> children) {
             //TODO: has to be in nativeCrs, transform it not
             EpsgCrs crs = multiPolygon.getCrs()
-                                  .orElse(nativeCrs);
+                                      .orElse(nativeCrs);
             return String.format("ST_GeomFromText('%s',%s)", super.visit(multiPolygon, children), crs.getCode());
         }
 
@@ -249,7 +303,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             List<Double> coordinates = envelope.getCoordinates();
             //TODO: has to be in nativeCrs, transform it not
             EpsgCrs crs = envelope.getCrs()
-                                      .orElse(nativeCrs);
+                                  .orElse(nativeCrs);
             return String.format("ST_GeomFromText('POLYGON((%1$s %2$s,%3$s %2$s,%3$s %4$s,%1$s %4$s,%1$s %2$s))',%5$s)", coordinates.get(0), coordinates.get(1), coordinates.get(2), coordinates.get(3), crs.getCode());
         }
     }

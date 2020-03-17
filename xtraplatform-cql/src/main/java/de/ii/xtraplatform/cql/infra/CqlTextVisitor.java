@@ -1,6 +1,7 @@
 package de.ii.xtraplatform.cql.infra;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.app.CqlVisitorPropertyPrefix;
 import de.ii.xtraplatform.cql.domain.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -350,7 +351,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         if (!ctx.nestedFilter().isEmpty()) {
             Map<String, CqlFilter> nestedFilters = new HashMap<>();
             for (int i = 0; i < ctx.nestedFilter().size(); i++) {
-                nestedFilters.put(ctx.Identifier(i).getText(), CqlFilter.of(ctx.nestedFilter(i).accept(this)));
+                CqlFilter nestedFilter = CqlFilter.of(ctx.nestedFilter(i)
+                                               .accept(this));
+                CqlVisitorPropertyPrefix prefix = new CqlVisitorPropertyPrefix(ctx.Identifier(i)
+                                                                                                    .getText());
+                nestedFilter = (CqlFilter) nestedFilter.accept(prefix);
+                nestedFilters.put(ctx.Identifier(i).getText(), nestedFilter);
             }
             String path = ctx.Identifier().stream()
                     .map(ParseTree::getText)
