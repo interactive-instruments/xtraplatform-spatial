@@ -79,6 +79,27 @@ public interface FeatureType extends ValueInstance {
                                                        })
                                                        .collect(Collectors.toList());
 
+                           //TODO: better double col support
+                           String column = path.get(path.size() - 1);
+                           if (column.contains(":")) {
+                               List<String> columns = Splitter.on(':')
+                                                              .splitToList(column);
+
+                               List<String> parentPath = path.subList(0, path.size()-1);
+
+                               List<String> path1 = new ImmutableList.Builder<String>().addAll(parentPath).add(columns.get(0)).build();
+                               List<String> path2 = new ImmutableList.Builder<String>().addAll(parentPath).add(columns.get(1)).build();
+
+                               builder.putIfAbsent(path1, new ArrayList<>());
+                               builder.get(path1)
+                                      .add(featureProperty);
+                               builder.putIfAbsent(path2, new ArrayList<>());
+                               builder.get(path2)
+                                      .add(featureProperty);
+
+                               return;
+                           }
+
 
                            builder.putIfAbsent(path, new ArrayList<>());
 
