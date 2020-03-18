@@ -1,12 +1,16 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
+import de.ii.xtraplatform.feature.provider.sql.app.SimpleFeatureGeometryFromToWkt;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProperty;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import schemacrawler.schema.Catalog;
 import schemacrawler.schema.Column;
 import schemacrawler.schema.ColumnDataType;
@@ -22,11 +26,19 @@ import schemacrawler.tools.databaseconnector.SingleUseUserCredentials;
 import schemacrawler.utility.SchemaCrawlerUtility;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class SqlSchemaCrawler {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlSchemaCrawler.class);
     private final ConnectionInfoSql connectionInfo;
+    private Connection connection;
 
     public SqlSchemaCrawler(ConnectionInfoSql connectionInfo) {
         this.connectionInfo = connectionInfo;
@@ -47,6 +59,7 @@ public class SqlSchemaCrawler {
 
     private List<FeatureType> getFeatureTypes(Catalog catalog) {
         ImmutableList.Builder<FeatureType> featureTypes = new ImmutableList.Builder<>();
+        Map<String, List<String>> geometry = getGeometry();
 
         for (final Schema schema : catalog.getSchemas()) {
 
@@ -57,18 +70,28 @@ public class SqlSchemaCrawler {
                 for (final Column column : table.getColumns()) {
                     FeatureProperty.Type featurePropertyType = getFeaturePropertyType(column.getColumnDataType());
                     if (featurePropertyType != FeatureProperty.Type.UNKNOWN) {
-                        ImmutableFeatureProperty featureProperty = new ImmutableFeatureProperty.Builder()
+                        ImmutableFeatureProperty.Builder featureProperty = new ImmutableFeatureProperty.Builder()
                                 .name(column.getName())
-                                .type(featurePropertyType)
-                                .build();
-                        featureType.putProperties(featureProperty.getName(), featureProperty);
+                                .path(column.getName())
+                                .type(featurePropertyType);
+                        if (column.isPartOfPrimaryKey()) {
+                            featureProperty.role(FeatureProperty.Role.ID);
+                        }
+                        if (featurePropertyType == FeatureProperty.Type.GEOMETRY && !Objects.isNull(geometry.get(table.getName()))) {
+                            List<String> geometryInfo = geometry.get(table.getName());
+                            String geometryType = SimpleFeatureGeometryFromToWkt.fromString(geometryInfo.get(0))
+                                    .toSimpleFeatureGeometry()
+                                    .toString();
+                            String crs = geometryInfo.get(1);
+                            featureProperty.additionalInfo(ImmutableMap.of("geometryType", geometryType, "crs", crs));
+                        }
+                        featureType.putProperties(column.getName(), featureProperty.build());
                     }
                 }
 
                 featureTypes.add(featureType.build());
             }
         }
-
         return featureTypes.build();
     }
 
@@ -97,7 +120,7 @@ public class SqlSchemaCrawler {
 
     private Catalog getCatalog(String schemaNames) throws SchemaCrawlerException {
         final SchemaCrawlerOptionsBuilder optionsBuilder = SchemaCrawlerOptionsBuilder.builder()
-                                                                                      .withSchemaInfoLevel(SchemaInfoLevelBuilder.standard())
+                                                                                      .withSchemaInfoLevel(SchemaInfoLevelBuilder.maximum())
                                                                                       .includeSchemas(new RegularExpressionInclusionRule(schemaNames));
 
         final SchemaCrawlerOptions options = optionsBuilder.toOptions();
@@ -108,11 +131,35 @@ public class SqlSchemaCrawler {
         return catalog;
     }
 
+    private Map<String, List<String>> getGeometry() {
+        Map<String, List<String>> geometry = new HashMap<>();
+        Connection con = getConnection();
+        Statement stmt;
+        String query = "SELECT * FROM public.geometry_columns;";
+        try {
+            stmt = con.createStatement();
+            ResultSet rs = stmt.executeQuery(query);
+            while (rs.next()) {
+                geometry.put(rs.getString("f_table_name"), ImmutableList.of(rs.getString("type"), rs.getString("srid")));
+            }
+        } catch (SQLException e) {
+            LOGGER.debug("SQL QUERY EXCEPTION", e);
+        }
+        return geometry;
+    }
+
 
     private Connection getConnection() {
-        final String connectionUrl = String.format("jdbc:postgresql://%1$s/%2$s", connectionInfo.getHost(), connectionInfo.getDatabase());
-        final DatabaseConnectionSource dataSource = new DatabaseConnectionSource(connectionUrl);
-        dataSource.setUserCredentials(new SingleUseUserCredentials(connectionInfo.getUser(), connectionInfo.getPassword()));
-        return dataSource.get();
+        try {
+            if (Objects.isNull(connection) || connection.isClosed()) {
+                final String connectionUrl = String.format("jdbc:postgresql://%1$s/%2$s", connectionInfo.getHost(), connectionInfo.getDatabase());
+                final DatabaseConnectionSource dataSource = new DatabaseConnectionSource(connectionUrl);
+                dataSource.setUserCredentials(new SingleUseUserCredentials(connectionInfo.getUser(), connectionInfo.getPassword()));
+                connection = dataSource.get();
+            }
+        } catch (SQLException e) {
+            LOGGER.debug("SQL CONNECTION ERROR", e);
+        }
+        return connection;
     }
 }
