@@ -217,7 +217,7 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
 
             if (!property.isPresent() && filter.getExpression1()
                                                .toString()
-                                               .equals("NOT_AVAILABLE")) {
+                                               .equals(FeatureQueryTransformer.PROPERTY_NOT_AVAILABLE)) {
                 if (filter.getSRS() != null) {
                     return new BBOXImpl(null, filter.getBounds()
                                                     .getMinX(), filter.getBounds()

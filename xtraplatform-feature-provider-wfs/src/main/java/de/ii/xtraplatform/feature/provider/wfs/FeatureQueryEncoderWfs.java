@@ -13,6 +13,7 @@ import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
+import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.wfs.FilterEncoder;
@@ -200,7 +201,7 @@ public class FeatureQueryEncoderWfs {
 
             if (!property.isPresent() && filter.getExpression1()
                                                .toString()
-                                               .equals("NOT_AVAILABLE")) {
+                                               .equals(FeatureQueryTransformer.PROPERTY_NOT_AVAILABLE)) {
                 if (filter.getSRS() != null) {
                     return new BBOXImpl(null, filter.getBounds()
                                                     .getMinX(), filter.getBounds()

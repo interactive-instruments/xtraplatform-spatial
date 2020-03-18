@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 @Value.Immutable
 @JsonDeserialize(as = ImmutableFunction.class)
-public interface Function extends CqlNode, Scalar, Operand {
+public interface Function extends CqlNode, Scalar, Temporal, Operand {
 
     String getName();
 

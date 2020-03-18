@@ -16,14 +16,18 @@ import de.ii.xtraplatform.cql.domain.ImmutableEquals;
 import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
 import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
 import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
+import de.ii.xtraplatform.cql.domain.ImmutableTOverlaps;
 import de.ii.xtraplatform.cql.domain.ImmutableTouches;
 import de.ii.xtraplatform.cql.domain.ImmutableWithin;
 import de.ii.xtraplatform.cql.domain.In;
 import de.ii.xtraplatform.cql.domain.IsNull;
 import de.ii.xtraplatform.cql.domain.Like;
+import de.ii.xtraplatform.cql.domain.Operand;
 import de.ii.xtraplatform.cql.domain.Property;
 import de.ii.xtraplatform.cql.domain.ScalarOperation;
 import de.ii.xtraplatform.cql.domain.SpatialOperation;
+import de.ii.xtraplatform.cql.domain.TOverlaps;
+import de.ii.xtraplatform.cql.domain.Temporal;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -37,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
 import javax.ws.rs.BadRequestException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -56,6 +61,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             .put(ImmutableBefore.class, "<")
             .put(ImmutableDuring.class, "BETWEEN")
             .put(ImmutableTEquals.class, "=")
+            .put(ImmutableTOverlaps.class, "OVERLAPS")
             .build();
 
     private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
@@ -182,6 +188,19 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             return String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %%1$s%5$s%%2$s)", instanceContainer.getName(), aliases.get(0), instanceContainer.getSortKey(), join, qualifiedColumn);
         }
 
+        @Override
+        public String visit(de.ii.xtraplatform.cql.domain.Function function, List<String> children) {
+            if (Objects.equals(function.getName(), "interval")) {
+                String start = children.get(0);
+                String end = children.get(1);
+                String endColumn = end.substring(end.indexOf("%1$s")+4, end.indexOf("%2$s"));
+
+                return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
+            }
+
+            return super.visit(function, children);
+        }
+
         //TODO: unary + nnary
         @Override
         public String visit(ScalarOperation scalarOperation, List<String> children) {
@@ -232,6 +251,28 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 String[] interval2 = children.get(1)
                                              .split("/");
                 return String.format(expression, "", String.format(" %s %s' AND '%s", operator, interval2[0], interval2[1]));
+            }
+
+            if (temporalOperation instanceof TOverlaps) {
+                TemporalLiteral operand2 = (TemporalLiteral) temporalOperation.getOperands()
+                                                                              .get(1);
+
+                String literalInterval;
+
+                if (operand2.getType() == Interval.class) {
+                    Interval interval = (Interval) temporalOperation.getValue()
+                                                                    .get()
+                                                                    .getValue();
+                    literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", interval.getStart(), interval.getEnd());
+                    literalInterval = literalInterval.replaceAll("0000-01-01T00:00:00Z", "-infinity");
+                } else {
+                    Instant instant = (Instant) temporalOperation.getValue()
+                                                                   .get()
+                                                                   .getValue();
+                    literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", instant, instant);
+                }
+
+                return String.format(expression, "", String.format(" %s %s", operator, literalInterval));
             }
 
             return String.format(expression, "", String.format(" %s %s", operator, children.get(1)));
