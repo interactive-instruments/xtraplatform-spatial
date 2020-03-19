@@ -46,15 +46,20 @@ class SqlSchemaCrawlerPlayground extends Specification {
 
         then:
 
-        featureTypeList.size() > 0
-        featureTypeList.get(0).name == "aeronauticcrv"
-        featureTypeList.get(0).properties.size() > 0
-        featureTypeList.get(0).properties.get(0).name == "id"
-        featureTypeList.get(0).properties.get(0).type == FeatureProperty.Type.INTEGER
-        featureTypeList.get(0).properties.get(1).name == "ara"
-        featureTypeList.get(0).properties.get(1).type == FeatureProperty.Type.FLOAT
-        featureTypeList.get(0).properties.get(3).name == "ben"
-        featureTypeList.get(0).properties.get(3).type == FeatureProperty.Type.STRING
+            featureTypeList.size() > 0
+            featureTypeList.get(0).name == "aeronauticcrv"
+            featureTypeList.get(0).properties.size() > 0
+            featureTypeList.get(0).properties.containsKey("id")
+            featureTypeList.get(0).properties.get("id").type == FeatureProperty.Type.INTEGER
+            featureTypeList.get(0).properties.get("id").role.isPresent()
+            featureTypeList.get(0).properties.get("id").role.get() == FeatureProperty.Role.ID
+            featureTypeList.get(0).properties.containsKey("ara")
+            featureTypeList.get(0).properties.get("ara").type == FeatureProperty.Type.FLOAT
+            featureTypeList.get(0).properties.containsKey("ben")
+            featureTypeList.get(0).properties.get("ben").type == FeatureProperty.Type.STRING
+            featureTypeList.get(0).properties.containsKey("geom")
+            featureTypeList.get(0).properties.get("geom").additionalInfo.get("geometryType") == "MULTI_LINE_STRING"
+            featureTypeList.get(0).properties.get("geom").additionalInfo.get("crs") == "4326"
 
     }
 
@@ -71,16 +76,27 @@ class SqlSchemaCrawlerPlayground extends Specification {
 
         featureTypeList.get(0).name == "table1"
         featureTypeList.get(0).properties.size() == 3
-        featureTypeList.get(0).properties.any{ it.name == "column1" && it.type == FeatureProperty.Type.INTEGER }
-        featureTypeList.get(0).properties.any{ it.name == "column2" && it.type == FeatureProperty.Type.STRING }
-        featureTypeList.get(0).properties.any{ it.name == "column3" && it.type == FeatureProperty.Type.GEOMETRY }
+        featureTypeList.get(0).properties.containsKey("column1")
+        featureTypeList.get(0).properties.get("column1").type == FeatureProperty.Type.INTEGER
+        featureTypeList.get(0).properties.get("column1").role.isPresent()
+        featureTypeList.get(0).properties.get("column1").role.get() == FeatureProperty.Role.ID
+        featureTypeList.get(0).properties.containsKey("column2")
+        featureTypeList.get(0).properties.get("column2").type == FeatureProperty.Type.STRING
+        featureTypeList.get(0).properties.containsKey("column3")
+        featureTypeList.get(0).properties.get("column3").type == FeatureProperty.Type.GEOMETRY
 
         featureTypeList.get(1).name == "table2"
         featureTypeList.get(1).properties.size() == 4
-        featureTypeList.get(1).properties.any{ it.name == "column5" && it.type == FeatureProperty.Type.INTEGER}
-        featureTypeList.get(1).properties.any{ it.name == "column6" && it.type == FeatureProperty.Type.FLOAT}
-        featureTypeList.get(1).properties.any{ it.name == "column7" && it.type == FeatureProperty.Type.BOOLEAN}
-        featureTypeList.get(1).properties.any{ it.name == "column9" && it.type == FeatureProperty.Type.DATETIME}
+        featureTypeList.get(1).properties.containsKey("column5")
+        featureTypeList.get(1).properties.get("column5").type == FeatureProperty.Type.INTEGER
+        featureTypeList.get(1).properties.get("column5").role.isPresent()
+        featureTypeList.get(1).properties.get("column5").role.get() == FeatureProperty.Role.ID
+        featureTypeList.get(1).properties.containsKey("column6")
+        featureTypeList.get(1).properties.get("column6").type == FeatureProperty.Type.FLOAT
+        featureTypeList.get(1).properties.containsKey("column7")
+        featureTypeList.get(1).properties.get("column7").type == FeatureProperty.Type.BOOLEAN
+        featureTypeList.get(1).properties.containsKey("column9")
+        featureTypeList.get(1).properties.get("column9").type == FeatureProperty.Type.DATETIME
     }
 
 
@@ -99,6 +115,7 @@ class SqlSchemaCrawlerPlayground extends Specification {
         ColumnDataType columnDataType = new MutableColumnDataType(schema, "serial")
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.INTEGER, Integer.class, JavaSqlTypeGroup.integer))
         column.setColumnDataType(columnDataType)
+        column.markAsPartOfPrimaryKey()
         table.addColumn(column)
 
         column = new MutableColumn(table, "column2")
@@ -127,6 +144,7 @@ class SqlSchemaCrawlerPlayground extends Specification {
         columnDataType = new MutableColumnDataType(schema, "serial")
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.INTEGER, Integer.class, JavaSqlTypeGroup.integer))
         column.setColumnDataType(columnDataType)
+        column.markAsPartOfPrimaryKey()
         table.addColumn(column)
 
         column = new MutableColumn(table, "column6")
