@@ -170,9 +170,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             }
 
             Optional<CqlFilter> userFilter;
-            if (property.getNestedFilters().isPresent() && !property.getNestedFilters().get().isEmpty())  {
-                Map<String, CqlFilter> userFilters = property.getNestedFilters()
-                                                                    .get();
+            if (!property.getNestedFilters().isEmpty())  {
+                Map<String, CqlFilter> userFilters = property.getNestedFilters();
                 userFilter = userFilters.values().stream().findFirst();
             } else {
                 userFilter = Optional.empty();
