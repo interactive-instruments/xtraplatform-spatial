@@ -6,8 +6,11 @@ import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.Parser;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 public class CqlTextParser {
@@ -49,6 +52,26 @@ public class CqlTextParser {
                                 String msg, RecognitionException e)
                 throws ParseCancellationException {
             throw new ParseCancellationException("line " + line + ":" + charPositionInLine + " " + msg);
+        }
+    }
+
+    public static abstract class CqlParserCustom extends Parser {
+
+        public CqlParserCustom(TokenStream input) {
+            super(input);
+        }
+
+        protected final Boolean isNotInsideNestedFilter(ParserRuleContext ctx) {
+
+            while (ctx.parent != null) {
+                ctx = (ParserRuleContext) ctx.parent;
+
+                if (ctx instanceof CqlParser.NestedCqlFilterContext) {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

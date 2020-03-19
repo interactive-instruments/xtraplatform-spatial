@@ -244,8 +244,8 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(Property property, List<String> children) {
-        if (property.getNestedFilters().isPresent()) {
-            Map<String, CqlFilter> nestedFilters = property.getNestedFilters().get();
+        if (!property.getNestedFilters().isEmpty()) {
+            Map<String, CqlFilter> nestedFilters = property.getNestedFilters();
             StringJoiner sj = new StringJoiner(".");
             for (String element : property.getPath()) {
                 if (nestedFilters.containsKey(element)) {

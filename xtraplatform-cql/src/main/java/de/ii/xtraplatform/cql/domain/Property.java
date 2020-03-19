@@ -33,7 +33,7 @@ public interface Property extends Scalar, Spatial, Temporal, Operand, CqlNode {
     String getName();
 
     @JsonIgnore
-    Optional<Map<String, CqlFilter>> getNestedFilters();
+    Map<String, CqlFilter> getNestedFilters();
 
     Splitter PATH_SPLITTER = Splitter.on('.')
                                      .omitEmptyStrings();

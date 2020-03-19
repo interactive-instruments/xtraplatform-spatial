@@ -115,13 +115,13 @@ public class CqlFilterExamples {
 
     static final CqlFilter EXAMPLE_32 = CqlFilter.of(
             Gt.of(Property.of("filterValues.measure",
-                            ImmutableMap.of("filterValues", CqlFilter.of(Eq.of("property", ScalarLiteral.of("d30"))))),
+                            ImmutableMap.of("filterValues", CqlFilter.of(Eq.of("filterValues.property", ScalarLiteral.of("d30"))))),
                     ScalarLiteral.of(0.1)));
 
     static final CqlFilter EXAMPLE_33 = CqlFilter.of(
             Gt.of(Property.of("filterValues1.filterValues2.measure",
-                            ImmutableMap.of("filterValues1", CqlFilter.of(Eq.of("property1", ScalarLiteral.of("d30"))),
-                                    "filterValues2", CqlFilter.of(Lte.of("property2", ScalarLiteral.of(100))))),
+                            ImmutableMap.of("filterValues1", CqlFilter.of(Eq.of("filterValues1.property1", ScalarLiteral.of("d30"))),
+                                    "filterValues2", CqlFilter.of(Lte.of("filterValues2.property2", ScalarLiteral.of(100))))),
                     ScalarLiteral.of(0.1)));
 
 

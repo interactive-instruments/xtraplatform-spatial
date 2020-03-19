@@ -23,6 +23,11 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     }
 
     @Override
+    public CqlNode visitNestedCqlFilter(CqlParser.NestedCqlFilterContext ctx) {
+        return CqlFilter.of(ctx.booleanValueExpression().accept(this));
+    }
+
+    @Override
     public CqlNode visitBooleanValueExpression(CqlParser.BooleanValueExpressionContext ctx) {
         CqlNode booleanTerm = ctx.booleanTerm()
                                  .accept(this);
@@ -348,10 +353,10 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
     @Override
     public CqlNode visitPropertyName(CqlParser.PropertyNameContext ctx) {
-        if (!ctx.nestedFilter().isEmpty()) {
+        if (!ctx.nestedCqlFilter().isEmpty()) {
             Map<String, CqlFilter> nestedFilters = new HashMap<>();
-            for (int i = 0; i < ctx.nestedFilter().size(); i++) {
-                CqlFilter nestedFilter = CqlFilter.of(ctx.nestedFilter(i)
+            for (int i = 0; i < ctx.nestedCqlFilter().size(); i++) {
+                CqlFilter nestedFilter = CqlFilter.of(ctx.nestedCqlFilter(i)
                                                .accept(this));
                 CqlVisitorPropertyPrefix prefix = new CqlVisitorPropertyPrefix(ctx.Identifier(i)
                                                                                                     .getText());
@@ -365,54 +370,6 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         } else {
             return Property.of(ctx.getText());
         }
-    }
-
-    @Override
-    public CqlNode visitNestedFilter(CqlParser.NestedFilterContext ctx) {
-        return CqlFilter.of(ctx.binaryComparisonPredicateNested().accept(this));
-    }
-
-    @Override
-    public CqlNode visitBinaryComparisonPredicateNested(CqlParser.BinaryComparisonPredicateNestedContext ctx) {
-        Scalar scalar1 = (Scalar) ctx.scalarExpressionNested(0)
-                .accept(this);
-        Scalar scalar2 = (Scalar) ctx.scalarExpressionNested(1)
-                .accept(this);
-        ComparisonOperator comparisonOperator = ComparisonOperator.valueOfCqlText(ctx.ComparisonOperator()
-                .getText());
-
-        ScalarOperation.Builder<? extends ScalarOperation> builder;
-        switch (comparisonOperator) {
-            case EQ:
-                builder = new ImmutableEq.Builder();
-                break;
-            case NEQ:
-                builder = new ImmutableNeq.Builder();
-                break;
-            case GT:
-                builder = new ImmutableGt.Builder();
-                break;
-            case GTEQ:
-                builder = new ImmutableGte.Builder();
-                break;
-            case LT:
-                builder = new ImmutableLt.Builder();
-                break;
-            case LTEQ:
-                builder = new ImmutableLte.Builder();
-                break;
-            default:
-                throw new IllegalStateException("unknown comparison operator: " + comparisonOperator);
-        }
-
-        return builder.operand1(scalar1)
-                .operand2(scalar2)
-                .build();
-    }
-
-    @Override
-    public CqlNode visitPropertyNameNested(CqlParser.PropertyNameNestedContext ctx) {
-        return Property.of(ctx.getText());
     }
 
     @Override

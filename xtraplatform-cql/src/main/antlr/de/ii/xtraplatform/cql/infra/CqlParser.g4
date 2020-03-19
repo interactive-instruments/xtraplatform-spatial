@@ -1,5 +1,5 @@
 parser grammar CqlParser;
-options { tokenVocab=CqlLexer; }
+options { tokenVocab=CqlLexer; superClass=CqlTextParser.CqlParserCustom; }
 
 /*
 #=============================================================================#
@@ -7,6 +7,7 @@ options { tokenVocab=CqlLexer; }
 #=============================================================================#
 */
 cqlFilter : booleanValueExpression EOF;
+nestedCqlFilter: {isNotInsideNestedFilter($ctx)}? booleanValueExpression;
 booleanValueExpression : booleanTerm | booleanValueExpression OR booleanTerm;
 booleanTerm : booleanFactor | booleanTerm AND booleanFactor;
 booleanFactor : (NOT)? booleanPrimary;
@@ -59,23 +60,9 @@ scalarExpression : propertyName
                     | function
                     /*| arithmeticExpression*/;
 
-//CHANGE: add extra definitions for nested filters, scalar expression, property and binary comparison to avoid recursion in nested filters
-scalarExpressionNested : propertyNameNested
-                    | characterLiteral
-                    | numericLiteral
-                    | booleanLiteral
-                    | function
-                    /*| arithmeticExpression*/;
-
-propertyNameNested: Identifier (PERIOD Identifier)*;
-
-binaryComparisonPredicateNested : scalarExpressionNested ComparisonOperator scalarExpressionNested;
-
-nestedFilter: LEFTSQUAREBRACKET binaryComparisonPredicateNested RIGHTSQUAREBRACKET;
-
 //CHANGE: support compound property names
 //CHANGE: support nested filters
-propertyName: Identifier nestedFilter? (PERIOD Identifier nestedFilter?)*;
+propertyName: (Identifier (LEFTSQUAREBRACKET nestedCqlFilter RIGHTSQUAREBRACKET)? PERIOD)* Identifier;
 
 characterLiteral: CharacterStringLiteral
                    | BitStringLiteral

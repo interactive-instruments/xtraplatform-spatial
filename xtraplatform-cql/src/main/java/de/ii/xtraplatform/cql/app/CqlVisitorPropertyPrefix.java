@@ -17,8 +17,7 @@ public class CqlVisitorPropertyPrefix extends CqlVisitorCopy {
     @Override
     public CqlNode visit(Property property, List<CqlNode> children) {
         if (!property.getName().startsWith(prefix)) {
-            return Property.of(prefix + property.getName(), property.getNestedFilters()
-                                                                    .orElse(ImmutableMap.of()));
+            return Property.of(prefix + property.getName(), property.getNestedFilters());
         }
         return property;
     }
