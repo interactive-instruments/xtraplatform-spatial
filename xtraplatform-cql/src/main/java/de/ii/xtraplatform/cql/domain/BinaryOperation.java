@@ -60,7 +60,7 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
         }
 
         @SuppressWarnings("unchecked")
-        private void addOperand(Operand literal) {
+        public void addOperand(Operand literal) {
             if (literal instanceof Property) {
                 property((Property) literal);
             } else if (literal instanceof Literal) {

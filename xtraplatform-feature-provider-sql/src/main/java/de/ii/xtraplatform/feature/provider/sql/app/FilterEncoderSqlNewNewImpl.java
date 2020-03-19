@@ -195,6 +195,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 String endColumn = end.substring(end.indexOf("%1$s")+4, end.indexOf("%2$s"));
 
                 return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
+            } else if (Objects.equals(function.getName(), "position")) {
+                return "%1$srow_number%2$s";
             }
 
             return super.visit(function, children);

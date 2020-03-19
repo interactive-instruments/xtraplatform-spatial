@@ -66,6 +66,7 @@ import de.ii.xtraplatform.cql.domain.Meets;
 import de.ii.xtraplatform.cql.domain.MetBy;
 import de.ii.xtraplatform.cql.domain.Neq;
 import de.ii.xtraplatform.cql.domain.Not;
+import de.ii.xtraplatform.cql.domain.Operand;
 import de.ii.xtraplatform.cql.domain.Or;
 import de.ii.xtraplatform.cql.domain.OverlappedBy;
 import de.ii.xtraplatform.cql.domain.Overlaps;
@@ -83,6 +84,7 @@ import de.ii.xtraplatform.cql.domain.Touches;
 import de.ii.xtraplatform.cql.domain.Within;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
@@ -116,148 +118,111 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
 
     @Override
     public CqlNode visit(ScalarOperation scalarOperation, List<CqlNode> children) {
+        ScalarOperation.Builder<?> builder = null;
+
         if (scalarOperation instanceof Between) {
-            return new ImmutableBetween.Builder().property(((Property) children.get(0)))
-                                                 .lower(((ScalarLiteral) children.get(1)))
-                                                 .upper(((ScalarLiteral) children.get(2)))
-                                                 .build();
+            builder = new ImmutableBetween.Builder();
         } else if (scalarOperation instanceof Eq) {
-            return new ImmutableEq.Builder().property(((Property) children.get(0)))
-                                            .value(((ScalarLiteral) children.get(1)))
-                                            .build();
+            builder = new ImmutableEq.Builder();
         } else if (scalarOperation instanceof Exists) {
-            return new ImmutableExists.Builder().property(((Property) children.get(0)))
-                                                .build();
+            builder = new ImmutableExists.Builder();
         } else if (scalarOperation instanceof Gt) {
-            return new ImmutableGt.Builder().property(((Property) children.get(0)))
-                                            .value(((ScalarLiteral) children.get(1)))
-                                            .build();
+            builder = new ImmutableGt.Builder();
         } else if (scalarOperation instanceof Gte) {
-            return new ImmutableGte.Builder().property(((Property) children.get(0)))
-                                             .value(((ScalarLiteral) children.get(1)))
-                                             .build();
+            builder = new ImmutableGte.Builder();
         } else if (scalarOperation instanceof In) {
-            return new ImmutableIn.Builder().property(((Property) children.get(0)))
-                                            .values(children.subList(1, children.size())
-                                                            .stream()
-                                                            .map(cqlNode -> (ScalarLiteral) cqlNode)
-                                                            .collect(Collectors.toList()))
-                                            .build();
+            builder = new ImmutableIn.Builder();
         } else if (scalarOperation instanceof IsNull) {
-            return new ImmutableIsNull.Builder().property(((Property) children.get(0)))
-                                                .build();
+            builder = new ImmutableIsNull.Builder();
         } else if (scalarOperation instanceof Like) {
-            return new ImmutableLike.Builder().property(((Property) children.get(0)))
-                                              .value(((ScalarLiteral) children.get(1)))
-                                              .build();
+            builder = new ImmutableLike.Builder();
         } else if (scalarOperation instanceof Lt) {
-            return new ImmutableLt.Builder().property(((Property) children.get(0)))
-                                            .value(((ScalarLiteral) children.get(1)))
-                                            .build();
+            builder = new ImmutableLt.Builder();
         } else if (scalarOperation instanceof Lte) {
-            return new ImmutableLte.Builder().property(((Property) children.get(0)))
-                                             .value(((ScalarLiteral) children.get(1)))
-                                             .build();
+            builder = new ImmutableLte.Builder();
         } else if (scalarOperation instanceof Neq) {
-            return new ImmutableNeq.Builder().property(((Property) children.get(0)))
-                                             .value(((ScalarLiteral) children.get(1)))
-                                             .build();
+            builder = new ImmutableNeq.Builder();
         }
+
+        if (Objects.nonNull(builder)) {
+            for (CqlNode cqlNode : children) {
+                builder.addOperand((Operand) cqlNode);
+            }
+            return builder.build();
+        }
+
         return null;
     }
 
     @Override
     public CqlNode visit(TemporalOperation temporalOperation, List<CqlNode> children) {
+        TemporalOperation.Builder<?> builder = null;
+
         if (temporalOperation instanceof After) {
-            return new ImmutableAfter.Builder().property(((Property) children.get(0)))
-                                               .value(((TemporalLiteral) children.get(1)))
-                                               .build();
+            builder = new ImmutableAfter.Builder();
         } else if (temporalOperation instanceof Before) {
-            return new ImmutableBefore.Builder().property(((Property) children.get(0)))
-                                                .value(((TemporalLiteral) children.get(1)))
-                                                .build();
+            builder = new ImmutableBefore.Builder();
         } else if (temporalOperation instanceof Begins) {
-            return new ImmutableBegins.Builder().property(((Property) children.get(0)))
-                                                .value(((TemporalLiteral) children.get(1)))
-                                                .build();
+            builder = new ImmutableBegins.Builder();
         } else if (temporalOperation instanceof BegunBy) {
-            return new ImmutableBegunBy.Builder().property(((Property) children.get(0)))
-                                                 .value(((TemporalLiteral) children.get(1)))
-                                                 .build();
+            builder = new ImmutableBegunBy.Builder();
         } else if (temporalOperation instanceof During) {
-            return new ImmutableDuring.Builder().property(((Property) children.get(0)))
-                                                .value(((TemporalLiteral) children.get(1)))
-                                                .build();
+            builder = new ImmutableDuring.Builder();
         } else if (temporalOperation instanceof EndedBy) {
-            return new ImmutableEndedBy.Builder().property(((Property) children.get(0)))
-                                                 .value(((TemporalLiteral) children.get(1)))
-                                                 .build();
+            builder = new ImmutableEndedBy.Builder();
         } else if (temporalOperation instanceof Ends) {
-            return new ImmutableEnds.Builder().property(((Property) children.get(0)))
-                                              .value(((TemporalLiteral) children.get(1)))
-                                              .build();
+            builder = new ImmutableEnds.Builder();
         } else if (temporalOperation instanceof Meets) {
-            return new ImmutableMeets.Builder().property(((Property) children.get(0)))
-                                               .value(((TemporalLiteral) children.get(1)))
-                                               .build();
+            builder = new ImmutableMeets.Builder();
         } else if (temporalOperation instanceof MetBy) {
-            return new ImmutableMetBy.Builder().property(((Property) children.get(0)))
-                                               .value(((TemporalLiteral) children.get(1)))
-                                               .build();
+            builder = new ImmutableMetBy.Builder();
         } else if (temporalOperation instanceof OverlappedBy) {
-            return new ImmutableOverlappedBy.Builder().property(((Property) children.get(0)))
-                                                      .value(((TemporalLiteral) children.get(1)))
-                                                      .build();
+            builder = new ImmutableOverlappedBy.Builder();
         } else if (temporalOperation instanceof TContains) {
-            return new ImmutableTContains.Builder().property(((Property) children.get(0)))
-                                                   .value(((TemporalLiteral) children.get(1)))
-                                                   .build();
+            builder = new ImmutableTContains.Builder();
         } else if (temporalOperation instanceof TEquals) {
-            return new ImmutableTEquals.Builder().property(((Property) children.get(0)))
-                                                 .value(((TemporalLiteral) children.get(1)))
-                                                 .build();
+            builder = new ImmutableTEquals.Builder();
         } else if (temporalOperation instanceof TOverlaps) {
-            return new ImmutableTOverlaps.Builder().property(((Property) children.get(0)))
-                                                   .value(((TemporalLiteral) children.get(1)))
-                                                   .build();
+            builder = new ImmutableTOverlaps.Builder();
         }
+
+        if (Objects.nonNull(builder)) {
+            for (CqlNode cqlNode : children) {
+                builder.addOperand((Operand) cqlNode);
+            }
+            return builder.build();
+        }
+
         return null;
     }
 
     @Override
     public CqlNode visit(SpatialOperation spatialOperation, List<CqlNode> children) {
+        SpatialOperation.Builder<?> builder = null;
+
         if (spatialOperation instanceof Contains) {
-            return new ImmutableContains.Builder().property(((Property) children.get(0)))
-                                                  .value(((SpatialLiteral) children.get(1)))
-                                                  .build();
+            builder = new ImmutableContains.Builder();
         } else if (spatialOperation instanceof Crosses) {
-            return new ImmutableCrosses.Builder().property(((Property) children.get(0)))
-                                                 .value(((SpatialLiteral) children.get(1)))
-                                                 .build();
+            builder = new ImmutableCrosses.Builder();
         } else if (spatialOperation instanceof Disjoint) {
-            return new ImmutableDisjoint.Builder().property(((Property) children.get(0)))
-                                                  .value(((SpatialLiteral) children.get(1)))
-                                                  .build();
+            builder = new ImmutableDisjoint.Builder();
         } else if (spatialOperation instanceof Equals) {
-            return new ImmutableEquals.Builder().property(((Property) children.get(0)))
-                                                .value(((SpatialLiteral) children.get(1)))
-                                                .build();
+            builder = new ImmutableEquals.Builder();
         } else if (spatialOperation instanceof Intersects) {
-            return new ImmutableIntersects.Builder().property(((Property) children.get(0)))
-                                                    .value(((SpatialLiteral) children.get(1)))
-                                                    .build();
+            builder = new ImmutableIntersects.Builder();
         } else if (spatialOperation instanceof Overlaps) {
-            return new ImmutableOverlaps.Builder().property(((Property) children.get(0)))
-                                                  .value(((SpatialLiteral) children.get(1)))
-                                                  .build();
+            builder = new ImmutableOverlaps.Builder();
         } else if (spatialOperation instanceof Touches) {
-            return new ImmutableTouches.Builder().property(((Property) children.get(0)))
-                                                 .value(((SpatialLiteral) children.get(1)))
-                                                 .build();
+            builder = new ImmutableTouches.Builder();
         } else if (spatialOperation instanceof Within) {
-            return new ImmutableWithin.Builder().property(((Property) children.get(0)))
-                                                .value(((SpatialLiteral) children.get(1)))
-                                                .build();
+            builder = new ImmutableWithin.Builder();
+        }
+
+        if (Objects.nonNull(builder)) {
+            for (CqlNode cqlNode : children) {
+                builder.addOperand((Operand) cqlNode);
+            }
+            return builder.build();
         }
 
         return null;

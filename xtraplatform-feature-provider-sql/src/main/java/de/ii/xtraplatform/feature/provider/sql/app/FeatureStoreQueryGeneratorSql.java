@@ -186,7 +186,13 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
                           String sourceField, Optional<String> sqlFilter) {
         String additionalFilter = sqlFilter.map(s -> " AND " + s)
                                            .orElse("");
-        return String.format("JOIN %1$s %2$s ON %4$s.%5$s=%2$s.%3$s%6$s", targetContainer, targetAlias, targetField, sourceContainer, sourceField, additionalFilter);
+        String targetTable = targetContainer;
+
+        if (additionalFilter.contains("row_number")) {
+            targetTable = String.format("(SELECT *,row_number() OVER () FROM %s)", targetContainer);
+        }
+
+        return String.format("JOIN %1$s %2$s ON (%4$s.%5$s=%2$s.%3$s%6$s)", targetTable, targetAlias, targetField, sourceContainer, sourceField, additionalFilter);
     }
 
     private Optional<String> getFilter(FeatureStoreInstanceContainer instanceContainer, Optional<CqlFilter> cqlFilter) {
