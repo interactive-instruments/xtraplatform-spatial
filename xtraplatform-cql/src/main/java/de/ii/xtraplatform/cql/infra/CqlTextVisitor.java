@@ -3,6 +3,7 @@ package de.ii.xtraplatform.cql.infra;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.app.CqlVisitorPropertyPrefix;
 import de.ii.xtraplatform.cql.domain.*;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.Collection;
@@ -13,6 +14,12 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements CqlParserVisitor<CqlNode> {
+
+    private final EpsgCrs defaultCrs;
+
+    public CqlTextVisitor(EpsgCrs defaultCrs) {
+        this.defaultCrs = defaultCrs;
+    }
 
     @Override
     public CqlNode visitCqlFilter(CqlParser.CqlFilterContext ctx) {
@@ -412,6 +419,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                                   .accept(this);
 
         return new ImmutablePoint.Builder().addCoordinates(coordinate)
+                                           .crs(defaultCrs)
                                            .build();
     }
 
@@ -423,6 +431,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                    .collect(Collectors.toList());
 
         return new ImmutableMultiPoint.Builder().coordinates(points)
+                                                .crs(defaultCrs)
                                                      .build();
     }
 
@@ -434,6 +443,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                          .collect(Collectors.toList());
 
         return new ImmutableMultiLineString.Builder().coordinates(lineStrings)
+                                                     .crs(defaultCrs)
                                              .build();
     }
 
@@ -445,6 +455,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                    .collect(Collectors.toList());
 
         return new ImmutableMultiPolygon.Builder().coordinates(polygons)
+                                                  .crs(defaultCrs)
                                                      .build();
     }
 
@@ -456,6 +467,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                          .collect(Collectors.toList());
 
         return new ImmutablePolygon.Builder().coordinates(coordinates)
+                                             .crs(defaultCrs)
                                              .build();
     }
 
@@ -489,6 +501,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         return new ImmutableEnvelope.Builder()
                 .coordinates(coordinates)
+                .crs(defaultCrs)
                 .build();
     }
 
@@ -500,6 +513,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                    .collect(Collectors.toList());
 
         return new ImmutableLineString.Builder().coordinates(coordinates)
+                                                .crs(defaultCrs)
                                                 .build();
     }
 

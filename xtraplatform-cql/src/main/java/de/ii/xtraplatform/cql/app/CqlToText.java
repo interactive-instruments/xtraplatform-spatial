@@ -1,12 +1,68 @@
 package de.ii.xtraplatform.cql.app;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.cql.domain.*;
+import de.ii.xtraplatform.cql.domain.And;
+import de.ii.xtraplatform.cql.domain.Between;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.CqlNode;
+import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.cql.domain.CqlVisitor;
+import de.ii.xtraplatform.cql.domain.Exists;
+import de.ii.xtraplatform.cql.domain.Function;
+import de.ii.xtraplatform.cql.domain.Geometry;
+import de.ii.xtraplatform.cql.domain.ImmutableAfter;
+import de.ii.xtraplatform.cql.domain.ImmutableAnd;
+import de.ii.xtraplatform.cql.domain.ImmutableBefore;
+import de.ii.xtraplatform.cql.domain.ImmutableBegins;
+import de.ii.xtraplatform.cql.domain.ImmutableBegunBy;
+import de.ii.xtraplatform.cql.domain.ImmutableBetween;
+import de.ii.xtraplatform.cql.domain.ImmutableContains;
+import de.ii.xtraplatform.cql.domain.ImmutableCrosses;
+import de.ii.xtraplatform.cql.domain.ImmutableDisjoint;
+import de.ii.xtraplatform.cql.domain.ImmutableDuring;
+import de.ii.xtraplatform.cql.domain.ImmutableEndedBy;
+import de.ii.xtraplatform.cql.domain.ImmutableEnds;
+import de.ii.xtraplatform.cql.domain.ImmutableEq;
+import de.ii.xtraplatform.cql.domain.ImmutableEquals;
+import de.ii.xtraplatform.cql.domain.ImmutableExists;
+import de.ii.xtraplatform.cql.domain.ImmutableGt;
+import de.ii.xtraplatform.cql.domain.ImmutableGte;
+import de.ii.xtraplatform.cql.domain.ImmutableIn;
+import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
+import de.ii.xtraplatform.cql.domain.ImmutableIsNull;
+import de.ii.xtraplatform.cql.domain.ImmutableLike;
+import de.ii.xtraplatform.cql.domain.ImmutableLt;
+import de.ii.xtraplatform.cql.domain.ImmutableLte;
+import de.ii.xtraplatform.cql.domain.ImmutableMeets;
+import de.ii.xtraplatform.cql.domain.ImmutableMetBy;
+import de.ii.xtraplatform.cql.domain.ImmutableNeq;
+import de.ii.xtraplatform.cql.domain.ImmutableNot;
+import de.ii.xtraplatform.cql.domain.ImmutableOr;
+import de.ii.xtraplatform.cql.domain.ImmutableOverlappedBy;
+import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
+import de.ii.xtraplatform.cql.domain.ImmutableTContains;
+import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
+import de.ii.xtraplatform.cql.domain.ImmutableTOverlaps;
+import de.ii.xtraplatform.cql.domain.ImmutableTouches;
+import de.ii.xtraplatform.cql.domain.ImmutableWithin;
+import de.ii.xtraplatform.cql.domain.In;
+import de.ii.xtraplatform.cql.domain.IsNull;
+import de.ii.xtraplatform.cql.domain.LogicalOperation;
+import de.ii.xtraplatform.cql.domain.Or;
+import de.ii.xtraplatform.cql.domain.Property;
+import de.ii.xtraplatform.cql.domain.ScalarLiteral;
+import de.ii.xtraplatform.cql.domain.ScalarOperation;
+import de.ii.xtraplatform.cql.domain.SpatialLiteral;
+import de.ii.xtraplatform.cql.domain.SpatialOperation;
+import de.ii.xtraplatform.cql.domain.TemporalLiteral;
+import de.ii.xtraplatform.cql.domain.TemporalOperation;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.threeten.extra.Interval;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -60,6 +116,27 @@ public class CqlToText implements CqlVisitor<String> {
             .put(ImmutableContains.class, "CONTAINS")
             .build();
 
+    private final Optional<java.util.function.BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>>> coordinatesTransformer;
+
+    public CqlToText() {
+        this.coordinatesTransformer = Optional.empty();
+    }
+
+    public CqlToText(java.util.function.BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>> coordinatesTransformer) {
+        this.coordinatesTransformer = Optional.ofNullable(coordinatesTransformer);
+    }
+
+    private java.util.function.Function<Geometry.Coordinate, Geometry.Coordinate> transformIfNecessary(Optional<EpsgCrs> sourceCrs) {
+        return coordinate -> coordinatesTransformer.map(transformer -> transformer.apply(coordinate, sourceCrs))
+                                     .map(list -> Geometry.Coordinate.of(list.get(0), list.get(1)))
+                                     .orElse(coordinate);
+    }
+
+    private java.util.function.Function<List<Double>, List<Double>> transformIfNecessary2(Optional<EpsgCrs> sourceCrs) {
+        return coordinates -> coordinatesTransformer.map(transformer -> transformer.apply(coordinates, sourceCrs))
+                                     .orElse(coordinates);
+    }
+
     @Override
     public String visit(CqlFilter cqlFilter, List<String> children) {
         CqlNode node = cqlFilter.getExpressions()
@@ -87,15 +164,24 @@ public class CqlToText implements CqlVisitor<String> {
         if (Objects.equals(logicalOperation.getClass(), ImmutableNot.class)) {
             String operation = children.get(0);
 
-            if (logicalOperation.getPredicates().get(0).getLike().isPresent()) {
+            if (logicalOperation.getPredicates()
+                                .get(0)
+                                .getLike()
+                                .isPresent()) {
                 String like = SCALAR_OPERATORS.get(ImmutableLike.class);
 
                 return operation.replace(like, String.format("%s %s", operator, like));
-            } else if (logicalOperation.getPredicates().get(0).getExists().isPresent()) {
+            } else if (logicalOperation.getPredicates()
+                                       .get(0)
+                                       .getExists()
+                                       .isPresent()) {
                 String exists = SCALAR_OPERATORS.get(ImmutableExists.class);
 
                 return operation.replace(exists, "DOES-NOT-EXIST");
-            } else if (logicalOperation.getPredicates().get(0).getIsNull().isPresent()) {
+            } else if (logicalOperation.getPredicates()
+                                       .get(0)
+                                       .getIsNull()
+                                       .isPresent()) {
                 String isNull = SCALAR_OPERATORS.get(ImmutableIsNull.class);
 
                 return operation.replace(isNull, "IS NOT NULL");
@@ -146,15 +232,16 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(Geometry.Point point, List<String> children) {
-        return String.format("POINT(%s)", point.getCoordinates()
-                                               .get(0)
-                                               .accept(this));
+        return String.format("POINT(%s)", transformIfNecessary(point.getCrs()).apply(point.getCoordinates()
+                                                                    .get(0))
+                .accept(this));
     }
 
     @Override
     public String visit(Geometry.LineString lineString, List<String> children) {
         return String.format("LINESTRING%s", lineString.getCoordinates()
                                                        .stream()
+                                                       .map(transformIfNecessary(lineString.getCrs()))
                                                        .map(coordinate -> coordinate.accept(this))
                                                        .collect(Collectors.joining(",", "(", ")")));
     }
@@ -164,6 +251,7 @@ public class CqlToText implements CqlVisitor<String> {
         return String.format("POLYGON%s", polygon.getCoordinates()
                                                  .stream()
                                                  .flatMap(l -> Stream.of(l.stream()
+                                                                          .map(transformIfNecessary(polygon.getCrs()))
                                                                           .flatMap(coordinate -> Stream.of(coordinate.accept(this)))
                                                                           .collect(Collectors.joining(",", "(", ")"))))
                                                  .collect(Collectors.joining(",", "(", ")")));
@@ -175,6 +263,7 @@ public class CqlToText implements CqlVisitor<String> {
                                                        .stream()
                                                        .flatMap(point -> point.getCoordinates()
                                                                               .stream())
+                                                       .map(transformIfNecessary(multiPoint.getCrs()))
                                                        .map(coordinate -> coordinate.accept(this))
                                                        .collect(Collectors.joining(",", "(", ")")));
     }
@@ -185,6 +274,7 @@ public class CqlToText implements CqlVisitor<String> {
                                                                  .stream()
                                                                  .flatMap(ls -> Stream.of(ls.getCoordinates()
                                                                                             .stream()
+                                                                                            .map(transformIfNecessary(multiLineString.getCrs()))
                                                                                             .map(coordinate -> coordinate.accept(this))
                                                                                             .collect(Collectors.joining(",", "(", ")"))))
                                                                  .collect(Collectors.joining(",", "(", ")")));
@@ -197,6 +287,7 @@ public class CqlToText implements CqlVisitor<String> {
                                                            .flatMap(p -> Stream.of(p.getCoordinates()
                                                                                     .stream()
                                                                                     .flatMap(l -> Stream.of(l.stream()
+                                                                                                             .map(transformIfNecessary(multiPolygon.getCrs()))
                                                                                                              .flatMap(coordinate -> Stream.of(coordinate.accept(this)))
                                                                                                              .collect(Collectors.joining(",", "(", ")"))))
                                                                                     .collect(Collectors.joining(",", "(", ")"))))
@@ -205,7 +296,7 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(Geometry.Envelope envelope, List<String> children) {
-        return String.format("ENVELOPE%s", envelope.getCoordinates()
+        return String.format("ENVELOPE%s", transformIfNecessary2(envelope.getCrs()).apply(envelope.getCoordinates())
                                                    .stream()
                                                    .map(String::valueOf)
                                                    .collect(Collectors.joining(",", "(", ")")));
@@ -227,14 +318,19 @@ public class CqlToText implements CqlVisitor<String> {
             if (interval.equals(Interval.of(TemporalLiteral.MIN_DATE, TemporalLiteral.MAX_DATE))) {
                 return "../..";
             }
-            if (interval.getStart().equals(TemporalLiteral.MIN_DATE)) {
-                return String.join("/", "..", interval.getEnd().toString());
+            if (interval.getStart()
+                        .equals(TemporalLiteral.MIN_DATE)) {
+                return String.join("/", "..", interval.getEnd()
+                                                      .toString());
             }
-            if (interval.getEnd().equals(TemporalLiteral.MAX_DATE)) {
-                return String.join("/", interval.getStart().toString(), "..");
+            if (interval.getEnd()
+                        .equals(TemporalLiteral.MAX_DATE)) {
+                return String.join("/", interval.getStart()
+                                                .toString(), "..");
             }
         }
-        return temporalLiteral.getValue().toString();
+        return temporalLiteral.getValue()
+                              .toString();
     }
 
     @Override
@@ -244,12 +340,14 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(Property property, List<String> children) {
-        if (!property.getNestedFilters().isEmpty()) {
+        if (!property.getNestedFilters()
+                     .isEmpty()) {
             Map<String, CqlFilter> nestedFilters = property.getNestedFilters();
             StringJoiner sj = new StringJoiner(".");
             for (String element : property.getPath()) {
                 if (nestedFilters.containsKey(element)) {
-                    sj.add(String.format("%s[%s]", element, nestedFilters.get(element).accept(this)));
+                    sj.add(String.format("%s[%s]", element, nestedFilters.get(element)
+                                                                         .accept(this)));
                 } else {
                     sj.add(element);
                 }

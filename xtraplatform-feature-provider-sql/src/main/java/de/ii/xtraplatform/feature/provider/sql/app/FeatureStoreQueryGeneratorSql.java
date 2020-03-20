@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.And;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.ImmutableCqlPredicate;
+import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNewNew;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
@@ -30,10 +31,11 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     private final FilterEncoderSqlNewNew filterEncoder;
     private final SqlDialect sqlDialect;
 
-    public FeatureStoreQueryGeneratorSql(SqlDialect sqlDialect, EpsgCrs nativeCrs) {
+    public FeatureStoreQueryGeneratorSql(SqlDialect sqlDialect, EpsgCrs nativeCrs,
+                                         CrsTransformerFactory crsTransformerFactory) {
         //this.filterEncoder = new FilterEncoderSqlNewImpl(nativeCrs);
         this.sqlDialect = sqlDialect;
-        this.filterEncoder = new FilterEncoderSqlNewNewImpl(this::getAliases, (attributeContainer, aliases) -> userFilter -> getJoins(attributeContainer, aliases, userFilter), nativeCrs, sqlDialect);
+        this.filterEncoder = new FilterEncoderSqlNewNewImpl(this::getAliases, (attributeContainer, aliases) -> userFilter -> getJoins(attributeContainer, aliases, userFilter), nativeCrs, sqlDialect,crsTransformerFactory);
     }
 
     @Override

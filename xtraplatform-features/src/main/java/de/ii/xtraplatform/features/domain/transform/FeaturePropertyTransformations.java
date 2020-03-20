@@ -3,6 +3,7 @@ package de.ii.xtraplatform.features.domain.transform;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public interface FeaturePropertyTransformations<T> {
@@ -23,7 +24,9 @@ public interface FeaturePropertyTransformations<T> {
         FeatureProperty transformedSchema = schema;
 
         for (FeaturePropertySchemaTransformer schemaTransformer : getSchemaTransformers()) {
-            transformedSchema = schemaTransformer.transform(transformedSchema);
+            if (Objects.nonNull(transformedSchema)) {
+                transformedSchema = schemaTransformer.transform(transformedSchema);
+            }
         }
 
         String transformedValue = getValue(wrapper);

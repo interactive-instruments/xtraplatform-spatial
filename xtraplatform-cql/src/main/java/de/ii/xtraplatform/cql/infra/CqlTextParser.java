@@ -3,6 +3,7 @@ package de.ii.xtraplatform.cql.infra;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -29,8 +30,8 @@ public class CqlTextParser {
         return parser.cqlFilter();
     }
 
-    public CqlFilter parse(String cql) throws CqlParseException {
-        return parse(cql, new CqlTextVisitor());
+    public CqlFilter parse(String cql, EpsgCrs defaultCrs) throws CqlParseException {
+        return parse(cql, new CqlTextVisitor(defaultCrs));
     }
 
     public CqlFilter parse(String cql, CqlTextVisitor visitor) throws CqlParseException {

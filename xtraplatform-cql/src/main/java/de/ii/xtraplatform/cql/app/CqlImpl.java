@@ -11,6 +11,8 @@ import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.infra.CqlTextParser;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.OgcCrs;
 import io.dropwizard.jackson.Jackson;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
@@ -47,7 +49,7 @@ public class CqlImpl implements Cql {
         switch (format) {
 
             case TEXT:
-                return cqlTextParser.parse(cql);
+                return cqlTextParser.parse(cql, OgcCrs.CRS84);
             case JSON:
                 try {
                     return cqlJsonMapper.readValue(cql, CqlFilter.class);

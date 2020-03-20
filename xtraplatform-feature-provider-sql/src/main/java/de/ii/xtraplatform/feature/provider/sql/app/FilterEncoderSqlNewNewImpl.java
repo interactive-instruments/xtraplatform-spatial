@@ -1,11 +1,14 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.primitives.Doubles;
 import de.ii.xtraplatform.cql.app.CqlToText;
 import de.ii.xtraplatform.cql.domain.Between;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.During;
 import de.ii.xtraplatform.cql.domain.Geometry;
+import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
 import de.ii.xtraplatform.cql.domain.ImmutableAfter;
 import de.ii.xtraplatform.cql.domain.ImmutableBefore;
 import de.ii.xtraplatform.cql.domain.ImmutableContains;
@@ -15,6 +18,7 @@ import de.ii.xtraplatform.cql.domain.ImmutableDuring;
 import de.ii.xtraplatform.cql.domain.ImmutableEquals;
 import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
 import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
+import de.ii.xtraplatform.cql.domain.ImmutablePolygon;
 import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
 import de.ii.xtraplatform.cql.domain.ImmutableTOverlaps;
 import de.ii.xtraplatform.cql.domain.ImmutableTouches;
@@ -22,14 +26,14 @@ import de.ii.xtraplatform.cql.domain.ImmutableWithin;
 import de.ii.xtraplatform.cql.domain.In;
 import de.ii.xtraplatform.cql.domain.IsNull;
 import de.ii.xtraplatform.cql.domain.Like;
-import de.ii.xtraplatform.cql.domain.Operand;
 import de.ii.xtraplatform.cql.domain.Property;
 import de.ii.xtraplatform.cql.domain.ScalarOperation;
 import de.ii.xtraplatform.cql.domain.SpatialOperation;
 import de.ii.xtraplatform.cql.domain.TOverlaps;
-import de.ii.xtraplatform.cql.domain.Temporal;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.cql.domain.TemporalOperation;
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
+import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNewNew;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
@@ -79,15 +83,33 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
     private final BiFunction<FeatureStoreAttributesContainer, List<String>, Function<Optional<CqlFilter>, String>> joinsGenerator;
     private final EpsgCrs nativeCrs;
     private final SqlDialect sqlDialect;
+    private final CrsTransformerFactory crsTransformerFactory;
+    java.util.function.BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>> coordinatesTransformer;
 
     public FilterEncoderSqlNewNewImpl(
             Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator,
             BiFunction<FeatureStoreAttributesContainer, List<String>, Function<Optional<CqlFilter>, String>> joinsGenerator,
-            EpsgCrs nativeCrs, SqlDialect sqlDialect) {
+            EpsgCrs nativeCrs, SqlDialect sqlDialect,
+            CrsTransformerFactory crsTransformerFactory) {
         this.aliasesGenerator = aliasesGenerator;
         this.joinsGenerator = joinsGenerator;
         this.nativeCrs = nativeCrs;
         this.sqlDialect = sqlDialect;
+        this.crsTransformerFactory = crsTransformerFactory;
+        this.coordinatesTransformer = this::transformCoordinatesIfNecessary;
+    }
+
+    private List<Double> transformCoordinatesIfNecessary(List<Double> coordinates, Optional<EpsgCrs> sourceCrs) {
+
+        if (sourceCrs.isPresent() && !Objects.equals(sourceCrs.get(), nativeCrs)) {
+            Optional<CrsTransformer> transformer = crsTransformerFactory.getTransformer(sourceCrs.get(), nativeCrs);
+            if (transformer.isPresent()) {
+                double[] transformed = transformer.get()
+                                                  .transform(Doubles.toArray(coordinates), coordinates.size() / 2, false);
+                return Doubles.asList(transformed);
+            }
+        }
+        return coordinates;
     }
 
     @Override
@@ -140,6 +162,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         private final FeatureStoreInstanceContainer instanceContainer;
 
         private CqlToSql(FeatureStoreInstanceContainer instanceContainer) {
+            super(coordinatesTransformer);
             this.instanceContainer = instanceContainer;
         }
 
@@ -170,9 +193,12 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             }
 
             Optional<CqlFilter> userFilter;
-            if (!property.getNestedFilters().isEmpty())  {
+            if (!property.getNestedFilters()
+                         .isEmpty()) {
                 Map<String, CqlFilter> userFilters = property.getNestedFilters();
-                userFilter = userFilters.values().stream().findFirst();
+                userFilter = userFilters.values()
+                                        .stream()
+                                        .findFirst();
             } else {
                 userFilter = Optional.empty();
             }
@@ -181,7 +207,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                    .stream()
                                                    .map(s -> "A" + s)
                                                    .collect(Collectors.toList());
-            String join = joinsGenerator.apply(table.get(), aliases).apply(userFilter);
+            String join = joinsGenerator.apply(table.get(), aliases)
+                                        .apply(userFilter);
             String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column.get());
 
             return String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %%1$s%5$s%%2$s)", instanceContainer.getName(), aliases.get(0), instanceContainer.getSortKey(), join, qualifiedColumn);
@@ -192,7 +219,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             if (Objects.equals(function.getName(), "interval")) {
                 String start = children.get(0);
                 String end = children.get(1);
-                String endColumn = end.substring(end.indexOf("%1$s")+4, end.indexOf("%2$s"));
+                String endColumn = end.substring(end.indexOf("%1$s") + 4, end.indexOf("%2$s"));
 
                 return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
             } else if (Objects.equals(function.getName(), "position")) {
@@ -268,8 +295,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     literalInterval = literalInterval.replaceAll("0000-01-01T00:00:00Z", "-infinity");
                 } else {
                     Instant instant = (Instant) temporalOperation.getValue()
-                                                                   .get()
-                                                                   .getValue();
+                                                                 .get()
+                                                                 .getValue();
                     literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", instant, instant);
                 }
 
@@ -294,59 +321,49 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         @Override
         public String visit(Geometry.Point point, List<String> children) {
-            //TODO: has to be in nativeCrs, transform it not
-            EpsgCrs crs = point.getCrs()
-                               .orElse(nativeCrs);
-            return String.format("ST_GeomFromText('%s',%s)", super.visit(point, children), crs.getCode());
+            return String.format("ST_GeomFromText('%s',%s)", super.visit(point, children), nativeCrs.getCode());
         }
 
         @Override
         public String visit(Geometry.LineString lineString, List<String> children) {
-            //TODO: has to be in nativeCrs, transform it not
-            EpsgCrs crs = lineString.getCrs()
-                                    .orElse(nativeCrs);
-            return String.format("ST_GeomFromText('%s',%s)", super.visit(lineString, children), crs.getCode());
+            return String.format("ST_GeomFromText('%s',%s)", super.visit(lineString, children), nativeCrs.getCode());
         }
 
         @Override
         public String visit(Geometry.Polygon polygon, List<String> children) {
-            //TODO: has to be in nativeCrs, transform it not
-            EpsgCrs crs = polygon.getCrs()
-                                 .orElse(nativeCrs);
-            return String.format("ST_GeomFromText('%s',%s)", super.visit(polygon, children), crs.getCode());
+            return String.format("ST_GeomFromText('%s',%s)", super.visit(polygon, children), nativeCrs.getCode());
         }
 
         @Override
         public String visit(Geometry.MultiPoint multiPoint, List<String> children) {
-            //TODO: has to be in nativeCrs, transform it not
-            EpsgCrs crs = multiPoint.getCrs()
-                                    .orElse(nativeCrs);
-            return String.format("ST_GeomFromText('%s',%s)", super.visit(multiPoint, children), crs.getCode());
+            return String.format("ST_GeomFromText('%s',%s)", super.visit(multiPoint, children), nativeCrs.getCode());
         }
 
         @Override
         public String visit(Geometry.MultiLineString multiLineString, List<String> children) {
-            //TODO: has to be in nativeCrs, transform it not
-            EpsgCrs crs = multiLineString.getCrs()
-                                         .orElse(nativeCrs);
-            return String.format("ST_GeomFromText('%s',%s)", super.visit(multiLineString, children), crs.getCode());
+            return String.format("ST_GeomFromText('%s',%s)", super.visit(multiLineString, children), nativeCrs.getCode());
         }
 
         @Override
         public String visit(Geometry.MultiPolygon multiPolygon, List<String> children) {
-            //TODO: has to be in nativeCrs, transform it not
-            EpsgCrs crs = multiPolygon.getCrs()
-                                      .orElse(nativeCrs);
-            return String.format("ST_GeomFromText('%s',%s)", super.visit(multiPolygon, children), crs.getCode());
+            return String.format("ST_GeomFromText('%s',%s)", super.visit(multiPolygon, children), nativeCrs.getCode());
         }
 
         @Override
         public String visit(Geometry.Envelope envelope, List<String> children) {
-            List<Double> coordinates = envelope.getCoordinates();
-            //TODO: has to be in nativeCrs, transform it not
-            EpsgCrs crs = envelope.getCrs()
-                                  .orElse(nativeCrs);
-            return String.format("ST_GeomFromText('POLYGON((%1$s %2$s,%3$s %2$s,%3$s %4$s,%1$s %4$s,%1$s %2$s))',%5$s)", coordinates.get(0), coordinates.get(1), coordinates.get(2), coordinates.get(3), crs.getCode());
+            List<Double> c = envelope.getCoordinates();
+            List<Coordinate> coordinates = ImmutableList.of(
+                    Coordinate.of(c.get(0), c.get(1)),
+                    Coordinate.of(c.get(2), c.get(1)),
+                    Coordinate.of(c.get(2), c.get(3)),
+                    Coordinate.of(c.get(0), c.get(3)),
+                    Coordinate.of(c.get(0), c.get(1))
+            );
+            Geometry.Polygon polygon = new ImmutablePolygon.Builder().addCoordinates(coordinates)
+                                                                     .crs(envelope.getCrs())
+                                                                     .build();
+
+            return visit(polygon, ImmutableList.of());
         }
     }
 

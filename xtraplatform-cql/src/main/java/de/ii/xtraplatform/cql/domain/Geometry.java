@@ -154,6 +154,12 @@ public interface Geometry<T> extends CqlNode {
                                                   .build();
         }
 
+        static Envelope of(double xmin, double ymin, double xmax, double ymax, EpsgCrs crs) {
+            return new ImmutableEnvelope.Builder().addCoordinates(xmin, ymin, xmax, ymax)
+                                                  .crs(crs)
+                                                  .build();
+        }
+
         @JsonIgnore
         @Override
         default Type getType() {

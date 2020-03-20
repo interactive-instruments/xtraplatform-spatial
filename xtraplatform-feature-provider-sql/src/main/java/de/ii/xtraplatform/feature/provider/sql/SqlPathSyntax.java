@@ -256,7 +256,7 @@ public interface SqlPathSyntax {
 
     @Value.Derived
     default Pattern getColumnPathPattern() {
-        return Pattern.compile("(?<" + MatcherGroups.PATH + ">" + "(?:" + getPathSeparator() + getTablePatternString() + ")+)" + getPathSeparator() + "(?<" + MatcherGroups.COLUMNS + ">" + getColumnPattern() + ")" + "(?<" + MatcherGroups.PATH_FLAGS + ">" + getFlagsPattern() + ")?");
+        return Pattern.compile("^(?<" + MatcherGroups.PATH + ">" + "(?:" + getPathSeparator() + getTablePatternString() + ")+)" + getPathSeparator() + "(?<" + MatcherGroups.COLUMNS + ">" + getColumnPattern() + ")" + "(?<" + MatcherGroups.PATH_FLAGS + ">" + getFlagsPattern() + ")?$");
     }
 
     @Value.Default

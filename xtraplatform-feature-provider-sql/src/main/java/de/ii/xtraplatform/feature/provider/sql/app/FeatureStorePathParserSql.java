@@ -17,6 +17,8 @@ import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelatedContainer;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
@@ -32,6 +34,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class FeatureStorePathParserSql implements FeatureStorePathParser {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureStorePathParserSql.class);
 
     private final SqlPathSyntax syntax;
     private final SqlFeatureTypeParser mappingParser;
@@ -117,6 +121,8 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                .queryable(queryable.get())
                                                .isSpatial(isSpatial)
                                                .build());
+        } else {
+            LOGGER.warn("Invalid path in provider configuration: {}", path);
         }
 
         return Optional.empty();
