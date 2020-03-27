@@ -13,6 +13,7 @@ import akka.util.ByteString;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.akka.http.Http;
 import de.ii.xtraplatform.api.exceptions.BadRequest;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.Feature;
@@ -52,6 +53,7 @@ import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Provides;
+import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.codehaus.staxmate.SMInputFactory;
 import org.slf4j.Logger;
@@ -97,9 +99,11 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
     private final FeatureQueryEncoderWfs queryEncoder;
     private final MappingStatus mappingStatus;
     private final FeatureProviderDataTransformer data;
+    private final Http http;
 
     FeatureProviderWfs(@Property(name = ".data") FeatureProviderDataTransformer data,
-                       @Property(name = ".connector") WfsConnector connector) {
+                       @Property(name = ".connector") WfsConnector connector,
+                       @Requires Http http) {
         ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
 
         this.wfsRequestEncoder = new WfsRequestEncoder();
@@ -147,6 +151,8 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
         this.mappingStatus = data.getMappingStatus();
 
         this.data = data;
+
+        this.http = http;
     }
 
     //@Override
@@ -394,7 +400,7 @@ public class FeatureProviderWfs implements FeatureProvider2, FeatureQueries, Fea
         InputStream source = connector.runWfsOperation(new DescribeFeatureType());
 
         // create mappings
-        GMLSchemaParser gmlSchemaParser = new GMLSchemaParser(ImmutableList.of(schemaConsumer), baseUri);
+        GMLSchemaParser gmlSchemaParser = new GMLSchemaParser(ImmutableList.of(schemaConsumer), baseUri, http.getDefaultClient());
 
         gmlSchemaParser.parse(source, featureTypesByNamespace, taskProgress);
     }

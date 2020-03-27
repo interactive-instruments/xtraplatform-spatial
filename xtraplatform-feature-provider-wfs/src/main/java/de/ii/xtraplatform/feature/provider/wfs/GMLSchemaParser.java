@@ -20,6 +20,7 @@ import com.sun.xml.xsom.XSSchemaSet;
 import com.sun.xml.xsom.XSTerm;
 import com.sun.xml.xsom.XSType;
 import com.sun.xml.xsom.parser.XSOMParser;
+import de.ii.xtraplatform.akka.http.HttpClient;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
@@ -56,11 +57,11 @@ public class GMLSchemaParser {
     private final URI baseURI;
     private EntityResolver entityResolver;
 
-    public GMLSchemaParser(List<FeatureProviderSchemaConsumer> analyzers, URI baseURI) {
-        this(analyzers, baseURI, new OGCEntityResolver());
+    public GMLSchemaParser(List<FeatureProviderSchemaConsumer> analyzers, URI baseURI, HttpClient httpClient) {
+        this(analyzers, baseURI, new OGCEntityResolver(httpClient));
     }
 
-    public GMLSchemaParser(List<FeatureProviderSchemaConsumer> analyzers, URI baseURI, EntityResolver entityResolver) {
+    private GMLSchemaParser(List<FeatureProviderSchemaConsumer> analyzers, URI baseURI, EntityResolver entityResolver) {
         this.analyzers = analyzers;
         this.currentPath = new XMLPathTracker();
         this.abstractObjectDecl = new ArrayList<XSElementDecl>();
