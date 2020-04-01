@@ -10,7 +10,7 @@ package de.ii.xtraplatform.codelists;
 import java.util.Map;
 import java.util.Optional;
 
-
+@Deprecated // use EntityRegistry instead
 public interface CodelistRegistry {
 
     Map<String, Codelist> getCodelists();

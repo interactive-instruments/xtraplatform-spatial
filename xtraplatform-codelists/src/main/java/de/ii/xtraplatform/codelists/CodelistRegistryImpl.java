@@ -26,7 +26,7 @@ import java.util.Optional;
 @Provides
 @Instantiate
 @Wbp(
-        filter = "(objectClass=de.ii.ldproxy.codelists.Codelist)",
+        filter = "(objectClass=de.ii.xtraplatform.codelists.Codelist)",
         onArrival = "onArrival",
         onDeparture = "onDeparture")
 public class CodelistRegistryImpl implements CodelistRegistry {
