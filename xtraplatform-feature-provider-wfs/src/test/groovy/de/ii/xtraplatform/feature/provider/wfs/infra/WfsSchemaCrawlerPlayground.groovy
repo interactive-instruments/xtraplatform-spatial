@@ -1,6 +1,7 @@
 package de.ii.xtraplatform.feature.provider.wfs.infra
 
 import de.ii.xtraplatform.feature.provider.wfs.domain.ImmutableConnectionInfoWfsHttp
+import de.ii.xtraplatform.features.domain.FeatureProperty
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -39,7 +40,21 @@ class WfsSchemaCrawlerPlayground extends Specification {
 
         then:
 
-        featureTypeList.size() > 0
-
+        featureTypeList.size() == 6
+        featureTypeList.get(0).name == "Flurstueck"
+        featureTypeList.get(0).properties.containsKey("id")
+        featureTypeList.get(0).properties.get("id").role.get() == FeatureProperty.Role.ID
+        featureTypeList.get(0).properties.get("id").type == FeatureProperty.Type.STRING
+        featureTypeList.get(0).properties.get("id").path == "@id"
+        featureTypeList.get(0).properties.containsKey("kreis")
+        featureTypeList.get(0).properties.get("kreis").additionalInfo.get("multiple") == "false"
+        featureTypeList.get(0).properties.get("kreis").type == FeatureProperty.Type.STRING
+        featureTypeList.get(0).properties.get("kreis").path == "kreis"
+        featureTypeList.get(0).properties.containsKey("geometrie")
+        featureTypeList.get(0).properties.get("geometrie").type == FeatureProperty.Type.GEOMETRY
+        featureTypeList.get(0).properties.get("geometrie").path == "geometrie"
+        featureTypeList.get(0).properties.get("geometrie").additionalInfo.get("geometryType") == "MULTI_POLYGON"
+        featureTypeList.get(0).properties.get("geometrie").additionalInfo.get("crs") == "25832"
+        featureTypeList.get(0).properties.get("geometrie").additionalInfo.get("multiple") == "false"
     }
 }
