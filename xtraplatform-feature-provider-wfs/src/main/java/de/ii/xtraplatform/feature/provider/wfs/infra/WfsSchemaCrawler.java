@@ -59,11 +59,12 @@ public class WfsSchemaCrawler {
         wfsRequestEncoder.setNsStore(new XMLNamespaceNormalizer(connectionInfo.getNamespaces()));
     }
 
-    public List<FeatureType> parseSchema(Map<String, QName> featureTypes) {
+    public List<FeatureType> parseSchema() {
 
         MetadataConsumer metadataConsumer = new MetadataConsumer();
         analyzeFeatureTypesWithDescribeGetCapabilities(metadataConsumer);
         Map<String, String> crsMap = metadataConsumer.getCrsMap();
+        Map<String, QName> featureTypes = metadataConsumer.getFeatureTypes();
         SchemaConsumer schemaConsumer = new SchemaConsumer(crsMap);
         analyzeFeatureTypes(schemaConsumer, featureTypes, new TaskProgressNoop());
 
@@ -287,31 +288,49 @@ public class WfsSchemaCrawler {
 
     static class MetadataConsumer extends AbstractFeatureProviderMetadataConsumer {
 
+        private final XMLNamespaceNormalizer namespaceNormalizer;
         private final Map<String, String> crsMap;
-        private String currentLocalName;
+        private final Map<String, QName> featureTypes;
+        private String currentFeatureTypeName;
         private String currentCrs;
 
         MetadataConsumer() {
             this.crsMap = new HashMap<>();
+            this.featureTypes = new HashMap<>();
+            this.namespaceNormalizer = new XMLNamespaceNormalizer();
         }
 
         public Map<String, String> getCrsMap() {
             return crsMap;
         }
 
+        public Map<String, QName> getFeatureTypes() {
+            return featureTypes;
+        }
+
+        @Override
+        public void analyzeNamespace(String prefix, String uri) {
+            if (!namespaceNormalizer.getNamespaces().containsKey(prefix)) {
+                namespaceNormalizer.addNamespace(prefix, uri);
+            }
+        }
+
         @Override
         public void analyzeFeatureType(String featureTypeName) {
-            String[] nameFull = featureTypeName.split(":");
-            currentLocalName = nameFull[nameFull.length - 1].toLowerCase();
+            if (featureTypeName.contains(":")) {
+                String[] name = featureTypeName.split(":");
+                String namespace = namespaceNormalizer.getNamespaceURI(name[0]);
+                currentFeatureTypeName = name[1];
+                featureTypes.put(currentFeatureTypeName.toLowerCase(), new QName(namespace, currentFeatureTypeName, name[0]));
+            }
         }
 
         @Override
         public void analyzeFeatureTypeDefaultCrs(String featureTypeName, String crs) {
-            if (Objects.nonNull(currentLocalName)) {
-                String[] crsFull = crs.split(":");
-                currentCrs = crsFull[crsFull.length - 1];
+            if (Objects.nonNull(currentFeatureTypeName)) {
+                currentCrs = namespaceNormalizer.getLocalName(crs);
             }
-            crsMap.put(currentLocalName, currentCrs);
+            crsMap.put(currentFeatureTypeName.toLowerCase(), currentCrs);
         }
 
     }

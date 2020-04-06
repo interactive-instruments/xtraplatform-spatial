@@ -5,8 +5,6 @@ import de.ii.xtraplatform.features.domain.FeatureProperty
 import spock.lang.Shared
 import spock.lang.Specification
 
-import javax.xml.namespace.QName
-
 class WfsSchemaCrawlerPlayground extends Specification {
 
     @Shared WfsSchemaCrawler wfsSchemaCrawler
@@ -25,36 +23,30 @@ class WfsSchemaCrawlerPlayground extends Specification {
 
     def 'parse schema'() {
 
-        given:
-        Map<String, QName> featureTypes = [
-                "flurstueck": new QName("http://repository.gdi-de.org/schemas/adv/produkt/alkis-vereinfacht/2.0", "Flurstueck"),
-                "flurstueckPunkt": new QName("http://repository.gdi-de.org/schemas/adv/produkt/alkis-vereinfacht/2.0", "FlurstueckPunkt"),
-                "gebaeudeBauwerk": new QName("http://repository.gdi-de.org/schemas/adv/produkt/alkis-vereinfacht/2.0", "GebaeudeBauwerk"),
-                "katasterBezirk": new QName("http://repository.gdi-de.org/schemas/adv/produkt/alkis-vereinfacht/2.0", "KatasterBezirk"),
-                "nutzung": new QName("http://repository.gdi-de.org/schemas/adv/produkt/alkis-vereinfacht/2.0", "Nutzung"),
-                "verwaltungsEinheit": new QName("http://repository.gdi-de.org/schemas/adv/produkt/alkis-vereinfacht/2.0", "VerwaltungsEinheit")
-        ]
-
         when:
-        def featureTypeList = wfsSchemaCrawler.parseSchema(featureTypes)
+        def featureTypeList = wfsSchemaCrawler.parseSchema()
 
         then:
 
         featureTypeList.size() == 6
-        featureTypeList.get(0).name == "Flurstueck"
-        featureTypeList.get(0).properties.containsKey("id")
-        featureTypeList.get(0).properties.get("id").role.get() == FeatureProperty.Role.ID
-        featureTypeList.get(0).properties.get("id").type == FeatureProperty.Type.STRING
-        featureTypeList.get(0).properties.get("id").path == "@id"
-        featureTypeList.get(0).properties.containsKey("kreis")
-        featureTypeList.get(0).properties.get("kreis").additionalInfo.get("multiple") == "false"
-        featureTypeList.get(0).properties.get("kreis").type == FeatureProperty.Type.STRING
-        featureTypeList.get(0).properties.get("kreis").path == "kreis"
-        featureTypeList.get(0).properties.containsKey("geometrie")
-        featureTypeList.get(0).properties.get("geometrie").type == FeatureProperty.Type.GEOMETRY
-        featureTypeList.get(0).properties.get("geometrie").path == "geometrie"
-        featureTypeList.get(0).properties.get("geometrie").additionalInfo.get("geometryType") == "MULTI_POLYGON"
-        featureTypeList.get(0).properties.get("geometrie").additionalInfo.get("crs") == "25832"
-        featureTypeList.get(0).properties.get("geometrie").additionalInfo.get("multiple") == "false"
+        featureTypeList.get(4).name == "Flurstueck"
+        featureTypeList.get(4).properties.containsKey("id")
+        featureTypeList.get(4).properties.get("id").role.get() == FeatureProperty.Role.ID
+        featureTypeList.get(4).properties.get("id").type == FeatureProperty.Type.STRING
+        featureTypeList.get(4).properties.get("id").path == "ueboname.@id"
+        featureTypeList.get(4).properties.containsKey("kreis")
+        featureTypeList.get(4).properties.get("kreis").additionalInfo.get("multiple") == "false"
+        featureTypeList.get(4).properties.get("kreis").type == FeatureProperty.Type.STRING
+        featureTypeList.get(4).properties.get("kreis").path == "kreis"
+        featureTypeList.get(4).properties.containsKey("geometrie")
+        featureTypeList.get(4).properties.get("geometrie").type == FeatureProperty.Type.GEOMETRY
+        featureTypeList.get(4).properties.get("geometrie").path == "geometrie"
+        featureTypeList.get(4).properties.get("geometrie").additionalInfo.get("geometryType") == "MULTI_POLYGON"
+        featureTypeList.get(4).properties.get("geometrie").additionalInfo.get("crs") == "25832"
+        featureTypeList.get(4).properties.get("geometrie").additionalInfo.get("multiple") == "false"
+        featureTypeList.get(4).properties.get("flaeche").type == FeatureProperty.Type.FLOAT
+        featureTypeList.get(4).properties.get("aktualit").type == FeatureProperty.Type.DATETIME
+        featureTypeList.get(4).properties.get("name").additionalInfo.get("multiple") == "true"
+
     }
 }
