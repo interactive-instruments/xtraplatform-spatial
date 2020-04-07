@@ -30,9 +30,10 @@ class CoordinatesParserSpec extends Specification {
 
         then:
 
-        1 * writer.onStart(2)
+        1 * writer.onStart()
         1 * writer.onX(coordinates,0,5)
         1 * writer.onY(coordinates,6,5)
+        1 * writer.onSeparator()
         1 * writer.onX(coordinates,13,5)
         1 * writer.onY("20.05".toCharArray(),0,5)
         1 * writer.onEnd()
@@ -56,9 +57,10 @@ class CoordinatesParserSpec extends Specification {
 
         then:
 
-        1 * writer.onStart(2)
+        1 * writer.onStart()
         1 * writer.onX(coordinates,0,5)
         1 * writer.onY("10.33".toCharArray(),0,5)
+        1 * writer.onSeparator()
         1 * writer.onX(coordinates,13,5)
         1 * writer.onY("20.05".toCharArray(),0,5)
         1 * writer.onEnd()
@@ -82,9 +84,10 @@ class CoordinatesParserSpec extends Specification {
 
         then:
 
-        1 * writer.onStart(2)
+        1 * writer.onStart()
         1 * writer.onX(coordinates,0,5)
         1 * writer.onY(coordinates,6,5)
+        1 * writer.onSeparator()
         1 * writer.onX(coordinates,13,5)
         1 * writer.onY("20.05".toCharArray(),0,5)
         1 * writer.onEnd()
@@ -108,9 +111,10 @@ class CoordinatesParserSpec extends Specification {
 
         then:
 
-        1 * writer.onStart(2)
+        1 * writer.onStart()
         1 * writer.onX(coordinates,0,5)
         1 * writer.onY("10.33".toCharArray(),0,5)
+        1 * writer.onSeparator()
         1 * writer.onX(coordinates2,2,5)
         1 * writer.onY("20.05".toCharArray(),0,5)
         1 * writer.onEnd()
@@ -134,9 +138,10 @@ class CoordinatesParserSpec extends Specification {
 
         then:
 
-        1 * writer.onStart(2)
+        1 * writer.onStart()
         1 * writer.onX(coordinates,0,5)
         1 * writer.onY(coordinates,6,5)
+        1 * writer.onSeparator()
         1 * writer.onX(coordinates2,1,5)
         1 * writer.onY("20.05".toCharArray(),0,5)
         1 * writer.onEnd()
@@ -160,9 +165,10 @@ class CoordinatesParserSpec extends Specification {
 
         then:
 
-        1 * writer.onStart(2)
+        1 * writer.onStart()
         1 * writer.onX(coordinates,0,5)
         1 * writer.onY(coordinates,6,5)
+        1 * writer.onSeparator()
         1 * writer.onX(coordinates2,0,5)
         1 * writer.onY("20.05".toCharArray(),0,5)
         1 * writer.onEnd()
@@ -184,10 +190,11 @@ class CoordinatesParserSpec extends Specification {
 
         then:
 
-        1 * writer.onStart(3)
+        1 * writer.onStart()
         1 * writer.onX(coordinates,0,5)
         1 * writer.onY(coordinates,6,5)
         1 * writer.onZ(coordinates,12,5)
+        1 * writer.onSeparator()
         1 * writer.onX(coordinates,19,5)
         1 * writer.onY(coordinates,25,5)
         1 * writer.onZ("15.65".toCharArray(),0,5)
@@ -210,9 +217,10 @@ class CoordinatesParserSpec extends Specification {
 
         then:
 
-        1 * writer.onStart(2)
+        1 * writer.onStart()
         1 * writer.onX(coordinates,0,5)
         1 * writer.onY(coordinates,6,5)
+        1 * writer.onSeparator()
         1 * writer.onX(coordinates,19,5)
         1 * writer.onY(coordinates,25,5)
         1 * writer.onEnd()

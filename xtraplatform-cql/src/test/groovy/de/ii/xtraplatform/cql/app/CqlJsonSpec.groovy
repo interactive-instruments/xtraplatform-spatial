@@ -508,7 +508,13 @@ class CqlJsonSpec extends Specification {
         {
              "within": {
                 "property": "location",
-                "value": { "bbox": [33.8,-118,34,-117.9] }
+                "value": { 
+                    "bbox": [33.8,-118,34,-117.9],
+                    "crs": {
+                        "code": 4326,
+                        "forceAxisOrder": "LON_LAT"
+                    }
+                }
               }
         }
         """
@@ -537,7 +543,11 @@ class CqlJsonSpec extends Specification {
                     "property": "location",
                     "value": {
                         "type": "Polygon",
-                        "coordinates": [[[-10.0, -10.0],[10.0, -10.0],[10.0, 10.0],[-10.0, -10.0]]]
+                        "coordinates": [[[-10.0, -10.0],[10.0, -10.0],[10.0, 10.0],[-10.0, -10.0]]],
+                        "crs": {
+                            "code": 4326,
+                            "forceAxisOrder": "LON_LAT"
+                        }
                     }
                 }
             }
@@ -574,7 +584,13 @@ class CqlJsonSpec extends Specification {
                 {
                    "within": {
                       "property": "geometry",
-                      "value": { "bbox": [33.8,-118,34,-117.9] }
+                      "value": { 
+                        "bbox": [33.8,-118,34,-117.9],
+                        "crs": {
+                            "code": 4326,
+                            "forceAxisOrder": "LON_LAT"
+                        }
+                      }
                    }
                 }
             ]

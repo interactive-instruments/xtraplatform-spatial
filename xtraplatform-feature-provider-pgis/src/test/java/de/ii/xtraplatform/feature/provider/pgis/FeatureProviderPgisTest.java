@@ -7,8 +7,6 @@
  */
 package de.ii.xtraplatform.feature.provider.pgis;
 
-import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
-
 /**
  * @author zahnen
  */

@@ -83,7 +83,7 @@ class SimplifyLineSpec extends Specification {
 
         then:
 
-        1 * next.onCoordinates([10.0, 10.0, 12.0, 9.0, 13.0, 10.0], 6, dimension)
+        1 * next.onCoordinates([10.0, 10.0, 11.0, 11.0, 12.0, 9.0, 13.0, 10.0], 8, dimension)
         0 * _
     }
 }

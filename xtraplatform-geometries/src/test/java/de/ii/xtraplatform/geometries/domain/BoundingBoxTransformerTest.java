@@ -10,7 +10,11 @@
  */
 package de.ii.xtraplatform.geometries.domain;
 
+import de.ii.xtraplatform.crs.domain.BoundingBox;
+import de.ii.xtraplatform.crs.domain.BoundingBoxTransformer;
+import de.ii.xtraplatform.crs.domain.CoordinateTuple;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import junit.framework.Assert;
 
 import java.util.Random;
@@ -128,6 +132,11 @@ public class BoundingBoxTransformerTest {
         }
 
         @Override
+        public double[] transform3d(double[] coordinates, int numberOfPoints, boolean swap) {
+            return new double[0];
+        }
+
+        @Override
         public double getSourceUnitEquivalentInMeters() {
             return 0;
         }
@@ -140,6 +149,16 @@ public class BoundingBoxTransformerTest {
         @Override
         public boolean needsCoordinateSwap() {
             return false;
+        }
+
+        @Override
+        public int getSourceDimension() {
+            return 2;
+        }
+
+        @Override
+        public int getTargetDimension() {
+            return 2;
         }
     }
 }

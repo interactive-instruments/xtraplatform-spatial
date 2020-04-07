@@ -60,13 +60,14 @@ public class SqlSchemaCrawler {
             e.printStackTrace();
             throw new IllegalStateException("could not parse schema");
         }
-        return getFeatureTypes(catalog);
+        Map<String, List<String>> geometry = getGeometry();
+
+        return getFeatureTypes(catalog, geometry);
 
     }
 
-    private List<FeatureType> getFeatureTypes(Catalog catalog) {
+    private List<FeatureType> getFeatureTypes(Catalog catalog, Map<String, List<String>> geometry) {
         ImmutableList.Builder<FeatureType> featureTypes = new ImmutableList.Builder<>();
-        Map<String, List<String>> geometry = getGeometry();
 
         for (final Schema schema : catalog.getSchemas()) {
 

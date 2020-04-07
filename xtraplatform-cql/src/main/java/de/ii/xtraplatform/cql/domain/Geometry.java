@@ -91,6 +91,12 @@ public interface Geometry<T> extends CqlNode {
                                                  .build();
         }
 
+        static Polygon of(EpsgCrs crs, List<Coordinate>... coordinates) {
+            return new ImmutablePolygon.Builder().crs(crs)
+                                                 .addCoordinates(coordinates)
+                                                 .build();
+        }
+
         @Override
         default Type getType() {
             return Type.Polygon;

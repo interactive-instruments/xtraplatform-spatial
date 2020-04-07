@@ -20,7 +20,7 @@ import java.util.function.BiFunction
 import java.util.function.Function
 
 class FilterEncoderSqlNewNewImplSpec extends Specification {
-
+/*
     @Shared
     FilterEncoderSqlNewNewImpl filterEncoder
 
@@ -97,5 +97,7 @@ class FilterEncoderSqlNewNewImplSpec extends Specification {
         actual == expected
 
     }
+
+ */
 
 }
