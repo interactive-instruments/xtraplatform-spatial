@@ -11,6 +11,7 @@ import akka.japi.Pair;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +28,32 @@ import java.util.stream.Stream;
  * @author zahnen
  */
 @Value.Immutable
-public abstract class SqlFeatureQuery {
+public abstract class SqlFeatureQuery implements FeatureStoreInstanceContainer {
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlFeatureQuery.class);
+
+    @Override
+    @Value.Lazy
+    public String getName() {
+        return getTableName();
+    }
+
+    @Override
+    @Value.Lazy
+    public String getSortKey() {
+        return getSortColumn();
+    }
+
+    @Override
+    @Value.Lazy
+    public List<String> getPath() {
+        return getPathElements(getPaths().get(0).substring(0, getPaths().get(0).lastIndexOf("/")));
+    }
+
+    @Override
+    @Value.Lazy
+    public String getInstanceContainerName() {
+        return getPathElements(getPaths().get(0)).get(0);
+    }
 
     protected abstract List<String> getPaths();
 
@@ -73,7 +98,7 @@ public abstract class SqlFeatureQuery {
 
         String limit2 = limit > 0 ? " LIMIT " + limit : "";
         String offset2 = offset > 0 ? " OFFSET " + offset : "";
-        String where = Strings.isNullOrEmpty(whereClause) ? "" : " WHERE " + cqlToSql(whereClause);
+        String where = Strings.isNullOrEmpty(whereClause) ? "" : " WHERE " + whereClause;
         String orderBy = IntStream.rangeClosed(1, sortFields.size())
                                   .boxed()
                                   .map(String::valueOf)

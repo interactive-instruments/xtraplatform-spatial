@@ -1,11 +1,43 @@
 apply plugin: 'scala'
 
-version = '2.2.0'
+sourceSets {
+    String sharedTestDir = project(':xtraplatform-feature-transformer-api').file("src/test/java")
+    test {
+        java.srcDir sharedTestDir
+    }
+    main {
+        scala {
+            outputDir = file("$buildDir/classes/scala/main")
+        }
+        java {
+            outputDir = file("$buildDir/classes/java/main")
+        }
+    }
+    /*main {
+        scala {
+            srcDirs = ['src/main/scala', 'src/main/java']
+        }
+        java {
+            srcDirs = []
+        }
+    }*/
+}
+
+tasks.compileJava.dependsOn compileScala
+tasks.compileScala.dependsOn.remove("compileJava")
 
 dependencies {
+    compile files("$sourceSets.main.scala.outputDir")
+
+    provided project(':xtraplatform-geometries')
+    provided project(':xtraplatform-crs')
+    provided project(':xtraplatform-features')
     provided project(':xtraplatform-feature-provider-api')
+    provided project(':xtraplatform-feature-transformer-api')
+    provided project(':xtraplatform-geotools')
 
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-entity-api'
 
     embedded (group: 'com.lightbend.akka', name: 'akka-stream-alpakka-slick_2.12', version: '0.19') {
         exclude  group: 'com.typesafe.akka', module: 'akka-stream_2.12'
@@ -15,7 +47,17 @@ dependencies {
         exclude  group: 'org.slf4j', module: 'slf4j-api'
     }
 
+    embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.2'
+
+    embedded group: 'us.fatehi', name: 'schemacrawler-api', version: '16.2.5'
+    embedded group: 'us.fatehi', name: 'schemacrawler-tools', version: '16.2.5'
+
+    testCompile project(':xtraplatform-feature-transformer-api')
     testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.18'
+
+    //TODO: gradle 6 fixtures
+    testImplementation(project(":xtraplatform-cql"))
+    //testImplementation(testFixtures(project(":xtraplatform-cql")))
 }
 
 jar {

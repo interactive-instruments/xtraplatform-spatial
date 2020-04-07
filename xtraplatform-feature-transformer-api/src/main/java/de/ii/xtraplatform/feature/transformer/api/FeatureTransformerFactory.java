@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.feature.transformer.api;
 
+import de.ii.xtraplatform.features.domain.FeatureTransformer;
+
 import java.io.OutputStream;
 
 /**

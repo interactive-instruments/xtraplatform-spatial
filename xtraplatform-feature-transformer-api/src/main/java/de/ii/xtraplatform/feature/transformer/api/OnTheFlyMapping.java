@@ -10,7 +10,7 @@
  */
 package de.ii.xtraplatform.feature.transformer.api;
 
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 
 import java.util.List;
 

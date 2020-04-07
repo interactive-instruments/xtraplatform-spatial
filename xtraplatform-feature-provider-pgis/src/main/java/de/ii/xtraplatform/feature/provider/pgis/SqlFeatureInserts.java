@@ -13,11 +13,11 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
+import de.ii.xtraplatform.feature.provider.sql.SQL_PATH_TYPE_DEPRECATED;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,7 +61,7 @@ public abstract class SqlFeatureInserts {
                   .stream()
                   .sorted(Comparator.comparing(SqlPathTree::getType))
                   .forEach(nestedPath1 -> {
-                      int defaultRowCount = nestedPath1.getType() != SqlPathTree.TYPE.ID_1_N && nestedPath1.getType() != SqlPathTree.TYPE.ID_M_N ? 1 : 0;
+                      int defaultRowCount = nestedPath1.getType() != SQL_PATH_TYPE_DEPRECATED.ID_1_N && nestedPath1.getType() != SQL_PATH_TYPE_DEPRECATED.ID_M_N ? 1 : 0;
                       int rowCount = multiplicities.getOrDefault(nestedPath1.getTableName(), ImmutableList.of(defaultRowCount))
                                                    .get(parentRow);
                       for (int i = 0; i < rowCount; i++) {
@@ -91,11 +91,11 @@ public abstract class SqlFeatureInserts {
                                               .filter(col -> !col.endsWith("/id"))
                                               .collect(Collectors.toList());*/
         ;
-        if (nestedPath.getType() == SqlPathTree.TYPE.MERGED) {
+        if (nestedPath.getType() == SQL_PATH_TYPE_DEPRECATED.MERGED) {
             //TODO fullPath
             columnPaths2.add(0, mainPath.getTableName() + ".id");
             columns2.add(0, "id");
-        } else if (nestedPath.getType() == SqlPathTree.TYPE.ID_1_N) {
+        } else if (nestedPath.getType() == SQL_PATH_TYPE_DEPRECATED.ID_1_N) {
             columnPaths2.add(0, parentPath.getTableName() + ".id");
             columns2.add(0, nestedPath.getJoinPathElements()
                                       .get(0)
@@ -118,8 +118,8 @@ public abstract class SqlFeatureInserts {
         }
         String finalColumnNames = columnNames;
 
-        String returningId = nestedPath.getType() != SqlPathTree.TYPE.ID_1_N ? " RETURNING id" : " RETURNING null";
-        Optional<String> returningName = nestedPath.getType() != SqlPathTree.TYPE.ID_1_N ? Optional.of(tableName + ".id") : Optional.empty();
+        String returningId = nestedPath.getType() != SQL_PATH_TYPE_DEPRECATED.ID_1_N ? " RETURNING id" : " RETURNING null";
+        Optional<String> returningName = nestedPath.getType() != SQL_PATH_TYPE_DEPRECATED.ID_1_N ? Optional.of(tableName + ".id") : Optional.empty();
 
         Function<NestedSqlInsertRow, Pair<String, Optional<Consumer<String>>>> mainQuery = nestedRow -> {
             NestedSqlInsertRow currentRow = nestedRow.getNested(nestedPath.getTrail(), parentRows);
@@ -138,14 +138,14 @@ public abstract class SqlFeatureInserts {
             return new Pair<>(query, returningName.map(name -> id -> currentRow.ids.put(name, id)));
         };
 
-        if (nestedPath.getType() != SqlPathTree.TYPE.REF)
+        if (nestedPath.getType() != SQL_PATH_TYPE_DEPRECATED.REF)
             queries.add(mainQuery);
 
-        if (nestedPath.getType() == SqlPathTree.TYPE.ID_M_N) {
+        if (nestedPath.getType() == SQL_PATH_TYPE_DEPRECATED.ID_M_N) {
             queries.addAll(toSqlRefs(parentPath, nestedPath, parentRows));
         }
 
-        if (nestedPath.getType() == SqlPathTree.TYPE.ID_1_1) {
+        if (nestedPath.getType() == SQL_PATH_TYPE_DEPRECATED.ID_1_1) {
             queries.addAll(toSqlRef(parentPath, nestedPath, parentRows));
         }
 
@@ -158,13 +158,13 @@ public abstract class SqlFeatureInserts {
     // --> 1 - (1) --> 1 - (1) --> 2 - (1,1) --> 1 - (1,1) --> 2 - (1,1) --> 2 - (1,2)
     public List<Function<NestedSqlInsertRow, Pair<String, Optional<Consumer<String>>>>> toSql2(SqlPathTree parentParentPath, SqlPathTree parentPath, SqlPathTree mainPath, Map<String, List<Integer>> rows, List<Integer> parentRows) {
         //Stream<NestedSqlInsert> stream = type == TYPE.MERGED ? Stream.concat(nestedPaths.stream(), Stream.of(this)) : Stream.concat(Stream.of(this), nestedPaths.stream());
-        Stream<SqlPathTree> stream = parentPath.getType() == SqlPathTree.TYPE.MERGED ? Stream.concat(parentPath.getChildren()
-                                                                                                               .stream(), Stream.of(parentPath)) : Stream.concat(Stream.of(parentPath), parentPath.getChildren()
+        Stream<SqlPathTree> stream = parentPath.getType() == SQL_PATH_TYPE_DEPRECATED.MERGED ? Stream.concat(parentPath.getChildren()
+                                                                                                                       .stream(), Stream.of(parentPath)) : Stream.concat(Stream.of(parentPath), parentPath.getChildren()
                                                                                                                                    .stream());
 
         SqlPathTree main = mainPath != null ? mainPath : Stream.concat(Stream.of(parentPath), parentPath.getChildren()
                                                                                                         .stream())
-                                                               .filter(nestedPath -> nestedPath.getType() == SqlPathTree.TYPE.MAIN)
+                                                               .filter(nestedPath -> nestedPath.getType() == SQL_PATH_TYPE_DEPRECATED.MAIN)
                                                                .findFirst()
                                                                .orElse(null);
 
@@ -178,7 +178,7 @@ public abstract class SqlFeatureInserts {
                     if (nestedPath.equals(parentPath)) {
                         builder.addAll(toSql(parentParentPath, main, nestedPath, parentRows));
                     } else {
-                        int defaultRowCount = nestedPath.getType() != SqlPathTree.TYPE.ID_1_N && nestedPath.getType() != SqlPathTree.TYPE.ID_M_N ? 1 : 0;
+                        int defaultRowCount = nestedPath.getType() != SQL_PATH_TYPE_DEPRECATED.ID_1_N && nestedPath.getType() != SQL_PATH_TYPE_DEPRECATED.ID_M_N ? 1 : 0;
                         //TODO ???
                         // rows rr 1 oa 2 fk 0,3
                         // parentRows ft 0 oo 0 rr 0 oa 0 1 fk 0

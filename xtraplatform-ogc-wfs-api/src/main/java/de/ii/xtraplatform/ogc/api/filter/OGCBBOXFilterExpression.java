@@ -10,7 +10,7 @@
  */
 package de.ii.xtraplatform.ogc.api.filter;
 
-import de.ii.xtraplatform.crs.api.BoundingBox;
+import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.util.xml.XMLDocument;
@@ -58,9 +58,9 @@ public class OGCBBOXFilterExpression extends OGCFilterExpression {
         Element envelope = doc.createElementNS(GML.getNS(version.getGmlVersion()), GML.getWord(version.getGmlVersion(), GML.VOCABULARY.ENVELOPE));
 
         if (version.isGreaterOrEqual(FES.VERSION._2_0_0)) {
-            envelope.setAttribute(GML.getWord(version.getGmlVersion(), GML.VOCABULARY.SRSNAME), env.getEpsgCrs().getAsUrn());
+            envelope.setAttribute(GML.getWord(version.getGmlVersion(), GML.VOCABULARY.SRSNAME), env.getEpsgCrs().toUrnString());
         } else {
-            envelope.setAttribute(GML.getWord(version.getGmlVersion(), GML.VOCABULARY.SRSNAME), env.getEpsgCrs().getAsSimple());
+            envelope.setAttribute(GML.getWord(version.getGmlVersion(), GML.VOCABULARY.SRSNAME), env.getEpsgCrs().toSimpleString());
         }
 
         bbox.appendChild(envelope);
@@ -81,7 +81,7 @@ public class OGCBBOXFilterExpression extends OGCFilterExpression {
         String bbox = min+","+max;
         
 //        if( env.getEpsgCrs().getCode() != 4326) {
-            bbox += ","+env.getEpsgCrs().getAsSimple();
+            bbox += ","+env.getEpsgCrs().toSimpleString();
   //      }
         params.put(FES.getWord(version, FES.VOCABULARY.BBOX).toUpperCase(), bbox);     
     }

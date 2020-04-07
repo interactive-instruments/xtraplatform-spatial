@@ -20,7 +20,7 @@ import com.sun.xml.xsom.XSSchemaSet;
 import com.sun.xml.xsom.XSTerm;
 import com.sun.xml.xsom.XSType;
 import com.sun.xml.xsom.parser.XSOMParser;
-import de.ii.xtraplatform.feature.transformer.api.FeatureProviderSchemaConsumer;
+import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
 import de.ii.xtraplatform.scheduler.api.TaskProgress;

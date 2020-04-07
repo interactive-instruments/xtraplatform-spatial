@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.ogc.api.wfs;
 
 import com.vividsolutions.jts.geom.Envelope;
-import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.WFS;
 import org.eclipse.xsd.XSDElementDeclaration;
@@ -28,6 +28,7 @@ import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory;
 import org.opengis.filter.expression.Literal;
 import org.opengis.filter.spatial.BBOX;
+import org.opengis.geometry.BoundingBox;
 import org.opengis.temporal.Instant;
 import org.opengis.temporal.Period;
 import org.picocontainer.MutablePicoContainer;
@@ -105,16 +106,17 @@ public class FilterEncoder {
             return box.getExpression1();
         }
 
+        //TODO: test if still working
         @Override
         public List getProperties(Object object, XSDElementDeclaration element) throws Exception {
-            BBOX box = (BBOX) object;
+            BoundingBox box = ((BBOX) object).getBounds();
             List properties = new ArrayList();
             Object env = null;
 
-            if (box.getSRS() != null) {
-                env = new CrsEnvelope(box.getMinX(), box.getMaxX(), box.getMinY(), box.getMaxY(), box.getSRS());
+            if (box.getCoordinateReferenceSystem() != null) {
+                env = new CrsEnvelope(box.getMinX(), box.getMaxX(), box.getMinY(), box.getMaxY(), box.getCoordinateReferenceSystem().toString());
             } else {
-                env = new CrsEnvelope(box.getMinX(), box.getMaxX(), box.getMinY(), box.getMaxY(), new EpsgCrs(4326).getAsUri());
+                env = new CrsEnvelope(box.getMinX(), box.getMaxX(), box.getMinY(), box.getMaxY(), EpsgCrs.of(4326).toUriString());
             }
 
             properties.add(new Object[]{ENVELOPE_PARTICLE2, env});

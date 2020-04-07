@@ -15,12 +15,11 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
 import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import org.immutables.value.Value;
 
 import java.util.AbstractMap;

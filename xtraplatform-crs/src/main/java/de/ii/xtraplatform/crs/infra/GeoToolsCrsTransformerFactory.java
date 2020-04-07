@@ -1,0 +1,159 @@
+/**
+ * Copyright 2019 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+/**
+ * bla
+ */
+package de.ii.xtraplatform.crs.infra;
+
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
+import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
+import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
+import org.apache.felix.ipojo.annotations.Component;
+import org.apache.felix.ipojo.annotations.Instantiate;
+import org.apache.felix.ipojo.annotations.Provides;
+import org.geotools.referencing.CRS;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.crs.SingleCRS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import static de.ii.xtraplatform.api.functional.LambdaWithException.mayThrow;
+
+/**
+ *
+ * @author zahnen
+ */
+@Component
+@Provides
+@Instantiate
+public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GeoToolsCrsTransformerFactory.class);
+
+    private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
+    private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
+
+    public GeoToolsCrsTransformerFactory() {
+        this.crsCache = new HashMap<>();
+        this.transformerCache = new HashMap<>();
+
+        //TODO: at service start
+        /*
+        LOGGER.debug("warming up GeoTools ...");
+
+        try {
+            new GeoToolsCrsTransformer(CRS.decode("EPSG:4326"), CRS.decode("EPSG:4258"), new EpsgCrs(4326), new EpsgCrs(4258));
+        } catch (Throwable ex) {
+            //ignore
+        }
+
+        LOGGER.debug("done");
+
+         */
+    }
+
+    @Override
+    public boolean isCrsSupported(EpsgCrs crs) {
+        try {
+            crsCache.computeIfAbsent(crs, mayThrow(ignore -> CRS.decode(applyWorkarounds(crs).toSimpleString(), crs.getForceAxisOrder() == Force.LON_LAT)));
+        } catch (Throwable e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean isCrs3d(EpsgCrs crs) {
+        return isCrsSupported(crs) && crsCache.get(crs).getCoordinateSystem().getDimension() == 3;
+    }
+
+    @Override
+    public Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
+        if (Objects.equals(sourceCrs, targetCrs)) {
+            return Optional.empty();
+        }
+        if (!isCrsSupported(sourceCrs)) {
+            throw new IllegalArgumentException(String.format("CRS %s is not supported.", sourceCrs.toSimpleString()));
+        }
+        if (!isCrsSupported(targetCrs)) {
+            throw new IllegalArgumentException(String.format("CRS %s is not supported.", targetCrs.toSimpleString()));
+        }
+
+        transformerCache.computeIfAbsent(sourceCrs, ignore -> new HashMap<>());
+        Map<EpsgCrs, CrsTransformer> transformerCacheForSourceCrs = transformerCache.get(sourceCrs);
+        transformerCacheForSourceCrs.computeIfAbsent(targetCrs, ignore -> createCrsTransformer(sourceCrs, targetCrs));
+
+        return Optional.ofNullable(transformerCacheForSourceCrs.get(targetCrs));
+    }
+
+    private CrsTransformer createCrsTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
+        boolean is3dTo3d = isCrs3d(sourceCrs) && isCrs3d(targetCrs);
+        boolean is3dTo2d = isCrs3d(sourceCrs) && !isCrs3d(targetCrs);
+        boolean is2dTo3d = !isCrs3d(sourceCrs) && isCrs3d(targetCrs);
+        int sourceDimension = isCrs3d(sourceCrs) ? 3 : 2;
+        int targetDimension = is3dTo3d ? 3 : 2;
+        CoordinateReferenceSystem geotoolsSourceCrs = isCrs3d(sourceCrs) ? CRS.getHorizontalCRS(crsCache.get(sourceCrs)) : crsCache.get(sourceCrs);
+        CoordinateReferenceSystem geotoolsTargetCrs = is3dTo3d || is2dTo3d ? CRS.getHorizontalCRS(crsCache.get(targetCrs)) : crsCache.get(targetCrs);
+        EpsgCrs epsgTargetCrs = is2dTo3d ? EpsgCrs.fromString(geotoolsTargetCrs.getIdentifiers().iterator().next().toString()) : targetCrs;
+
+        try {
+            return new GeoToolsCrsTransformer(geotoolsSourceCrs, geotoolsTargetCrs, sourceCrs, epsgTargetCrs, sourceDimension, targetDimension);
+        } catch (FactoryException ex) {
+            LOGGER.debug("GeoTools error", ex);
+            throw new IllegalArgumentException(ex.getMessage(), ex);
+        }
+
+
+        /*if (preserveHeight) {
+            SingleCRS horizontalSourceCrs = CRS.getHorizontalCRS(crsCache.get(sourceCrs));
+            SingleCRS horizontalTargetCrs = CRS.getHorizontalCRS(crsCache.get(targetCrs));
+
+            try {
+                return new GeoToolsCrsTransformer(horizontalSourceCrs, horizontalTargetCrs, sourceCrs, targetCrs, 3, 3);
+            } catch (FactoryException ex) {
+                LOGGER.debug("GeoTools error", ex);
+                throw new IllegalArgumentException(ex.getMessage(), ex);
+            }
+        }
+
+        if (dropHeight) {
+            SingleCRS horizontalSourceCrs = CRS.getHorizontalCRS(crsCache.get(sourceCrs));
+
+            try {
+                return new GeoToolsCrsTransformer(horizontalSourceCrs, crsCache.get(targetCrs), sourceCrs, targetCrs, 3, 2);
+            } catch (FactoryException ex) {
+                LOGGER.debug("GeoTools error", ex);
+                throw new IllegalArgumentException(ex.getMessage(), ex);
+            }
+        }
+
+        try {
+            return new GeoToolsCrsTransformer(crsCache.get(sourceCrs), crsCache.get(targetCrs), sourceCrs, targetCrs, 2, 2);
+        } catch (FactoryException ex) {
+            LOGGER.debug("GeoTools error", ex);
+            throw new IllegalArgumentException(ex.getMessage(), ex);
+        }*/
+    }
+
+    private EpsgCrs applyWorkarounds(EpsgCrs crs) {
+        // ArcGIS still uses code 102100, but GeoTools does not support it anymore
+        if (crs.getCode() == 102100) {
+            return new ImmutableEpsgCrs.Builder().from(crs).code(3857).build();
+        }
+        return crs;
+    }
+}

@@ -7,8 +7,10 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs;
 
-import de.ii.xtraplatform.crs.api.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.AbstractFeatureProviderMetadataConsumer;
+import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
+import de.ii.xtraplatform.feature.provider.wfs.domain.ImmutableConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureProviderDataTransformer;
 import de.ii.xtraplatform.ogc.api.WFS;
@@ -69,7 +71,7 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
     @Override
     public void analyzeFeatureTypeDefaultCrs(String featureTypeName, String crs) {
         //TODO usage with Immutable Builder
-        featureProviderDataBuilder.nativeCrs(new EpsgCrs(crs));
+        featureProviderDataBuilder.nativeCrs(EpsgCrs.fromString(crs));
     }
 
     @Override
@@ -95,7 +97,7 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
         throw new WFSException(ex.getMessage(), ex);
     }
 
-    static URI parseAndCleanWfsUrl(URI inUri) {
+    public static URI parseAndCleanWfsUrl(URI inUri) {
         URIBuilder outUri = new URIBuilder(inUri).removeQuery();
 
         if (inUri.getQuery() != null && !inUri.getQuery()

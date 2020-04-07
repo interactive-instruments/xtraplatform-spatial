@@ -1,6 +1,6 @@
 /**
- * Copyright 2020 interactive instruments GmbH
- *
+ * Copyright 2019 interactive instruments GmbH
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -9,18 +9,20 @@ package de.ii.xtraplatform.feature.transformer.api;
 
 import akka.stream.Shape;
 import akka.stream.stage.GraphStageLogic;
-import com.codahale.metrics.Timer;
 import com.fasterxml.aalto.AsyncByteArrayFeeder;
 import com.fasterxml.aalto.AsyncXMLInputFactory;
 import com.fasterxml.aalto.AsyncXMLStreamReader;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
 import de.ii.xtraplatform.util.xml.XMLPathTracker;
 
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -39,12 +41,13 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
     XMLPathTracker pathTracker = new XMLPathTracker();
 
     private final List<QName> featureTypes;
-    private final GmlConsumer gmlConsumer;
+    private final FeatureConsumer gmlConsumer;
     private final StringBuilder buffer;
     private final GmlMultiplicityTracker multiplicityTracker;
     private boolean isBuffering;
 
-    protected AbstractStreamingGmlGraphStage(Shape shape, List<QName> featureTypes, GmlConsumer gmlConsumer) throws XMLStreamException {
+    protected AbstractStreamingGmlGraphStage(Shape shape, List<QName> featureTypes,
+                                             FeatureConsumer gmlConsumer) throws XMLStreamException {
         super(shape);
         this.featureTypes = featureTypes;
         this.gmlConsumer = gmlConsumer;
@@ -91,33 +94,50 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
                         } catch (NumberFormatException e) {
                             numberReturned = OptionalLong.empty();
                         }
-
-                        gmlConsumer.onStart(numberReturned, numberMatched);
+                        Map<String, String> attributes = new LinkedHashMap<>();
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
-                            gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i), ImmutableList.of());
+                            attributes.put(getQualifiedName(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i)), parser.getAttributeValue(i));
                         }
+                        gmlConsumer.onStart(numberReturned, numberMatched, attributes);
+                        /*for (int i = 0; i < parser.getAttributeCount(); i++) {
+                            gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i), ImmutableList.of());
+                        }*/
                     } else if (matchesFeatureType(parser.getNamespaceURI(), parser.getLocalName())) {
                         inFeature = true;
                         featureDepth = depth;
-                        gmlConsumer.onFeatureStart(ImmutableList.of(getQualifiedName(parser.getNamespaceURI(), parser.getLocalName())));
+                        Map<String, String> attributes = new LinkedHashMap<>();
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
-                            gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i), ImmutableList.of());
+                            attributes.put(getQualifiedName(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i)), parser.getAttributeValue(i));
                         }
+                        gmlConsumer.onFeatureStart(ImmutableList.of(getQualifiedName(parser.getNamespaceURI(), parser.getLocalName())), attributes);
+                        /*for (int i = 0; i < parser.getAttributeCount(); i++) {
+                            gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i), ImmutableList.of());
+                        }*/
                     } else if (matchesFeatureType(parser.getLocalName())) {
                         inFeature = true;
                         featureDepth = depth;
-                        gmlConsumer.onNamespaceRewrite(getMatchingFeatureType(parser.getLocalName()), parser.getNamespaceURI());
-                        gmlConsumer.onFeatureStart(ImmutableList.of(getQualifiedName(parser.getNamespaceURI(), parser.getLocalName())));
+                        //gmlConsumer.onNamespaceRewrite(getMatchingFeatureType(parser.getLocalName()), parser.getNamespaceURI());
+
+                        Map<String, String> attributes = new LinkedHashMap<>();
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
-                            gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i), ImmutableList.of());
+                            attributes.put(getQualifiedName(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i)), parser.getAttributeValue(i));
                         }
+                        gmlConsumer.onFeatureStart(ImmutableList.of(getQualifiedName(parser.getNamespaceURI(), parser.getLocalName())), attributes);
+                        /*for (int i = 0; i < parser.getAttributeCount(); i++) {
+                            gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i), ImmutableList.of());
+                        }*/
                     } else if (inFeature) {
                         pathTracker.track(parser.getNamespaceURI(), parser.getLocalName(), depth - featureDepth, false);
                         multiplicityTracker.track(pathTracker.asList());
-                        gmlConsumer.onPropertyStart(pathTracker.asList(), multiplicityTracker.getMultiplicitiesForPath(pathTracker.asList()));
+
+                        Map<String, String> attributes = new LinkedHashMap<>();
                         for (int i = 0; i < parser.getAttributeCount(); i++) {
-                            gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i), multiplicityTracker.getMultiplicitiesForPath(pathTracker.asList()));
+                            attributes.put(getQualifiedName(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i)), parser.getAttributeValue(i));
                         }
+                        gmlConsumer.onPropertyStart(pathTracker.asList(), multiplicityTracker.getMultiplicitiesForPath(pathTracker.asList()), attributes);
+                        /*for (int i = 0; i < parser.getAttributeCount(); i++) {
+                            gmlConsumer.onGmlAttribute(parser.getAttributeNamespace(i), parser.getAttributeLocalName(i), pathTracker.asList(), parser.getAttributeValue(i), multiplicityTracker.getMultiplicitiesForPath(pathTracker.asList()));
+                        }*/
                     }
                     depth += 1;
                     break;
@@ -171,15 +191,24 @@ public abstract class AbstractStreamingGmlGraphStage extends GraphStageLogic {
     }
 
     boolean matchesFeatureType(final String namespace, final String localName) {
-        return featureTypes.stream().anyMatch(featureType -> featureType.getLocalPart().equals(localName) && Objects.nonNull(namespace) && featureType.getNamespaceURI().equals(namespace));
+        return featureTypes.stream()
+                           .anyMatch(featureType -> featureType.getLocalPart()
+                                                               .equals(localName) && Objects.nonNull(namespace) && featureType.getNamespaceURI()
+                                                                                                                              .equals(namespace));
     }
 
     boolean matchesFeatureType(final String localName) {
-        return featureTypes.stream().anyMatch(featureType -> featureType.getLocalPart().equals(localName));
+        return featureTypes.stream()
+                           .anyMatch(featureType -> featureType.getLocalPart()
+                                                               .equals(localName));
     }
 
     QName getMatchingFeatureType(final String localName) {
-        return featureTypes.stream().filter(featureType -> featureType.getLocalPart().equals(localName)).findFirst().orElse(null);
+        return featureTypes.stream()
+                           .filter(featureType -> featureType.getLocalPart()
+                                                             .equals(localName))
+                           .findFirst()
+                           .orElse(null);
     }
 
     private String getQualifiedName(String namespaceUri, String localName) {

@@ -1,0 +1,14 @@
+
+dependencies {
+
+    provided project(':xtraplatform-cql')
+    provided project(':xtraplatform-crs')
+    provided project(':xtraplatform-geometries')
+
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-entity-api'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-event-store'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
+
+}
+
+

@@ -9,7 +9,7 @@ package de.ii.xtraplatform.feature.transformer.geojson;
 
 import akka.japi.Pair;
 import com.google.common.base.Splitter;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping;

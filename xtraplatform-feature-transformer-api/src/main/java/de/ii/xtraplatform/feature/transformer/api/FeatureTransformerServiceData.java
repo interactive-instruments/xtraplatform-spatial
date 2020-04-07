@@ -15,10 +15,7 @@ import java.util.Map;
 /**
  * @author zahnen
  */
-//@Value.Immutable
-//@Value.Modifiable
-//@Value.Style(deepImmutablesDetection = true)
-//@JsonDeserialize(as = ModifiableFeatureTransformerServiceData.class)
+@Deprecated
 public abstract class FeatureTransformerServiceData<T extends FeatureTypeConfiguration> implements ServiceData {
 
     public abstract Map<String, T> getFeatureTypes();

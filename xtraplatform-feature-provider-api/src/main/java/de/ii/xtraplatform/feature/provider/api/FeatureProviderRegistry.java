@@ -7,11 +7,17 @@
  */
 package de.ii.xtraplatform.feature.provider.api;
 
+import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
+
 /**
  * @author zahnen
  */
 public interface FeatureProviderRegistry {
     boolean isSupported(String providerType, String connectorType);
 
-    FeatureProvider createFeatureProvider(FeatureProviderData featureProviderData);
+    //FeatureProvider2 createFeatureProvider(FeatureProviderDataV1 featureProviderData);
+
+    FeatureProviderConnector createConnector(FeatureProviderDataV1 featureProviderData);
 }

@@ -8,12 +8,15 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
-import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.cql.app.CqlImpl;
+import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
@@ -64,11 +67,13 @@ public class FeatureQueryEncoderWfsTest {
                                                                     .build()))
             .build();
 
+    private static final CqlFilter FILTER = new CqlImpl().read("name = 'bla' AND name LIKE 'bl*' AND BBOX(pos, 50,7,51,8,'EPSG:4258')", Cql.Format.TEXT);
+
     private static final FeatureQuery QUERY = ImmutableFeatureQuery.builder()
                                                                    .type("AdministrativeUnit")
                                                                    .limit(10)
                                                                    .offset(10)
-                                                                   .filter("name = 'bla' AND name LIKE 'bl*' AND BBOX(pos, 50,7,51,8,'EPSG:4258')")
+                                                                   .filter(FILTER)
                                                                    .build();
 
     private static final String EXPECTED_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n" +

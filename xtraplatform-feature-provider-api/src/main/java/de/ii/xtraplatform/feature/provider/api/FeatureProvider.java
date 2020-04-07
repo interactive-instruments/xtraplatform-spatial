@@ -7,11 +7,10 @@
  */
 package de.ii.xtraplatform.feature.provider.api;
 
-import de.ii.xtraplatform.crs.api.BoundingBox;
-import de.ii.xtraplatform.crs.api.EpsgCrs;
-
-import java.util.Map;
-import java.util.Optional;
+import de.ii.xtraplatform.crs.domain.BoundingBox;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
 
 /**
  * @author zahnen
@@ -23,26 +22,7 @@ public interface FeatureProvider<T extends FeatureConsumer> {
     String getSourceFormat();
 
     default BoundingBox getSpatialExtent(String featureTypeId) {
-        return new BoundingBox(-180.0D, -90.0D, 180.0D, 90.0D, new EpsgCrs(4326));
+        return new BoundingBox(-180.0D, -90.0D, 180.0D, 90.0D, EpsgCrs.of(4326));
     }
 
-    interface MetadataAware {
-        void getMetadata(FeatureProviderMetadataConsumer metadataConsumer);
-    }
-
-    //TODO
-    /*interface Queries {
-        FeatureStream<T> getFeatureStream(FeatureQuery query);
-        Optional<ListenableFuture<HttpEntity>> getFeatureCount(FeatureQuery query);
-    }
-
-    interface Transformations {
-        FeatureStream<FeatureTransformer> getFeatureTransformationStream(FeatureQuery query);
-    }
-
-    interface Transactions {
-        void addFeaturesFromStream(FeatureStream<FeatureTransformer>);
-        void updateFeaturesFromStream();
-        void deleteFeature(String id);
-    }*/
 }

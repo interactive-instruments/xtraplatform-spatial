@@ -8,10 +8,10 @@
 package de.ii.xtraplatform.feature.provider;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.api.FeatureProvider;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderData;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderRegistry;
+import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 import org.apache.felix.ipojo.ComponentInstance;
 import org.apache.felix.ipojo.ConfigurationException;
 import org.apache.felix.ipojo.Factory;
@@ -44,11 +44,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Instantiate
 @Whiteboards(whiteboards = {
         @Wbp(
-                filter = "(&(objectClass=org.apache.felix.ipojo.Factory)(component.providedServiceSpecifications=de.ii.xtraplatform.feature.provider.api.FeatureProvider))",
+                filter = "(&(objectClass=org.apache.felix.ipojo.Factory)(component.providedServiceSpecifications=de.ii.xtraplatform.features.domain.FeatureProvider2))",
                 onArrival = "onFactoryArrival",
                 onDeparture = "onFactoryDeparture"),
         @Wbp(
-                filter = "(&(objectClass=org.apache.felix.ipojo.Factory)(component.providedServiceSpecifications=de.ii.xtraplatform.feature.provider.api.FeatureProviderConnector))",
+                filter = "(&(objectClass=org.apache.felix.ipojo.Factory)(component.providedServiceSpecifications=de.ii.xtraplatform.features.domain.FeatureProviderConnector))",
                 onArrival = "onFactoryArrival",
                 onDeparture = "onFactoryDeparture")
 })
@@ -70,11 +70,11 @@ public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {
 
     @Override
     public boolean isSupported(String providerType, String connectorType) {
-        return providerFactories.containsKey(providerType) && connectorFactories.containsKey(providerType) && connectorFactories.get(providerType).containsKey(connectorType);
+        return /*providerFactories.containsKey(providerType) &&*/ connectorFactories.containsKey(providerType) && connectorFactories.get(providerType).containsKey(connectorType);
     }
 
-    @Override
-    public FeatureProvider createFeatureProvider(FeatureProviderData featureProviderData) {
+    /*@Override
+    public FeatureProvider2 createFeatureProvider(FeatureProviderDataV1 featureProviderData) {
         if (!isSupported(featureProviderData.getProviderType(), featureProviderData.getConnectorType())) {
             throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getProviderType() + " and connector " + featureProviderData.getConnectorType() + " is not supported");
         }
@@ -87,13 +87,32 @@ public class FeatureProviderRegistryImpl implements FeatureProviderRegistry {
 
             ComponentInstance instance =  providerFactories.get(featureProviderData.getProviderType()).createComponentInstance(new Hashtable<>(ImmutableMap.of(".data", featureProviderData, ".connector", connector)));
 
-            ServiceReference[] refs = context.getServiceReferences(FeatureProvider.class.getName(), "(instance.name=" + instance.getInstanceName() +")");
-            FeatureProvider featureProvider = (FeatureProvider) context.getService(refs[0]);
+            ServiceReference[] refs = context.getServiceReferences(FeatureProvider2.class.getName(), "(instance.name=" + instance.getInstanceName() +")");
+            FeatureProvider2 featureProvider = (FeatureProvider2) context.getService(refs[0]);
 
             return featureProvider;
 
         } catch (UnacceptableConfiguration | MissingHandlerException | ConfigurationException | InvalidSyntaxException | NullPointerException e) {
             throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getProviderType() + " could not be created", e);
+        }
+    }*/
+
+    @Override
+    public FeatureProviderConnector createConnector(FeatureProviderDataV1 featureProviderData) {
+        if (!isSupported(featureProviderData.getFeatureProviderType(), featureProviderData.getConnectionInfo().getConnectorType())) {
+            throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getFeatureProviderType() + " and connector " + featureProviderData.getConnectionInfo().getConnectorType() + " is not supported");
+        }
+
+        try {
+            ComponentInstance connectorInstance =  connectorFactories.get(featureProviderData.getFeatureProviderType()).get(featureProviderData.getConnectionInfo().getConnectorType()).createComponentInstance(new Hashtable<>(ImmutableMap.of(".data", featureProviderData)));
+
+            ServiceReference<?>[] connectorRefs = context.getServiceReferences(FeatureProviderConnector.class.getName(), "(instance.name=" + connectorInstance.getInstanceName() +")");
+            FeatureProviderConnector<?,?,?> connector = (FeatureProviderConnector<?,?,?>) context.getService(connectorRefs[0]);
+
+            return connector;
+
+        } catch (UnacceptableConfiguration | MissingHandlerException | ConfigurationException | InvalidSyntaxException | NullPointerException e) {
+            throw new IllegalStateException("FeatureProvider with type " + featureProviderData.getFeatureProviderType() + " could not be created", e);
         }
     }
 

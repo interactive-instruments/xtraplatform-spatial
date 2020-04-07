@@ -8,13 +8,13 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import akka.japi.Pair;
-import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.crs.api.EpsgCrs;
-import de.ii.xtraplatform.feature.provider.api.FeatureQuery;
-import de.ii.xtraplatform.feature.provider.api.ImmutableFeatureQuery;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
+import de.ii.xtraplatform.cql.app.CqlToText;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
+import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.wfs.FilterEncoder;
 import de.ii.xtraplatform.ogc.api.wfs.GetFeature;
@@ -57,7 +57,6 @@ import org.w3c.dom.Element;
 import org.xml.sax.helpers.NamespaceSupport;
 
 import javax.xml.namespace.QName;
-import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -131,7 +130,7 @@ public class FeatureQueryEncoderWfs {
         final String featureTypeName = namespaceNormalizer.getQualifiedName(featureType.getNamespaceURI(), featureType.getLocalPart());
 
         final WfsQuery wfsQuery = new WfsQueryBuilder().typeName(featureTypeName)
-                                                       .crs(query.getCrs())
+                                                       .crs(query.getCrs().get())
                                                        .filter(encodeFilter(query.getFilter(), featureTypeMapping))
                                                        .build();
         final GetFeatureBuilder getFeature = new GetFeatureBuilder();
@@ -155,12 +154,12 @@ public class FeatureQueryEncoderWfs {
         return getFeature.build();
     }
 
-    private Filter encodeFilter(final String filter, final FeatureTypeMapping featureTypeMapping) throws CQLException {
-        if (Objects.isNull(filter) || Objects.isNull(featureTypeMapping)) {
+    private Filter encodeFilter(final Optional<CqlFilter> filter, final FeatureTypeMapping featureTypeMapping) throws CQLException {
+        if (!filter.isPresent() || Objects.isNull(featureTypeMapping)) {
             return null;
         }
 
-        return (Filter) ECQL.toFilter(filter)
+        return (Filter) ECQL.toFilter(filter.get().accept(new CqlToText()))
                             .accept(new ResolvePropertyNamesFilterVisitor(featureTypeMapping, namespaceNormalizer), null);
     }
 
@@ -192,6 +191,7 @@ public class FeatureQueryEncoderWfs {
             return super.visit(expression, extraData);
         }
 
+        //TODO: test if still works
         @Override
         public Object visit(BBOX filter, Object extraData) {
             LOGGER.debug("BBOX {} | {} | {}", filter.getExpression1(), filter.getSRS(), extraData);
@@ -201,7 +201,7 @@ public class FeatureQueryEncoderWfs {
 
             if (!property.isPresent() && filter.getExpression1()
                                                .toString()
-                                               .equals("NOT_AVAILABLE")) {
+                                               .equals(FeatureQueryTransformer.PROPERTY_NOT_AVAILABLE)) {
                 if (filter.getSRS() != null) {
                     return new BBOXImpl(null, filter.getBounds()
                                                     .getMinX(), filter.getBounds()

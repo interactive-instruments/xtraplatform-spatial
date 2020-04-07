@@ -1,15 +1,14 @@
 
-version = '2.2.4'
-
 dependencies {
-    provided project(':xtraplatform-crs-api')
+    provided project(':xtraplatform-geometries')
+    provided project(':xtraplatform-crs')
     provided project(':xtraplatform-feature-provider-api')
     provided project(':xtraplatform-feature-transformer-api')
     provided project(':xtraplatform-ogc-wfs-api')
     provided project(':xtraplatform-feature-provider-sql')
-    provided project(':xtraplatform-geotools')
 
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-entity-api'
     //TODO: create own ActorSystemProvider, remove this dep
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka-http'
 

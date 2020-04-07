@@ -13,7 +13,6 @@ import java.util.Optional;
  * @author zahnen
  */
 public interface FeatureTransformerService {
-    Optional<FeatureTypeConfiguration> getFeatureTypeByName(String name);
 
     TransformingFeatureProvider getFeatureProvider();
 }

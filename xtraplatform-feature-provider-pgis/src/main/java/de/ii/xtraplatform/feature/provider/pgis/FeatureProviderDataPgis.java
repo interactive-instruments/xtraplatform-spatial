@@ -9,11 +9,11 @@ package de.ii.xtraplatform.feature.provider.pgis;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.feature.provider.api.TargetMapping;
-import de.ii.xtraplatform.feature.provider.sql.SqlConnectorSlick;
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureActionTrigger;
+import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlConnectorSlick;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
-import de.ii.xtraplatform.feature.transformer.api.ImmutableMappingStatus;
-import de.ii.xtraplatform.feature.transformer.api.MappingStatus;
+import de.ii.xtraplatform.features.domain.ImmutableMappingStatus;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
@@ -22,6 +22,7 @@ import java.util.Optional;
 /**
  * @author zahnen
  */
+//TODO: still needed for migration???
 @Value.Immutable
 @Value.Modifiable
 //@JsonDeserialize(as = ModifiableFeatureProviderDataPgis.class)
@@ -34,7 +35,7 @@ public abstract class FeatureProviderDataPgis extends FeatureProviderDataTransfo
     @Value.Default
     @Override
     public String getProviderType() {
-        return FeatureProviderPgis.PROVIDER_TYPE;
+        return "PGIS";
     }
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
