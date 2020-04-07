@@ -1,3 +1,10 @@
+/**
+ * Copyright 2020 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -81,6 +88,12 @@ public interface Geometry<T> extends CqlNode {
 
         static Polygon of(List<Coordinate>... coordinates) {
             return new ImmutablePolygon.Builder().addCoordinates(coordinates)
+                                                 .build();
+        }
+
+        static Polygon of(EpsgCrs crs, List<Coordinate>... coordinates) {
+            return new ImmutablePolygon.Builder().crs(crs)
+                                                 .addCoordinates(coordinates)
                                                  .build();
         }
 

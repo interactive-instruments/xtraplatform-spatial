@@ -6,8 +6,16 @@ subprojects {
         strictCheck true
         skipExistingHeaders false
         excludes([
+                "**/CqlParser.java",
+                "**/CqlLexer.java",
+                "**/CqlParserBaseVisitor.java",
+                "**/CqlParserVisitor.java",
                 "**/Modifiable*.java",
                 "**/Immutable*.java",
+                "**/*.bnf",
+                "**/*.g4",
+                "**/*.tokens",
+                "**/*.interp",
                 "**/*.mustache",
                 "**/*.png",
                 "**/*.ico",

@@ -1,3 +1,10 @@
+/**
+ * Copyright 2020 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
@@ -53,13 +60,14 @@ public class SqlSchemaCrawler {
             e.printStackTrace();
             throw new IllegalStateException("could not parse schema");
         }
-        return getFeatureTypes(catalog);
+        Map<String, List<String>> geometry = getGeometry();
+
+        return getFeatureTypes(catalog, geometry);
 
     }
 
-    private List<FeatureType> getFeatureTypes(Catalog catalog) {
+    private List<FeatureType> getFeatureTypes(Catalog catalog, Map<String, List<String>> geometry) {
         ImmutableList.Builder<FeatureType> featureTypes = new ImmutableList.Builder<>();
-        Map<String, List<String>> geometry = getGeometry();
 
         for (final Schema schema : catalog.getSchemas()) {
 

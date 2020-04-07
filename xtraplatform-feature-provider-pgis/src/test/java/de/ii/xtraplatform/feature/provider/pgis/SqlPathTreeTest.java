@@ -1,18 +1,19 @@
+/**
+ * Copyright 2020 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.feature.provider.pgis;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
-import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathColumn;
-import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathJoin;
-import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSegmentDiff;
-import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlMappingParser;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
-import de.ii.xtraplatform.feature.provider.sql.SqlPathSegmentDiff;
-import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping;
 import de.ii.xtraplatform.feature.transformer.api.SourcePathMapping;
+import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import io.dropwizard.jackson.Jackson;
 import org.junit.Assert;
 import org.junit.Test;
@@ -36,7 +37,7 @@ import java.util.stream.StreamSupport;
 import static de.ii.xtraplatform.feature.provider.pgis.SqlPathTree.depthFirst;
 
 public class SqlPathTreeTest {
-
+/*
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlPathTreeTest.class);
 
     private static final ObjectMapper MAPPER = Jackson.newObjectMapper();
@@ -313,4 +314,6 @@ public class SqlPathTreeTest {
                                                                     })
                                                                     .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
+
+ */
 }

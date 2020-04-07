@@ -1,3 +1,10 @@
+/*
+ * Copyright 2020 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.cql.app
 
 import de.ii.xtraplatform.cql.domain.Cql
@@ -501,7 +508,13 @@ class CqlJsonSpec extends Specification {
         {
              "within": {
                 "property": "location",
-                "value": { "bbox": [33.8,-118,34,-117.9] }
+                "value": { 
+                    "bbox": [33.8,-118,34,-117.9],
+                    "crs": {
+                        "code": 4326,
+                        "forceAxisOrder": "LON_LAT"
+                    }
+                }
               }
         }
         """
@@ -530,7 +543,11 @@ class CqlJsonSpec extends Specification {
                     "property": "location",
                     "value": {
                         "type": "Polygon",
-                        "coordinates": [[[-10.0, -10.0],[10.0, -10.0],[10.0, 10.0],[-10.0, -10.0]]]
+                        "coordinates": [[[-10.0, -10.0],[10.0, -10.0],[10.0, 10.0],[-10.0, -10.0]]],
+                        "crs": {
+                            "code": 4326,
+                            "forceAxisOrder": "LON_LAT"
+                        }
                     }
                 }
             }
@@ -567,7 +584,13 @@ class CqlJsonSpec extends Specification {
                 {
                    "within": {
                       "property": "geometry",
-                      "value": { "bbox": [33.8,-118,34,-117.9] }
+                      "value": { 
+                        "bbox": [33.8,-118,34,-117.9],
+                        "crs": {
+                            "code": 4326,
+                            "forceAxisOrder": "LON_LAT"
+                        }
+                      }
                    }
                 }
             ]

@@ -1,6 +1,13 @@
+/*
+ * Copyright 2020 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.feature.provider.sql.infra.db
 
-import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax
+import de.ii.xtraplatform.cql.app.CqlImpl
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureStorePathParserSql
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation
 import spock.lang.Shared
@@ -8,12 +15,13 @@ import spock.lang.Specification
 import spock.lang.Unroll
 
 class FeatureStorePathParserSpec extends Specification {
-
+/*
     @Shared
             pathParser
 
     def setupSpec() {
         def syntax = ImmutableSqlPathSyntax.builder().build()
+        def cql = new CqlImpl()
 
         pathParser = new FeatureStorePathParserSql(syntax, cql)
     }
@@ -206,4 +214,6 @@ class FeatureStorePathParserSpec extends Specification {
         ]
 
     }
+
+    */
 }

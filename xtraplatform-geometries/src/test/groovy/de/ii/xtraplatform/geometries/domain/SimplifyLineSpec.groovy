@@ -1,3 +1,10 @@
+/*
+ * Copyright 2020 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.geometries.domain
 
 import spock.lang.Specification
@@ -76,7 +83,7 @@ class SimplifyLineSpec extends Specification {
 
         then:
 
-        1 * next.onCoordinates([10.0, 10.0, 12.0, 9.0, 13.0, 10.0], 6, dimension)
+        1 * next.onCoordinates([10.0, 10.0, 11.0, 11.0, 12.0, 9.0, 13.0, 10.0], 8, dimension)
         0 * _
     }
 }

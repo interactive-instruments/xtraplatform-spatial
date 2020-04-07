@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 interactive instruments GmbH
+ * Copyright 2020 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,7 +11,7 @@
 package de.ii.xtraplatform.crs.infra;
 
 import de.ii.xtraplatform.crs.domain.CoordinateTuple;
-import de.ii.xtraplatform.geometries.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.geotools.referencing.CRS;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -64,7 +64,7 @@ public class GeoToolsCrsTransformerTest {
         CoordinateReferenceSystem scrs = CRS.decode("EPSG:4326");
         CoordinateReferenceSystem tcrs = CRS.decode("EPSG:3857");
 
-        GeoToolsCrsTransformer gct = new GeoToolsCrsTransformer(scrs,tcrs, EpsgCrs.of(4326), EpsgCrs.of(3857), false);
+        GeoToolsCrsTransformer gct = new GeoToolsCrsTransformer(scrs,tcrs, EpsgCrs.of(4326), EpsgCrs.of(3857), 2, 2);
         
         double x = 50.7164;
         double y = 7.086;

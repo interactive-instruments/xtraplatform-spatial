@@ -1,11 +1,9 @@
 /**
- * Copyright 2019 interactive instruments GmbH
- * <p>
+ * Copyright 2020 interactive instruments GmbH
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- * <p>
- * bla
  */
 /**
  * bla
@@ -38,7 +36,7 @@ public class BoundingBox {
 
         this.crs = crs;
     }
-
+    
     public BoundingBox(double[] coords, EpsgCrs crs) {
         this.xmin = coords[0];
         this.ymin = coords[1];
@@ -47,10 +45,10 @@ public class BoundingBox {
 
         this.crs = crs;
     }
-
+    
     @JsonIgnore
-    public double[] getCoords() {
-        double[] out = {xmin, ymin, xmax, ymax};
+    public double [] getCoords(){
+        double [] out = {xmin, ymin, xmax, ymax};
         return out;
     }
 
@@ -79,7 +77,7 @@ public class BoundingBox {
     }
 
     public double getYmax() {
-        return ymax;
+         return ymax;
     }
 
     public void setYmax(double ymax) {
@@ -98,6 +96,6 @@ public class BoundingBox {
     public String toString() {
         return "(" + xmin + ", " + ymin + ", " + xmax + ", " + ymax + ", " + crs.toSimpleString() + ')';
     }
-
-
+    
+    
 }

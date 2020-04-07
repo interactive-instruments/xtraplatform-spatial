@@ -1,9 +1,17 @@
+/**
+ * Copyright 2020 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.cql.app;
 
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.*;
+import de.ii.xtraplatform.crs.domain.OgcCrs;
 
 import java.util.Objects;
 import java.util.Properties;
@@ -63,9 +71,9 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_14 = CqlFilter.of(During.of("updated", TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z"))));
 
-    public static final CqlFilter EXAMPLE_15 = CqlFilter.of(Within.of("location", SpatialLiteral.of(Geometry.Envelope.of(33.8, -118.0, 34.0, -117.9))));
+    public static final CqlFilter EXAMPLE_15 = CqlFilter.of(Within.of("location", SpatialLiteral.of(Geometry.Envelope.of(33.8, -118.0, 34.0, -117.9, OgcCrs.CRS84))));
 
-    public static final CqlFilter EXAMPLE_16 = CqlFilter.of(Intersects.of("location", SpatialLiteral.of(Geometry.Polygon.of(ImmutableList.of(
+    public static final CqlFilter EXAMPLE_16 = CqlFilter.of(Intersects.of("location", SpatialLiteral.of(Geometry.Polygon.of(OgcCrs.CRS84, ImmutableList.of(
             Geometry.Coordinate.of(-10.0, -10.0),
             Geometry.Coordinate.of(10.0, -10.0),
             Geometry.Coordinate.of(10.0, 10.0),
@@ -74,7 +82,7 @@ public class CqlFilterExamples {
 
     static final CqlFilter EXAMPLE_17 = CqlFilter.of(And.of(
             EXAMPLE_1,
-            CqlPredicate.of(Within.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(33.8, -118.0, 34.0, -117.9))))
+            CqlPredicate.of(Within.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(33.8, -118.0, 34.0, -117.9, OgcCrs.CRS84))))
     ));
 
     static final CqlFilter EXAMPLE_18 = CqlFilter.of(Between.of("floors", ScalarLiteral.of(4), ScalarLiteral.of(8)));

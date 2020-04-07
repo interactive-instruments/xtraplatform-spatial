@@ -1,6 +1,6 @@
 /**
- * Copyright 2019 interactive instruments GmbH
- * <p>
+ * Copyright 2020 interactive instruments GmbH
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -115,23 +115,23 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
         wfsRequestEncoder.setNsStore(new XMLNamespaceNormalizer(connectionInfo.getNamespaces()));
 
         this.featureTypeNames = !data.getLocalFeatureTypeNames()
-                                     .isEmpty() ? data.getLocalFeatureTypeNames() : data.getMappings()
-                                                                                        .entrySet()
-                                                                                        .stream()
-                                                                                        .map(entry -> {
-                                                                                            //TODO
-                                                                                            String featureTypePath = entry.getValue()
-                                                                                                                          .getMappings()
-                                                                                                                          .keySet()
-                                                                                                                          .iterator()
-                                                                                                                          .next();
-                                                                                            String localName = featureTypePath.substring(featureTypePath.lastIndexOf(":") + 1);
-                                                                                            String namespace = featureTypePath.substring(0, featureTypePath.lastIndexOf(":"));
+                                 .isEmpty() ? data.getLocalFeatureTypeNames() : data.getMappings()
+                                                                                    .entrySet()
+                                                                                    .stream()
+                                                                                    .map(entry -> {
+                                                                                        //TODO
+                                                                                        String featureTypePath = entry.getValue()
+                                                                                                                      .getMappings()
+                                                                                                                      .keySet()
+                                                                                                                      .iterator()
+                                                                                                                      .next();
+                                                                                        String localName = featureTypePath.substring(featureTypePath.lastIndexOf(":") + 1);
+                                                                                        String namespace = featureTypePath.substring(0, featureTypePath.lastIndexOf(":"));
 
 
-                                                                                            return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), new QName(namespace, localName));
-                                                                                        })
-                                                                                        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+                                                                                        return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), new QName(namespace, localName));
+                                                                                    })
+                                                                                    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
         this.featureTypeMappings = data.getMappings();
         //TODO
@@ -253,13 +253,13 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
         // TODO factor out, move into derived in FeatureTypeMapping
         List<List<String>> embedRefs = featureType.getProperties()
                                                   .values()
-                                                  .stream()
+                                                         .stream()
                                                   .filter(FeatureProperty::isReferenceEmbed)
                                                   //TODO
                                                   .map(featureProperty -> Splitter.on('/')
                                                                                   .omitEmptyStrings()
                                                                                   .splitToList(featureProperty.getPath()))
-                                                  .collect(Collectors.toList());
+                                                         .collect(Collectors.toList());
 
         List<List<String>> embedRoots = embedRefs.stream()
                                                  .map(path -> path.subList(0, path.size() - 1))
@@ -267,31 +267,31 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
 
         return featureType.getProperties()
                           .values()
-                          .stream()
+                                 .stream()
                           //TODO
                           .map(featureProperty -> Splitter.on('/')
                                                           .omitEmptyStrings()
                                                           .splitToList(featureProperty.getPath()))
-                          .filter(path -> embedRoots.stream()
-                                                    .anyMatch(root -> path.subList(0, root.size())
-                                                                          .equals(root)) && embedRefs.stream()
-                                                                                                     .noneMatch(ref -> ref.equals(path)))
-                          .map(path -> embedRoots.stream()
-                                                 .filter(root -> path.subList(0, root.size())
-                                                                     .equals(root))
-                                                 .findFirst()
-                                                 .map(root -> path.subList(0, root.size() + 1))
-                                                 .get())
-                          .distinct()
-                          .map(path -> {
-                              String type = path.get(path.size() - 1);
-                              QName qn = new QName(type.substring(0, type.lastIndexOf(":")), type.substring(type.lastIndexOf(":") + 1));
-                              return new AbstractMap.SimpleImmutableEntry<>(qn, path);
-                          })
+                                 .filter(path -> embedRoots.stream()
+                                                           .anyMatch(root -> path.subList(0, root.size())
+                                                                                 .equals(root)) && embedRefs.stream()
+                                                                                                            .noneMatch(ref -> ref.equals(path)))
+                                 .map(path -> embedRoots.stream()
+                                                        .filter(root -> path.subList(0, root.size())
+                                                                            .equals(root))
+                                                        .findFirst()
+                                                        .map(root -> path.subList(0, root.size() + 1))
+                                                        .get())
+                                 .distinct()
+                                 .map(path -> {
+                                     String type = path.get(path.size() - 1);
+                                     QName qn = new QName(type.substring(0, type.lastIndexOf(":")), type.substring(type.lastIndexOf(":") + 1));
+                                     return new AbstractMap.SimpleImmutableEntry<>(qn, path);
+                                 })
                           .filter(entry -> featureTypeNames.values()
-                                                           .stream()
-                                                           .anyMatch(ft -> ft.equals(entry.getKey())))
-                          .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+                                                              .stream()
+                                                              .anyMatch(ft -> ft.equals(entry.getKey())))
+                                 .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
@@ -307,11 +307,11 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
     @Override
     public boolean shouldSwapCoordinates(EpsgCrs crs) {
         return isCrsSupported(crs) && Stream.concat(Stream.of(data.getNativeCrs()), data.getOtherCrs()
-                                                                                        .stream())
-                                            .filter(epsgCrs -> epsgCrs.getCode() == crs.getCode())
-                                            .findFirst()
+                                                                                     .stream())
+                                         .filter(epsgCrs -> epsgCrs.getCode() == crs.getCode())
+                                         .findFirst()
                                             .map(epsgCrs -> epsgCrs.getForceAxisOrder() != crs.getForceAxisOrder())
-                                            .orElse(false);
+                                         .orElse(false);
     }
 
     //@Override

@@ -1,5 +1,5 @@
 /**
- * Copyright 2019 interactive instruments GmbH
+ * Copyright 2020 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.feature.provider.pgis;
 
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
-import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
 import org.geotools.filter.text.cql2.CQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +19,7 @@ import static org.testng.Assert.*;
  * @author zahnen
  */
 public class FilterEncoderSqlImplTest {
+    /*
     private static final Logger LOGGER = LoggerFactory.getLogger(FilterEncoderSqlImplTest.class);
 
     FeatureTypeMapping mappings = new ImmutableFeatureTypeMapping.Builder().build();
@@ -115,4 +115,6 @@ public class FilterEncoderSqlImplTest {
 
         assertEquals(encodedFilter, expected);
     }
+
+     */
 }

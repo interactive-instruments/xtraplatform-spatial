@@ -1,13 +1,9 @@
 /**
- * Copyright 2019 interactive instruments GmbH
- * <p>
+ * Copyright 2020 interactive instruments GmbH
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- * <p>
- * bla
- * <p>
- * bla
  */
 /**
  * bla
@@ -36,7 +32,7 @@ import javax.measure.unit.Unit;
  *
  * @author zahnen
  */
-public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements CrsTransformer {
+public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements CrsTransformer  {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GeoToolsCrsTransformer.class);
 
@@ -79,12 +75,12 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
                                                                                          .getSemiMajorAxis();
 /*
         AxisDirection sourceDirection = sourceCrs.getCoordinateSystem()
-                                                 .getAxis(0)
-                                                 .getDirection();
+                                           .getAxis(0)
+                                           .getDirection();
         AxisDirection sourceOrigDirection = CRS.decode(this.sourceCrs.toSimpleString())
                                                .getCoordinateSystem()
-                                               .getAxis(0)
-                                               .getDirection();
+                                                 .getAxis(0)
+                                                 .getDirection();
         AxisDirection targetDirection = targetCrs.getCoordinateSystem()
                                                  .getAxis(0)
                                                  .getDirection();
@@ -148,7 +144,7 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
                     source[i + 1] = coordinates[i];
                 }
             }
-            double[] target = new double[2 * numberOfPoints];
+            double[] target = new double[2* numberOfPoints];
             mathTransform.transform(source, 0, target, 0, numberOfPoints);
 
             return target;
