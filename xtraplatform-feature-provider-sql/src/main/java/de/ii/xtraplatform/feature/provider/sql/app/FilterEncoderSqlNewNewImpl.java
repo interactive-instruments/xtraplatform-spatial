@@ -257,6 +257,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                           .replace("*", "\\*");
                 value = value.replaceAll("%", "\\%")
                              .replaceAll(wildCard, "%");
+                operation = String.format("::varchar %s %s", operator, value);
             }
 
             return String.format(propertyExpression, "", operation);
