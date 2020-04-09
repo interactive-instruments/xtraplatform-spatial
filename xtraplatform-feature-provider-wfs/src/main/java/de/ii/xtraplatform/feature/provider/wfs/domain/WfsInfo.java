@@ -7,16 +7,22 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.domain;
 
+import org.immutables.value.Value;
+
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author zahnen
  */
 public interface WfsInfo {
 
-    String getVersion();
+    @Value.Default
+    default String getVersion() {
+        return "2.0.0";
+    }
 
-    String getGmlVersion();
+    Optional<String> getGmlVersion();
 
     Map<String,String> getNamespaces();
 
