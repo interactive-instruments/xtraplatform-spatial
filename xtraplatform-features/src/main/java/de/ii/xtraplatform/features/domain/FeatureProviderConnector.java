@@ -28,9 +28,11 @@ import java.util.concurrent.CompletionStage;
  * @param <U> query type
  * @param <V> options type
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "connectorType", visible = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = FeatureProviderConnector.CONNECTOR_TYPE_KEY, visible = true)
 @JsonTypeIdResolver(JacksonProvider.DynamicTypeIdResolver.class)
 public interface FeatureProviderConnector<T,U,V extends FeatureProviderConnector.QueryOptions> {
+
+    String CONNECTOR_TYPE_KEY = "connectorType";
 
     interface QueryOptions {}
 

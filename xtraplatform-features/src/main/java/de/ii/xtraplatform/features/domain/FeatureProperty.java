@@ -105,4 +105,13 @@ public interface FeatureProperty extends ValueInstance {
     default boolean isForceReversePolygon() {
         return false;
     }
+
+    //TODO: implement double col support as provider transformer and remove this
+    @Deprecated
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean hasDoubleColumn() {
+        return getPath().indexOf(":") > getPath().lastIndexOf("/");
+    }
 }
