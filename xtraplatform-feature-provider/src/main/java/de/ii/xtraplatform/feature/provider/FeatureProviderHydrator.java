@@ -8,9 +8,10 @@
 package de.ii.xtraplatform.feature.provider;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
+import de.ii.xtraplatform.entity.api.handler.Entity;
 import de.ii.xtraplatform.event.store.EntityHydrator;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderRegistry;
+import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
+import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 import org.apache.felix.ipojo.annotations.Component;
@@ -25,8 +26,7 @@ import java.util.Map;
 
 @Component
 @Provides(properties = {
-        //TODO: how to connect to entity
-        @StaticServiceProperty(name = "entityType", type = "java.lang.String", value = "providers")
+        @StaticServiceProperty(name = Entity.TYPE_KEY, type = "java.lang.String", value = FeatureProvider2.ENTITY_TYPE)
 })
 @Instantiate
 public class FeatureProviderHydrator implements EntityHydrator<FeatureProviderDataV1> {
@@ -34,11 +34,9 @@ public class FeatureProviderHydrator implements EntityHydrator<FeatureProviderDa
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderHydrator.class);
 
     @Requires
-    private FeatureProviderRegistry featureProviderFactory;
+    private ConnectorFactory featureProviderFactory;
 
-    @Requires
-    private CrsTransformerFactory crsTransformerFactory;
-
+    //TODO: why don't do this in entity constructor
     @Override
     public Map<String, Object> getInstanceConfiguration(FeatureProviderDataV1 data) {
         try {
