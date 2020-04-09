@@ -62,6 +62,7 @@ import org.w3c.dom.Element;
 import org.xml.sax.helpers.NamespaceSupport;
 
 import javax.xml.namespace.QName;
+import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -98,12 +99,10 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
         this.typeInfos = typeInfos;
         this.featureTypes = types;
         this.namespaceNormalizer = new XMLNamespaceNormalizer(connectionInfo.getNamespaces());
-        this.wfsRequestEncoder = new WfsRequestEncoder();
-        wfsRequestEncoder.setVersion(connectionInfo.getVersion());
-        wfsRequestEncoder.setGmlVersion(connectionInfo.getGmlVersion());
-        wfsRequestEncoder.setUrls(ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri()))));
-        wfsRequestEncoder.setNsStore(new XMLNamespaceNormalizer(connectionInfo.getNamespaces()));
 
+        Map<String, Map<WFS.METHOD, URI>> urls = ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri())));
+
+        this.wfsRequestEncoder = new WfsRequestEncoder(connectionInfo.getVersion(), connectionInfo.getGmlVersion(), connectionInfo.getNamespaces(), urls);
         this.nativeCrs = nativeCrs;
     }
 

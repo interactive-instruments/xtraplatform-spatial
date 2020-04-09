@@ -9,17 +9,18 @@ package de.ii.xtraplatform.feature.provider.wfs.domain;
 
 import akka.util.ByteString;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.feature.provider.wfs.FeatureQueryEncoderWfs;
+import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.ogc.api.wfs.WfsOperation;
 
 import java.io.InputStream;
+import java.util.Optional;
 
 /**
  * @author zahnen
  */
 public interface WfsConnector extends FeatureProviderConnector<ByteString, String, FeatureProviderConnector.QueryOptions> {
 
-    void setQueryEncoder(final FeatureQueryEncoderWfs queryEncoder);
+    InputStream runWfsOperation(final WfsOperation operation);
 
-    InputStream runWfsOperation(final WfsOperation wfsOperation);
+    Optional<Metadata> getMetadata();
 }

@@ -9,7 +9,6 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.provider.sql.app.SimpleFeatureGeometryFromToWkt;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
@@ -45,13 +44,20 @@ public class SqlSchemaCrawler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlSchemaCrawler.class);
     private final ConnectionInfoSql connectionInfo;
+    private final ClassLoader classLoader;
     private Connection connection;
 
     public SqlSchemaCrawler(ConnectionInfoSql connectionInfo) {
         this.connectionInfo = connectionInfo;
+        this.classLoader = Thread.currentThread().getContextClassLoader();
     }
 
-    public List<FeatureType> parseSchema(String schemaName, FeatureProviderSchemaConsumer schemaConsumer) {
+    public SqlSchemaCrawler(ConnectionInfoSql connectionInfo, ClassLoader classLoader) {
+        this.connectionInfo = connectionInfo;
+        this.classLoader = classLoader;
+    }
+
+    public List<FeatureType> parseSchema(String schemaName) {
 
         Catalog catalog;
         try {
@@ -60,14 +66,13 @@ public class SqlSchemaCrawler {
             e.printStackTrace();
             throw new IllegalStateException("could not parse schema");
         }
-        Map<String, List<String>> geometry = getGeometry();
-
-        return getFeatureTypes(catalog, geometry);
+        return getFeatureTypes(catalog);
 
     }
 
-    private List<FeatureType> getFeatureTypes(Catalog catalog, Map<String, List<String>> geometry) {
+    private List<FeatureType> getFeatureTypes(Catalog catalog) {
         ImmutableList.Builder<FeatureType> featureTypes = new ImmutableList.Builder<>();
+        Map<String, List<String>> geometry = getGeometriesInfo();
 
         for (final Schema schema : catalog.getSchemas()) {
 
@@ -80,7 +85,7 @@ public class SqlSchemaCrawler {
                     if (featurePropertyType != FeatureProperty.Type.UNKNOWN) {
                         ImmutableFeatureProperty.Builder featureProperty = new ImmutableFeatureProperty.Builder()
                                 .name(column.getName())
-                                .path(column.getName())
+                                .path(String.format("/%s/%s", table.getName(), column.getName()))
                                 .type(featurePropertyType);
                         if (column.isPartOfPrimaryKey()) {
                             featureProperty.role(FeatureProperty.Role.ID);
@@ -139,7 +144,7 @@ public class SqlSchemaCrawler {
         return catalog;
     }
 
-    private Map<String, List<String>> getGeometry() {
+    private Map<String, List<String>> getGeometriesInfo() {
         Map<String, List<String>> geometry = new HashMap<>();
         Connection con = getConnection();
         Statement stmt;
@@ -160,6 +165,8 @@ public class SqlSchemaCrawler {
     private Connection getConnection() {
         try {
             if (Objects.isNull(connection) || connection.isClosed()) {
+                Thread.currentThread().setContextClassLoader(classLoader);
+                LOGGER.debug("CLASSL {}", classLoader);
                 final String connectionUrl = String.format("jdbc:postgresql://%1$s/%2$s", connectionInfo.getHost(), connectionInfo.getDatabase());
                 final DatabaseConnectionSource dataSource = new DatabaseConnectionSource(connectionUrl);
                 dataSource.setUserCredentials(new SingleUseUserCredentials(connectionInfo.getUser(), connectionInfo.getPassword()));

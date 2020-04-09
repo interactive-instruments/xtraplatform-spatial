@@ -11,12 +11,14 @@ import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.net.UrlEscapers;
 import de.ii.xtraplatform.akka.http.Http;
 import de.ii.xtraplatform.akka.http.HttpClient;
+import de.ii.xtraplatform.entity.api.handler.Entity;
 import de.ii.xtraplatform.ogc.parser.GMLDictionaryAnalyzer;
 import de.ii.xtraplatform.ogc.parser.GMLDictionaryParser;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
+import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.codehaus.staxmate.SMInputFactory;
 import org.codehaus.staxmate.in.SMInputCursor;
 
@@ -26,7 +28,9 @@ import java.util.Map;
 import java.util.Objects;
 
 @Component
-@Provides
+@Provides(properties = {
+        @StaticServiceProperty(name = Entity.TYPE_KEY, type = "java.lang.String", value = Codelist.ENTITY_TYPE)
+})
 @Instantiate
 public class CodelistImporterGmlDictionary implements CodelistImporter {
 

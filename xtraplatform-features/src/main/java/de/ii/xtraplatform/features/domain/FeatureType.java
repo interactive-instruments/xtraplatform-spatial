@@ -86,9 +86,10 @@ public interface FeatureType extends ValueInstance {
                                                        })
                                                        .collect(Collectors.toList());
 
-                           //TODO: better double col support
+                           //TODO: implement double col support as provider transformer and remove this
+                           String root = path.get(0);
                            String column = path.get(path.size() - 1);
-                           if (column.contains(":")) {
+                           if (column.contains(":") && !root.contains(":")) {
                                List<String> columns = Splitter.on(':')
                                                               .splitToList(column);
 

@@ -125,9 +125,14 @@ public interface FeatureProviderDataV1 extends EntityData {
         return Optional.of(String.format("%s/%s", getProviderType(), getFeatureProviderType()).toLowerCase());
     }
 
+    @Value.Default
+    default boolean getAuto() {
+        return false;
+    }
+
     ConnectionInfo getConnectionInfo();
 
-    EpsgCrs getNativeCrs();
+    Optional<EpsgCrs> getNativeCrs();
 
     //behaves exactly like Map<String, FeatureTypeMapping>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)

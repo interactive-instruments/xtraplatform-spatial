@@ -12,6 +12,7 @@ import de.ii.xtraplatform.entity.api.PersistentEntity;
 public interface FeatureProvider2 extends PersistentEntity {
 
     String ENTITY_TYPE = "providers";
+    String PROVIDER_TYPE_KEY = "providerType";
 
     @Override
     default String getType() {
@@ -45,7 +46,7 @@ public interface FeatureProvider2 extends PersistentEntity {
     }
 
     default boolean supportsExtents() {
-        return this instanceof FeatureExtents;
+        return this instanceof FeatureExtents && supportsCrs();
     }
 
     default FeatureExtents extents() {
@@ -86,5 +87,16 @@ public interface FeatureProvider2 extends PersistentEntity {
             throw new UnsupportedOperationException();
         }
         return (FeatureCrs) this;
+    }
+
+    default boolean supportsMetadata() {
+        return this instanceof FeatureMetadata;
+    }
+
+    default FeatureMetadata metadata() {
+        if (!supportsMetadata()) {
+            throw new UnsupportedOperationException();
+        }
+        return (FeatureMetadata) this;
     }
 }

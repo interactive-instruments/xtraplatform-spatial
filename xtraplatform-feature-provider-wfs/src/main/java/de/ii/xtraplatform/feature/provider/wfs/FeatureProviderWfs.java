@@ -85,8 +85,8 @@ import java.util.stream.Stream;
  */
 //@Component
 //@Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = PROVIDER_TYPE)})
-public class FeatureProviderWfs extends AbstractFeatureProvider implements FeatureProvider2, FeatureQueries, FeatureQueriesPassThrough, FeatureCrs, FeatureMetadata, FeatureSchema, FeatureProviderGenerator {
-
+public class FeatureProviderWfs {//extends AbstractFeatureProvider implements FeatureProvider2, FeatureQueries, FeatureQueriesPassThrough, FeatureCrs, FeatureMetadata, FeatureSchema, FeatureProviderGenerator {
+/*
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
 
     private static final String SOURCE_FORMAT = "application/gml+xml";
@@ -163,82 +163,157 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
     }
 
     //@Override
-    /*public FeatureStream<FeatureConsumer> getFeatureStream(FeatureQuery query) {
-        if (!queryEncoder.isValid(query)) {
-            throw new IllegalArgumentException("Feature type '" + query.getType() + "' not found");
-        }
+    //public FeatureStream<FeatureConsumer> getFeatureStream(FeatureQuery query) {
 
-        return (featureConsumer, timer) -> {
-            Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(query.getType());
-            Map<QName, List<String>> resolvableTypes = featureTypeMapping.isPresent() ? getResolvableTypes(featureTypeMapping.get()) : ImmutableMap.of();
+    //        if (!queryEncoder.isValid(query)) {
 
-            List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(queryEncoder.getFeatureTypeName(query)) : ImmutableList.<QName>builder().add(queryEncoder.getFeatureTypeName(query))
-                                                                                                                                                            .addAll(resolvableTypes.keySet())
-                                                                                                                                                            .build();
+    //            throw new IllegalArgumentException("Feature type '" + query.getType() + "' not found");
 
-            Sink<ByteString, CompletionStage<Done>> parser = GmlStreamParser.consume(featureTypes, featureConsumer);
+    //        }
 
-            Map<String, String> additionalQueryParameters;
+    //
 
-            if (!resolvableTypes.isEmpty()) {
-                //TODO depth???
-                additionalQueryParameters = ImmutableMap.of("resolve", "local", "resolvedepth", "1");
-            } else {
-                additionalQueryParameters = ImmutableMap.of();
-            }
+    //        return (featureConsumer, timer) -> {
 
-            return connector.runQuery(query, parser, additionalQueryParameters);
-        };
-    }
+    //            Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(query.getType());
 
-    //TODO interface ResolveRelations
-    //@Override
-    public FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query) {
-        // if query crs is native or not supported by provider, remove from query
-        boolean useProviderDefaultCrs = data.getNativeCrs()
-                                            .getCode() == query.getCrs()
-                                                               .getCode()
-                || !supportsCrs(query.getCrs());
+    //            Map<QName, List<String>> resolvableTypes = featureTypeMapping.isPresent() ? getResolvableTypes(featureTypeMapping.get()) : ImmutableMap.of();
 
-        FeatureQuery finalQuery = useProviderDefaultCrs ? ImmutableFeatureQuery.builder()
-                                                                               .from(query)
-                                                                               .crs(null)
-                                                                               .build() : query;
+    //
 
-        return (featureTransformer, timer) -> {
-            Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(finalQuery.getType());
+    //            List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(queryEncoder.getFeatureTypeName(query)) : ImmutableList.<QName>builder().add(queryEncoder.getFeatureTypeName(query))
 
-            if (!featureTypeMapping.isPresent()) {
-                try {
-                    OnTheFly onTheFly = (OnTheFly) featureTransformer;
-                } catch (ClassCastException e) {
+    //                                                                                                                                                            .addAll(resolvableTypes.keySet())
 
-                    CompletableFuture<Done> promise = new CompletableFuture<>();
-                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
-                    return promise;
-                }
-            }
+    //                                                                                                                                                            .build();
 
-            Map<QName, List<String>> resolvableTypes = getResolvableTypes(featureTypeMapping.get());
+    //
 
+    //            Sink<ByteString, CompletionStage<Done>> parser = GmlStreamParser.consume(featureTypes, featureConsumer);
 
-            Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(queryEncoder.getFeatureTypeName(finalQuery), featureTypeMapping.orElse(null), featureTransformer, finalQuery.getFields(), resolvableTypes);
+    //
 
-            Map<String, String> additionalQueryParameters;
+    //            Map<String, String> additionalQueryParameters;
 
-            if (!resolvableTypes.isEmpty()) {
-                //TODO depth???
-                additionalQueryParameters = ImmutableMap.of("resolve", "local", "resolvedepth", "1");
-            } else {
-                additionalQueryParameters = ImmutableMap.of();
-            }
+    //
 
-            if (Objects.nonNull(timer))
-                timer.stop();
+    //            if (!resolvableTypes.isEmpty()) {
 
-            return connector.runQuery(finalQuery, transformer, additionalQueryParameters);
-        };
-    }*/
+    //                //TODO depth???
+
+    //                additionalQueryParameters = ImmutableMap.of("resolve", "local", "resolvedepth", "1");
+
+    //            } else {
+
+    //                additionalQueryParameters = ImmutableMap.of();
+
+    //            }
+
+    //
+
+    //            return connector.runQuery(query, parser, additionalQueryParameters);
+
+    //        };
+
+    //    }
+
+    //
+
+    //    //TODO interface ResolveRelations
+
+    //    //@Override
+
+    //    public FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query) {
+
+    //        // if query crs is native or not supported by provider, remove from query
+
+    //        boolean useProviderDefaultCrs = data.getNativeCrs()
+
+    //                                            .getCode() == query.getCrs()
+
+    //                                                               .getCode()
+
+    //                || !supportsCrs(query.getCrs());
+
+    //
+
+    //        FeatureQuery finalQuery = useProviderDefaultCrs ? ImmutableFeatureQuery.builder()
+
+    //                                                                               .from(query)
+
+    //                                                                               .crs(null)
+
+    //                                                                               .build() : query;
+
+    //
+
+    //        return (featureTransformer, timer) -> {
+
+    //            Optional<FeatureTypeMapping> featureTypeMapping = getFeatureTypeMapping(finalQuery.getType());
+
+    //
+
+    //            if (!featureTypeMapping.isPresent()) {
+
+    //                try {
+
+    //                    OnTheFly onTheFly = (OnTheFly) featureTransformer;
+
+    //                } catch (ClassCastException e) {
+
+    //
+
+    //                    CompletableFuture<Done> promise = new CompletableFuture<>();
+
+    //                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
+
+    //                    return promise;
+
+    //                }
+
+    //            }
+
+    //
+
+    //            Map<QName, List<String>> resolvableTypes = getResolvableTypes(featureTypeMapping.get());
+
+    //
+
+    //
+
+    //            Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(queryEncoder.getFeatureTypeName(finalQuery), featureTypeMapping.orElse(null), featureTransformer, finalQuery.getFields(), resolvableTypes);
+
+    //
+
+    //            Map<String, String> additionalQueryParameters;
+
+    //
+
+    //            if (!resolvableTypes.isEmpty()) {
+
+    //                //TODO depth???
+
+    //                additionalQueryParameters = ImmutableMap.of("resolve", "local", "resolvedepth", "1");
+
+    //            } else {
+
+    //                additionalQueryParameters = ImmutableMap.of();
+
+    //            }
+
+    //
+
+    //            if (Objects.nonNull(timer))
+
+    //                timer.stop();
+
+    //
+
+    //            return connector.runQuery(finalQuery, transformer, additionalQueryParameters);
+
+    //        };
+
+    //    }
 
     private Map<String, FeatureTypeMapping> getOnTheFlyMappings(Set<String> featureTypes) {
         return featureTypes.stream()
@@ -571,4 +646,6 @@ public class FeatureProviderWfs extends AbstractFeatureProvider implements Featu
             }
         };
     }
+
+ */
 }
