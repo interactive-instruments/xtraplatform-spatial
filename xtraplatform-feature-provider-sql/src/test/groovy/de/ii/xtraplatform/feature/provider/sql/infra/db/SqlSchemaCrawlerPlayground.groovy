@@ -35,7 +35,7 @@ class SqlSchemaCrawlerPlayground extends Specification {
 
     def setupSpec() {
 
-        def connectionInfo = new ImmutableConnectionInfoSql.Builder().host("ldproxy02:5433")
+        def connectionInfo = new ImmutableConnectionInfoSql.Builder().host("localhost:5433")
                 .database("daraa")
                 .user("postgres")
                 .password("postgres")
@@ -52,7 +52,7 @@ class SqlSchemaCrawlerPlayground extends Specification {
             String schemaName = "public"
 
         when:
-            def featureTypeList = sqlSchemaCrawler.parseSchema(schemaName, null)
+            def featureTypeList = sqlSchemaCrawler.parseSchema(schemaName)
 
         then:
 
@@ -73,6 +73,7 @@ class SqlSchemaCrawlerPlayground extends Specification {
 
     }
 
+    @Ignore
     def 'mock catalog'() {
         given: 'mock catalog'
         Catalog mockCatalog = createCatalog()
