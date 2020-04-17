@@ -7,8 +7,6 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -19,15 +17,12 @@ import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
 import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
-import de.ii.xtraplatform.event.store.EntityDataBuilder;
 import org.immutables.value.Value;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Value.Immutable
@@ -39,14 +34,18 @@ public interface FeatureTypeV2 extends ValueInstance {
     @JsonIgnore
     String getName();
 
+    String getPath();
+
+    String getLabel();
+
+    String getDescription();
+
     //behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonMerge
     ValueBuilderMap<FeaturePropertyV2, ImmutableFeaturePropertyV2.Builder> getProperties();
 
     Map<String, String> getAdditionalInfo();
-
-
 
 
     // custom builder to automatically use keys of types as name of FeaturePropertyV2

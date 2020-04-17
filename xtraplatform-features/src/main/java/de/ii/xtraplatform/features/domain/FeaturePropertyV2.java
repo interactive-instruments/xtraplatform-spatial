@@ -15,8 +15,10 @@ import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
 import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import org.immutables.value.Value;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -37,6 +39,9 @@ public interface FeaturePropertyV2 extends ValueInstance {
         BOOLEAN,
         DATETIME,
         GEOMETRY,
+        OBJECT,
+        VALUE_ARRAY,
+        OBJECT_ARRAY,
         UNKNOWN
     }
 
@@ -50,7 +55,21 @@ public interface FeaturePropertyV2 extends ValueInstance {
         return Type.STRING;
     }
 
+    Optional<String> getObjectType();
+
+    Optional<Type> getValueType();
+
     Optional<Role> getRole();
+
+    Optional<String> getLabel();
+
+    Optional<String> getDescription();
+
+    Optional<SimpleFeatureGeometry> getGeometryType();
+
+    Optional<Map<String, String>> getTransformers();
+
+    Map<String, List<String>> getConstraints();
 
     //behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
@@ -58,10 +77,6 @@ public interface FeaturePropertyV2 extends ValueInstance {
     ValueBuilderMap<FeaturePropertyV2, ImmutableFeaturePropertyV2.Builder> getProperties();
 
     Map<String, String> getAdditionalInfo();
-
-
-
-
 
     // custom builder to automatically use keys of types as name of nested FeaturePropertyV2
     abstract class Builder implements ValueBuilder<FeaturePropertyV2> {

@@ -19,7 +19,6 @@ import de.ii.xtraplatform.event.store.EntityDataBuilder;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
-import javax.validation.constraints.Null;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -56,12 +55,14 @@ public interface FeatureProviderDataV2 extends EntityData {
 
     EpsgCrs getNativeCrs();
 
+    Optional<String> getDefaultLanguage();
+
     //behaves exactly like Map<String, FeatureTypeMapping>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonMerge
     ValueBuilderMap<FeatureTypeV2, ImmutableFeatureTypeV2.Builder> getTypes();
 
-
+    Map<String, Map<String, String>> getCodelists();
 
 
     // custom builder to automatically use keys of types as name of FeatureTypeV2
