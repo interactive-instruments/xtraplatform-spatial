@@ -86,4 +86,9 @@ public class ConnectorFactoryImpl implements ConnectorFactory, Registry<Factory>
             throw new IllegalStateException(String.format("Connector with type %s for provider type %s could not be created.", connectorType, providerType), e);
         }
     }
+
+    @Override
+    public void disposeConnector(FeatureProviderConnector<?, ?, ?> connector) {
+        connectorFactories.disposeInstance(connector);
+    }
 }

@@ -16,6 +16,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entity.api.EntityComponent;
 import de.ii.xtraplatform.entity.api.handler.Entity;
+import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
@@ -47,8 +48,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 import java.util.Optional;
 
-//@Component
-//@Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = FeatureProviderSql.PROVIDER_TYPE)})
 @EntityComponent
 @Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV1.class)
 public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueries, SqlQueryOptions> implements FeatureProvider2, FeatureQueries, FeatureExtents, FeatureCrs {
@@ -69,13 +68,13 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                               @Requires ActorSystemProvider actorSystemProvider,
                               @Requires CrsTransformerFactory crsTransformerFactory,
                               @Requires Cql cql,
-                              @Property(name = "data") FeatureProviderDataV1 data,
-                              @Property(name = ".connector") SqlConnector sqlConnector) {
+                              @Requires ConnectorFactory connectorFactory,
+                              @Property(name = Entity.DATA_KEY) FeatureProviderDataV1 data) {
         //TODO: starts akka for every instance, move to singleton
         super(context, actorSystemProvider, data, createPathParser((ConnectionInfoSql) data.getConnectionInfo(), cql));
 
         this.crsTransformerFactory = crsTransformerFactory;
-        this.connector = sqlConnector;
+        this.connector = (SqlConnector) connectorFactory.createConnector(data);
         //TODO: from config
         SqlDialect sqlDialect = new SqlDialectPostGis();
         this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect, data.getNativeCrs().orElse(OgcCrs.CRS84),crsTransformerFactory);

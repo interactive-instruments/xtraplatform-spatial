@@ -16,6 +16,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entity.api.EntityComponent;
 import de.ii.xtraplatform.entity.api.handler.Entity;
+import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
@@ -60,12 +61,12 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     public FeatureProviderWfs(@Context BundleContext context,
                               @Requires ActorSystemProvider actorSystemProvider,
                               @Requires CrsTransformerFactory crsTransformerFactory,
-                              @Property(name = "data") FeatureProviderDataV1 data,
-                              @Property(name = ".connector") WfsConnector wfsConnector) {
+                              @Requires ConnectorFactory connectorFactory,
+                              @Property(name = Entity.DATA_KEY) FeatureProviderDataV1 data) {
         super(context, actorSystemProvider, data, createPathParser((ConnectionInfoWfsHttp) data.getConnectionInfo()));
 
         this.crsTransformerFactory = crsTransformerFactory;
-        this.connector = wfsConnector;
+        this.connector = (WfsConnector) connectorFactory.createConnector(data);
         this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), data.getTypes(), (ConnectionInfoWfsHttp) data.getConnectionInfo(), data.getNativeCrs().orElse(OgcCrs.CRS84));
         this.featureNormalizer = new FeatureNormalizerWfs(getTypeInfos(), data.getTypes(), ((ConnectionInfoWfsHttp) data.getConnectionInfo()).getNamespaces());
         this.extentReader = new ExtentReaderWfs(connector, crsTransformerFactory, data.getNativeCrs().orElse(OgcCrs.CRS84));

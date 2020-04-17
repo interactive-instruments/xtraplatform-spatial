@@ -12,9 +12,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entity.api.handler.Entity;
 import de.ii.xtraplatform.event.store.EntityHydrator;
-import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
-import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlConnectorSlick;
 import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlSchemaCrawler;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
@@ -24,7 +22,6 @@ import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
-import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.wiring.BundleWiring;
@@ -46,61 +43,38 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderDataHydratorSql.class);
 
     private final ClassLoader classLoader;
-    private final ConnectorFactory connectorFactory;
 
-    public FeatureProviderDataHydratorSql(@Context BundleContext context,
-                                          @Requires ConnectorFactory connectorFactory) {
+    public FeatureProviderDataHydratorSql(@Context BundleContext context) {
         this.classLoader = context.getBundle()
                                   .adapt(BundleWiring.class)
                                   .getClassLoader();
-        this.connectorFactory = connectorFactory;
-        Thread.currentThread().setContextClassLoader(classLoader);
+        Thread.currentThread()
+              .setContextClassLoader(classLoader);
     }
 
     @Override
-    public Map<String, Object> getInstanceConfiguration(FeatureProviderDataV1 data) {
+    public FeatureProviderDataV1 hydrateData(FeatureProviderDataV1 data) {
 
-        if (data.getAuto()) {
+        if (data.isAuto()) {
             LOGGER.info("Feature provider with id '{}' is in auto mode, generating configuration ...", data.getId());
         }
 
-        FeatureProviderDataV1 hydrated = generateNativeCrsIfNecessary(generateTypesIfNecessary(data));
-
         try {
-            SqlConnectorSlick connector = getConnector(data);
+            return generateNativeCrsIfNecessary(generateTypesIfNecessary(data));
 
-            return ImmutableMap.<String, Object>builder()
-                    .put("data", hydrated)
-                    .put(".connector", connector)
-                    .build();
-
-
-        } catch (IllegalStateException e) {
-            LOGGER.error("Service with id '{}' could not be created: {}", data.getId(), e.getMessage());
+        } catch (Throwable e) {
+            LOGGER.error("Feature provider with id '{}' could not be hydrated: {}", data.getId(), e.getMessage());
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Exception:", e);
+                LOGGER.debug("Stacktrace", e);
             }
         }
 
         throw new IllegalStateException();
     }
 
-    private SqlConnectorSlick getConnector(FeatureProviderDataV1 data) {
-        try {
-            return (SqlConnectorSlick) connectorFactory.createConnector(data);
-
-        } catch (IllegalStateException e) {
-            LOGGER.error("Feature provider with id '{}' could not be created: {}", data.getId(), e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Stacktrace", e);
-            }
-            throw e;
-        }
-    }
-
     private FeatureProviderDataV1 generateTypesIfNecessary(FeatureProviderDataV1 data) {
-        if (data.getAuto() && data.getTypes()
-                                          .isEmpty()) {
+        if (data.isAuto() && data.getTypes()
+                                 .isEmpty()) {
 
             ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
 
@@ -127,17 +101,20 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
     }
 
     private FeatureProviderDataV1 generateNativeCrsIfNecessary(FeatureProviderDataV1 data) {
-        if (data.getAuto() && !data.getNativeCrs().isPresent()) {
-            EpsgCrs nativeCrs = data.getTypes().values().stream()
-                                        .flatMap(type -> type.getProperties()
-                                                             .values()
-                                                             .stream())
-                                        .filter(property -> property.isSpatial() && property.getAdditionalInfo()
-                                                                                            .containsKey("crs"))
-                                        .findFirst()
-                                        .map(property -> EpsgCrs.fromString(property.getAdditionalInfo()
-                                                                                    .get("crs")))
-                                        .orElseGet(() -> OgcCrs.CRS84);
+        if (data.isAuto() && !data.getNativeCrs()
+                                  .isPresent()) {
+            EpsgCrs nativeCrs = data.getTypes()
+                                    .values()
+                                    .stream()
+                                    .flatMap(type -> type.getProperties()
+                                                         .values()
+                                                         .stream())
+                                    .filter(property -> property.isSpatial() && property.getAdditionalInfo()
+                                                                                        .containsKey("crs"))
+                                    .findFirst()
+                                    .map(property -> EpsgCrs.fromString(property.getAdditionalInfo()
+                                                                                .get("crs")))
+                                    .orElseGet(() -> OgcCrs.CRS84);
 
             return new ImmutableFeatureProviderDataV1.Builder()
                     .from(data)

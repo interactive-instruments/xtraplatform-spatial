@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author zahnen
@@ -28,12 +29,14 @@ public final class FactoryRegistryState<T> implements Registry.State<Factory>, F
     private final String className;
     private final BundleContext bundleContext;
     private final Registry.State<Factory> factories;
+    private final Map<T, ComponentInstance> instances;
 
     public FactoryRegistryState(String className, String shortName, BundleContext bundleContext,
                                 String... componentProperties) {
         this.className = className;
         this.bundleContext = bundleContext;
         this.factories = new RegistryState<>(String.format("%s factory", shortName), bundleContext, componentProperties);
+        this.instances = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -80,10 +83,20 @@ public final class FactoryRegistryState<T> implements Registry.State<Factory>, F
             ServiceReference<?>[] connectorRefs = bundleContext.getServiceReferences(className, "(instance.name=" + connectorInstance.getInstanceName() + ")");
             T connector = (T) bundleContext.getService(connectorRefs[0]);
 
+            instances.put(connector, connectorInstance);
+
             return connector;
 
         } catch (Throwable e) {
             throw new IllegalStateException("", e);
+        }
+    }
+
+    @Override
+    public void disposeInstance(T instance) {
+        if (instances.containsKey(instance)) {
+            ComponentInstance componentInstance = instances.remove(instance);
+            componentInstance.dispose();
         }
     }
 }
