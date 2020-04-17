@@ -166,7 +166,7 @@ public class SqlSchemaCrawler {
         try {
             if (Objects.isNull(connection) || connection.isClosed()) {
                 Thread.currentThread().setContextClassLoader(classLoader);
-                LOGGER.debug("CLASSL {}", classLoader);
+                //LOGGER.debug("CLASSL {}", classLoader);
                 final String connectionUrl = String.format("jdbc:postgresql://%1$s/%2$s", connectionInfo.getHost(), connectionInfo.getDatabase());
                 final DatabaseConnectionSource dataSource = new DatabaseConnectionSource(connectionUrl);
                 dataSource.setUserCredentials(new SingleUseUserCredentials(connectionInfo.getUser(), connectionInfo.getPassword()));

@@ -17,7 +17,6 @@ import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.infra.WfsConnectorHttp;
 import de.ii.xtraplatform.feature.provider.wfs.infra.WfsSchemaCrawler;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
-import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV1;
@@ -50,31 +49,28 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
     }
 
     @Override
-    public Map<String, Object> getInstanceConfiguration(FeatureProviderDataV1 data) {
-        WfsConnectorHttp connector = getConnector(data);
+    public FeatureProviderDataV1 hydrateData(FeatureProviderDataV1 data) {
 
-        if (data.getAuto()) {
-            LOGGER.info("Feature provider with id '{}' is in auto mode, generating configuration ...", data.getId());
-        }
-
-        FeatureProviderDataV1 hydrated = completeConnectionInfoIfNecessary(connector,
-                generateNativeCrsIfNecessary(
-                        generateTypesIfNecessary(connector, data)
-                )
-        );
-
-        //TODO: remove or reconfigurate first provider
         try {
-            WfsConnectorHttp connector2 = getConnector(data);
+            WfsConnectorHttp connector = (WfsConnectorHttp) connectorFactory.createConnector(data);
 
-            return ImmutableMap.<String, Object>builder()
-                    .put("data", hydrated)
-                    .put(".connector", connector2)
-                    .build();
+            if (data.isAuto()) {
+                LOGGER.info("Feature provider with id '{}' is in auto mode, generating configuration ...", data.getId());
+            }
+
+            FeatureProviderDataV1 hydrated = completeConnectionInfoIfNecessary(connector,
+                    generateNativeCrsIfNecessary(
+                            generateTypesIfNecessary(connector, data)
+                    )
+            );
+
+            connectorFactory.disposeConnector(connector);
+
+            return hydrated;
 
 
-        } catch (IllegalStateException e) {
-            LOGGER.error("Feature provider with id '{}' could not be created: {}", data.getId(), e.getMessage());
+        } catch (Throwable e) {
+            LOGGER.error("Feature provider with id '{}' could not be hydrated: {}", data.getId(), e.getMessage());
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Exception:", e);
             }
@@ -83,25 +79,12 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
         throw new IllegalStateException();
     }
 
-    private WfsConnectorHttp getConnector(FeatureProviderDataV1 data) {
-        try {
-            return (WfsConnectorHttp) connectorFactory.createConnector(data);
-
-        } catch (IllegalStateException e) {
-            LOGGER.error("Feature provider with id '{}' could not be created: {}", data.getId(), e.getMessage());
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Stacktrace", e);
-            }
-            throw e;
-        }
-    }
-
     private FeatureProviderDataV1 completeConnectionInfoIfNecessary(WfsConnectorHttp connector,
                                                                     FeatureProviderDataV1 data) {
         ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
 
-        if (data.getAuto() && connectionInfo.getNamespaces()
-                                            .isEmpty()) {
+        if (data.isAuto() && connectionInfo.getNamespaces()
+                                           .isEmpty()) {
 
             WfsSchemaCrawler schemaCrawler = new WfsSchemaCrawler(connector, connectionInfo);
 
@@ -117,8 +100,8 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
     }
 
     private FeatureProviderDataV1 generateTypesIfNecessary(WfsConnectorHttp connector, FeatureProviderDataV1 data) {
-        if (data.getAuto() && data.getTypes()
-                                  .isEmpty()) {
+        if (data.isAuto() && data.getTypes()
+                                 .isEmpty()) {
 
             ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
 
@@ -140,8 +123,8 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
     }
 
     private FeatureProviderDataV1 generateNativeCrsIfNecessary(FeatureProviderDataV1 data) {
-        if (data.getAuto() && !data.getNativeCrs()
-                                   .isPresent()) {
+        if (data.isAuto() && !data.getNativeCrs()
+                                  .isPresent()) {
             EpsgCrs nativeCrs = data.getTypes()
                                     .values()
                                     .stream()

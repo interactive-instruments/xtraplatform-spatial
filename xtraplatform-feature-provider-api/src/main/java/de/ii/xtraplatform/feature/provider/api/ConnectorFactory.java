@@ -16,4 +16,6 @@ import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 public interface ConnectorFactory {
 
     FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV1 featureProviderData);
+
+    void disposeConnector(FeatureProviderConnector<?, ?, ?> connector);
 }
