@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Value.Immutable
@@ -36,9 +37,9 @@ public interface FeatureTypeV2 extends ValueInstance {
 
     String getPath();
 
-    String getLabel();
+    Optional<String> getLabel();
 
-    String getDescription();
+    Optional<String> getDescription();
 
     //behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)

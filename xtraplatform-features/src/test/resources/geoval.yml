@@ -2,7 +2,7 @@
 id: geoval
 createdAt: 1586271491161
 lastModified: 1586271491161
-entityStorageVersion: 1
+entityStorageVersion: 2
 providerType: FEATURE
 featureProviderType: SQL
 nativeCrs:
