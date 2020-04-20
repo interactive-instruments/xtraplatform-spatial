@@ -31,8 +31,8 @@ types:
         constraints:
           codelist: geoval_type
           enum:
-            - Borehole
-            - TrialPit
+           - Borehole
+           - TrialPit
       shortName:
         path: shortname
         type: STRING
@@ -98,4 +98,4 @@ types:
 codelists:
   nullValues:
     No Information: null
-    '-1': null
+    -1: null

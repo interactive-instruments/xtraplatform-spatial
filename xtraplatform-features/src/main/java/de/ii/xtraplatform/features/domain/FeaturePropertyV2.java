@@ -18,6 +18,7 @@ import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodi
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import org.immutables.value.Value;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,7 +70,8 @@ public interface FeaturePropertyV2 extends ValueInstance {
 
     Optional<Map<String, String>> getTransformers();
 
-    Map<String, List<String>> getConstraints();
+    @Nullable
+    Constraints getConstraints();
 
     //behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
@@ -88,6 +90,30 @@ public interface FeaturePropertyV2 extends ValueInstance {
         public ImmutableFeaturePropertyV2.Builder putProperties2(String key, ImmutableFeaturePropertyV2.Builder builder) {
             return putProperties(key, builder.name(key));
         }
+    }
+
+    @Value.Immutable
+    @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
+    @JsonDeserialize(builder = ImmutableConstraints.Builder.class)
+    interface Constraints {
+
+        Optional<String> getCodelist();
+
+        @JsonProperty(value = "enum")
+        Optional<List<String>> getEnumValues();
+
+        Optional<String> getRegex();
+
+        Optional<Boolean> getRequired();
+
+        Optional<Double> getMin();
+
+        Optional<Double> getMax();
+
+        Optional<Integer> getMinOccurrence();
+
+        Optional<Integer> getMaxOccurrence();
+
     }
 
     @Override
