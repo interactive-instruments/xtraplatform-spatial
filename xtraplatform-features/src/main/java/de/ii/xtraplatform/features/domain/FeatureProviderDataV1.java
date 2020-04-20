@@ -18,6 +18,7 @@ import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodi
 import de.ii.xtraplatform.event.store.EntityDataBuilder;
 import org.immutables.value.Value;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -125,6 +126,8 @@ public interface FeatureProviderDataV1 extends EntityData {
         return Optional.of(String.format("%s/%s", getProviderType(), getFeatureProviderType()).toLowerCase());
     }
 
+    @Nullable //TODO: remove when done
+    @JsonIgnore //TODO: remove when done
     ConnectionInfo getConnectionInfo();
 
     EpsgCrs getNativeCrs();
@@ -147,15 +150,15 @@ public interface FeatureProviderDataV1 extends EntityData {
 
 
     //TODO
-    @Value.Default
+    /*@Value.Default
     default String getConnectorType() {
         return getConnectionInfo().getConnectorType();
-    }
+    }*/
 
     //TODO
-    @JsonIgnore
+    /*@JsonIgnore
     @Value.Default
     default Optional<String> getDataSourceUrl() {
         return getConnectionInfo().getConnectionUri();
-    }
+    }*/
 }
