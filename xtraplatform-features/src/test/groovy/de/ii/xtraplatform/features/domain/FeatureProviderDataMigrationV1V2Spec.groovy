@@ -91,7 +91,7 @@ class FeatureProviderDataMigrationV1V2Spec extends Specification {
                                 .additionalInfo(ImmutableMap.of("role", "LINKTITLE"))
                         )
                         .putProperties2("process[].href", new ImmutableFeatureProperty.Builder()
-                                .path("/observationsubject/_type/observationsubject/[id=observationsubject_fk]observationsubject_process/[process_fk=id]process/id")
+                                .path("/observationsubject/[id=observationsubject_fk]observationsubject_process/[process_fk=id]process/id")
                                 .type(Type.STRING)
                                 .additionalInfo(ImmutableMap.of("role", "LINKHREF"))
                         )
