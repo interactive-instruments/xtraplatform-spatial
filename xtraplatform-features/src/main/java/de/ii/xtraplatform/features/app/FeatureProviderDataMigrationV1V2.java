@@ -48,7 +48,13 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
 
         entityData.getTypes().values().forEach(featureType -> {
 
-            String featureTypePath = "/" + featureType.getName();
+            String firstElement = featureType.getPropertiesByPath()
+                    .keySet()
+                    .stream()
+                    .map(property -> property.get(0))
+                    .findFirst()
+                    .get();
+            String featureTypePath = "/" + firstElement;
             ImmutableFeatureTypeV2.Builder featureTypeNew = new ImmutableFeatureTypeV2.Builder()
                     .path(featureTypePath);
 
@@ -72,7 +78,7 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
                         featureTypeNew.putProperties(entry.getKey(), getFeaturePropertyV2(name, path, type, role));
                     }
                 } else {
-                    String parentName = nameTokens[0].replace("[]", "");
+                    String parentName = nameTokens[0].split("(\\[\\w*\\])")[0];
                     FeaturePropertyV2.Type childType = FeaturePropertyV2.Type.valueOf(fp.getType().toString());
 
                     if (!parentName.equals(name)) {
@@ -81,14 +87,14 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
                         newProperties.clear();
                     }
 
-                    if (nameTokens[0].contains("[]")) {
+                    if (nameTokens[0].matches("([\\w]*\\[\\w*\\])")) {
                         type = FeaturePropertyV2.Type.OBJECT_ARRAY;
                     } else {
                         type = FeaturePropertyV2.Type.OBJECT;
                     }
 
-                    if (nameTokens[1].endsWith("[]")) {
-                        String childName = nameTokens[1].replace("[]", "");
+                    if (nameTokens[1].matches("([\\w]*\\[\\w*\\])")) {
+                        String childName = nameTokens[1].split("(\\[\\w*\\])")[0];
                         String childPath = fp.getPath().replace(featureTypePath + "/" + path + "/", "");
                         newProperties.put(childName,
                                 getFeaturePropertyV2ValueArray(childName, childPath, childType, role));
