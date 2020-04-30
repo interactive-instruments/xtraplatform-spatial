@@ -1,0 +1,101 @@
+---
+id: geoval
+createdAt: 1586271491161
+lastModified: 1586271491161
+entityStorageVersion: 2
+providerType: FEATURE
+featureProviderType: SQL
+nativeCrs:
+  code: 4326
+  forceAxisOrder: LON_LAT
+defaultLanguage: de
+types:
+  observationsubject:
+    path: /observationsubject
+    label: Untersuchungsobjekt
+    description: Ein Untersuchungsobjekt ist entweder eine Probe für Untersuchungen
+      im Labor oder eine In-Situ-Messung
+    properties:
+      id:
+        path: id
+        type: STRING
+        role: ID
+        label: Objekt-Id
+        description: Eindeutige Id des Objekts
+        constraints:
+          regex: '[a-zA-Z0-9_]{3,}'
+      type:
+        path: _type
+        type: STRING
+        label: Art
+        constraints:
+          codelist: geoval_type
+          enum:
+           - Borehole
+           - TrialPit
+      shortName:
+        path: shortname
+        type: STRING
+        transformers:
+          codelist: nullValues
+      geomLowerPoint:
+        path: geomlowerpoint
+        type: GEOMETRY
+        geometryType: POINT
+      explorationSite:
+        path: '[explorationsite_fk=id]explorationsite'
+        type: OBJECT
+        objectType: Link
+        label: Aufschlußpunkt
+        properties:
+          title:
+            path: shortname
+            type: STRING
+          href:
+            path: id
+            type: STRING
+            constraints:
+              required: true
+      process:
+        path: '[id=observationsubject_fk]observationsubject_process/[process_fk=id]process'
+        type: OBJECT_ARRAY
+        objectType: Link
+        label: Versuche
+        constraints:
+          minOccurrence: 1
+          maxOccurrence: 3
+        properties:
+          title:
+            path: category_fk
+            type: STRING
+          href:
+            path: id
+            type: STRING
+            constraints:
+              required: true
+      filterValues:
+        path: '[id=observationsubject_fk]observationsubject_filtervalues'
+        type: OBJECT_ARRAY
+        objectType: FilterValue
+        label: Leitkennwerte
+        properties:
+          property:
+            path: filtervalueproperty_fk
+            type: STRING
+            label: Eigenschaft
+          measure:
+            path: resultmeasure
+            type: FLOAT
+            label: Messwert
+            constraints:
+              min: 0.0
+              max: 100.0
+          classification:
+            path: '[id=filtervalue_fk]filtervalue_resultclassification/classificationcode_fk'
+            type: VALUE_ARRAY
+            valueType: STRING
+            label: Klassifikationen
+codelists:
+  nullValues:
+    No Information: null
+    -1: null

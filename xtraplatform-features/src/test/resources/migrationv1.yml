@@ -1,0 +1,54 @@
+---
+id: geoval
+createdAt: 1586271491161
+lastModified: 1586271491161
+entityStorageVersion: 2
+providerType: FEATURE
+featureProviderType: SQL
+nativeCrs:
+  code: 4326
+  forceAxisOrder: LON_LAT
+types:
+  observationsubject:    
+    id:
+      path: /observationsubject/id
+      type: STRING
+      role: ID
+    type:
+      path: /observationsubject/_type
+      type: STRING
+    geomLowerPoint:
+      path: /observationsubject/geomlowerpoint
+      type: GEOMETRY
+    shortName:
+      path: /observationsubject/shortname
+      type: STRING
+    explorationSite.title:
+      path: /observationsubject/[explorationsite_fk=id]explorationsite/shortname
+      type: STRING
+      additionalInfo:
+        role: LINKTITLE
+    explorationSite.href:
+      path: /observationsubject/[explorationsite_fk=id]explorationsite/id
+      type: STRING
+      additionalInfo:
+        role: LINKHREF
+    process[].title:
+      path: /observationsubject/[id=observationsubject_fk]observationsubject_process/[process_fk=id]process/category_fk
+      type: STRING
+      additionalInfo:
+        role: LINKTITLE
+    process[].href:
+      path: /observationsubject/[id=observationsubject_fk]observationsubject_process/[process_fk=id]process/id
+      type: STRING
+      additionalInfo:
+        role: LINKHREF
+    filterValues[].property:
+      path: /observationsubject/[id=observationsubject_fk]observationsubject_filtervalues/filtervalueproperty_fk
+      type: STRING
+    filterValues[].measure:
+      path: /observationsubject/[id=observationsubject_fk]observationsubject_filtervalues/resultmeasure
+      type: FLOAT
+    filterValues[].classification[]:
+      path: /observationsubject/[id=observationsubject_fk]observationsubject_filtervalues/[id=filtervalue_fk]filtervalue_resultclassification/classificationcode_fk
+      type: STRING
