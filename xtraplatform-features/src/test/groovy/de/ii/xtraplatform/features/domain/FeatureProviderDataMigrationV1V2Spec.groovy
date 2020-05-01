@@ -16,6 +16,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import com.fasterxml.jackson.datatype.guava.GuavaModule
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.google.common.collect.ImmutableMap
+import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.features.app.FeatureProviderDataMigrationV1V2
 import spock.lang.Shared
@@ -23,6 +24,8 @@ import spock.lang.Specification
 
 import static de.ii.xtraplatform.features.domain.FeatureProperty.Role
 import static de.ii.xtraplatform.features.domain.FeatureProperty.Type
+import static de.ii.xtraplatform.features.domain.FeatureProviderDataFixtures.ONEO_V1
+import static de.ii.xtraplatform.features.domain.FeatureProviderDataFixtures.ONEO_V2
 
 class FeatureProviderDataMigrationV1V2Spec extends Specification {
 
@@ -121,6 +124,24 @@ class FeatureProviderDataMigrationV1V2Spec extends Specification {
         def expected = new File("src/test/resources/migrationv2.yml").text
 
         dataAsYaml == expected
+
+    }
+
+
+
+    def 'migrate oneo'() {
+
+        given:
+
+        when:
+
+        FeatureProviderDataV2 actual = new FeatureProviderDataMigrationV1V2().migrate(ONEO_V1)
+
+        FeatureProviderDataV2 expected = ONEO_V2
+
+        then:
+
+        actual == expected
 
     }
 }

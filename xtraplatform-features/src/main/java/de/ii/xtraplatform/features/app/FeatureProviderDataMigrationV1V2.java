@@ -9,11 +9,15 @@ import de.ii.xtraplatform.features.domain.FeatureProperty;
 import de.ii.xtraplatform.features.domain.FeaturePropertyV2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.domain.FeatureType;
+import de.ii.xtraplatform.features.domain.FeatureTypeV2;
 import de.ii.xtraplatform.features.domain.ImmutableFeaturePropertyV2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV1;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureTypeV2;
 
+import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -45,105 +49,173 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
                 .featureProviderType(entityData.getFeatureProviderType())
                 .nativeCrs(entityData.getNativeCrs());
 
+        entityData.getTypes()
+                  .values()
+                  .forEach(featureType -> {
+                      FeatureTypeV2 featureTypeNew = migrateFeatureType(featureType);
 
-        entityData.getTypes().values().forEach(featureType -> {
+                      builder.putTypes(featureTypeNew.getName(), featureTypeNew);
 
-            String firstElement = featureType.getPropertiesByPath()
-                    .keySet()
-                    .stream()
-                    .map(property -> property.get(0))
-                    .findFirst()
-                    .get();
-            String featureTypePath = "/" + firstElement;
-            ImmutableFeatureTypeV2.Builder featureTypeNew = new ImmutableFeatureTypeV2.Builder()
-                    .path(featureTypePath);
-
-            String name = null;
-            String path = null;
-            Map<String, FeaturePropertyV2> newProperties = new LinkedHashMap<>();
-            for (Map.Entry<String, FeatureProperty> entry : featureType.getProperties().entrySet()) {
-
-                FeatureProperty fp = entry.getValue();
-                String[] nameTokens = entry.getKey().split("\\.");
-                FeaturePropertyV2.Role role = fp.getRole().isPresent() ? FeaturePropertyV2.Role.ID : null;
-                FeaturePropertyV2.Type type = FeaturePropertyV2.Type.valueOf(fp.getType().toString());
-
-                if (nameTokens.length == 1) {
-                    path = fp.getPath().replace(featureTypePath + "/", "");
-                    name = entry.getKey();
-                    if (nameTokens[0].endsWith("[]")) {
-                        featureTypeNew.putProperties(entry.getKey(),
-                                getFeaturePropertyV2ValueArray(entry.getKey(), path, type, role));
-                    } else {
-                        featureTypeNew.putProperties(entry.getKey(), getFeaturePropertyV2(name, path, type, role));
-                    }
-                } else {
-                    String parentName = nameTokens[0].split("(\\[\\w*\\])")[0];
-                    FeaturePropertyV2.Type childType = FeaturePropertyV2.Type.valueOf(fp.getType().toString());
-
-                    if (!parentName.equals(name)) {
-                        name = parentName;
-                        path = fp.getPath().replace(featureTypePath + "/", "").split("(/[^/]+$)")[0];
-                        newProperties.clear();
-                    }
-
-                    if (nameTokens[0].matches("([\\w]*\\[\\w*\\])")) {
-                        type = FeaturePropertyV2.Type.OBJECT_ARRAY;
-                    } else {
-                        type = FeaturePropertyV2.Type.OBJECT;
-                    }
-
-                    if (nameTokens[1].matches("([\\w]*\\[\\w*\\])")) {
-                        String childName = nameTokens[1].split("(\\[\\w*\\])")[0];
-                        String childPath = fp.getPath().replace(featureTypePath + "/" + path + "/", "");
-                        newProperties.put(childName,
-                                getFeaturePropertyV2ValueArray(childName, childPath, childType, role));
-                    } else {
-                        int lastSlashIndex = fp.getPath().lastIndexOf('/');
-                        newProperties.put(nameTokens[1],
-                                getFeaturePropertyV2(fp.getName(), fp.getPath().substring(lastSlashIndex + 1), childType, role));
-                    }
-                    featureTypeNew.putProperties(name, getFeaturePropertyV2(name, path, type, role, newProperties));
-                }
-            }
-            builder.putTypes2(featureType.getName(), featureTypeNew);
-
-        });
+                  });
 
         return builder.build();
-    }
-
-    private FeaturePropertyV2 getFeaturePropertyV2(String name, String path, FeaturePropertyV2.Type type,
-                                                   FeaturePropertyV2.Role role) {
-        return new ImmutableFeaturePropertyV2.Builder()
-                .name(name)
-                .path(path)
-                .type(type)
-                .role(Optional.ofNullable(role))
-                .build();
-    }
-
-    private FeaturePropertyV2 getFeaturePropertyV2(String name, String path, FeaturePropertyV2.Type type,
-                                                   FeaturePropertyV2.Role role, Map<String, FeaturePropertyV2> properties) {
-        return new ImmutableFeaturePropertyV2.Builder()
-                .from(getFeaturePropertyV2(name, path, type, role))
-                .properties(properties)
-                .build();
-    }
-
-    private FeaturePropertyV2 getFeaturePropertyV2ValueArray(String name, String path, FeaturePropertyV2.Type valueType,
-                                                             FeaturePropertyV2.Role role) {
-        return new ImmutableFeaturePropertyV2.Builder()
-                .name(name)
-                .path(path)
-                .type(FeaturePropertyV2.Type.VALUE_ARRAY)
-                .role(Optional.ofNullable(role))
-                .valueType(valueType)
-                .build();
     }
 
     @Override
     public Map<Identifier, EntityData> getAdditionalEntities(Identifier identifier, FeatureProviderDataV1 entityData) {
         return ImmutableMap.of();
+    }
+
+    public FeatureTypeV2 migrateFeatureType(FeatureType featureType) {
+
+        String featureTypePath = getFeatureTypePath(featureType);
+
+        return new ImmutableFeatureTypeV2.Builder()
+                .name(featureType.getName())
+                .path(featureTypePath)
+                .setProperties(migrateProperties(featureType.getProperties(), featureTypePath))
+                .build();
+    }
+
+    private Map<String, ImmutableFeaturePropertyV2.Builder> migrateProperties(Map<String, FeatureProperty> properties,
+                                                                              String featureTypePath) {
+        Map<String, ImmutableFeaturePropertyV2.Builder> migrated = new LinkedHashMap<>();
+
+        Map<String, ImmutableFeaturePropertyV2.Builder> objectPropertiesCache = new LinkedHashMap<>();
+
+        properties.entrySet()
+                  .stream()
+                  .map(entry -> {
+
+                      String[] nameTokens = entry.getKey()
+                                                 .split("\\.");
+                      FeatureProperty originalProperty = entry.getValue();
+                      String path = removePrefix(originalProperty.getPath(), featureTypePath);
+                      FeaturePropertyV2.Type type = FeaturePropertyV2.Type.valueOf(originalProperty.getType()
+                                                                                                   .toString());
+                      Optional<FeaturePropertyV2.Role> role = originalProperty.getRole()
+                                                                              .map(originalRole -> FeaturePropertyV2.Role.valueOf(originalRole.toString()));
+
+                      return createPropertyTree(objectPropertiesCache, nameTokens, path, type, role);
+
+                  })
+                  .forEach(entry -> migrated.put(entry.getKey(), entry.getValue()));
+
+        return migrated;
+    }
+
+    private Map.Entry<String, ImmutableFeaturePropertyV2.Builder> createPropertyTree(
+            Map<String, ImmutableFeaturePropertyV2.Builder> objectPropertiesCache,
+            String[] nameTokens,
+            String path,
+            FeaturePropertyV2.Type type,
+            Optional<FeaturePropertyV2.Role> role) {
+
+        String name = nameTokens[0];
+
+        if (nameTokens.length == 1) {
+            return new AbstractMap.SimpleImmutableEntry<>(clean(name), getValueProperty(name, path, type, role));
+        }
+
+        String objectPath = isNamedArray(name)
+                ? removeSuffix(path, getArrayName(name))
+                : removeSuffix(path, isArray(nameTokens[1]) ? 2 : 1);
+        String childPath = removePrefix(path, objectPath);
+
+        ImmutableFeaturePropertyV2.Builder objectProperty = objectPropertiesCache.computeIfAbsent(clean(name), cleanName -> getObjectProperty(name, objectPath));
+
+        Map.Entry<String, ImmutableFeaturePropertyV2.Builder> childTree = createPropertyTree(objectPropertiesCache, Arrays.copyOfRange(nameTokens, 1, nameTokens.length), childPath, type, role);
+
+        objectProperty.putProperties(childTree.getKey(), childTree.getValue());
+
+        return new AbstractMap.SimpleImmutableEntry<>(clean(name), objectProperty);
+
+    }
+
+    private ImmutableFeaturePropertyV2.Builder getValueProperty(String name, String path, FeaturePropertyV2.Type type,
+                                                                Optional<FeaturePropertyV2.Role> role) {
+
+        ImmutableFeaturePropertyV2.Builder builder = new ImmutableFeaturePropertyV2.Builder()
+                .name(clean(name))
+                .path(path)
+                .type(type)
+                .role(role);
+
+        if (isArray(name)) {
+            builder.type(FeaturePropertyV2.Type.VALUE_ARRAY)
+                   .valueType(type);
+        }
+
+        return builder;
+    }
+
+    private ImmutableFeaturePropertyV2.Builder getObjectProperty(String name, String path) {
+        return new ImmutableFeaturePropertyV2.Builder()
+                .name(clean(name))
+                .path(path)
+                .type(isArray(name) ? FeaturePropertyV2.Type.OBJECT_ARRAY : FeaturePropertyV2.Type.OBJECT);
+    }
+
+    private String getFeatureTypePath(FeatureType featureType) {
+        String firstPathElement = featureType.getPropertiesByPath()
+                                             .keySet()
+                                             .stream()
+                                             .map(property -> property.get(0))
+                                             .findFirst()
+                                             .orElse("");
+        return "/" + firstPathElement;
+    }
+
+    private String removePrefix(String path, String prefix) {
+        return path.substring(prefix.length() + 1);
+    }
+
+    private String removeSuffix(String path, int numberOfElements) {
+        int slashPos = path.length();
+        for (int i = 0; i < numberOfElements; i++) {
+            slashPos = path.lastIndexOf("/", slashPos - 1);
+        }
+        int end = slashPos > -1 ? slashPos : 0;
+
+        return path.substring(0, end);
+    }
+
+    private String removeSuffix(String path, String afterElement) {
+        int elementPos = path.lastIndexOf("]" + afterElement + "/");
+        int end = elementPos > -1 ? path.indexOf("/", elementPos) : 0;
+
+        return path.substring(0, end);
+    }
+
+    private int squareBracketStart(String name) {
+        return name.indexOf("[");
+    }
+
+    private int squareBracketEnd(String name) {
+        return name.indexOf("]");
+    }
+
+    private boolean isArray(String name) {
+        return squareBracketStart(name) > 0;
+    }
+
+    private boolean isNamedArray(String name) {
+        int start = squareBracketStart(name);
+        return start > 0 && squareBracketEnd(name) > start + 1;
+    }
+
+    private String getArrayName(String name) {
+        if (isNamedArray(name)) {
+            return name.substring(squareBracketStart(name) + 1, squareBracketEnd(name));
+        }
+        return "";
+    }
+
+    private String clean(String name) {
+        if (isArray(name)) {
+            return name.substring(0, squareBracketStart(name));
+        }
+
+        return name;
     }
 }
