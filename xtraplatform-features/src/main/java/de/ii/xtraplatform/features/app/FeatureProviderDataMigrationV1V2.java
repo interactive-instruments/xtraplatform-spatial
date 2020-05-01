@@ -16,6 +16,8 @@ import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV1;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureTypeV2;
 
+import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -68,58 +70,64 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
 
         String featureTypePath = getFeatureTypePath(featureType);
 
-        ImmutableFeatureTypeV2.Builder featureTypeNew = new ImmutableFeatureTypeV2.Builder()
+        return new ImmutableFeatureTypeV2.Builder()
                 .name(featureType.getName())
-                .path(featureTypePath);
-
-        Map<String, ImmutableFeaturePropertyV2.Builder> newProperties = new LinkedHashMap<>();
-
-        for (Map.Entry<String, FeatureProperty> entry : featureType.getProperties()
-                                                                   .entrySet()) {
-
-            String[] nameTokens = entry.getKey()
-                                       .split("\\.");
-            FeatureProperty originalProperty = entry.getValue();
-            String name = nameTokens[0];
-            String path = originalProperty.getPath()
-                                          .replace(featureTypePath + "/", "");
-            FeaturePropertyV2.Type type = FeaturePropertyV2.Type.valueOf(originalProperty.getType()
-                                                                                         .toString());
-            Optional<FeaturePropertyV2.Role> role = originalProperty.getRole().map(originalRole -> FeaturePropertyV2.Role.valueOf(originalRole.toString()));
-
-            if (nameTokens.length == 1) {
-                newProperties.put(clean(name), getValueProperty(name, path, type, role));
-
-                continue;
-            }
-
-            getNestedProperties(newProperties, nameTokens, path, type, role);
-
-        }
-
-        newProperties.forEach(featureTypeNew::putProperties);
-
-        return featureTypeNew.build();
+                .path(featureTypePath)
+                .setProperties(migrateProperties(featureType.getProperties(), featureTypePath))
+                .build();
     }
 
-    private void getNestedProperties(Map<String, ImmutableFeaturePropertyV2.Builder> parentProperties,
-                                     String[] nameTokens,
-                                     String path,
-                                     FeaturePropertyV2.Type type,
-                                     Optional<FeaturePropertyV2.Role> role) {
+    private Map<String, ImmutableFeaturePropertyV2.Builder> migrateProperties(Map<String, FeatureProperty> properties,
+                                                                              String featureTypePath) {
+        Map<String, ImmutableFeaturePropertyV2.Builder> migrated = new LinkedHashMap<>();
 
-        String parentName = nameTokens[0];
-        String parentPath = getFirstElements(path, isArray(nameTokens[1]) ? 2 : 1);
+        Map<String, ImmutableFeaturePropertyV2.Builder> objectPropertiesCache = new LinkedHashMap<>();
 
-        if (!parentProperties.containsKey(clean(parentName))) {
-            parentProperties.put(clean(parentName), getObjectProperty(parentName, parentPath));
+        properties.entrySet()
+                  .stream()
+                  .map(entry -> {
+
+                      String[] nameTokens = entry.getKey()
+                                                 .split("\\.");
+                      FeatureProperty originalProperty = entry.getValue();
+                      String path = removePrefix(originalProperty.getPath(), featureTypePath);
+                      FeaturePropertyV2.Type type = FeaturePropertyV2.Type.valueOf(originalProperty.getType()
+                                                                                                   .toString());
+                      Optional<FeaturePropertyV2.Role> role = originalProperty.getRole()
+                                                                              .map(originalRole -> FeaturePropertyV2.Role.valueOf(originalRole.toString()));
+
+                      return createPropertyTree(objectPropertiesCache, nameTokens, path, type, role);
+
+                  })
+                  .forEach(entry -> migrated.put(entry.getKey(), entry.getValue()));
+
+        return migrated;
+    }
+
+    private Map.Entry<String, ImmutableFeaturePropertyV2.Builder> createPropertyTree(
+            Map<String, ImmutableFeaturePropertyV2.Builder> objectPropertiesCache,
+            String[] nameTokens,
+            String path,
+            FeaturePropertyV2.Type type,
+            Optional<FeaturePropertyV2.Role> role) {
+
+        String name = nameTokens[0];
+
+        if (nameTokens.length == 1) {
+            return new AbstractMap.SimpleImmutableEntry<>(clean(name), getValueProperty(name, path, type, role));
         }
 
-        String childName = nameTokens[1];
-        String childPath = path.replace(parentPath + "/", "");
+        String objectPath = removeSuffix(path, isArray(nameTokens[1]) ? 2 : 1);
+        String childPath = removePrefix(path, objectPath);
 
-        parentProperties.get(clean(parentName))
-                        .putProperties(clean(childName), getValueProperty(childName, childPath, type, role));
+        ImmutableFeaturePropertyV2.Builder objectProperty = objectPropertiesCache.computeIfAbsent(clean(name), cleanName -> getObjectProperty(name, objectPath));
+
+        Map.Entry<String, ImmutableFeaturePropertyV2.Builder> childTree = createPropertyTree(objectPropertiesCache, Arrays.copyOfRange(nameTokens, 1, nameTokens.length), childPath, type, role);
+
+        objectProperty.putProperties(childTree.getKey(), childTree.getValue());
+
+        return new AbstractMap.SimpleImmutableEntry<>(clean(name), objectProperty);
+
     }
 
     private ImmutableFeaturePropertyV2.Builder getValueProperty(String name, String path, FeaturePropertyV2.Type type,
@@ -140,14 +148,10 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
     }
 
     private ImmutableFeaturePropertyV2.Builder getObjectProperty(String name, String path) {
-
-        ImmutableFeaturePropertyV2.Builder builder = new ImmutableFeaturePropertyV2.Builder()
+        return new ImmutableFeaturePropertyV2.Builder()
                 .name(clean(name))
                 .path(path)
                 .type(isArray(name) ? FeaturePropertyV2.Type.OBJECT_ARRAY : FeaturePropertyV2.Type.OBJECT);
-
-
-        return builder;
     }
 
     private String getFeatureTypePath(FeatureType featureType) {
@@ -160,7 +164,11 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
         return "/" + firstPathElement;
     }
 
-    private String getFirstElements(String path, int remainingElementCount) {
+    private String removePrefix(String path, String prefix) {
+        return path.substring(prefix.length() + 1);
+    }
+
+    private String removeSuffix(String path, int remainingElementCount) {
         int slashPos = path.length();
         for (int i = 0; i < remainingElementCount; i++) {
             slashPos = path.lastIndexOf("/", slashPos - 1);
