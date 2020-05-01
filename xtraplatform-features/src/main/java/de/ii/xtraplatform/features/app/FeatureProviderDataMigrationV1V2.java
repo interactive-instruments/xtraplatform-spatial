@@ -117,7 +117,9 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
             return new AbstractMap.SimpleImmutableEntry<>(clean(name), getValueProperty(name, path, type, role));
         }
 
-        String objectPath = removeSuffix(path, isArray(nameTokens[1]) ? 2 : 1);
+        String objectPath = isNamedArray(name)
+                ? removeSuffix(path, getArrayName(name))
+                : removeSuffix(path, isArray(nameTokens[1]) ? 2 : 1);
         String childPath = removePrefix(path, objectPath);
 
         ImmutableFeaturePropertyV2.Builder objectProperty = objectPropertiesCache.computeIfAbsent(clean(name), cleanName -> getObjectProperty(name, objectPath));
@@ -168,9 +170,9 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
         return path.substring(prefix.length() + 1);
     }
 
-    private String removeSuffix(String path, int remainingElementCount) {
+    private String removeSuffix(String path, int numberOfElements) {
         int slashPos = path.length();
-        for (int i = 0; i < remainingElementCount; i++) {
+        for (int i = 0; i < numberOfElements; i++) {
             slashPos = path.lastIndexOf("/", slashPos - 1);
         }
         int end = slashPos > -1 ? slashPos : 0;
@@ -178,17 +180,40 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
         return path.substring(0, end);
     }
 
-    private int squareBracketPos(String name) {
+    private String removeSuffix(String path, String afterElement) {
+        int elementPos = path.lastIndexOf("]" + afterElement + "/");
+        int end = elementPos > -1 ? path.indexOf("/", elementPos) : 0;
+
+        return path.substring(0, end);
+    }
+
+    private int squareBracketStart(String name) {
         return name.indexOf("[");
     }
 
+    private int squareBracketEnd(String name) {
+        return name.indexOf("]");
+    }
+
     private boolean isArray(String name) {
-        return squareBracketPos(name) > 0;
+        return squareBracketStart(name) > 0;
+    }
+
+    private boolean isNamedArray(String name) {
+        int start = squareBracketStart(name);
+        return start > 0 && squareBracketEnd(name) > start + 1;
+    }
+
+    private String getArrayName(String name) {
+        if (isNamedArray(name)) {
+            return name.substring(squareBracketStart(name) + 1, squareBracketEnd(name));
+        }
+        return "";
     }
 
     private String clean(String name) {
         if (isArray(name)) {
-            return name.substring(0, squareBracketPos(name));
+            return name.substring(0, squareBracketStart(name));
         }
 
         return name;
