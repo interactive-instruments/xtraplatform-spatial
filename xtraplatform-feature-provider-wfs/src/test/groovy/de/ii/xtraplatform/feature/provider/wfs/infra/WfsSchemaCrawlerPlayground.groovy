@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider.wfs.infra
 
 import de.ii.xtraplatform.feature.provider.wfs.domain.ImmutableConnectionInfoWfsHttp
-import de.ii.xtraplatform.features.domain.FeatureProperty
+import de.ii.xtraplatform.features.domain.FeaturePropertyV2
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -35,24 +35,25 @@ class WfsSchemaCrawlerPlayground extends Specification {
 
         then:
 
-        featureTypeList.size() == 6
+        featureTypeList.size() == 7
         featureTypeList.get(4).name == "Flurstueck"
+        featureTypeList.get(4).path == "/flurstueck"
         featureTypeList.get(4).properties.containsKey("id")
-        featureTypeList.get(4).properties.get("id").role.get() == FeatureProperty.Role.ID
-        featureTypeList.get(4).properties.get("id").type == FeatureProperty.Type.STRING
+        featureTypeList.get(4).properties.get("id").role.get() == FeaturePropertyV2.Role.ID
+        featureTypeList.get(4).properties.get("id").type == FeaturePropertyV2.Type.STRING
         featureTypeList.get(4).properties.get("id").path == "ueboname.@id"
         featureTypeList.get(4).properties.containsKey("kreis")
         featureTypeList.get(4).properties.get("kreis").additionalInfo.get("multiple") == "false"
-        featureTypeList.get(4).properties.get("kreis").type == FeatureProperty.Type.STRING
+        featureTypeList.get(4).properties.get("kreis").type == FeaturePropertyV2.Type.STRING
         featureTypeList.get(4).properties.get("kreis").path == "kreis"
         featureTypeList.get(4).properties.containsKey("geometrie")
-        featureTypeList.get(4).properties.get("geometrie").type == FeatureProperty.Type.GEOMETRY
+        featureTypeList.get(4).properties.get("geometrie").type == FeaturePropertyV2.Type.GEOMETRY
         featureTypeList.get(4).properties.get("geometrie").path == "geometrie"
         featureTypeList.get(4).properties.get("geometrie").additionalInfo.get("geometryType") == "MULTI_POLYGON"
         featureTypeList.get(4).properties.get("geometrie").additionalInfo.get("crs") == "25832"
         featureTypeList.get(4).properties.get("geometrie").additionalInfo.get("multiple") == "false"
-        featureTypeList.get(4).properties.get("flaeche").type == FeatureProperty.Type.FLOAT
-        featureTypeList.get(4).properties.get("aktualit").type == FeatureProperty.Type.DATETIME
+        featureTypeList.get(4).properties.get("flaeche").type == FeaturePropertyV2.Type.FLOAT
+        featureTypeList.get(4).properties.get("aktualit").type == FeaturePropertyV2.Type.DATETIME
         featureTypeList.get(4).properties.get("name").additionalInfo.get("multiple") == "true"
 
     }

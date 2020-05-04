@@ -18,10 +18,10 @@ import de.ii.xtraplatform.feature.provider.wfs.GMLSchemaParser;
 import de.ii.xtraplatform.feature.provider.wfs.WFSCapabilitiesParser;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
-import de.ii.xtraplatform.features.domain.FeatureProperty;
-import de.ii.xtraplatform.features.domain.FeatureType;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureProperty;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureType;
+import de.ii.xtraplatform.features.domain.FeaturePropertyV2;
+import de.ii.xtraplatform.features.domain.FeatureTypeV2;
+import de.ii.xtraplatform.features.domain.ImmutableFeaturePropertyV2;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureTypeV2;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.wfs.DescribeFeatureType;
@@ -66,7 +66,7 @@ public class WfsSchemaCrawler {
         wfsRequestEncoder.setNsStore(new XMLNamespaceNormalizer(connectionInfo.getNamespaces()));
     }
 
-    public List<FeatureType> parseSchema() {
+    public List<FeatureTypeV2> parseSchema() {
 
         MetadataConsumer metadataConsumer = new MetadataConsumer();
         analyzeFeatureTypesWithDescribeGetCapabilities(metadataConsumer);
@@ -146,8 +146,8 @@ public class WfsSchemaCrawler {
 
         public static final String GML_NS_URI = GML.getNS(GML.VERSION._2_1_1);
 
-        private final List<FeatureType> featureTypes;
-        private ImmutableFeatureType.Builder currentFeatureType;
+        private final List<FeatureTypeV2> featureTypes;
+        private ImmutableFeatureTypeV2.Builder currentFeatureType;
         private String currentLocalName;
         private XMLPathTracker currentPath;
         private Set<String> mappedPaths;
@@ -161,7 +161,7 @@ public class WfsSchemaCrawler {
             this.crsMap = crsMap;
         }
 
-        public List<FeatureType> getFeatureTypes() {
+        public List<FeatureTypeV2> getFeatureTypes() {
             return featureTypes;
         }
 
@@ -174,8 +174,9 @@ public class WfsSchemaCrawler {
             mappedPaths.clear();
             currentPath.clear();
 
-            currentFeatureType = new ImmutableFeatureType.Builder();
+            currentFeatureType = new ImmutableFeatureTypeV2.Builder();
             currentFeatureType.name(localName);
+            currentFeatureType.path("/" + localName.toLowerCase());
         }
 
         @Override
@@ -189,11 +190,11 @@ public class WfsSchemaCrawler {
             if ((localName.equals("id") && nsUri.startsWith(GML_NS_URI)) || localName.equals("fid")) {
                 String path = currentPath.toString();
                 if (currentFeatureType != null && !isPathMapped(path)) {
-                    ImmutableFeatureProperty.Builder featureProperty = new ImmutableFeatureProperty.Builder()
+                    ImmutableFeaturePropertyV2.Builder featureProperty = new ImmutableFeaturePropertyV2.Builder()
                             .name(localName)
                             .path(currentPath.toFieldNameGml())
-                            .role(FeatureProperty.Role.ID)
-                            .type(FeatureProperty.Type.STRING);
+                            .role(FeaturePropertyV2.Role.ID)
+                            .type(FeaturePropertyV2.Type.STRING);
                     currentFeatureType.putProperties(localName, featureProperty);
                 }
             }
@@ -211,10 +212,10 @@ public class WfsSchemaCrawler {
             if (path.startsWith(GML_NS_URI)) {
                 return;
             }
-            ImmutableFeatureProperty.Builder featureProperty = new ImmutableFeatureProperty.Builder();
+            ImmutableFeaturePropertyV2.Builder featureProperty = new ImmutableFeaturePropertyV2.Builder();
             if (currentFeatureType != null && !isPathMapped(path)) {
                 featureProperty.additionalInfo(ImmutableMap.of("multiple", String.valueOf(isParentMultiple)));
-                FeatureProperty.Type featurePropertyType;
+                FeaturePropertyV2.Type featurePropertyType;
                 TargetMappingProviderFromGml.GML_TYPE dataType = TargetMappingProviderFromGml.GML_TYPE.fromString(type);
                 if (dataType.isValid()) {
                     featurePropertyType = getFeaturePropertyType(dataType);
@@ -228,7 +229,7 @@ public class WfsSchemaCrawler {
                     if (geoType.isValid()) {
                         featureProperty.name(localName)
                                 .path(localName)
-                                .type(FeatureProperty.Type.GEOMETRY);
+                                .type(FeaturePropertyV2.Type.GEOMETRY);
                         if (crsMap.containsKey(currentLocalName)) {
                             featureProperty.additionalInfo(ImmutableMap.of(
                                     "geometryType", geoType.toSimpleFeatureGeometry().toString(),
@@ -258,27 +259,27 @@ public class WfsSchemaCrawler {
             }
         }
 
-        private FeatureProperty.Type getFeaturePropertyType(TargetMappingProviderFromGml.GML_TYPE dataType) {
+        private FeaturePropertyV2.Type getFeaturePropertyType(TargetMappingProviderFromGml.GML_TYPE dataType) {
 
             switch (dataType) {
                 case BOOLEAN:
-                    return FeatureProperty.Type.BOOLEAN;
+                    return FeaturePropertyV2.Type.BOOLEAN;
                 case STRING:
-                    return FeatureProperty.Type.STRING;
+                    return FeaturePropertyV2.Type.STRING;
                 case INT:
                 case INTEGER:
                 case SHORT:
                 case LONG:
-                    return FeatureProperty.Type.INTEGER;
+                    return FeaturePropertyV2.Type.INTEGER;
                 case FLOAT:
                 case DOUBLE:
                 case DECIMAL:
-                    return FeatureProperty.Type.FLOAT;
+                    return FeaturePropertyV2.Type.FLOAT;
                 case DATE:
                 case DATE_TIME:
-                    return FeatureProperty.Type.DATETIME;
+                    return FeaturePropertyV2.Type.DATETIME;
                 default:
-                    return FeatureProperty.Type.UNKNOWN;
+                    return FeaturePropertyV2.Type.UNKNOWN;
             }
         }
 
