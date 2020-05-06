@@ -163,4 +163,81 @@ class FeatureProviderDataV2Spec extends Specification {
         dataAsYaml == expected
 
     }
+
+    def "Properties are not empty when Type is not OBJECT or OBJECT_ARRAY"() {
+        when:
+        def property = new ImmutableFeaturePropertyV2.Builder()
+                .path("testPath")
+                .name("testName")
+                .type(FeaturePropertyV2.Type.VALUE_ARRAY)
+                .putProperties2("testProp", new ImmutableFeaturePropertyV2.Builder()
+                        .path("innerPropertyPath"))
+                .build()
+
+        then:
+        thrown(IllegalStateException)
+    }
+
+    def "ObjectType is set, Type is not OBJECT, OBJECT_ARRAY or GEOMETRY"() {
+        when:
+        def property = new ImmutableFeaturePropertyV2.Builder()
+                .path("geoPath")
+                .name("geoName")
+                .type(FeaturePropertyV2.Type.STRING)
+                .objectType("Link")
+                .build()
+
+        then:
+        thrown(IllegalStateException)
+    }
+
+    def "ValueType is set, Type is OBJECT"() {
+        when:
+        def property = new ImmutableFeaturePropertyV2.Builder()
+                .path("geoPath")
+                .name("geoName")
+                .type(FeaturePropertyV2.Type.OBJECT)
+                .valueType(FeaturePropertyV2.Type.STRING)
+                .build()
+
+        then:
+        thrown(IllegalStateException)
+    }
+
+    def "Type is VALUE_ARRAY, ValueType is not set"() {
+        when:
+        def property = new ImmutableFeaturePropertyV2.Builder()
+                .path("geoPath")
+                .name("geoName")
+                .type(FeaturePropertyV2.Type.VALUE_ARRAY)
+                .build()
+
+        then:
+        thrown(IllegalStateException)
+    }
+
+    def "GeometryType is present when Type is not GEOMETRY"() {
+        when:
+        def property = new ImmutableFeaturePropertyV2.Builder()
+                .path("geoPath")
+                .name("geoName")
+                .type(FeaturePropertyV2.Type.STRING)
+                .geometryType(SimpleFeatureGeometry.POINT)
+                .build()
+
+        then:
+        thrown(IllegalStateException)
+    }
+
+    def "Type is GEOMETRY, GeometryType is not set"() {
+        when:
+        def property = new ImmutableFeaturePropertyV2.Builder()
+                .path("geoPath")
+                .name("geoName")
+                .type(FeaturePropertyV2.Type.GEOMETRY)
+                .build()
+
+        then:
+        thrown(IllegalStateException)
+    }
 }

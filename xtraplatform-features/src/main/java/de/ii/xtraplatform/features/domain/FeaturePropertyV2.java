@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Preconditions;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
@@ -165,4 +166,34 @@ public interface FeaturePropertyV2 extends ValueInstance {
     default boolean isForceReversePolygon() {
         return false;
     }
+
+    @Value.Check
+    default void check() {
+        Type type = getType();
+        if (!getProperties().isEmpty()) {
+            Preconditions.checkState(type == Type.OBJECT || type == Type.OBJECT_ARRAY,
+                    "Properties should only be filled when Type is OBJECT or OBJECT_ARRAY. Current type: %s", type);
+        }
+        if (getObjectType().isPresent()) {
+            Preconditions.checkState(type == Type.OBJECT || type == Type.OBJECT_ARRAY,
+                    "ObjectType should only be set when Type is OBJECT or OBJECT_ARRAY. Current type: %s", type);
+        }
+        if (getValueType().isPresent()) {
+            Preconditions.checkState(type == Type.VALUE_ARRAY,
+                    "ValueType should only be set when Type is VALUE_ARRAY. Current type: %s", type);
+        }
+        if (type == Type.VALUE_ARRAY) {
+            Preconditions.checkState(getValueType().isPresent(),
+                    "ValueType must be set when Type is VALUE_ARRAY");
+        }
+        if (getGeometryType().isPresent()) {
+            Preconditions.checkState(type == Type.GEOMETRY,
+                    "GeometryType should only be set when Type is Geometry, current type: %s", getType());
+        }
+        if (type == Type.GEOMETRY) {
+            Preconditions.checkState(getGeometryType().isPresent(),
+                    "GeometryType must be set when Type is Geometry,");
+        }
+    }
+
 }
