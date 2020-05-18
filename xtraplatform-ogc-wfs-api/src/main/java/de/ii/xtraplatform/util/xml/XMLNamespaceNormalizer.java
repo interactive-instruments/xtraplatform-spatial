@@ -12,7 +12,6 @@
  */
 package de.ii.xtraplatform.util.xml;
 
-import com.google.common.base.Splitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -104,7 +102,7 @@ public class XMLNamespaceNormalizer {
         if (prefix != null && prefix.isEmpty()) {
             //defaultNamespaceURI = namespaceURI;
             //prefix = defaultNamespacePRE;
-            LOGGER.debug("Added Default-Namespace: {}, {}", prefix, namespaceURI);
+            //LOGGER.debug("Added Default-Namespace: {}, {}", prefix, namespaceURI);
             this.addNamespace(namespaceURI);
         }
 
@@ -112,10 +110,10 @@ public class XMLNamespaceNormalizer {
             // force gml prefix for gml namespace (some WFS want it like that ... [carbon])
             if (namespaceURI.startsWith("http://www.opengis.net/gml")) {
                 namespaces.put("gml", namespaceURI);
-                LOGGER.debug("Added gml Namespace: {}, {}", "gml", namespaceURI);
+                //LOGGER.debug("Added gml Namespace: {}, {}", "gml", namespaceURI);
             } else if (!namespaces.containsValue(namespaceURI) && prefix != null) {
                 namespaces.put(prefix, namespaceURI);
-                LOGGER.debug("Added Namespace: {}, {}", prefix, namespaceURI);
+                //LOGGER.debug("Added Namespace: {}, {}", prefix, namespaceURI);
             }
         }
 

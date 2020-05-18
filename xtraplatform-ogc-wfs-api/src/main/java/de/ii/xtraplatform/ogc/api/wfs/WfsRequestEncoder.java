@@ -26,8 +26,8 @@ import javax.xml.transform.TransformerException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  *
@@ -41,29 +41,15 @@ public class WfsRequestEncoder {
     private Versions versions;
     private XMLNamespaceNormalizer nsStore;
 
-    public WfsRequestEncoder() {
-        this.urls = new HashMap<>();
-        this.nsStore = new XMLNamespaceNormalizer();
-        this.versions = new Versions();
-    }
-
-    public void setUrls(Map<String, Map<WFS.METHOD, URI>> urls) {
+    public WfsRequestEncoder(String version, Optional<String> gmlVersion, Map<String,String> namespaces, Map<String, Map<WFS.METHOD, URI>> urls) {
         this.urls = urls;
-    }
+        this.nsStore = new XMLNamespaceNormalizer(namespaces);
+        this.versions = new Versions();
 
-    public void setVersion(String version) {
-        WFS.VERSION v = WFS.VERSION.fromString(version);
-        if (v != null) {
-            if (this.versions.getWfsVersion() == null || v.isGreater(this.versions.getWfsVersion())) {
-                this.versions.setWfsVersion(v);
-                LOGGER.debug("Version set to '{}'", version);
-            }
+        versions.setWfsVersion(WFS.VERSION.fromString(version));
+        if (gmlVersion.isPresent()) {
+            versions.setGmlVersion(GML.VERSION.fromString(gmlVersion.get()));
         }
-    }
-
-    public void setGmlVersion(String gmlversion) {
-        GML.VERSION v = GML.VERSION.fromString(gmlversion);
-        this.versions.setGmlVersion(v);
     }
 
     public String getAsUrl(WfsOperation operation) {
@@ -93,14 +79,6 @@ public class WfsRequestEncoder {
         } catch (TransformerException | ParserConfigurationException | SAXException | IOException e) {
             return null;
         }
-    }
-
-    public XMLNamespaceNormalizer getNsStore() {
-        return nsStore;
-    }
-
-    public void setNsStore(XMLNamespaceNormalizer nsStore) {
-        this.nsStore = nsStore;
     }
 
     public URI findUrl(WFS.OPERATION operation, WFS.METHOD method) {

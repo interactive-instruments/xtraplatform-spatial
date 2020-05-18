@@ -13,6 +13,9 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import de.ii.xtraplatform.feature.provider.sql.app.FeatureProviderSql;
+import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
@@ -44,8 +47,8 @@ import java.util.Optional;
  */
 @Component
 @Provides(properties = {
-        @StaticServiceProperty(name = "providerType", type = "java.lang.String", value = "SQL"),
-        @StaticServiceProperty(name = "connectorType", type = "java.lang.String", value = SqlConnectorSlick.CONNECTOR_TYPE)
+        @StaticServiceProperty(name = FeatureProvider2.PROVIDER_TYPE_KEY, type = "java.lang.String", value = FeatureProviderSql.PROVIDER_TYPE),
+        @StaticServiceProperty(name = FeatureProviderConnector.CONNECTOR_TYPE_KEY, type = "java.lang.String", value = SqlConnectorSlick.CONNECTOR_TYPE)
 })
 public class SqlConnectorSlick implements SqlConnector {
 
@@ -71,6 +74,25 @@ public class SqlConnectorSlick implements SqlConnector {
                                   .adapt(BundleWiring.class)
                                   .getClassLoader();
         this.connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+
+        try {
+            // bundle class loader has to be passed to Slick for initialization
+            Thread.currentThread()
+                  .setContextClassLoader(classLoader);
+            DatabaseConfig<JdbcProfile> databaseConfig = DatabaseConfig$.MODULE$.forConfig("", createSlickConfig(connectionInfo), classLoader, ClassTag$.MODULE$.apply(JdbcProfile.class));
+
+            this.session = SlickSession.forConfig(databaseConfig);
+            this.sqlClient = new SqlClientSlick(session);
+
+            this.controller = true;
+
+        } catch (Throwable e) {
+            //TODO: handle properly, service start should fail with error message, show in manager
+            //LOGGER.error("CONNECTING TO DB FAILED", e);
+            this.connectionError = e;
+
+            this.controller = true;
+        }
     }
 
     @Validate

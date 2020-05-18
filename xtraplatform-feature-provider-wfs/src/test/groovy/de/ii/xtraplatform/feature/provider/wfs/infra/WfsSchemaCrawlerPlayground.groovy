@@ -13,7 +13,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 class WfsSchemaCrawlerPlayground extends Specification {
-
+/*
     @Shared WfsSchemaCrawler wfsSchemaCrawler
 
     def setupSpec() {
@@ -21,7 +21,7 @@ class WfsSchemaCrawlerPlayground extends Specification {
         def connectionInfo = new ImmutableConnectionInfoWfsHttp.Builder()
                 .version("2.0.0")
                 .gmlVersion("3.2.1")
-                .uri(URI.create("https://www.wfs.nrw.de/geobasis/wfs_nw_alkis_vereinfacht"))
+                .uri(URI.create("https://www.wfs.nrw.de/geobasis/wfs_nw_atkis-basis-dlm_aaa-modell-basiert"))
                 .build()
 
         wfsSchemaCrawler = new WfsSchemaCrawler(connectionInfo);
@@ -57,4 +57,6 @@ class WfsSchemaCrawlerPlayground extends Specification {
         featureTypeList.get(4).properties.get("name").additionalInfo.get("multiple") == "true"
 
     }
+
+ */
 }

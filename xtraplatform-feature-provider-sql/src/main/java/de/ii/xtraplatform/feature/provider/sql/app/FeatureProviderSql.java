@@ -13,8 +13,10 @@ import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entity.api.EntityComponent;
 import de.ii.xtraplatform.entity.api.handler.Entity;
+import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
@@ -43,15 +45,17 @@ import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
 import java.util.Optional;
 
-//@Component
-//@Provides(properties = {@StaticServiceProperty(name = "providerType", type = "java.lang.String", value = FeatureProviderSql.PROVIDER_TYPE)})
 @EntityComponent
-@Entity(entityType = FeatureProvider2.class, dataType = FeatureProviderDataV1.class, type = "providers", subType = "feature/sql")
+@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV1.class)
 public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueries, SqlQueryOptions> implements FeatureProvider2, FeatureQueries, FeatureExtents, FeatureCrs {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
+
+    static final String ENTITY_SUB_TYPE = "feature/sql";
+    public static final String PROVIDER_TYPE = "SQL";
 
     private final CrsTransformerFactory crsTransformerFactory;
     private final SqlConnector connector;
@@ -64,19 +68,19 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                               @Requires ActorSystemProvider actorSystemProvider,
                               @Requires CrsTransformerFactory crsTransformerFactory,
                               @Requires Cql cql,
-                              @Property(name = "data") FeatureProviderDataV1 data,
-                              @Property(name = ".connector") SqlConnector sqlConnector) {
+                              @Requires ConnectorFactory connectorFactory,
+                              @Property(name = Entity.DATA_KEY) FeatureProviderDataV1 data) {
         //TODO: starts akka for every instance, move to singleton
         super(context, actorSystemProvider, data, createPathParser((ConnectionInfoSql) data.getConnectionInfo(), cql));
 
         this.crsTransformerFactory = crsTransformerFactory;
-        this.connector = sqlConnector;
+        this.connector = (SqlConnector) connectorFactory.createConnector(data);
         //TODO: from config
         SqlDialect sqlDialect = new SqlDialectPostGis();
-        this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect, data.getNativeCrs(),crsTransformerFactory);
+        this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect, data.getNativeCrs().orElse(OgcCrs.CRS84),crsTransformerFactory);
         this.queryTransformer = new FeatureQueryTransformerSql(getTypeInfos(), queryGeneratorSql, ((ConnectionInfoSql) data.getConnectionInfo()).getComputeNumberMatched());
         this.featureNormalizer = new FeatureNormalizerSql(getTypeInfos(), data.getTypes());
-        this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect, data.getNativeCrs());
+        this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect, data.getNativeCrs().orElse(OgcCrs.CRS84));
     }
 
     private static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql, Cql cql) {
@@ -107,14 +111,23 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     }
 
     @Override
+    public boolean supportsCrs() {
+        return FeatureProvider2.super.supportsCrs() && getData().getNativeCrs().isPresent();
+    }
+
+    @Override
+    public EpsgCrs getNativeCrs() {
+        return getData().getNativeCrs().get();
+    }
+
+    @Override
     public boolean isCrsSupported(EpsgCrs crs) {
-        return getData().getNativeCrs()
-                        .equals(crs) || crsTransformerFactory.isCrsSupported(crs);
+        return Objects.equals(getNativeCrs(), crs) || crsTransformerFactory.isCrsSupported(crs);
     }
 
     @Override
     public boolean is3dSupported() {
-        return crsTransformerFactory.isCrs3d(getData().getNativeCrs());
+        return crsTransformerFactory.isCrs3d(getNativeCrs());
     }
 
     @Override
@@ -125,16 +138,22 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
             return Optional.empty();
         }
 
-        return extentReader.getExtent(typeInfo.get())
-                           .run(getMaterializer())
-                           .exceptionally(throwable -> Optional.empty())
-                           .toCompletableFuture()
-                           .join();
+        try {
+            return extentReader.getExtent(typeInfo.get())
+                               .run(getMaterializer())
+                               .exceptionally(throwable -> Optional.empty())
+                               .toCompletableFuture()
+                               .join();
+        } catch (Throwable e) {
+            //continue
+        }
+
+        return Optional.empty();
     }
 
     @Override
     public Optional<BoundingBox> getSpatialExtent(String typeName, EpsgCrs crs) {
-        return getSpatialExtent(typeName).flatMap(boundingBox -> crsTransformerFactory.getTransformer(getData().getNativeCrs(), crs)
+        return getSpatialExtent(typeName).flatMap(boundingBox -> crsTransformerFactory.getTransformer(getNativeCrs(), crs)
                                                                                       .flatMap(crsTransformer -> {
                                                                                           try {
                                                                                               return Optional.of(crsTransformer.transformBoundingBox(boundingBox));

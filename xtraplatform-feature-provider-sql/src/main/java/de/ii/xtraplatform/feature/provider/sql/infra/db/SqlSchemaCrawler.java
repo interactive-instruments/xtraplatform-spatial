@@ -45,10 +45,17 @@ public class SqlSchemaCrawler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlSchemaCrawler.class);
     private final ConnectionInfoSql connectionInfo;
+    private final ClassLoader classLoader;
     private Connection connection;
 
     public SqlSchemaCrawler(ConnectionInfoSql connectionInfo) {
         this.connectionInfo = connectionInfo;
+        this.classLoader = Thread.currentThread().getContextClassLoader();
+    }
+
+    public SqlSchemaCrawler(ConnectionInfoSql connectionInfo, ClassLoader classLoader) {
+        this.connectionInfo = connectionInfo;
+        this.classLoader = classLoader;
     }
 
     public List<FeatureTypeV2> parseSchema(String schemaName, FeatureProviderSchemaConsumer schemaConsumer) {
@@ -81,7 +88,7 @@ public class SqlSchemaCrawler {
                     if (featurePropertyType != FeaturePropertyV2.Type.UNKNOWN) {
                         ImmutableFeaturePropertyV2.Builder featureProperty = new ImmutableFeaturePropertyV2.Builder()
                                 .name(column.getName())
-                                .path(column.getName())
+                                .path(String.format("/%s/%s", table.getName(), column.getName()))
                                 .type(featurePropertyType);
                         if (column.isPartOfPrimaryKey()) {
                             featureProperty.role(FeaturePropertyV2.Role.ID);
@@ -161,6 +168,8 @@ public class SqlSchemaCrawler {
     private Connection getConnection() {
         try {
             if (Objects.isNull(connection) || connection.isClosed()) {
+                Thread.currentThread().setContextClassLoader(classLoader);
+                //LOGGER.debug("CLASSL {}", classLoader);
                 final String connectionUrl = String.format("jdbc:postgresql://%1$s/%2$s", connectionInfo.getHost(), connectionInfo.getDatabase());
                 final DatabaseConnectionSource dataSource = new DatabaseConnectionSource(connectionUrl);
                 dataSource.setUserCredentials(new SingleUseUserCredentials(connectionInfo.getUser(), connectionInfo.getPassword()));

@@ -10,13 +10,15 @@
  */
 package de.ii.xtraplatform.ogc.api;
 
+import java.util.Objects;
+
 /**
  *
  * @author fischer
  */
 public class Versions {
-    GML.VERSION gmlVersion;
-    WFS.VERSION wfsVersion;
+    GML.VERSION gmlVersion = null;
+    WFS.VERSION wfsVersion = null;
 
     public Versions() {
     }
@@ -31,7 +33,13 @@ public class Versions {
     }
 
     public GML.VERSION getGmlVersion() {
-        return gmlVersion;
+        if (Objects.nonNull(gmlVersion)) {
+            return gmlVersion;
+        }
+        if (Objects.nonNull(wfsVersion)) {
+            return wfsVersion.getGmlVersion();
+        }
+        return null;
     }
 
     public void setGmlVersion(GML.VERSION gmlVersion) {

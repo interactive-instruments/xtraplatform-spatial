@@ -9,14 +9,21 @@ package de.ii.xtraplatform.feature.provider.wfs.app;
 
 import akka.util.ByteString;
 import de.ii.xtraplatform.akka.ActorSystemProvider;
+import de.ii.xtraplatform.crs.domain.BoundingBox;
+import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entity.api.EntityComponent;
 import de.ii.xtraplatform.entity.api.handler.Entity;
+import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
+import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
+import de.ii.xtraplatform.features.domain.FeatureExtents;
+import de.ii.xtraplatform.features.domain.FeatureMetadata;
 import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
@@ -24,6 +31,8 @@ import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
+import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
+import de.ii.xtraplatform.features.domain.Metadata;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -31,28 +40,36 @@ import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
+import java.util.Optional;
+
 @EntityComponent
-@Entity(entityType = FeatureProvider2.class, dataType = FeatureProviderDataV1.class, type = "providers", subType = "feature/wfs")
-public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, String, FeatureProviderConnector.QueryOptions> implements FeatureProvider2, FeatureQueries, FeatureCrs {
+@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderWfs.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV1.class)
+public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, String, FeatureProviderConnector.QueryOptions> implements FeatureProvider2, FeatureQueries, FeatureCrs, FeatureExtents, FeatureMetadata {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
+
+    static final String ENTITY_SUB_TYPE = "feature/wfs";
+    public static final String PROVIDER_TYPE = "WFS";
 
     private final CrsTransformerFactory crsTransformerFactory;
     private final WfsConnector connector;
     private final FeatureQueryTransformerWfs queryTransformer;
     private final FeatureNormalizerWfs featureNormalizer;
+    private final ExtentReader extentReader;
 
     public FeatureProviderWfs(@Context BundleContext context,
                               @Requires ActorSystemProvider actorSystemProvider,
                               @Requires CrsTransformerFactory crsTransformerFactory,
-                              @Property(name = "data") FeatureProviderDataV1 data,
-                              @Property(name = ".connector") WfsConnector wfsConnector) {
+                              @Requires ConnectorFactory connectorFactory,
+                              @Property(name = Entity.DATA_KEY) FeatureProviderDataV1 data) {
         super(context, actorSystemProvider, data, createPathParser((ConnectionInfoWfsHttp) data.getConnectionInfo()));
 
         this.crsTransformerFactory = crsTransformerFactory;
-        this.connector = wfsConnector;
-        this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), getData().getTypes(), (ConnectionInfoWfsHttp) getData().getConnectionInfo(), getData().getNativeCrs());
-        this.featureNormalizer = new FeatureNormalizerWfs(getTypeInfos(), getData().getTypes(), ((ConnectionInfoWfsHttp) getData().getConnectionInfo()).getNamespaces());
+        this.connector = (WfsConnector) connectorFactory.createConnector(data);
+        this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), data.getTypes(), (ConnectionInfoWfsHttp) data.getConnectionInfo(), data.getNativeCrs().orElse(OgcCrs.CRS84));
+        this.featureNormalizer = new FeatureNormalizerWfs(getTypeInfos(), data.getTypes(), ((ConnectionInfoWfsHttp) data.getConnectionInfo()).getNamespaces());
+        this.extentReader = new ExtentReaderWfs(connector, crsTransformerFactory, data.getNativeCrs().orElse(OgcCrs.CRS84));
     }
 
     private static FeatureStorePathParser createPathParser(ConnectionInfoWfsHttp connectionInfoWfsHttp) {
@@ -81,8 +98,56 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
 
 
     @Override
+    public boolean supportsCrs() {
+        return FeatureProvider2.super.supportsCrs() && getData().getNativeCrs().isPresent();
+    }
+
+    @Override
+    public EpsgCrs getNativeCrs() {
+        return getData().getNativeCrs().get();
+    }
+
+    @Override
     public boolean isCrsSupported(EpsgCrs crs) {
-        return getData().getNativeCrs()
-                        .equals(crs) || crsTransformerFactory.isCrsSupported(crs);
+        return Objects.equals(getNativeCrs(), crs) || crsTransformerFactory.isCrsSupported(crs);
+    }
+
+    @Override
+    public Optional<BoundingBox> getSpatialExtent(String typeName) {
+        Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
+
+        if (!typeInfo.isPresent()) {
+            return Optional.empty();
+        }
+
+        try {
+            return extentReader.getExtent(typeInfo.get())
+                               .run(getMaterializer())
+                               .exceptionally(throwable -> Optional.empty())
+                               .toCompletableFuture()
+                               .join();
+        } catch (Throwable e) {
+            //continue
+            boolean br = true;
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<BoundingBox> getSpatialExtent(String typeName, EpsgCrs crs) {
+        return getSpatialExtent(typeName).flatMap(boundingBox -> crsTransformerFactory.getTransformer(getNativeCrs(), crs)
+                                                                                      .flatMap(crsTransformer -> {
+                                                                                          try {
+                                                                                              return Optional.of(crsTransformer.transformBoundingBox(boundingBox));
+                                                                                          } catch (CrsTransformationException e) {
+                                                                                              return Optional.empty();
+                                                                                          }
+                                                                                      }));
+    }
+
+    @Override
+    public Optional<Metadata> getMetadata() {
+        return connector.getMetadata();
     }
 }

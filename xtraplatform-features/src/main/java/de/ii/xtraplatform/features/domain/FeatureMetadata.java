@@ -7,8 +7,10 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import java.util.Optional;
+
 public interface FeatureMetadata {
 
-    //void getMetadata(FeatureProviderMetadataConsumer metadataConsumer);
+    Optional<Metadata> getMetadata();
 
 }
