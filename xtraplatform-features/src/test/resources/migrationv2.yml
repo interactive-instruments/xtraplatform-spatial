@@ -1,0 +1,61 @@
+---
+id: geoval
+createdAt: 1586271491161
+lastModified: 1586271491161
+entityStorageVersion: 2
+providerType: FEATURE
+featureProviderType: SQL
+nativeCrs:
+  code: 4326
+  forceAxisOrder: LON_LAT
+types:
+  observationsubject:
+    path: /observationsubject
+    properties:
+      id:
+        path: id
+        type: STRING
+        role: ID
+      type:
+        path: _type
+        type: STRING
+      geomLowerPoint:
+        path: geomlowerpoint
+        type: GEOMETRY
+      shortName:
+        path: shortname
+        type: STRING
+      explorationSite:
+        path: '[explorationsite_fk=id]explorationsite'
+        type: OBJECT
+        properties:
+          title:
+            path: shortname
+            type: STRING
+          href:
+            path: id
+            type: STRING
+      process:
+        path: '[id=observationsubject_fk]observationsubject_process/[process_fk=id]process'
+        type: OBJECT_ARRAY
+        properties:
+          title:
+            path: category_fk
+            type: STRING
+          href:
+            path: id
+            type: STRING
+      filterValues:
+        path: '[id=observationsubject_fk]observationsubject_filtervalues'
+        type: OBJECT_ARRAY
+        properties:
+          property:
+            path: filtervalueproperty_fk
+            type: STRING
+          measure:
+            path: resultmeasure
+            type: FLOAT
+          classification:
+            path: '[id=filtervalue_fk]filtervalue_resultclassification/classificationcode_fk'
+            type: VALUE_ARRAY
+            valueType: STRING
