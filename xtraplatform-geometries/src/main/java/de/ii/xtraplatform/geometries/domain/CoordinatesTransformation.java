@@ -27,6 +27,11 @@ public interface CoordinatesTransformation extends DoubleArrayProcessor {
     }
 
     @Override
+    default void onFlush() throws IOException {
+        getNext().onFlush();
+    }
+
+    @Override
     default void onEnd() throws IOException {
         getNext().onEnd();
     }

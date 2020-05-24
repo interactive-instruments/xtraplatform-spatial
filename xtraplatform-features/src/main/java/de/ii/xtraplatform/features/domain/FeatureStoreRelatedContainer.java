@@ -1,6 +1,6 @@
 /**
  * Copyright 2020 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -12,17 +12,40 @@ import org.immutables.value.Value;
 
 import java.util.List;
 import java.util.ListIterator;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true)
 public interface FeatureStoreRelatedContainer extends FeatureStoreAttributesContainer {
+
+    @Value.Derived
+    @Override
+    default List<String> getPath() {
+        return Stream.concat(
+                Stream.of(getInstanceContainerName()),
+                getInstanceConnection().stream()
+                                       .flatMap(relation -> {
+                                           if (relation.getJunction()
+                                                       .isPresent()) {
+                                               return Stream.of(String.format("[%s=%s]%s", relation.getSourceField(), relation.getJunctionSource()
+                                                                                                                              .get(), relation.getJunction()
+                                                                                                                                              .get()),
+                                                       String.format("[%s=%s]%s", relation.getJunctionTarget()
+                                                                                          .get(), relation.getTargetField(), relation.getTargetContainer()));
+                                           }
+                                           return Stream.of(String.format("[%s=%s]%s", relation.getSourceField(), relation.getTargetField(), relation.getTargetContainer()));
+                                       }))
+                     .collect(Collectors.toList());
+    }
 
     List<FeatureStoreRelation> getInstanceConnection();
 
     @Override
     @Value.Derived
     default String getInstanceContainerName() {
-        return getInstanceConnection().get(0).getSourceContainer();
+        return getInstanceConnection().get(0)
+                                      .getSourceContainer();
     }
 
     @Override

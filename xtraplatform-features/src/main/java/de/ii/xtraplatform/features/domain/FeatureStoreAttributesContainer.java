@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
@@ -30,6 +31,12 @@ public interface FeatureStoreAttributesContainer {
     //boolean shouldAutoGenerateId();
 
     List<FeatureStoreAttribute> getAttributes();
+
+    @Value.Derived
+    @Value.Auxiliary
+    default String getPathString() {
+        return "/" + Joiner.on('/').join(getPath());
+    }
 
     @Value.Derived
     @Value.Auxiliary
@@ -59,6 +66,23 @@ public interface FeatureStoreAttributesContainer {
         return getAttributes()
                 .stream()
                 .filter(FeatureStoreAttribute::isSpatial)
+                .findFirst();
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isMain() {
+        return getAttributes()
+                .stream()
+                .anyMatch(FeatureStoreAttribute::isId);
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
+    default Optional<FeatureStoreAttribute> getIdAttribute() {
+        return getAttributes()
+                .stream()
+                .filter(FeatureStoreAttribute::isId)
                 .findFirst();
     }
 }

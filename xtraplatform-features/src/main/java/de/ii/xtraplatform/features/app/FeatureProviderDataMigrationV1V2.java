@@ -6,15 +6,14 @@ import de.ii.xtraplatform.event.store.EntityDataBuilder;
 import de.ii.xtraplatform.event.store.EntityMigration;
 import de.ii.xtraplatform.event.store.Identifier;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
-import de.ii.xtraplatform.features.domain.FeaturePropertyV2;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureType;
-import de.ii.xtraplatform.features.domain.FeatureTypeV2;
-import de.ii.xtraplatform.features.domain.ImmutableFeaturePropertyV2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV1;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureTypeV2;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.SchemaBase;
 
 import java.util.AbstractMap;
 import java.util.Arrays;
@@ -52,7 +51,7 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
         entityData.getTypes()
                   .values()
                   .forEach(featureType -> {
-                      FeatureTypeV2 featureTypeNew = migrateFeatureType(featureType);
+                      FeatureSchema featureTypeNew = migrateFeatureType(featureType);
 
                       builder.putTypes(featureTypeNew.getName(), featureTypeNew);
 
@@ -66,22 +65,23 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
         return ImmutableMap.of();
     }
 
-    public FeatureTypeV2 migrateFeatureType(FeatureType featureType) {
+    public FeatureSchema migrateFeatureType(FeatureType featureType) {
 
         String featureTypePath = getFeatureTypePath(featureType);
 
-        return new ImmutableFeatureTypeV2.Builder()
+        return new ImmutableFeatureSchema.Builder()
                 .name(featureType.getName())
-                .path(featureTypePath)
-                .setProperties(migrateProperties(featureType.getProperties(), featureTypePath))
+                .type(SchemaBase.Type.OBJECT)
+                .sourcePath(featureTypePath)
+                .setPropertyMap(migrateProperties(featureType.getProperties(), featureTypePath))
                 .build();
     }
 
-    private Map<String, ImmutableFeaturePropertyV2.Builder> migrateProperties(Map<String, FeatureProperty> properties,
+    private Map<String, ImmutableFeatureSchema.Builder> migrateProperties(Map<String, FeatureProperty> properties,
                                                                               String featureTypePath) {
-        Map<String, ImmutableFeaturePropertyV2.Builder> migrated = new LinkedHashMap<>();
+        Map<String, ImmutableFeatureSchema.Builder> migrated = new LinkedHashMap<>();
 
-        Map<String, ImmutableFeaturePropertyV2.Builder> objectPropertiesCache = new LinkedHashMap<>();
+        Map<String, ImmutableFeatureSchema.Builder> objectPropertiesCache = new LinkedHashMap<>();
 
         properties.entrySet()
                   .stream()
@@ -91,10 +91,10 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
                                                  .split("\\.");
                       FeatureProperty originalProperty = entry.getValue();
                       String path = removePrefix(originalProperty.getPath(), featureTypePath);
-                      FeaturePropertyV2.Type type = FeaturePropertyV2.Type.valueOf(originalProperty.getType()
-                                                                                                   .toString());
-                      Optional<FeaturePropertyV2.Role> role = originalProperty.getRole()
-                                                                              .map(originalRole -> FeaturePropertyV2.Role.valueOf(originalRole.toString()));
+                      FeatureSchema.Type type = FeatureSchema.Type.valueOf(originalProperty.getType()
+                                                                                           .toString());
+                      Optional<FeatureSchema.Role> role = originalProperty.getRole()
+                                                                          .map(originalRole -> FeatureSchema.Role.valueOf(originalRole.toString()));
 
                       return createPropertyTree(objectPropertiesCache, nameTokens, path, type, role);
 
@@ -104,12 +104,12 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
         return migrated;
     }
 
-    private Map.Entry<String, ImmutableFeaturePropertyV2.Builder> createPropertyTree(
-            Map<String, ImmutableFeaturePropertyV2.Builder> objectPropertiesCache,
+    private Map.Entry<String, ImmutableFeatureSchema.Builder> createPropertyTree(
+            Map<String, ImmutableFeatureSchema.Builder> objectPropertiesCache,
             String[] nameTokens,
             String path,
-            FeaturePropertyV2.Type type,
-            Optional<FeaturePropertyV2.Role> role) {
+            FeatureSchema.Type type,
+            Optional<FeatureSchema.Role> role) {
 
         String name = nameTokens[0];
 
@@ -122,38 +122,38 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
                 : removeSuffix(path, isArray(nameTokens[1]) ? 2 : 1);
         String childPath = removePrefix(path, objectPath);
 
-        ImmutableFeaturePropertyV2.Builder objectProperty = objectPropertiesCache.computeIfAbsent(clean(name), cleanName -> getObjectProperty(name, objectPath));
+        ImmutableFeatureSchema.Builder objectProperty = objectPropertiesCache.computeIfAbsent(clean(name), cleanName -> getObjectProperty(name, objectPath));
 
-        Map.Entry<String, ImmutableFeaturePropertyV2.Builder> childTree = createPropertyTree(objectPropertiesCache, Arrays.copyOfRange(nameTokens, 1, nameTokens.length), childPath, type, role);
+        Map.Entry<String, ImmutableFeatureSchema.Builder> childTree = createPropertyTree(objectPropertiesCache, Arrays.copyOfRange(nameTokens, 1, nameTokens.length), childPath, type, role);
 
-        objectProperty.putProperties(childTree.getKey(), childTree.getValue());
+        objectProperty.putPropertyMap(childTree.getKey(), childTree.getValue());
 
         return new AbstractMap.SimpleImmutableEntry<>(clean(name), objectProperty);
 
     }
 
-    private ImmutableFeaturePropertyV2.Builder getValueProperty(String name, String path, FeaturePropertyV2.Type type,
-                                                                Optional<FeaturePropertyV2.Role> role) {
+    private ImmutableFeatureSchema.Builder getValueProperty(String name, String path, FeatureSchema.Type type,
+                                                                Optional<FeatureSchema.Role> role) {
 
-        ImmutableFeaturePropertyV2.Builder builder = new ImmutableFeaturePropertyV2.Builder()
+        ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder()
                 .name(clean(name))
-                .path(path)
+                .sourcePath(path)
                 .type(type)
                 .role(role);
 
         if (isArray(name)) {
-            builder.type(FeaturePropertyV2.Type.VALUE_ARRAY)
+            builder.type(FeatureSchema.Type.VALUE_ARRAY)
                    .valueType(type);
         }
 
         return builder;
     }
 
-    private ImmutableFeaturePropertyV2.Builder getObjectProperty(String name, String path) {
-        return new ImmutableFeaturePropertyV2.Builder()
+    private ImmutableFeatureSchema.Builder getObjectProperty(String name, String path) {
+        return new ImmutableFeatureSchema.Builder()
                 .name(clean(name))
-                .path(path)
-                .type(isArray(name) ? FeaturePropertyV2.Type.OBJECT_ARRAY : FeaturePropertyV2.Type.OBJECT);
+                .sourcePath(path)
+                .type(isArray(name) ? FeatureSchema.Type.OBJECT_ARRAY : FeatureSchema.Type.OBJECT);
     }
 
     private String getFeatureTypePath(FeatureType featureType) {

@@ -12,7 +12,9 @@ import org.immutables.value.Value;
 import java.util.OptionalLong;
 
 @Value.Immutable
-public interface FeatureCollection {
+@Value.Modifiable
+@Value.Style(set = "*")
+public interface CollectionMetadata {
 
     @Value.Parameter
     OptionalLong getNumberReturned();

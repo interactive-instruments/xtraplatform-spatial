@@ -8,17 +8,14 @@
 package de.ii.xtraplatform.feature.provider.wfs.app;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.features.domain.FeatureProperty;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureType;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreInstanceContainer;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class FeatureStorePathParserWfs implements FeatureStorePathParser {
@@ -55,7 +52,7 @@ public class FeatureStorePathParserWfs implements FeatureStorePathParser {
 */
         instanceContainerBuilders.get(instanceContainerName)
                                  .name(instanceContainerName)
-                                 .path(path)
+                                 //TODO.path(path)
                                  .sortKey("none")
                                  //.attributes(ImmutableList.of(attribute))
                                  .attributesPosition(0);

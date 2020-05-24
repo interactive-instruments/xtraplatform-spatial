@@ -61,6 +61,13 @@ public abstract class ToChars implements DoubleArrayProcessor {
     }
 
     @Override
+    public void onFlush() throws IOException {
+        this.isFirst = true;
+
+        getCoordinatesProcessor().onFlush();
+    }
+
+    @Override
     public void onEnd() throws IOException {
         getCoordinatesProcessor().onEnd();
     }

@@ -9,20 +9,32 @@ package de.ii.xtraplatform.features.domain;
 
 import akka.Done;
 import akka.stream.javadsl.Sink;
+import org.immutables.value.Value;
 
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 public interface FeatureStream2 {
 
+    @Value.Immutable
     interface Result {
-        boolean isSuccess();
+
+        @Value.Derived
+        default boolean isSuccess() {
+            return !getError().isPresent();
+        }
+
+        boolean isEmpty();
+
+        Optional<Throwable> getError();
     }
 
     CompletionStage<Result> runWith(FeatureTransformer2 transformer);
 
-    CompletionStage<Result> runWith(Sink<Feature<?>, CompletionStage<Done>> transformer);
+    CompletionStage<Result> runWith(Sink<Feature, CompletionStage<Done>> transformer);
 
-    default <T extends Property<?>,U extends Feature<T>> CompletionStage<Result> runWith(FeatureTransformer3<T,U> transformer) {
+    default <V extends PropertyBase<V,X>, W extends FeatureBase<V,X>, X extends SchemaBase<X>> CompletionStage<Result> runWith(
+            FeatureProcessor<V,W,X> transformer) {
         return null;
     }
 }

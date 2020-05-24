@@ -224,7 +224,6 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                                     .findFirst();
 
                             instanceContainerBuilder.name(instanceContainerName)
-                                                    .path(tablePathAsList)
                                                     .sortKey(syntax.getOptions()
                                                                    .getDefaultSortKey())
                                                     .attributes(attributes)
@@ -249,7 +248,6 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
                             ImmutableFeatureStoreRelatedContainer attributesContainer = ImmutableFeatureStoreRelatedContainer.builder()
                                                                                                                              .name(attributesContainerName)
-                                                                                                                             .path(tablePathAsList)
                                                                                                                              .sortKey(sortKey)
                                                                                                                              .instanceConnection(instanceConnection)
                                                                                                                              .attributes(attributes)

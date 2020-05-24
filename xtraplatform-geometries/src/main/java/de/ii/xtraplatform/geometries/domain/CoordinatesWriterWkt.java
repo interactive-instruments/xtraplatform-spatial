@@ -47,7 +47,7 @@ public abstract class CoordinatesWriterWkt implements CoordinatesWriter<Writer> 
         getDelegate().write(chars, offset, length);
 
         if (separator) {
-            getDelegate().append(',');
+            getDelegate().append(' ');
         }
     }
 }

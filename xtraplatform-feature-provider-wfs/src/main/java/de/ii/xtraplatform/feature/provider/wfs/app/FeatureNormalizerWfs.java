@@ -10,29 +10,28 @@ package de.ii.xtraplatform.feature.provider.wfs.app;
 import akka.Done;
 import akka.NotUsed;
 import akka.japi.function.Function;
-import akka.japi.function.Function2;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.transformer.api.GmlStreamParser;
-import de.ii.xtraplatform.features.domain.Feature;
+import de.ii.xtraplatform.features.domain.FeatureBase;
 import de.ii.xtraplatform.features.domain.FeatureNormalizer;
-import de.ii.xtraplatform.features.domain.FeatureProperty;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
+import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureStream2;
 import de.ii.xtraplatform.features.domain.FeatureTransformer2;
 import de.ii.xtraplatform.features.domain.FeatureType;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureProperty;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureType;
-import de.ii.xtraplatform.features.domain.Property;
+import de.ii.xtraplatform.features.domain.ImmutableResult;
+import de.ii.xtraplatform.features.domain.PropertyBase;
+import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 
 import javax.xml.namespace.QName;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
@@ -89,22 +88,16 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
         Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(qualifiedName, featureType1, featureTransformer, featureQuery.getFields(), ImmutableMap.of());
 
         return transformer.mapMaterializedValue((Function<CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (completionStage) -> completionStage.handle((done, throwable) -> {
-            boolean success = true;
-            if (Objects.nonNull(throwable)) {
-                //handleException(throwable, readContext);
-                success = false;
-            }
-
-            //handleCompletion(readContext);
-            boolean finalSuccess = success;
-            return () -> finalSuccess;
+            return ImmutableResult.builder()
+                                  .isEmpty(false/*TODO!readContext.getReadState()
+                                                       .isAtLeastOneFeatureWritten()*/)
+                                  .error(Optional.ofNullable(throwable))
+                                  .build();
         }));
     }
 
     @Override
-    public <U extends Property<?>, V extends Feature<U>> Source<V, CompletionStage<FeatureStream2.Result>> normalize(
-            Source<ByteString, NotUsed> sourceStream, FeatureQuery featureQuery, Supplier<V> featureCreator,
-            Supplier<U> propertyCreator) {
+    public <V extends PropertyBase<V, X>, W extends FeatureBase<V, X>, X extends SchemaBase<X>> Source<W, CompletionStage<FeatureStream2.Result>> normalize(Source<ByteString, NotUsed> sourceStream, FeatureQuery featureQuery, Supplier<W> featureCreator, Supplier<V> propertyCreator) {
         return null;
     }
 }

@@ -121,8 +121,8 @@ public class SqlFeatureCreator {
             return previousId != null ? previousId : id;
         };
 
-        return SlickSql.source(session, queryFunctions, mapper, valueContainer, materializer.system())
-                .runWith(Sink.fold("", (id1, id2) -> id1.isEmpty() ? id2 : id1), materializer);
+        return null;//SlickSql.source(session, materializer.system().dispatcher(), queryFunctions, mapper, valueContainer)
+                //.runWith(Sink.fold("", (id1, id2) -> id1.isEmpty() ? id2 : id1), materializer);
 
         /*return Source.from(queries)
                      .flatMapConcat(queryFunction -> {
@@ -223,8 +223,8 @@ public class SqlFeatureCreator {
             return previousId != null ? previousId : id2;
         };
 
-        return SlickSql.source(session, queryFunctions, mapper, valueContainer, materializer.system())
-                       .runWith(Sink.fold("", (id1, id2) -> id1.isEmpty() ? id2 : id1), materializer);
+        return null;//SlickSql.source(session, materializer.system().dispatcher(), queryFunctions, mapper, valueContainer)
+                      // .runWith(Sink.fold("", (id1, id2) -> id1.isEmpty() ? id2 : id1), materializer);
 
         /*return Source.from(queries)
                      .flatMapConcat(queryFunction -> {

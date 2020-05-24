@@ -1,0 +1,48 @@
+package de.ii.xtraplatform.feature.transformer.geojson;
+
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+
+public enum GeoJsonGeometryType {
+
+    POINT("Point", SimpleFeatureGeometry.POINT),
+    MULTI_POINT("MultiPoint", SimpleFeatureGeometry.MULTI_POINT),
+    LINE_STRING("LineString", SimpleFeatureGeometry.LINE_STRING),
+    MULTI_LINE_STRING("MultiLineString", SimpleFeatureGeometry.MULTI_LINE_STRING),
+    POLYGON("Polygon", SimpleFeatureGeometry.POLYGON),
+    MULTI_POLYGON("MultiPolygon", SimpleFeatureGeometry.MULTI_POLYGON),
+    GEOMETRY_COLLECTION("GeometryCollection", SimpleFeatureGeometry.NONE),
+    GENERIC("", SimpleFeatureGeometry.NONE),
+    NONE("", SimpleFeatureGeometry.NONE);
+
+    private String stringRepresentation;
+    private SimpleFeatureGeometry sfType;
+
+    GeoJsonGeometryType(String stringRepresentation, SimpleFeatureGeometry sfType) {
+        this.stringRepresentation = stringRepresentation;
+        this.sfType = sfType;
+    }
+
+    @Override
+    public String toString() {
+        return stringRepresentation;
+    }
+
+    public SimpleFeatureGeometry toSimpleFeatureGeometry() {
+        return sfType;
+    }
+
+    public static GeoJsonGeometryType forString(String type) {
+        for (GeoJsonGeometryType geoJsonType : GeoJsonGeometryType.values()) {
+            if (geoJsonType.toString()
+                           .equals(type)) {
+                return geoJsonType;
+            }
+        }
+
+        return NONE;
+    }
+
+    public boolean isValid() {
+        return this != NONE;
+    }
+}

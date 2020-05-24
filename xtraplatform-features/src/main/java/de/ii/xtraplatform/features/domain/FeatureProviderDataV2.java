@@ -53,14 +53,14 @@ public interface FeatureProviderDataV2 extends EntityData {
     @JsonIgnore //TODO: remove when done
     ConnectionInfo getConnectionInfo();
 
-    EpsgCrs getNativeCrs();
+    Optional<EpsgCrs> getNativeCrs();
 
     Optional<String> getDefaultLanguage();
 
     //behaves exactly like Map<String, FeatureTypeMapping>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonMerge
-    ValueBuilderMap<FeatureTypeV2, ImmutableFeatureTypeV2.Builder> getTypes();
+    ValueBuilderMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
 
     Map<String, Map<String, String>> getCodelists();
 
@@ -68,28 +68,28 @@ public interface FeatureProviderDataV2 extends EntityData {
     // custom builder to automatically use keys of types as name of FeatureTypeV2
     abstract class Builder implements EntityDataBuilder<FeatureProviderDataV2> {
         @JsonIgnore
-        public abstract Map<String, ImmutableFeatureTypeV2.Builder> getTypes();
+        public abstract Map<String, ImmutableFeatureSchema.Builder> getTypes();
 
         @JsonProperty(value = "types")
-        public Map<String, ImmutableFeatureTypeV2.Builder> getTypes2() {
-            Map<String, ImmutableFeatureTypeV2.Builder> types = getTypes();
+        public Map<String, ImmutableFeatureSchema.Builder> getTypes2() {
+            Map<String, ImmutableFeatureSchema.Builder> types = getTypes();
 
             return new KeyToNameBuilderMap(types);
 
             //return new LinkedHashMap<String, ImmutableFeatureType.Builder>(types){};
         }
 
-        public abstract ImmutableFeatureProviderDataV2.Builder putTypes(String key, ImmutableFeatureTypeV2.Builder builder);
+        public abstract ImmutableFeatureProviderDataV2.Builder putTypes(String key, ImmutableFeatureSchema.Builder builder);
 
         @JsonProperty(value = "types")
-        public ImmutableFeatureProviderDataV2.Builder putTypes2(String key, ImmutableFeatureTypeV2.Builder builder) {
+        public ImmutableFeatureProviderDataV2.Builder putTypes2(String key, ImmutableFeatureSchema.Builder builder) {
             return putTypes(key, builder.name(key));
         }
 
-        private static class KeyToNameBuilderMap implements Map<String, ImmutableFeatureTypeV2.Builder> {
-            private final Map<String, ImmutableFeatureTypeV2.Builder> types;
+        private static class KeyToNameBuilderMap implements Map<String, ImmutableFeatureSchema.Builder> {
+            private final Map<String, ImmutableFeatureSchema.Builder> types;
 
-            public KeyToNameBuilderMap(Map<String, ImmutableFeatureTypeV2.Builder> types) {
+            public KeyToNameBuilderMap(Map<String, ImmutableFeatureSchema.Builder> types) {
                 this.types = types;
             }
 
@@ -114,22 +114,22 @@ public interface FeatureProviderDataV2 extends EntityData {
             }
 
             @Override
-            public ImmutableFeatureTypeV2.Builder get(Object o) {
+            public ImmutableFeatureSchema.Builder get(Object o) {
                 return types.get(o);
             }
 
             @Override
-            public ImmutableFeatureTypeV2.Builder put(String s, ImmutableFeatureTypeV2.Builder builder) {
+            public ImmutableFeatureSchema.Builder put(String s, ImmutableFeatureSchema.Builder builder) {
                 return types.put(s, builder.name(s));
             }
 
             @Override
-            public ImmutableFeatureTypeV2.Builder remove(Object o) {
+            public ImmutableFeatureSchema.Builder remove(Object o) {
                 return types.remove(o);
             }
 
             @Override
-            public void putAll(Map<? extends String, ? extends ImmutableFeatureTypeV2.Builder> map) {
+            public void putAll(Map<? extends String, ? extends ImmutableFeatureSchema.Builder> map) {
                 types.putAll(map);
             }
 
@@ -144,12 +144,12 @@ public interface FeatureProviderDataV2 extends EntityData {
             }
 
             @Override
-            public Collection<ImmutableFeatureTypeV2.Builder> values() {
+            public Collection<ImmutableFeatureSchema.Builder> values() {
                 return types.values();
             }
 
             @Override
-            public Set<Entry<String, ImmutableFeatureTypeV2.Builder>> entrySet() {
+            public Set<Entry<String, ImmutableFeatureSchema.Builder>> entrySet() {
                 return types.entrySet();
             }
         }

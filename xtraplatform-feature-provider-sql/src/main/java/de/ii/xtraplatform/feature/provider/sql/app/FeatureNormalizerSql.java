@@ -1,6 +1,6 @@
 /**
  * Copyright 2020 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -21,8 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowMeta;
-import de.ii.xtraplatform.features.domain.Feature;
-import de.ii.xtraplatform.features.domain.FeatureCollection;
+import de.ii.xtraplatform.features.domain.CollectionMetadata;
+import de.ii.xtraplatform.features.domain.FeatureBase;
 import de.ii.xtraplatform.features.domain.FeatureConsumer;
 import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
@@ -32,8 +32,10 @@ import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureStream2;
 import de.ii.xtraplatform.features.domain.FeatureTransformer2;
 import de.ii.xtraplatform.features.domain.FeatureType;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureCollection;
-import de.ii.xtraplatform.features.domain.Property;
+import de.ii.xtraplatform.features.domain.ImmutableCollectionMetadata;
+import de.ii.xtraplatform.features.domain.ImmutableResult;
+import de.ii.xtraplatform.features.domain.PropertyBase;
+import de.ii.xtraplatform.features.domain.SchemaBase;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +47,7 @@ import javax.ws.rs.WebApplicationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -84,10 +87,12 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
     }
 
     @Override
-    public <U extends Property<?>,V extends Feature<U>> Source<V, CompletionStage<FeatureStream2.Result>> normalize(Source<SqlRow, NotUsed> sourceStream, FeatureQuery featureQuery, Supplier<V> featureCreator, Supplier<U> propertyCreator) {
+    public <U extends PropertyBase<U,W>, V extends FeatureBase<U,W>, W extends SchemaBase<W>> Source<V, CompletionStage<FeatureStream2.Result>> normalize(
+            Source<SqlRow, NotUsed> sourceStream, FeatureQuery featureQuery, Supplier<V> featureCreator,
+            Supplier<U> propertyCreator) {
 
         Long[] featureId = {null};
-        final FeatureCollection[] collection = new FeatureCollection[1];
+        final CollectionMetadata[] collection = new CollectionMetadata[1];
 
         //TODO: support multiple typeInfos
         FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());
@@ -114,17 +119,13 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
         SubSource<V, NotUsed> folded = subSource.fold(featureCreator.get(), handleRow(readContext, propertyCreator));
 
         Source<V, CompletionStage<FeatureStream2.Result>> featureSource = folded.concatSubstreams()
-                                                                                      .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
-                                                                                          boolean success = true;
-                                                                                          if (Objects.nonNull(throwable)) {
-                                                                                              //handleException(throwable, readContext);
-                                                                                              success = false;
-                                                                                          }
-
-                                                                                          //handleCompletion(readContext);
-                                                                                          boolean finalSuccess = success;
-                                                                                          return () -> finalSuccess;
-                                                                                      }));
+                                                                                .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
+                                                                                    return ImmutableResult.builder()
+                                                                                                          .isEmpty(!readContext.getReadState()
+                                                                                                                               .isAtLeastOneFeatureWritten())
+                                                                                                          .error(Optional.ofNullable(throwable))
+                                                                                                          .build();
+                                                                                }));
 
         return featureSource;
     }
@@ -145,7 +146,8 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
         };
     }
 
-    private <U extends Property<?>,V extends Feature<U>> Function2<V, SqlRow, V> handleRow(ReadContext readContext, Supplier<U> propertyCreator) {
+    private <U extends PropertyBase<U,W>, V extends FeatureBase<U,W>, W extends SchemaBase<W>> Function2<V, SqlRow, V> handleRow(
+            ReadContext readContext, Supplier<U> propertyCreator) {
         return (feature, sqlRow) -> {
 
             boolean stop = true;
@@ -200,15 +202,35 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                     return NotUsed.getInstance();
                 })
                     .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
-                        boolean success = true;
                         if (Objects.nonNull(throwable)) {
-                            handleException(throwable, readContext);
-                            success = false;
+                            //handleException(throwable, readContext);
+                            try {
+                                if (!readContext.getReadState()
+                                                .isStarted()) {
+                                    readContext.getFeatureConsumer()
+                                               .onStart(OptionalLong.of(0), OptionalLong.empty(), ImmutableMap.of());
+                                }
+                            } catch (Exception e) {
+                                //ignore
+                            }
                         }
 
-                        handleCompletion(readContext);
-                        boolean finalSuccess = success;
-                        return () -> finalSuccess;
+                        //handleCompletion(readContext);
+                        try {
+                            if (readContext.getReadState()
+                                           .isFeatureStarted()) {
+                                consumer.onFeatureEnd(readContext.getMainTablePath());
+                            }
+                            consumer.onEnd();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+
+                        return ImmutableResult.builder()
+                                              .isEmpty(!readContext.getReadState()
+                                                                   .isAtLeastOneFeatureWritten())
+                                              .error(Optional.ofNullable(throwable))
+                                              .build();
                     }));
 
         return consumerFlow.to(Sink.ignore());
@@ -263,10 +285,13 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
         @Nullable
         Long getCurrentId();
 
-        boolean isAtLeastOneFeatureWritten();
+        @Value.Default
+        default boolean isAtLeastOneFeatureWritten() {
+            return false;
+        }
 
         @Nullable
-        FeatureCollection getFeatureCollection();
+        CollectionMetadata getCollectionMetadata();
 
         @Value.Default
         default long getIndex() {
@@ -307,7 +332,8 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
     private static void handleMetaRow2(SqlRowMeta sqlRow, ReadContext readContext) throws Exception {
 
-        readContext.getReadState().setFeatureCollection(ImmutableFeatureCollection.of(OptionalLong.of(sqlRow.getNumberReturned()), sqlRow.getNumberMatched()));
+        readContext.getReadState()
+                   .setCollectionMetadata(ImmutableCollectionMetadata.of(OptionalLong.of(sqlRow.getNumberReturned()), sqlRow.getNumberMatched()));
 
         readContext.getReadState()
                    .setIsStarted(true);
@@ -351,9 +377,11 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
         handleColumns(sqlRow, consumer, multiplicityTracker.getMultiplicitiesForPath(sqlRow.getPath()));
     }
 
-    private static <U extends Property<?>,V extends Feature<U>> void handleValueRow2(V feature, SqlRow sqlRow, ReadContext readContext, Supplier<U> propertyCreator) throws Exception {
-        feature.setFeatureCollection(readContext.getReadState()
-                                                .getFeatureCollection());
+    private static <U extends PropertyBase<U,W>, V extends FeatureBase<U,W>, W extends SchemaBase<W>> void handleValueRow2(V feature, SqlRow sqlRow,
+                                                                                              ReadContext readContext,
+                                                                                              Supplier<U> propertyCreator) throws Exception {
+        feature.collectionMetadata(readContext.getReadState()
+                                              .getCollectionMetadata());
 
         for (int i = 0; i < sqlRow.getValues()
                                   .size() && i < sqlRow.getColumnPaths()
@@ -362,11 +390,11 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                                       .get(i))) {
 
                 U property = propertyCreator.get();
-                property.setName(Joiner.on('.')
-                                       .join(sqlRow.getColumnPaths()
-                                                   .get(i)));
-                property.setValue((String) sqlRow.getValues()
-                                                 .get(i));
+                property.name(Joiner.on('.')
+                                    .join(sqlRow.getColumnPaths()
+                                                .get(i)));
+                property.value((String) sqlRow.getValues()
+                                              .get(i));
                 feature.addProperties(property);
 
                     /*feature.putProperties(sqlRow.getColumnPaths()

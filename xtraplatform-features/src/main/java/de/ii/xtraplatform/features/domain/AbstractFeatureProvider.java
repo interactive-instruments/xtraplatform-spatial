@@ -80,7 +80,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return typeInfos;
     }
 
-    protected Materializer getMaterializer() {
+    protected ActorMaterializer getMaterializer() {
         return materializer;
     }
 
@@ -125,7 +125,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             }
 
             @Override
-            public CompletionStage<Result> runWith(Sink<Feature<?>, CompletionStage<Done>> transformer) {
+            public CompletionStage<Result> runWith(Sink<Feature, CompletionStage<Done>> transformer) {
                 /*Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(typeInfos.get(query.getType()));
 
                 if (!typeInfo.isPresent()) {
@@ -148,7 +148,8 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             }
 
             @Override
-            public <W extends Property<?>,X extends Feature<W>> CompletionStage<Result> runWith(FeatureTransformer3<W, X> transformer) {
+            public <Y extends PropertyBase<Y,Z>, W extends FeatureBase<Y,Z>, Z extends SchemaBase<Z>> CompletionStage<Result> runWith(
+                    FeatureProcessor<Y,W,Z> transformer) {
                 Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(typeInfos.get(query.getType()));
 
                 if (!typeInfo.isPresent()) {
@@ -162,15 +163,15 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
                 Source<T, NotUsed> rowStream = getConnector().getSourceStream(sqlQueries);
 
-                Source<X, CompletionStage<Result>> featureStream = getNormalizer().normalize(rowStream, query, transformer::createFeature, transformer::createProperty);
+                Source<W, CompletionStage<Result>> featureStream = getNormalizer().normalize(rowStream, query, transformer::createFeature, transformer::createProperty);
 
-                Sink<X, CompletionStage<Done>> sink = Sink.foreach(feature -> {
+                Sink<W, CompletionStage<Done>> sink = Sink.foreach(feature -> {
 
             /*if (!numberReturned.isDone() && feature.getProperties().containsKey(ImmutableList.of("numberReturned"))) {
                 numberReturned.complete(Long.getLong(feature.getProperties().get(ImmutableList.of("numberReturned"))));
             }*/
 
-                    transformer.processFeature(feature);
+                    transformer.process(feature);
                 });
 
                 return featureStream.toMat(sink, Keep.left())

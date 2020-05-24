@@ -28,16 +28,8 @@ import static groovy.io.FileType.FILES
 /**
  * @author zahnen
  */
-@Title("GeoJsonStreamParser")
-@Narrative("""
-As a user
-I want foo
-So that bar
-""")
-@See("http://spockframework.org/spec")
-@Issue("http://my.issues.org/FOO-1")
 @Unroll
-@Ignore//TODO
+//@Ignore//TODO
 class GeoJsonStreamParserSpec extends Specification {
 
     static final Logger LOGGER = LoggerFactory.getLogger(GeoJsonStreamParserSpec.class)

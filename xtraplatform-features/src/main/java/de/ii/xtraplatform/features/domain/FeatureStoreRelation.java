@@ -1,6 +1,6 @@
 /**
  * Copyright 2020 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -8,9 +8,11 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import org.immutables.value.Value;
 
+import java.util.List;
 import java.util.Optional;
 
 @Value.Immutable
@@ -66,4 +68,16 @@ public interface FeatureStoreRelation {
     }
 
     Optional<CqlFilter> getFilter();
+
+    @Value.Derived
+    default List<String> asPath() {
+        if (isM2N()) {
+            return ImmutableList.of(
+                    String.format("[%s=%s]%s", getSourceField(), getJunctionSource().get(), getJunction().get()),
+                    String.format("[%s=%s]%s", getJunctionTarget().get(), getTargetField(), getTargetContainer())
+            );
+        }
+
+        return ImmutableList.of(String.format("[%s=%s]%s", getSourceField(), getTargetField(), getTargetContainer()));
+    }
 }

@@ -18,6 +18,6 @@ public interface FeatureNormalizer<T> {
 
     Sink<T, CompletionStage<FeatureStream2.Result>> normalizeAndTransform(FeatureTransformer2 featureTransformer, FeatureQuery featureQuery);
 
-    <U extends Property<?>,V extends Feature<U>> Source<V, CompletionStage<FeatureStream2.Result>> normalize(Source<T, NotUsed> sourceStream, FeatureQuery featureQuery, Supplier<V> featureCreator, Supplier<U> propertyCreator);
+    <V extends PropertyBase<V,X>, W extends FeatureBase<V,X>, X extends SchemaBase<X>> Source<W, CompletionStage<FeatureStream2.Result>> normalize(Source<T, NotUsed> sourceStream, FeatureQuery featureQuery, Supplier<W> featureCreator, Supplier<V> propertyCreator);
 
 }
