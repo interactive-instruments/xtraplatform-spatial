@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.entity.api.AutoEntity;
 import de.ii.xtraplatform.entity.api.EntityData;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
@@ -31,7 +32,7 @@ import java.util.Set;
 @Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
 @ValueBuilderMapEncodingEnabled
 @JsonDeserialize(builder = ImmutableFeatureProviderDataV2.Builder.class)
-public interface FeatureProviderDataV2 extends EntityData {
+public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
 
     @Override
     @Value.Derived

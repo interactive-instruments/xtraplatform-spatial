@@ -13,9 +13,12 @@ import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.provider.sql.app.SimpleFeatureGeometryFromToWkt;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.domain.FeaturePropertyV2;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTypeV2;
 import de.ii.xtraplatform.features.domain.ImmutableFeaturePropertyV2;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureTypeV2;
+import de.ii.xtraplatform.features.domain.SchemaBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import schemacrawler.schema.Catalog;
@@ -58,7 +61,7 @@ public class SqlSchemaCrawler {
         this.classLoader = classLoader;
     }
 
-    public List<FeatureTypeV2> parseSchema(String schemaName, FeatureProviderSchemaConsumer schemaConsumer) {
+    public List<FeatureSchema> parseSchema(String schemaName) {
 
         Catalog catalog;
         try {
@@ -73,27 +76,27 @@ public class SqlSchemaCrawler {
 
     }
 
-    private List<FeatureTypeV2> getFeatureTypes(Catalog catalog, Map<String, List<String>> geometry) {
-        ImmutableList.Builder<FeatureTypeV2> featureTypes = new ImmutableList.Builder<>();
+    private List<FeatureSchema> getFeatureTypes(Catalog catalog, Map<String, List<String>> geometry) {
+        ImmutableList.Builder<FeatureSchema> featureTypes = new ImmutableList.Builder<>();
 
         for (final Schema schema : catalog.getSchemas()) {
 
             for (final Table table : catalog.getTables(schema)) {
-                ImmutableFeatureTypeV2.Builder featureType = new ImmutableFeatureTypeV2.Builder()
+                ImmutableFeatureSchema.Builder featureType = new ImmutableFeatureSchema.Builder()
                                                                     .name(table.getName())
-                                                                    .path("/" + table.getName().toLowerCase());
+                                                                    .sourcePath("/" + table.getName().toLowerCase());
 
                 for (final Column column : table.getColumns()) {
-                    FeaturePropertyV2.Type featurePropertyType = getFeaturePropertyType(column.getColumnDataType());
-                    if (featurePropertyType != FeaturePropertyV2.Type.UNKNOWN) {
-                        ImmutableFeaturePropertyV2.Builder featureProperty = new ImmutableFeaturePropertyV2.Builder()
+                    SchemaBase.Type featurePropertyType = getFeaturePropertyType(column.getColumnDataType());
+                    if (featurePropertyType != SchemaBase.Type.UNKNOWN) {
+                        ImmutableFeatureSchema.Builder featureProperty = new ImmutableFeatureSchema.Builder()
                                 .name(column.getName())
-                                .path(String.format("/%s/%s", table.getName(), column.getName()))
+                                .sourcePath(String.format("/%s/%s", table.getName(), column.getName()))
                                 .type(featurePropertyType);
                         if (column.isPartOfPrimaryKey()) {
-                            featureProperty.role(FeaturePropertyV2.Role.ID);
+                            featureProperty.role(SchemaBase.Role.ID);
                         }
-                        if (featurePropertyType == FeaturePropertyV2.Type.GEOMETRY && !Objects.isNull(geometry.get(table.getName()))) {
+                        if (featurePropertyType == SchemaBase.Type.GEOMETRY && !Objects.isNull(geometry.get(table.getName()))) {
                             List<String> geometryInfo = geometry.get(table.getName());
                             String geometryType = SimpleFeatureGeometryFromToWkt.fromString(geometryInfo.get(0))
                                     .toSimpleFeatureGeometry()
@@ -101,7 +104,7 @@ public class SqlSchemaCrawler {
                             String crs = geometryInfo.get(1);
                             featureProperty.additionalInfo(ImmutableMap.of("geometryType", geometryType, "crs", crs));
                         }
-                        featureType.putProperties(column.getName(), featureProperty.build());
+                        featureType.putPropertyMap(column.getName(), featureProperty.build());
                     }
                 }
 
@@ -111,25 +114,25 @@ public class SqlSchemaCrawler {
         return featureTypes.build();
     }
 
-    private FeaturePropertyV2.Type getFeaturePropertyType(ColumnDataType columnDataType) {
+    private SchemaBase.Type getFeaturePropertyType(ColumnDataType columnDataType) {
 
         if ("geometry".equals(columnDataType.getName())) {
-            return FeaturePropertyV2.Type.GEOMETRY;
+            return SchemaBase.Type.GEOMETRY;
         }
 
         switch (columnDataType.getJavaSqlType().getJavaSqlTypeGroup()) {
             case bit:
-                return FeaturePropertyV2.Type.BOOLEAN;
+                return SchemaBase.Type.BOOLEAN;
             case character:
-                return FeaturePropertyV2.Type.STRING;
+                return SchemaBase.Type.STRING;
             case integer:
-                return FeaturePropertyV2.Type.INTEGER;
+                return SchemaBase.Type.INTEGER;
             case real:
-                return FeaturePropertyV2.Type.FLOAT;
+                return SchemaBase.Type.FLOAT;
             case temporal:
-                return FeaturePropertyV2.Type.DATETIME;
+                return SchemaBase.Type.DATETIME;
             default:
-                return FeaturePropertyV2.Type.UNKNOWN;
+                return SchemaBase.Type.UNKNOWN;
         }
 
     }

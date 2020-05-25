@@ -17,9 +17,9 @@ import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.infra.WfsConnectorHttp;
 import de.ii.xtraplatform.feature.provider.wfs.infra.WfsSchemaCrawler;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
-import de.ii.xtraplatform.features.domain.FeatureType;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV1;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
@@ -38,7 +38,7 @@ import java.util.Map;
         @StaticServiceProperty(name = Entity.SUB_TYPE_KEY, type = "java.lang.String", value = FeatureProviderWfs.ENTITY_SUB_TYPE)
 })
 @Instantiate
-public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeatureProviderDataV1> {
+public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeatureProviderDataV2> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderDataHydratorWfs.class);
 
@@ -49,7 +49,7 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
     }
 
     @Override
-    public FeatureProviderDataV1 hydrateData(FeatureProviderDataV1 data) {
+    public FeatureProviderDataV2 hydrateData(FeatureProviderDataV2 data) {
 
         try {
             WfsConnectorHttp connector = (WfsConnectorHttp) connectorFactory.createConnector(data);
@@ -58,7 +58,7 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
                 LOGGER.info("Feature provider with id '{}' is in auto mode, generating configuration ...", data.getId());
             }
 
-            FeatureProviderDataV1 hydrated = completeConnectionInfoIfNecessary(connector,
+            FeatureProviderDataV2 hydrated = completeConnectionInfoIfNecessary(connector,
                     generateNativeCrsIfNecessary(
                             generateTypesIfNecessary(connector, data)
                     )
@@ -79,8 +79,8 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
         throw new IllegalStateException();
     }
 
-    private FeatureProviderDataV1 completeConnectionInfoIfNecessary(WfsConnectorHttp connector,
-                                                                    FeatureProviderDataV1 data) {
+    private FeatureProviderDataV2 completeConnectionInfoIfNecessary(WfsConnectorHttp connector,
+                                                                    FeatureProviderDataV2 data) {
         ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
 
         if (data.isAuto() && connectionInfo.getNamespaces()
@@ -90,7 +90,7 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
 
             ConnectionInfoWfsHttp connectionInfoWfsHttp = schemaCrawler.completeConnectionInfo();
 
-            return new ImmutableFeatureProviderDataV1.Builder()
+            return new ImmutableFeatureProviderDataV2.Builder()
                     .from(data)
                     .connectionInfo(connectionInfoWfsHttp)
                     .build();
@@ -99,7 +99,7 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
         return data;
     }
 
-    private FeatureProviderDataV1 generateTypesIfNecessary(WfsConnectorHttp connector, FeatureProviderDataV1 data) {
+    private FeatureProviderDataV2 generateTypesIfNecessary(WfsConnectorHttp connector, FeatureProviderDataV2 data) {
         if (data.isAuto() && data.getTypes()
                                  .isEmpty()) {
 
@@ -107,13 +107,13 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
 
             WfsSchemaCrawler schemaCrawler = new WfsSchemaCrawler(connector, connectionInfo);
 
-            List<FeatureType> types = schemaCrawler.parseSchema();
+            List<FeatureSchema> types = schemaCrawler.parseSchema();
 
-            ImmutableMap<String, FeatureType> typeMap = types.stream()
+            ImmutableMap<String, FeatureSchema> typeMap = types.stream()
                                                              .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
                                                              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            return new ImmutableFeatureProviderDataV1.Builder()
+            return new ImmutableFeatureProviderDataV2.Builder()
                     .from(data)
                     .types(typeMap)
                     .build();
@@ -122,14 +122,13 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
         return data;
     }
 
-    private FeatureProviderDataV1 generateNativeCrsIfNecessary(FeatureProviderDataV1 data) {
+    private FeatureProviderDataV2 generateNativeCrsIfNecessary(FeatureProviderDataV2 data) {
         if (data.isAuto() && !data.getNativeCrs()
                                   .isPresent()) {
             EpsgCrs nativeCrs = data.getTypes()
                                     .values()
                                     .stream()
                                     .flatMap(type -> type.getProperties()
-                                                         .values()
                                                          .stream())
                                     .filter(property -> property.isSpatial() && property.getAdditionalInfo()
                                                                                         .containsKey("crs"))
@@ -138,7 +137,7 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
                                                                                 .get("crs")))
                                     .orElseGet(() -> OgcCrs.CRS84);
 
-            return new ImmutableFeatureProviderDataV1.Builder()
+            return new ImmutableFeatureProviderDataV2.Builder()
                     .from(data)
                     .nativeCrs(nativeCrs)
                     .build();

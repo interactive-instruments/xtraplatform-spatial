@@ -15,9 +15,11 @@ import de.ii.xtraplatform.event.store.EntityHydrator;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlSchemaCrawler;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureType;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV1;
+import de.ii.xtraplatform.features.domain.FeatureTypeV2;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Instantiate;
@@ -38,7 +40,7 @@ import java.util.Map;
         @StaticServiceProperty(name = Entity.SUB_TYPE_KEY, type = "java.lang.String", value = FeatureProviderSql.ENTITY_SUB_TYPE)
 })
 @Instantiate
-public class FeatureProviderDataHydratorSql implements EntityHydrator<FeatureProviderDataV1> {
+public class FeatureProviderDataHydratorSql implements EntityHydrator<FeatureProviderDataV2> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderDataHydratorSql.class);
 
@@ -53,7 +55,7 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
     }
 
     @Override
-    public FeatureProviderDataV1 hydrateData(FeatureProviderDataV1 data) {
+    public FeatureProviderDataV2 hydrateData(FeatureProviderDataV2 data) {
 
         if (data.isAuto()) {
             LOGGER.info("Feature provider with id '{}' is in auto mode, generating configuration ...", data.getId());
@@ -72,7 +74,7 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
         throw new IllegalStateException();
     }
 
-    private FeatureProviderDataV1 generateTypesIfNecessary(FeatureProviderDataV1 data) {
+    private FeatureProviderDataV2 generateTypesIfNecessary(FeatureProviderDataV2 data) {
         if (data.isAuto() && data.getTypes()
                                  .isEmpty()) {
 
@@ -85,13 +87,13 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
                                           .findFirst()
                                           .orElse("public");
 
-            List<FeatureType> types = sqlSchemaCrawler.parseSchema(schema);
+            List<FeatureSchema> types = sqlSchemaCrawler.parseSchema(schema);
 
-            ImmutableMap<String, FeatureType> typeMap = types.stream()
+            ImmutableMap<String, FeatureSchema> typeMap = types.stream()
                                                              .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
                                                              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            return new ImmutableFeatureProviderDataV1.Builder()
+            return new ImmutableFeatureProviderDataV2.Builder()
                     .from(data)
                     .types(typeMap)
                     .build();
@@ -100,14 +102,13 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
         return data;
     }
 
-    private FeatureProviderDataV1 generateNativeCrsIfNecessary(FeatureProviderDataV1 data) {
+    private FeatureProviderDataV2 generateNativeCrsIfNecessary(FeatureProviderDataV2 data) {
         if (data.isAuto() && !data.getNativeCrs()
                                   .isPresent()) {
             EpsgCrs nativeCrs = data.getTypes()
                                     .values()
                                     .stream()
                                     .flatMap(type -> type.getProperties()
-                                                         .values()
                                                          .stream())
                                     .filter(property -> property.isSpatial() && property.getAdditionalInfo()
                                                                                         .containsKey("crs"))
@@ -116,7 +117,7 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
                                                                                 .get("crs")))
                                     .orElseGet(() -> OgcCrs.CRS84);
 
-            return new ImmutableFeatureProviderDataV1.Builder()
+            return new ImmutableFeatureProviderDataV2.Builder()
                     .from(data)
                     .nativeCrs(nativeCrs)
                     .build();

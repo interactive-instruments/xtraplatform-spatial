@@ -15,6 +15,7 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.akka.ActorSystemProvider;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -37,6 +38,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
+import de.ii.xtraplatform.features.app.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
@@ -45,7 +47,7 @@ import de.ii.xtraplatform.features.domain.FeatureExtents;
 import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -63,14 +65,16 @@ import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.AbstractMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 @EntityComponent
-@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV1.class)
+@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class)
 public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueries, SqlQueryOptions> implements FeatureProvider2, FeatureQueries, FeatureExtents, FeatureCrs, FeatureTransactions {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
@@ -93,7 +97,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                               @Requires CrsTransformerFactory crsTransformerFactory,
                               @Requires Cql cql,
                               @Requires ConnectorFactory connectorFactory,
-                              @Property(name = Entity.DATA_KEY) FeatureProviderDataV1 data) {
+                              @Property(name = Entity.DATA_KEY) FeatureProviderDataV2 data) {
         //TODO: starts akka for every instance, move to singleton
         super(context, actorSystemProvider, data, createPathParser((ConnectionInfoSql) data.getConnectionInfo(), cql));
 
@@ -104,7 +108,15 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect, data.getNativeCrs()
                                                                                    .orElse(OgcCrs.CRS84), crsTransformerFactory);
         this.queryTransformer = new FeatureQueryTransformerSql(getTypeInfos(), queryGeneratorSql, ((ConnectionInfoSql) data.getConnectionInfo()).getComputeNumberMatched());
-        this.featureNormalizer = new FeatureNormalizerSql(getTypeInfos(), data.getTypes());
+
+        Map<String, FeatureType> types = data.getTypes()
+                                             .entrySet()
+                                             .stream()
+                                             .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue()
+                                                                                                                       .accept(new FeatureSchemaToTypeVisitor(entry.getKey()))))
+                                             .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        this.featureNormalizer = new FeatureNormalizerSql(getTypeInfos(), types);
         this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect, data.getNativeCrs()
                                                                                               .orElse(OgcCrs.CRS84));
         this.featureMutationsSql = new FeatureMutationsSql(connector.getSqlClient(), new SqlInsertGenerator2(data.getNativeCrs()
@@ -135,7 +147,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     }
 
     @Override
-    public FeatureProviderDataV1 getData() {
+    public FeatureProviderDataV2 getData() {
         return super.getData();
     }
 
@@ -240,27 +252,27 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     @Override
     public MutationResult deleteFeature(String featureType, String id) {
-        Optional<FeatureType> schema = Optional.ofNullable(getData().getTypes()
-                                                                    .get(featureType));
+        Optional<FeatureSchema> schema = Optional.ofNullable(getData().getTypes()
+                                                                      .get(featureType));
         Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(featureType));
 
         if (!schema.isPresent() || !typeInfo.isPresent()) {
             throw new IllegalArgumentException(String.format("Feature type '%s' not found.", featureType));
         }
 
-        FeatureSchema migrated = FeatureSchemaNamePathSwapper.migrate(schema.get());
+        FeatureSchema migrated = schema.get();//FeatureSchemaNamePathSwapper.migrate(schema.get());
 
         SchemaSql sqlSchema = migrated.accept(new SchemaBuilderSql(pathParser));
 
         SchemaSql mutationSchemaSql = sqlSchema.accept(new MutationSchemaBuilderSql());
 
         RunnableGraph<CompletionStage<MutationResult>> result = featureMutationsSql.getDeletionSource(mutationSchemaSql, id)
-                                                                                           .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<MutationResult>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
-                                                                                               return ImmutableMutationResult.builder()
-                                                                                                                             .error(Optional.ofNullable(throwable))
-                                                                                                                             .build();
-                                                                                           }))
-                                                                                           .toMat(Sink.ignore(), Keep.left());
+                                                                                   .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<MutationResult>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
+                                                                                       return ImmutableMutationResult.builder()
+                                                                                                                     .error(Optional.ofNullable(throwable))
+                                                                                                                     .build();
+                                                                                   }))
+                                                                                   .toMat(Sink.ignore(), Keep.left());
 
         return result.run(getMaterializer())
                      .toCompletableFuture()
@@ -271,15 +283,15 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                          FeatureDecoder.WithSource featureSource,
                                          Optional<String> id) {
 
-        Optional<FeatureType> schema = Optional.ofNullable(getData().getTypes()
-                                                                    .get(featureType));
+        Optional<FeatureSchema> schema = Optional.ofNullable(getData().getTypes()
+                                                                      .get(featureType));
         Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(featureType));
 
         if (!schema.isPresent() || !typeInfo.isPresent()) {
             throw new IllegalArgumentException(String.format("Feature type '%s' not found.", featureType));
         }
 
-        FeatureSchema migrated = FeatureSchemaNamePathSwapper.migrate(schema.get());
+        FeatureSchema migrated = schema.get();//FeatureSchemaNamePathSwapper.migrate(schema.get());
 
         //SchemaMapping<FeatureSchema> mapping = new ImmutableSchemaMappingSql.Builder().targetSchema(migrated)
         //                                                                              .build();

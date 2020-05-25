@@ -26,6 +26,7 @@ import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public class FeatureProviderDataMigrationV1V2 implements EntityMigration<FeatureProviderDataV1, FeatureProviderDataV2> {
@@ -103,7 +104,7 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
                       Optional<FeatureSchema.Role> role = originalProperty.getRole()
                                                                           .map(originalRole -> FeatureSchema.Role.valueOf(originalRole.toString()));
 
-                      return createPropertyTree(objectPropertiesCache, nameTokens, path, type, role);
+                      return createPropertyTree(objectPropertiesCache, nameTokens, path, type, role, originalProperty.getAdditionalInfo());
 
                   })
                   .forEach(entry -> migrated.put(entry.getKey(), entry.getValue()));
@@ -116,7 +117,7 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
             String[] nameTokens,
             String path,
             FeatureSchema.Type type,
-            Optional<FeatureSchema.Role> role) {
+            Optional<FeatureSchema.Role> role, Map<String, String> additionalInfo) {
 
         String name = nameTokens[0];
 
@@ -128,10 +129,14 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
                 ? removeSuffix(path, getArrayName(name))
                 : removeSuffix(path, isArray(nameTokens[1]) ? 2 : 1);
         String childPath = removePrefix(path, objectPath);
+        String objectType = nameTokens.length == 2 && additionalInfo.containsKey("role")
+                && (Objects.equals(additionalInfo.get("role"), "LINKHREF") || Objects.equals(additionalInfo.get("role"), "LINKTITLE"))
+                ? "Link"
+                : null;
 
-        ImmutableFeatureSchema.Builder objectProperty = objectPropertiesCache.computeIfAbsent(clean(name), cleanName -> getObjectProperty(name, objectPath));
+        ImmutableFeatureSchema.Builder objectProperty = objectPropertiesCache.computeIfAbsent(clean(name), cleanName -> getObjectProperty(name, objectPath, objectType));
 
-        Map.Entry<String, ImmutableFeatureSchema.Builder> childTree = createPropertyTree(objectPropertiesCache, Arrays.copyOfRange(nameTokens, 1, nameTokens.length), childPath, type, role);
+        Map.Entry<String, ImmutableFeatureSchema.Builder> childTree = createPropertyTree(objectPropertiesCache, Arrays.copyOfRange(nameTokens, 1, nameTokens.length), childPath, type, role, additionalInfo);
 
         objectProperty.putPropertyMap(childTree.getKey(), childTree.getValue());
 
@@ -156,11 +161,12 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
         return builder;
     }
 
-    private ImmutableFeatureSchema.Builder getObjectProperty(String name, String path) {
+    private ImmutableFeatureSchema.Builder getObjectProperty(String name, String path, String objectType) {
         return new ImmutableFeatureSchema.Builder()
                 .name(clean(name))
                 .sourcePath(path)
-                .type(isArray(name) ? FeatureSchema.Type.OBJECT_ARRAY : FeatureSchema.Type.OBJECT);
+                .type(isArray(name) ? FeatureSchema.Type.OBJECT_ARRAY : FeatureSchema.Type.OBJECT)
+                .objectType(Optional.ofNullable(objectType));
     }
 
     private String getFeatureTypePath(FeatureType featureType) {

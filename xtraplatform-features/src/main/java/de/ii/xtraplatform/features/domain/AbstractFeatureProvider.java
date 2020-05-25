@@ -11,7 +11,6 @@ import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -20,6 +19,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.akka.ActorSystemProvider;
 import de.ii.xtraplatform.entity.api.AbstractPersistentEntity;
+import de.ii.xtraplatform.features.app.FeatureSchemaToTypeVisitor;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConnector.QueryOptions> extends AbstractPersistentEntity<FeatureProviderDataV1> implements FeatureProvider2, FeatureQueries {
+public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConnector.QueryOptions> extends AbstractPersistentEntity<FeatureProviderDataV2> implements FeatureProvider2, FeatureQueries {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
 
@@ -43,7 +43,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
     protected AbstractFeatureProvider(BundleContext context,
                                       ActorSystemProvider actorSystemProvider,
-                                      FeatureProviderDataV1 data,
+                                      FeatureProviderDataV2 data,
                                       FeatureStorePathParser pathParser) {
         ActorSystem system = actorSystemProvider.getActorSystem(context, config);
         this.materializer = ActorMaterializer.create(system);
@@ -85,11 +85,11 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
     }
 
     private Map<String, FeatureStoreTypeInfo> createTypeInfos(
-            FeatureStorePathParser pathParser, Map<String, FeatureType> featureTypes) {
+            FeatureStorePathParser pathParser, Map<String, FeatureSchema> featureTypes) {
         return featureTypes.entrySet()
                            .stream()
                            .map(entry -> {
-                               List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(entry.getValue());
+                               List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(entry.getValue().accept(new FeatureSchemaToTypeVisitor(entry.getKey())));
                                FeatureStoreTypeInfo typeInfo = ImmutableFeatureStoreTypeInfo.builder()
                                                                                             .name(entry.getKey())
                                                                                             .instanceContainers(instanceContainers)

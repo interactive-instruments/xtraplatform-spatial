@@ -9,13 +9,14 @@ package de.ii.xtraplatform.feature.provider.api;
 
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 
 /**
  * @author zahnen
  */
 public interface ConnectorFactory {
 
-    FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV1 featureProviderData);
+    FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV2 featureProviderData);
 
     void disposeConnector(FeatureProviderConnector<?, ?, ?> connector);
 }

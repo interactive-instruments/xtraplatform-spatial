@@ -10,52 +10,55 @@ nativeCrs:
   forceAxisOrder: LON_LAT
 types:
   observationsubject:
-    path: /observationsubject
+    sourcePath: /observationsubject
+    type: OBJECT
     properties:
       id:
-        path: id
+        sourcePath: id
         type: STRING
         role: ID
       type:
-        path: _type
+        sourcePath: _type
         type: STRING
       geomLowerPoint:
-        path: geomlowerpoint
+        sourcePath: geomlowerpoint
         type: GEOMETRY
       shortName:
-        path: shortname
+        sourcePath: shortname
         type: STRING
       explorationSite:
-        path: '[explorationsite_fk=id]explorationsite'
+        sourcePath: '[explorationsite_fk=id]explorationsite'
         type: OBJECT
+        objectType: Link
         properties:
           title:
-            path: shortname
+            sourcePath: shortname
             type: STRING
           href:
-            path: id
+            sourcePath: id
             type: STRING
       process:
-        path: '[id=observationsubject_fk]observationsubject_process/[process_fk=id]process'
+        sourcePath: '[id=observationsubject_fk]observationsubject_process/[process_fk=id]process'
         type: OBJECT_ARRAY
+        objectType: Link
         properties:
           title:
-            path: category_fk
+            sourcePath: category_fk
             type: STRING
           href:
-            path: id
+            sourcePath: id
             type: STRING
       filterValues:
-        path: '[id=observationsubject_fk]observationsubject_filtervalues'
+        sourcePath: '[id=observationsubject_fk]observationsubject_filtervalues'
         type: OBJECT_ARRAY
         properties:
           property:
-            path: filtervalueproperty_fk
+            sourcePath: filtervalueproperty_fk
             type: STRING
           measure:
-            path: resultmeasure
+            sourcePath: resultmeasure
             type: FLOAT
           classification:
-            path: '[id=filtervalue_fk]filtervalue_resultclassification/classificationcode_fk'
+            sourcePath: '[id=filtervalue_fk]filtervalue_resultclassification/classificationcode_fk'
             type: VALUE_ARRAY
             valueType: STRING
