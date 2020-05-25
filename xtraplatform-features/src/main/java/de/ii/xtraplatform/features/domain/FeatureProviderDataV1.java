@@ -126,14 +126,6 @@ public interface FeatureProviderDataV1 extends EntityData, AutoEntity {
         return Optional.of(String.format("%s/%s", getProviderType(), getFeatureProviderType()).toLowerCase());
     }
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    @Override
-    Optional<Boolean> getAuto();
-
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    @Override
-    Optional<Boolean> getAutoPersist();
-
     ConnectionInfo getConnectionInfo();
 
     Optional<EpsgCrs> getNativeCrs();
