@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import spock.lang.Ignore
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -23,6 +24,7 @@ import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.*
 /**
  * @author zahnen
  */
+@Ignore
 class SqlInsertGeneratorSpec extends Specification {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlInsertGeneratorSpec.class);

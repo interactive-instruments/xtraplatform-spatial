@@ -73,7 +73,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["id"], "24", {})
 
         then:
-        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "Point"])
+        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "POINT"])
 
         then:
         1 * featureReader.onArrayStart(["geometry"], {})
@@ -121,7 +121,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["id"], "20", {})
 
         then:
-        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "MultiPoint"])
+        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "MULTI_POINT"])
 
         then:
         1 * featureReader.onArrayStart(["geometry"], {})
@@ -175,7 +175,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["id"], "21", {})
 
         then:
-        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "MultiPolygon"])
+        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "MULTI_POLYGON"])
 
         then:
         1 * featureReader.onArrayStart(["geometry"], {})
@@ -466,7 +466,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["id"], "19", {})
 
         then:
-        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "Point"])
+        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "POINT"])
 
         then:
         1 * featureReader.onArrayStart(["geometry"], {})
@@ -508,7 +508,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["id"], "21", {})
 
         then:
-        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "MultiPoint"])
+        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "MULTI_POINT"])
 
         then:
         1 * featureReader.onArrayStart(["geometry"], {})

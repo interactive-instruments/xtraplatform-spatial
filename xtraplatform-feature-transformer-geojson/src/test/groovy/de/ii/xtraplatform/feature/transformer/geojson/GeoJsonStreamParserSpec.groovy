@@ -29,7 +29,7 @@ import static groovy.io.FileType.FILES
  * @author zahnen
  */
 @Unroll
-//@Ignore//TODO
+@Ignore//TODO
 class GeoJsonStreamParserSpec extends Specification {
 
     static final Logger LOGGER = LoggerFactory.getLogger(GeoJsonStreamParserSpec.class)

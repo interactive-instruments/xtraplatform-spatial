@@ -11,12 +11,15 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
 import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -48,9 +51,19 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, ValueInstance 
     Optional<String> getSourcePath();
 
     @Value.Default
+    @Override
     default Type getType() {
-        return Type.STRING;
+        return getPropertyMap().isEmpty() ? Type.STRING : Type.OBJECT;
     }
+
+    @Override
+    Optional<Role> getRole();
+
+    @Override
+    Optional<Type> getValueType();
+
+    @Override
+    Optional<SimpleFeatureGeometry> getGeometryType();
 
     Optional<String> getObjectType();
 
@@ -61,6 +74,31 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, ValueInstance 
     Map<String, String> getTransformers();
 
     Optional<SchemaConstraints> getConstraints();
+
+    //behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder deserialization
+    // (immutables attributeBuilder does not work with maps yet)
+    @JsonProperty(value = "properties")
+    ValueBuilderMap<FeatureSchema, ImmutableFeatureSchema.Builder> getPropertyMap();
+
+    // custom builder to automatically use keys of types as name of nested FeaturePropertyV2
+    abstract class Builder implements ValueBuilder<FeatureSchema> {
+
+        public abstract ImmutableFeatureSchema.Builder putPropertyMap(String key,
+                                                                      ImmutableFeatureSchema.Builder builder);
+
+        @JsonMerge
+        @JsonSetter(value = "properties")
+        public ImmutableFeatureSchema.Builder putProperties2(String key, ImmutableFeatureSchema.Builder builder) {
+            return putPropertyMap(key, builder.name(key));
+        }
+    }
+
+    @Override
+    default ImmutableFeatureSchema.Builder toBuilder() {
+        return new ImmutableFeatureSchema.Builder().from(this);
+    }
+
+    Map<String, String> getAdditionalInfo();
 
     @JsonIgnore
     @Value.Derived
@@ -75,31 +113,6 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, ValueInstance 
                                                                                          .build())
                                .collect(Collectors.toList());
     }
-
-    //behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder deserialization
-    // (immutables attributeBuilder does not work with maps yet)
-    @JsonMerge
-    @JsonProperty(value = "properties")
-    ValueBuilderMap<FeatureSchema, ImmutableFeatureSchema.Builder> getPropertyMap();
-
-    // custom builder to automatically use keys of types as name of nested FeaturePropertyV2
-    abstract class Builder implements ValueBuilder<FeatureSchema> {
-
-        public abstract ImmutableFeatureSchema.Builder putPropertyMap(String key,
-                                                                      ImmutableFeatureSchema.Builder builder);
-
-        @JsonProperty(value = "properties")
-        public ImmutableFeatureSchema.Builder putProperties2(String key, ImmutableFeatureSchema.Builder builder) {
-            return putPropertyMap(key, builder.name(key));
-        }
-    }
-
-    @Override
-    default ImmutableFeatureSchema.Builder toBuilder() {
-        return new ImmutableFeatureSchema.Builder().from(this);
-    }
-
-    Map<String, String> getAdditionalInfo();
 
     @JsonIgnore
     @Value.Derived

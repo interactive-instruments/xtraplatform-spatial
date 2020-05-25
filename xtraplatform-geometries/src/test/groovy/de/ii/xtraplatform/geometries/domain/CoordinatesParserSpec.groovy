@@ -36,6 +36,7 @@ class CoordinatesParserSpec extends Specification {
         1 * writer.onSeparator()
         1 * writer.onX(coordinates,13,5)
         1 * writer.onY("20.05".toCharArray(),0,5)
+        1 * writer.onFlush()
         1 * writer.onEnd()
         0 * _
     }
@@ -63,6 +64,7 @@ class CoordinatesParserSpec extends Specification {
         1 * writer.onSeparator()
         1 * writer.onX(coordinates,13,5)
         1 * writer.onY("20.05".toCharArray(),0,5)
+        1 * writer.onFlush()
         1 * writer.onEnd()
         0 * _
     }
@@ -90,6 +92,7 @@ class CoordinatesParserSpec extends Specification {
         1 * writer.onSeparator()
         1 * writer.onX(coordinates,13,5)
         1 * writer.onY("20.05".toCharArray(),0,5)
+        1 * writer.onFlush()
         1 * writer.onEnd()
         0 * _
     }
@@ -117,6 +120,7 @@ class CoordinatesParserSpec extends Specification {
         1 * writer.onSeparator()
         1 * writer.onX(coordinates2,2,5)
         1 * writer.onY("20.05".toCharArray(),0,5)
+        1 * writer.onFlush()
         1 * writer.onEnd()
         0 * _
     }
@@ -144,6 +148,7 @@ class CoordinatesParserSpec extends Specification {
         1 * writer.onSeparator()
         1 * writer.onX(coordinates2,1,5)
         1 * writer.onY("20.05".toCharArray(),0,5)
+        1 * writer.onFlush()
         1 * writer.onEnd()
         0 * _
     }
@@ -171,6 +176,7 @@ class CoordinatesParserSpec extends Specification {
         1 * writer.onSeparator()
         1 * writer.onX(coordinates2,0,5)
         1 * writer.onY("20.05".toCharArray(),0,5)
+        1 * writer.onFlush()
         1 * writer.onEnd()
         0 * _
     }
@@ -198,6 +204,7 @@ class CoordinatesParserSpec extends Specification {
         1 * writer.onX(coordinates,19,5)
         1 * writer.onY(coordinates,25,5)
         1 * writer.onZ("15.65".toCharArray(),0,5)
+        1 * writer.onFlush()
         1 * writer.onEnd()
         0 * _
     }
@@ -223,6 +230,7 @@ class CoordinatesParserSpec extends Specification {
         1 * writer.onSeparator()
         1 * writer.onX(coordinates,19,5)
         1 * writer.onY(coordinates,25,5)
+        1 * writer.onFlush()
         1 * writer.onEnd()
         0 * _
     }

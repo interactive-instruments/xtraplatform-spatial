@@ -10,6 +10,7 @@ package de.ii.xtraplatform.feature.provider.sql.app
 import akka.japi.Pair
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
+import de.ii.xtraplatform.crs.domain.OgcCrs
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import spock.lang.Specification
@@ -36,7 +37,7 @@ class FeatureMutationsSqlSpec extends Specification {
 
         given:
 
-        FeatureMutationsSql inserts = Spy(new FeatureMutationsSql(null, new SqlInsertGenerator2(), data.getNativeCrs().orElse(de.ii.xtraplatform.crs.domain.OgcCrs.CRS84), crsTransformerFactory))
+        FeatureMutationsSql inserts = Spy(new FeatureMutationsSql(null, new SqlInsertGenerator2(OgcCrs.CRS84, null)))
 
         Map<List<String>, List<Integer>> rows = ImmutableMap.<List<String>, List<Integer>> builder()
                 .put(MAIN_M_2_N_SCHEMA.getFullPath(), ImmutableList.of(3))
@@ -47,9 +48,9 @@ class FeatureMutationsSqlSpec extends Specification {
 
         when:
 
-        List<Function<FeatureSql, Pair<String, Consumer<String>>>> accept = FULL.accept(new FeatureMutationsSql.StatementsVisitor(rows, rowCursor, false));
+        //List<Function<FeatureSql, Pair<String, Consumer<String>>>> accept = FULL.accept(new FeatureMutationsSql.StatementsVisitor(rows, rowCursor, false));
 
-        inserts.createInstanceInserts(FULL, rows, rowCursor, withId, java.util.Optional.empty())
+        inserts.createInstanceInserts(FULL, rows, rowCursor, withId, Optional.empty())
 
         then:
         1 * inserts.createAttributesInserts(FULL, [0], withId)
@@ -89,7 +90,7 @@ class FeatureMutationsSqlSpec extends Specification {
         given:
 
         FeatureStoreInsertGenerator generator = Mock();
-        FeatureMutationsSql inserts = new FeatureMutationsSql(null, generator, data.getNativeCrs().orElse(de.ii.xtraplatform.crs.domain.OgcCrs.CRS84), crsTransformerFactory)
+        FeatureMutationsSql inserts = new FeatureMutationsSql(null, generator)
         List<Integer> rows = ImmutableList.of(0, 0, 1)
 
         when:
@@ -108,7 +109,7 @@ class FeatureMutationsSqlSpec extends Specification {
         given:
 
         FeatureStoreInsertGenerator generator = Mock();
-        FeatureMutationsSql inserts = new FeatureMutationsSql(null, generator, data.getNativeCrs().orElse(de.ii.xtraplatform.crs.domain.OgcCrs.CRS84), crsTransformerFactory)
+        FeatureMutationsSql inserts = new FeatureMutationsSql(null, generator)
         List<Integer> rows = ImmutableList.of(0, 0, 0, 1)
 
         when:
@@ -131,7 +132,7 @@ class FeatureMutationsSqlSpec extends Specification {
         given:
 
         FeatureStoreInsertGenerator generator = Mock();
-        FeatureMutationsSql inserts = new FeatureMutationsSql(null, generator, data.getNativeCrs().orElse(de.ii.xtraplatform.crs.domain.OgcCrs.CRS84), crsTransformerFactory)
+        FeatureMutationsSql inserts = new FeatureMutationsSql(null, generator)
         List<Integer> rows = ImmutableList.of(0, 0, 0, 1)
 
         when:

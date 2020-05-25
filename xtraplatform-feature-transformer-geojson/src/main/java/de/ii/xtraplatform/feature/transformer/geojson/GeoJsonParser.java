@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
 
@@ -164,7 +165,9 @@ public class GeoJsonParser {
                         lastNameIsArrayDepth += 1;
                         depth += 1;
 
-                        featureReader.onArrayStart(pathTracker.asList(), ImmutableMap.of("geometryType", geometryType));
+                        Map<String,String> context = inGeometry ? ImmutableMap.of("geometryType", geometryType) : ImmutableMap.of();
+
+                        featureReader.onArrayStart(pathTracker.asList(), context);
                         // start nested geo array
                     } else if (inGeometry) {
                         if (endArray > 0) {

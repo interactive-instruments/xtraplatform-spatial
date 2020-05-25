@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.cql.domain.CqlVisitor;
@@ -57,6 +58,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
 
     List<T> getProperties();
 
+    @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
     default List<T> getAllNestedProperties() {
@@ -69,6 +71,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
                               .collect(Collectors.toList());
     }
 
+    @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
     default List<String> getFullPath() {
@@ -77,6 +80,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
                                                   .build();
     }
 
+    @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
     default Set<String> getValueNames() {
@@ -86,24 +90,28 @@ public interface SchemaBase<T extends SchemaBase<T>> {
                               .collect(ImmutableSet.toImmutableSet());
     }
 
+    @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
     default boolean isObject() {
         return getType() == Type.OBJECT || getType() == Type.OBJECT_ARRAY;
     }
 
+    @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
     default boolean isArray() {
         return getType() == Type.OBJECT_ARRAY || getType() == Type.VALUE_ARRAY;
     }
 
+    @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
     default boolean isValue() {
         return !isObject() /*&& getType() != Type.VALUE_ARRAY*/;
     }
 
+    @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
     default boolean isFeature() {

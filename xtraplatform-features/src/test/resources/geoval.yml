@@ -1,11 +1,3 @@
-#
-# Copyright 2020 interactive instruments GmbH
-#
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#
-
 ---
 id: geoval
 createdAt: 1586271491161
@@ -19,13 +11,14 @@ nativeCrs:
 defaultLanguage: de
 types:
   observationsubject:
-    path: /observationsubject
+    sourcePath: /observationsubject
+    type: OBJECT
     label: Untersuchungsobjekt
     description: Ein Untersuchungsobjekt ist entweder eine Probe für Untersuchungen
       im Labor oder eine In-Situ-Messung
     properties:
       id:
-        path: id
+        sourcePath: id
         type: STRING
         role: ID
         label: Objekt-Id
@@ -33,7 +26,7 @@ types:
         constraints:
           regex: '[a-zA-Z0-9_]{3,}'
       type:
-        path: _type
+        sourcePath: _type
         type: STRING
         label: Art
         constraints:
@@ -42,30 +35,30 @@ types:
            - Borehole
            - TrialPit
       shortName:
-        path: shortname
+        sourcePath: shortname
         type: STRING
         transformers:
           codelist: nullValues
       geomLowerPoint:
-        path: geomlowerpoint
+        sourcePath: geomlowerpoint
         type: GEOMETRY
         geometryType: POINT
       explorationSite:
-        path: '[explorationsite_fk=id]explorationsite'
+        sourcePath: '[explorationsite_fk=id]explorationsite'
         type: OBJECT
         objectType: Link
         label: Aufschlußpunkt
         properties:
           title:
-            path: shortname
+            sourcePath: shortname
             type: STRING
           href:
-            path: id
+            sourcePath: id
             type: STRING
             constraints:
               required: true
       process:
-        path: '[id=observationsubject_fk]observationsubject_process/[process_fk=id]process'
+        sourcePath: '[id=observationsubject_fk]observationsubject_process/[process_fk=id]process'
         type: OBJECT_ARRAY
         objectType: Link
         label: Versuche
@@ -74,32 +67,32 @@ types:
           maxOccurrence: 3
         properties:
           title:
-            path: category_fk
+            sourcePath: category_fk
             type: STRING
           href:
-            path: id
+            sourcePath: id
             type: STRING
             constraints:
               required: true
       filterValues:
-        path: '[id=observationsubject_fk]observationsubject_filtervalues'
+        sourcePath: '[id=observationsubject_fk]observationsubject_filtervalues'
         type: OBJECT_ARRAY
         objectType: FilterValue
         label: Leitkennwerte
         properties:
           property:
-            path: filtervalueproperty_fk
+            sourcePath: filtervalueproperty_fk
             type: STRING
             label: Eigenschaft
           measure:
-            path: resultmeasure
+            sourcePath: resultmeasure
             type: FLOAT
             label: Messwert
             constraints:
               min: 0.0
               max: 100.0
           classification:
-            path: '[id=filtervalue_fk]filtervalue_resultclassification/classificationcode_fk'
+            sourcePath: '[id=filtervalue_fk]filtervalue_resultclassification/classificationcode_fk'
             type: VALUE_ARRAY
             valueType: STRING
             label: Klassifikationen
