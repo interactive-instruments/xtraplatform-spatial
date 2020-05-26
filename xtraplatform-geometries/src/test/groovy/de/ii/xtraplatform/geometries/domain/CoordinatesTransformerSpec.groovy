@@ -34,6 +34,7 @@ class CoordinatesTransformerSpec extends Specification {
         2 * coordinatesWriter.onX(*_)
         2 * coordinatesWriter.onY(*_)
         1 * coordinatesWriter.onSeparator()
+        1 * coordinatesWriter.onFlush()
         1 * coordinatesWriter.onEnd()
         0 * _
     }
@@ -62,6 +63,7 @@ class CoordinatesTransformerSpec extends Specification {
         2 * coordinatesWriter.onX(*_)
         2 * coordinatesWriter.onY(*_)
         1 * coordinatesWriter.onSeparator()
+        2 * coordinatesWriter.onFlush()
         1 * coordinatesWriter.onEnd()
         0 * _
     }

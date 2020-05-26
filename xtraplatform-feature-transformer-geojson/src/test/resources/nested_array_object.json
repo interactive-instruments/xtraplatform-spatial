@@ -1,34 +1,20 @@
 {
   "type": "Feature",
   "id": "24",
-  "geometry": {
-    "type": "Point",
-    "coordinates": [
-      8.18523495507722,
-      49.698295103021096
-    ]
-  },
   "properties": {
     "raumreferenz": [
       {
         "ortsangabe": [
           {
             "kreisschluessel": 11,
-            "flurstueckskennzeichen": [
-              34
-            ]
+            "flurstueckskennzeichen": [34]
           },
           {
-            "flurstueckskennzeichen": [
-              35,
-              36
-            ]
+            "flurstueckskennzeichen": [35, 36]
           },
           {
             "kreisschluessel": 12,
-            "flurstueckskennzeichen": [
-              37
-            ]
+            "flurstueckskennzeichen": [37]
           }
         ]
       }

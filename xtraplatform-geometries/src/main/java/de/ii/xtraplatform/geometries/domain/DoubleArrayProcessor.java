@@ -14,5 +14,7 @@ public interface DoubleArrayProcessor {
 
     void onCoordinates(double[] coordinates, int length, int dimension) throws IOException;
 
+    default void onFlush() throws IOException {}
+
     void onEnd() throws IOException;
 }

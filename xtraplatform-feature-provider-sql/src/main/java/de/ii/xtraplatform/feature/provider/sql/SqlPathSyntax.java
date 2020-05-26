@@ -247,8 +247,22 @@ public interface SqlPathSyntax {
     }
 
     @Value.Derived
+    default String getJoinConditionPlainPattern() {
+        return Pattern.quote(getJoinConditionStart()) +
+                "(?:" + getIdentifierPattern() + ")" +
+                Pattern.quote(getJoinConditionSeparator()) +
+                "(?:" + getIdentifierPattern() + ")" +
+                Pattern.quote(getJoinConditionEnd());
+    }
+
+    @Value.Derived
     default String getTablePatternString() {
         return "(?:" + getJoinConditionPattern() + ")?" + "(?<" + MatcherGroups.TABLE + ">" + getIdentifierPattern() + ")" + "(?<" + MatcherGroups.TABLE_FLAGS + ">" + getFlagsPattern() + ")?";
+    }
+
+    @Value.Derived
+    default String getTablePatternPlainString() {
+        return "(?:" + getJoinConditionPlainPattern() + ")?" + "(?:" + getIdentifierPattern() + ")" + "(?:" + getFlagsPattern() + ")?";
     }
 
     @Value.Derived
@@ -264,6 +278,21 @@ public interface SqlPathSyntax {
     @Value.Derived
     default Pattern getColumnPathPattern() {
         return Pattern.compile("^(?<" + MatcherGroups.PATH + ">" + "(?:" + getPathSeparator() + getTablePatternString() + ")+)" + getPathSeparator() + "(?<" + MatcherGroups.COLUMNS + ">" + getColumnPattern() + ")" + "(?<" + MatcherGroups.PATH_FLAGS + ">" + getFlagsPattern() + ")?$");
+    }
+
+    @Value.Derived
+    default Pattern getPartialColumnPathPattern() {
+        return Pattern.compile(getPathPatternString() + "(?:" + getPathSeparator() + "(?<" + MatcherGroups.COLUMNS + ">" + getColumnPattern() + "))" + "(?<" + MatcherGroups.PATH_FLAGS + ">" + getFlagsPattern() + ")?$");
+    }
+
+    @Value.Derived
+    default Pattern getPathPattern() {
+        return Pattern.compile(getPathPatternString());
+    }
+
+    @Value.Derived
+    default String getPathPatternString() {
+        return "(?<" + MatcherGroups.PATH + ">" + getPathSeparator() + "?" + getTablePatternPlainString() + "(?:" + getPathSeparator() + getTablePatternPlainString() + ")*)";
     }
 
     @Value.Default

@@ -1,8 +1,22 @@
+/*
+ * Copyright 2020 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.features.domain
 
 import de.ii.xtraplatform.crs.domain.EpsgCrs
 
 class FeatureProviderDataFixtures {
+
+    static final ConnectionInfo connectionInfo = new ConnectionInfo() {
+        @Override
+        Optional<String> getConnectionUri() {
+            return Optional.empty()
+        }
+    }
 
     static final FeatureProviderDataV1 ONEO_V1 = new ImmutableFeatureProviderDataV1.Builder()
             .id("oneo")
@@ -10,6 +24,7 @@ class FeatureProviderDataFixtures {
             .lastModified(1586271491161)
             .providerType("FEATURE")
             .featureProviderType("SQL")
+    .connectionInfo(connectionInfo)
             .nativeCrs(EpsgCrs.of(25832))
             .putTypes2("fundorttiere", new ImmutableFeatureType.Builder()
                     .putProperties2("id", new ImmutableFeatureProperty.Builder()
@@ -48,46 +63,47 @@ class FeatureProviderDataFixtures {
             .lastModified(1586271491161)
             .providerType("FEATURE")
             .featureProviderType("SQL")
+            .connectionInfo(connectionInfo)
             .nativeCrs(EpsgCrs.of(25832))
-            .putTypes2("fundorttiere", new ImmutableFeatureTypeV2.Builder()
-            .path("/fundorttiere")
-                    .putProperties2("id", new ImmutableFeaturePropertyV2.Builder()
-                            .path("[id=id]osirisobjekt/id")
-                            .type(FeaturePropertyV2.Type.STRING)
-                            .role(FeaturePropertyV2.Role.ID)
+            .putTypes2("fundorttiere", new ImmutableFeatureSchema.Builder()
+            .sourcePath("/fundorttiere")
+                    .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("[id=id]osirisobjekt/id")
+                            .type(SchemaBase.Type.STRING)
+                            .role(SchemaBase.Role.ID)
                     )
-                    .putProperties2("foto", new ImmutableFeaturePropertyV2.Builder()
-                            .path("[id=id]osirisobjekt/[id=osirisobjekt_id]osirisobjekt_2_foto/[foto_id=id]foto")
-                            .type(FeaturePropertyV2.Type.OBJECT_ARRAY)
-                            .putProperties2("fotoverweis", new ImmutableFeaturePropertyV2.Builder()
-                                    .path("fotoverweis")
-                                    .type(FeaturePropertyV2.Type.STRING)
+                    .putProperties2("foto", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("[id=id]osirisobjekt/[id=osirisobjekt_id]osirisobjekt_2_foto/[foto_id=id]foto")
+                            .type(SchemaBase.Type.OBJECT_ARRAY)
+                            .putProperties2("fotoverweis", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("fotoverweis")
+                                    .type(SchemaBase.Type.STRING)
                             )
                     )
-                    .putProperties2("raumreferenz", new ImmutableFeaturePropertyV2.Builder()
-                            .path("[id=id]osirisobjekt/[id=osirisobjekt_id]osirisobjekt_2_raumreferenz/[raumreferenz_id=id]raumreferenz")
-                            .type(FeaturePropertyV2.Type.OBJECT_ARRAY)
-                            .putProperties2("ortsangabe", new ImmutableFeaturePropertyV2.Builder()
-                                    .path("[id=raumreferenz_id]raumreferenz_2_ortsangabe/[ortsangabe_id=id]ortsangaben")
-                                    .type(FeaturePropertyV2.Type.OBJECT_ARRAY)
-                                    .putProperties2("kreisSchluessel", new ImmutableFeaturePropertyV2.Builder()
-                                            .path("kreisschluessel")
-                                            .type(FeaturePropertyV2.Type.STRING)
+                    .putProperties2("raumreferenz", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("[id=id]osirisobjekt/[id=osirisobjekt_id]osirisobjekt_2_raumreferenz/[raumreferenz_id=id]raumreferenz")
+                            .type(SchemaBase.Type.OBJECT_ARRAY)
+                            .putProperties2("ortsangabe", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("[id=raumreferenz_id]raumreferenz_2_ortsangabe/[ortsangabe_id=id]ortsangaben")
+                                    .type(SchemaBase.Type.OBJECT_ARRAY)
+                                    .putProperties2("kreisSchluessel", new ImmutableFeatureSchema.Builder()
+                                            .sourcePath("kreisschluessel")
+                                            .type(SchemaBase.Type.STRING)
                                     )
-                                    .putProperties2("flurstuecksKennzeichen", new ImmutableFeaturePropertyV2.Builder()
-                                            .path("[id=ortsangaben_id]ortsangaben_flurstueckskennzeichen/flurstueckskennzeichen")
-                                            .type(FeaturePropertyV2.Type.VALUE_ARRAY)
-                                            .valueType(FeaturePropertyV2.Type.STRING)
+                                    .putProperties2("flurstuecksKennzeichen", new ImmutableFeatureSchema.Builder()
+                                            .sourcePath("[id=ortsangaben_id]ortsangaben_flurstueckskennzeichen/flurstueckskennzeichen")
+                                            .type(SchemaBase.Type.VALUE_ARRAY)
+                                            .valueType(SchemaBase.Type.STRING)
                                     )
                             )
-                            .putProperties2("datumAbgleich", new ImmutableFeaturePropertyV2.Builder()
-                                    .path("datumabgleich")
-                                    .type(FeaturePropertyV2.Type.STRING)
+                            .putProperties2("datumAbgleich", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("datumabgleich")
+                                    .type(SchemaBase.Type.STRING)
                             )
-                            .putProperties2("fachreferenz", new ImmutableFeaturePropertyV2.Builder()
-                                    .path("[id=raumreferenz_id]raumreferenz_2_fachreferenz/objektart:fachreferenz_id")
-                                    .type(FeaturePropertyV2.Type.VALUE_ARRAY)
-                                    .valueType(FeaturePropertyV2.Type.STRING)
+                            .putProperties2("fachreferenz", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("[id=raumreferenz_id]raumreferenz_2_fachreferenz/objektart:fachreferenz_id")
+                                    .type(SchemaBase.Type.VALUE_ARRAY)
+                                    .valueType(SchemaBase.Type.STRING)
                             )
                     )
             )

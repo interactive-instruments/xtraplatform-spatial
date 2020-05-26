@@ -20,7 +20,7 @@ public interface FeatureProvider2 extends PersistentEntity {
     }
 
     @Override
-    FeatureProviderDataV1 getData();
+    FeatureProviderDataV2 getData();
 
 /*
     default String getProviderType() {

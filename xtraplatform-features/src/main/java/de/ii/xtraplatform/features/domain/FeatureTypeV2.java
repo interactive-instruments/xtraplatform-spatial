@@ -44,7 +44,7 @@ public interface FeatureTypeV2 extends ValueInstance {
     //behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonMerge
-    ValueBuilderMap<FeaturePropertyV2, ImmutableFeaturePropertyV2.Builder> getProperties();
+    ValueBuilderMap<FeatureSchema, ImmutableFeatureSchema.Builder> getProperties();
 
     Map<String, String> getAdditionalInfo();
 
@@ -52,10 +52,10 @@ public interface FeatureTypeV2 extends ValueInstance {
     // custom builder to automatically use keys of types as name of FeaturePropertyV2
     abstract static class Builder implements ValueBuilder<FeatureTypeV2> {
         public abstract ImmutableFeatureTypeV2.Builder putProperties(String key,
-                                                                     ImmutableFeaturePropertyV2.Builder builder);
+                                                                     ImmutableFeatureSchema.Builder builder);
 
         @JsonProperty(value = "properties")
-        public ImmutableFeatureTypeV2.Builder putProperties2(String key, ImmutableFeaturePropertyV2.Builder builder) {
+        public ImmutableFeatureTypeV2.Builder putProperties2(String key, ImmutableFeatureSchema.Builder builder) {
             return putProperties(key, builder.name(key));
         }
     }
@@ -68,15 +68,15 @@ public interface FeatureTypeV2 extends ValueInstance {
     //TODO
     @JsonIgnore
     @Value.Derived
-    default Map<List<String>, List<FeaturePropertyV2>> getPropertiesByPath() {
-        Map<List<String>, List<FeaturePropertyV2>> builder = new LinkedHashMap<>();
+    default Map<List<String>, List<FeatureSchema>> getPropertiesByPath() {
+        Map<List<String>, List<FeatureSchema>> builder = new LinkedHashMap<>();
 
         getProperties().values()
                        .forEach(featureProperty -> {
                            //TODO
                            List<String> path = Splitter.on('/')
                                                        .omitEmptyStrings()
-                                                       .splitToList(featureProperty.getPath())
+                                                       .splitToList(featureProperty.getSourcePath().orElse(""))
                                                        .stream()
                                                        .map(element -> {
                                                            String resolvedElement = element.replaceAll("\\{.*?\\}", "");
@@ -127,7 +127,7 @@ public interface FeatureTypeV2 extends ValueInstance {
     }
 
 
-    default List<FeaturePropertyV2> findPropertiesForPath(List<String> path) {
+    default List<FeatureSchema> findPropertiesForPath(List<String> path) {
         return getPropertiesByPath().getOrDefault(path, ImmutableList.of());
     }
 

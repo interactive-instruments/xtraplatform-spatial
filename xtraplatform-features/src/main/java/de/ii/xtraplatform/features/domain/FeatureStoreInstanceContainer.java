@@ -18,6 +18,12 @@ import java.util.Optional;
 @Value.Style(deepImmutablesDetection = true)
 public interface FeatureStoreInstanceContainer extends FeatureStoreAttributesContainer {
 
+    @Value.Derived
+    @Override
+    default List<String> getPath() {
+        return ImmutableList.of(getName());
+    }
+
     Optional<CqlFilter> getFilter();
 
     //TODO: find a better way to handle this
@@ -26,7 +32,7 @@ public interface FeatureStoreInstanceContainer extends FeatureStoreAttributesCon
         return 0;
     }
 
-    //TODO:
+    //TODO: see getIdAttributesContainer
     @Value.Default
     default String getIdField() {
         return getAttributes().stream()
@@ -74,6 +80,15 @@ public interface FeatureStoreInstanceContainer extends FeatureStoreAttributesCon
         return getAllAttributesContainers()
                 .stream()
                 .filter(FeatureStoreAttributesContainer::isSpatial)
+                .findFirst();
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
+    default Optional<FeatureStoreAttributesContainer> getMainAttributesContainer() {
+        return getAllAttributesContainers()
+                .stream()
+                .filter(FeatureStoreAttributesContainer::isMain)
                 .findFirst();
     }
 

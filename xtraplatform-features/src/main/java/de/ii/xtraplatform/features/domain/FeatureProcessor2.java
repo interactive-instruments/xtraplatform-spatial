@@ -7,13 +7,18 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import java.io.IOException;
+import akka.NotUsed;
+import akka.stream.javadsl.Flow;
 
-public interface FeatureTransformer3<T extends Property<?>, U extends Feature<T>> {
+public interface FeatureProcessor2<T extends PropertyBase<T,W>, U extends FeatureBase<T,W>, V, W extends SchemaBase<W>> {
 
     U createFeature();
 
     T createProperty();
 
-    void processFeature(U feature) throws IOException;
+    V process(U feature);
+
+    default Flow<U,V, NotUsed> getFlow() {
+        return Flow.fromFunction(this::process);
+    }
 }

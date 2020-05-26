@@ -44,8 +44,18 @@ public abstract class ToDoubleArray implements CoordinatesWriter<DoubleArrayProc
     }
 
     @Override
+    public void onFlush() throws IOException {
+        if (bufferCursor > 0) {
+            getDelegate().onCoordinates(buffer, bufferCursor, getDimension());
+            bufferCursor = 0;
+        }
+
+        getDelegate().onFlush();
+    }
+
+    @Override
     public void onEnd() throws IOException {
-        getDelegate().onCoordinates(buffer, bufferCursor, getDimension());
+        onFlush();
 
         getDelegate().onEnd();
     }
@@ -55,8 +65,7 @@ public abstract class ToDoubleArray implements CoordinatesWriter<DoubleArrayProc
         bufferCursor++;
 
         if (bufferCursor == MAX_BUFFER_SIZE) {
-            getDelegate().onCoordinates(buffer, bufferCursor, getDimension());
-            bufferCursor = 0;
+            onFlush();
         }
     }
 }

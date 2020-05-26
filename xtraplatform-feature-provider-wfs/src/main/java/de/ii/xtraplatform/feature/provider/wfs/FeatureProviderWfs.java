@@ -43,13 +43,12 @@ import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQueriesPassThrough;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
-import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureSourceStream;
-import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStream2;
 import de.ii.xtraplatform.features.domain.FeatureTransformer2;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery;
+import de.ii.xtraplatform.features.domain.ImmutableResult;
 import de.ii.xtraplatform.features.domain.MappingStatus;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.exceptions.ParseError;
@@ -575,12 +574,15 @@ public class FeatureProviderWfs {//extends AbstractFeatureProvider implements Fe
 
 
                 return connector.runQuery(finalQuery, transformer, additionalQueryParameters)
-                                .thenApply(done -> () -> true);
+                                .handle((done,throwable) -> ImmutableResult.builder()
+                                                                  .isEmpty(false)//TODO!readContext.getReadState().isAtLeastOneFeatureWritten())
+                                                                  .error(Optional.ofNullable(throwable))
+                                                                  .build());
 
             }
 
             @Override
-            public CompletionStage<Result> runWith(Sink<Feature<?>, CompletionStage<Done>> transformer) {
+            public CompletionStage<Result> runWith(Sink<Feature, CompletionStage<Done>> transformer) {
                 return null;
             }
         };
@@ -637,7 +639,10 @@ public class FeatureProviderWfs {//extends AbstractFeatureProvider implements Fe
                 }
 
                 return connector.runQuery(finalQuery, parser, additionalQueryParameters)
-                                .thenApply(done -> () -> true);
+                                .handle((done, throwable) -> ImmutableResult.builder()
+                                                                            .isEmpty(false)//TODO!readContext.getReadState().isAtLeastOneFeatureWritten())
+                                                                            .error(Optional.ofNullable(throwable))
+                                                                            .build());
             }
 
             @Override

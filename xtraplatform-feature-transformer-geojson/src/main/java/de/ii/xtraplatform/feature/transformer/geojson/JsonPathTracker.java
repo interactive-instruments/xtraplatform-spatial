@@ -66,13 +66,13 @@ public class JsonPathTracker {
     public String toString() {
         //return JOINER.join(localPath.build());
         if (length == 0) return "";
-        return Arrays.stream(localPath, 0, length - 1)
+        return Arrays.stream(localPath, 0, length)
                      .collect(Collectors.joining("."));
     }
 
     public List<String> asList() {
         if (length == 0) return ImmutableList.of();
-        return Arrays.stream(localPath, 0, length - 1)
+        return Arrays.stream(localPath, 0, length)
                      .collect(ImmutableList.toImmutableList());
     }
 }

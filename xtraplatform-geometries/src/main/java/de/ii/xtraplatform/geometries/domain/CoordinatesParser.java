@@ -74,13 +74,25 @@ public class CoordinatesParser {
         }
     }
 
-    public void close() throws IOException {
+    public void flush() throws IOException {
         if (!started) {
             onStart();
         }
-        if (!lastCharWasSeparator) {
+        if (!lastCharWasSeparator && hasChunkBoundaryBuffer()) {
             onValue(new char[0], 0, 0);
         }
+
+        this.started = false;
+        this.lastCharWasSeparator = true;
+        this.chunkBoundaryBuffer = null;
+        this.counter = 0;
+        this.axis = Axis.X;
+
+        coordinatesProcessor.onFlush();
+    }
+
+    public void close() throws IOException {
+        flush();
 
         coordinatesProcessor.onEnd();
     }

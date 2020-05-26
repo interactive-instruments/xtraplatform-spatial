@@ -21,6 +21,8 @@ public interface SeperateStringsProcessor {
 
     void onZ(char[] chars, int offset, int length) throws IOException;
 
+    default void onFlush() throws IOException {}
+
     void onEnd() throws IOException;
 
 }

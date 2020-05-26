@@ -9,10 +9,8 @@ package de.ii.xtraplatform.feature.provider;
 
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
-import org.apache.felix.ipojo.ComponentInstance;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import org.apache.felix.ipojo.Factory;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
@@ -21,12 +19,8 @@ import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Validate;
 import org.apache.felix.ipojo.whiteboard.Wbp;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Hashtable;
-import java.util.Optional;
 
 import static de.ii.xtraplatform.features.domain.FeatureProvider2.PROVIDER_TYPE_KEY;
 import static de.ii.xtraplatform.features.domain.FeatureProviderConnector.CONNECTOR_TYPE_KEY;
@@ -70,7 +64,7 @@ public class ConnectorFactoryImpl implements ConnectorFactory, Registry<Factory>
     }
 
     @Override
-    public FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV1 featureProviderData) {
+    public FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV2 featureProviderData) {
         final String providerType = featureProviderData.getFeatureProviderType();
         final String connectorType = featureProviderData.getConnectionInfo()
                                                         .getConnectorType();

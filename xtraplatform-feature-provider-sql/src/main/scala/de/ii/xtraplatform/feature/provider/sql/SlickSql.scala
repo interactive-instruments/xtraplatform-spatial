@@ -13,9 +13,8 @@ import java.util.{List => JList}
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.slick.javadsl.SlickSession
-import akka.stream.alpakka.slick.scaladsl.{Slick => ScalaSlick}
 import akka.stream.javadsl._
-import slick.dbio.{DBIOAction, Effect, Streaming}
+import slick.dbio.{DBIOAction, Effect, Streaming, SuccessAction}
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc._
 import slick.sql.SqlStreamingAction
@@ -32,38 +31,43 @@ object SlickSql {
                ): Source[T, NotUsed] = {
     val streamingAction = SQLActionBuilder(query, SetParameter.SetUnit).as[T](toSlick(mapper))
 
-    ScalaSlick
-      .source[T](streamingAction)(session)
-      .asJava
+    Source.fromPublisher(session.db.stream(streamingAction))
   }
 
 
-  def source[T >: Null,U](
-                 session: SlickSession,
-                 queryFunctions: JList[JFunction[U,String]],
-                 mapper: JBiFunction[SlickRow, T, T],
-                 insertContext: U,
-                 actorSystem: ActorSystem
-               ): Source[T, NotUsed] = {
+  def source[T,R >: Null](
+                           session: SlickSession,
+                           executionContext: ExecutionContext,
+                           toStatements: JList[JFunction[T,String]],
+                           resultMapper: JBiFunction[SlickRow, R, R],
+                           feature: T
+               ): Source[R, NotUsed] = {
 
+    Source.fromPublisher(session.db.stream(toTransaction(feature, executionContext, toStatements, resultMapper)))
+  }
 
-    implicit val ec: ExecutionContext = actorSystem.dispatcher
+  def toTransaction[T,R >: Null] (feature: T,
+                          executionContext: ExecutionContext,
+                          toStatements: JList[JFunction[T,String]],
+                          mapper: JBiFunction[SlickRow, R, R]
+                       ): DBIOAction[Vector[R], Streaming[R], Effect with Effect.Transactional] = {
+    implicit val ec: ExecutionContext = executionContext
 
+    var streamingAction: DBIOAction[Vector[R], Streaming[R], Effect with Effect] = toDbio(toStatements.get(0).apply(feature), mapper, null)
 
-    val insert1: SqlStreamingAction[Vector[T], T, Effect] = toDbio(queryFunctions.get(0).apply(insertContext), mapper, null)
+    for (i <- 1 until toStatements.size()) {
+      streamingAction = streamingAction.flatMap(results => {
+        val statement = toStatements.get(i).apply(feature)
+        var nextAction : DBIOAction[Vector[R], Streaming[R], Effect] = toDbio("SELECT null", mapper, results)
 
-    var streamingAction: DBIOAction[Vector[T], Streaming[T], Effect with Effect] = insert1.flatMap(results => toDbio(queryFunctions.get(1).apply(insertContext), mapper, results))
-
-    for (i <- 2 until queryFunctions.size()) {
-      streamingAction = streamingAction.flatMap(results => toDbio(queryFunctions.get(i).apply(insertContext), mapper, results))
+        if (statement != null) {
+          nextAction = toDbio(statement, mapper, results)
+        }
+        nextAction
+      })
     }
 
-    //val transactionalStreamingAction = PostgresProfile.api.jdbcActionExtensionMethods(streamingAction).transactionally
-    val transactionalStreamingAction = streamingAction.transactionally
-
-    ScalaSlick
-      .source[T](transactionalStreamingAction)(session)
-      .asJava
+    streamingAction.transactionally
   }
 
   private def toDbio[T >: Null](query: String, mapper: JBiFunction[SlickRow, T, T], results: Vector[T]): SqlStreamingAction[Vector[T], T, Effect] =

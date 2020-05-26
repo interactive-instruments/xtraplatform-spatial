@@ -24,6 +24,7 @@ import de.ii.xtraplatform.feature.provider.wfs.app.FeatureProviderWfs;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.ogc.api.WFS;
@@ -67,7 +68,7 @@ public class WfsConnectorHttp implements WfsConnector {
     private final Optional<Metadata> metadata;
     private Optional<Throwable> connectionError;
 
-    WfsConnectorHttp(@Property(name = ".data") FeatureProviderDataV1 data, @Requires Dropwizard dropwizard,
+    WfsConnectorHttp(@Property(name = ".data") FeatureProviderDataV2 data, @Requires Dropwizard dropwizard,
                      @Requires Http http) {
         ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
 

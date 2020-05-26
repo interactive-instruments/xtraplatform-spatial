@@ -126,7 +126,7 @@ public abstract class CoordinatesTransformer extends Writer {
 
     @Override
     public void flush() throws IOException {
-
+        getCoordinatesParser().flush();
     }
 
     @Override

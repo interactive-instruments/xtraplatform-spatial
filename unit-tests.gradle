@@ -11,6 +11,7 @@ subprojects {
             transitive = false // this avoids affecting your version of Groovy/Spock
         }
         testCompile group: 'org.mockito', name: 'mockito-core', version: '1.9.5'
+        testCompile "net.bytebuddy:byte-buddy:1.10.9"
     }
     
     test {

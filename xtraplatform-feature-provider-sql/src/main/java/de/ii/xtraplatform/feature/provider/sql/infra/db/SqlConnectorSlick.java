@@ -21,6 +21,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Invalidate;
@@ -68,7 +69,7 @@ public class SqlConnectorSlick implements SqlConnector {
     private boolean controller;
 
     public SqlConnectorSlick(@Context BundleContext context,
-                             @Property(name = ".data") FeatureProviderDataV1 data) {
+                             @Property(name = ".data") FeatureProviderDataV2 data) {
         // bundle class loader has to be passed to Slick for initialization
         this.classLoader = context.getBundle()
                                   .adapt(BundleWiring.class)
