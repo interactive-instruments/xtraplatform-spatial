@@ -15,7 +15,6 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;

@@ -9,10 +9,12 @@ package de.ii.xtraplatform.features.app;
 
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.entity.api.EntityData;
+import de.ii.xtraplatform.entity.api.handler.Entity;
 import de.ii.xtraplatform.event.store.EntityDataBuilder;
 import de.ii.xtraplatform.event.store.EntityMigration;
 import de.ii.xtraplatform.event.store.Identifier;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
+import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
@@ -21,6 +23,10 @@ import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV1;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase;
+import org.apache.felix.ipojo.annotations.Component;
+import org.apache.felix.ipojo.annotations.Instantiate;
+import org.apache.felix.ipojo.annotations.Provides;
+import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 
 import java.util.AbstractMap;
 import java.util.Arrays;
@@ -29,6 +35,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+@Component
+@Provides(properties = {
+        @StaticServiceProperty(name = Entity.TYPE_KEY, type = "java.lang.String", value = FeatureProvider2.ENTITY_TYPE)
+})
+@Instantiate
 public class FeatureProviderDataMigrationV1V2 implements EntityMigration<FeatureProviderDataV1, FeatureProviderDataV2> {
     @Override
     public long getSourceVersion() {
@@ -54,7 +65,8 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
                 .lastModified(entityData.getLastModified())
                 .providerType(entityData.getProviderType())
                 .featureProviderType(entityData.getFeatureProviderType())
-                .nativeCrs(entityData.getNativeCrs());
+                .nativeCrs(entityData.getNativeCrs())
+                .connectionInfo(entityData.getConnectionInfo());
 
         entityData.getTypes()
                   .values()
@@ -81,13 +93,14 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
                 .name(featureType.getName())
                 .type(SchemaBase.Type.OBJECT)
                 .sourcePath(featureTypePath)
-                .setPropertyMap(migrateProperties(featureType.getProperties(), featureTypePath))
+                .putAllPropertyMap(migrateProperties(featureType.getProperties(), featureTypePath))
                 .build();
     }
 
-    private Map<String, ImmutableFeatureSchema.Builder> migrateProperties(Map<String, FeatureProperty> properties,
-                                                                              String featureTypePath) {
+    private Map<String, FeatureSchema> migrateProperties(Map<String, FeatureProperty> properties,
+                                                         String featureTypePath) {
         Map<String, ImmutableFeatureSchema.Builder> migrated = new LinkedHashMap<>();
+        Map<String, FeatureSchema> migrated2 = new LinkedHashMap<>();
 
         Map<String, ImmutableFeatureSchema.Builder> objectPropertiesCache = new LinkedHashMap<>();
 
@@ -104,12 +117,20 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
                       Optional<FeatureSchema.Role> role = originalProperty.getRole()
                                                                           .map(originalRole -> FeatureSchema.Role.valueOf(originalRole.toString()));
 
-                      return createPropertyTree(objectPropertiesCache, nameTokens, path, type, role, originalProperty.getAdditionalInfo());
+                      return createPropertyTree(objectPropertiesCache, nameTokens, path, type, role, originalProperty.getAdditionalInfo(), "");
 
                   })
                   .forEach(entry -> migrated.put(entry.getKey(), entry.getValue()));
 
-        return migrated;
+        migrated.forEach((key, value) -> {
+            try {
+                migrated2.put(key, value.build());
+            } catch (Throwable e) {
+                boolean br = true;
+            }
+        });
+
+        return migrated2;
     }
 
     private Map.Entry<String, ImmutableFeatureSchema.Builder> createPropertyTree(
@@ -117,7 +138,7 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
             String[] nameTokens,
             String path,
             FeatureSchema.Type type,
-            Optional<FeatureSchema.Role> role, Map<String, String> additionalInfo) {
+            Optional<FeatureSchema.Role> role, Map<String, String> additionalInfo, String parentName) {
 
         String name = nameTokens[0];
 
@@ -133,10 +154,11 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
                 && (Objects.equals(additionalInfo.get("role"), "LINKHREF") || Objects.equals(additionalInfo.get("role"), "LINKTITLE"))
                 ? "Link"
                 : null;
+        String newParentName = parentName.isEmpty() ? clean(name) : parentName + "." + clean(name);
 
-        ImmutableFeatureSchema.Builder objectProperty = objectPropertiesCache.computeIfAbsent(clean(name), cleanName -> getObjectProperty(name, objectPath, objectType));
+        ImmutableFeatureSchema.Builder objectProperty = objectPropertiesCache.computeIfAbsent(newParentName, cleanName -> getObjectProperty(name, objectPath, objectType));
 
-        Map.Entry<String, ImmutableFeatureSchema.Builder> childTree = createPropertyTree(objectPropertiesCache, Arrays.copyOfRange(nameTokens, 1, nameTokens.length), childPath, type, role, additionalInfo);
+        Map.Entry<String, ImmutableFeatureSchema.Builder> childTree = createPropertyTree(objectPropertiesCache, Arrays.copyOfRange(nameTokens, 1, nameTokens.length), childPath, type, role, additionalInfo, newParentName);
 
         objectProperty.putPropertyMap(childTree.getKey(), childTree.getValue());
 
@@ -180,7 +202,7 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
     }
 
     private String removePrefix(String path, String prefix) {
-        return path.substring(prefix.length() + 1);
+        return prefix.isEmpty() ? path : path.substring(prefix.length() + 1);
     }
 
     private String removeSuffix(String path, int numberOfElements) {

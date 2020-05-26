@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 @ValueBuilderMapEncodingEnabled
 @JsonDeserialize(builder = ImmutableFeatureSchema.Builder.class)
+@JsonPropertyOrder({"sourcePath", "type", "role", "valueType", "geometryType", "objectType", "label", "description", "transformers", "constraints", "properties"})
 public interface FeatureSchema extends SchemaBase<FeatureSchema>, ValueInstance {
 
     @JsonIgnore
@@ -80,14 +82,27 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, ValueInstance 
     @JsonProperty(value = "properties")
     ValueBuilderMap<FeatureSchema, ImmutableFeatureSchema.Builder> getPropertyMap();
 
-    // custom builder to automatically use keys of types as name of nested FeaturePropertyV2
+    // custom builder to automatically use keys of properties as name
     abstract class Builder implements ValueBuilder<FeatureSchema> {
 
         public abstract ImmutableFeatureSchema.Builder putPropertyMap(String key,
                                                                       ImmutableFeatureSchema.Builder builder);
 
-        @JsonMerge
-        @JsonSetter(value = "properties")
+        //@JsonMerge
+        @JsonProperty(value = "properties")
+        public ImmutableFeatureSchema.Builder putProperties2(Map<String, ImmutableFeatureSchema.Builder> builderMap) {
+            ImmutableFeatureSchema.Builder builder1 = null;
+            for (Map.Entry<String, ImmutableFeatureSchema.Builder> entry : builderMap.entrySet()) {
+                String key = entry.getKey();
+                ImmutableFeatureSchema.Builder builder = entry.getValue();
+                builder1 = putPropertyMap(key, builder.name(key));
+            }
+            return builder1;
+            //return putPropertyMap(key, builder.name(key));
+        }
+
+        //@JsonProperty(value = "properties")
+        //@JsonAnySetter
         public ImmutableFeatureSchema.Builder putProperties2(String key, ImmutableFeatureSchema.Builder builder) {
             return putPropertyMap(key, builder.name(key));
         }

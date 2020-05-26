@@ -99,6 +99,7 @@ public class FeatureSchemaToTypeVisitor implements SchemaVisitor<FeatureSchema, 
     }
 
     private String getPath(FeatureSchema schema, String suffix) {
-        return getPath(schema) + "/" + suffix;
+        String path = getPath(schema);
+        return path.isEmpty() ? suffix : path + "/" + suffix;
     }
 }

@@ -10,7 +10,6 @@ package de.ii.xtraplatform.feature.provider.sql.app
 
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSchemaSql
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql
-import de.ii.xtraplatform.features.domain.FeatureSchema
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation
 import de.ii.xtraplatform.features.domain.PropertyBase

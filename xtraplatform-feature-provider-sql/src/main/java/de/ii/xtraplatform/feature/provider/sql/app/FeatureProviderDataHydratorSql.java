@@ -17,8 +17,6 @@ import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlSchemaCrawler;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureType;
-import de.ii.xtraplatform.features.domain.FeatureTypeV2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;

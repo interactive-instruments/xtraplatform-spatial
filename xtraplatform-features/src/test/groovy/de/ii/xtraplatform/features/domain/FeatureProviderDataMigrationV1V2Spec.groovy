@@ -28,7 +28,8 @@ import static de.ii.xtraplatform.features.domain.FeatureProperty.Type
 import static de.ii.xtraplatform.features.domain.FeatureProviderDataFixtures.ONEO_V1
 import static de.ii.xtraplatform.features.domain.FeatureProviderDataFixtures.ONEO_V2
 
-@Ignore//TODO
+@Ignore
+//TODO
 class FeatureProviderDataMigrationV1V2Spec extends Specification {
 
     @Shared
@@ -61,7 +62,7 @@ class FeatureProviderDataMigrationV1V2Spec extends Specification {
                 .lastModified(1586271491161)
                 .providerType("FEATURE")
                 .featureProviderType("SQL")
-        .connectionInfo(FeatureProviderDataFixtures.connectionInfo)
+                .connectionInfo(FeatureProviderDataFixtures.connectionInfo)
                 .nativeCrs(OgcCrs.CRS84)
                 .putTypes2("observationsubject", new ImmutableFeatureType.Builder()
                         .putProperties2("id", new ImmutableFeatureProperty.Builder()
@@ -129,7 +130,6 @@ class FeatureProviderDataMigrationV1V2Spec extends Specification {
         dataAsYaml == expected
 
     }
-
 
 
     def 'migrate oneo'() {

@@ -89,7 +89,9 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return featureTypes.entrySet()
                            .stream()
                            .map(entry -> {
-                               List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(entry.getValue().accept(new FeatureSchemaToTypeVisitor(entry.getKey())));
+                               FeatureType featureType = entry.getValue()
+                                                         .accept(new FeatureSchemaToTypeVisitor(entry.getKey()));
+                               List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(featureType);
                                FeatureStoreTypeInfo typeInfo = ImmutableFeatureStoreTypeInfo.builder()
                                                                                             .name(entry.getKey())
                                                                                             .instanceContainers(instanceContainers)

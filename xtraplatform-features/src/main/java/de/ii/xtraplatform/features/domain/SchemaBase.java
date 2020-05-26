@@ -7,11 +7,9 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import de.ii.xtraplatform.cql.domain.CqlVisitor;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import org.immutables.value.Value;
 

@@ -50,8 +50,6 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
         return Optional.of(String.format("%s/%s", getProviderType(), getFeatureProviderType()).toLowerCase());
     }
 
-    @Nullable //TODO: remove when done
-    @JsonIgnore //TODO: remove when done
     ConnectionInfo getConnectionInfo();
 
     Optional<EpsgCrs> getNativeCrs();
@@ -64,6 +62,13 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
     ValueBuilderMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
 
     Map<String, Map<String, String>> getCodelists();
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default Optional<String> getDataSourceUrl() {
+        return Optional.ofNullable(getConnectionInfo()).flatMap(ConnectionInfo::getConnectionUri);
+    }
 
 
     // custom builder to automatically use keys of types as name of FeatureTypeV2
