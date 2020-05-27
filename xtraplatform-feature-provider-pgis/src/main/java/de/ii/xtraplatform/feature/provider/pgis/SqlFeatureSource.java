@@ -108,7 +108,7 @@ public class SqlFeatureSource {
         return createRowStream(query)
                 .runForeach(slickRowInfo -> {
                     if (slickRowInfo.getPath()
-                                    .size() >= 3 && queries.getMultiTables()
+                                    .size() >= 2 && queries.getMultiTables()
                                                            .contains(slickRowInfo.getName())) {
 
                         boolean same = slickRowInfo.getPath()

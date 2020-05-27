@@ -18,14 +18,14 @@ apply plugin: 'maven-publish'
 //apply plugin: 'com.jfrog.bintray'
 apply plugin: 'java'
 
-version = '2.0.32'
+version = '2.0.33'
 //version += '-SNAPSHOT'
 
 group = 'de.interactive_instruments'
 
 repositories {
     maven {
-        url "https://repo.boundlessgeo.com/main/"
+        url "https://repo.osgeo.org/repository/release"
     }
     maven {
         url "http://maven.geomajas.org"
@@ -226,7 +226,7 @@ subprojects {
     repositories {     
         mavenLocal()
         maven {
-            url "https://repo.boundlessgeo.com/main/"
+            url "https://repo.osgeo.org/repository/release"
         }
         maven {
             url "http://maven.geomajas.org"
