@@ -271,13 +271,13 @@ public class GMLSchemaParser {
                 }
             }
 
-        } else if (!decl.getType().getBaseType().getName().equals("anyType")) {
+        } else if (!propertyType.isSimpleType() && !decl.getType().getBaseType().getName().equals("anyType")) {
             propertyType = decl.getType().getBaseType();
         }
 
         String propertyTypeName = propertyType.getName();
 
-        if (propertyType.isSimpleType()) {
+        if (propertyType.isSimpleType() && !propertyTypeName.equals("integer")) {
             if (propertyType.asSimpleType().getPrimitiveType() != null) {
                 propertyType = propertyType.asSimpleType().getPrimitiveType();
                 propertyTypeName = propertyType.getName();
