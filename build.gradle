@@ -22,7 +22,7 @@ dependencies {
 subprojects {
     repositories {
         maven {
-            url "https://repo.osgeo.org/"
+            url "https://repo.osgeo.org/repository/release"
         }
         maven {
             url "http://maven.geomajas.org"
