@@ -7,9 +7,21 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.infra
 
+import com.fasterxml.aalto.stax.InputFactoryImpl
+import com.google.common.collect.ImmutableMap
+import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderDataWfsFromMetadata
+import de.ii.xtraplatform.feature.provider.wfs.WFSCapabilitiesParser
+import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp
 import de.ii.xtraplatform.feature.provider.wfs.domain.ImmutableConnectionInfoWfsHttp
-import de.ii.xtraplatform.features.domain.FeaturePropertyV2
-import spock.lang.Shared
+import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector
+import de.ii.xtraplatform.features.domain.Metadata
+import de.ii.xtraplatform.features.domain.SchemaBase
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
+import de.ii.xtraplatform.ogc.api.WFS
+import de.ii.xtraplatform.ogc.api.wfs.GetCapabilities
+import de.ii.xtraplatform.ogc.api.wfs.WfsOperation
+import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder
+import org.codehaus.staxmate.SMInputFactory
 import spock.lang.Specification
 
 class WfsSchemaCrawlerPlayground extends Specification {
@@ -59,4 +71,79 @@ class WfsSchemaCrawlerPlayground extends Specification {
     }
 
  */
+
+
+    def 'test complex schema'() {
+        given:
+        def conn = new ImmutableConnectionInfoWfsHttp.Builder()
+                .version("2.0.0")
+                .gmlVersion("3.2.1")
+                .uri(URI.create("https://www.wfs.nrw.de/geobasis/wfs_nw_inspire-adressen_gebref?SERVICE=WFS&REQUEST=GetCapabilities"))
+                .build()
+
+        WfsConnector connector = new MockWfsConnectorHttp(conn)
+        def wfsSchemaCrawler = new WfsSchemaCrawler(connector, conn)
+
+        when:
+        def featureTypeList = wfsSchemaCrawler.parseSchema()
+
+        then:
+        featureTypeList.size() == 4
+        featureTypeList.get(0).getPropertyMap().containsKey("id")
+        featureTypeList.get(0).getPropertyMap().get("id").getRole().get() == SchemaBase.Role.ID
+        featureTypeList.get(0).getPropertyMap().get("id").getType() == SchemaBase.Type.STRING
+        featureTypeList.get(0).getPropertyMap().get("id").getSourcePath().get() == "/ad:Address/gml:@id"
+        featureTypeList.get(0).getPropertyMap().containsKey("inspireId")
+        featureTypeList.get(0).getPropertyMap().get("inspireId").getType() == SchemaBase.Type.OBJECT
+        featureTypeList.get(0).getPropertyMap().get("inspireId").getProperties().size() == 3
+        featureTypeList.get(0).getPropertyMap().containsKey("validFrom")
+        featureTypeList.get(0).getPropertyMap().get("validFrom").getType() == SchemaBase.Type.DATETIME
+        featureTypeList.get(0).getPropertyMap().get("validFrom").getSourcePath().get() == "/ad:Address/ad:validFrom"
+        featureTypeList.get(0).getPropertyMap().get("position").getType() == SchemaBase.Type.OBJECT_ARRAY
+        featureTypeList.get(0).getPropertyMap().get("position").getPropertyMap().get("geometry").getType() == SchemaBase.Type.GEOMETRY
+        featureTypeList.get(0).getPropertyMap().get("position").getPropertyMap().get("geometry").getGeometryType().get() == SimpleFeatureGeometry.POINT
+        featureTypeList.get(0).getPropertyMap().get("pronunciation").getType() == SchemaBase.Type.OBJECT_ARRAY
+        featureTypeList.get(0).getPropertyMap().get("pronunciation").getPropertyMap().get("pronunciationIPA").getType() == SchemaBase.Type.VALUE_ARRAY
+        featureTypeList.get(0).getPropertyMap().get("pronunciation").getPropertyMap().get("pronunciationIPA").getValueType().get() == SchemaBase.Type.STRING
+        featureTypeList.get(0).getPropertyMap().get("pronunciation").getPropertyMap().get("pronunciationIPA").getSourcePath().get() ==
+                "/ad:Address/ad:locator/ad:AddressLocator/ad:name/ad:LocatorName/ad:name/http://inspire.ec.europa.eu/schemas/gn/4.0:GeographicalName/http://inspire.ec.europa.eu/schemas/gn/4.0:pronunciation/http://inspire.ec.europa.eu/schemas/gn/4.0:PronunciationOfName/http://inspire.ec.europa.eu/schemas/gn/4.0:pronunciationIPA"
+
+    }
+
+    class MockWfsConnectorHttp extends WfsConnectorHttp {
+
+        private final WfsRequestEncoder wfsRequestEncoder
+        private static SMInputFactory staxFactory = new SMInputFactory(new InputFactoryImpl())
+        ConnectionInfoWfsHttp connectionInfo;
+
+
+        MockWfsConnectorHttp(ConnectionInfoWfsHttp connectionInfo) {
+            Map<String, Map<WFS.METHOD, URI>> urls = ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri())));
+            this.connectionInfo = connectionInfo
+            this.wfsRequestEncoder = new WfsRequestEncoder(connectionInfo.getVersion(), connectionInfo.getGmlVersion(), connectionInfo.getNamespaces(), urls)
+        }
+
+        @Override
+        InputStream runWfsOperation(WfsOperation operation) {
+            return new URL(wfsRequestEncoder.getAsUrl(operation)).openConnection().getInputStream()
+        }
+
+        @Override
+        Optional<Metadata> getMetadata() {
+            try {
+
+                InputStream inputStream = runWfsOperation(new GetCapabilities())
+                WfsCapabilitiesAnalyzer metadataConsumer = new WfsCapabilitiesAnalyzer()
+                WFSCapabilitiesParser gmlSchemaParser = new WFSCapabilitiesParser(metadataConsumer, staxFactory)
+                gmlSchemaParser.parse(inputStream)
+                return Optional.of(metadataConsumer.getMetadata())
+
+            } catch (Throwable e) {
+                e.printStackTrace()
+            }
+
+            return Optional.empty();
+        }
+
+    }
 }
