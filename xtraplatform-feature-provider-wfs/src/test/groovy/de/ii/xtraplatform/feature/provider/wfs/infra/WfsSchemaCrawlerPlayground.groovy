@@ -25,22 +25,19 @@ import org.codehaus.staxmate.SMInputFactory
 import spock.lang.Specification
 
 class WfsSchemaCrawlerPlayground extends Specification {
-/*
-    @Shared WfsSchemaCrawler wfsSchemaCrawler
 
-    def setupSpec() {
 
+    def 'parse schema'() {
+
+        given:
         def connectionInfo = new ImmutableConnectionInfoWfsHttp.Builder()
                 .version("2.0.0")
                 .gmlVersion("3.2.1")
-                .uri(URI.create("https://www.wfs.nrw.de/geobasis/wfs_nw_atkis-basis-dlm_aaa-modell-basiert"))
+                .uri(URI.create("https://www.wfs.nrw.de/geobasis/wfs_nw_alkis_vereinfacht"))
                 .build()
 
-        wfsSchemaCrawler = new WfsSchemaCrawler(connectionInfo);
-
-    }
-
-    def 'parse schema'() {
+        WfsConnector connector = new MockWfsConnectorHttp(connectionInfo)
+        def wfsSchemaCrawler = new WfsSchemaCrawler(connector, connectionInfo)
 
         when:
         def featureTypeList = wfsSchemaCrawler.parseSchema()
@@ -48,29 +45,28 @@ class WfsSchemaCrawlerPlayground extends Specification {
         then:
 
         featureTypeList.size() == 7
-        featureTypeList.get(4).name == "Flurstueck"
-        featureTypeList.get(4).path == "/flurstueck"
-        featureTypeList.get(4).properties.containsKey("id")
-        featureTypeList.get(4).properties.get("id").role.get() == FeaturePropertyV2.Role.ID
-        featureTypeList.get(4).properties.get("id").type == FeaturePropertyV2.Type.STRING
-        featureTypeList.get(4).properties.get("id").path == "ueboname.@id"
-        featureTypeList.get(4).properties.containsKey("kreis")
-        featureTypeList.get(4).properties.get("kreis").additionalInfo.get("multiple") == "false"
-        featureTypeList.get(4).properties.get("kreis").type == FeaturePropertyV2.Type.STRING
-        featureTypeList.get(4).properties.get("kreis").path == "kreis"
-        featureTypeList.get(4).properties.containsKey("geometrie")
-        featureTypeList.get(4).properties.get("geometrie").type == FeaturePropertyV2.Type.GEOMETRY
-        featureTypeList.get(4).properties.get("geometrie").path == "geometrie"
-        featureTypeList.get(4).properties.get("geometrie").additionalInfo.get("geometryType") == "MULTI_POLYGON"
-        featureTypeList.get(4).properties.get("geometrie").additionalInfo.get("crs") == "25832"
-        featureTypeList.get(4).properties.get("geometrie").additionalInfo.get("multiple") == "false"
-        featureTypeList.get(4).properties.get("flaeche").type == FeaturePropertyV2.Type.FLOAT
-        featureTypeList.get(4).properties.get("aktualit").type == FeaturePropertyV2.Type.DATETIME
-        featureTypeList.get(4).properties.get("name").additionalInfo.get("multiple") == "true"
+        featureTypeList.get(0).getName() == "flurstueck"
+        featureTypeList.get(0).getSourcePath().get() == "/flurstueck"
+        featureTypeList.get(0).getPropertyMap().containsKey("id")
+        featureTypeList.get(0).getPropertyMap().get("id").role.get() == SchemaBase.Role.ID
+        featureTypeList.get(0).getPropertyMap().get("id").type == SchemaBase.Type.STRING
+        featureTypeList.get(0).getPropertyMap().get("id").sourcePath.get() == "@id"
+        featureTypeList.get(0).getPropertyMap().containsKey("kreis")
+        featureTypeList.get(0).getPropertyMap().get("kreis").additionalInfo.get("multiple") == "false"
+        featureTypeList.get(0).getPropertyMap().get("kreis").type == SchemaBase.Type.STRING
+        featureTypeList.get(0).getPropertyMap().get("kreis").sourcePath.get() == "kreis"
+        featureTypeList.get(0).getPropertyMap().containsKey("geometrie")
+        featureTypeList.get(0).getPropertyMap().get("geometrie").type == SchemaBase.Type.GEOMETRY
+        featureTypeList.get(0).getPropertyMap().get("geometrie").geometryType.get() == SimpleFeatureGeometry.MULTI_POLYGON
+        featureTypeList.get(0).getPropertyMap().get("geometrie").sourcePath.get() == "geometrie"
+        featureTypeList.get(0).getPropertyMap().get("geometrie").additionalInfo.get("crs") == "25832"
+        featureTypeList.get(0).getPropertyMap().get("geometrie").additionalInfo.get("multiple") == "false"
+        featureTypeList.get(0).getPropertyMap().get("flaeche").type == SchemaBase.Type.FLOAT
+        featureTypeList.get(0).getPropertyMap().get("aktualit").type == SchemaBase.Type.DATETIME
+        featureTypeList.get(0).getPropertyMap().get("surfaceMember").additionalInfo.get("multiple") == "true"
 
     }
 
- */
 
 
     def 'test complex schema'() {
@@ -92,13 +88,13 @@ class WfsSchemaCrawlerPlayground extends Specification {
         featureTypeList.get(0).getPropertyMap().containsKey("id")
         featureTypeList.get(0).getPropertyMap().get("id").getRole().get() == SchemaBase.Role.ID
         featureTypeList.get(0).getPropertyMap().get("id").getType() == SchemaBase.Type.STRING
-        featureTypeList.get(0).getPropertyMap().get("id").getSourcePath().get() == "/ad:Address/gml:@id"
+        featureTypeList.get(0).getPropertyMap().get("id").getSourcePath().get() == "@id"
         featureTypeList.get(0).getPropertyMap().containsKey("inspireId")
         featureTypeList.get(0).getPropertyMap().get("inspireId").getType() == SchemaBase.Type.OBJECT
         featureTypeList.get(0).getPropertyMap().get("inspireId").getProperties().size() == 3
         featureTypeList.get(0).getPropertyMap().containsKey("validFrom")
         featureTypeList.get(0).getPropertyMap().get("validFrom").getType() == SchemaBase.Type.DATETIME
-        featureTypeList.get(0).getPropertyMap().get("validFrom").getSourcePath().get() == "/ad:Address/ad:validFrom"
+        featureTypeList.get(0).getPropertyMap().get("validFrom").getSourcePath().get() == "validFrom"
         featureTypeList.get(0).getPropertyMap().get("position").getType() == SchemaBase.Type.OBJECT_ARRAY
         featureTypeList.get(0).getPropertyMap().get("position").getPropertyMap().get("geometry").getType() == SchemaBase.Type.GEOMETRY
         featureTypeList.get(0).getPropertyMap().get("position").getPropertyMap().get("geometry").getGeometryType().get() == SimpleFeatureGeometry.POINT
@@ -106,7 +102,7 @@ class WfsSchemaCrawlerPlayground extends Specification {
         featureTypeList.get(0).getPropertyMap().get("pronunciation").getPropertyMap().get("pronunciationIPA").getType() == SchemaBase.Type.VALUE_ARRAY
         featureTypeList.get(0).getPropertyMap().get("pronunciation").getPropertyMap().get("pronunciationIPA").getValueType().get() == SchemaBase.Type.STRING
         featureTypeList.get(0).getPropertyMap().get("pronunciation").getPropertyMap().get("pronunciationIPA").getSourcePath().get() ==
-                "/ad:Address/ad:locator/ad:AddressLocator/ad:name/ad:LocatorName/ad:name/http://inspire.ec.europa.eu/schemas/gn/4.0:GeographicalName/http://inspire.ec.europa.eu/schemas/gn/4.0:pronunciation/http://inspire.ec.europa.eu/schemas/gn/4.0:PronunciationOfName/http://inspire.ec.europa.eu/schemas/gn/4.0:pronunciationIPA"
+                "locator/name/name/pronunciation/pronunciationIPA"
 
     }
 

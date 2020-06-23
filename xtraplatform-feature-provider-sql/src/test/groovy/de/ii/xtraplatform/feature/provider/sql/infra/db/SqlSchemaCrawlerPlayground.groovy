@@ -8,8 +8,9 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db
 
 import com.google.common.collect.ImmutableMap
-import de.ii.xtraplatform.features.domain.FeaturePropertyV2
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableConnectionInfoSql
+import de.ii.xtraplatform.features.domain.SchemaBase
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 import schemacrawler.crawl.MutableCatalog
 import schemacrawler.crawl.MutableColumn
 import schemacrawler.crawl.MutableColumnDataType
@@ -58,23 +59,24 @@ class SqlSchemaCrawlerPlayground extends Specification {
 
             featureTypeList.size() > 0
             featureTypeList.get(0).name == "aeronauticcrv"
-            featureTypeList.get(0).path == "/aeronauticcrv"
-            featureTypeList.get(0).properties.size() > 0
-            featureTypeList.get(0).properties.containsKey("id")
-            featureTypeList.get(0).properties.get("id").type == FeaturePropertyV2.Type.INTEGER
-            featureTypeList.get(0).properties.get("id").role.isPresent()
-            featureTypeList.get(0).properties.get("id").role.get() == FeaturePropertyV2.Role.ID
-            featureTypeList.get(0).properties.containsKey("ara")
-            featureTypeList.get(0).properties.get("ara").type == FeaturePropertyV2.Type.FLOAT
-            featureTypeList.get(0).properties.containsKey("ben")
-            featureTypeList.get(0).properties.get("ben").type == FeaturePropertyV2.Type.STRING
-            featureTypeList.get(0).properties.containsKey("geom")
-            featureTypeList.get(0).properties.get("geom").additionalInfo.get("geometryType") == "MULTI_LINE_STRING"
-            featureTypeList.get(0).properties.get("geom").additionalInfo.get("crs") == "4326"
+            featureTypeList.get(0).sourcePath.get() == "/aeronauticcrv"
+            featureTypeList.get(0).propertyMap.size() > 0
+            featureTypeList.get(0).propertyMap.containsKey("id")
+            featureTypeList.get(0).propertyMap.get("id").type == SchemaBase.Type.INTEGER
+            featureTypeList.get(0).propertyMap.get("id").role.isPresent()
+            featureTypeList.get(0).propertyMap.get("id").role.get() == SchemaBase.Role.ID
+            featureTypeList.get(0).propertyMap.containsKey("ara")
+            featureTypeList.get(0).propertyMap.get("ara").type == SchemaBase.Type.FLOAT
+            featureTypeList.get(0).propertyMap.containsKey("ben")
+            featureTypeList.get(0).propertyMap.get("ben").type == SchemaBase.Type.STRING
+            featureTypeList.get(0).propertyMap.containsKey("geom")
+            featureTypeList.get(0).propertyMap.get("geom").type == SchemaBase.Type.GEOMETRY
+            featureTypeList.get(0).propertyMap.get("geom").type == SchemaBase.Type.GEOMETRY
+            featureTypeList.get(0).propertyMap.get("geom").geometryType.get() == SimpleFeatureGeometry.MULTI_LINE_STRING
+            featureTypeList.get(0).propertyMap.get("geom").additionalInfo.get("crs") == "4326"
 
     }
 
-    @Ignore
     def 'mock catalog'() {
         given: 'mock catalog'
         Catalog mockCatalog = createCatalog()
@@ -87,30 +89,30 @@ class SqlSchemaCrawlerPlayground extends Specification {
         featureTypeList.size() == 2
 
         featureTypeList.get(0).name == "table1"
-        featureTypeList.get(0).path == "/table1"
-        featureTypeList.get(0).properties.size() == 3
-        featureTypeList.get(0).properties.containsKey("column1")
-        featureTypeList.get(0).properties.get("column1").type == FeaturePropertyV2.Type.INTEGER
-        featureTypeList.get(0).properties.get("column1").role.isPresent()
-        featureTypeList.get(0).properties.get("column1").role.get() == FeaturePropertyV2.Role.ID
-        featureTypeList.get(0).properties.containsKey("column2")
-        featureTypeList.get(0).properties.get("column2").type == FeaturePropertyV2.Type.STRING
-        featureTypeList.get(0).properties.containsKey("column3")
-        featureTypeList.get(0).properties.get("column3").type == FeaturePropertyV2.Type.GEOMETRY
+        featureTypeList.get(0).sourcePath.get() == "/table1"
+        featureTypeList.get(0).propertyMap.size() == 2
+        featureTypeList.get(0).propertyMap.containsKey("column1")
+        featureTypeList.get(0).propertyMap.get("column1").type == SchemaBase.Type.INTEGER
+        featureTypeList.get(0).propertyMap.get("column1").role.isPresent()
+        featureTypeList.get(0).propertyMap.get("column1").role.get() == SchemaBase.Role.ID
+        featureTypeList.get(0).propertyMap.containsKey("column2")
+        featureTypeList.get(0).propertyMap.get("column2").type == SchemaBase.Type.STRING
+//        featureTypeList.get(0).propertyMap.containsKey("column3")
+//        featureTypeList.get(0).propertyMap.get("column3").type == SchemaBase.Type.GEOMETRY
 
         featureTypeList.get(1).name == "table2"
-        featureTypeList.get(1).path == "/table2"
-        featureTypeList.get(1).properties.size() == 4
-        featureTypeList.get(1).properties.containsKey("column5")
-        featureTypeList.get(1).properties.get("column5").type == FeaturePropertyV2.Type.INTEGER
-        featureTypeList.get(1).properties.get("column5").role.isPresent()
-        featureTypeList.get(1).properties.get("column5").role.get() == FeaturePropertyV2.Role.ID
-        featureTypeList.get(1).properties.containsKey("column6")
-        featureTypeList.get(1).properties.get("column6").type == FeaturePropertyV2.Type.FLOAT
-        featureTypeList.get(1).properties.containsKey("column7")
-        featureTypeList.get(1).properties.get("column7").type == FeaturePropertyV2.Type.BOOLEAN
-        featureTypeList.get(1).properties.containsKey("column9")
-        featureTypeList.get(1).properties.get("column9").type == FeaturePropertyV2.Type.DATETIME
+        featureTypeList.get(1).sourcePath.get() == "/table2"
+        featureTypeList.get(1).propertyMap.size() == 4
+        featureTypeList.get(1).propertyMap.containsKey("column5")
+        featureTypeList.get(1).propertyMap.get("column5").type == SchemaBase.Type.INTEGER
+        featureTypeList.get(1).propertyMap.get("column5").role.isPresent()
+        featureTypeList.get(1).propertyMap.get("column5").role.get() == SchemaBase.Role.ID
+        featureTypeList.get(1).propertyMap.containsKey("column6")
+        featureTypeList.get(1).propertyMap.get("column6").type == SchemaBase.Type.FLOAT
+        featureTypeList.get(1).propertyMap.containsKey("column7")
+        featureTypeList.get(1).propertyMap.get("column7").type == SchemaBase.Type.BOOLEAN
+        featureTypeList.get(1).propertyMap.containsKey("column9")
+        featureTypeList.get(1).propertyMap.get("column9").type == SchemaBase.Type.DATETIME
     }
 
 

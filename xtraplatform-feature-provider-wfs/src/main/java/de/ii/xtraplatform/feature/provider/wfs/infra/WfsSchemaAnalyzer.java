@@ -87,7 +87,7 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
             if (currentFeatureType != null && !isPathMapped(path)) {
                 ImmutableFeatureSchema.Builder featureProperty = new ImmutableFeatureSchema.Builder()
                         .name("id")
-                        .sourcePath(getFullPath(path))
+                        .sourcePath(currentPath.toFieldNameGml())
                         .role(FeatureSchema.Role.ID)
                         .type(FeatureSchema.Type.STRING);
                 currentFeatureType.putPropertyMap(localName, featureProperty);
@@ -116,13 +116,14 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
             if (propertyType.isPresent()) {
                 String fieldNameGml = currentPath.toFieldNameGml();
                 property.name(getShortPropertyName(fieldNameGml))
-                        .sourcePath(getFullPath(path))
+                        .sourcePath(getSourcePath(fieldNameGml))
                         .type(propertyType.get());
                 if (propertyType.get() == FeatureSchema.Type.GEOMETRY) {
                     property.geometryType(TargetMappingProviderFromGml.GML_GEOMETRY_TYPE.fromString(type).toSimpleFeatureGeometry());
                     if (crsMap.containsKey(currentLocalName)) {
+                        String crs = crsMap.get(currentLocalName).split("EPSG::")[1];
                         property.additionalInfo(ImmutableMap.of(
-                                "crs", crsMap.get(currentLocalName),
+                                "crs", crs,
                                 "multiple", String.valueOf(isParentMultiple)));
                     }
                 }
@@ -247,8 +248,8 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
         }
     }
 
-    private String getFullPath(String path) {
-        return String.format("/%s/%s", currentQualifiedName, namespaceNormalizer.getPrefixedPath(path));
+    private String getSourcePath(String path) {
+        return path.replace("[]", "").replace(".", "/");
     }
 
     // this prevents that we descend further on a mapped path
