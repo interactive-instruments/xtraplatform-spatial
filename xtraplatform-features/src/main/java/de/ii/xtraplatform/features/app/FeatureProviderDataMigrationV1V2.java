@@ -65,6 +65,7 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
                 .lastModified(entityData.getLastModified())
                 .providerType(entityData.getProviderType())
                 .featureProviderType(entityData.getFeatureProviderType())
+                .entityStorageVersion(getTargetVersion())
                 .nativeCrs(entityData.getNativeCrs())
                 .connectionInfo(entityData.getConnectionInfo());
 

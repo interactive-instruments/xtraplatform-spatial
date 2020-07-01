@@ -12,11 +12,13 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.app.CqlToText;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderDataWfsFromMetadata;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureType;
@@ -89,15 +91,17 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
 
     private final Map<String, FeatureStoreTypeInfo> typeInfos;
     private final Map<String, FeatureType> featureTypes;
+    private final Map<String, FeatureSchema> featureSchemas;
     private final XMLNamespaceNormalizer namespaceNormalizer;
     private final WfsRequestEncoder wfsRequestEncoder;
     private final EpsgCrs nativeCrs;
 
     public FeatureQueryTransformerWfs(Map<String, FeatureStoreTypeInfo> typeInfos, Map<String, FeatureType> types,
-                                      ConnectionInfoWfsHttp connectionInfo,
+                                      Map<String, FeatureSchema> featureSchemas, ConnectionInfoWfsHttp connectionInfo,
                                       EpsgCrs nativeCrs) {
         this.typeInfos = typeInfos;
         this.featureTypes = types;
+        this.featureSchemas = featureSchemas;
         this.namespaceNormalizer = new XMLNamespaceNormalizer(connectionInfo.getNamespaces());
 
         Map<String, Map<WFS.METHOD, URI>> urls = ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri())));
@@ -118,11 +122,9 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
     }
 
     public QName getFeatureTypeName(final FeatureQuery query) {
-        String name = typeInfos.get(query.getType())
-                            .getInstanceContainers()
-                            .get(0)
-                            .getPath()
-                            .get(0);
+        FeatureSchema featureSchema = featureSchemas.get(query.getType());
+        String name = featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
+
         return new QName(namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)), namespaceNormalizer.getLocalName(name));
     }
 
