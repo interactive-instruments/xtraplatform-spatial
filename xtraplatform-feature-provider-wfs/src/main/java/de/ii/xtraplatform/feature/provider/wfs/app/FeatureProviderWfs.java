@@ -80,8 +80,8 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
 
         this.crsTransformerFactory = crsTransformerFactory;
         this.connector = (WfsConnector) connectorFactory.createConnector(data);
-        this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), types, (ConnectionInfoWfsHttp) data.getConnectionInfo(), data.getNativeCrs().orElse(OgcCrs.CRS84));
-        this.featureNormalizer = new FeatureNormalizerWfs(getTypeInfos(), types, ((ConnectionInfoWfsHttp) data.getConnectionInfo()).getNamespaces());
+        this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), types, data.getTypes(), (ConnectionInfoWfsHttp) data.getConnectionInfo(), data.getNativeCrs().orElse(OgcCrs.CRS84));
+        this.featureNormalizer = new FeatureNormalizerWfs(getTypeInfos(), types, data.getTypes(), ((ConnectionInfoWfsHttp) data.getConnectionInfo()).getNamespaces());
         this.extentReader = new ExtentReaderWfs(connector, crsTransformerFactory, data.getNativeCrs().orElse(OgcCrs.CRS84));
     }
 

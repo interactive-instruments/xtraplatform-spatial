@@ -14,10 +14,12 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.feature.transformer.api.GmlStreamParser;
 import de.ii.xtraplatform.features.domain.FeatureBase;
 import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureStream2;
 import de.ii.xtraplatform.features.domain.FeatureTransformer2;
@@ -39,13 +41,15 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
 
     private final Map<String, FeatureStoreTypeInfo> typeInfos;
     private final Map<String, FeatureType> types;
+    private final Map<String, FeatureSchema> schemas;
     private final Map<String, String> namespaces;
     private final XMLNamespaceNormalizer namespaceNormalizer;
 
     public FeatureNormalizerWfs(Map<String, FeatureStoreTypeInfo> typeInfos, Map<String, FeatureType> types,
-                                Map<String, String> namespaces) {
+                                Map<String, FeatureSchema> schemas, Map<String, String> namespaces) {
         this.typeInfos = typeInfos;
         this.types = types;
+        this.schemas = schemas;
         this.namespaces = namespaces;
         this.namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
     }
@@ -69,11 +73,9 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
 
         FeatureType featureType = types.get(featureQuery.getType());
         FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());
+        FeatureSchema featureSchema = schemas.get(featureQuery.getType());
 
-        String name = typeInfo.getInstanceContainers()
-                               .get(0)
-                               .getPath()
-                               .get(0);
+        String name = featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
 
         QName qualifiedName = new QName(namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)), namespaceNormalizer.getLocalName(name));
         String featureTypePath = qualifiedName.getNamespaceURI() + ":" + qualifiedName.getLocalPart();
