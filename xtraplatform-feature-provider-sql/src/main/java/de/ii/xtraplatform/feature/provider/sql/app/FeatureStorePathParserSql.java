@@ -98,10 +98,11 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                          .matcher(tablePath);
             while (tableMatcher.find()) {
                 String flags = tableMatcher.group(SqlPathSyntax.MatcherGroups.TABLE_FLAGS);
+                String tableName = tableMatcher.group(SqlPathSyntax.MatcherGroups.TABLE);
                 tablePath = tablePath.replace(flags, "");
-                String pathWithoutFlags = tableMatcher.group(0)
-                                                      .replace(flags, "");
-                tableFlags.putIfAbsent(pathWithoutFlags, flags);
+                //String pathWithoutFlags = tableMatcher.group(0)
+                //                                      .replace(flags, "");
+                tableFlags.putIfAbsent(tableName, flags);
             }
 
             List<String> columns = syntax.getMultiColumnSplitter()
@@ -116,6 +117,12 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                .map(q -> q.replaceAll("\\[", "")
                                                           .replaceAll("]", ""));
             boolean isSpatial = syntax.getSpatialFlag(flags);
+            String sortKey = tableFlags.values()
+                                       .stream()
+                                       .findFirst()
+                                       .flatMap(syntax::getSortKeyFlag)
+                                       .orElse(syntax.getOptions()
+                                                     .getDefaultSortKey());
 
             return Optional.of(ImmutableSqlPath.builder()
                                                .tablePath(tablePath)
@@ -127,6 +134,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                .isJunction(isJunction)
                                                .queryable(queryable.get())
                                                .isSpatial(isSpatial)
+                                               .sortKey(sortKey)
                                                .build());
         } else {
             LOGGER.warn("Invalid path in provider configuration: {}", path);
@@ -208,32 +216,36 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                                     .map(entry2 -> new AbstractMap.SimpleImmutableEntry<>(entry2.getKey(), cql.read(entry2.getValue(), Cql.Format.TEXT)))
                                                                     .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
+                        Map<String, String> sortKeys = columnPaths.stream()
+                                                                    .flatMap(sqlPath -> sqlPath.getTableFlags()
+                                                                                               .entrySet()
+                                                                                               .stream())
+                                                                    .filter(entry2 -> syntax.getSortKeyFlag(entry2.getValue())
+                                                                                            .isPresent())
+                                                                    .map(entry2 -> new AbstractMap.SimpleImmutableEntry<>(entry2.getKey(), syntax.getSortKeyFlag(entry2.getValue())
+                                                                                                                                                 .get()))
+                                                                    .distinct()
+                                                                    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
                         if (isRoot) {
                             ImmutableFeatureStoreInstanceContainer.Builder instanceContainerBuilder = instanceContainerBuilders.get(instanceContainerName);
 
                             //TODO: if multiple it should be different instance containers
-                            Optional<CqlFilter> filter = columnPaths.stream()
-                                                                    .flatMap(sqlPath -> sqlPath.getTableFlags()
-                                                                                               .values()
-                                                                                               .stream())
-                                                                    .map(syntax::getFilterFlag)
-                                                                    .filter(Optional::isPresent)
-                                                                    .map(Optional::get)
-                                                                    .distinct()
-                                                                    .map(filterText -> cql.read(filterText, Cql.Format.TEXT))
-                                                                    .findFirst();
+                            Optional<CqlFilter> filter = Optional.ofNullable(filters.get(instanceContainerName));
+
+                            String sortKey = sortKeys.getOrDefault(instanceContainerName, syntax.getOptions().getDefaultSortKey());
 
                             instanceContainerBuilder.name(instanceContainerName)
-                                                    .sortKey(syntax.getOptions()
-                                                                   .getDefaultSortKey())
+                                                    .sortKey(sortKey)
                                                     .attributes(attributes)
                                                     .attributesPosition(instancePos[0])
                                                     .filter(filter);
 
                             instancePos[0] = 0;
                         } else {
-                            List<FeatureStoreRelation> instanceConnection = toRelations(tablePathAsList, filters);
-                            String sortKey = syntax.isJunctionTable(attributesContainerName)
+                            List<FeatureStoreRelation> instanceConnection = toRelations(tablePathAsList, filters, sortKeys);
+
+                            String defaultSortKey = syntax.isJunctionTable(attributesContainerName)
                                     //TODO: oneo uses columns.get(columns.size()-1) instead, thats not a good default value
                                     //TODO: support flag {orderBy=btkomplex_id}{orderDir=ASC}
                                     ? instanceConnection.get(instanceConnection.size() - 1)
@@ -241,6 +253,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                     : syntax.getOptions()
                                             .getDefaultSortKey();
 
+                            String sortKey = sortKeys.getOrDefault(attributesContainerName, defaultSortKey);
 
                             //TODO: get tableFlags/filters; since right now we can only filter on mapped attributes, we might put the filter on the attributesContainer
                             //TODO: better would be to put the filter(s) on FeatureStoreRelation, so pass them to toRelations
@@ -267,7 +280,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
     }
 
     private List<FeatureStoreRelation> toRelations(List<String> path,
-                                                   Map<String, CqlFilter> filters) {
+                                                   Map<String, CqlFilter> filters, Map<String, String> sortKeys) {
 
         if (path.size() < 2) {
             throw new IllegalArgumentException(String.format("not a valid relation path: %s", path));
@@ -275,57 +288,61 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
         if (path.size() > 2) {
             return IntStream.range(2, path.size())
-                            .mapToObj(i -> toRelations(path.get(i - 2), path.get(i - 1), path.get(i), i == path.size() - 1, filters))
+                            .mapToObj(i -> toRelations(path.get(i - 2), path.get(i - 1), path.get(i), i == path.size() - 1, filters, sortKeys))
                             .flatMap(Function.identity())
                             .collect(Collectors.toList());
         }
 
         return IntStream.range(1, path.size())
-                        .mapToObj(i -> toRelation(path.get(i - 1), path.get(i), filters))
+                        .mapToObj(i -> toRelation(path.get(i - 1), path.get(i), filters, sortKeys))
                         .collect(Collectors.toList());
     }
 
     private Stream<FeatureStoreRelation> toRelations(String source, String link, String target, boolean isLast,
-                                                     Map<String, CqlFilter> filters) {
+                                                     Map<String, CqlFilter> filters, Map<String, String> sortKeys) {
         if (syntax.isJunctionTable(source)) {
             if (isLast) {
-                return Stream.of(toRelation(link, target, filters));
+                return Stream.of(toRelation(link, target, filters, sortKeys));
             } else {
                 return Stream.empty();
             }
         }
         if (syntax.isJunctionTable(target) && !isLast) {
-            return Stream.of(toRelation(source, link, filters));
+            return Stream.of(toRelation(source, link, filters, sortKeys));
         }
 
         if (syntax.isJunctionTable(link)) {
-            return Stream.of(toRelation(source, link, target));
+            return Stream.of(toRelation(source, link, target, sortKeys));
         }
 
-        return Stream.of(toRelation(source, link, filters), toRelation(link, target, filters));
+        return Stream.of(toRelation(source, link, filters, sortKeys), toRelation(link, target, filters, sortKeys));
     }
 
     //TODO: support sortKey flag on table instead of getDefaultPrimaryKey
     private FeatureStoreRelation toRelation(String source, String target,
-                                            Map<String, CqlFilter> filters) {
+                                            Map<String, CqlFilter> filters, Map<String, String> sortKeys) {
         Matcher sourceMatcher = syntax.getTablePattern()
                                       .matcher(source);
         Matcher targetMatcher = syntax.getJoinedTablePattern()
                                       .matcher(target);
         if (sourceMatcher.find() && targetMatcher.find()) {
+            String sourceContainer = sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE);
             String sourceField = targetMatcher.group(SqlPathSyntax.MatcherGroups.SOURCE_FIELD);
             String targetField = targetMatcher.group(SqlPathSyntax.MatcherGroups.TARGET_FIELD);
+            //TODO: primaryKey flag
             boolean isOne2One = Objects.equals(targetField, syntax.getOptions()
                                                                   .getDefaultPrimaryKey());
 
+            //TODO: shouldn't this be targetContainer?
             Optional<CqlFilter> filter = Optional.ofNullable(filters.get(target));
+
+            String sortKey = sortKeys.getOrDefault(sourceContainer, syntax.getOptions().getDefaultSortKey());
 
             return ImmutableFeatureStoreRelation.builder()
                                                 .cardinality(isOne2One ? CARDINALITY.ONE_2_ONE : CARDINALITY.ONE_2_N)
-                                                .sourceContainer(sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
+                                                .sourceContainer(sourceContainer)
                                                 .sourceField(sourceField)
-                                                .sourceSortKey(syntax.getOptions()
-                                                                     .getDefaultPrimaryKey())
+                                                .sourceSortKey(sortKey)
                                                 .targetContainer(targetMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .targetField(targetField)
                                                 .filter(filter)
@@ -335,7 +352,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
         throw new IllegalArgumentException(String.format("not a valid relation path: %s/%s", source, target));
     }
 
-    private FeatureStoreRelation toRelation(String source, String link, String target) {
+    private FeatureStoreRelation toRelation(String source, String link, String target, Map<String, String> sortKeys) {
         Matcher sourceMatcher = syntax.getTablePattern()
                                       .matcher(source);
         Matcher junctionMatcher = syntax.getJoinedTablePattern()
@@ -343,12 +360,14 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
         Matcher targetMatcher = syntax.getJoinedTablePattern()
                                       .matcher(target);
         if (sourceMatcher.find() && junctionMatcher.find() && targetMatcher.find()) {
+            String sourceContainer = sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE);
+            String sortKey = sortKeys.getOrDefault(sourceContainer, syntax.getOptions().getDefaultSortKey());
+
             return ImmutableFeatureStoreRelation.builder()
                                                 .cardinality(CARDINALITY.M_2_N)
                                                 .sourceContainer(sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .sourceField(junctionMatcher.group(SqlPathSyntax.MatcherGroups.SOURCE_FIELD))
-                                                .sourceSortKey(syntax.getOptions()
-                                                                     .getDefaultPrimaryKey())
+                                                .sourceSortKey(sortKey)
                                                 .junctionSource(junctionMatcher.group(SqlPathSyntax.MatcherGroups.TARGET_FIELD))
                                                 .junction(junctionMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .junctionTarget(targetMatcher.group(SqlPathSyntax.MatcherGroups.SOURCE_FIELD))

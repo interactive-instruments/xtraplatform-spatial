@@ -132,7 +132,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
     private Predicate<SqlRow> hasDifferentFeatureId(ModifiableReadState readState) {
         return sqlRow -> {
-            Long currentId = sqlRow.getIds()
+            Object currentId = sqlRow.getIds()
                                    .get(0);
 
             if (!Objects.equals(readState.getCurrentId(), currentId)) {
@@ -283,7 +283,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
         }
 
         @Nullable
-        Long getCurrentId();
+        Object getCurrentId();
 
         @Value.Default
         default boolean isAtLeastOneFeatureWritten() {
@@ -348,7 +348,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
         FeatureConsumer consumer = readContext.getFeatureConsumer();
         ModifiableReadState readState = readContext.getReadState();
         FeatureStoreMultiplicityTracker multiplicityTracker = readContext.getMultiplicityTracker();
-        Long featureId = sqlRow.getIds()
+        Object featureId = sqlRow.getIds()
                                .get(0);
 
         multiplicityTracker.track(sqlRow.getPath(), sqlRow.getIds());

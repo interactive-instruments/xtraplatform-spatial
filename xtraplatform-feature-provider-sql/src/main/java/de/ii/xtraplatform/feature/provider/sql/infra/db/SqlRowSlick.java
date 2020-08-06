@@ -13,6 +13,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.Option;
 import slick.jdbc.PositionedResult;
 
 import java.math.BigDecimal;
@@ -32,7 +33,7 @@ class SqlRowSlick implements SqlRow {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlRowSlick.class);
 
-    private final List<Long> ids;
+    private final List<Comparable<?>> ids;
     private final List<Object> values;
     private List<String> idColumnNames;
     private int priority;
@@ -70,7 +71,7 @@ class SqlRowSlick implements SqlRow {
     }
 
     @Override
-    public List<Long> getIds() {
+    public List<Comparable<?>> getIds() {
         return ids;
     }
 
@@ -105,7 +106,12 @@ class SqlRowSlick implements SqlRow {
             for (int i = 0; i < attributesContainer.getSortKeys()
                                                    .size(); i++) {
                 try {
-                    ids.add(result.nextLong());
+                    Object id = result.nextObject();
+                    if (id instanceof Comparable<?>) {
+                        ids.add((Comparable<?>)id);
+                    } else {
+                        LOGGER.error("Sort key '{}' has invalid type '{}'.", attributesContainer.getSortKeys().get(i), id.getClass());
+                    }
                 } catch (Throwable e) {
                     break;
                 }
@@ -183,10 +189,19 @@ class SqlRowSlick implements SqlRow {
         return size;
     }
 
-    private static int compareIdLists(List<Long> ids1, List<Long> ids2, int numberOfIds) {
+    private static int compareIdLists(List<Comparable<?>> ids1, List<Comparable<?>> ids2, int numberOfIds) {
         for (int i = 0; i < numberOfIds; i++) {
-            int result = ids1.get(i)
-                             .compareTo(ids2.get(i));
+            int result = 0;
+            Comparable<?> id1 = ids1.get(i);
+            if (id1 instanceof Integer) {
+                result = ((Integer)id1).compareTo((Integer)ids2.get(i));
+            } else if (id1 instanceof Long) {
+                result = ((Long)id1).compareTo((Long)ids2.get(i));
+            } else if (id1 instanceof Short) {
+                result = ((Short)id1).compareTo((Short)ids2.get(i));
+            } else {
+                result = ((String)id1).compareTo((String)ids2.get(i));
+            }
             if (result != 0) {
                 return result;
             }

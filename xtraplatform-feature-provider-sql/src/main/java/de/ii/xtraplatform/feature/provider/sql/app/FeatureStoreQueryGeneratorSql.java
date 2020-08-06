@@ -65,7 +65,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
     @Override
     public Stream<String> getInstanceQueries(FeatureStoreInstanceContainer instanceContainer, Optional<CqlFilter> cqlFilter,
-                                             long minKey, long maxKey) {
+                                             Object minKey, Object maxKey) {
 
         boolean isIdFilter = cqlFilter.flatMap(CqlFilter::getInOperator).isPresent();
         List<String> aliases = getAliases(instanceContainer);
@@ -262,7 +262,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     }
 
 
-    private String toWhereClause(String alias, String keyField, long minKey, long maxKey,
+    private String toWhereClause(String alias, String keyField, Object minKey, Object maxKey,
                                  Optional<String> additionalFilter) {
         StringBuilder filter = new StringBuilder()
                 .append("(")
@@ -270,13 +270,13 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
                 .append(".")
                 .append(keyField)
                 .append(" >= ")
-                .append(minKey)
+                .append(minKey instanceof String ? String.format("'%s'", minKey) : minKey)
                 .append(" AND ")
                 .append(alias)
                 .append(".")
                 .append(keyField)
                 .append(" <= ")
-                .append(maxKey)
+                .append(maxKey instanceof String ? String.format("'%s'", maxKey) : maxKey)
                 .append(")");
 
         if (additionalFilter.isPresent()) {
