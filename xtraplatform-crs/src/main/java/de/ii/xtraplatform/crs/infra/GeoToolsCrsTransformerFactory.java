@@ -51,18 +51,22 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
         this.transformerCache = new HashMap<>();
 
         //TODO: at service start
-        /*
-        LOGGER.debug("warming up GeoTools ...");
+
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("warming up GeoTools ...");
+        }
 
         try {
-            new GeoToolsCrsTransformer(CRS.decode("EPSG:4326"), CRS.decode("EPSG:4258"), new EpsgCrs(4326), new EpsgCrs(4258));
+            new GeoToolsCrsTransformer(CRS.decode("EPSG:4326"), CRS.decode("EPSG:4258"), EpsgCrs.of(4326), EpsgCrs.of(4258), 2, 2);
         } catch (Throwable ex) {
             //ignore
         }
 
-        LOGGER.debug("done");
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("done");
+        }
 
-         */
+
     }
 
     @Override

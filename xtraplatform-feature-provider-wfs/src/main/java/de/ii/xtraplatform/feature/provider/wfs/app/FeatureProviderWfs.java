@@ -50,7 +50,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @EntityComponent
-@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderWfs.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class)
+@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderWfs.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderDataV2.class)
 public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, String, FeatureProviderConnector.QueryOptions> implements FeatureProvider2, FeatureQueries, FeatureCrs, FeatureExtents, FeatureMetadata {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);

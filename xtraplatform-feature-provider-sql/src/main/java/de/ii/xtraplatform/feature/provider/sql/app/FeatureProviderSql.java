@@ -74,7 +74,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 @EntityComponent
-@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class)
+@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderDataV2.class)
 public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueries, SqlQueryOptions> implements FeatureProvider2, FeatureQueries, FeatureExtents, FeatureCrs, FeatureTransactions {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
