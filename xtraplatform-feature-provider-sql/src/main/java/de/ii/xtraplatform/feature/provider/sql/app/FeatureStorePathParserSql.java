@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
@@ -105,8 +106,9 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                 tableFlags.putIfAbsent(tableName, flags);
             }
 
-            List<String> columns = syntax.getMultiColumnSplitter()
-                                         .splitToList(matcher.group(SqlPathSyntax.MatcherGroups.COLUMNS));
+            String columnString = matcher.group(SqlPathSyntax.MatcherGroups.COLUMNS);
+            List<String> columns = Objects.nonNull(columnString) ? syntax.getMultiColumnSplitter()
+                                         .splitToList(columnString) : ImmutableList.of();
             String flags = matcher.group(SqlPathSyntax.MatcherGroups.PATH_FLAGS);
             OptionalInt priority = syntax.getPriorityFlag(flags);
             boolean hasOid = syntax.getOidFlag(flags);
@@ -123,6 +125,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                        .flatMap(syntax::getSortKeyFlag)
                                        .orElse(syntax.getOptions()
                                                      .getDefaultSortKey());
+            Optional<String> constant = syntax.getConstantFlag(flags);
 
             return Optional.of(ImmutableSqlPath.builder()
                                                .tablePath(tablePath)
@@ -135,6 +138,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                .queryable(queryable.get())
                                                .isSpatial(isSpatial)
                                                .sortKey(sortKey)
+                                               .constantValue(constant)
                                                .build());
         } else {
             LOGGER.warn("Invalid path in provider configuration: {}", path);
@@ -166,16 +170,19 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                                                      .stream())
                                                           .collect(Collectors.toList());
                         List<FeatureStoreAttribute> attributes = columnPaths.stream()
-                                                                            .flatMap(sqlPath -> sqlPath.getColumns()
-                                                                                                       .stream()
-                                                                                                       .map(name -> ImmutableFeatureStoreAttribute.builder()
-                                                                                                                                                  .name(name)
-                                                                                                                                                  .path(tablePathAsList)
-                                                                                                                                                  .addPath(name)
-                                                                                                                                                  .queryable(sqlPath.getQueryable())
-                                                                                                                                                  .isId(sqlPath.hasOid())
-                                                                                                                                                  .isSpatial(sqlPath.isSpatial())
-                                                                                                                                                  .build()))
+                                                                            .flatMap(sqlPath -> {
+                                                                                return sqlPath.getColumns()
+                                                                                              .stream()
+                                                                                              .map(name -> ImmutableFeatureStoreAttribute.builder()
+                                                                                                                                         .name(name)
+                                                                                                                                         .path(tablePathAsList)
+                                                                                                                                         .addPath(name)
+                                                                                                                                         .queryable(sqlPath.getQueryable())
+                                                                                                                                         .isId(sqlPath.hasOid())
+                                                                                                                                         .isSpatial(sqlPath.isSpatial())
+                                                                                                                                         .constantValue(sqlPath.getConstantValue())
+                                                                                                                                         .build());
+                                                                            })
                                                                             .collect(Collectors.toList());
                         boolean hasOid = columnPaths.stream()
                                                     .anyMatch(SqlPath::hasOid);

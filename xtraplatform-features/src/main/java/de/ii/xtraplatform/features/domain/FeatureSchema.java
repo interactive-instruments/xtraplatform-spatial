@@ -8,14 +8,11 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
@@ -23,6 +20,7 @@ import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodi
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import org.immutables.value.Value;
 
+import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,6 +70,8 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, ValueInstance 
     Optional<String> getLabel();
 
     Optional<String> getDescription();
+
+    Optional<String> getConstantValue();
 
     Map<String, String> getTransformers();
 
@@ -213,5 +213,37 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, ValueInstance 
     @Value.Auxiliary
     default boolean isForceReversePolygon() {
         return false;
+    }
+
+    @Value.Check
+    default FeatureSchema normalizeConstants() {
+        if (!getPropertyMap().isEmpty() && getPropertyMap().values()
+                                                           .stream()
+                                                           .anyMatch(property -> property.getConstantValue()
+                                                                                         .isPresent() && !property.getSourcePath()
+                                                                                                                  .isPresent())) {
+            final int[] constantCounter = {0};
+
+            Map<String, FeatureSchema> properties = getPropertyMap().entrySet()
+                                                                                     .stream()
+                                                                                     .map(entry -> {
+                                                                                         if (entry.getValue().getConstantValue().isPresent() && !entry.getValue().getSourcePath().isPresent()) {
+                                                                                             String constantValue = entry.getValue().getType() == Type.STRING ? String.format("'%s'", entry.getValue()
+                                                                                                                                                                                           .getConstantValue()
+                                                                                                                                                                                           .get()) : entry.getValue().getConstantValue().get();
+                                                                                             return new AbstractMap.SimpleEntry<>(entry.getKey(), new ImmutableFeatureSchema.Builder().from(entry.getValue())
+                                                                                                                                                                                      .sourcePath(String.format("constant_%d{constant=%s}", constantCounter[0]++, constantValue))
+                                                                                                                                                                                      .build());
+                                                                                         }
+                                                                                         return entry;
+                                                                                     })
+                                                                                     .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+            return new ImmutableFeatureSchema.Builder().from(this)
+                                                       .propertyMap(properties)
+                                                       .build();
+        }
+
+        return this;
     }
 }

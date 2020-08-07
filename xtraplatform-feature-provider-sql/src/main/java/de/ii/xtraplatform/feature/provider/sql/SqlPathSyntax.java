@@ -96,6 +96,17 @@ public interface SqlPathSyntax {
         return Optional.empty();
     }
 
+    default Optional<String> getConstantFlag(String flags) {
+        Matcher matcher = Pattern.compile(getConstantFlagPattern())
+                                 .matcher(flags);
+
+        if (matcher.find()) {
+            return Optional.of(matcher.group(MatcherGroups.CONSTANT));
+        }
+
+        return Optional.empty();
+    }
+
     default Optional<String> getSortKeyFlag(String flags) {
         Matcher matcher = Pattern.compile(getSortKeyFlagPattern())
                                  .matcher(flags);
@@ -142,6 +153,11 @@ public interface SqlPathSyntax {
     @Value.Derived
     default String getQueryableFlagPattern() {
         return "\\{queryable=" + "(?<" + MatcherGroups.QUERYABLE + ">.+?)\\}";
+    }
+
+    @Value.Derived
+    default String getConstantFlagPattern() {
+        return "\\{constant=" + "(?<" + MatcherGroups.CONSTANT + ">.+?)\\}";
     }
 
     @Value.Derived
@@ -196,6 +212,7 @@ public interface SqlPathSyntax {
         String PATH_FLAGS = "pathFlags";
         String TABLE_FLAGS = "tableFlags";
         String QUERYABLE = "queryable";
+        String CONSTANT = "constant";
         String SORT_KEY = "sortKey";
         String FILTER = "filter";
     }
@@ -294,7 +311,7 @@ public interface SqlPathSyntax {
 
     @Value.Derived
     default Pattern getColumnPathPattern() {
-        return Pattern.compile("^(?<" + MatcherGroups.PATH + ">" + "(?:" + getPathSeparator() + getTablePatternString() + ")+)" + getPathSeparator() + "(?<" + MatcherGroups.COLUMNS + ">" + getColumnPattern() + ")" + "(?<" + MatcherGroups.PATH_FLAGS + ">" + getFlagsPattern() + ")?$");
+        return Pattern.compile("^(?<" + MatcherGroups.PATH + ">" + "(?:" + getPathSeparator() + getTablePatternString() + ")+)" + getPathSeparator() + "(?<" + MatcherGroups.COLUMNS + ">" + getColumnPattern() + ")?" + "(?<" + MatcherGroups.PATH_FLAGS + ">" + getFlagsPattern() + ")?$");
     }
 
     @Value.Derived

@@ -107,7 +107,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         String columns = Stream.concat(sortFields.stream(), attributeContainer.getAttributes()
                                                                               .stream()
                                                                               .map(column -> {
-                                                                                  String name = getQualifiedColumn(attributeContainerAlias, column.getName());
+                                                                                  String name = column.isConstant() ? column.getConstantValue().get() + " AS " + column.getName() : getQualifiedColumn(attributeContainerAlias, column.getName());
                                                                                   return column.isSpatial() ? sqlDialect.applyToWkt(name) : name;
                                                                               }))
                                .collect(Collectors.joining(", "));

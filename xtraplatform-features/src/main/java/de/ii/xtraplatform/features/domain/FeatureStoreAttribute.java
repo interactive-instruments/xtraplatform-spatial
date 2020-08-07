@@ -33,4 +33,11 @@ public interface FeatureStoreAttribute {
     default boolean isSpatial() {
         return false;
     }
+
+    Optional<String> getConstantValue();
+
+    @Value.Derived
+    default boolean isConstant() {
+        return getConstantValue().isPresent();
+    }
 }
