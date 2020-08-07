@@ -23,7 +23,7 @@ public interface SqlRow extends Comparable<SqlRow> {
         return ImmutableList.of();
     }
 
-    default List<Long> getIds() {
+    default List<Comparable<?>> getIds() {
         return ImmutableList.of();
     }
 

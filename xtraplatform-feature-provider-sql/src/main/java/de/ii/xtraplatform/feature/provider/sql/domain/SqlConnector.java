@@ -93,13 +93,13 @@ public interface SqlConnector extends FeatureProviderConnector<SqlRow, SqlQuerie
             LOGGER.trace("Meta query: {}", metaQuery.get());
         }*/
 
-        return getSqlClient().getSourceStream(metaQuery.get(), SqlQueryOptions.withColumnTypes(Long.class, Long.class, Long.class, Long.class))
+        return getSqlClient().getSourceStream(metaQuery.get(), SqlQueryOptions.withColumnTypes(Object.class, Object.class, Long.class, Long.class))
                              .map(sqlRow -> getMetaQueryResult(sqlRow.getValues()))
                              .recover(new PFBuilder<Throwable, SqlRowMeta>().matchAny(throwable -> getMetaQueryResult(0L, 0L, 0L, 0L))
                                                                             .build());
     }
 
-    default SqlRowMeta getMetaQueryResult(Long minKey, Long maxKey, Long numberReturned, Long numberMatched) {
+    default SqlRowMeta getMetaQueryResult(Object minKey, Object maxKey, Long numberReturned, Long numberMatched) {
         return ImmutableSqlRowMeta.builder()
                                   .minKey(Objects.nonNull(minKey) ? minKey : 0L)
                                   .maxKey(Objects.nonNull(maxKey) ? maxKey : 0L)
@@ -109,7 +109,7 @@ public interface SqlConnector extends FeatureProviderConnector<SqlRow, SqlQuerie
     }
 
     default SqlRowMeta getMetaQueryResult(List<Object> values) {
-        return getMetaQueryResult((Long) values.get(0), (Long) values.get(1), (Long) values.get(2), (Long) values.get(3));
+        return getMetaQueryResult(values.get(0), values.get(1), (Long) values.get(2), (Long) values.get(3));
     }
 
     static <T extends Comparable<T>> Source<T, NotUsed> mergeAndSort(Source<T, NotUsed>... sources) {

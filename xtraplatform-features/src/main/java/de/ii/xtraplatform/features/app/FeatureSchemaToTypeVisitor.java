@@ -57,6 +57,7 @@ public class FeatureSchemaToTypeVisitor implements SchemaVisitor<FeatureSchema, 
                                                                                                 return new ImmutableFeatureProperty.Builder().from(property)
                                                                                                                                              .name(name)
                                                                                                                                              .path(getPath(schema, property.getPath()))
+                                                                                                                                             .constantValue(property.getConstantValue())
                                                                                                                                              .additionalInfo(getAdditionalInfo(schema, property.getName(), property.getAdditionalInfo()))
                                                                                                                                              .build();
                                                                                             })

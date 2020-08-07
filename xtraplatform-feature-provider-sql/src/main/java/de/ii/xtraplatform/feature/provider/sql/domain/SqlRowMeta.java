@@ -20,9 +20,9 @@ import java.util.OptionalLong;
 @Value.Immutable
 public interface SqlRowMeta extends SqlRow {
 
-    long getMinKey();
+    Object getMinKey();
 
-    long getMaxKey();
+    Object getMaxKey();
 
     long getNumberReturned();
 

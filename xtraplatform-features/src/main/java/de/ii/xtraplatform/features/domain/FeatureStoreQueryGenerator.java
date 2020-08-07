@@ -16,7 +16,7 @@ public interface FeatureStoreQueryGenerator<T> {
 
     T getMetaQuery(FeatureStoreInstanceContainer instanceContainer, int limit, int offset, Optional<CqlFilter> cqlFilter, boolean computeNumberMatched);
 
-    Stream<T> getInstanceQueries(FeatureStoreInstanceContainer instanceContainer, Optional<CqlFilter> cqlFilter, long minKey, long maxKey);
+    Stream<T> getInstanceQueries(FeatureStoreInstanceContainer instanceContainer, Optional<CqlFilter> cqlFilter, Object minKey, Object maxKey);
 
     T getExtentQuery(FeatureStoreAttributesContainer attributesContainer);
 }

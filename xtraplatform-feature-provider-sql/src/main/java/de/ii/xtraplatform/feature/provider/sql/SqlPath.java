@@ -50,5 +50,9 @@ public interface SqlPath {
         return false;
     }
 
+    String getSortKey();
+
+    Optional<String> getConstantValue();
+
     Map<String, String> getTableFlags();
 }

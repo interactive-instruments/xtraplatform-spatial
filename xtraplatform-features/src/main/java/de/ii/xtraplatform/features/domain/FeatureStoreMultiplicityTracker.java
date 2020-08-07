@@ -12,7 +12,7 @@ import java.util.List;
 public interface FeatureStoreMultiplicityTracker {
     void reset();
 
-    void track(List<String> path, List<Long> ids);
+    void track(List<String> path, List<Comparable<?>> ids);
 
     List<Integer> getMultiplicitiesForPath(List<String> path);
 }

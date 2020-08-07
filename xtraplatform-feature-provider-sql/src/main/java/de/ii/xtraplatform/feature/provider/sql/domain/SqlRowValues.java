@@ -99,7 +99,7 @@ public class SqlRowValues implements SqlRow {
     }
 
 
-    public List<Long> getIds() {
+    public List<Comparable<?>> getIds() {
         return ids.stream().map(s -> Long.parseLong(s)).collect(Collectors.toList());
     }
 

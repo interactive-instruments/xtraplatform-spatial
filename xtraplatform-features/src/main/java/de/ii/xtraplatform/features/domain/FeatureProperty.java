@@ -58,6 +58,8 @@ public interface FeatureProperty extends ValueInstance {
 
     Optional<Role> getRole();
 
+    Optional<String> getConstantValue();
+
     Map<String, String> getAdditionalInfo();
 
     //TODO

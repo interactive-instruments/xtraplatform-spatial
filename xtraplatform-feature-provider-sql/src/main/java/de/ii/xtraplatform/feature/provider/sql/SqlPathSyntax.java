@@ -96,6 +96,28 @@ public interface SqlPathSyntax {
         return Optional.empty();
     }
 
+    default Optional<String> getConstantFlag(String flags) {
+        Matcher matcher = Pattern.compile(getConstantFlagPattern())
+                                 .matcher(flags);
+
+        if (matcher.find()) {
+            return Optional.of(matcher.group(MatcherGroups.CONSTANT));
+        }
+
+        return Optional.empty();
+    }
+
+    default Optional<String> getSortKeyFlag(String flags) {
+        Matcher matcher = Pattern.compile(getSortKeyFlagPattern())
+                                 .matcher(flags);
+
+        if (matcher.find()) {
+            return Optional.of(matcher.group(MatcherGroups.SORT_KEY));
+        }
+
+        return Optional.empty();
+    }
+
     default String setQueryableFlag(String path, String queryable) {
         return String.format("%s{queryable=%s}", path, queryable);
     }
@@ -134,13 +156,23 @@ public interface SqlPathSyntax {
     }
 
     @Value.Derived
+    default String getConstantFlagPattern() {
+        return "\\{constant=" + "(?<" + MatcherGroups.CONSTANT + ">.+?)\\}";
+    }
+
+    @Value.Derived
+    default String getSortKeyFlagPattern() {
+        return "\\{sortKey=" + "(?<" + MatcherGroups.SORT_KEY + ">.+?)\\}";
+    }
+
+    @Value.Derived
     default String getFilterFlagPattern() {
         return "\\{filter=" + "(?<" + MatcherGroups.FILTER + ">.+?)\\}";
     }
 
     @Value.Derived
     default String getFlagsPattern() {
-        return "(?:\\{[a-z_]+.*\\})*";
+        return "(?:\\{[a-z_]+.*?\\})*";
     }
 
     @Value.Immutable
@@ -180,6 +212,8 @@ public interface SqlPathSyntax {
         String PATH_FLAGS = "pathFlags";
         String TABLE_FLAGS = "tableFlags";
         String QUERYABLE = "queryable";
+        String CONSTANT = "constant";
+        String SORT_KEY = "sortKey";
         String FILTER = "filter";
     }
 
@@ -277,7 +311,7 @@ public interface SqlPathSyntax {
 
     @Value.Derived
     default Pattern getColumnPathPattern() {
-        return Pattern.compile("^(?<" + MatcherGroups.PATH + ">" + "(?:" + getPathSeparator() + getTablePatternString() + ")+)" + getPathSeparator() + "(?<" + MatcherGroups.COLUMNS + ">" + getColumnPattern() + ")" + "(?<" + MatcherGroups.PATH_FLAGS + ">" + getFlagsPattern() + ")?$");
+        return Pattern.compile("^(?<" + MatcherGroups.PATH + ">" + "(?:" + getPathSeparator() + getTablePatternString() + ")+)" + getPathSeparator() + "(?<" + MatcherGroups.COLUMNS + ">" + getColumnPattern() + ")?" + "(?<" + MatcherGroups.PATH_FLAGS + ">" + getFlagsPattern() + ")?$");
     }
 
     @Value.Derived
