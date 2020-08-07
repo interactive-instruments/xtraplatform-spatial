@@ -232,7 +232,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, ValueInstance 
                                                                                                                                                                                            .getConstantValue()
                                                                                                                                                                                            .get()) : entry.getValue().getConstantValue().get();
                                                                                              return new AbstractMap.SimpleEntry<>(entry.getKey(), new ImmutableFeatureSchema.Builder().from(entry.getValue())
-                                                                                                                                                                                      .sourcePath(String.format("constant_%d{constant=%s}", constantCounter[0]++, constantValue))
+                                                                                                                                                                                      .sourcePath(String.format("constant_%s_%d{constant=%s}", getName(), constantCounter[0]++, constantValue))
                                                                                                                                                                                       .build());
                                                                                          }
                                                                                          return entry;

@@ -71,7 +71,7 @@ public interface FeatureType extends ValueInstance {
                            //TODO
                            List<String> path = Splitter.on('/')
                                                        .omitEmptyStrings()
-                                                       .splitToList(featureProperty.getPath())
+                                                       .splitToList(featureProperty.getPath().replaceAll("\\{.*?\\}", ""))
                                                        .stream()
                                                        .map(element -> {
                                                            String resolvedElement = element.replaceAll("\\{.*?\\}", "");
