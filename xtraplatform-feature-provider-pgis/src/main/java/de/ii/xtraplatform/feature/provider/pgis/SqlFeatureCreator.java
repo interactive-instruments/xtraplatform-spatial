@@ -264,7 +264,7 @@ public class SqlFeatureCreator {
         valueContainer.addRow(path);
         // TODO: increment, nested
         // TODO: do we need rows at all? we could inject valueContainer, they have the same lifetime
-        this.multiplicities.put(path.substring(path.lastIndexOf("]") + 1), multiplicities);
+        this.multiplicities.put(path.substring(path.lastIndexOf("[")), multiplicities);
         //this.multiplicities.compute(path.substring(path.lastIndexOf("]")+1), (key, count) -> count == null ? ImmutableList.of(1) : ImmutableList.of(count.get(0)+1));
     }
 

@@ -13,6 +13,8 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -39,6 +41,9 @@ import java.util.stream.Stream;
  */
 @Value.Immutable
 public abstract class SqlPathTree {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlPathTree.class);
+
     enum TYPE {
         MAIN,
         MERGED,
@@ -265,14 +270,29 @@ public abstract class SqlPathTree {
                                }
                            }
                            //split up paths with at least 2 m:n relations where the object table in the middle has no column mappings
-                           if (shortened && i == 0 && path.split("/").length > 4 && collect2.get(path).split("_2_").length > 2) {
+                           if (shortened && path.split("/").length > 4 && collect2.get(path).split("_2_").length > 2) {
+                               if (LOGGER.isTraceEnabled()) {
+                                   LOGGER.trace("SPLIT PATH {}", path);
+                               }
+
                                int splitAt = path.indexOf("_2_");
-                               splitAt = path.indexOf("/", splitAt);
-                               splitAt = path.indexOf("/", splitAt+1);
-                               String parentPath = path.substring(0,splitAt);
-                               collect2.put(parentPath, parentPath);
-                               collect2.put(path, parentPath);
-                               collect3.add(parentPath);
+
+                               while (splitAt > -1) {
+                                   splitAt = path.indexOf("/", splitAt);
+                                   splitAt = path.indexOf("/", splitAt+1);
+                                   if (splitAt > -1) {
+                                       String parentPath = path.substring(0, splitAt);
+                                       if (LOGGER.isTraceEnabled()) {
+                                           LOGGER.trace("PARTIAL {}", parentPath);
+                                       }
+
+                                       collect2.put(parentPath, parentPath);
+                                       collect2.put(path, parentPath);
+                                       collect3.add(parentPath);
+
+                                       splitAt = path.indexOf("_2_", splitAt);
+                                   }
+                               }
                            }
                            if (!shortened)
                                collect2.put(path, path);

@@ -188,7 +188,7 @@ public abstract class SqlFeatureInserts {
                         // rr rows.get --> [1] .get(0) --> 1
 
                         int rowCount = defaultRowCount;
-                        List<Integer> rowsOrDefault = rows.getOrDefault(nestedPath.getTableName(), ImmutableList.of());
+                        List<Integer> rowsOrDefault = rows.getOrDefault(nestedPath.getPath().substring(nestedPath.getPath().lastIndexOf("[")), ImmutableList.of());
                         if (rowsOrDefault.size() > parentRows.get(parentRows.size() - 1)) {
                             rowCount = rowsOrDefault.get(parentRows.get(parentRows.size() - 1));
                         }

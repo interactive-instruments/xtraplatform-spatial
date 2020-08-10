@@ -65,26 +65,26 @@ public class SqlMultiplicityTracker {
             String table = element.substring(element.indexOf("]") + 1);
 
             if (currentIds.containsKey(table)) {
-                LOGGER.debug("TRACKER {} {} {}", table, multiplicityIndex, ids);
+                LOGGER.debug("TRACKER {} {} {}", element, multiplicityIndex, ids);
                 String id = ids.get(multiplicityIndex + 1);
                 if (increased) {
                     currentIds.put(table, id);
-                    currentMultiplicities.put(table, 1);
+                    currentMultiplicities.put(element, 1);
                 } else if (currentIds.containsKey(table) && !Objects.equals(id, currentIds.get(table))) {
                     currentIds.put(table, id);
-                    currentMultiplicities.put(table, currentMultiplicities.getOrDefault(table, 0) + 1);
+                    currentMultiplicities.put(element, currentMultiplicities.getOrDefault(element, 0) + 1);
                     increased = true;
-                    increasedMultiplicityKey = table;
+                    increasedMultiplicityKey = element;
                 } else {// if (currentMultiplicities.get(table) == 0) {
-                    currentMultiplicities.putIfAbsent(table, 1);
+                    currentMultiplicities.putIfAbsent(element, 1);
                 }
 
-                children.putIfAbsent(table, new HashSet<>());
+                children.putIfAbsent(element, new HashSet<>());
                 if (multiplicityIndex > 0) {
                     parentTables.forEach(parent -> children.get(parent)
-                                                           .add(table));
+                                                           .add(element));
                 }
-                parentTables.add(table);
+                parentTables.add(element);
 
                 multiplicityIndex++;
             }
@@ -102,9 +102,9 @@ public class SqlMultiplicityTracker {
 
     public List<Integer> getMultiplicitiesForPath(List<String> path) {
         return path.stream()
-                   .map(element -> element.substring(element.indexOf("]") + 1))
-                   .filter(currentIds::containsKey)
-                   .map(table -> currentMultiplicities.getOrDefault(table, 1))
+                   //.map(element -> element.substring(element.indexOf("]") + 1))
+                   .filter(element -> currentIds.containsKey(element.substring(element.indexOf("]") + 1)))
+                   .map(element -> currentMultiplicities.getOrDefault(element, 1))
                    .collect(Collectors.toList());
     }
 }
