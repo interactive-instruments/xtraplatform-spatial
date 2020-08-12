@@ -29,7 +29,6 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
@@ -80,7 +79,7 @@ public class CSWAdapter {
             this.urls.put(DEFAULT_OPERATION, urls);
         } catch (URISyntaxException ex) {
             //LOGGER.error(FrameworkMessages.INVALID_WFS_URL, url);
-            throw new WebApplicationException();
+            throw new RuntimeException(ex);
         }
     }
 

@@ -41,7 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.WebApplicationException;
 import java.util.List;
@@ -446,7 +445,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
         //TODO: return featureFound in Result, handle in getItemResponse
         if (readContext.isIdFilter()) {
-            throw new InternalServerErrorException();
+            throw new RuntimeException();
         }
 
         try {

@@ -14,7 +14,6 @@ import de.ii.xtraplatform.feature.provider.wfs.domain.ImmutableConnectionInfoWfs
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureProviderDataTransformer;
 import de.ii.xtraplatform.ogc.api.WFS;
-import de.ii.xtraplatform.ogc.api.exceptions.WFSException;
 import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.apache.http.client.utils.URIBuilder;
 
@@ -94,7 +93,7 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
     public void analyzeFailed(Exception ex) {
         featureProviderDataBuilder.connectionInfo(connectionInfoBuilder.build());
 
-        throw new WFSException(ex.getMessage(), ex);
+        throw new RuntimeException(ex.getMessage(), ex);
     }
 
     public static URI parseAndCleanWfsUrl(URI inUri) {

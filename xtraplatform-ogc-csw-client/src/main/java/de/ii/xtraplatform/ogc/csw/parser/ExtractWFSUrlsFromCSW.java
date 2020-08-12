@@ -32,7 +32,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.util.EntityUtils;
 import org.codehaus.staxmate.SMInputFactory;
 
-import javax.ws.rs.BadRequestException;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 
@@ -159,7 +158,7 @@ public class ExtractWFSUrlsFromCSW {
                 // ignore
                 //e.printStackTrace();
                 if (e.getCause().getClass() == ReadError.class)  {
-                    throw new BadRequestException(e.getCause().getMessage());
+                    throw new IllegalArgumentException(e.getCause().getMessage());
                 }
             } finally {
                 EntityUtils.consumeQuietly(entity);

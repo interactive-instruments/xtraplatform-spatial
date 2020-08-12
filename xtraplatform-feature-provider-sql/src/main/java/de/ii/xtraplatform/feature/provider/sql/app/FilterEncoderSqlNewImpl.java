@@ -44,7 +44,6 @@ import org.opengis.temporal.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.BadRequestException;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -117,7 +116,7 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
                                                                                                           .map(FeatureStoreAttribute::getName));
 
                         if (!table.isPresent() || !column.isPresent()) {
-                            throw new BadRequestException("Filter invalid");//TODO: field not allowed, valid fields are etc.
+                            throw new IllegalArgumentException("Filter invalid");//TODO: field not allowed, valid fields are etc.
                         }
 
                         if (LOGGER.isTraceEnabled()) {
