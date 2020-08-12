@@ -11,7 +11,7 @@ import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.net.UrlEscapers;
 import de.ii.xtraplatform.akka.http.Http;
 import de.ii.xtraplatform.akka.http.HttpClient;
-import de.ii.xtraplatform.entity.api.handler.Entity;
+import de.ii.xtraplatform.entities.domain.handler.Entity;
 import de.ii.xtraplatform.ogc.parser.GMLDictionaryAnalyzer;
 import de.ii.xtraplatform.ogc.parser.GMLDictionaryParser;
 import org.apache.felix.ipojo.annotations.Component;
@@ -43,7 +43,7 @@ public class CodelistImporterGmlDictionary implements CodelistImporter {
         this.staxFactory = new SMInputFactory(new InputFactoryImpl());
     }
 
-    @Override
+    //TODO@Override
     public Class<CodelistData> getType() {
         return CodelistData.class;
     }
@@ -53,7 +53,7 @@ public class CodelistImporterGmlDictionary implements CodelistImporter {
         return CodelistData.IMPORT_TYPE.GML_DICTIONARY;
     }
 
-    @Override
+    //TODO@Override
     public CodelistData generate(Map<String, String> partialData) {
         if (!Objects.equals(getSourceType().toString(), partialData.get("sourceType")) || !partialData.containsKey("sourceUrl")) {
             throw new IllegalArgumentException();

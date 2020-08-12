@@ -8,8 +8,8 @@
 package de.ii.xtraplatform.codelists;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.entity.api.EntityData;
-import de.ii.xtraplatform.event.store.EntityDataBuilder;
+import de.ii.xtraplatform.entities.domain.EntityData;
+import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
 import org.immutables.value.Value;
 
 import java.util.Map;

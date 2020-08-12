@@ -8,21 +8,21 @@
 package de.ii.xtraplatform.features.app;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.entity.api.EntityData;
-import de.ii.xtraplatform.entity.api.handler.Entity;
-import de.ii.xtraplatform.event.store.EntityDataBuilder;
-import de.ii.xtraplatform.event.store.EntityMigration;
-import de.ii.xtraplatform.event.store.Identifier;
+import de.ii.xtraplatform.entities.domain.EntityData;
+import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
+import de.ii.xtraplatform.entities.domain.EntityMigration;
+import de.ii.xtraplatform.entities.domain.handler.Entity;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
-import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV1;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase;
+import de.ii.xtraplatform.store.domain.Identifier;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;

@@ -37,7 +37,7 @@ dependencies {
     provided project(':xtraplatform-geotools')
 
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-entity-api'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-entities'
 
     embedded (group: 'com.lightbend.akka', name: 'akka-stream-alpakka-slick_2.12', version: '0.19') {
         exclude  group: 'com.typesafe.akka', module: 'akka-stream_2.12'

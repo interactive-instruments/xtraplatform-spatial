@@ -12,10 +12,10 @@ import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
-import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
+import de.ii.xtraplatform.entities.domain.maptobuilder.Buildable;
+import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableBuilder;
+import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableMap;
+import de.ii.xtraplatform.entities.domain.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import org.immutables.value.Value;
 
@@ -25,9 +25,9 @@ import java.util.Optional;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
-@ValueBuilderMapEncodingEnabled
+@BuildableMapEncodingEnabled
 @JsonDeserialize(builder = ImmutableFeaturePropertyV2.Builder.class)
-public interface FeaturePropertyV2 extends ValueInstance {
+public interface FeaturePropertyV2 extends Buildable<FeaturePropertyV2> {
 
     enum Role {
         ID
@@ -75,12 +75,12 @@ public interface FeaturePropertyV2 extends ValueInstance {
     //behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonMerge
-    ValueBuilderMap<FeaturePropertyV2, ImmutableFeaturePropertyV2.Builder> getProperties();
+    BuildableMap<FeaturePropertyV2, ImmutableFeaturePropertyV2.Builder> getProperties();
 
     Map<String, String> getAdditionalInfo();
 
     // custom builder to automatically use keys of types as name of nested FeaturePropertyV2
-    abstract class Builder implements ValueBuilder<FeaturePropertyV2> {
+    abstract class Builder implements BuildableBuilder<FeaturePropertyV2> {
 
         public abstract ImmutableFeaturePropertyV2.Builder putProperties(String key,
                                                                      ImmutableFeaturePropertyV2.Builder builder);
@@ -116,7 +116,7 @@ public interface FeaturePropertyV2 extends ValueInstance {
     }
 
     @Override
-    default ImmutableFeaturePropertyV2.Builder toBuilder() {
+    default ImmutableFeaturePropertyV2.Builder getBuilder() {
         return new ImmutableFeaturePropertyV2.Builder().from(this);
     }
 

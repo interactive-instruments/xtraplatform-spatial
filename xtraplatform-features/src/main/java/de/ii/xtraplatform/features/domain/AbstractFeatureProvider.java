@@ -18,7 +18,7 @@ import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.akka.ActorSystemProvider;
-import de.ii.xtraplatform.entity.api.AbstractPersistentEntity;
+import de.ii.xtraplatform.entities.domain.AbstractPersistentEntity;
 import de.ii.xtraplatform.features.app.FeatureSchemaToTypeVisitor;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
@@ -58,6 +58,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
     @Override
     protected void onStart() {
         if (!getConnector().isConnected()) {
+            this.register = false;
             Optional<Throwable> connectionError = getConnector().getConnectionError();
             String message = connectionError.map(Throwable::getMessage)
                                             .orElse("unknown reason");

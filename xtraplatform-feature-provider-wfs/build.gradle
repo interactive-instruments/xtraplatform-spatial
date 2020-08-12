@@ -9,7 +9,7 @@ dependencies {
     provided project(':xtraplatform-geotools')
 
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-scheduler-api'
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-entity-api'
+    provided  group: 'de.interactive_instruments', name: 'xtraplatform-entities'
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka-http'
 

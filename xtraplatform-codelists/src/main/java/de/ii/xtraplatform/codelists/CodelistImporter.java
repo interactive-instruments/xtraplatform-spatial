@@ -7,9 +7,9 @@
  */
 package de.ii.xtraplatform.codelists;
 
-import de.ii.xtraplatform.entity.api.EntityDataGenerator;
 
-public interface CodelistImporter extends EntityDataGenerator<CodelistData> {
+//TODO
+public interface CodelistImporter /*extends EntityDataGenerator<CodelistData>*/ {
 
     CodelistData.IMPORT_TYPE getSourceType();
 }

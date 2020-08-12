@@ -15,10 +15,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
-import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
+import de.ii.xtraplatform.entities.domain.maptobuilder.Buildable;
+import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableBuilder;
+import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableMap;
+import de.ii.xtraplatform.entities.domain.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import org.immutables.value.Value;
 
 import java.util.ArrayList;
@@ -29,11 +29,11 @@ import java.util.stream.Collectors;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
-@ValueBuilderMapEncodingEnabled
+@BuildableMapEncodingEnabled
 @JsonDeserialize(builder = ImmutableFeatureType.Builder.class)
-public interface FeatureType extends ValueInstance {
+public interface FeatureType extends Buildable<FeatureType> {
 
-    abstract static class Builder implements ValueBuilder<FeatureType> {
+    abstract static class Builder implements BuildableBuilder<FeatureType> {
         public abstract ImmutableFeatureType.Builder putProperties(String key,
                                                                    ImmutableFeatureProperty.Builder builder);
 
@@ -45,7 +45,7 @@ public interface FeatureType extends ValueInstance {
     }
 
     @Override
-    default ImmutableFeatureType.Builder toBuilder() {
+    default ImmutableFeatureType.Builder getBuilder() {
         return new ImmutableFeatureType.Builder().from(this);
     }
 
@@ -55,7 +55,7 @@ public interface FeatureType extends ValueInstance {
     //behaves exactly like Map<String, FeatureTypeConfigurationOgcApi>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonMerge
-    ValueBuilderMap<FeatureProperty, ImmutableFeatureProperty.Builder> getProperties();
+    BuildableMap<FeatureProperty, ImmutableFeatureProperty.Builder> getProperties();
 
     @JsonIgnore
     String getName();

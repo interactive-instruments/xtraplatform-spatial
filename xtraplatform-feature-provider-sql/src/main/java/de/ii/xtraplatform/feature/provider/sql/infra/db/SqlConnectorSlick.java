@@ -138,9 +138,9 @@ public class SqlConnectorSlick implements SqlConnector {
 
     @Override
     public SqlClient getSqlClient() {
-        if (Objects.isNull(sqlClient)) {
+        /*if (Objects.isNull(sqlClient)) {
             throw new IllegalStateException("not connected to database");
-        }
+        }*/
 
         return sqlClient;
     }

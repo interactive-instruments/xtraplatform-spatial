@@ -12,7 +12,6 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.app.CqlToText;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderDataWfsFromMetadata;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
