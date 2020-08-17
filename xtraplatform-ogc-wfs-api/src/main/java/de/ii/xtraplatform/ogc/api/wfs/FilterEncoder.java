@@ -135,7 +135,7 @@ public class FilterEncoder {
                                                  .getSchema()
                                                  .resolveElementDeclaration(GML.Envelope.getLocalPart()));
             } catch (IOException var1) {
-                throw new RuntimeException(var1);
+                throw new IllegalStateException(var1);
             }
         }
     }

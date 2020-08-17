@@ -342,13 +342,13 @@ public class FeatureSchemaSwapperSql {
                         Matcher instanceContainerNameMatcher = syntax.getTablePattern()
                                                                      .matcher(tablePathAsList.get(0));
                         if (!instanceContainerNameMatcher.find()) {
-                            throw new IllegalArgumentException();
+                            throw new IllegalStateException("Unexpected error generating the provider transactions mapping");
                         }
                         String instanceContainerName = instanceContainerNameMatcher.group(SqlPathSyntax.MatcherGroups.TABLE);
                         Matcher attributesContainerNameMatcher = syntax.getTablePattern()
                                                                        .matcher(tablePathAsList.get(tablePathAsList.size() - 1));
                         if (!attributesContainerNameMatcher.find()) {
-                            throw new IllegalArgumentException();
+                            throw new IllegalStateException("Unexpected error generating the provider transactions mapping");
                         }
                         String attributesContainerName = attributesContainerNameMatcher.group(SqlPathSyntax.MatcherGroups.TABLE);
 

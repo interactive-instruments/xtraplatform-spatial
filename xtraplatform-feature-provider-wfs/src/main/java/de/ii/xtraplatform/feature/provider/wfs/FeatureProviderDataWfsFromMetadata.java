@@ -93,7 +93,7 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
     public void analyzeFailed(Exception ex) {
         featureProviderDataBuilder.connectionInfo(connectionInfoBuilder.build());
 
-        throw new RuntimeException(ex.getMessage(), ex);
+        throw new IllegalStateException(ex.getMessage(), ex);
     }
 
     public static URI parseAndCleanWfsUrl(URI inUri) {

@@ -79,7 +79,7 @@ public class CSWAdapter {
             this.urls.put(DEFAULT_OPERATION, urls);
         } catch (URISyntaxException ex) {
             //LOGGER.error(FrameworkMessages.INVALID_WFS_URL, url);
-            throw new RuntimeException(ex);
+            throw new IllegalStateException(ex);
         }
     }
 
@@ -196,13 +196,13 @@ public class CSWAdapter {
             }
 
             //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError("Failed requesting URL: '" + uri.toString() + "'");
+            throw new RuntimeException(ex.getMessage(), ex);
         } catch (URISyntaxException ex) {
             //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError("Failed requesting URL: '" + uri.toString() + "'");
+            throw new RuntimeException(ex.getMessage(), ex);
         } catch (ReadError ex) {
             //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw ex;
+            throw new RuntimeException(ex.getMessage(), ex);
         }
         //LOGGER.debug(FrameworkMessages.WFS_REQUEST_SUBMITTED);
         return response;
@@ -280,10 +280,10 @@ public class CSWAdapter {
             } catch (URISyntaxException ex0) {
             }
             //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError("Failed requesting URL: '" + uri.toString() + "'");
+            throw new RuntimeException(ex.getMessage(), ex);
         } catch (URISyntaxException ex) {
             //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL, uri.toString());
-            throw new ReadError("Failed requesting URL: '" + uri.toString() + "'");
+            throw new RuntimeException(ex.getMessage(), ex);
         }
         //LOGGER.debug(FrameworkMessages.WFS_REQUEST_SUBMITTED);
         return response;
@@ -297,9 +297,7 @@ public class CSWAdapter {
             } catch (Exception e) {
             }
             //LOGGER.error(FrameworkMessages.FAILED_REQUESTING_URL_REASON, uri.toString(), reason);
-            ReadError re = new ReadError("Failed requesting URL: '" + uri.toString() + "'");
-            re.addDetail("Reason: " + reason);
-            throw re;
+            throw new RuntimeException(String.format("Failed requesting URL: '%s'. Reason: %s", uri.toString(), reason));
         }
     }
 
