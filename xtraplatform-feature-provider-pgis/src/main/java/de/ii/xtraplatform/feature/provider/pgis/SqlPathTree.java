@@ -442,7 +442,7 @@ public abstract class SqlPathTree {
             @Override
             public SqlPathTree next() {
                 if (queue.isEmpty()) {
-                    throw new NoSuchElementException();
+                    throw new NoSuchElementException("No more elements in the SQL path tree");
                 }
                 SqlPathTree next = queue.removeFirst();
                 next.getChildren().forEach(queue::addLast);
@@ -464,7 +464,7 @@ public abstract class SqlPathTree {
             @Override
             public SqlPathTree next() {
                 if (queue.isEmpty()) {
-                    throw new NoSuchElementException();
+                    throw new NoSuchElementException("No more elements in the SQL path tree");
                 }
                 SqlPathTree next = queue.removeLast();
                 List<SqlPathTree> children = next.getChildren();

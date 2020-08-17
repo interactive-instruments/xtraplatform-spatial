@@ -40,7 +40,7 @@ public interface FeatureProvider2 extends PersistentEntity {
 
     default FeatureQueries queries() {
         if (!supportsQueries()) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Queries not supported");
         }
         return (FeatureQueries) this;
     }
@@ -51,7 +51,7 @@ public interface FeatureProvider2 extends PersistentEntity {
 
     default FeatureExtents extents() {
         if (!supportsExtents()) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Extents not supported");
         }
         return (FeatureExtents) this;
     }
@@ -62,7 +62,7 @@ public interface FeatureProvider2 extends PersistentEntity {
 
     default FeatureQueriesPassThrough passThrough() {
         if (!supportsQueries()) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Queries not supported");
         }
         return (FeatureQueriesPassThrough) this;
     }
@@ -73,7 +73,7 @@ public interface FeatureProvider2 extends PersistentEntity {
 
     default FeatureTransactions transactions() {
         if (!supportsTransactions()) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Transactions not supported");
         }
         return (FeatureTransactions) this;
     }
@@ -84,7 +84,7 @@ public interface FeatureProvider2 extends PersistentEntity {
 
     default FeatureCrs crs() {
         if (!supportsCrs()) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("CRS not supported");
         }
         return (FeatureCrs) this;
     }
@@ -95,7 +95,7 @@ public interface FeatureProvider2 extends PersistentEntity {
 
     default FeatureMetadata metadata() {
         if (!supportsMetadata()) {
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Metadata not supported");
         }
         return (FeatureMetadata) this;
     }

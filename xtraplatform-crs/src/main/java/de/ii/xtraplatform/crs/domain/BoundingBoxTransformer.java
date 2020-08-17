@@ -27,7 +27,7 @@ public abstract class BoundingBoxTransformer implements CrsTransformer{
         CoordinateTuple ul = this.transform(boundingBox.getXmin(), boundingBox.getYmax());
 
         if (ll.isNull() || ul.isNull() || lr.isNull() || ur.isNull()) {
-            throw new CrsTransformationException();
+            throw new CrsTransformationException("Failed to transform bounding box corner point coordinate(s): " + boundingBox.toString());
         }
 
         BoundingBox envOut = new BoundingBox();

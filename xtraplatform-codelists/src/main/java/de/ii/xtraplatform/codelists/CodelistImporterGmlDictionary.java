@@ -56,7 +56,7 @@ public class CodelistImporterGmlDictionary implements CodelistImporter {
     @Override
     public CodelistData generate(Map<String, String> partialData) {
         if (!Objects.equals(getSourceType().toString(), partialData.get("sourceType")) || !partialData.containsKey("sourceUrl")) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Failed to generate codelist data");
         }
 
         String sourceUrl = partialData.get("sourceUrl");

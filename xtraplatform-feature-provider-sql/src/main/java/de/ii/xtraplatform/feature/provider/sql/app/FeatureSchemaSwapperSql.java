@@ -99,7 +99,7 @@ public class FeatureSchemaSwapperSql {
 
         //TODO: column?
         if (!sqlPath.isPresent()) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Parse error for SQL path: " + parentPath + "/" + originalProperty.getSourcePath().orElse(""));
         }
 
         List<String> tablePathAsList = syntax.asList(sqlPath.get()

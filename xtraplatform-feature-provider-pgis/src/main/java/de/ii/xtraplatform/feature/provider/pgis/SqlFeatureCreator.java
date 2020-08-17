@@ -160,7 +160,7 @@ public class SqlFeatureCreator {
                                         .filter(p -> p.endsWith("/id"))
                                         .findFirst();
         if (!idPath.isPresent()) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Path not found for id: " + id);
         }
 
         property(idPath.get(), id);
