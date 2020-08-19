@@ -51,7 +51,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
-import javax.ws.rs.BadRequestException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -150,7 +149,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                          .map(FeatureStoreAttribute::getName);
 
             if (!column.isPresent()) {
-                throw new BadRequestException(String.format("Filter is invalid. Unknown property: %s", property.getName()));
+                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", property.getName()));
             }
 
             List<String> aliases = isUserFilter ? aliasesGenerator.apply(attributesContainer)
@@ -191,7 +190,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                                                               .map(FeatureStoreAttribute::getName));
 
             if (!table.isPresent() || !column.isPresent()) {
-                throw new BadRequestException(String.format("Filter is invalid. Unknown property: %s", property.getName()));
+                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", property.getName()));
             }
 
             if (LOGGER.isTraceEnabled()) {

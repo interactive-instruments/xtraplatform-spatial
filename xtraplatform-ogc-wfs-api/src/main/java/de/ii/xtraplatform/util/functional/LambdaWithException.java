@@ -36,7 +36,7 @@ public class LambdaWithException {
             try {
                 return fe.apply(arg);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new IllegalStateException(e);
             }
         };
     }
@@ -46,7 +46,7 @@ public class LambdaWithException {
             try {
                 ce.apply(arg);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new IllegalStateException(e);
             }
         };
     }
@@ -56,7 +56,7 @@ public class LambdaWithException {
             try {
                 ce.apply(arg, arg2);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new IllegalStateException(e);
             }
         };
     }

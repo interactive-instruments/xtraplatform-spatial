@@ -14,6 +14,7 @@ import org.osgi.framework.ServiceReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Optional;
@@ -74,7 +75,7 @@ public final class FactoryRegistryState<T> implements Registry.State<Factory>, F
         final Optional<Factory> factory = factories.get(factoryProperties);
 
         if (!factory.isPresent()) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Factory class is not present for properties: " + Arrays.toString(factoryProperties));
         }
 
         try {
@@ -88,7 +89,7 @@ public final class FactoryRegistryState<T> implements Registry.State<Factory>, F
             return connector;
 
         } catch (Throwable e) {
-            throw new IllegalStateException("", e);
+            throw new IllegalStateException("Failed to create a connector instance", e);
         }
     }
 

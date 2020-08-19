@@ -61,7 +61,7 @@ public class SchemaBuilderSql implements ReverseSchemaBuilder<SchemaSql> {
 
         //TODO: column?
         if (!sqlPath.isPresent()) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("Parse error for SQL path: " + parentParentPath + "/" + JOINER.join(child.getFullPath()));
         }
 
         List<String> tablePathAsList = ReverseSchemaBuilder.SPLITTER.splitToList(sqlPath.get()
