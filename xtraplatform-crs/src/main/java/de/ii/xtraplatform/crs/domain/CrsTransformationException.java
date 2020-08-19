@@ -15,5 +15,8 @@ package de.ii.xtraplatform.crs.domain;
  * @author zahnen
  */
 public class CrsTransformationException extends Exception {
-    
+
+    public CrsTransformationException(String message) {
+        super(message);
+    }
 }
