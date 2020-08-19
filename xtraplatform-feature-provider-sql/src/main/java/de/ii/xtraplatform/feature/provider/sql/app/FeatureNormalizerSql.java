@@ -223,7 +223,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                             }
                             consumer.onEnd();
                         } catch (Exception e) {
-                            throw new RuntimeException(e);
+                            //ignore
                         }
 
                         return ImmutableResult.builder()
