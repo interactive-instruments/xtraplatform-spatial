@@ -89,6 +89,15 @@ public class WfsConnectorHttp implements WfsConnector {
 
     }
 
+    WfsConnectorHttp() {
+        metricRegistry = null;
+        httpClient = null;
+        wfsRequestEncoder = null;
+        useHttpPost = false;
+        metadata = Optional.empty();
+    }
+
+
     private Optional<Metadata> crawlMetadata() {
         try {
             InputStream inputStream = runWfsOperation(new GetCapabilities());

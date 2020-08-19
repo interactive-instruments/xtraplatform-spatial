@@ -14,7 +14,6 @@ import de.ii.xtraplatform.feature.provider.wfs.GMLSchemaParser;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ImmutableConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureTypeV2;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.ogc.api.wfs.DescribeFeatureType;
 import de.ii.xtraplatform.scheduler.api.TaskProgress;
@@ -69,7 +68,7 @@ public class WfsSchemaCrawler {
         WfsSchemaAnalyzer schemaConsumer = new WfsSchemaAnalyzer(crsMap, namespaces);
         analyzeFeatureTypes(schemaConsumer, featureTypes, new TaskProgressNoop());
 
-        return ImmutableList.of();//TODO schemaConsumer.getFeatureTypes();
+        return schemaConsumer.getFeatureTypes();
     }
 
     private void analyzeFeatureTypes(FeatureProviderSchemaConsumer schemaConsumer, Map<String, QName> featureTypes,
@@ -86,10 +85,10 @@ public class WfsSchemaCrawler {
                                                             TaskProgress taskProgress) {
 
         URI baseUri = connectionInfo.getUri();
-            InputStream inputStream = connector.runWfsOperation(new DescribeFeatureType());
+        InputStream inputStream = connector.runWfsOperation(new DescribeFeatureType());
 
-            GMLSchemaParser gmlSchemaParser = new GMLSchemaParser(ImmutableList.of(schemaConsumer), baseUri);
-            gmlSchemaParser.parse(inputStream, featureTypesByNamespace, taskProgress);
+        GMLSchemaParser gmlSchemaParser = new GMLSchemaParser(ImmutableList.of(schemaConsumer), baseUri);
+        gmlSchemaParser.parse(inputStream, featureTypesByNamespace, taskProgress);
     }
 
     private Map<String, List<String>> getSupportedFeatureTypesPerNamespace(Map<String, QName> featureTypes) {

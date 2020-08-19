@@ -9,15 +9,10 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.provider.sql.app.SimpleFeatureGeometryFromToWkt;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
-import de.ii.xtraplatform.features.domain.FeaturePropertyV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureTypeV2;
-import de.ii.xtraplatform.features.domain.ImmutableFeaturePropertyV2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureTypeV2;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,13 +91,15 @@ public class SqlSchemaCrawler {
                         if (column.isPartOfPrimaryKey()) {
                             featureProperty.role(SchemaBase.Role.ID);
                         }
-                        if (featurePropertyType == SchemaBase.Type.GEOMETRY && !Objects.isNull(geometry.get(table.getName()))) {
+                        if (featurePropertyType == SchemaBase.Type.GEOMETRY) {
+                            if (Objects.isNull(geometry.get(table.getName()))) {
+                                continue;
+                            }
                             List<String> geometryInfo = geometry.get(table.getName());
-                            String geometryType = SimpleFeatureGeometryFromToWkt.fromString(geometryInfo.get(0))
-                                    .toSimpleFeatureGeometry()
-                                    .toString();
                             String crs = geometryInfo.get(1);
-                            featureProperty.additionalInfo(ImmutableMap.of("geometryType", geometryType, "crs", crs));
+                            featureProperty.geometryType(SimpleFeatureGeometryFromToWkt.fromString(geometryInfo.get(0))
+                                            .toSimpleFeatureGeometry())
+                                    .additionalInfo(ImmutableMap.of("crs", crs));
                         }
                         featureType.putPropertyMap(column.getName(), featureProperty.build());
                     }
