@@ -197,13 +197,13 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                         Matcher instanceContainerNameMatcher = syntax.getTablePattern()
                                                                      .matcher(tablePathAsList.get(0));
                         if (!instanceContainerNameMatcher.find()) {
-                            throw new IllegalArgumentException();
+                            throw new IllegalStateException("Unexpected error parsing the provider schema");
                         }
                         String instanceContainerName = instanceContainerNameMatcher.group(SqlPathSyntax.MatcherGroups.TABLE);
                         Matcher attributesContainerNameMatcher = syntax.getTablePattern()
                                                                        .matcher(tablePathAsList.get(tablePathAsList.size() - 1));
                         if (!attributesContainerNameMatcher.find()) {
-                            throw new IllegalArgumentException();
+                            throw new IllegalStateException("Unexpected error parsing the provider schema");
                         }
                         String attributesContainerName = attributesContainerNameMatcher.group(SqlPathSyntax.MatcherGroups.TABLE);
 

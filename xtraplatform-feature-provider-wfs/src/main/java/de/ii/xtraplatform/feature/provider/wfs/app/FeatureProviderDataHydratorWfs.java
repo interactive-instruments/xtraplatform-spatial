@@ -76,7 +76,7 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
             }
         }
 
-        throw new IllegalStateException();
+        throw new IllegalStateException(String.format("Feature provider with id %s   could not be hydrated", data.getId()));
     }
 
     private FeatureProviderDataV2 completeConnectionInfoIfNecessary(WfsConnectorHttp connector,

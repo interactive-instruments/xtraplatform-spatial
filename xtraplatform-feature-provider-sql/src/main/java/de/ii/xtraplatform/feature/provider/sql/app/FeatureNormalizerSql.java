@@ -41,9 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.WebApplicationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -223,7 +220,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                             }
                             consumer.onEnd();
                         } catch (Exception e) {
-                            throw new RuntimeException(e);
+                            //ignore
                         }
 
                         return ImmutableResult.builder()
@@ -437,48 +434,4 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
         }*/
     }
 
-    private static Done handleException(Throwable throwable, ReadContext readContext) {
-        if (throwable instanceof WebApplicationException) {
-            throw (WebApplicationException) throwable;
-        }
-        LOGGER.error(throwable.getMessage());
-        LOGGER.debug("STREAM FAILURE", throwable);
-
-        //TODO: return featureFound in Result, handle in getItemResponse
-        if (readContext.isIdFilter()) {
-            throw new InternalServerErrorException();
-        }
-
-        try {
-            if (!readContext.getReadState()
-                            .isStarted()) {
-                readContext.getFeatureConsumer()
-                           .onStart(OptionalLong.of(0), OptionalLong.empty(), ImmutableMap.of());
-            }
-        } catch (Exception e) {
-            //ignore
-        }
-        return Done.getInstance();
-    }
-
-    private static void handleCompletion(ReadContext readContext) {
-
-        //TODO: return featureFound in Result, handle in getItemResponse
-        if (readContext.isIdFilter() && !readContext.getReadState()
-                                                    .isAtLeastOneFeatureWritten()) {
-            throw new NotFoundException();
-        }
-
-        FeatureConsumer consumer = readContext.getFeatureConsumer();
-
-        try {
-            if (readContext.getReadState()
-                           .isFeatureStarted()) {
-                consumer.onFeatureEnd(readContext.getMainTablePath());
-            }
-            consumer.onEnd();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 }
