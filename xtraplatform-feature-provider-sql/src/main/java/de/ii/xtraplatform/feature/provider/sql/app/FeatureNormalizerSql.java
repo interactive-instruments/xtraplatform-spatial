@@ -199,7 +199,9 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                     return NotUsed.getInstance();
                 })
                     .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
-                        if (Objects.nonNull(throwable)) {
+                        Throwable error = throwable;
+
+                        if (Objects.nonNull(error)) {
                             //handleException(throwable, readContext);
                             try {
                                 if (!readContext.getReadState()
@@ -220,13 +222,15 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                             }
                             consumer.onEnd();
                         } catch (Exception e) {
-                            //ignore
+                            if (Objects.isNull(error)) {
+                                error = e;
+                            }
                         }
 
                         return ImmutableResult.builder()
                                               .isEmpty(!readContext.getReadState()
                                                                    .isAtLeastOneFeatureWritten())
-                                              .error(Optional.ofNullable(throwable))
+                                              .error(Optional.ofNullable(error))
                                               .build();
                     }));
 
