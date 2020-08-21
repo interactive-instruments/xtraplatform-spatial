@@ -4,7 +4,7 @@ ext {
 }
 
 configurations {
-    embedded {
+    embeddedExport {
         exclude group: 'javax.media', module: 'jai_core'
         exclude group: 'org.geotools', module: 'gt-coverage'
 
@@ -19,37 +19,16 @@ configurations {
 }
 
 dependencies {
-    embedded group: 'org.geotools', name: 'gt-cql', version: geotoolsVersion
-    embedded group: 'org.geotools', name: 'gt-xml', version: geotoolsVersion
+    embeddedExport group: 'org.geotools', name: 'gt-cql', version: geotoolsVersion
+    embeddedExport group: 'org.geotools', name: 'gt-xml', version: geotoolsVersion
     //embedded group: 'org.geotools.xsd', name: 'gt-xsd-wfs', version: geotoolsVersion
-    embedded group: 'org.geotools', name: 'gt-referencing', version: geotoolsVersion
-    embedded group: 'org.geotools', name: 'gt-epsg-hsql', version: geotoolsVersion
-    embedded group: 'org.geotools', name: 'gt-epsg-extension', version: geotoolsVersion
+    embeddedExport group: 'org.geotools', name: 'gt-referencing', version: geotoolsVersion
+    embeddedExport group: 'org.geotools', name: 'gt-epsg-hsql', version: geotoolsVersion
+    embeddedExport group: 'org.geotools', name: 'gt-epsg-extension', version: geotoolsVersion
 }
 
 jar {
     manifest {
-
-/*
-        instructionFirst 'Import-Package', 'javax.xml.transform'
-        instructionFirst 'Import-Package', 'javax.sql'
-        instructionFirst 'Import-Package', 'org.xml.sax'
-        instructionFirst 'Import-Package', 'javax.naming'
-        instructionFirst 'Import-Package', 'javax.swing.event'
-        instructionFirst 'Import-Package', 'javax.swing.tree'
-        instructionFirst 'Import-Package', 'javax.xml.namespace'
-        instructionFirst 'Import-Package', 'org.xml.sax.helpers'
-        instructionFirst 'Import-Package', 'org.w3c.dom'
-        instructionFirst 'Import-Package', 'org.xml.sax.ext'
-        instructionFirst 'Import-Package', 'javax.xml.parsers'
-        instructionFirst 'Import-Package', 'org.w3c.dom.events'
-        instructionFirst 'Import-Package', 'javax.xml.transform.sax'
-        instructionFirst 'Import-Package', 'javax.xml.transform.stream'
-        instructionFirst 'Import-Package', 'javax.xml.datatype'
-        instructionFirst 'Import-Package', 'javax.xml.transform.dom'
-        instructionFirst 'Import-Package', 'javax.annotation'
-        instruction 'Import-Package', 'javax.imageio.spi'
-*/
         instructionFirst 'Import-Package', '!com.sun.medialib.codec.*'
         instructionFirst 'Import-Package', '!com.sun.image.codec.*'
         instructionFirst 'Import-Package', '!org.eclipse.core.*'

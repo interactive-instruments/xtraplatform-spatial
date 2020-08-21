@@ -7,11 +7,6 @@ dependencies {
     provided project(':xtraplatform-ogc-wfs-api')
     provided project(':xtraplatform-feature-provider-sql')
 
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-entities'
-    //TODO: create own ActorSystemProvider, remove this dep
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka-http'
-
     embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.2'
 
     testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.18'
