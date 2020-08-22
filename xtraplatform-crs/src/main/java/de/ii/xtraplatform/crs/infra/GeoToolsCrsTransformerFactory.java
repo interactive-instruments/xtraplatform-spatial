@@ -21,7 +21,6 @@ import org.apache.felix.ipojo.annotations.Provides;
 import org.geotools.referencing.CRS;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.crs.SingleCRS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import static de.ii.xtraplatform.api.functional.LambdaWithException.mayThrow;
+import static de.ii.xtraplatform.dropwizard.domain.LambdaWithException.mayThrow;
 
 /**
  *

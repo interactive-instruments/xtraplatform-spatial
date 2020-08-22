@@ -27,7 +27,7 @@ import de.ii.xtraplatform.features.domain.ImmutableFeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableResult;
 import de.ii.xtraplatform.features.domain.PropertyBase;
 import de.ii.xtraplatform.features.domain.SchemaBase;
-import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
 
 import javax.xml.namespace.QName;
 import java.util.Map;

@@ -21,7 +21,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static de.ii.xtraplatform.util.functional.LambdaWithException.consumerMayThrow;
+import static de.ii.xtraplatform.dropwizard.domain.LambdaWithException.consumerMayThrow;
 
 /**
  * @author zahnen

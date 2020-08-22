@@ -11,10 +11,9 @@ import akka.Done;
 import akka.NotUsed;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.util.ByteString;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import de.ii.xtraplatform.dropwizard.cfg.JacksonProvider;
+import de.ii.xtraplatform.dropwizard.domain.JacksonProvider;
 
 import java.util.Map;
 import java.util.Optional;

@@ -16,7 +16,7 @@ import de.ii.xtraplatform.feature.provider.wfs.domain.ImmutableConnectionInfoWfs
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.ogc.api.wfs.DescribeFeatureType;
-import de.ii.xtraplatform.scheduler.api.TaskProgress;
+import de.ii.xtraplatform.services.domain.TaskProgress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -16,7 +16,7 @@ import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.akka.ActorSystemProvider;
+import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
@@ -24,8 +24,8 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.entities.domain.EntityComponent;
-import de.ii.xtraplatform.entities.domain.handler.Entity;
+import de.ii.xtraplatform.store.domain.entities.EntityComponent;
+import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
@@ -38,7 +38,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
-import de.ii.xtraplatform.features.app.FeatureSchemaToTypeVisitor;
+import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
@@ -168,7 +168,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     @Override
     public boolean supportsCrs() {
-        return FeatureProvider2.super.supportsCrs() && getData().getNativeCrs()
+        return super.supportsCrs() && getData().getNativeCrs()
                                                                 .isPresent();
     }
 
@@ -215,7 +215,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                                                                       .flatMap(crsTransformer -> {
                                                                                           try {
                                                                                               return Optional.of(crsTransformer.transformBoundingBox(boundingBox));
-                                                                                          } catch (CrsTransformationException e) {
+                                                                                          } catch (Exception e) {
                                                                                               return Optional.empty();
                                                                                           }
                                                                                       }));

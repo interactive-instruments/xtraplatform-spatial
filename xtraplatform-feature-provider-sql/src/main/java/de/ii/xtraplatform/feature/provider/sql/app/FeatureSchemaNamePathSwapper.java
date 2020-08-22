@@ -7,20 +7,8 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
-import de.ii.xtraplatform.features.app.FeatureProviderDataMigrationV1V2;
-import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureType;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
-
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Stream;
-
 public class FeatureSchemaNamePathSwapper {
-
+/*
     static final FeatureProviderDataMigrationV1V2 migration = new FeatureProviderDataMigrationV1V2();
 
     public static FeatureSchema migrate(FeatureType featureType) {
@@ -55,4 +43,6 @@ public class FeatureSchemaNamePathSwapper {
                          })
                          .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
+
+ */
 }

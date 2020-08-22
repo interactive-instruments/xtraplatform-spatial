@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 
-import de.ii.xtraplatform.entities.domain.PersistentEntity;
+import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
 
 public interface FeatureProvider2 extends PersistentEntity {
 

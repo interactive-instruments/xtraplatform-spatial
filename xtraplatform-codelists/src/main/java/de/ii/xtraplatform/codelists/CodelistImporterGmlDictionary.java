@@ -9,11 +9,11 @@ package de.ii.xtraplatform.codelists;
 
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.net.UrlEscapers;
-import de.ii.xtraplatform.akka.http.Http;
-import de.ii.xtraplatform.akka.http.HttpClient;
-import de.ii.xtraplatform.entities.domain.handler.Entity;
-import de.ii.xtraplatform.ogc.parser.GMLDictionaryAnalyzer;
-import de.ii.xtraplatform.ogc.parser.GMLDictionaryParser;
+import de.ii.xtraplatform.streams.domain.Http;
+import de.ii.xtraplatform.streams.domain.HttpClient;
+import de.ii.xtraplatform.store.domain.entities.handler.Entity;
+import de.ii.xtraplatform.ogc.api.GMLDictionaryAnalyzer;
+import de.ii.xtraplatform.ogc.api.GMLDictionaryParser;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;

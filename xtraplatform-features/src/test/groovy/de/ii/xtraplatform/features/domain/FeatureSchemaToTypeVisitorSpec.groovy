@@ -18,7 +18,6 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.crs.domain.OgcCrs
-import de.ii.xtraplatform.features.app.FeatureSchemaToTypeVisitor
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 import spock.lang.Shared
 import spock.lang.Specification

@@ -9,18 +9,18 @@ package de.ii.xtraplatform.feature.provider.wfs.app;
 
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.akka.ActorSystemProvider;
+import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.entities.domain.EntityComponent;
-import de.ii.xtraplatform.entities.domain.handler.Entity;
+import de.ii.xtraplatform.store.domain.entities.EntityComponent;
+import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
-import de.ii.xtraplatform.features.app.FeatureSchemaToTypeVisitor;
+import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
@@ -111,7 +111,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
 
     @Override
     public boolean supportsCrs() {
-        return FeatureProvider2.super.supportsCrs() && getData().getNativeCrs().isPresent();
+        return super.supportsCrs() && getData().getNativeCrs().isPresent();
     }
 
     @Override

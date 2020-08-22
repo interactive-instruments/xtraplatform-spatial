@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import com.fasterxml.jackson.databind.jsontype.impl.AsPropertyTypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.impl.StdTypeResolverBuilder;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
-import de.ii.xtraplatform.dropwizard.cfg.JacksonProvider;
+import de.ii.xtraplatform.dropwizard.domain.JacksonProvider;
 import org.immutables.value.Value;
 
 import java.io.IOException;

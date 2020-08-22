@@ -14,8 +14,8 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.ogc.api.GML;
-import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
-import de.ii.xtraplatform.util.xml.XMLPathTracker;
+import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.xml.domain.XMLPathTracker;
 
 import java.util.ArrayList;
 import java.util.HashSet;

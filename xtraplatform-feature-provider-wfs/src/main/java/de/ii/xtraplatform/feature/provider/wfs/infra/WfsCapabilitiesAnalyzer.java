@@ -9,18 +9,14 @@ package de.ii.xtraplatform.feature.provider.wfs.infra;
 
 import com.google.common.base.Strings;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
-import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.feature.provider.api.AbstractFeatureProviderMetadataConsumer;
 import de.ii.xtraplatform.features.domain.ImmutableMetadata;
 import de.ii.xtraplatform.features.domain.Metadata;
-import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
 
 import javax.xml.namespace.QName;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 public class WfsCapabilitiesAnalyzer extends AbstractFeatureProviderMetadataConsumer {
 

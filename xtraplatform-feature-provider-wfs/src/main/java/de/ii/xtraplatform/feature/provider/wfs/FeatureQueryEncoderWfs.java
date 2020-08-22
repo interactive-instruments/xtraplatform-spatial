@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import akka.japi.Pair;
-import de.ii.xtraplatform.cql.app.CqlToText;
+import de.ii.xtraplatform.cql.domain.CqlToText;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
@@ -22,7 +22,7 @@ import de.ii.xtraplatform.ogc.api.wfs.GetFeatureBuilder;
 import de.ii.xtraplatform.ogc.api.wfs.WfsQuery;
 import de.ii.xtraplatform.ogc.api.wfs.WfsQueryBuilder;
 import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder;
-import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
 import org.geotools.filter.FilterFactoryImpl;
 import org.geotools.filter.spatial.BBOXImpl;
 import org.geotools.filter.text.cql2.CQLException;

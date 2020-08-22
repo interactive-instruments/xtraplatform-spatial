@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.codelists;
 
-import de.ii.xtraplatform.entities.domain.PersistentEntity;
+import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
 
 /**
  * @author zahnen

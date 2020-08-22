@@ -11,9 +11,9 @@
 package de.ii.xtraplatform.ogc.csw.client;
 
 import de.ii.xtraplatform.ogc.api.CSW;
-import de.ii.xtraplatform.util.xml.XMLDocument;
-import de.ii.xtraplatform.util.xml.XMLDocumentFactory;
-import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.xml.domain.XMLDocument;
+import de.ii.xtraplatform.xml.domain.XMLDocumentFactory;
+import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
 import org.apache.http.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

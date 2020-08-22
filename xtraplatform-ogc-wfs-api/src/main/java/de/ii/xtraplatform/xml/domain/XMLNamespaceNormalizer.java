@@ -10,7 +10,7 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.util.xml;
+package de.ii.xtraplatform.xml.domain;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

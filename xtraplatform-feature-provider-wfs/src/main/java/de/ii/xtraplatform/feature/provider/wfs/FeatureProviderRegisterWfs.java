@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.dropwizard.api.JacksonSubTypeIds;
+import de.ii.xtraplatform.dropwizard.domain.JacksonSubTypeIds;
 import de.ii.xtraplatform.feature.provider.wfs.app.FeatureProviderWfs;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.infra.WfsConnectorHttp;

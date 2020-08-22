@@ -14,7 +14,7 @@ import de.ii.xtraplatform.feature.provider.wfs.domain.ImmutableConnectionInfoWfs
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureProviderDataTransformer;
 import de.ii.xtraplatform.ogc.api.WFS;
-import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
 import org.apache.http.client.utils.URIBuilder;
 
 import javax.xml.namespace.QName;

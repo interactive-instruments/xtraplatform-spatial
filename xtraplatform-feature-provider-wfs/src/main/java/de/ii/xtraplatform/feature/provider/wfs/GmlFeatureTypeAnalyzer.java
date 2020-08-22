@@ -20,8 +20,8 @@ import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_TYPE;
 import de.ii.xtraplatform.ogc.api.GML;
-import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
-import de.ii.xtraplatform.util.xml.XMLPathTracker;
+import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.xml.domain.XMLPathTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

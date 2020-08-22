@@ -10,8 +10,8 @@ package de.ii.xtraplatform.feature.transformer.api;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.entities.domain.maptobuilder.Buildable;
-import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableBuilder;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import org.immutables.value.Value;
 

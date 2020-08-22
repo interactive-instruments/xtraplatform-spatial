@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider.pgis;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.dropwizard.api.JacksonSubTypeIds;
+import de.ii.xtraplatform.dropwizard.domain.JacksonSubTypeIds;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlConnectorSlick;
 import org.apache.felix.ipojo.annotations.Component;

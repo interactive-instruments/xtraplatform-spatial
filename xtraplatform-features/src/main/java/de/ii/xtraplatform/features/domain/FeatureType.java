@@ -15,10 +15,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.entities.domain.maptobuilder.Buildable;
-import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableBuilder;
-import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableMap;
-import de.ii.xtraplatform.entities.domain.maptobuilder.encoding.BuildableMapEncodingEnabled;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import org.immutables.value.Value;
 
 import java.util.ArrayList;

@@ -7,9 +7,9 @@
  */
 package de.ii.xtraplatform.codelists;
 
-import de.ii.xtraplatform.entities.domain.AbstractPersistentEntity;
-import de.ii.xtraplatform.entities.domain.EntityComponent;
-import de.ii.xtraplatform.entities.domain.handler.Entity;
+import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
+import de.ii.xtraplatform.store.domain.entities.EntityComponent;
+import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

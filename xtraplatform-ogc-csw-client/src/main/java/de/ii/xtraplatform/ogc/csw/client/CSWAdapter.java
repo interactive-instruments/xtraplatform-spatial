@@ -13,7 +13,7 @@ package de.ii.xtraplatform.ogc.csw.client;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.ogc.api.CSW;
 import de.ii.xtraplatform.ogc.api.exceptions.ReadError;
-import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;

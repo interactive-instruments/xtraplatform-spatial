@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.codelists;
 
-import de.ii.xtraplatform.stringtemplates.StringTemplateFilters;
+import de.ii.xtraplatform.stringtemplates.domain.StringTemplateFilters;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
 import org.immutables.value.Value;
 import org.slf4j.Logger;

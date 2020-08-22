@@ -10,7 +10,7 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Doubles;
-import de.ii.xtraplatform.cql.app.CqlToText;
+import de.ii.xtraplatform.cql.domain.CqlToText;
 import de.ii.xtraplatform.cql.domain.Between;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.During;

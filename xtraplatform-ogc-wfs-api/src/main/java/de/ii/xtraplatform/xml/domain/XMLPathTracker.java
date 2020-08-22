@@ -8,7 +8,7 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.util.xml;
+package de.ii.xtraplatform.xml.domain;
 
 import com.google.common.base.Joiner;
 

@@ -8,10 +8,10 @@
 package de.ii.xtraplatform.features.app;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.entities.domain.EntityData;
-import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
-import de.ii.xtraplatform.entities.domain.EntityMigration;
-import de.ii.xtraplatform.entities.domain.handler.Entity;
+import de.ii.xtraplatform.store.domain.entities.EntityData;
+import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
+import de.ii.xtraplatform.store.domain.entities.EntityMigration;
+import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
