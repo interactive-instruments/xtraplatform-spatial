@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
+import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.CqlToText;
 import de.ii.xtraplatform.cql.infra.CqlTextParser;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
@@ -28,6 +29,7 @@ import org.threeten.extra.Interval;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 
 @Component
@@ -83,6 +85,13 @@ public class CqlImpl implements Cql {
         }
 
         throw new IllegalStateException();
+    }
+
+    @Override
+    public List<String> findInvalidProperties(CqlPredicate cqlPredicate, Collection<String> validProperties) {
+        CqlPropertyChecker visitor = new CqlPropertyChecker(validProperties);
+
+        return cqlPredicate.accept(visitor);
     }
 
     static class IntervalConverter extends StdConverter<Interval, List<String>> {

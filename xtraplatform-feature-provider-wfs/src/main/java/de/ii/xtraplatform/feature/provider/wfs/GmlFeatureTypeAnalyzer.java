@@ -38,7 +38,6 @@ import java.util.Set;
 public class GmlFeatureTypeAnalyzer {
 
 
-
     public static final String GML_NS_URI = GML.getNS(GML.VERSION._2_1_1);
     private static final Logger LOGGER = LoggerFactory.getLogger(GmlFeatureTypeAnalyzer.class);
 
