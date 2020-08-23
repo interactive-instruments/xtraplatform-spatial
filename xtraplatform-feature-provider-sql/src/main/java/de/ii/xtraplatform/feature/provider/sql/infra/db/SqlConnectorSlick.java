@@ -8,25 +8,28 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import akka.stream.alpakka.slick.javadsl.SlickSession;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.health.HealthCheckRegistry;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import de.ii.xtraplatform.dropwizard.domain.Dropwizard;
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureProviderSql;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
-import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
+import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Invalidate;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Provides;
+import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.ServiceController;
 import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.apache.felix.ipojo.annotations.Validate;
@@ -37,7 +40,9 @@ import org.slf4j.LoggerFactory;
 import scala.reflect.ClassTag$;
 import slick.basic.DatabaseConfig;
 import slick.basic.DatabaseConfig$;
+import slick.jdbc.JdbcDataSource;
 import slick.jdbc.JdbcProfile;
+import slick.jdbc.hikaricp.HikariCPJdbcDataSource;
 
 import java.util.Base64;
 import java.util.Objects;
@@ -60,6 +65,9 @@ public class SqlConnectorSlick implements SqlConnector {
 
     private final ClassLoader classLoader;
     private final ConnectionInfoSql connectionInfo;
+    private final String poolName;
+    private final MetricRegistry metricRegistry;
+    private final HealthCheckRegistry healthCheckRegistry;
 
     private SlickSession session;
     private SqlClient sqlClient;
@@ -68,32 +76,16 @@ public class SqlConnectorSlick implements SqlConnector {
     @ServiceController(value=false)
     private boolean controller;
 
-    public SqlConnectorSlick(@Context BundleContext context,
+    public SqlConnectorSlick(@Context BundleContext context, @Requires Dropwizard dropwizard,
                              @Property(name = ".data") FeatureProviderDataV2 data) {
         // bundle class loader has to be passed to Slick for initialization
         this.classLoader = context.getBundle()
                                   .adapt(BundleWiring.class)
                                   .getClassLoader();
         this.connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
-
-        try {
-            // bundle class loader has to be passed to Slick for initialization
-            Thread.currentThread()
-                  .setContextClassLoader(classLoader);
-            DatabaseConfig<JdbcProfile> databaseConfig = DatabaseConfig$.MODULE$.forConfig("", createSlickConfig(connectionInfo), classLoader, ClassTag$.MODULE$.apply(JdbcProfile.class));
-
-            this.session = SlickSession.forConfig(databaseConfig);
-            this.sqlClient = new SqlClientSlick(session);
-
-            this.controller = true;
-
-        } catch (Throwable e) {
-            //TODO: handle properly, service start should fail with error message, show in manager
-            //LOGGER.error("CONNECTING TO DB FAILED", e);
-            this.connectionError = e;
-
-            this.controller = true;
-        }
+        this.poolName = String.format("db.%s", data.getId());
+        this.metricRegistry = dropwizard.getEnvironment().metrics();
+        this.healthCheckRegistry = dropwizard.getEnvironment().healthChecks();
     }
 
     @Validate
@@ -102,10 +94,19 @@ public class SqlConnectorSlick implements SqlConnector {
             // bundle class loader has to be passed to Slick for initialization
             Thread.currentThread()
                   .setContextClassLoader(classLoader);
-            DatabaseConfig<JdbcProfile> databaseConfig = DatabaseConfig$.MODULE$.forConfig("", createSlickConfig(connectionInfo), classLoader, ClassTag$.MODULE$.apply(JdbcProfile.class));
+            Config slickConfig = createSlickConfig(connectionInfo, poolName, healthCheckRegistry);
+            DatabaseConfig<JdbcProfile> databaseConfig = DatabaseConfig$.MODULE$.forConfig("", slickConfig, classLoader, ClassTag$.MODULE$.apply(JdbcProfile.class));
 
             this.session = SlickSession.forConfig(databaseConfig);
             this.sqlClient = new SqlClientSlick(session);
+
+            JdbcDataSource source = session.db()
+                                           .source();
+            if (source instanceof HikariCPJdbcDataSource) {
+                ((HikariCPJdbcDataSource)source).ds().setMetricRegistry(metricRegistry);
+                //TODO: not allowed
+                //((HikariCPJdbcDataSource)source).ds().setHealthCheckRegistry(healthCheckRegistry);
+            }
 
             this.controller = true;
 
@@ -138,34 +139,11 @@ public class SqlConnectorSlick implements SqlConnector {
 
     @Override
     public SqlClient getSqlClient() {
-        /*if (Objects.isNull(sqlClient)) {
-            throw new IllegalStateException("not connected to database");
-        }*/
-
         return sqlClient;
     }
 
-    /*@Override
-    public CompletionStage<Done> runQuery(FeatureQuery query, Sink<SqlRow, CompletionStage<Done>> consumer,
-                                          Map<String, String> additionalQueryParameters) {
-        return null;
-    }
-
-    @Override
-    public Source<SqlRow, NotUsed> getSourceStream(String query) {
-        return getSourceStream(query, NO_OPTIONS);
-    }
-
-    @Override
-    public Source<SqlRow, NotUsed> getSourceStream(String query, SqlQueryOptions options) {
-        return SlickSql.source(session, query, positionedResult -> new SqlRowSlick().read(positionedResult, options));
-
-
-        //return Slick.source(session, query, slickRow -> options.isPlain() ? ModifiableSqlRowPlain.create(). : new SqlRowValues(slickRow, options.getAttributesContainer().get(), options.getContainerPriority()));
-    }*/
-
     //TODO: to SlickConfig.create
-    private static Config createSlickConfig(ConnectionInfoSql connectionInfo) {
+    private static Config createSlickConfig(ConnectionInfoSql connectionInfo, String poolName, HealthCheckRegistry healthCheckRegistry) {
         ImmutableMap.Builder<String, Object> databaseConfig = ImmutableMap.<String, Object>builder()
                 .put("user", connectionInfo.getUser())
                 .put("password", getPassword(connectionInfo))
@@ -173,7 +151,8 @@ public class SqlConnectorSlick implements SqlConnector {
                 .put("properties.serverName", connectionInfo.getHost())
                 .put("properties.databaseName", connectionInfo.getDatabase())
                 .put("numThreads", connectionInfo.getMaxThreads())
-                .put("initializationFailFast", connectionInfo.getInitFailFast());
+                .put("initializationFailFast", connectionInfo.getInitFailFast())
+                .put("poolName", poolName);
 
         if (!connectionInfo.getSchemas().isEmpty()) {
             databaseConfig.put("connectionInitSql", String.format("SET search_path TO %s,public;", Joiner.on(',').join(connectionInfo.getSchemas())));
