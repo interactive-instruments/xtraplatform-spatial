@@ -36,8 +36,8 @@ dependencies {
     provided project(':xtraplatform-feature-transformer-api')
     provided project(':xtraplatform-geotools')
 
-    //TODO: merge with feature-provider-pgis
-    embeddedExport (group: 'com.lightbend.akka', name: 'akka-stream-alpakka-slick_2.12', version: '0.19') {
+    //TODO: upgrade
+    embedded (group: 'com.lightbend.akka', name: 'akka-stream-alpakka-slick_2.12', version: '2.0.1') {
         exclude  group: 'com.typesafe.akka', module: 'akka-stream_2.12'
         exclude  group: 'org.scala-lang', module: 'scala-library'
         exclude  group: 'com.typesafe', module: 'config'
@@ -45,13 +45,13 @@ dependencies {
         exclude  group: 'org.slf4j', module: 'slf4j-api'
     }
 
-    embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.2'
+    embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.16'
 
     embedded group: 'us.fatehi', name: 'schemacrawler-api', version: '16.2.5'
     embedded group: 'us.fatehi', name: 'schemacrawler-tools', version: '16.2.5'
 
     testCompile project(':xtraplatform-feature-transformer-api')
-    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.18'
+    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.31'
 
     //TODO: gradle 6 fixtures
     testImplementation(project(":xtraplatform-cql"))
@@ -72,8 +72,7 @@ jar {
         instructionFirst 'Import-Package', "!io.prometheus.client"
         instructionFirst 'Import-Package', "!com.sun.jna.ptr"
         instructionFirst 'Import-Package', "!org.osgi.service.jdbc"
-        // TODO
-        instructionFirst 'Import-Package', "org.postgresql.ds"
+        instructionFirst 'Import-Package', "!io.micrometer.core.instrument"
     }
 }
 

@@ -9,5 +9,5 @@ dependencies {
     provided project(':xtraplatform-geotools')
 
     testCompile project(':xtraplatform-ogc-wfs-api')
-    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.18'
+    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.31'
 }
