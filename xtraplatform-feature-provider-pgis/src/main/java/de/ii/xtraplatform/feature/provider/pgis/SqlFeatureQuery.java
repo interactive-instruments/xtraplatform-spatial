@@ -188,9 +188,12 @@ public abstract class SqlFeatureQuery {
 
     @Value.Derived
     public SqlPathTree getSqlPath() {
-        return getSqlPaths().findChildEndsWith("/" + getMatchPaths().get(0)
-                                                                    .get(getMatchPaths().get(0)
-                                                                                        .size() - 2));
+        List<String> firstMatchPath = getMatchPaths().get(0);
+        // use longer match path if possible to prevent mix-ups
+        if (firstMatchPath.size() > 4 && firstMatchPath.get(firstMatchPath.size() - 3).contains("_2_")) {
+            return getSqlPaths().findChildEndsWith(String.format("/%s/%s", firstMatchPath.get(firstMatchPath.size() - 3), firstMatchPath.get(firstMatchPath.size() - 2)));
+        }
+        return getSqlPaths().findChildEndsWith(String.format("/%s", firstMatchPath.get(firstMatchPath.size() - 2)));
     }
 
     @Value.Derived
