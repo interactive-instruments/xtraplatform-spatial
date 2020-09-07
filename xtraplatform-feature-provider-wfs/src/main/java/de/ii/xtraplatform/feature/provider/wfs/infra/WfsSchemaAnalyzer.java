@@ -7,8 +7,11 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.infra;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
+import de.ii.xtraplatform.feature.provider.wfs.GMLSchemaParser;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
@@ -25,9 +28,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(WfsSchemaAnalyzer.class);
     public static final String GML_NS_URI = GML.getNS(GML.VERSION._2_1_1);
 
     private final List<FeatureSchema> featureTypes;
@@ -56,6 +62,11 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
     }
 
     @Override
+    public void analyzeNamespace(String uri) {
+        namespaceNormalizer.addNamespace(uri);
+    }
+
+    @Override
     public void analyzeFeatureType(String nsUri, String localName) {
         if (Objects.nonNull(currentFeatureType) && Objects.nonNull(currentLocalName)) {
             addLastProperty();
@@ -71,7 +82,7 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
         currentFeatureType = new ImmutableFeatureSchema.Builder();
         currentFeatureType.name(currentLocalName)
                 .type(SchemaBase.Type.OBJECT)
-                .sourcePath("/" + localName.toLowerCase());
+                .sourcePath("/" + currentQualifiedName);
     }
 
     @Override
@@ -87,7 +98,7 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
             if (currentFeatureType != null && !isPathMapped(path)) {
                 ImmutableFeatureSchema.Builder featureProperty = new ImmutableFeatureSchema.Builder()
                         .name("id")
-                        .sourcePath(currentPath.toFieldNameGml())
+                        .sourcePath(getSourcePath(currentPath.asList()))
                         .role(FeatureSchema.Role.ID)
                         .type(FeatureSchema.Type.STRING);
                 currentFeatureType.putPropertyMap(localName, featureProperty);
@@ -107,6 +118,11 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
         if (path.startsWith(GML_NS_URI)) {
             return;
         }
+
+        if (depth == 1) {
+            currentParentProperty = null;
+        }
+
         if (currentFeatureType != null && !isPathMapped(path)) {
 
             ImmutableFeatureSchema.Builder property = new ImmutableFeatureSchema.Builder();
@@ -116,16 +132,18 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
             if (propertyType.isPresent()) {
                 String fieldNameGml = currentPath.toFieldNameGml();
                 property.name(getShortPropertyName(fieldNameGml))
-                        .sourcePath(getSourcePath(fieldNameGml))
+                        .sourcePath(getSourcePath(currentPath.asList()))
                         .type(propertyType.get());
                 if (propertyType.get() == FeatureSchema.Type.GEOMETRY) {
                     property.geometryType(TargetMappingProviderFromGml.GML_GEOMETRY_TYPE.fromString(type).toSimpleFeatureGeometry());
                     if (crsMap.containsKey(currentLocalName)) {
-                        String crs = crsMap.get(currentLocalName).split("EPSG::")[1];
+                        String crs = String
+                            .valueOf(EpsgCrs.fromString(crsMap.get(currentLocalName)).getCode());
                         property.additionalInfo(ImmutableMap.of(
                                 "crs", crs,
                                 "multiple", String.valueOf(isParentMultiple)));
                     }
+                    mappedPaths.add(path);
                 }
                 if (propertyType.get() == SchemaBase.Type.VALUE_ARRAY) {
                     property.valueType(getFeatureSchemaType(TargetMappingProviderFromGml.GML_TYPE.fromString(type)));
@@ -248,8 +266,15 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
         }
     }
 
-    private String getSourcePath(String path) {
-        return path.replace("[]", "").replace(".", "/");
+    private String getSourcePath(List<String> path) {
+        String sourcePath = namespaceNormalizer.getPrefixedPath(Joiner.on('/').join(path));
+        if (Objects.nonNull(currentParentProperty) &&
+            properties.get(currentParentProperty).getSourcePath().isPresent()) {
+            LOGGER.info("SP: {} {}", sourcePath, properties.get(currentParentProperty).getSourcePath().get());
+            sourcePath = sourcePath.substring(properties.get(currentParentProperty).getSourcePath().get().length() +1);
+        }
+
+        return sourcePath;
     }
 
     // this prevents that we descend further on a mapped path

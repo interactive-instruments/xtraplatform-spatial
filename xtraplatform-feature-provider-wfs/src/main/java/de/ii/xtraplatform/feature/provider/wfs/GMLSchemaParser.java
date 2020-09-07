@@ -114,6 +114,8 @@ public class GMLSchemaParser {
 
             XSSchemaSet schemas = parser.getResult();
 
+            schemas.getSchemas().forEach(xsSchema -> analyzers.forEach(analyzer -> analyzer.analyzeNamespace(xsSchema.getTargetNamespace())));
+
             for (GML.VERSION version : GML.VERSION.values()) {
                 XSSchema schema0 = schemas.getSchema(GML.getWord(version, GML.NAMESPACE.URI));
                 if (schema0 != null) {

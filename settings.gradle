@@ -7,7 +7,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'xtraplatform-sdi-tools'
+rootProject.name = 'xtraplatform-spatial'
 
 rootDir.listFiles().each { file ->
     if (file.isDirectory() && file.name.startsWith('xtraplatform-')) {
@@ -15,3 +15,5 @@ rootDir.listFiles().each { file ->
     }  
 }
 
+//includeBuild '../xtraplatform/xtraplatform-gradle-plugins'
+//includeBuild '../xtraplatform/xtraplatform-core'

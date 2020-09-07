@@ -10,6 +10,7 @@ package de.ii.xtraplatform.feature.provider.wfs.app;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.store.domain.entities.EntityHydrator;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
@@ -20,6 +21,7 @@ import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
@@ -58,11 +60,11 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
                 LOGGER.info("Feature provider with id '{}' is in auto mode, generating configuration ...", data.getId());
             }
 
-            FeatureProviderDataV2 hydrated = completeConnectionInfoIfNecessary(connector,
+            FeatureProviderDataV2 hydrated = cleanupAdditionalInfo(completeConnectionInfoIfNecessary(connector,
                     generateNativeCrsIfNecessary(
                             generateTypesIfNecessary(connector, data)
                     )
-            );
+            ));
 
             connectorFactory.disposeConnector(connector);
 
@@ -141,6 +143,29 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
                     .from(data)
                     .nativeCrs(nativeCrs)
                     .build();
+
+        }
+
+        return data;
+    }
+
+    private FeatureProviderDataV2 cleanupAdditionalInfo(FeatureProviderDataV2 data) {
+        if (data.isAuto()) {
+            return new ImmutableFeatureProviderDataV2.Builder()
+                .from(data)
+                .types(data.getTypes().entrySet().stream()
+                    .map(entry -> new SimpleImmutableEntry<>(entry.getKey(), new ImmutableFeatureSchema.Builder()
+                        .from(entry.getValue())
+                        .additionalInfo(ImmutableMap.of())
+                        .propertyMap(entry.getValue().getPropertyMap().entrySet().stream()
+                            .map(entry2 -> new SimpleImmutableEntry<>(entry2.getKey(), new ImmutableFeatureSchema.Builder()
+                                .from(entry2.getValue())
+                                .additionalInfo(ImmutableMap.of())
+                                .build()))
+                            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
+                        .build()))
+                    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
+                .build();
 
         }
 
