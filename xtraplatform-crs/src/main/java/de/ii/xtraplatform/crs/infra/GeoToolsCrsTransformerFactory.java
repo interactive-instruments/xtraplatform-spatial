@@ -15,6 +15,7 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
@@ -46,8 +47,8 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
     private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
 
     public GeoToolsCrsTransformerFactory() {
-        this.crsCache = new HashMap<>();
-        this.transformerCache = new HashMap<>();
+        this.crsCache = new ConcurrentHashMap<>();
+        this.transformerCache = new ConcurrentHashMap<>();
 
         //TODO: at service start
 
@@ -96,7 +97,7 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
             throw new IllegalArgumentException(String.format("CRS %s is not supported.", targetCrs.toSimpleString()));
         }
 
-        transformerCache.computeIfAbsent(sourceCrs, ignore -> new HashMap<>());
+        transformerCache.computeIfAbsent(sourceCrs, ignore -> new ConcurrentHashMap<>());
         Map<EpsgCrs, CrsTransformer> transformerCacheForSourceCrs = transformerCache.get(sourceCrs);
         transformerCacheForSourceCrs.computeIfAbsent(targetCrs, ignore -> createCrsTransformer(sourceCrs, targetCrs));
 
