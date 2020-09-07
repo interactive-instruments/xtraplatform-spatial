@@ -191,6 +191,13 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
         return getType() == Type.DATETIME;
     }
 
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isConstant() {
+        return (isValue() && getConstantValue().isPresent()) || (isObject() && getProperties().stream().allMatch(FeatureSchema::isConstant));
+    }
+
     //TODO
     @JsonIgnore
     @Value.Derived

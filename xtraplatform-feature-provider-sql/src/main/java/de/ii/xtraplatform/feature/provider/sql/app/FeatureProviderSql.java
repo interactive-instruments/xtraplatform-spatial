@@ -120,7 +120,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect, data.getNativeCrs()
                                                                                               .orElse(OgcCrs.CRS84));
         this.featureMutationsSql = new FeatureMutationsSql(connector.getSqlClient(), new SqlInsertGenerator2(data.getNativeCrs()
-                                                                                                                 .orElse(OgcCrs.CRS84), crsTransformerFactory));
+                                                                                                                 .orElse(OgcCrs.CRS84), crsTransformerFactory, ((ConnectionInfoSql)data.getConnectionInfo()).getPathSyntax()));
         this.schemaSwapperSql = createSchemaSwapper((ConnectionInfoSql) data.getConnectionInfo(), cql);
         this.pathParser = createPathParser2((ConnectionInfoSql) data.getConnectionInfo(), cql);
     }
@@ -262,9 +262,13 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
         FeatureSchema migrated = schema.get();//FeatureSchemaNamePathSwapper.migrate(schema.get());
 
-        SchemaSql sqlSchema = migrated.accept(new SchemaBuilderSql(pathParser));
+        List<SchemaSql> sqlSchema = migrated.accept(new SchemaBuilderSql(pathParser));
 
-        SchemaSql mutationSchemaSql = sqlSchema.accept(new MutationSchemaBuilderSql());
+        if (sqlSchema.isEmpty()) {
+            throw new IllegalStateException("Mutation mapping could not be derived from provider schema.");
+        }
+
+        SchemaSql mutationSchemaSql = sqlSchema.get(0).accept(new MutationSchemaBuilderSql());
 
         RunnableGraph<CompletionStage<MutationResult>> result = featureMutationsSql.getDeletionSource(mutationSchemaSql, id)
                                                                                    .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<MutationResult>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
@@ -299,11 +303,15 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         //TODO: multiple mappings per path
         //Multimap<List<String>, FeatureSchema> mapping2 = migrated.accept(new SchemaToMappingVisitor<>());
 
-        SchemaSql sqlSchema = migrated.accept(new SchemaBuilderSql(pathParser));
+        List<SchemaSql> sqlSchema = migrated.accept(new SchemaBuilderSql(pathParser));
+
+        if (sqlSchema.isEmpty()) {
+            throw new IllegalStateException("Mutation mapping could not be derived from provider schema.");
+        }
 
         //Multimap<List<String>, SchemaSql> mapping3 = sqlSchema.accept(new SchemaToMappingVisitor<>());
 
-        SchemaSql mutationSchemaSql = sqlSchema.accept(new MutationSchemaBuilderSql());
+        SchemaSql mutationSchemaSql = sqlSchema.get(0).accept(new MutationSchemaBuilderSql());
 
         SchemaMapping<SchemaSql> mapping4 = new ImmutableSchemaMappingSql.Builder().targetSchema(mutationSchemaSql)
                                                                                    .build();

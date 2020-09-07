@@ -195,7 +195,7 @@ public class FeatureMutationsSql {
 
         String table = schema.getName();
         String primaryKey = schema.getPrimaryKey()
-                                  .orElse("id");
+                                  .orElse(((SqlInsertGenerator2)generator).getSqlOptions().getDefaultPrimaryKey());
 
         return featureSql -> new Pair<>(String.format("DELETE FROM %s WHERE %s=%s RETURNING %2$s", table, primaryKey, id), ignore -> {
         });
@@ -207,6 +207,10 @@ public class FeatureMutationsSql {
 
         if (schema.isFeature()) {
             return createAttributesInserts(schema, rowCursor.get(schema.getPath()), withId);
+        }
+
+        if (!schema.getRelation().isPresent()) {
+            return ImmutableList.of();
         }
 
         FeatureStoreRelation relation = schema.getRelation()

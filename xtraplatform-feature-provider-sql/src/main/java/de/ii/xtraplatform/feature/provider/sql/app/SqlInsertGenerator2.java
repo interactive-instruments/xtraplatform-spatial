@@ -12,6 +12,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax.Options;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import org.slf4j.Logger;
@@ -37,10 +38,17 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
 
     private final EpsgCrs nativeCrs;
     private final CrsTransformerFactory crsTransformerFactory;
+    private final Options sqlOptions;
 
-    public SqlInsertGenerator2(EpsgCrs nativeCrs, CrsTransformerFactory crsTransformerFactory) {
+    public SqlInsertGenerator2(EpsgCrs nativeCrs, CrsTransformerFactory crsTransformerFactory,
+        Options sqlOptions) {
         this.nativeCrs = nativeCrs;
         this.crsTransformerFactory = crsTransformerFactory;
+        this.sqlOptions = sqlOptions;
+    }
+
+    Options getSqlOptions() {
+        return sqlOptions;
     }
 
     public Function<FeatureSql, Pair<String, Consumer<String>>> createInsert(
@@ -49,15 +57,16 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
 
         Optional<FeatureStoreRelation> parentRelation = schema.getRelation();
 
+        String primaryKey = schema.getPrimaryKey()
+            .orElse(sqlOptions.getDefaultPrimaryKey());
+
         Set<String> columns = withId
-                ? ImmutableSet.<String>builder().add(schema.getPrimaryKey()
-                                                           .get())
+                ? ImmutableSet.<String>builder().add(primaryKey)
                                                 .addAll(schema.getValueNames())
                                                 .build()
                 : schema.getValueNames()
                         .stream()
-                        .filter(name -> !Objects.equals(name, schema.getPrimaryKey()
-                                                                    .get()))
+                        .filter(name -> !Objects.equals(name, primaryKey))
                         .collect(ImmutableSet.toImmutableSet());
 
         //TODO: from Syntax
@@ -77,10 +86,8 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
                 idKeys.add(0, String.format("%s.%s", parentRelation.get()
                                                                    .getSourceContainer(), parentRelation.get()
                                                                                                         .getSourceSortKey()));
-                if (!columns2.contains(schema.getPrimaryKey()
-                                             .get())) {
-                    columns2.add(0, schema.getPrimaryKey()
-                                          .get());
+                if (!columns2.contains(primaryKey)) {
+                    columns2.add(0, primaryKey);
                 }
 
             } else if (parentRelation.get()
@@ -104,9 +111,9 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
 
         //TODO: primaryKey instead of id
         String returningId = parentRelation.isPresent() && parentRelation.get()
-                                                                         .isOne2N() ? " RETURNING null" : " RETURNING id";
+                                                                         .isOne2N() ? " RETURNING null" : " RETURNING " + primaryKey;
         Optional<String> returningName = parentRelation.isPresent() && parentRelation.get()
-                                                                                     .isOne2N() ? Optional.empty() : Optional.of(tableName + ".id");
+                                                                                     .isOne2N() ? Optional.empty() : Optional.of(tableName + "." + primaryKey);
 
 
         return feature -> {

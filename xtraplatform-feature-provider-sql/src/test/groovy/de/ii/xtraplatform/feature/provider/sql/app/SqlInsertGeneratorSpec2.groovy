@@ -52,7 +52,7 @@ class SqlInsertGeneratorSpec2 extends Specification {
 
         given:
 
-        SqlInsertGenerator2 inserts = new SqlInsertGenerator2(null, null);
+        SqlInsertGenerator2 inserts = new SqlInsertGenerator2(null, null,);
 
         when:
 
@@ -84,7 +84,7 @@ class SqlInsertGeneratorSpec2 extends Specification {
 
         given:
 
-        SqlInsertGenerator2 inserts = new SqlInsertGenerator2(null, null);
+        SqlInsertGenerator2 inserts = new SqlInsertGenerator2(null, null,);
         SchemaSql schema = MERGE_MERGE_ONE_2_ONE_SCHEMA
 
         when:
@@ -102,7 +102,7 @@ class SqlInsertGeneratorSpec2 extends Specification {
 
         given:
 
-        SqlInsertGenerator2 inserts = new SqlInsertGenerator2(null, null);
+        SqlInsertGenerator2 inserts = new SqlInsertGenerator2(null, null,);
         SchemaSql schema = MERGE_MERGE_M_2_N_SCHEMA
 
         when:

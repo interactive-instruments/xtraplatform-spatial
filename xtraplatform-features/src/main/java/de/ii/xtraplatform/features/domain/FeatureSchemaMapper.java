@@ -62,6 +62,11 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
     public void onObjectStart(List<String> path, Map<String, String> context) throws Exception {
         List<T> targetSchemas = mapping.getTargetSchemas(path);
 
+        if (targetSchemas.isEmpty()) {
+            LOGGER.warn("No mapping found for path {}.", path);
+            return;
+        }
+
         T objectSchema = targetSchemas.get(targetSchemas.size() - 1);
 
         //TODO
@@ -86,6 +91,10 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
     @Override
     public void onObjectEnd(List<String> path) throws Exception {
         List<T> targetSchemas = mapping.getTargetSchemas(path);
+
+        if (targetSchemas.isEmpty()) {
+            return;
+        }
 
         if (Objects.equals(path.get(0), "geometry")) {
             closeDiffering(ImmutableList.of(), ImmutableList.of());

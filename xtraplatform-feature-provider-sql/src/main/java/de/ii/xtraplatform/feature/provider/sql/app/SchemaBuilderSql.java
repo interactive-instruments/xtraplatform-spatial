@@ -17,6 +17,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.ReverseSchemaBuilder;
 import de.ii.xtraplatform.features.domain.SchemaBase;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,11 +33,14 @@ public class SchemaBuilderSql implements ReverseSchemaBuilder<SchemaSql> {
 
     private static final Joiner JOINER = Joiner.on('/')
                                                .skipNulls();
+    private static final String IGNORE = "__IGNORE__";
 
     private final PathParserSql pathParser;
+    private int ignoreCounter;
 
     public SchemaBuilderSql(PathParserSql pathParser) {
         this.pathParser = pathParser;
+        this.ignoreCounter = 0;
     }
 
     @Override
@@ -57,11 +61,18 @@ public class SchemaBuilderSql implements ReverseSchemaBuilder<SchemaSql> {
     @Override
     public List<SchemaSql> createParents(String parentParentPath, SchemaSql child, Map<List<String>, SchemaSql> objectCache) {
 
-        Optional<SqlPath> sqlPath = pathParser.parse(parentParentPath + "/" + JOINER.join(child.getFullPath()), child.isValue());
+        String path = JOINER.join(child.getFullPath());
+        if (!shouldIgnore(parentParentPath)) {
+            path = parentParentPath + "/" + path;
+        } else {
+            boolean br = true;
+        }
+
+        Optional<SqlPath> sqlPath = pathParser.parse(path, child.isValue());
 
         //TODO: column?
         if (!sqlPath.isPresent()) {
-            throw new IllegalArgumentException("Parse error for SQL path: " + parentParentPath + "/" + JOINER.join(child.getFullPath()));
+            throw new IllegalArgumentException("Parse error for SQL path: " + path);
         }
 
         List<String> tablePathAsList = ReverseSchemaBuilder.SPLITTER.splitToList(sqlPath.get()
@@ -149,6 +160,10 @@ public class SchemaBuilderSql implements ReverseSchemaBuilder<SchemaSql> {
 
     @Override
     public SchemaSql prependToParentPath(List<String> path, SchemaSql schema) {
+        if (shouldIgnore(path)) {
+            return schema;
+        }
+
         return new ImmutableSchemaSql.Builder().from(schema)
                                                .parentPath(path)
                                                .addAllParentPath(schema.getParentPath())
@@ -157,5 +172,26 @@ public class SchemaBuilderSql implements ReverseSchemaBuilder<SchemaSql> {
                                                                        .map(prop -> prependToParentPath(path, prop))
                                                                        .collect(Collectors.toList()))
                                                .build();
+    }
+
+    @Override
+    public SchemaSql prependToSourcePath(String parentSourcePath, SchemaSql schema) {
+        return new ImmutableSchemaSql.Builder().from(schema)
+            .sourcePath(JOINER.join(parentSourcePath, schema.getSourcePath().orElse(null)))
+            .build();
+    }
+
+    @Override
+    public String ignore() {
+            return IGNORE + ignoreCounter++;
+    }
+
+    private boolean shouldIgnore(String path) {
+        return path.startsWith(IGNORE);
+    }
+
+    @Override
+    public boolean shouldIgnore(List<String> path) {
+        return path.isEmpty() || shouldIgnore(path.get(0));
     }
 }
