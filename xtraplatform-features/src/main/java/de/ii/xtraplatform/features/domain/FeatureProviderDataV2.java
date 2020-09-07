@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2.Builder;
 import de.ii.xtraplatform.store.domain.entities.AutoEntity;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
@@ -89,6 +90,23 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
         @JsonProperty(value = "types")
         public ImmutableFeatureProviderDataV2.Builder putTypes2(String key, ImmutableFeatureSchema.Builder builder) {
             return putTypes(key, builder.name(key));
+        }
+
+        public abstract ImmutableFeatureProviderDataV2.Builder id(String id);
+
+        @Override
+        public EntityDataBuilder<FeatureProviderDataV2> fillRequiredFieldsWithPlaceholders() {
+            String placeholder = "__DEFAULT__";
+            return this.id(placeholder)
+                .providerType(placeholder)
+                .featureProviderType(placeholder)
+                .connectionInfo(
+                new ConnectionInfo() {
+                    @Override
+                    public Optional<String> getConnectionUri() {
+                        return Optional.empty();
+                    }
+                });
         }
 
         private static class KeyToNameBuilderMap implements Map<String, ImmutableFeatureSchema.Builder> {

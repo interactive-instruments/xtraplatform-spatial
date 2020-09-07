@@ -42,6 +42,8 @@ import java.util.Objects;
 public class SqlSchemaCrawler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlSchemaCrawler.class);
+    private static final List<String> TABLE_BLACKLIST = ImmutableList.of("spatial_ref_sys", "geography_columns", "geometry_columns", "raster_columns", "raster_overviews");
+
     private final ConnectionInfoSql connectionInfo;
     private final ClassLoader classLoader;
     private Connection connection;
@@ -77,6 +79,10 @@ public class SqlSchemaCrawler {
         for (final Schema schema : catalog.getSchemas()) {
 
             for (final Table table : catalog.getTables(schema)) {
+                if (TABLE_BLACKLIST.contains(table.getName())) {
+                    continue;
+                }
+
                 ImmutableFeatureSchema.Builder featureType = new ImmutableFeatureSchema.Builder()
                                                                     .name(table.getName())
                                                                     .sourcePath("/" + table.getName().toLowerCase());
@@ -86,7 +92,7 @@ public class SqlSchemaCrawler {
                     if (featurePropertyType != SchemaBase.Type.UNKNOWN) {
                         ImmutableFeatureSchema.Builder featureProperty = new ImmutableFeatureSchema.Builder()
                                 .name(column.getName())
-                                .sourcePath(String.format("/%s/%s", table.getName(), column.getName()))
+                                .sourcePath(column.getName())
                                 .type(featurePropertyType);
                         if (column.isPartOfPrimaryKey()) {
                             featureProperty.role(SchemaBase.Role.ID);
