@@ -270,7 +270,7 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
         String sourcePath = namespaceNormalizer.getPrefixedPath(Joiner.on('/').join(path));
         if (Objects.nonNull(currentParentProperty) &&
             properties.get(currentParentProperty).getSourcePath().isPresent()) {
-            LOGGER.info("SP: {} {}", sourcePath, properties.get(currentParentProperty).getSourcePath().get());
+            //LOGGER.info("SP: {} {}", sourcePath, properties.get(currentParentProperty).getSourcePath().get());
             sourcePath = sourcePath.substring(properties.get(currentParentProperty).getSourcePath().get().length() +1);
         }
 
