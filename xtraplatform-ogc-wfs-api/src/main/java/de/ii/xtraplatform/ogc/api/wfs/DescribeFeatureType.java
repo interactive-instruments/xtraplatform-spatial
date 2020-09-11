@@ -16,8 +16,8 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
-import de.ii.xtraplatform.util.xml.XMLDocument;
-import de.ii.xtraplatform.util.xml.XMLDocumentFactory;
+import de.ii.xtraplatform.xml.domain.XMLDocument;
+import de.ii.xtraplatform.xml.domain.XMLDocumentFactory;
 import org.w3c.dom.Element;
 
 import java.util.Map;

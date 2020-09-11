@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.ogc.api.filter;
 
 import de.ii.xtraplatform.ogc.api.FES;
-import de.ii.xtraplatform.util.xml.XMLDocument;
+import de.ii.xtraplatform.xml.domain.XMLDocument;
 import java.util.ArrayList;
 import java.util.List;
 import org.w3c.dom.Element;

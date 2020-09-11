@@ -31,9 +31,5 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
     //TODO
     Optional<Object> getTarget();
 
-    //TODO
-    @Value.Default
-    default Optional<String> getPrimaryKey() {
-        return Optional.of("id");
-    }
+    Optional<String> getPrimaryKey();
 }

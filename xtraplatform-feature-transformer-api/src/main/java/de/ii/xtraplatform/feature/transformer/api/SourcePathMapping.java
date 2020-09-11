@@ -10,8 +10,8 @@ package de.ii.xtraplatform.feature.transformer.api;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import org.immutables.value.Value;
 
@@ -24,12 +24,12 @@ import java.util.Map;
 //@Value.Modifiable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 @JsonDeserialize(builder = ImmutableSourcePathMapping.Builder.class)
-public abstract class SourcePathMapping implements ValueInstance {
+public abstract class SourcePathMapping implements Buildable<SourcePathMapping> {
 
-    abstract static class Builder implements ValueBuilder<SourcePathMapping> {}
+    abstract static class Builder implements BuildableBuilder<SourcePathMapping> {}
 
     @Override
-    public ImmutableSourcePathMapping.Builder toBuilder() {
+    public ImmutableSourcePathMapping.Builder getBuilder() {
         return new ImmutableSourcePathMapping.Builder().from(this);
     }
 

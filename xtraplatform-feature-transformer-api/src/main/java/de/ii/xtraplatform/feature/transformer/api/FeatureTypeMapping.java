@@ -15,10 +15,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
-import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import org.immutables.value.Value;
 
@@ -36,12 +36,12 @@ import java.util.stream.Stream;
 @Value.Immutable
 @Value.Modifiable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
-@ValueBuilderMapEncodingEnabled
+@BuildableMapEncodingEnabled
 //TODO: @JsonAnySetter not generated for ModifiableFeatureTypeMapping
 //TODO: map order only sustained with Builder
 @JsonDeserialize(builder = ImmutableFeatureTypeMapping.Builder.class)
 //@JsonDeserialize(as = ModifiableFeatureTypeMappingAnySetter.class)
-public abstract class FeatureTypeMapping implements ValueInstance {
+public abstract class FeatureTypeMapping implements Buildable<FeatureTypeMapping> {
 
     private static final Splitter SPLITTER_NS_HTTP = Splitter.onPattern("\\/(?=http)");
     private static final Splitter SPLITTER_NS_HTTPS = Splitter.onPattern("\\/(?=https)");
@@ -49,7 +49,7 @@ public abstract class FeatureTypeMapping implements ValueInstance {
     public static final String NS_HTTP = "http://";
     public static final String NS_HTTPS = "https://";
 
-    abstract static class Builder implements ValueBuilder<FeatureTypeMapping> {
+    abstract static class Builder implements BuildableBuilder<FeatureTypeMapping> {
         //@JsonAnySetter
         //public abstract ImmutableFeatureTypeMapping.Builder putMappings(String key, SourcePathMapping value);
 
@@ -58,7 +58,7 @@ public abstract class FeatureTypeMapping implements ValueInstance {
     }
 
     @Override
-    public ImmutableFeatureTypeMapping.Builder toBuilder() {
+    public ImmutableFeatureTypeMapping.Builder getBuilder() {
         return new ImmutableFeatureTypeMapping.Builder().from(this);
     }
 
@@ -68,7 +68,7 @@ public abstract class FeatureTypeMapping implements ValueInstance {
     //behaves exactly like Map<String, FeatureTypeConfigurationOgcApi>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonMerge
-    public abstract ValueBuilderMap<SourcePathMapping, ImmutableSourcePathMapping.Builder> getMappings();
+    public abstract BuildableMap<SourcePathMapping, ImmutableSourcePathMapping.Builder> getMappings();
 
     @JsonIgnore
     @Value.Derived

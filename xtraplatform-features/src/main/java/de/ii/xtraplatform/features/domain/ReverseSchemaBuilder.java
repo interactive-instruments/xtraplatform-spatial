@@ -9,23 +9,28 @@ package de.ii.xtraplatform.features.domain;
 
 import com.google.common.base.Splitter;
 
+import com.google.common.collect.ImmutableList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-public interface ReverseSchemaBuilder<T extends SchemaBase<T>> extends SchemaVisitor<FeatureSchema, T> {
+public interface ReverseSchemaBuilder<T extends SchemaBase<T>> extends SchemaVisitor<FeatureSchema, List<T>> {
 
     @Override
-    default T visit(FeatureSchema schema, List<T> visitedProperties) {
+    default List<T> visit(FeatureSchema schema, List<List<T>> visitedProperties) {
 
-        List<String> currentPath = splitPath(schema.getSourcePath().orElse(""));
+      if (schema.isConstant()) {
+        return ImmutableList.of();
+      }
 
-        T current = create(currentPath, schema);
+        List<String> currentPath = splitPath(schema.getSourcePath().orElse(ignore()));
 
         Map<List<String>, T> objectCache = new LinkedHashMap<>();
 
         List<T> properties = visitedProperties.stream()
+              .flatMap(List::stream)
                 .map(sourceSchema -> {
                     List<String> parentPath = sourceSchema.getParentPath();
 
@@ -49,7 +54,15 @@ public interface ReverseSchemaBuilder<T extends SchemaBase<T>> extends SchemaVis
                 .map(sourceSchema -> prependToParentPath(currentPath, sourceSchema))
                 .collect(Collectors.toList());
 
-        return addChildren(current, properties);
+        if (shouldIgnore(currentPath)) {
+          return properties.stream()
+              .map(sourceSchema -> prependToSourcePath(schema.getName(), sourceSchema))
+              .collect(Collectors.toList());
+        }
+
+      T current = create(currentPath, schema);
+
+        return ImmutableList.of(addChildren(current, properties));
     }
 
     List<T> createParents(String parentParentPath, T child, Map<List<String>, T> objectCache);
@@ -60,9 +73,15 @@ public interface ReverseSchemaBuilder<T extends SchemaBase<T>> extends SchemaVis
 
     T prependToParentPath(List<String> path, T schema);
 
+  T prependToSourcePath(String parentSourcePath, T schema);
+
     Splitter SPLITTER = Splitter.on('/').omitEmptyStrings();
 
     default List<String> splitPath(String path) {
         return SPLITTER.splitToList(path);
     }
+
+  String ignore();
+
+    boolean shouldIgnore(List<String> path);
 }

@@ -13,10 +13,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
-import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import org.immutables.value.Value;
 
@@ -29,10 +29,10 @@ import java.util.stream.Collectors;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
-@ValueBuilderMapEncodingEnabled
+@BuildableMapEncodingEnabled
 @JsonDeserialize(builder = ImmutableFeatureSchema.Builder.class)
 @JsonPropertyOrder({"sourcePath", "type", "role", "valueType", "geometryType", "objectType", "label", "description", "transformers", "constraints", "properties"})
-public interface FeatureSchema extends SchemaBase<FeatureSchema>, ValueInstance {
+public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<FeatureSchema> {
 
     @JsonIgnore
     @Override
@@ -80,10 +80,10 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, ValueInstance 
     //behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonProperty(value = "properties")
-    ValueBuilderMap<FeatureSchema, ImmutableFeatureSchema.Builder> getPropertyMap();
+    BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getPropertyMap();
 
     // custom builder to automatically use keys of properties as name
-    abstract class Builder implements ValueBuilder<FeatureSchema> {
+    abstract class Builder implements BuildableBuilder<FeatureSchema> {
 
         public abstract ImmutableFeatureSchema.Builder putPropertyMap(String key,
                                                                       ImmutableFeatureSchema.Builder builder);
@@ -109,7 +109,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, ValueInstance 
     }
 
     @Override
-    default ImmutableFeatureSchema.Builder toBuilder() {
+    default ImmutableFeatureSchema.Builder getBuilder() {
         return new ImmutableFeatureSchema.Builder().from(this);
     }
 
@@ -189,6 +189,13 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, ValueInstance 
     @Value.Auxiliary
     default boolean isTemporal() {
         return getType() == Type.DATETIME;
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isConstant() {
+        return (isValue() && getConstantValue().isPresent()) || (isObject() && getProperties().stream().allMatch(FeatureSchema::isConstant));
     }
 
     //TODO

@@ -26,9 +26,9 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Predicate;
 
-import static de.ii.xtraplatform.util.functional.LambdaWithException.biConsumerMayThrow;
-import static de.ii.xtraplatform.util.functional.LambdaWithException.consumerMayThrow;
-import static de.ii.xtraplatform.util.functional.LambdaWithException.mayThrow;
+import static de.ii.xtraplatform.dropwizard.domain.LambdaWithException.biConsumerMayThrow;
+import static de.ii.xtraplatform.dropwizard.domain.LambdaWithException.consumerMayThrow;
+import static de.ii.xtraplatform.dropwizard.domain.LambdaWithException.mayThrow;
 
 /**
  * @author zahnen

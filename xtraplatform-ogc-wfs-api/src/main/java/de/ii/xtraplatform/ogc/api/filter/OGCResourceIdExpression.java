@@ -11,8 +11,7 @@
 package de.ii.xtraplatform.ogc.api.filter;
 
 import de.ii.xtraplatform.ogc.api.FES;
-import de.ii.xtraplatform.ogc.api.GML;
-import de.ii.xtraplatform.util.xml.XMLDocument;
+import de.ii.xtraplatform.xml.domain.XMLDocument;
 
 import java.util.Map;
 import org.w3c.dom.Element;

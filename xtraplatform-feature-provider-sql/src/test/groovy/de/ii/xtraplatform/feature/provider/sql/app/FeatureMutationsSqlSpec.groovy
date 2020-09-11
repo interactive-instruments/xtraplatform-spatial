@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app
 
-import akka.japi.Pair
+
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.crs.domain.OgcCrs
@@ -15,7 +15,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import spock.lang.Specification
 
-import java.util.function.Consumer
 import java.util.function.Function
 
 import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.FULL
@@ -37,7 +36,7 @@ class FeatureMutationsSqlSpec extends Specification {
 
         given:
 
-        FeatureMutationsSql inserts = Spy(new FeatureMutationsSql(null, new SqlInsertGenerator2(OgcCrs.CRS84, null)))
+        FeatureMutationsSql inserts = Spy(new FeatureMutationsSql(null, new SqlInsertGenerator2(OgcCrs.CRS84, null,)))
 
         Map<List<String>, List<Integer>> rows = ImmutableMap.<List<String>, List<Integer>> builder()
                 .put(MAIN_M_2_N_SCHEMA.getFullPath(), ImmutableList.of(3))

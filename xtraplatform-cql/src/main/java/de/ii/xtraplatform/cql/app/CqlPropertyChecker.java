@@ -13,14 +13,15 @@ import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.Property;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class CqlPropertyChecker extends CqlVisitorBase<List<String>> {
 
-    private final List<String> allowedProperties;
+    private final Collection<String> allowedProperties;
     private final List<String> invalidProperties = new ArrayList<>();
 
-    public CqlPropertyChecker(List<String> allowedProperties) {
+    public CqlPropertyChecker(Collection<String> allowedProperties) {
         this.allowedProperties = allowedProperties;
     }
 

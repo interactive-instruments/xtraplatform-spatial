@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
 import com.google.common.base.Splitter;
-import de.ii.xtraplatform.api.functional.LambdaWithException;
+import de.ii.xtraplatform.dropwizard.domain.LambdaWithException;
 import de.ii.xtraplatform.features.domain.FeatureConsumer;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;

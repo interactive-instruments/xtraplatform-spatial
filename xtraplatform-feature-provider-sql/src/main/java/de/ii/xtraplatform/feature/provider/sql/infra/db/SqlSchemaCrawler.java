@@ -9,15 +9,10 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.provider.sql.app.SimpleFeatureGeometryFromToWkt;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
-import de.ii.xtraplatform.features.domain.FeaturePropertyV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureTypeV2;
-import de.ii.xtraplatform.features.domain.ImmutableFeaturePropertyV2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureTypeV2;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +42,8 @@ import java.util.Objects;
 public class SqlSchemaCrawler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlSchemaCrawler.class);
+    private static final List<String> TABLE_BLACKLIST = ImmutableList.of("spatial_ref_sys", "geography_columns", "geometry_columns", "raster_columns", "raster_overviews");
+
     private final ConnectionInfoSql connectionInfo;
     private final ClassLoader classLoader;
     private Connection connection;
@@ -82,6 +79,10 @@ public class SqlSchemaCrawler {
         for (final Schema schema : catalog.getSchemas()) {
 
             for (final Table table : catalog.getTables(schema)) {
+                if (TABLE_BLACKLIST.contains(table.getName())) {
+                    continue;
+                }
+
                 ImmutableFeatureSchema.Builder featureType = new ImmutableFeatureSchema.Builder()
                                                                     .name(table.getName())
                                                                     .sourcePath("/" + table.getName().toLowerCase());
@@ -91,18 +92,20 @@ public class SqlSchemaCrawler {
                     if (featurePropertyType != SchemaBase.Type.UNKNOWN) {
                         ImmutableFeatureSchema.Builder featureProperty = new ImmutableFeatureSchema.Builder()
                                 .name(column.getName())
-                                .sourcePath(String.format("/%s/%s", table.getName(), column.getName()))
+                                .sourcePath(column.getName())
                                 .type(featurePropertyType);
                         if (column.isPartOfPrimaryKey()) {
                             featureProperty.role(SchemaBase.Role.ID);
                         }
-                        if (featurePropertyType == SchemaBase.Type.GEOMETRY && !Objects.isNull(geometry.get(table.getName()))) {
+                        if (featurePropertyType == SchemaBase.Type.GEOMETRY) {
+                            if (Objects.isNull(geometry.get(table.getName()))) {
+                                continue;
+                            }
                             List<String> geometryInfo = geometry.get(table.getName());
-                            String geometryType = SimpleFeatureGeometryFromToWkt.fromString(geometryInfo.get(0))
-                                    .toSimpleFeatureGeometry()
-                                    .toString();
                             String crs = geometryInfo.get(1);
-                            featureProperty.additionalInfo(ImmutableMap.of("geometryType", geometryType, "crs", crs));
+                            featureProperty.geometryType(SimpleFeatureGeometryFromToWkt.fromString(geometryInfo.get(0))
+                                            .toSimpleFeatureGeometry())
+                                    .additionalInfo(ImmutableMap.of("crs", crs));
                         }
                         featureType.putPropertyMap(column.getName(), featureProperty.build());
                     }

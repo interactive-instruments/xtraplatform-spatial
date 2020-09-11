@@ -20,6 +20,7 @@ public interface FeatureProviderSchemaConsumer {
     void analyzeProperty(String nsUri, String localName, String type, long minOccurs, long maxOccurs,
                          int depth, boolean isParentMultiple, boolean isComplex, boolean isObject);
     boolean analyzeNamespaceRewrite(String oldNamespace, String newNamespace, String featureTypeName);
+    default void analyzeNamespace(String uri) {}
     void analyzeFailure(Throwable e);
     void analyzeSuccess();
 }

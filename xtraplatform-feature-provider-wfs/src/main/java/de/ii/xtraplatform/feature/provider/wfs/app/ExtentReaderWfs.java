@@ -11,7 +11,6 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import com.fasterxml.aalto.stax.InputFactoryImpl;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -21,12 +20,11 @@ import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.Metadata;
-import org.codehaus.staxmate.SMInputFactory;
 
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
-import static de.ii.xtraplatform.api.functional.LambdaWithException.mayThrow;
+import static de.ii.xtraplatform.dropwizard.domain.LambdaWithException.mayThrow;
 
 public class ExtentReaderWfs implements ExtentReader {
 

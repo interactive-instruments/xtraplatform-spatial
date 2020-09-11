@@ -7,6 +7,9 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import java.util.Collection;
+import java.util.List;
+
 public interface Cql {
 
     enum Format {TEXT, JSON}
@@ -14,5 +17,7 @@ public interface Cql {
     CqlFilter read(String cql, Format format) throws CqlParseException;
 
     String write(CqlFilter cql, Format format);
+
+    List<String> findInvalidProperties(CqlPredicate cqlPredicate, Collection<String> validProperties);
 
 }

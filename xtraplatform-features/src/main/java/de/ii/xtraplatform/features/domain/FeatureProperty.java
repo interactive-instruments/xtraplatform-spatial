@@ -9,8 +9,8 @@ package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilder;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueInstance;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import org.immutables.value.Value;
 
 import java.util.Map;
@@ -19,7 +19,7 @@ import java.util.Optional;
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 @JsonDeserialize(builder = ImmutableFeatureProperty.Builder.class)
-public interface FeatureProperty extends ValueInstance {
+public interface FeatureProperty extends Buildable<FeatureProperty> {
 
     //TODO: Role with ID, SPATIAL, TEMPORAL, REFERENCE, REFERENCE_EMBED
     //TODO: more specific types, in addition or instead of Type
@@ -37,11 +37,11 @@ public interface FeatureProperty extends ValueInstance {
         UNKNOWN
     }
 
-    abstract class Builder implements ValueBuilder<FeatureProperty> {
+    abstract class Builder implements BuildableBuilder<FeatureProperty> {
     }
 
     @Override
-    default ImmutableFeatureProperty.Builder toBuilder() {
+    default ImmutableFeatureProperty.Builder getBuilder() {
         return new ImmutableFeatureProperty.Builder().from(this);
     }
 

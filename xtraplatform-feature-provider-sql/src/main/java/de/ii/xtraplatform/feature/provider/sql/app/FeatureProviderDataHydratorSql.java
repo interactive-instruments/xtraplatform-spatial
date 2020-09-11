@@ -10,14 +10,16 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.entity.api.handler.Entity;
-import de.ii.xtraplatform.event.store.EntityHydrator;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.store.domain.entities.EntityHydrator;
+import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlSchemaCrawler;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Instantiate;
@@ -60,7 +62,7 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
         }
 
         try {
-            return generateNativeCrsIfNecessary(generateTypesIfNecessary(data));
+            return cleanupAdditionalInfo(generateNativeCrsIfNecessary(generateTypesIfNecessary(data)));
 
         } catch (Throwable e) {
             LOGGER.error("Feature provider with id '{}' could not be hydrated: {}", data.getId(), e.getMessage());
@@ -119,6 +121,29 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
                     .from(data)
                     .nativeCrs(nativeCrs)
                     .build();
+
+        }
+
+        return data;
+    }
+
+    private FeatureProviderDataV2 cleanupAdditionalInfo(FeatureProviderDataV2 data) {
+        if (data.isAuto()) {
+            return new ImmutableFeatureProviderDataV2.Builder()
+                .from(data)
+                .types(data.getTypes().entrySet().stream()
+                    .map(entry -> new SimpleImmutableEntry<> (entry.getKey(), new ImmutableFeatureSchema.Builder()
+                        .from(entry.getValue())
+                        .additionalInfo(ImmutableMap.of())
+                        .propertyMap(entry.getValue().getPropertyMap().entrySet().stream()
+                            .map(entry2 -> new SimpleImmutableEntry<>(entry2.getKey(), new ImmutableFeatureSchema.Builder()
+                                .from(entry2.getValue())
+                                .additionalInfo(ImmutableMap.of())
+                                .build()))
+                            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
+                        .build()))
+                    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
+                .build();
 
         }
 

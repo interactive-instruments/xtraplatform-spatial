@@ -5,32 +5,7 @@ dependencies {
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-geotools')
 
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
-
-    embedded group: 'com.sun.xsom', name: 'xsom', version: '20140925'
-    embedded group: 'com.fasterxml', name: 'aalto-xml', version: '1.0.0'
-    embedded group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1'
-}
- 
-jar {
-    manifest { 
-                
-        //instructionFirst 'Import-Package', '!org.apache.xml.*'
-        //instructionFirst 'Import-Package', '!org.eclipse.xsd'
-        
-        /*
-        instruction 'Import-Package', 'javax.xml.stream.util'
-        instruction 'Import-Package', 'javax.xml.stream.events'
-        instruction 'Import-Package', 'org.xml.sax.helpers'
-
-        instruction 'Import-Package', 'sun.misc'
-        instruction 'Import-Package', 'javax.net.ssl'
-        instruction 'Import-Package', 'sun.security.util'
-        instruction 'Import-Package', 'sun.security.x509'
-        instruction 'Import-Package', 'javax.crypto'
-        instruction 'Import-Package', 'javax.naming'
-        
-         */
-
-    }
+    embeddedExport group: 'com.sun.xsom', name: 'xsom', version: '20140925'
+    embeddedExport group: 'com.fasterxml', name: 'aalto-xml', version: '1.0.0'
+    embeddedExport group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1'
 }

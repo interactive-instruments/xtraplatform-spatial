@@ -8,11 +8,6 @@ dependencies {
     provided project(':xtraplatform-ogc-wfs-api')
     provided project(':xtraplatform-geotools')
 
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-scheduler-api'
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-entity-api'
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka-http'
-
     testCompile project(':xtraplatform-ogc-wfs-api')
-    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.18'
+    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.31'
 }

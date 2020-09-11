@@ -8,9 +8,9 @@
 package de.ii.xtraplatform.ogc.api.filter;
 
 import de.ii.xtraplatform.ogc.api.FES;
-import de.ii.xtraplatform.util.xml.XMLDocument;
-import de.ii.xtraplatform.util.xml.XMLDocumentFactory;
-import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.xml.domain.XMLDocument;
+import de.ii.xtraplatform.xml.domain.XMLDocumentFactory;
+import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
 import org.w3c.dom.Element;
 
 import javax.xml.parsers.ParserConfigurationException;

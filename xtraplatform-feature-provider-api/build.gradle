@@ -3,9 +3,4 @@ dependencies {
     provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-features')
-
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-scheduler-api'
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-entity-api'
-    provided  group: 'de.interactive_instruments', name: 'xtraplatform-event-store'
 }

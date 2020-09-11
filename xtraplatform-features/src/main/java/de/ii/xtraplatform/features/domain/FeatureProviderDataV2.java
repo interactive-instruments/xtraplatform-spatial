@@ -12,14 +12,14 @@ import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.entity.api.AutoEntity;
-import de.ii.xtraplatform.entity.api.EntityData;
-import de.ii.xtraplatform.entity.api.maptobuilder.ValueBuilderMap;
-import de.ii.xtraplatform.entity.api.maptobuilder.encoding.ValueBuilderMapEncodingEnabled;
-import de.ii.xtraplatform.event.store.EntityDataBuilder;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2.Builder;
+import de.ii.xtraplatform.store.domain.entities.AutoEntity;
+import de.ii.xtraplatform.store.domain.entities.EntityData;
+import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import org.immutables.value.Value;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -30,7 +30,7 @@ import java.util.Set;
  */
 @Value.Immutable
 @Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
-@ValueBuilderMapEncodingEnabled
+@BuildableMapEncodingEnabled
 @JsonDeserialize(builder = ImmutableFeatureProviderDataV2.Builder.class)
 public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
 
@@ -59,7 +59,7 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
     //behaves exactly like Map<String, FeatureTypeMapping>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonMerge
-    ValueBuilderMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
+    BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
 
     Map<String, Map<String, String>> getCodelists();
 
@@ -90,6 +90,23 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
         @JsonProperty(value = "types")
         public ImmutableFeatureProviderDataV2.Builder putTypes2(String key, ImmutableFeatureSchema.Builder builder) {
             return putTypes(key, builder.name(key));
+        }
+
+        public abstract ImmutableFeatureProviderDataV2.Builder id(String id);
+
+        @Override
+        public EntityDataBuilder<FeatureProviderDataV2> fillRequiredFieldsWithPlaceholders() {
+            String placeholder = "__DEFAULT__";
+            return this.id(placeholder)
+                .providerType(placeholder)
+                .featureProviderType(placeholder)
+                .connectionInfo(
+                new ConnectionInfo() {
+                    @Override
+                    public Optional<String> getConnectionUri() {
+                        return Optional.empty();
+                    }
+                });
         }
 
         private static class KeyToNameBuilderMap implements Map<String, ImmutableFeatureSchema.Builder> {

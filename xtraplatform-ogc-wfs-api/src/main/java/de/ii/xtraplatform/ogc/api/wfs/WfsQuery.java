@@ -16,7 +16,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
-import de.ii.xtraplatform.util.xml.XMLDocument;
+import de.ii.xtraplatform.xml.domain.XMLDocument;
 import org.geotools.filter.FidFilterImpl;
 import org.opengis.filter.Filter;
 import org.slf4j.Logger;

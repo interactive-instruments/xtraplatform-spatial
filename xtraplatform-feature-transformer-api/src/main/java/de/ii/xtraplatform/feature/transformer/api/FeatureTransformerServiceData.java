@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.transformer.api;
 
 import com.fasterxml.jackson.annotation.JsonMerge;
-import de.ii.xtraplatform.service.api.ServiceData;
+import de.ii.xtraplatform.services.domain.ServiceData;
 
 import java.util.Map;
 
