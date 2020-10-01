@@ -13,7 +13,6 @@ import de.ii.xtraplatform.feature.query.api.SimpleFeatureGeometry;
 import de.ii.xtraplatform.feature.query.api.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTransformer;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
-import de.ii.xtraplatform.feature.transformer.api.TargetMappingWfs3;
 
 import java.io.IOException;
 import java.io.StreamTokenizer;
@@ -37,12 +36,14 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
     private boolean inProperty = false;
     private TargetMapping geometryMapping;
     private final List<String> fields;
+    private final boolean skipGeometry;
 
-    public FeatureTransformerFromSql(FeatureTypeMapping featureTypeMapping, FeatureTransformer featureTransformer, List<String> fields) {
+    public FeatureTransformerFromSql(FeatureTypeMapping featureTypeMapping, FeatureTransformer featureTransformer, List<String> fields, boolean skipGeometry) {
         this.featureTypeMapping = featureTypeMapping;
         this.featureTransformer = featureTransformer;
         this.outputFormat = featureTransformer.getTargetFormat();
         this.fields = fields;
+        this.skipGeometry = skipGeometry;
     }
 
 
@@ -86,14 +87,20 @@ public class FeatureTransformerFromSql implements FeatureConsumer {
     }
 
     private boolean shouldIgnoreProperty(List<String> path) {
-        return !inProperty && !fields.contains("*") && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
-                                                                          .filter(this::isPropertyInWhitelist)
-                                                                          .isPresent();
+        return !inProperty
+                && ((!fields.contains("*") && !featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
+                                                                            .filter(this::isPropertyInWhitelist)
+                                                                            .isPresent())
+                || (skipGeometry && featureTypeMapping.findMappings(path, TargetMapping.BASE_TYPE)
+                                                       .filter(TargetMapping::isSpatial)
+                                                       .isPresent()));
     }
 
     private boolean isPropertyInWhitelist(TargetMapping targetMapping) {
-        return targetMapping.isSpatial()
-                || targetMapping.getType()
+        if (targetMapping.isSpatial()) {
+            return !skipGeometry;
+        }
+        return targetMapping.getType()
                                 .toString()
                                 .toUpperCase()
                                 .equals("ID")

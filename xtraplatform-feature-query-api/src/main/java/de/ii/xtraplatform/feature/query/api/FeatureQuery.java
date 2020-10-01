@@ -46,4 +46,7 @@ public abstract class FeatureQuery {
     public List<String> getFields() {
         return ImmutableList.of("*");
     }
+
+    @Value.Default
+    public boolean skipGeometry() {return false;}
 }

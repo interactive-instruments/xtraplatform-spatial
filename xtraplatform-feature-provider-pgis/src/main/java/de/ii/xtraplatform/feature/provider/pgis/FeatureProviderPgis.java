@@ -133,7 +133,7 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     @Override
     public FeatureStream<FeatureTransformer> getFeatureTransformStream(FeatureQuery query) {
         return featureTransformer -> createFeatureStream(query, new FeatureTransformerFromSql(data.getMappings()
-                                                                                                  .get(query.getType()), featureTransformer, query.getFields()));
+                                                                                                  .get(query.getType()), featureTransformer, query.getFields(), query.skipGeometry()));
     }
 
     @Override
