@@ -77,7 +77,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
         //TODO: consumer to transformer is generic code, but this also contains WKT parser, factor out
         //FeatureTransformerFromSql consumer = new FeatureTransformerFromSql(mapping, featureTransformer, featureQuery.getFields());
-        FeatureTransformerFromSql2 consumer = new FeatureTransformerFromSql2(featureType, featureTransformer, featureQuery.getFields());
+        FeatureTransformerFromSql2 consumer = new FeatureTransformerFromSql2(featureType, featureTransformer, featureQuery.getFields(), featureQuery.skipGeometry());
 
 
         return consume(typeInfo, consumer, featureQuery);

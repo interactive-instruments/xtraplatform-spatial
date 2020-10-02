@@ -85,7 +85,7 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
                                                                               .build();
 
 
-        Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(qualifiedName, featureType1, featureTransformer, featureQuery.getFields(), ImmutableMap.of());
+        Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(qualifiedName, featureType1, featureTransformer, featureQuery.getFields(), featureQuery.skipGeometry(), ImmutableMap.of());
 
         return transformer.mapMaterializedValue((Function<CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (completionStage) -> completionStage.handle((done, throwable) -> {
             return ImmutableResult.builder()

@@ -53,19 +53,21 @@ public class GmlStreamParser {
     public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureTypeName,
                                                                     final FeatureType featureType,
                                                                     final FeatureTransformer2 featureTransformer,
-                                                                    List<String> fields) {
-        return transform(featureTypeName, featureType, featureTransformer, fields, ImmutableMap.of());
+                                                                    List<String> fields,
+                                                                    boolean skipGeometry) {
+        return transform(featureTypeName, featureType, featureTransformer, fields, skipGeometry, ImmutableMap.of());
     }
 
     public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureTypeName,
                                                                     final FeatureType featureType,
                                                                     final FeatureTransformer2 featureTransformer,
                                                                     List<String> fields,
+                                                                    boolean skipGeometry,
                                                                     Map<QName, List<String>> resolvableTypes) {
         List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(featureTypeName) : ImmutableList.<QName>builder().add(featureTypeName)
                                                                                                                              .addAll(resolvableTypes.keySet())
                                                                                                                              .build();
-        return GmlStreamParser.consume(featureTypes, new FeatureTransformerFromGml2(featureType, featureTransformer, fields, resolvableTypes));
+        return GmlStreamParser.consume(featureTypes, new FeatureTransformerFromGml2(featureType, featureTransformer, fields, skipGeometry, resolvableTypes));
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GmlStreamParser.class);

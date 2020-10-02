@@ -8,7 +8,7 @@ allprojects {
     group = 'de.interactive_instruments'
 }
 
-version = '4.0.0'
+version = '4.1.0'
 
 dependencies {
     feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '3.0.0'
