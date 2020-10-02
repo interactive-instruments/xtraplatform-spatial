@@ -41,14 +41,16 @@ public class FeatureTransformerFromSql2 implements FeatureConsumer {
     private boolean inProperty = false;
     private FeatureProperty geometry;
     private final List<String> fields;
+    private final boolean skipGeometry;
     private final Map<List<String>, Map<List<Integer>, Integer>> pathVisitCounter;
 
     public FeatureTransformerFromSql2(FeatureType featureType, FeatureTransformer2 featureTransformer,
-                                      List<String> fields) {
+                                      List<String> fields, boolean skipGeometry) {
         this.featureType = featureType;
         this.featureTransformer = featureTransformer;
         this.outputFormat = featureTransformer.getTargetFormat();
         this.fields = fields;
+        this.skipGeometry = skipGeometry;
         this.pathVisitCounter = new HashMap<>();
     }
 
@@ -110,14 +112,20 @@ public class FeatureTransformerFromSql2 implements FeatureConsumer {
     }
 
     private boolean shouldIgnoreProperty(List<String> path) {
-        return !inProperty && !fields.contains("*") && !featureType.findPropertiesForPath(path)
-                                                                   .stream()
-                                                                   .anyMatch(this::isPropertyInWhitelist);
+        return !inProperty
+                && ((!fields.contains("*") && featureType.findPropertiesForPath(path)
+                                                         .stream()
+                                                         .noneMatch(this::isPropertyInWhitelist))
+                || (skipGeometry && featureType.findPropertiesForPath(path)
+                                               .stream()
+                                               .anyMatch(FeatureProperty::isSpatial)));
     }
 
     private boolean isPropertyInWhitelist(FeatureProperty featureProperty) {
-        return featureProperty.isSpatial()
-                || featureProperty.isId()
+        if (featureProperty.isSpatial()) {
+            return !skipGeometry;
+        }
+        return featureProperty.isId()
                 || fields.contains(featureProperty.getName())
                 || fields.stream()
                          .anyMatch(field -> {

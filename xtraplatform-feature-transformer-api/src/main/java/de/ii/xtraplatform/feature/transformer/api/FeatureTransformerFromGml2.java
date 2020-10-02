@@ -1,6 +1,6 @@
 /**
  * Copyright 2020 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -66,13 +66,14 @@ class FeatureTransformerFromGml2 implements FeatureConsumer {
     private final Joiner joiner;
     private final StringBuilder stringBuilder;
     private final List<String> fields;
+    private final boolean skipGeometry;
     private final boolean onTheFly;
     private OnTheFlyMapping onTheFlyMapping;
     private List<Integer> currentMultiplicities;
     private List<String> currentType;
 
     FeatureTransformerFromGml2(FeatureType featureType, final FeatureTransformer2 featureTransformer,
-                               List<String> fields, Map<QName, List<String>> resolvableTypes) {
+                               List<String> fields, boolean skipGeometry, Map<QName, List<String>> resolvableTypes) {
         this.featureType = featureType;
         this.featureTransformer = featureTransformer;
         this.resolvableTypes = resolvableTypes.entrySet()
@@ -82,6 +83,7 @@ class FeatureTransformerFromGml2 implements FeatureConsumer {
                                                                                                                                  .getLocalPart(), Map.Entry::getValue));
         this.outputFormat = featureTransformer.getTargetFormat();
         this.fields = fields;
+        this.skipGeometry = skipGeometry;
         this.joiner = Joiner.on('/');
         this.stringBuilder = new StringBuilder();
 
@@ -144,7 +146,10 @@ class FeatureTransformerFromGml2 implements FeatureConsumer {
             }
 
             //TODO
-            List<String> fullPath = new ImmutableList.Builder<String>().add(featureType.getAdditionalInfo().get("featureTypePath")).addAll(path).build();
+            List<String> fullPath = new ImmutableList.Builder<String>().add(featureType.getAdditionalInfo()
+                                                                                       .get("featureTypePath"))
+                                                                       .addAll(path)
+                                                                       .build();
 
             return featureType.findPropertiesForPath(fullPath)
                               .stream()
@@ -343,10 +348,7 @@ class FeatureTransformerFromGml2 implements FeatureConsumer {
 
         if (!inProperty) {
             if (!onTheFly) {
-                boolean ignore = !fields.contains("*") && !getMappingForFormat(path, TargetMapping.BASE_TYPE)
-                        .filter(targetMapping -> fields.contains(targetMapping.getName()))
-                        .isPresent();
-                if (ignore) {
+                if (shouldIgnoreProperty(path)) {
                     return;
                 }
 
@@ -415,10 +417,7 @@ class FeatureTransformerFromGml2 implements FeatureConsumer {
     @Override
     public void onPropertyEnd(List<String> path) throws Exception {
         if (onTheFly && inGeometry == null) {
-            boolean ignore = !fields.contains("*") && !getMapping(path, stringBuilder.toString())
-                    .filter(targetMapping -> fields.contains(targetMapping.getName()))
-                    .isPresent();
-            if (ignore) {
+            if (shouldIgnoreProperty(path)) {
                 return;
             }
 
@@ -465,6 +464,28 @@ class FeatureTransformerFromGml2 implements FeatureConsumer {
             }
             inProperty = false;
         }
+    }
+
+    private boolean shouldIgnoreProperty(List<String> path) {
+        return !inProperty
+                && ((!fields.contains("*") && !getMapping(path).filter(this::isPropertyInWhitelist)
+                                                               .isPresent())
+                || (skipGeometry && getMapping(path).filter(FeatureProperty::isSpatial)
+                                                    .isPresent()));
+    }
+
+    private boolean isPropertyInWhitelist(FeatureProperty featureProperty) {
+        if (featureProperty.isSpatial()) {
+            return !skipGeometry;
+        }
+        return featureProperty.isId()
+                || fields.contains(featureProperty.getName())
+                || fields.stream()
+                         .anyMatch(field -> {
+                             String regex = field + "(?:\\[\\w*\\])?\\..*";
+                             return featureProperty.getName()
+                                                   .matches(regex);
+                         });
     }
 
     /*@Override

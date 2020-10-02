@@ -63,6 +63,11 @@ public abstract class FeatureQuery {
         return ImmutableList.of("*");
     }
 
+    @Value.Default
+    public boolean skipGeometry() {
+        return false;
+    }
+
     @Value.Derived
     public boolean hasIdFilter() {
         return getFilter().flatMap(ScalarExpression::getInOperator)
