@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.app;
 
+import akka.stream.javadsl.RunnableGraph;
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
@@ -47,6 +48,7 @@ import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 @EntityComponent
 @Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderWfs.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderDataV2.class)
@@ -133,11 +135,11 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
         }
 
         try {
-            return extentReader.getExtent(typeInfo.get())
-                               .run(getMaterializer())
-                               .exceptionally(throwable -> Optional.empty())
-                               .toCompletableFuture()
-                               .join();
+            RunnableGraph<CompletionStage<Optional<BoundingBox>>> extentGraph = extentReader.getExtent(typeInfo.get());
+            return getStreamRunner().run(extentGraph)
+                                    .exceptionally(throwable -> Optional.empty())
+                                    .toCompletableFuture()
+                                    .join();
         } catch (Throwable e) {
             //continue
             boolean br = true;

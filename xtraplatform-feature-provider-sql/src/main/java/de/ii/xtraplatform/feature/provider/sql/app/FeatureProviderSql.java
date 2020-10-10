@@ -16,10 +16,10 @@ import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.streams.domain.StreamRunner;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
-import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -146,6 +146,23 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         return new PathParserSql(syntax, cql);
     }
 
+    //TODO
+    @Override
+    protected int getRunnerCapacity(FeatureProviderDataV2 data) {
+        ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+
+        return 1;
+    }
+
+    @Override
+    protected Optional<Map<String, String>> getStartupInfo() {
+        String parallelism = String.valueOf(getStreamRunner().getCapacity());
+
+        //TODO: get other infos from connector
+
+        return Optional.of(ImmutableMap.of("parallelism", parallelism));
+    }
+
     @Override
     public FeatureProviderDataV2 getData() {
         return super.getData();
@@ -197,11 +214,11 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         }
 
         try {
-            return extentReader.getExtent(typeInfo.get())
-                               .run(getMaterializer())
-                               .exceptionally(throwable -> Optional.empty())
-                               .toCompletableFuture()
-                               .join();
+            RunnableGraph<CompletionStage<Optional<BoundingBox>>> extentGraph = extentReader.getExtent(typeInfo.get());
+            return getStreamRunner().run(extentGraph)
+                                    .exceptionally(throwable -> Optional.empty())
+                                    .toCompletableFuture()
+                                    .join();
         } catch (Throwable e) {
             //continue
         }
@@ -278,9 +295,9 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                                                                    }))
                                                                                    .toMat(Sink.ignore(), Keep.left());
 
-        return result.run(getMaterializer())
-                     .toCompletableFuture()
-                     .join();
+        return getStreamRunner().run(result)
+                                .toCompletableFuture()
+                                .join();
     }
 
     private MutationResult writeFeatures(String featureType,
@@ -320,10 +337,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         Source<FeatureSql, ?> features = featureSource.decode(mapping4, ModifiableFeatureSql::create, ModifiablePropertySql::create);
 
         Flow<FeatureSql, String, NotUsed> creator = id.isPresent()
-                ? featureMutationsSql.getUpdaterFlow(mutationSchemaSql, getMaterializer().system()
-                                                                                         .dispatcher(), id.get())
-                : featureMutationsSql.getCreatorFlow(mutationSchemaSql, getMaterializer().system()
-                                                                                         .dispatcher());
+                ? featureMutationsSql.getUpdaterFlow(mutationSchemaSql, getStreamRunner().getDispatcher(), id.get())
+                : featureMutationsSql.getCreatorFlow(mutationSchemaSql, getStreamRunner().getDispatcher());
 
         Sink<String, CompletionStage<MutationResult>> of = Flow.of(String.class)
                                                                .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<ImmutableMutationResult.Builder>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
@@ -343,9 +358,9 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         // result is
         RunnableGraph<CompletionStage<MutationResult>> result = idSource.toMat(Sink.seq(), FeatureProviderSql::writeIdsToResult);
 
-        return result.run(getMaterializer())
-                     .toCompletableFuture()
-                     .join();
+        return getStreamRunner().run(result)
+                                .toCompletableFuture()
+                                .join();
     }
 
     private static CompletionStage<MutationResult> writeIdsToResult(CompletionStage<ImmutableMutationResult.Builder> resultStage, CompletionStage<List<String>> idsStage) {

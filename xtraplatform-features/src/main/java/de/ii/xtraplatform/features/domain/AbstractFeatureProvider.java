@@ -9,16 +9,13 @@ package de.ii.xtraplatform.features.domain;
 
 import akka.Done;
 import akka.NotUsed;
-import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
+import de.ii.xtraplatform.streams.domain.StreamRunner;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,19 +31,19 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
 
-    private static final Config config = ConfigFactory.parseMap(new ImmutableMap.Builder<String, Object>()
-            .build());
-
-    private final ActorMaterializer materializer;
+    private final StreamRunner streamRunner;
     private final Map<String, FeatureStoreTypeInfo> typeInfos;
 
     protected AbstractFeatureProvider(BundleContext context,
                                       ActorSystemProvider actorSystemProvider,
                                       FeatureProviderDataV2 data,
                                       FeatureStorePathParser pathParser) {
-        ActorSystem system = actorSystemProvider.getActorSystem(context, config);
-        this.materializer = ActorMaterializer.create(system);
+        this.streamRunner = new StreamRunner(context, actorSystemProvider, data.getId(), getRunnerCapacity(data));
         this.typeInfos = createTypeInfos(pathParser, data.getTypes());
+    }
+
+    protected int getRunnerCapacity(FeatureProviderDataV2 data) {
+        return StreamRunner.DYNAMIC_CAPACITY;
     }
 
     @Override
@@ -66,7 +63,9 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                 LOGGER.debug("Stacktrace:", connectionError.get());
             }
         } else {
-            LOGGER.info("Feature provider with id '{}' started successfully.", getId());
+            String startupInfo = getStartupInfo().map(Map::toString).orElse("");
+
+            LOGGER.info("Feature provider with id '{}' started successfully. {}", getId(), startupInfo);
         }
     }
 
@@ -80,8 +79,12 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return typeInfos;
     }
 
-    protected ActorMaterializer getMaterializer() {
-        return materializer;
+    protected StreamRunner getStreamRunner() {
+        return streamRunner;
+    }
+
+    protected Optional<Map<String,String>> getStartupInfo() {
+        return Optional.empty();
     }
 
     private Map<String, FeatureStoreTypeInfo> createTypeInfos(
@@ -123,7 +126,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
                 Sink<T, CompletionStage<Result>> sink = getNormalizer().normalizeAndTransform(transformer, query);
 
-                return sourceStream.runWith(sink, materializer);
+                return getStreamRunner().run(sourceStream, sink);
             }
 
             @Override
@@ -176,8 +179,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                     transformer.process(feature);
                 });
 
-                return featureStream.toMat(sink, Keep.left())
-                                    .run(materializer);
+                return getStreamRunner().run(featureStream.toMat(sink, Keep.left()));
             }
         };
     }

@@ -12,10 +12,13 @@ import akka.NotUsed;
 import akka.japi.pf.PFBuilder;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlClientSlick;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -29,6 +32,8 @@ import java.util.function.IntFunction;
 
 //TODO: class
 public interface SqlConnector extends FeatureProviderConnector<SqlRow, SqlQueries, SqlQueryOptions> {
+
+    Logger LOGGER = LoggerFactory.getLogger(SqlConnector.class);
 
     //TODO
     SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
@@ -66,9 +71,9 @@ public interface SqlConnector extends FeatureProviderConnector<SqlRow, SqlQuerie
             Source<SqlRow, NotUsed>[] sqlRows = query.getValueQueries()
                                                      .apply(metaResult)
                                                      .map(valueQuery -> {
-                                                                  /*if (LOGGER.isTraceEnabled()) {
+                                                                  if (LOGGER.isTraceEnabled()) {
                                                                       LOGGER.trace("Values query: {}", valueQuery);
-                                                                  }*/
+                                                                  }
 
                                                          return getSqlClient().getSourceStream(valueQuery, ImmutableSqlQueryOptions.builder()
                                                                                                                                    .attributesContainer(attributesContainers.get(i[0]))
@@ -120,6 +125,14 @@ public interface SqlConnector extends FeatureProviderConnector<SqlRow, SqlQuerie
         return mergeAndSort(sources[0], sources[1], Arrays.asList(sources)
                                                           .subList(2, sources.length));
     }
+
+    //TODO 08.10.: feuerwehr has 1 join, so 3 queries
+    // it seems that it always works with maxThreads=6, so 2 * number of queries
+    // tested multiple times for 5 minutes with 8 parallel requests, 128 per second
+    // reducing maxThreads to 5 triggers the error, even with less parallel requests
+    // but testing luftreinhalteplan with maxThreads=14 did not seem to work reliable -> test again
+    // could it be that feuerwehr works not because it is 2 * 3 queries but 3 * 2 queries? so meta query does not count
+    // then luftreinhalteplan would be 3 * 5, so maxThreads=15 -> test
 
     static <T extends Comparable<T>> Source<T, NotUsed> mergeAndSort(Source<T, NotUsed> source1,
                                                                      Source<T, NotUsed> source2,
