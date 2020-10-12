@@ -13,12 +13,14 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.runtime.domain.Logging;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.streams.domain.StreamRunner;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.util.AbstractMap;
 import java.util.List;
@@ -53,19 +55,22 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
     @Override
     protected void onStart() {
-        if (!getConnector().isConnected()) {
-            this.register = false;
-            Optional<Throwable> connectionError = getConnector().getConnectionError();
-            String message = connectionError.map(Throwable::getMessage)
-                                            .orElse("unknown reason");
-            LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), message);
-            if (connectionError.isPresent() && LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Stacktrace:", connectionError.get());
-            }
-        } else {
-            String startupInfo = getStartupInfo().map(Map::toString).orElse("");
+        try(MDC.MDCCloseable closeable = Logging.putCloseable(Logging.CONTEXT.SERVICE, getId())) {
+            if (!getConnector().isConnected()) {
+                this.register = false;
+                Optional<Throwable> connectionError = getConnector().getConnectionError();
+                String message = connectionError.map(Throwable::getMessage)
+                                                .orElse("unknown reason");
+                LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), message);
+                if (connectionError.isPresent() && LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Stacktrace:", connectionError.get());
+                }
+            } else {
+                String startupInfo = getStartupInfo().map(Map::toString)
+                                                     .orElse("");
 
-            LOGGER.info("Feature provider with id '{}' started successfully. {}", getId(), startupInfo);
+                LOGGER.info("Feature provider with id '{}' started successfully. {}", getId(), startupInfo);
+            }
         }
     }
 

@@ -83,6 +83,10 @@ public class SqlSchemaCrawler {
                     continue;
                 }
 
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Generating type '{}'", table.getName());
+                }
+
                 ImmutableFeatureSchema.Builder featureType = new ImmutableFeatureSchema.Builder()
                                                                     .name(table.getName())
                                                                     .sourcePath("/" + table.getName().toLowerCase());
