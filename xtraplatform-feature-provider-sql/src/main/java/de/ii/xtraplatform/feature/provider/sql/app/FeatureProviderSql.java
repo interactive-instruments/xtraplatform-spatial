@@ -125,7 +125,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         this.pathParser = createPathParser2((ConnectionInfoSql) data.getConnectionInfo(), cql);
     }
 
-    private static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql, Cql cql) {
+    public static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql, Cql cql) {
         SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
                                                      .options(connectionInfoSql.getPathSyntax())
                                                      .build();
@@ -146,12 +146,97 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         return new PathParserSql(syntax, cql);
     }
 
-    //TODO
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (register && Runtime.getRuntime().availableProcessors() > getStreamRunner().getCapacity()) {
+            LOGGER.info("Recommended max connections for optimal performance under load: {}", getMaxQueries() * Runtime.getRuntime().availableProcessors());
+        }
+    }
+
+    //TODO: implement auto mode for maxConnections=-1, how to get numberOfQueries in Connector?
     @Override
     protected int getRunnerCapacity(FeatureProviderDataV2 data) {
         ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
 
-        return 1;
+        int maxConnections = connectionInfo.getMaxConnections();
+
+        int runnerCapacity = Runtime.getRuntime()
+                                    .availableProcessors();
+        if (maxConnections > 0) {
+            for (FeatureStoreTypeInfo typeInfo : getTypeInfos().values()) {
+                int numberOfQueries = typeInfo.getInstanceContainers()
+                                              .get(0)
+                                              .getAllAttributesContainers()
+                                              .size();
+                int capacity = maxConnections / numberOfQueries;
+                //LOGGER.info("{}: {}", typeInfo.getName(), capacity);
+                if (capacity >= 0 && capacity < runnerCapacity) {
+                    runnerCapacity = capacity;
+                }
+            }
+        }
+        //LOGGER.info("RUNNER: {}", runnerCapacity);
+        
+        return runnerCapacity;
+    }
+
+    @Override
+    protected int getRunnerQueueSize(FeatureProviderDataV2 data) {
+        ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+
+        int maxQueries = getMaxQueries();
+
+        int maxConnections;
+        if (connectionInfo.getMaxConnections() > 0) {
+            maxConnections = connectionInfo.getMaxConnections();
+        } else {
+            maxConnections = maxQueries * Runtime.getRuntime()
+                                                      .availableProcessors();
+        }
+        int capacity = maxConnections / maxQueries;
+        //TODO
+        int queueSize = (maxConnections * capacity * 2) / maxQueries;
+        //LOGGER.info("RUNNERQ: {}", queueSize);
+        return queueSize;
+    }
+
+    private int getMaxQueries() {
+        int maxQueries = 0;
+
+        for (FeatureStoreTypeInfo typeInfo : getTypeInfos().values()) {
+            int numberOfQueries = typeInfo.getInstanceContainers()
+                                          .get(0)
+                                          .getAllAttributesContainers()
+                                          .size();
+
+            if (numberOfQueries > maxQueries) {
+                maxQueries = numberOfQueries;
+            }
+        }
+        return maxQueries;
+    }
+
+    @Override
+    protected Optional<String> getRunnerError(FeatureProviderDataV2 data) {
+        if (getStreamRunner().getCapacity() == 0) {
+            ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+
+            int maxConnections = connectionInfo.getMaxConnections();
+
+            int minRequired = 0;
+
+            for (FeatureStoreTypeInfo typeInfo : getTypeInfos().values()) {
+                int numberOfQueries = typeInfo.getInstanceContainers().get(0).getAllAttributesContainers().size();
+                if (numberOfQueries > minRequired) {
+                    minRequired = numberOfQueries;
+                }
+            }
+
+            return Optional.of(String.format("maxConnections=%d is too low, a minimum of %d is required", maxConnections, minRequired));
+        }
+
+        return Optional.empty();
     }
 
     @Override
@@ -160,7 +245,11 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
         //TODO: get other infos from connector
 
-        return Optional.of(ImmutableMap.of("parallelism", parallelism));
+        return Optional.of(ImmutableMap.of(
+                "min connections", String.valueOf(connector.getMinConnections()),
+                "max connections", String.valueOf(connector.getMaxConnections()),
+                "stream capacity", parallelism)
+        );
     }
 
     @Override

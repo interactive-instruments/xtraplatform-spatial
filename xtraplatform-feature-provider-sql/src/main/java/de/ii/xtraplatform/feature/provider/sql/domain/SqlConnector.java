@@ -38,6 +38,12 @@ public interface SqlConnector extends FeatureProviderConnector<SqlRow, SqlQuerie
     //TODO
     SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
 
+    int getMaxConnections();
+
+    int getMinConnections();
+
+    int getQueueSize();
+
     SqlClient getSqlClient();
 
     @Deprecated

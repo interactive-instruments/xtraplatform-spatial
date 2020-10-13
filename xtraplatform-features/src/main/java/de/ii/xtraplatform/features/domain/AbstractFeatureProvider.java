@@ -38,12 +38,20 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                                       ActorSystemProvider actorSystemProvider,
                                       FeatureProviderDataV2 data,
                                       FeatureStorePathParser pathParser) {
-        this.streamRunner = new StreamRunner(context, actorSystemProvider, data.getId(), getRunnerCapacity(data));
         this.typeInfos = createTypeInfos(pathParser, data.getTypes());
+        this.streamRunner = new StreamRunner(context, actorSystemProvider, data.getId(), getRunnerCapacity(data), getRunnerQueueSize(data));
     }
 
     protected int getRunnerCapacity(FeatureProviderDataV2 data) {
         return StreamRunner.DYNAMIC_CAPACITY;
+    }
+
+    protected int getRunnerQueueSize(FeatureProviderDataV2 data) {
+        return StreamRunner.DYNAMIC_CAPACITY;
+    }
+
+    protected Optional<String> getRunnerError(FeatureProviderDataV2 data) {
+        return Optional.empty();
     }
 
     @Override
@@ -62,11 +70,15 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             if (connectionError.isPresent() && LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Stacktrace:", connectionError.get());
             }
+        } else if (getRunnerError(getData()).isPresent()) {
+            this.register = false;
+
+            LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), getRunnerError(getData()).get());
         } else {
-            String startupInfo = getStartupInfo().map(Map::toString)
+            String startupInfo = getStartupInfo().map(map -> String.format(" (%s)", map.toString().replace("{","").replace("}","")))
                                                  .orElse("");
 
-            LOGGER.info("Feature provider with id '{}' started successfully. {}", getId(), startupInfo);
+            LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(), startupInfo);
         }
     }
 
@@ -93,7 +105,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return Optional.empty();
     }
 
-    private Map<String, FeatureStoreTypeInfo> createTypeInfos(
+    public static Map<String, FeatureStoreTypeInfo> createTypeInfos(
             FeatureStorePathParser pathParser, Map<String, FeatureSchema> featureTypes) {
         return featureTypes.entrySet()
                            .stream()

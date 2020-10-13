@@ -210,8 +210,8 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                         if (!instanceContainerBuilders.containsKey(instanceContainerName)) {
                             instanceContainerBuilders.put(instanceContainerName, ImmutableFeatureStoreInstanceContainer.builder());
                         }
-
-                        Map<String, CqlFilter> filters = columnPaths.stream()
+                        //TODO: needed for SqlConnectorSlick
+                        Map<String, CqlFilter> filters = Objects.isNull(cql) ? ImmutableMap.of() : columnPaths.stream()
                                                                     .flatMap(sqlPath -> sqlPath.getTableFlags()
                                                                                                .entrySet()
                                                                                                .stream())
