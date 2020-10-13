@@ -12,7 +12,7 @@ pipeline:
     image: openjdk:11-slim
     commands:
       - export GRADLE_USER_HOME=$${DRONE_WORKSPACE}/.gradle
-      - ./gradlew check assemble -PisSnapshot=true
+      - ./gradlew assemble -PisSnapshot=true
     when:
       event: [push, pull_request]
 
@@ -20,7 +20,7 @@ pipeline:
     image: openjdk:11-slim
     commands:
       - export GRADLE_USER_HOME=$${DRONE_WORKSPACE}/.gradle
-      - ./gradlew check assemble
+      - ./gradlew assemble
     when:
       event: tag
 
