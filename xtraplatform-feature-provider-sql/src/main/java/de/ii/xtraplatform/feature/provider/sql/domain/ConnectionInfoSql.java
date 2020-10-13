@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
@@ -54,10 +55,17 @@ public interface ConnectionInfoSql extends ConnectionInfo {
 
     Optional<FeatureActionTrigger> getTriggers();
 
+    @JsonAlias("maxThreads")
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     @Value.Default
-    default int getMaxThreads() {
-        return 16;
+    default int getMaxConnections() {
+        return -1;
+    }
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @Value.Default
+    default int getMinConnections() {
+        return getMaxConnections();
     }
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json

@@ -21,9 +21,12 @@ import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
+import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
+import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Invalidate;
@@ -45,6 +48,7 @@ import slick.jdbc.JdbcProfile;
 import slick.jdbc.hikaricp.HikariCPJdbcDataSource;
 
 import java.util.Base64;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -68,6 +72,9 @@ public class SqlConnectorSlick implements SqlConnector {
     private final String poolName;
     private final MetricRegistry metricRegistry;
     private final HealthCheckRegistry healthCheckRegistry;
+    private final int maxConnections;
+    private final int minConnections;
+    private final int queueSize;
 
     private SlickSession session;
     private SqlClient sqlClient;
@@ -86,6 +93,56 @@ public class SqlConnectorSlick implements SqlConnector {
         this.poolName = String.format("db.%s", data.getId());
         this.metricRegistry = dropwizard.getEnvironment().metrics();
         this.healthCheckRegistry = dropwizard.getEnvironment().healthChecks();
+
+        int maxQueries = getMaxQueries(data);
+        if (connectionInfo.getMaxConnections() > 0) {
+            this.maxConnections = connectionInfo.getMaxConnections();
+        } else {
+            this.maxConnections = maxQueries * Runtime.getRuntime()
+                                                      .availableProcessors();
+        }
+        if (connectionInfo.getMinConnections() >= 0) {
+            this.minConnections = connectionInfo.getMinConnections();
+        } else {
+            this.minConnections = maxConnections;
+        }
+        int capacity = maxConnections / maxQueries;
+        //TODO
+        this.queueSize = Math.max(1024, maxConnections * capacity * 2);
+    }
+
+    //TODO: better way to get maxQueries
+    private int getMaxQueries(FeatureProviderDataV2 data) {
+        FeatureStorePathParser pathParser = FeatureProviderSql.createPathParser((ConnectionInfoSql) data.getConnectionInfo(), null);
+        Map<String, FeatureStoreTypeInfo> typeInfos = AbstractFeatureProvider.createTypeInfos(pathParser, data.getTypes());
+        int maxQueries = 0;
+
+        for (FeatureStoreTypeInfo typeInfo : typeInfos.values()) {
+            int numberOfQueries = typeInfo.getInstanceContainers()
+                                          .get(0)
+                                          .getAllAttributesContainers()
+                                          .size();
+
+            if (numberOfQueries > maxQueries) {
+                maxQueries = numberOfQueries;
+            }
+        }
+        return maxQueries;
+    }
+
+    @Override
+    public int getMaxConnections() {
+        return maxConnections;
+    }
+
+    @Override
+    public int getMinConnections() {
+        return minConnections;
+    }
+
+    @Override
+    public int getQueueSize() {
+        return queueSize;
     }
 
     @Validate
@@ -94,7 +151,7 @@ public class SqlConnectorSlick implements SqlConnector {
             // bundle class loader has to be passed to Slick for initialization
             Thread.currentThread()
                   .setContextClassLoader(classLoader);
-            Config slickConfig = createSlickConfig(connectionInfo, poolName, healthCheckRegistry);
+            Config slickConfig = createSlickConfig(connectionInfo, poolName, maxConnections, minConnections, queueSize, healthCheckRegistry);
             DatabaseConfig<JdbcProfile> databaseConfig = DatabaseConfig$.MODULE$.forConfig("", slickConfig, classLoader, ClassTag$.MODULE$.apply(JdbcProfile.class));
 
             this.session = SlickSession.forConfig(databaseConfig);
@@ -143,14 +200,16 @@ public class SqlConnectorSlick implements SqlConnector {
     }
 
     //TODO: to SlickConfig.create
-    private static Config createSlickConfig(ConnectionInfoSql connectionInfo, String poolName, HealthCheckRegistry healthCheckRegistry) {
+    private static Config createSlickConfig(ConnectionInfoSql connectionInfo, String poolName, int maxConnections, int minConnections, int queueSize, HealthCheckRegistry healthCheckRegistry) {
         ImmutableMap.Builder<String, Object> databaseConfig = ImmutableMap.<String, Object>builder()
                 .put("user", connectionInfo.getUser())
                 .put("password", getPassword(connectionInfo))
                 .put("dataSourceClass", getDataSourceClass(connectionInfo))
                 .put("properties.serverName", connectionInfo.getHost())
                 .put("properties.databaseName", connectionInfo.getDatabase())
-                .put("numThreads", connectionInfo.getMaxThreads())
+                .put("numThreads", maxConnections)
+                .put("minimumIdle", minConnections)
+                .put("queueSize", queueSize)
                 .put("initializationFailFast", connectionInfo.getInitFailFast())
                 .put("poolName", poolName);
 

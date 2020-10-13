@@ -16,10 +16,10 @@ import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.streams.domain.StreamRunner;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
-import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -125,7 +125,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         this.pathParser = createPathParser2((ConnectionInfoSql) data.getConnectionInfo(), cql);
     }
 
-    private static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql, Cql cql) {
+    public static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql, Cql cql) {
         SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
                                                      .options(connectionInfoSql.getPathSyntax())
                                                      .build();
@@ -144,6 +144,112 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                                      .options(connectionInfoSql.getPathSyntax())
                                                      .build();
         return new PathParserSql(syntax, cql);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (register && Runtime.getRuntime().availableProcessors() > getStreamRunner().getCapacity()) {
+            LOGGER.info("Recommended max connections for optimal performance under load: {}", getMaxQueries() * Runtime.getRuntime().availableProcessors());
+        }
+    }
+
+    //TODO: implement auto mode for maxConnections=-1, how to get numberOfQueries in Connector?
+    @Override
+    protected int getRunnerCapacity(FeatureProviderDataV2 data) {
+        ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+
+        int maxConnections = connectionInfo.getMaxConnections();
+
+        int runnerCapacity = Runtime.getRuntime()
+                                    .availableProcessors();
+        if (maxConnections > 0) {
+            for (FeatureStoreTypeInfo typeInfo : getTypeInfos().values()) {
+                int numberOfQueries = typeInfo.getInstanceContainers()
+                                              .get(0)
+                                              .getAllAttributesContainers()
+                                              .size();
+                int capacity = maxConnections / numberOfQueries;
+                //LOGGER.info("{}: {}", typeInfo.getName(), capacity);
+                if (capacity >= 0 && capacity < runnerCapacity) {
+                    runnerCapacity = capacity;
+                }
+            }
+        }
+        //LOGGER.info("RUNNER: {}", runnerCapacity);
+        
+        return runnerCapacity;
+    }
+
+    @Override
+    protected int getRunnerQueueSize(FeatureProviderDataV2 data) {
+        ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+
+        int maxQueries = getMaxQueries();
+
+        int maxConnections;
+        if (connectionInfo.getMaxConnections() > 0) {
+            maxConnections = connectionInfo.getMaxConnections();
+        } else {
+            maxConnections = maxQueries * Runtime.getRuntime()
+                                                      .availableProcessors();
+        }
+        int capacity = maxConnections / maxQueries;
+        //TODO
+        int queueSize = (maxConnections * capacity * 2) / maxQueries;
+        //LOGGER.info("RUNNERQ: {}", queueSize);
+        return queueSize;
+    }
+
+    private int getMaxQueries() {
+        int maxQueries = 0;
+
+        for (FeatureStoreTypeInfo typeInfo : getTypeInfos().values()) {
+            int numberOfQueries = typeInfo.getInstanceContainers()
+                                          .get(0)
+                                          .getAllAttributesContainers()
+                                          .size();
+
+            if (numberOfQueries > maxQueries) {
+                maxQueries = numberOfQueries;
+            }
+        }
+        return maxQueries;
+    }
+
+    @Override
+    protected Optional<String> getRunnerError(FeatureProviderDataV2 data) {
+        if (getStreamRunner().getCapacity() == 0) {
+            ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+
+            int maxConnections = connectionInfo.getMaxConnections();
+
+            int minRequired = 0;
+
+            for (FeatureStoreTypeInfo typeInfo : getTypeInfos().values()) {
+                int numberOfQueries = typeInfo.getInstanceContainers().get(0).getAllAttributesContainers().size();
+                if (numberOfQueries > minRequired) {
+                    minRequired = numberOfQueries;
+                }
+            }
+
+            return Optional.of(String.format("maxConnections=%d is too low, a minimum of %d is required", maxConnections, minRequired));
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
+    protected Optional<Map<String, String>> getStartupInfo() {
+        String parallelism = String.valueOf(getStreamRunner().getCapacity());
+
+        //TODO: get other infos from connector
+
+        return Optional.of(ImmutableMap.of(
+                "min connections", String.valueOf(connector.getMinConnections()),
+                "max connections", String.valueOf(connector.getMaxConnections()),
+                "stream capacity", parallelism)
+        );
     }
 
     @Override
@@ -197,11 +303,11 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         }
 
         try {
-            return extentReader.getExtent(typeInfo.get())
-                               .run(getMaterializer())
-                               .exceptionally(throwable -> Optional.empty())
-                               .toCompletableFuture()
-                               .join();
+            RunnableGraph<CompletionStage<Optional<BoundingBox>>> extentGraph = extentReader.getExtent(typeInfo.get());
+            return getStreamRunner().run(extentGraph)
+                                    .exceptionally(throwable -> Optional.empty())
+                                    .toCompletableFuture()
+                                    .join();
         } catch (Throwable e) {
             //continue
         }
@@ -278,9 +384,9 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                                                                    }))
                                                                                    .toMat(Sink.ignore(), Keep.left());
 
-        return result.run(getMaterializer())
-                     .toCompletableFuture()
-                     .join();
+        return getStreamRunner().run(result)
+                                .toCompletableFuture()
+                                .join();
     }
 
     private MutationResult writeFeatures(String featureType,
@@ -320,10 +426,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         Source<FeatureSql, ?> features = featureSource.decode(mapping4, ModifiableFeatureSql::create, ModifiablePropertySql::create);
 
         Flow<FeatureSql, String, NotUsed> creator = id.isPresent()
-                ? featureMutationsSql.getUpdaterFlow(mutationSchemaSql, getMaterializer().system()
-                                                                                         .dispatcher(), id.get())
-                : featureMutationsSql.getCreatorFlow(mutationSchemaSql, getMaterializer().system()
-                                                                                         .dispatcher());
+                ? featureMutationsSql.getUpdaterFlow(mutationSchemaSql, getStreamRunner().getDispatcher(), id.get())
+                : featureMutationsSql.getCreatorFlow(mutationSchemaSql, getStreamRunner().getDispatcher());
 
         Sink<String, CompletionStage<MutationResult>> of = Flow.of(String.class)
                                                                .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<ImmutableMutationResult.Builder>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
@@ -343,9 +447,9 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         // result is
         RunnableGraph<CompletionStage<MutationResult>> result = idSource.toMat(Sink.seq(), FeatureProviderSql::writeIdsToResult);
 
-        return result.run(getMaterializer())
-                     .toCompletableFuture()
-                     .join();
+        return getStreamRunner().run(result)
+                                .toCompletableFuture()
+                                .join();
     }
 
     private static CompletionStage<MutationResult> writeIdsToResult(CompletionStage<ImmutableMutationResult.Builder> resultStage, CompletionStage<List<String>> idsStage) {
