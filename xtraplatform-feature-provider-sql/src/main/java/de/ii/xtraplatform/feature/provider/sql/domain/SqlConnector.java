@@ -112,8 +112,8 @@ public interface SqlConnector extends FeatureProviderConnector<SqlRow, SqlQuerie
 
     default SqlRowMeta getMetaQueryResult(Object minKey, Object maxKey, Long numberReturned, Long numberMatched) {
         return ImmutableSqlRowMeta.builder()
-                                  .minKey(Objects.nonNull(minKey) ? minKey : 0L)
-                                  .maxKey(Objects.nonNull(maxKey) ? maxKey : 0L)
+                                  .minKey(minKey)
+                                  .maxKey(maxKey)
                                   .numberReturned(Objects.nonNull(numberReturned) ? numberReturned : 0L)
                                   .numberMatched(Objects.nonNull(numberMatched) && numberMatched > -1 ? OptionalLong.of(numberMatched) : OptionalLong.empty())
                                   .build();
