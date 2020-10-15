@@ -37,6 +37,7 @@ import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.Metadata;
+import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -135,7 +136,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
         }
 
         try {
-            RunnableGraph<CompletionStage<Optional<BoundingBox>>> extentGraph = extentReader.getExtent(typeInfo.get());
+            RunnableGraphWithMdc<CompletionStage<Optional<BoundingBox>>> extentGraph = extentReader.getExtent(typeInfo.get());
             return getStreamRunner().run(extentGraph)
                                     .exceptionally(throwable -> Optional.empty())
                                     .toCompletableFuture()

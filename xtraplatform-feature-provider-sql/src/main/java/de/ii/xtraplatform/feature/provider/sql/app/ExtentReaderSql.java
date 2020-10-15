@@ -9,7 +9,6 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 
 import akka.NotUsed;
 import akka.stream.javadsl.Keep;
-import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -22,6 +21,8 @@ import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
+import de.ii.xtraplatform.streams.domain.LogContextStream;
+import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
 
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -43,7 +44,7 @@ class ExtentReaderSql implements ExtentReader {
 
 
     @Override
-    public RunnableGraph<CompletionStage<Optional<BoundingBox>>> getExtent(FeatureStoreTypeInfo typeInfo) {
+    public RunnableGraphWithMdc<CompletionStage<Optional<BoundingBox>>> getExtent(FeatureStoreTypeInfo typeInfo) {
         //TODO: multiple main tables
         FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
                                                                   .get(0);
@@ -57,8 +58,7 @@ class ExtentReaderSql implements ExtentReader {
 
         Source<SqlRow, NotUsed> sourceStream = sqlConnector.getSqlClient().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class));
 
-        return sourceStream.map(sqlRow -> sqlDialect.parseExtent((String) sqlRow.getValues()
-                                                                                .get(0), crs))
-                           .toMat(Sink.head(), Keep.right());
+        return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseExtent((String) sqlRow.getValues()
+                                                                                                              .get(0), crs)), Sink.head());
     }
 }

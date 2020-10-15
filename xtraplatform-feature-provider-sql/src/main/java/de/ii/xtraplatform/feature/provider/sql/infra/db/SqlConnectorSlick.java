@@ -109,6 +109,8 @@ public class SqlConnectorSlick implements SqlConnector {
         int capacity = maxConnections / maxQueries;
         //TODO
         this.queueSize = Math.max(1024, maxConnections * capacity * 2);
+
+        //LOGGER.debug("QUEUE {} {} {} {} {}", connectionInfo.getDatabase(), maxQueries, maxConnections, capacity, maxConnections * capacity * 2);
     }
 
     //TODO: better way to get maxQueries
