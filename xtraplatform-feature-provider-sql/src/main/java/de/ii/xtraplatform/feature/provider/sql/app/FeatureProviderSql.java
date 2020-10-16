@@ -16,16 +16,12 @@ import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.streams.domain.StreamRunner;
-import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.store.domain.entities.EntityComponent;
-import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
@@ -38,7 +34,6 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
-import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
@@ -51,6 +46,7 @@ import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
@@ -58,6 +54,11 @@ import de.ii.xtraplatform.features.domain.FeatureTransformer;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
+import de.ii.xtraplatform.store.domain.entities.EntityComponent;
+import de.ii.xtraplatform.store.domain.entities.handler.Entity;
+import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
+import de.ii.xtraplatform.streams.domain.LogContextStream;
+import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -196,8 +197,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         }
         int capacity = maxConnections / maxQueries;
         //TODO
-        int queueSize = (maxConnections * capacity * 2) / maxQueries;
-        //LOGGER.info("RUNNERQ: {}", queueSize);
+        int queueSize = Math.max(1024, maxConnections * capacity * 2) / maxQueries;
+        //LOGGER.info("RUNNERQ: {} {} {} {}", maxQueries ,maxConnections, capacity, queueSize);
         return queueSize;
     }
 
@@ -303,7 +304,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         }
 
         try {
-            RunnableGraph<CompletionStage<Optional<BoundingBox>>> extentGraph = extentReader.getExtent(typeInfo.get());
+            RunnableGraphWithMdc<CompletionStage<Optional<BoundingBox>>> extentGraph = extentReader.getExtent(typeInfo.get());
             return getStreamRunner().run(extentGraph)
                                     .exceptionally(throwable -> Optional.empty())
                                     .toCompletableFuture()
@@ -376,15 +377,15 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
         SchemaSql mutationSchemaSql = sqlSchema.get(0).accept(new MutationSchemaBuilderSql());
 
-        RunnableGraph<CompletionStage<MutationResult>> result = featureMutationsSql.getDeletionSource(mutationSchemaSql, id)
-                                                                                   .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<MutationResult>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
-                                                                                       return ImmutableMutationResult.builder()
-                                                                                                                     .error(Optional.ofNullable(throwable))
-                                                                                                                     .build();
-                                                                                   }))
-                                                                                   .toMat(Sink.ignore(), Keep.left());
+        Source<SqlRow, CompletionStage<MutationResult>> deletionSource = featureMutationsSql.getDeletionSource(mutationSchemaSql, id)
+                                                                                             .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<MutationResult>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
+                                                                                                 return ImmutableMutationResult.builder()
+                                                                                                                               .error(Optional.ofNullable(throwable))
+                                                                                                                               .build();
+                                                                                             }));
+        RunnableGraphWithMdc<CompletionStage<MutationResult>> graph = LogContextStream.graphWithMdc(deletionSource, Sink.ignore(), Keep.left());
 
-        return getStreamRunner().run(result)
+        return getStreamRunner().run(graph)
                                 .toCompletableFuture()
                                 .join();
     }
@@ -445,9 +446,9 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                                                                             }));
 
         // result is
-        RunnableGraph<CompletionStage<MutationResult>> result = idSource.toMat(Sink.seq(), FeatureProviderSql::writeIdsToResult);
+        RunnableGraphWithMdc<CompletionStage<MutationResult>> graph = LogContextStream.graphWithMdc(idSource, Sink.seq(), FeatureProviderSql::writeIdsToResult);
 
-        return getStreamRunner().run(result)
+        return getStreamRunner().run(graph)
                                 .toCompletableFuture()
                                 .join();
     }

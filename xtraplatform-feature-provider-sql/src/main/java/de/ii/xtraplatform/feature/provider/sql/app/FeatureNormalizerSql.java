@@ -36,6 +36,8 @@ import de.ii.xtraplatform.features.domain.ImmutableCollectionMetadata;
 import de.ii.xtraplatform.features.domain.ImmutableResult;
 import de.ii.xtraplatform.features.domain.PropertyBase;
 import de.ii.xtraplatform.features.domain.SchemaBase;
+import de.ii.xtraplatform.runtime.domain.LogContext;
+import de.ii.xtraplatform.streams.domain.LogContextStream;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -192,17 +194,16 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                                                       .readState(ModifiableReadState.create())
                                                       .build();
 
-        //TODO: cleanup
         Flow<SqlRow, NotUsed, CompletionStage<FeatureStream2.Result>> consumerFlow =
                 Flow.fromFunction((Function<SqlRow, NotUsed>) sqlRow -> {
                     handleRow(sqlRow, readContext);
+
                     return NotUsed.getInstance();
                 })
-                    .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
+                    .watchTermination(LogContextStream.withMdc((Function2<NotUsed, CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (notUsed, completionStage) -> completionStage.handle(LogContext.withMdc((done, throwable) -> {
                         Throwable error = throwable;
 
                         if (Objects.nonNull(error)) {
-                            //handleException(throwable, readContext);
                             try {
                                 if (!readContext.getReadState()
                                                 .isStarted()) {
@@ -214,7 +215,6 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                             }
                         }
 
-                        //handleCompletion(readContext);
                         try {
                             if (readContext.getReadState()
                                            .isFeatureStarted()) {
@@ -232,7 +232,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                                                                    .isAtLeastOneFeatureWritten())
                                               .error(Optional.ofNullable(error))
                                               .build();
-                    }));
+                    }))));
 
         return consumerFlow.to(Sink.ignore());
     }

@@ -9,6 +9,7 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import org.immutables.value.Value;
 
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.sql.Blob;
 import java.sql.Clob;
@@ -20,8 +21,10 @@ import java.util.OptionalLong;
 @Value.Immutable
 public interface SqlRowMeta extends SqlRow {
 
+    @Nullable
     Object getMinKey();
 
+    @Nullable
     Object getMaxKey();
 
     long getNumberReturned();

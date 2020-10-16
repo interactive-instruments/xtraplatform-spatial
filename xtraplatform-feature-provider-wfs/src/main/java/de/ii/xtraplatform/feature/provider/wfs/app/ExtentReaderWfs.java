@@ -7,8 +7,6 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.app;
 
-import akka.stream.javadsl.Keep;
-import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -20,6 +18,8 @@ import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.Metadata;
+import de.ii.xtraplatform.streams.domain.LogContextStream;
+import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
 
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -37,14 +37,13 @@ public class ExtentReaderWfs implements ExtentReader {
     }
 
     @Override
-    public RunnableGraph<CompletionStage<Optional<BoundingBox>>> getExtent(FeatureStoreTypeInfo typeInfo) {
+    public RunnableGraphWithMdc<CompletionStage<Optional<BoundingBox>>> getExtent(FeatureStoreTypeInfo typeInfo) {
 
         Optional<BoundingBox> boundingBox = connector.getMetadata()
                                                       .map(Metadata::getFeatureTypesBoundingBox)
                                                       .flatMap(boundingBoxes -> Optional.ofNullable(boundingBoxes.get(typeInfo.getName())))
                                                       .flatMap(boundingBox1 -> crsTransformer.map(mayThrow(crsTransformer1 -> crsTransformer1.transformBoundingBox(boundingBox1))));
 
-        return Source.single(boundingBox)
-                     .toMat(Sink.head(), Keep.right());
+        return LogContextStream.graphWithMdc(Source.single(boundingBox), Sink.head());
     }
 }

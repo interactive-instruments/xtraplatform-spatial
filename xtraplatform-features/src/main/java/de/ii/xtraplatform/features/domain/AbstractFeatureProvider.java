@@ -197,7 +197,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                     transformer.process(feature);
                 });
 
-                return getStreamRunner().run(featureStream.toMat(sink, Keep.left()));
+                return getStreamRunner().run(featureStream, sink, Keep.left());
             }
         };
     }
