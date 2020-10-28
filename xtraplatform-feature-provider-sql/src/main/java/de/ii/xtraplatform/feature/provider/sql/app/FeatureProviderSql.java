@@ -34,6 +34,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
+import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlTypeInfoValidator;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
@@ -54,6 +55,7 @@ import de.ii.xtraplatform.features.domain.FeatureTransformer;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
+import de.ii.xtraplatform.features.domain.TypeInfoValidator;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
@@ -67,12 +69,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.AbstractMap;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @EntityComponent
 @Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderDataV2.class)
@@ -251,6 +255,18 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                 "max connections", String.valueOf(connector.getMaxConnections()),
                 "stream capacity", parallelism)
         );
+    }
+
+    @Override
+    protected List<String> validateSchema() {
+        TypeInfoValidator typeInfoValidator = new SqlTypeInfoValidator((ConnectionInfoSql) getData().getConnectionInfo());
+
+        return getTypeInfos().values()
+                      .stream()
+                      .flatMap(featureStoreTypeInfo -> featureStoreTypeInfo.getInstanceContainers().get(0).getAllAttributesContainers().stream())
+                      .map(typeInfoValidator::validate)
+                      .flatMap(Collection::stream)
+                      .collect(Collectors.toList());
     }
 
     @Override

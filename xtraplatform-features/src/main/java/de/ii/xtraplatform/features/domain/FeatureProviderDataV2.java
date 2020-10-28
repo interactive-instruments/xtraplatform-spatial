@@ -56,6 +56,13 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
 
     Optional<String> getDefaultLanguage();
 
+    enum VALIDATION {OFF,WARN,ERROR}
+
+    @Value.Default
+    default VALIDATION getValidateTypes() {
+        return VALIDATION.OFF;
+    }
+
     //behaves exactly like Map<String, FeatureTypeMapping>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonMerge
