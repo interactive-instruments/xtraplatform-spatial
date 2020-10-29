@@ -34,6 +34,11 @@ public interface FeatureStoreAttribute {
         return false;
     }
 
+    @Value.Default
+    default boolean isTemporal() {
+        return false;
+    }
+
     Optional<String> getConstantValue();
 
     @Value.Derived

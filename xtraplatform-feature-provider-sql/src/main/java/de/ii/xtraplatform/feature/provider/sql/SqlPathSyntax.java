@@ -70,6 +70,17 @@ public interface SqlPathSyntax {
         return String.format("%s{spatial}", path);
     }
 
+    default boolean getTemporalFlag(String path) {
+        Matcher matcher = Pattern.compile(getTemporalFlagPattern())
+                                 .matcher(path);
+
+        return matcher.find();
+    }
+
+    default String setTemporalFlag(String path) {
+        return String.format("%s{temporal}", path);
+    }
+
     default OptionalInt getPriorityFlag(String path) {
         Matcher matcher = Pattern.compile(getPriorityFlagPattern())
                                  .matcher(path);
@@ -148,6 +159,11 @@ public interface SqlPathSyntax {
     @Value.Derived
     default String getSpatialFlagPattern() {
         return "\\{spatial\\}";
+    }
+
+    @Value.Derived
+    default String getTemporalFlagPattern() {
+        return "\\{temporal\\}";
     }
 
     @Value.Derived

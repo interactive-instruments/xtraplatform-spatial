@@ -50,6 +50,11 @@ public interface SqlPath {
         return false;
     }
 
+    @Value.Default
+    default boolean isTemporal() {
+        return false;
+    }
+
     String getSortKey();
 
     Optional<String> getConstantValue();
