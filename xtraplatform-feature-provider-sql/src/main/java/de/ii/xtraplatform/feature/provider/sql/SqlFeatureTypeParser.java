@@ -58,6 +58,12 @@ public class SqlFeatureTypeParser {
             path = syntax.setSpatialFlag(path);
         }
 
+        boolean isTemporal = property.getType() == FeatureProperty.Type.DATETIME;
+
+        if (isTemporal) {
+            path = syntax.setTemporalFlag(path);
+        }
+
         return path;
     }
 }

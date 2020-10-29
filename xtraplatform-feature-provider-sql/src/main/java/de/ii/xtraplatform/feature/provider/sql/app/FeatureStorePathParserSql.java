@@ -119,6 +119,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                .map(q -> q.replaceAll("\\[", "")
                                                           .replaceAll("]", ""));
             boolean isSpatial = syntax.getSpatialFlag(flags);
+            boolean isTemporal = syntax.getTemporalFlag(flags);
             String sortKey = tableFlags.values()
                                        .stream()
                                        .findFirst()
@@ -137,6 +138,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                .isJunction(isJunction)
                                                .queryable(queryable.get())
                                                .isSpatial(isSpatial)
+                                               .isTemporal(isTemporal)
                                                .sortKey(sortKey)
                                                .constantValue(constant)
                                                .build());
@@ -180,6 +182,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                                                                                                          .queryable(sqlPath.getQueryable())
                                                                                                                                          .isId(sqlPath.hasOid())
                                                                                                                                          .isSpatial(sqlPath.isSpatial())
+                                                                                                                                         .isTemporal(sqlPath.isTemporal())
                                                                                                                                          .constantValue(sqlPath.getConstantValue())
                                                                                                                                          .build());
                                                                             })
