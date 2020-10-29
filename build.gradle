@@ -12,7 +12,7 @@ ext {
     versionSuffix = project.findProperty('isSnapshot') == 'true' ? '-SNAPSHOT' : ''
 }
 
-version = '4.2.0' + versionSuffix
+version = '4.3.0' + versionSuffix
 
 dependencies {
     feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '3.1.0'

@@ -68,6 +68,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+
 public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<String> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryTransformerWfs.class);
@@ -381,7 +383,7 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
                     .stream()
                               //TODO: why lower case???
                     .filter(featureProperty -> Objects.nonNull(featureProperty.getName()) && Objects.equals(featureProperty.getName()
-                                                                                                                        .toLowerCase(), property.toLowerCase().replaceAll("_id_", "id")))
+                                                                                                                        .toLowerCase(), property.replaceAll(ID_PLACEHOLDER, "id").toLowerCase()))
                     .map(FeatureProperty::getPath)
                               .map(path -> path.substring(path.indexOf("/", 1)+1))
                     .findFirst()

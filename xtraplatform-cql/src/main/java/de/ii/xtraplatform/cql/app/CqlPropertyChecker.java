@@ -16,13 +16,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+
 public class CqlPropertyChecker extends CqlVisitorBase<List<String>> {
 
     private final Collection<String> allowedProperties;
     private final List<String> invalidProperties = new ArrayList<>();
 
     public CqlPropertyChecker(Collection<String> allowedProperties) {
-        this.allowedProperties = allowedProperties;
+        this.allowedProperties = ImmutableList.<String>builder()
+                .addAll(allowedProperties)
+                .add(ID_PLACEHOLDER)
+                .build();
     }
 
     @Override

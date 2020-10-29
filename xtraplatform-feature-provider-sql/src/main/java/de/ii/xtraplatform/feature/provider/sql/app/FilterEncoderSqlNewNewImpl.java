@@ -61,6 +61,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+
 public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FilterEncoderSqlNewNewImpl.class);
@@ -141,7 +143,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         @Override
         public String visit(Property property, List<String> children) {
-            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), "_ID_") && attribute.isId());
+            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), ID_PLACEHOLDER) && attribute.isId());
             Optional<String> column = attributesContainer.getAttributes()
                                                          .stream()
                                                          .filter(propertyMatches)
@@ -175,7 +177,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         @Override
         public String visit(Property property, List<String> children) {
             //TODO: fast enough? maybe pass all typeInfos to constructor and create map?
-            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), "_ID_") && attribute.isId());
+            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), ID_PLACEHOLDER) && attribute.isId());
             Optional<FeatureStoreAttributesContainer> table = instanceContainer.getAllAttributesContainers()
                                                                                .stream()
                                                                                .filter(attributesContainer -> attributesContainer.getAttributes()
@@ -307,7 +309,9 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", instant, instant);
                 }
 
-                return String.format(expression, "", String.format(" %s %s", operator, literalInterval));
+                //TODO: test with timestamp, date and string
+                //TODO: also for other operators?
+                return String.format(expression, "", String.format("::TIMESTAMP %s %s", operator, literalInterval));
             }
 
             return String.format(expression, "", String.format(" %s %s", operator, children.get(1)));

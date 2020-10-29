@@ -61,6 +61,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+
 /**
  * @author zahnen
  */
@@ -360,7 +362,7 @@ public class FeatureQueryEncoderWfs {
                     .filter(targetMappings -> Objects.nonNull(targetMappings.getValue()
                                                                             .getName()) && Objects.equals(targetMappings.getValue()
                                                                                                                         .getName()
-                                                                                                                        .toLowerCase(), property.replaceAll("_id_", "id")))
+                                                                                                                        .toLowerCase(), property.replaceAll(ID_PLACEHOLDER, "id").toLowerCase()))
                     .map(Map.Entry::getKey)
                     .findFirst()
                     .map(namespaceNormalizer::getPrefixedPath)
