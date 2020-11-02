@@ -10,6 +10,7 @@ import de.ii.xtraplatform.features.domain.TypeInfoValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import schemacrawler.schema.Catalog;
+import schemacrawler.schema.Column;
 import schemacrawler.schema.Table;
 import schemacrawler.schemacrawler.RegularExpressionInclusionRule;
 import schemacrawler.schemacrawler.SchemaCrawlerException;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public class SqlTypeInfoValidator implements TypeInfoValidator {
 
@@ -61,25 +63,29 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
             errors.add(String.format("table '%s' does not exist", attributesContainer.getName()));
         }
 
-        if (!columnExists( attributesContainer.getSortKey(), attributesContainer.getName())) {
+        if (!columnExists(attributesContainer.getSortKey(), attributesContainer.getName())) {
             errors.add(String.format("column '%s' in table '%s' does not exist", attributesContainer.getSortKey(), attributesContainer.getName()));
         }
 
-        //TODO: isColumnUnique( attributesContainer.getSortKey(), attributesContainer.getName())
-        // -> check that column is either the primary key of the table or that a unique index for the column exists
+        if (!isColumnUnique(attributesContainer.getSortKey(), attributesContainer.getName())) {
+            errors.add(String.format("column %s in table %s is not a primary key or a unique index for the column does not exist",
+                    attributesContainer.getSortKey(), attributesContainer.getName()));
+        }
+
 
         attributesContainer.getAttributes().forEach(attribute -> {
             if (!attribute.isConstant()) {
-                //TODO: columnExists( attribute.getName(), attributesContainer.getName())
-
-                if (attribute.isId()) {
-                    //TODO: isColumnUnique( attribute.getName(), attributesContainer.getName())
-                    // -> check that column is either the primary key of the table or that a unique index for the column exists
+                if (!columnExists(attribute.getName(), attributesContainer.getName())) {
+                    errors.add(String.format("column '%s' in table '%s' does not exist", attribute.getName(), attributesContainer.getName()));
                 }
 
-                if (attribute.isSpatial()) {
-                    //TODO: isColumnSpatial( attribute.getName(), attributesContainer.getName())
-                    // -> check that column is of type geometry
+                if (attribute.isId() && !isColumnUnique(attribute.getName(), attributesContainer.getName())) {
+                    errors.add(String.format("column %s in table %s is not a primary key or a unique index for the column does not exist",
+                            attributesContainer.getSortKey(), attributesContainer.getName()));
+                }
+
+                if (attribute.isSpatial() && !isColumnSpatial(attribute.getName(), attributesContainer.getName())) {
+                    errors.add(String.format("column %s in table %s is not of type geometry", attribute.getName(), attributesContainer.getName()));
                 }
             }
         });
@@ -89,12 +95,45 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
 
             relations.forEach(relation -> {
                 //TODO: tableExists for relation.getSourceContainer(), relation.getTargetContainer() and relation.getJunction() (if present)
+                if (!tableExists(relation.getSourceContainer())) {
+                    errors.add(String.format("table '%s' does not exist", relation.getSourceContainer()));
+                }
+
+                if (!tableExists(relation.getTargetContainer())) {
+                    errors.add(String.format("table '%s' does not exist", relation.getTargetContainer()));
+                }
 
                 //TODO: columnExists for relation.getSourceField(), relation.getSourceSortKey() and relation.getTargetField()
+                if (relation.getJunction().isPresent() && !tableExists(relation.getJunction().get())) {
+                    errors.add(String.format("table '%s' does not exist", relation.getJunction().get()));
+                }
+
+                if (!columnExists(relation.getSourceField(), relation.getSourceSortKey())) {
+                    errors.add(String.format("column '%s' in table '%s' does not exist", relation.getSourceField(), relation.getSourceSortKey()));
+                }
+
+                if (!columnExists(relation.getTargetField(), relation.getSourceSortKey())) {
+                    errors.add(String.format("column '%s' in table '%s' does not exist", relation.getTargetField(), relation.getSourceSortKey()));
+                }
 
                 //TODO: columnExists for relation.getJunctionSource() and relation.getJunctionTarget() if present
+                if (relation.getJunctionSource().isPresent() && relation.getJunctionTarget().isPresent()) {
+                    if (!columnExists(relation.getJunctionSource().get(), relation.getJunctionTarget().get())) {
+                        errors.add(String.format("column '%s' in table '%s' does not exist",
+                                relation.getJunctionSource().get(), relation.getJunctionTarget().get()));
+                    }
+                }
 
                 //TODO: isColumnUnique for relation.getSourceSortKey()
+                if (!isColumnUnique(relation.getSourceField(), relation.getSourceSortKey())) {
+                    errors.add(String.format("column %s in table %s is not a primary key or a unique index for the column does not exist",
+                            relation.getSourceField(), relation.getSourceSortKey()));
+                }
+
+                if (!isColumnUnique(relation.getTargetField(), relation.getSourceSortKey())) {
+                    errors.add(String.format("column %s in table %s is not a primary key or a unique index for the column does not exist",
+                            relation.getTargetField(), relation.getSourceSortKey()));
+                }
 
             });
         }
@@ -103,13 +142,31 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
     }
 
     private boolean tableExists(String name) {
-        //TODO: check this.tables
-        return false;
+        return tables.stream().anyMatch(t -> t.getName().equals(name));
     }
 
     private boolean columnExists(String name, String table) {
-        //TODO: check this.tables
-        return false;
+        return tables.stream()
+                .filter(t -> t.getName().equals(table))
+                .flatMap(t -> t.getColumns().stream())
+                .anyMatch(c -> c.getName().equals(name));
+    }
+
+    private boolean isColumnUnique(String name, String table) {
+        Optional<Column> column = tables.stream()
+                .filter(t -> t.getName().equals(table))
+                .flatMap(t -> t.getColumns().stream())
+                .filter(c -> c.getName().equals(name))
+                .findFirst();
+        return column.isPresent() && (column.get().isPartOfPrimaryKey() || column.get().isPartOfUniqueIndex());
+    }
+
+    private boolean isColumnSpatial(String name, String table) {
+        return tables.stream()
+                .filter(t -> t.getName().equals(table))
+                .flatMap(t -> t.getColumns().stream())
+                .filter(c -> c.getName().equals(name))
+                .anyMatch(c -> "geometry".equals(c.getColumnDataType().getName()));
     }
 
 
