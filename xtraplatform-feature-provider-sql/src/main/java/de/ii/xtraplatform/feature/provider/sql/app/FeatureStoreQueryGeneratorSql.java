@@ -108,7 +108,14 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
                                                                               .stream()
                                                                               .map(column -> {
                                                                                   String name = column.isConstant() ? column.getConstantValue().get() + " AS " + column.getName() : getQualifiedColumn(attributeContainerAlias, column.getName());
-                                                                                  return column.isSpatial() ? sqlDialect.applyToWkt(name) : name;
+                                                                                  if (column.isSpatial()) {
+                                                                                      return sqlDialect.applyToWkt(name);
+                                                                                  }
+                                                                                  if (column.isTemporal()) {
+                                                                                      return sqlDialect.applyToDatetime(name);
+                                                                                  }
+
+                                                                                  return name;
                                                                               }))
                                .collect(Collectors.joining(", "));
 

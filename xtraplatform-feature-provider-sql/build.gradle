@@ -45,7 +45,7 @@ dependencies {
         exclude  group: 'org.slf4j', module: 'slf4j-api'
     }
 
-    embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.16'
+    embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.18'
 
     embedded group: 'us.fatehi', name: 'schemacrawler-api', version: '16.2.5'
     embedded group: 'us.fatehi', name: 'schemacrawler-tools', version: '16.2.5'

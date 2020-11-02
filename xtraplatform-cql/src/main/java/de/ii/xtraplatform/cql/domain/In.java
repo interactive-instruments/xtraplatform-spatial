@@ -21,6 +21,8 @@ import java.util.stream.Stream;
 @JsonDeserialize(builder = ImmutableIn.Builder.class)
 public interface In extends CqlNode, ScalarOperation {
 
+    String ID_PLACEHOLDER = "_ID_";
+
     static In of(String property, ScalarLiteral... values) {
         return new ImmutableIn.Builder().property(property)
                                         .values(Arrays.asList(values))
@@ -28,13 +30,13 @@ public interface In extends CqlNode, ScalarOperation {
     }
 
     static In of(ScalarLiteral... values) {
-        return new ImmutableIn.Builder().property("_ID_")
+        return new ImmutableIn.Builder().property(ID_PLACEHOLDER)
                                         .addValues(values)
                                         .build();
     }
 
     static In of(List<ScalarLiteral> values) {
-        return new ImmutableIn.Builder().property("_ID_")
+        return new ImmutableIn.Builder().property(ID_PLACEHOLDER)
                                         .values(values)
                                         .build();
     }

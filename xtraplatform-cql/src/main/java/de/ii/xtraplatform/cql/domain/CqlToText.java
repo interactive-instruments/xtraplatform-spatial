@@ -74,6 +74,8 @@ import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+
 public class CqlToText implements CqlVisitor<String> {
 
     private final static Map<Class<?>, String> LOGICAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
@@ -208,7 +210,8 @@ public class CqlToText implements CqlVisitor<String> {
         if (scalarOperation instanceof Between) {
             return String.format("%s %s %s AND %s", children.get(0), operator, children.get(1), children.get(2));
         } else if (scalarOperation instanceof In) {
-            return String.format("%s %s (%s)", children.get(0), operator, String.join(", ", children.subList(1, children.size())));
+            String property = Objects.equals(children.get(0), ID_PLACEHOLDER) ? "" : children.get(0);
+            return String.format("%s %s (%s)", property, operator, String.join(", ", children.subList(1, children.size())));
         } else if (scalarOperation instanceof IsNull || scalarOperation instanceof Exists) {
             return String.format("%s %s", children.get(0), operator);
         }

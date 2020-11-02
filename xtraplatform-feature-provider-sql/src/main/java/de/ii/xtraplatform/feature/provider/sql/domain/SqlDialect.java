@@ -20,4 +20,6 @@ public interface SqlDialect {
 
     Optional<BoundingBox> parseExtent(String extent, EpsgCrs crs);
 
+    String applyToDatetime(String column);
+
 }

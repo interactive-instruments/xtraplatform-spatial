@@ -61,6 +61,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+
 public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FilterEncoderSqlNewNewImpl.class);
@@ -141,7 +143,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         @Override
         public String visit(Property property, List<String> children) {
-            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), "_ID_") && attribute.isId());
+            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), ID_PLACEHOLDER) && attribute.isId());
             Optional<String> column = attributesContainer.getAttributes()
                                                          .stream()
                                                          .filter(propertyMatches)
@@ -175,7 +177,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         @Override
         public String visit(Property property, List<String> children) {
             //TODO: fast enough? maybe pass all typeInfos to constructor and create map?
-            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), "_ID_") && attribute.isId());
+            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), ID_PLACEHOLDER) && attribute.isId());
             Optional<FeatureStoreAttributesContainer> table = instanceContainer.getAllAttributesContainers()
                                                                                .stream()
                                                                                .filter(attributesContainer -> attributesContainer.getAttributes()
@@ -187,7 +189,12 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                                                               .stream()
                                                                                               .filter(propertyMatches)
                                                                                               .findFirst()
-                                                                                              .map(FeatureStoreAttribute::getName));
+                                                                                              .map(attribute -> {
+                                                                                                  if (attribute.isTemporal()) {
+                                                                                                      return String.format("%s::timestamp", attribute.getName());
+                                                                                                  }
+                                                                                                  return attribute.getName();
+                                                                                              }));
 
             if (!table.isPresent() || !column.isPresent()) {
                 throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", property.getName()));
@@ -275,17 +282,17 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     return "TRUE";
                 } else if (interval.isUnboundedStart()) {
                     operator = TEMPORAL_OPERATORS.get(ImmutableBefore.class);
-                    return String.format(expression, "", String.format(" %s '%s'", operator, interval.getEnd()
+                    return String.format(expression, "", String.format(" %s TIMESTAMP '%s'", operator, interval.getEnd()
                                                                                                      .toString()));
                 } else if (interval.isUnboundedEnd()) {
                     operator = TEMPORAL_OPERATORS.get(ImmutableAfter.class);
-                    return String.format(expression, "", String.format(" %s '%s'", operator, interval.getStart()
+                    return String.format(expression, "", String.format(" %s TIMESTAMP '%s'", operator, interval.getStart()
                                                                                                      .toString()));
                 }
 
                 String[] interval2 = children.get(1)
                                              .split("/");
-                return String.format(expression, "", String.format(" %s %s' AND '%s", operator, interval2[0], interval2[1]));
+                return String.format(expression, "", String.format(" %s TIMESTAMP %s' AND TIMESTAMP '%s", operator, interval2[0], interval2[1]));
             }
 
             if (temporalOperation instanceof TOverlaps) {
@@ -310,7 +317,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 return String.format(expression, "", String.format(" %s %s", operator, literalInterval));
             }
 
-            return String.format(expression, "", String.format(" %s %s", operator, children.get(1)));
+            return String.format(expression, "", String.format(" %s TIMESTAMP %s", operator, children.get(1)));
         }
 
         @Override

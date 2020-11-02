@@ -56,6 +56,8 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+
 /**
  * @author zahnen
  */
@@ -101,7 +103,7 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
                     public Object visit(PropertyName expression, Object extraData) {
 
                         //TODO: fast enough? maybe pass all typeInfos to constructor and create map?
-                        Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(expression.getPropertyName().replaceAll("/", "."), attribute.getQueryable()) || (Objects.equals(expression.getPropertyName(), "_ID_") && attribute.isId());
+                        Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(expression.getPropertyName().replaceAll("/", "."), attribute.getQueryable()) || (Objects.equals(expression.getPropertyName(), ID_PLACEHOLDER) && attribute.isId());
                         Optional<FeatureStoreAttributesContainer> table = typeInfo.getAllAttributesContainers()
                                                                                   .stream()
                                                                                   .filter(attributesContainer -> attributesContainer.getAttributes()
