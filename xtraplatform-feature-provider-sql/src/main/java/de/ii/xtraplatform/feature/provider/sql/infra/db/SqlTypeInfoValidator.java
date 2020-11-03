@@ -193,8 +193,8 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                 .filter(t -> t.getName().equals(table))
                 .flatMap(t -> t.getColumns().stream())
                 .filter(c -> c.getName().equals(name))
-                .anyMatch(c -> "timestamp".equals(c.getColumnDataType().getName()) ||
-                        "datetime".equals(c.getColumnDataType().getName()) ||
+                .anyMatch(c -> "timestamp*".equals(c.getColumnDataType().getName()) ||
+                        "date".equals(c.getColumnDataType().getName()) ||
                         "string".equals(c.getColumnDataType().getName()));
     }
 
