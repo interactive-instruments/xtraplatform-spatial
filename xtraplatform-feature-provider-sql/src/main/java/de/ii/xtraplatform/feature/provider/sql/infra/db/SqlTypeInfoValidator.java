@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import schemacrawler.schema.Catalog;
 import schemacrawler.schema.Column;
+import schemacrawler.schema.Index;
 import schemacrawler.schema.Table;
 import schemacrawler.schemacrawler.RegularExpressionInclusionRule;
 import schemacrawler.schemacrawler.SchemaCrawlerException;
@@ -87,6 +88,10 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                 if (attribute.isSpatial() && !isColumnSpatial(attribute.getName(), attributesContainer.getName())) {
                     errors.add(String.format("column %s in table %s is not of type geometry", attribute.getName(), attributesContainer.getName()));
                 }
+
+                if (attribute.isTemporal() && !isColumnTemporal(attribute.getName(), attributesContainer.getName())) {
+                    errors.add(String.format("column %s in table %s is not temporal", attribute.getName(), attributesContainer.getName()));
+                }
             }
         });
 
@@ -94,7 +99,6 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
             List<FeatureStoreRelation> relations = ((FeatureStoreRelatedContainer) attributesContainer).getInstanceConnection();
 
             relations.forEach(relation -> {
-                //TODO: tableExists for relation.getSourceContainer(), relation.getTargetContainer() and relation.getJunction() (if present)
                 if (!tableExists(relation.getSourceContainer())) {
                     errors.add(String.format("table '%s' does not exist", relation.getSourceContainer()));
                 }
@@ -103,36 +107,39 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                     errors.add(String.format("table '%s' does not exist", relation.getTargetContainer()));
                 }
 
-                //TODO: columnExists for relation.getSourceField(), relation.getSourceSortKey() and relation.getTargetField()
                 if (relation.getJunction().isPresent() && !tableExists(relation.getJunction().get())) {
                     errors.add(String.format("table '%s' does not exist", relation.getJunction().get()));
                 }
 
-                if (!columnExists(relation.getSourceField(), relation.getSourceSortKey())) {
-                    errors.add(String.format("column '%s' in table '%s' does not exist", relation.getSourceField(), relation.getSourceSortKey()));
+                if (!columnExists(relation.getSourceField(), relation.getSourceContainer())) {
+                    errors.add(String.format("column '%s' in table '%s' does not exist", relation.getSourceField(), relation.getSourceContainer()));
                 }
 
-                if (!columnExists(relation.getTargetField(), relation.getSourceSortKey())) {
+                if (!columnExists(relation.getSourceSortKey(), relation.getSourceContainer())) {
+                    errors.add(String.format("column '%s' in table '%s' does not exist", relation.getSourceSortKey(), relation.getSourceContainer()));
+                }
+
+                if (!columnExists(relation.getTargetField(), relation.getTargetContainer())) {
                     errors.add(String.format("column '%s' in table '%s' does not exist", relation.getTargetField(), relation.getSourceSortKey()));
                 }
 
-                //TODO: columnExists for relation.getJunctionSource() and relation.getJunctionTarget() if present
-                if (relation.getJunctionSource().isPresent() && relation.getJunctionTarget().isPresent()) {
-                    if (!columnExists(relation.getJunctionSource().get(), relation.getJunctionTarget().get())) {
+                if (relation.getJunctionSource().isPresent() && relation.getJunction().isPresent()) {
+                    if (!columnExists(relation.getJunctionSource().get(), relation.getJunction().get())) {
                         errors.add(String.format("column '%s' in table '%s' does not exist",
-                                relation.getJunctionSource().get(), relation.getJunctionTarget().get()));
+                                relation.getJunctionSource().get(), relation.getJunction().get()));
                     }
                 }
 
-                //TODO: isColumnUnique for relation.getSourceSortKey()
-                if (!isColumnUnique(relation.getSourceField(), relation.getSourceSortKey())) {
-                    errors.add(String.format("column %s in table %s is not a primary key or a unique index for the column does not exist",
-                            relation.getSourceField(), relation.getSourceSortKey()));
+                if (relation.getJunctionTarget().isPresent() && relation.getJunction().isPresent()) {
+                    if (!columnExists(relation.getJunctionTarget().get(), relation.getJunction().get())) {
+                        errors.add(String.format("column '%s' in table '%s' does not exist",
+                                relation.getJunctionTarget().get(), relation.getJunction().get()));
+                    }
                 }
 
-                if (!isColumnUnique(relation.getTargetField(), relation.getSourceSortKey())) {
+                if (!isColumnUnique(relation.getSourceSortKey(), relation.getSourceContainer())) {
                     errors.add(String.format("column %s in table %s is not a primary key or a unique index for the column does not exist",
-                            relation.getTargetField(), relation.getSourceSortKey()));
+                            relation.getSourceSortKey(), relation.getSourceContainer()));
                 }
 
             });
@@ -157,8 +164,20 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                 .filter(t -> t.getName().equals(table))
                 .flatMap(t -> t.getColumns().stream())
                 .filter(c -> c.getName().equals(name))
-                .findFirst();
-        return column.isPresent() && (column.get().isPartOfPrimaryKey() || column.get().isPartOfUniqueIndex());
+                .findAny();
+        if (column.isPresent()) {
+            boolean isPrimaryKey = tables.stream()
+                    .filter(t -> t.getName().equals(table))
+                    .anyMatch(t -> t.getPrimaryKey().getColumns().size() == 1 && t.getPrimaryKey().getColumns().get(0).getReferencedColumn().equals(column.get()));
+            boolean isUniqueIndex = tables.stream()
+                    .filter(t -> t.getName().equals(table))
+                    .flatMap(t -> t.getIndexes().stream())
+                    .filter(Index::isUnique)
+                    .anyMatch(index -> index.getColumns().size() == 1 && index.getColumns().get(0).getReferencedColumn().equals(column.get()));
+            return isPrimaryKey || isUniqueIndex;
+        }
+
+        return false;
     }
 
     private boolean isColumnSpatial(String name, String table) {
@@ -167,6 +186,16 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                 .flatMap(t -> t.getColumns().stream())
                 .filter(c -> c.getName().equals(name))
                 .anyMatch(c -> "geometry".equals(c.getColumnDataType().getName()));
+    }
+
+    private boolean isColumnTemporal(String name, String table) {
+        return tables.stream()
+                .filter(t -> t.getName().equals(table))
+                .flatMap(t -> t.getColumns().stream())
+                .filter(c -> c.getName().equals(name))
+                .anyMatch(c -> "timestamp".equals(c.getColumnDataType().getName()) ||
+                        "datetime".equals(c.getColumnDataType().getName()) ||
+                        "string".equals(c.getColumnDataType().getName()));
     }
 
 
