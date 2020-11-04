@@ -191,7 +191,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                                                               .findFirst()
                                                                                               .map(attribute -> {
                                                                                                   if (attribute.isTemporal()) {
-                                                                                                      return String.format("%s::timestamp", attribute.getName());
+                                                                                                      return sqlDialect.applyToDatetime(attribute.getName());
                                                                                                   }
                                                                                                   return attribute.getName();
                                                                                               }));
