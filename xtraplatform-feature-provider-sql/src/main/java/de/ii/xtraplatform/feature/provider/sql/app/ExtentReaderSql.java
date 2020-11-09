@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
 import akka.NotUsed;
-import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -24,6 +23,7 @@ import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.streams.domain.LogContextStream;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
 
+import java.time.Period;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
@@ -60,5 +60,40 @@ class ExtentReaderSql implements ExtentReader {
 
         return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseExtent((String) sqlRow.getValues()
                                                                                                               .get(0), crs)), Sink.head());
+    }
+
+    public RunnableGraphWithMdc<CompletionStage<Optional<Period>>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String property) {
+        FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
+                .get(0);
+        Optional<FeatureStoreAttributesContainer> temporalAttributesContainer = instanceContainer.getTemporalAttributesContainer(property);
+
+        if (!temporalAttributesContainer.isPresent()) {
+            throw new IllegalArgumentException("temporal property not found:" + property);
+        }
+
+        String query = queryGenerator.getTemporalExtentQuery(temporalAttributesContainer.get(), property);
+
+        Source<SqlRow, NotUsed> sourceStream = sqlConnector.getSqlClient().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class));
+
+        return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseTemporalExtent((String) sqlRow.getValues().get(0))), Sink.head());
+    }
+
+    public RunnableGraphWithMdc<CompletionStage<Optional<Period>>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String startProperty, String endProperty) {
+        FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
+                .get(0);
+        Optional<FeatureStoreAttributesContainer> startAttributesContainer = instanceContainer.getTemporalAttributesContainer(startProperty);
+        if (!startAttributesContainer.isPresent()) {
+            throw new IllegalArgumentException("temporal property not found:" + startProperty);
+        }
+        Optional<FeatureStoreAttributesContainer> endAttributesContainer = instanceContainer.getTemporalAttributesContainer(endProperty);
+        if (!endAttributesContainer.isPresent()) {
+            throw new IllegalArgumentException("temporal property not found:" + endProperty);
+        }
+
+        String query = queryGenerator.getTemporalExtentQuery(startAttributesContainer.get(), endAttributesContainer.get(), startProperty, endProperty);
+
+        Source<SqlRow, NotUsed> sourceStream = sqlConnector.getSqlClient().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class));
+
+        return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseTemporalExtent((String) sqlRow.getValues().get(0))), Sink.head());
     }
 }

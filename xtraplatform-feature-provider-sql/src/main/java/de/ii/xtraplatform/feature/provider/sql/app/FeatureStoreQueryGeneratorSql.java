@@ -97,6 +97,64 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         return String.format("SELECT %s FROM %s%s%s", column, mainTable, join.isEmpty() ? "" : " ", join);
     }
 
+    public String getTemporalExtentQuery(FeatureStoreAttributesContainer attributesContainer, String property) {
+        List<String> aliases = getAliases(attributesContainer);
+        String attributeContainerAlias = aliases.get(aliases.size() - 1);
+
+        String table = String.format("%s %s", attributesContainer.getInstanceContainerName(), aliases.get(0));
+        String column = attributesContainer.getTemporalAttribute(property)
+                .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(attributeContainerAlias, attribute.getName())))
+                .get();
+        String join = getJoins(attributesContainer, aliases, Optional.empty());
+
+        return String.format("SELECT MIN(%s), MAX(%s) FROM %s%s%s", column, column, table, join.isEmpty() ? "" : " ", join);
+    }
+
+    public String getTemporalExtentQuery(FeatureStoreAttributesContainer startAttributesContainer,
+                                         FeatureStoreAttributesContainer endAttributesContainer,
+                                         String startProperty, String endProperty) {
+        if (startAttributesContainer.equals(endAttributesContainer)) {
+            List<String> aliases = getAliases(startAttributesContainer);
+            String attributeContainerAlias = aliases.get(aliases.size() - 1);
+
+            String table = String.format("%s %s", startAttributesContainer.getInstanceContainerName(), aliases.get(0));
+            String startColumn = startAttributesContainer.getTemporalAttribute(startProperty)
+                    .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(attributeContainerAlias, attribute.getName())))
+                    .get();
+            String endColumn = endAttributesContainer.getTemporalAttribute(endProperty)
+                    .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(attributeContainerAlias, attribute.getName())))
+                    .get();
+            String join = getJoins(startAttributesContainer, aliases, Optional.empty());
+
+            return String.format("SELECT MIN(%s), MAX(%s) FROM %s%s%s", startColumn, endColumn, table, join.isEmpty() ? "" : " ", join);
+
+        } else {
+            List<String> startAliases = getAliases(startAttributesContainer);
+            String startAttributeContainerAlias = startAliases.get(startAliases.size() - 1);
+            String startTable = String.format("%s %s", startAttributesContainer.getInstanceContainerName(), startAliases.get(0));
+
+            List<String> endAliases = getAliases(endAttributesContainer);
+            String endAttributeContainerAlias = endAliases.get(endAliases.size() - 1);
+            String endTable = String.format("%s %s", endAttributesContainer.getInstanceContainerName(), endAliases.get(0));
+
+            String startColumn = startAttributesContainer.getTemporalAttribute(startProperty)
+                    .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(startAttributeContainerAlias, attribute.getName())))
+                    .get();
+            String endColumn = endAttributesContainer.getTemporalAttribute(endProperty)
+                    .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(endAttributeContainerAlias, attribute.getName())))
+                    .get();
+
+            String startTableJoin = getJoins(startAttributesContainer, startAliases, Optional.empty());
+            String startTableWithJoins = String.format("%s%s%s", startTable, startTableJoin.isEmpty() ? "" : " ", startTableJoin);
+            String endTableJoin = getJoins(endAttributesContainer, endAliases, Optional.empty());
+            String endTableWithJoins = String.format("%s%s%s", endTable, endTableJoin.isEmpty() ? "" : " ", endTableJoin);
+
+            return String.format("SELECT * FROM (SELECT MIN(%s) FROM %s) AS A, (SELECT MAX(%s) from %s) AS B;",
+                    startColumn, startTableWithJoins, endColumn, endTableWithJoins);
+        }
+
+    }
+
     private String getTableQuery(FeatureStoreAttributesContainer attributeContainer, Optional<String> whereClause) {
         List<String> aliases = getAliases(attributeContainer);
         String attributeContainerAlias = aliases.get(aliases.size() - 1);

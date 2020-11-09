@@ -85,6 +85,15 @@ public interface FeatureStoreInstanceContainer extends FeatureStoreAttributesCon
 
     @Value.Derived
     @Value.Auxiliary
+    default Optional<FeatureStoreAttributesContainer> getTemporalAttributesContainer(String property) {
+        return getAllAttributesContainers()
+                .stream()
+                .filter(c -> c.isTemporal(property))
+                .findFirst();
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
     default Optional<FeatureStoreAttributesContainer> getMainAttributesContainer() {
         return getAllAttributesContainers()
                 .stream()

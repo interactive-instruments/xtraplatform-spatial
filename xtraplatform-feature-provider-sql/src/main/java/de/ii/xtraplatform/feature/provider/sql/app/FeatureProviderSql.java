@@ -66,6 +66,8 @@ import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Period;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
@@ -326,6 +328,46 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                                                                               return Optional.empty();
                                                                                           }
                                                                                       }));
+    }
+
+    public Optional<Period> getTemporalExtent(String typeName, String property) {
+        Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
+
+        if (!typeInfo.isPresent()) {
+            return Optional.empty();
+        }
+
+        try {
+            RunnableGraphWithMdc<CompletionStage<Optional<Period>>> extentGraph = ((ExtentReaderSql) extentReader).getTemporalExtent(typeInfo.get(), property);
+            return getStreamRunner().run(extentGraph)
+                    .exceptionally(throwable -> Optional.empty())
+                    .toCompletableFuture()
+                    .join();
+        } catch (Throwable e) {
+            //continue
+        }
+
+        return Optional.empty();
+    }
+
+    public Optional<Period> getTemporalExtent(String typeName, String startProperty, String endProperty) {
+        Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
+
+        if (!typeInfo.isPresent()) {
+            return Optional.empty();
+        }
+
+        try {
+            RunnableGraphWithMdc<CompletionStage<Optional<Period>>> extentGraph = ((ExtentReaderSql) extentReader).getTemporalExtent(typeInfo.get(), startProperty, endProperty);
+            return getStreamRunner().run(extentGraph)
+                    .exceptionally(throwable -> Optional.empty())
+                    .toCompletableFuture()
+                    .join();
+        } catch (Throwable e) {
+            //continue
+        }
+
+        return Optional.empty();
     }
 
     @Override

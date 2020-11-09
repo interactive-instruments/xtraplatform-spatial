@@ -71,6 +71,25 @@ public interface FeatureStoreAttributesContainer {
 
     @Value.Derived
     @Value.Auxiliary
+    default boolean isTemporal(String property) {
+        return getAttributes()
+                .stream()
+                .filter(p -> p.getName().equals(property))
+                .anyMatch(FeatureStoreAttribute::isTemporal);
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
+    default Optional<FeatureStoreAttribute> getTemporalAttribute(String property) {
+        return getAttributes()
+                .stream()
+                .filter(FeatureStoreAttribute::isTemporal)
+                .filter(p -> p.getName().equals(property))
+                .findFirst();
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
     default boolean isMain() {
         return getAttributes()
                 .stream()
