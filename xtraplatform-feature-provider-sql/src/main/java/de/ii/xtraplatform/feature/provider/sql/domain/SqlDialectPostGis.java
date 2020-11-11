@@ -10,8 +10,11 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 import com.google.common.base.Splitter;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import org.threeten.extra.Interval;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public class SqlDialectPostGis implements SqlDialect {
@@ -39,6 +42,19 @@ public class SqlDialectPostGis implements SqlDialect {
         }
 
         return Optional.empty();
+    }
+
+    @Override
+    public Optional<Interval> parseTemporalExtent(String start, String end) {
+        if (Objects.isNull(start)) {
+            return Optional.empty();
+        }
+        Instant startTime = Instant.parse(start);
+        if (Objects.isNull(end)) {
+            return Optional.of(Interval.of(startTime, Instant.MAX));
+        }
+        Instant endTime = Instant.parse(end);
+        return Optional.of(Interval.of(startTime, endTime));
     }
 
     @Override

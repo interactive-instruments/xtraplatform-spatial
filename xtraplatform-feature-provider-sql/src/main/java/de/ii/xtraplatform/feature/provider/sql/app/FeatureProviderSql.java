@@ -65,9 +65,8 @@ import org.apache.felix.ipojo.annotations.Requires;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.threeten.extra.Interval;
 
-import java.time.Duration;
-import java.time.Period;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
@@ -330,7 +329,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                                                                       }));
     }
 
-    public Optional<Period> getTemporalExtent(String typeName, String property) {
+    public Optional<Interval> getTemporalExtent(String typeName, String property) {
         Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
         if (!typeInfo.isPresent()) {
@@ -338,7 +337,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         }
 
         try {
-            RunnableGraphWithMdc<CompletionStage<Optional<Period>>> extentGraph = ((ExtentReaderSql) extentReader).getTemporalExtent(typeInfo.get(), property);
+            RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> extentGraph = ((ExtentReaderSql) extentReader).getTemporalExtent(typeInfo.get(), property);
             return getStreamRunner().run(extentGraph)
                     .exceptionally(throwable -> Optional.empty())
                     .toCompletableFuture()
@@ -350,7 +349,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         return Optional.empty();
     }
 
-    public Optional<Period> getTemporalExtent(String typeName, String startProperty, String endProperty) {
+    public Optional<Interval> getTemporalExtent(String typeName, String startProperty, String endProperty) {
         Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
         if (!typeInfo.isPresent()) {
@@ -358,7 +357,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         }
 
         try {
-            RunnableGraphWithMdc<CompletionStage<Optional<Period>>> extentGraph = ((ExtentReaderSql) extentReader).getTemporalExtent(typeInfo.get(), startProperty, endProperty);
+            RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> extentGraph = ((ExtentReaderSql) extentReader).getTemporalExtent(typeInfo.get(), startProperty, endProperty);
             return getStreamRunner().run(extentGraph)
                     .exceptionally(throwable -> Optional.empty())
                     .toCompletableFuture()

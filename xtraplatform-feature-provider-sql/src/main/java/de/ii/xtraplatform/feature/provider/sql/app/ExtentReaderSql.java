@@ -22,8 +22,8 @@ import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.streams.domain.LogContextStream;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
+import org.threeten.extra.Interval;
 
-import java.time.Period;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
@@ -62,7 +62,7 @@ class ExtentReaderSql implements ExtentReader {
                                                                                                               .get(0), crs)), Sink.head());
     }
 
-    public RunnableGraphWithMdc<CompletionStage<Optional<Period>>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String property) {
+    public RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String property) {
         FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
                 .get(0);
         Optional<FeatureStoreAttributesContainer> temporalAttributesContainer = instanceContainer.getTemporalAttributesContainer(property);
@@ -75,10 +75,10 @@ class ExtentReaderSql implements ExtentReader {
 
         Source<SqlRow, NotUsed> sourceStream = sqlConnector.getSqlClient().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class));
 
-        return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseTemporalExtent((String) sqlRow.getValues().get(0))), Sink.head());
+        return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseTemporalExtent((String) sqlRow.getValues().get(0), (String) sqlRow.getValues().get(1))), Sink.head());
     }
 
-    public RunnableGraphWithMdc<CompletionStage<Optional<Period>>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String startProperty, String endProperty) {
+    public RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String startProperty, String endProperty) {
         FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
                 .get(0);
         Optional<FeatureStoreAttributesContainer> startAttributesContainer = instanceContainer.getTemporalAttributesContainer(startProperty);
@@ -94,6 +94,6 @@ class ExtentReaderSql implements ExtentReader {
 
         Source<SqlRow, NotUsed> sourceStream = sqlConnector.getSqlClient().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class));
 
-        return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseTemporalExtent((String) sqlRow.getValues().get(0))), Sink.head());
+        return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseTemporalExtent((String) sqlRow.getValues().get(0), (String) sqlRow.getValues().get(1))), Sink.head());
     }
 }
