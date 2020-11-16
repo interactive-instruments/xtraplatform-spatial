@@ -329,6 +329,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                                                                       }));
     }
 
+    @Override
     public Optional<Interval> getTemporalExtent(String typeName, String property) {
         Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
@@ -349,6 +350,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         return Optional.empty();
     }
 
+    @Override
     public Optional<Interval> getTemporalExtent(String typeName, String startProperty, String endProperty) {
         Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 

@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import org.threeten.extra.Interval;
 
 import java.util.Optional;
 
@@ -17,4 +18,8 @@ public interface FeatureExtents {
     Optional<BoundingBox> getSpatialExtent(String typeName);
 
     Optional<BoundingBox> getSpatialExtent(String typeName, EpsgCrs crs);
+
+    Optional<Interval> getTemporalExtent(String typeName, String property);
+
+    Optional<Interval> getTemporalExtent(String typeName, String startProperty, String endProperty);
 }
