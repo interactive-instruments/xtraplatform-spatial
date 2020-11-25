@@ -74,7 +74,7 @@ public interface FeatureStoreAttributesContainer {
     default boolean isTemporal(String property) {
         return getAttributes()
                 .stream()
-                .filter(p -> p.getName().equals(property))
+                .filter(p -> p.getQueryable().equals(property))
                 .anyMatch(FeatureStoreAttribute::isTemporal);
     }
 
@@ -84,7 +84,7 @@ public interface FeatureStoreAttributesContainer {
         return getAttributes()
                 .stream()
                 .filter(FeatureStoreAttribute::isTemporal)
-                .filter(p -> p.getName().equals(property))
+                .filter(p -> p.getQueryable().equals(property))
                 .findFirst();
     }
 

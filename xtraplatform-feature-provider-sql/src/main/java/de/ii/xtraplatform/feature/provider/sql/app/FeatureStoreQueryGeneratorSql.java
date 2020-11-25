@@ -103,7 +103,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
         String table = String.format("%s %s", attributesContainer.getInstanceContainerName(), aliases.get(0));
         String column = attributesContainer.getTemporalAttribute(property)
-                .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(attributeContainerAlias, attribute.getName())))
+                .map(attribute -> sqlDialect.applyToDatetime(getQualifiedColumn(attributeContainerAlias, attribute.getName())))
                 .get();
         String join = getJoins(attributesContainer, aliases, Optional.empty());
 
@@ -119,10 +119,10 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
             String table = String.format("%s %s", startAttributesContainer.getInstanceContainerName(), aliases.get(0));
             String startColumn = startAttributesContainer.getTemporalAttribute(startProperty)
-                    .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(attributeContainerAlias, attribute.getName())))
+                    .map(attribute -> sqlDialect.applyToDatetime(getQualifiedColumn(attributeContainerAlias, attribute.getName())))
                     .get();
             String endColumn = endAttributesContainer.getTemporalAttribute(endProperty)
-                    .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(attributeContainerAlias, attribute.getName())))
+                    .map(attribute -> sqlDialect.applyToDatetime(getQualifiedColumn(attributeContainerAlias, attribute.getName())))
                     .get();
             String join = getJoins(startAttributesContainer, aliases, Optional.empty());
 
@@ -138,10 +138,10 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
             String endTable = String.format("%s %s", endAttributesContainer.getInstanceContainerName(), endAliases.get(0));
 
             String startColumn = startAttributesContainer.getTemporalAttribute(startProperty)
-                    .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(startAttributeContainerAlias, attribute.getName())))
+                    .map(attribute -> sqlDialect.applyToDatetime(getQualifiedColumn(startAttributeContainerAlias, attribute.getName())))
                     .get();
             String endColumn = endAttributesContainer.getTemporalAttribute(endProperty)
-                    .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(endAttributeContainerAlias, attribute.getName())))
+                    .map(attribute -> sqlDialect.applyToDatetime(getQualifiedColumn(endAttributeContainerAlias, attribute.getName())))
                     .get();
 
             String startTableJoin = getJoins(startAttributesContainer, startAliases, Optional.empty());
