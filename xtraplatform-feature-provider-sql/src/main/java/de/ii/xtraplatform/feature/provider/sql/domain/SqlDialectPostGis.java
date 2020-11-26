@@ -13,6 +13,8 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.threeten.extra.Interval;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -49,12 +51,13 @@ public class SqlDialectPostGis implements SqlDialect {
         if (Objects.isNull(start)) {
             return Optional.empty();
         }
-        Instant startTime = Instant.parse(start);
+        DateTimeFormatter parser = DateTimeFormatter.ofPattern("yyyy-MM-dd[['T'][' ']HH:mm:ss][.SSS][X]").withZone(ZoneOffset.UTC);
+        Instant parsedStart = parser.parse(start, Instant::from);
         if (Objects.isNull(end)) {
-            return Optional.of(Interval.of(startTime, Instant.MAX));
+            return Optional.of(Interval.of(parsedStart, Instant.MAX));
         }
-        Instant endTime = Instant.parse(end);
-        return Optional.of(Interval.of(startTime, endTime));
+        Instant parsedEnd = parser.parse(end, Instant::from);
+        return Optional.of(Interval.of(parsedStart, parsedEnd));
     }
 
     @Override

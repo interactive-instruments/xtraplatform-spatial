@@ -73,7 +73,7 @@ class ExtentReaderSql implements ExtentReader {
 
         String query = queryGenerator.getTemporalExtentQuery(temporalAttributesContainer.get(), property);
 
-        Source<SqlRow, NotUsed> sourceStream = sqlConnector.getSqlClient().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class));
+        Source<SqlRow, NotUsed> sourceStream = sqlConnector.getSqlClient().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class, String.class));
 
         return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseTemporalExtent((String) sqlRow.getValues().get(0), (String) sqlRow.getValues().get(1))), Sink.head());
     }
@@ -92,7 +92,7 @@ class ExtentReaderSql implements ExtentReader {
 
         String query = queryGenerator.getTemporalExtentQuery(startAttributesContainer.get(), endAttributesContainer.get(), startProperty, endProperty);
 
-        Source<SqlRow, NotUsed> sourceStream = sqlConnector.getSqlClient().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class));
+        Source<SqlRow, NotUsed> sourceStream = sqlConnector.getSqlClient().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class, String.class));
 
         return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseTemporalExtent((String) sqlRow.getValues().get(0), (String) sqlRow.getValues().get(1))), Sink.head());
     }
