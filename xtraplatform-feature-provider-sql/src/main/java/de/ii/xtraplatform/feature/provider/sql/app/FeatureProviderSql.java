@@ -264,7 +264,6 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
         return getTypeInfos().values()
                       .stream()
-                      .flatMap(featureStoreTypeInfo -> featureStoreTypeInfo.getInstanceContainers().get(0).getAllAttributesContainers().stream())
                       .map(typeInfoValidator::validate)
                       .flatMap(Collection::stream)
                       .collect(Collectors.toList());

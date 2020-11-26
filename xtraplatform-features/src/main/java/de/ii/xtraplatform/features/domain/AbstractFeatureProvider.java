@@ -83,7 +83,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             return;
         }
 
-        if (getData().getValidateTypes() != VALIDATION.OFF) {
+        if (getData().getValidateTypes() != VALIDATION.IGNORE) {
             List<String> errors = validateSchema();
 
             if (!errors.isEmpty()) {
