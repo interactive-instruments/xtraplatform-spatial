@@ -44,6 +44,7 @@ import org.apache.felix.ipojo.annotations.Requires;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.threeten.extra.Interval;
 
 import java.util.AbstractMap;
 import java.util.Map;
@@ -159,6 +160,16 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
                                                                                               return Optional.empty();
                                                                                           }
                                                                                       }));
+    }
+
+    @Override
+    public Optional<Interval> getTemporalExtent(String typeName, String property) {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Interval> getTemporalExtent(String typeName, String startProperty, String endProperty) {
+        return Optional.empty();
     }
 
     @Override
