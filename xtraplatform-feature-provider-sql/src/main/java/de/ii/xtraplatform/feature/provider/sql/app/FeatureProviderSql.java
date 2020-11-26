@@ -67,6 +67,7 @@ import org.apache.felix.ipojo.annotations.Requires;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.threeten.extra.Interval;
 
 import java.util.AbstractMap;
 import java.util.Collection;
@@ -342,6 +343,59 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                                                                               return Optional.empty();
                                                                                           }
                                                                                       }));
+    }
+
+    @Override
+    public Optional<Interval> getTemporalExtent(String typeName, String property) {
+        Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
+
+        if (!typeInfo.isPresent()) {
+            return Optional.empty();
+        }
+
+        try {
+            RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> extentGraph = ((ExtentReaderSql) extentReader).getTemporalExtent(typeInfo.get(), property);
+
+            return computeTemporalExtent(extentGraph);
+        } catch (Throwable e) {
+            //continue
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Interval> getTemporalExtent(String typeName, String startProperty, String endProperty) {
+        Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
+
+        if (!typeInfo.isPresent()) {
+            return Optional.empty();
+        }
+
+        try {
+            RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> extentGraph = ((ExtentReaderSql) extentReader).getTemporalExtent(typeInfo.get(), startProperty, endProperty);
+
+            return computeTemporalExtent(extentGraph);
+        } catch (Throwable e) {
+            //continue
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<Interval> computeTemporalExtent(RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> extentComputation) {
+      return getStreamRunner().run(extentComputation)
+          .exceptionally(throwable -> {
+            LOGGER.warn("Cannot compute temporal extent: {}",
+                Objects.nonNull(throwable.getCause()) ? throwable.getCause().getMessage()
+                    : throwable.getMessage());
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("Stacktrace:", throwable);
+            }
+            return Optional.empty();
+          })
+          .toCompletableFuture()
+          .join();
     }
 
     @Override
