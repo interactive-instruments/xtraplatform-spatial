@@ -12,7 +12,6 @@ import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2.Builder;
 import de.ii.xtraplatform.store.domain.entities.AutoEntity;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
@@ -55,6 +54,13 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
     Optional<EpsgCrs> getNativeCrs();
 
     Optional<String> getDefaultLanguage();
+
+    enum VALIDATION {IGNORE,WARN,ERROR}
+
+    @Value.Default
+    default VALIDATION getValidateTypes() {
+        return VALIDATION.IGNORE;
+    }
 
     //behaves exactly like Map<String, FeatureTypeMapping>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)

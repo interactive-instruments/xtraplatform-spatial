@@ -12,7 +12,9 @@ import akka.NotUsed;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV2.VALIDATION;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.streams.domain.StreamRunner;
@@ -70,16 +72,35 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             if (connectionError.isPresent() && LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Stacktrace:", connectionError.get());
             }
-        } else if (getRunnerError(getData()).isPresent()) {
-            this.register = false;
-
-            LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), getRunnerError(getData()).get());
-        } else {
-            String startupInfo = getStartupInfo().map(map -> String.format(" (%s)", map.toString().replace("{","").replace("}","")))
-                                                 .orElse("");
-
-            LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(), startupInfo);
+            return;
         }
+
+        Optional<String> runnerError = getRunnerError(getData());
+
+        if (runnerError.isPresent()) {
+            this.register = false;
+            LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), runnerError.get());
+            return;
+        }
+
+        if (getData().getValidateTypes() != VALIDATION.IGNORE) {
+            List<String> errors = validateSchema();
+
+            if (!errors.isEmpty()) {
+                if (getData().getValidateTypes() == VALIDATION.WARN) {
+                    errors.forEach(LOGGER::warn);
+                } else if (getData().getValidateTypes() == VALIDATION.ERROR) {
+                    this.register = false;
+                    errors.forEach(LOGGER::error);
+                    return;
+                }
+            }
+        }
+
+        String startupInfo = getStartupInfo().map(map -> String.format(" (%s)", map.toString().replace("{","").replace("}","")))
+                                             .orElse("");
+
+        LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(), startupInfo);
     }
 
     @Override
@@ -103,6 +124,10 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
     protected Optional<Map<String,String>> getStartupInfo() {
         return Optional.empty();
+    }
+
+    protected List<String> validateSchema() {
+        return ImmutableList.of();
     }
 
     public static Map<String, FeatureStoreTypeInfo> createTypeInfos(
