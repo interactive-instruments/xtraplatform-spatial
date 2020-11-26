@@ -339,10 +339,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
         try {
             RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> extentGraph = ((ExtentReaderSql) extentReader).getTemporalExtent(typeInfo.get(), property);
-            return getStreamRunner().run(extentGraph)
-                    .exceptionally(throwable -> Optional.empty())
-                    .toCompletableFuture()
-                    .join();
+
+            return computeTemporalExtent(extentGraph);
         } catch (Throwable e) {
             //continue
         }
@@ -360,15 +358,28 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
         try {
             RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> extentGraph = ((ExtentReaderSql) extentReader).getTemporalExtent(typeInfo.get(), startProperty, endProperty);
-            return getStreamRunner().run(extentGraph)
-                    .exceptionally(throwable -> Optional.empty())
-                    .toCompletableFuture()
-                    .join();
+
+            return computeTemporalExtent(extentGraph);
         } catch (Throwable e) {
             //continue
         }
 
         return Optional.empty();
+    }
+
+    private Optional<Interval> computeTemporalExtent(RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> extentComputation) {
+      return getStreamRunner().run(extentComputation)
+          .exceptionally(throwable -> {
+            LOGGER.warn("Cannot compute temporal extent: {}",
+                Objects.nonNull(throwable.getCause()) ? throwable.getCause().getMessage()
+                    : throwable.getMessage());
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("Stacktrace:", throwable);
+            }
+            return Optional.empty();
+          })
+          .toCompletableFuture()
+          .join();
     }
 
     @Override
