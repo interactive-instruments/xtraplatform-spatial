@@ -15,6 +15,7 @@ import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2.VALIDATION;
+import de.ii.xtraplatform.runtime.domain.LogContext;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.streams.domain.StreamRunner;
@@ -83,24 +84,40 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             return;
         }
 
-        if (getData().getValidateTypes() != VALIDATION.IGNORE) {
-            List<String> errors = validateSchema();
+        if (getTypeInfoValidator().isPresent() && getData().getValidateTypes() != VALIDATION.IGNORE) {
+            try {
+                getTypeInfos().values().forEach(typeInfo -> {
+                    LOGGER.info("Validating type '{}'", typeInfo.getName());
 
-            if (!errors.isEmpty()) {
-                if (getData().getValidateTypes() == VALIDATION.WARN) {
-                    errors.forEach(LOGGER::warn);
-                } else if (getData().getValidateTypes() == VALIDATION.ERROR) {
-                    this.register = false;
-                    errors.forEach(LOGGER::error);
-                    return;
-                }
+                    List<String> errors = getTypeInfoValidator().get().validate(typeInfo);
+
+                    if (!errors.isEmpty()) {
+                        if (getData().getValidateTypes() == VALIDATION.WARN) {
+                            errors.forEach(LOGGER::warn);
+                        } else if (getData().getValidateTypes() == VALIDATION.ERROR) {
+                            this.register = false;
+                            errors.forEach(LOGGER::error);
+                        }
+                    }
+                });
+            } catch (Throwable e) {
+                LogContext.error("Cannot validate types", e, LOGGER);
+            }
+
+            if (!this.register) {
+                LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), "validation failed");
+                return;
             }
         }
 
-        String startupInfo = getStartupInfo().map(map -> String.format(" (%s)", map.toString().replace("{","").replace("}","")))
-                                             .orElse("");
+        if (this.register) {
+            String startupInfo = getStartupInfo().map(
+                map -> String.format(" (%s)", map.toString().replace("{", "").replace("}", "")))
+                .orElse("");
 
-        LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(), startupInfo);
+            LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(),
+                startupInfo);
+        }
     }
 
     @Override
@@ -126,8 +143,8 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return Optional.empty();
     }
 
-    protected List<String> validateSchema() {
-        return ImmutableList.of();
+    protected Optional<TypeInfoValidator> getTypeInfoValidator() {
+        return Optional.empty();
     }
 
     public static Map<String, FeatureStoreTypeInfo> createTypeInfos(

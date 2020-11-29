@@ -1,5 +1,6 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
@@ -7,6 +8,9 @@ import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelatedContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
+import java.util.Base64;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import schemacrawler.schema.Catalog;
@@ -42,8 +46,8 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
     private final ConnectionInfoSql connectionInfo;
     private final ClassLoader classLoader;
     private Connection connection;
-    private final Catalog catalog;
-    private final Collection<Table> tables;
+    private /*final*/ Catalog catalog;
+    private /*final*/ Collection<Table> tables;
 
     public SqlTypeInfoValidator(ConnectionInfoSql connectionInfo) {
         this(connectionInfo, Thread.currentThread().getContextClassLoader());
@@ -53,16 +57,39 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
         this.connectionInfo = connectionInfo;
         this.classLoader = classLoader;
 
-        try {
+        /*try {
             this.catalog = getCatalog();
         } catch (SchemaCrawlerException e) {
             throw new IllegalStateException("could not parse schema");
         }
-        this.tables = catalog.getTables();
+        this.tables = catalog.getTables();*/
     }
 
     @Override
     public List<String> validate(String typeName, FeatureStoreAttributesContainer attributesContainer) {
+        List<String> currentTables = new ArrayList<>();
+        currentTables.add(attributesContainer.getName());
+        if (attributesContainer instanceof FeatureStoreRelatedContainer) {
+            List<FeatureStoreRelation> relations = ((FeatureStoreRelatedContainer) attributesContainer).getInstanceConnection();
+
+            for (int i = 0; i < relations.size(); i++) {
+                FeatureStoreRelation relation = relations.get(i);
+                currentTables.add(relation.getSourceContainer());
+                currentTables.add(relation.getTargetContainer());
+                if (relation.getJunction().isPresent()) {
+                    currentTables.add(relation.getJunction().get());
+                }
+            }
+        }
+
+        try {
+            this.catalog = getCatalog(currentTables);
+        } catch (SchemaCrawlerException e) {
+            throw new IllegalStateException("could not parse schema");
+        }
+        this.tables = catalog.getTables();
+
+
         List<String> errors = new ArrayList<>();
 
         if (attributesContainer instanceof FeatureStoreRelatedContainer) {
@@ -219,12 +246,36 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
     }
 
 
+    private Catalog getCatalog(List<String> currentTables) throws SchemaCrawlerException {
+        String schemasPattern = Stream.concat(
+                Stream.of("public"),
+                connectionInfo.getSchemas().stream())
+            .distinct()
+            .collect(Collectors.joining("|", "(", ")"));
+        String tablesPattern = currentTables.stream()
+            .distinct()
+            .collect(Collectors.joining("|.*\\.", "(.*\\.", ")"));
+
+        final SchemaCrawlerOptionsBuilder optionsBuilder = SchemaCrawlerOptionsBuilder.builder()
+            .withSchemaInfoLevel(SchemaInfoLevelBuilder.detailed())
+            //TODO: does the include pattern work, also for multiple schemas?
+            .includeSchemas(new RegularExpressionInclusionRule(schemasPattern))
+            .includeTables(new RegularExpressionInclusionRule(tablesPattern));
+
+        final SchemaCrawlerOptions options = optionsBuilder.toOptions();
+
+        // Get the schema definition
+        Catalog catalog = SchemaCrawlerUtility.getCatalog(getConnection(), options);
+
+        return catalog;
+    }
+
     private Catalog getCatalog() throws SchemaCrawlerException {
         List<String> schemas = connectionInfo.getSchemas().isEmpty() ? ImmutableList.of("public") : connectionInfo.getSchemas();
         String schemaNames = Joiner.on('|').join(schemas);
 
         final SchemaCrawlerOptionsBuilder optionsBuilder = SchemaCrawlerOptionsBuilder.builder()
-                                                                                      .withSchemaInfoLevel(SchemaInfoLevelBuilder.maximum())
+                                                                                      .withSchemaInfoLevel(SchemaInfoLevelBuilder.detailed())
                                                                                       //TODO: does the include pattern work, also for multiple schemas?
                                                                                       .includeSchemas(new RegularExpressionInclusionRule("(" + schemaNames + ")"));
 
@@ -239,16 +290,30 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
     private Connection getConnection() {
         try {
             if (Objects.isNull(connection) || connection.isClosed()) {
-                Thread.currentThread().setContextClassLoader(classLoader);
+                //Thread.currentThread().setContextClassLoader(classLoader);
                 //LOGGER.debug("CLASSL {}", classLoader);
                 final String connectionUrl = String.format("jdbc:postgresql://%1$s/%2$s", connectionInfo.getHost(), connectionInfo.getDatabase());
                 final DatabaseConnectionSource dataSource = new DatabaseConnectionSource(connectionUrl);
-                dataSource.setUserCredentials(new SingleUseUserCredentials(connectionInfo.getUser(), connectionInfo.getPassword()));
+                dataSource.setUserCredentials(new SingleUseUserCredentials(connectionInfo.getUser(), getPassword(connectionInfo)));
                 connection = dataSource.get();
             }
         } catch (SQLException e) {
             LOGGER.debug("SQL CONNECTION ERROR", e);
         }
         return connection;
+    }
+
+    //TODO: does SqlSchemaCrawler use this?
+    //TODO: factor out common SchemaCrawler
+    private static String getPassword(ConnectionInfoSql connectionInfo) {
+        String password = connectionInfo.getPassword();
+        try {
+            password = new String(Base64.getDecoder()
+                .decode(password), Charsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            //ignore if not valid base64
+        }
+
+        return password;
     }
 }

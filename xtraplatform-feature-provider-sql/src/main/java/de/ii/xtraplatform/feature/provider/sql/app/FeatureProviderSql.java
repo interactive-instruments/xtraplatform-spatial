@@ -15,6 +15,7 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -56,6 +57,7 @@ import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
+import de.ii.xtraplatform.runtime.domain.LogContext;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
@@ -97,6 +99,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     private final FeatureMutationsSql featureMutationsSql;
     private final FeatureSchemaSwapperSql schemaSwapperSql;
     private final PathParserSql pathParser;
+    private final TypeInfoValidator typeInfoValidator;
 
     public FeatureProviderSql(@Context BundleContext context,
                               @Requires ActorSystemProvider actorSystemProvider,
@@ -129,6 +132,14 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                                                                                                  .orElse(OgcCrs.CRS84), crsTransformerFactory, ((ConnectionInfoSql)data.getConnectionInfo()).getPathSyntax()));
         this.schemaSwapperSql = createSchemaSwapper((ConnectionInfoSql) data.getConnectionInfo(), cql);
         this.pathParser = createPathParser2((ConnectionInfoSql) data.getConnectionInfo(), cql);
+        TypeInfoValidator tiv = null;
+        try {
+            tiv = new SqlTypeInfoValidator(
+                (ConnectionInfoSql) data.getConnectionInfo());
+        } catch (Throwable e) {
+            LOGGER.error("", e);
+        }
+        this.typeInfoValidator = tiv;
     }
 
     public static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql, Cql cql) {
@@ -259,14 +270,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     }
 
     @Override
-    protected List<String> validateSchema() {
-        TypeInfoValidator typeInfoValidator = new SqlTypeInfoValidator((ConnectionInfoSql) getData().getConnectionInfo());
-
-        return getTypeInfos().values()
-                      .stream()
-                      .map(typeInfoValidator::validate)
-                      .flatMap(Collection::stream)
-                      .collect(Collectors.toList());
+    protected Optional<TypeInfoValidator> getTypeInfoValidator() {
+        return Optional.ofNullable(typeInfoValidator);
     }
 
     @Override
