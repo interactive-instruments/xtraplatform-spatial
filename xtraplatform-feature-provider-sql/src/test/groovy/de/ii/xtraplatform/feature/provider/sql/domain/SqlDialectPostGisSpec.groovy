@@ -7,7 +7,11 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.domain
 
+import de.ii.xtraplatform.crs.domain.BoundingBox
+import de.ii.xtraplatform.crs.domain.EpsgCrs
+import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs
 import org.threeten.extra.Interval
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -74,6 +78,65 @@ class SqlDialectPostGisSpec extends Specification {
             Optional<Interval> interval = sqlDialectPostGis.parseTemporalExtent(start, end)
         then:
             thrown(DateTimeException)
+    }
+
+    def 'Spatial extent and CRS both present'() {
+        given:
+            String bbox = "BOX(2.336059,50.664734,7.304131,55.433815)"
+            EpsgCrs crs = new ImmutableEpsgCrs.Builder().code(4326).build()
+        when:
+            Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(bbox, crs)
+        then:
+            extent.get().getCoords().toString() == "[2.336059, 50.664734, 7.304131, 55.433815]"
+            extent.get().getEpsgCrs().getCode() == 4326
+    }
+
+    @Ignore
+    def 'Spatial extent and CRS are null'() {
+        when:
+            Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(null, null)
+        then:
+            extent.isEmpty()
+    }
+
+    @Ignore
+    def 'Spatial extent is present, CRS is null'() {
+        given:
+            String bbox = "BOX(2.336059,50.664734,7.304131,55.433815)"
+        when:
+            Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(bbox, null)
+        then:
+            extent.isEmpty()
+    }
+
+    @Ignore
+    def 'Spatial extent is null, CRS is present'() {
+        given:
+            EpsgCrs crs = new ImmutableEpsgCrs.Builder().code(4326).build()
+        when:
+            Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(null, crs)
+        then:
+            extent.isEmpty()
+    }
+
+    def 'Spatial extent with incomplete coordinates'() {
+        given:
+            String bbox = "BOX(2.336059,50.664734,7.304131)"
+            EpsgCrs crs = new ImmutableEpsgCrs.Builder().code(4326).build()
+        when:
+            Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(bbox, crs)
+        then:
+            extent.isEmpty()
+    }
+
+    def 'Spatial extent in unexpected format'() {
+        given:
+            String bbox = "2.336059,50.664734,7.304131,55.433815"
+            EpsgCrs crs = new ImmutableEpsgCrs.Builder().code(4326).build()
+        when:
+            Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(bbox, crs)
+        then:
+            extent.isEmpty()
     }
 
 }
