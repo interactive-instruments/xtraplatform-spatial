@@ -15,7 +15,6 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -57,7 +56,6 @@ import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
-import de.ii.xtraplatform.runtime.domain.LogContext;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
@@ -72,14 +70,12 @@ import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
 import java.util.AbstractMap;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @EntityComponent
 @Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderDataV2.class)
@@ -132,14 +128,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                                                                                                  .orElse(OgcCrs.CRS84), crsTransformerFactory, ((ConnectionInfoSql)data.getConnectionInfo()).getPathSyntax()));
         this.schemaSwapperSql = createSchemaSwapper((ConnectionInfoSql) data.getConnectionInfo(), cql);
         this.pathParser = createPathParser2((ConnectionInfoSql) data.getConnectionInfo(), cql);
-        TypeInfoValidator tiv = null;
-        try {
-            tiv = new SqlTypeInfoValidator(
-                (ConnectionInfoSql) data.getConnectionInfo());
-        } catch (Throwable e) {
-            LOGGER.error("", e);
-        }
-        this.typeInfoValidator = tiv;
+        this.typeInfoValidator = new SqlTypeInfoValidator(((ConnectionInfoSql) data.getConnectionInfo()).getSchemas(), connector.getSqlClient());
     }
 
     public static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql, Cql cql) {
@@ -163,12 +152,14 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         return new PathParserSql(syntax, cql);
     }
 
+    //TODO: to onStarted
     @Override
-    protected void onStart() {
-        super.onStart();
-        if (register && Runtime.getRuntime().availableProcessors() > getStreamRunner().getCapacity()) {
+    protected boolean onStartup() {
+        boolean success = super.onStartup();
+        if (success && Runtime.getRuntime().availableProcessors() > getStreamRunner().getCapacity()) {
             LOGGER.info("Recommended max connections for optimal performance under load: {}", getMaxQueries() * Runtime.getRuntime().availableProcessors());
         }
+        return success;
     }
 
     //TODO: implement auto mode for maxConnections=-1, how to get numberOfQueries in Connector?
