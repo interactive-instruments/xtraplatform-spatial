@@ -2,9 +2,11 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.base.Joiner;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV2.VALIDATION;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelatedContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
+import de.ii.xtraplatform.features.domain.ImmutableValidationResult;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,21 +37,21 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
   }
 
   @Override
-  public List<String> validate(
-      String typeName, FeatureStoreAttributesContainer attributesContainer) {
+  public ValidationResult validate(
+      String typeName, FeatureStoreAttributesContainer attributesContainer, VALIDATION mode) {
     try (SqlSchemaCrawler schemaCrawler = new SqlSchemaCrawler(sqlClient.getConnection())) {
       Catalog catalog = schemaCrawler.getCatalog(schemas, getUsedTables(attributesContainer));
       Collection<Table> tables = catalog.getTables();
 
-      return validate(typeName, attributesContainer, new SchemaInfo(tables));
+      return validate(typeName, attributesContainer, mode, new SchemaInfo(tables));
     } catch (SchemaCrawlerException | IOException e) {
       throw new IllegalStateException("could not parse schema");
     }
   }
 
-  private List<String> validate(
-      String typeName, FeatureStoreAttributesContainer attributesContainer, SchemaInfo test) {
-    List<String> errors = new ArrayList<>();
+  private ValidationResult validate(
+      String typeName, FeatureStoreAttributesContainer attributesContainer, VALIDATION mode, SchemaInfo schemaInfo) {
+    ImmutableValidationResult.Builder result = ImmutableValidationResult.builder().mode(mode);
 
     if (attributesContainer instanceof FeatureStoreRelatedContainer) {
       List<FeatureStoreRelation> relations =
@@ -62,10 +64,10 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                 "Invalid sourcePath '%s' in type '%s'",
                 Joiner.on('/').join(relation.asPath()), typeName);
 
-        if (i > 0 && !test.tableExists(relation.getSourceContainer())) {
-          errors.add(String.format(TABLE_DOES_NOT_EXIST, context, relation.getSourceContainer()));
-        } else if (!test.columnExists(relation.getSourceField(), relation.getSourceContainer())) {
-          errors.add(
+        if (i > 0 && !schemaInfo.tableExists(relation.getSourceContainer())) {
+          result.addErrors(String.format(TABLE_DOES_NOT_EXIST, context, relation.getSourceContainer()));
+        } else if (!schemaInfo.columnExists(relation.getSourceField(), relation.getSourceContainer())) {
+          result.addErrors(
               String.format(
                   COLUMN_DOES_NOT_EXIST,
                   context,
@@ -73,10 +75,10 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                   relation.getSourceContainer()));
         }
 
-        if (!test.tableExists(relation.getTargetContainer())) {
-          errors.add(String.format(TABLE_DOES_NOT_EXIST, context, relation.getTargetContainer()));
-        } else if (!test.columnExists(relation.getTargetField(), relation.getTargetContainer())) {
-          errors.add(
+        if (!schemaInfo.tableExists(relation.getTargetContainer())) {
+          result.addErrors(String.format(TABLE_DOES_NOT_EXIST, context, relation.getTargetContainer()));
+        } else if (!schemaInfo.columnExists(relation.getTargetField(), relation.getTargetContainer())) {
+          result.addErrors(
               String.format(
                   COLUMN_DOES_NOT_EXIST,
                   context,
@@ -84,13 +86,13 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                   relation.getTargetContainer()));
         }
 
-        if (relation.getJunction().isPresent() && !test.tableExists(relation.getJunction().get())) {
-          errors.add(String.format(TABLE_DOES_NOT_EXIST, context, relation.getJunction().get()));
+        if (relation.getJunction().isPresent() && !schemaInfo.tableExists(relation.getJunction().get())) {
+          result.addErrors(String.format(TABLE_DOES_NOT_EXIST, context, relation.getJunction().get()));
         } else {
           if (relation.getJunctionSource().isPresent() && relation.getJunction().isPresent()) {
-            if (!test.columnExists(
+            if (!schemaInfo.columnExists(
                 relation.getJunctionSource().get(), relation.getJunction().get())) {
-              errors.add(
+              result.addErrors(
                   String.format(
                       COLUMN_DOES_NOT_EXIST,
                       context,
@@ -100,9 +102,9 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
           }
 
           if (relation.getJunctionTarget().isPresent() && relation.getJunction().isPresent()) {
-            if (!test.columnExists(
+            if (!schemaInfo.columnExists(
                 relation.getJunctionTarget().get(), relation.getJunction().get())) {
-              errors.add(
+              result.addErrors(
                   String.format(
                       COLUMN_DOES_NOT_EXIST,
                       context,
@@ -112,26 +114,27 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
           }
         }
       }
-    } else if (!test.tableExists(attributesContainer.getName())) {
+    } else if (!schemaInfo.tableExists(attributesContainer.getName())) {
       String context = String.format("Invalid sourcePath in type '%s'", typeName);
-      errors.add(String.format(TABLE_DOES_NOT_EXIST, context, attributesContainer.getName()));
+      result.addErrors(String.format(TABLE_DOES_NOT_EXIST, context, attributesContainer.getName()));
     }
 
-    if (!errors.isEmpty()) {
-      return errors;
+    ValidationResult intermediateResult = result.build();
+    if (!intermediateResult.isSuccess()) {
+      return intermediateResult;
     }
 
     String context = String.format("Invalid sort key for type '%s'", typeName);
-    if (!test.columnExists(attributesContainer.getSortKey(), attributesContainer.getName())) {
-      errors.add(
+    if (!schemaInfo.columnExists(attributesContainer.getSortKey(), attributesContainer.getName())) {
+      result.addErrors(
           String.format(
               COLUMN_DOES_NOT_EXIST,
               context,
               attributesContainer.getSortKey(),
               attributesContainer.getName()));
-    } else if (!test.isColumnUnique(
+    } else if (!schemaInfo.isColumnUnique(
         attributesContainer.getSortKey(), attributesContainer.getName())) {
-      errors.add(
+      result.addStrictErrors(
           String.format(
               COLUMN_NOT_UNIQUE,
               context,
@@ -150,8 +153,8 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                         "Invalid sourcePath for property '%s' in type '%s'",
                         attribute.getQueryable(), typeName);
 
-                if (!test.columnExists(attribute.getName(), attributesContainer.getName())) {
-                  errors.add(
+                if (!schemaInfo.columnExists(attribute.getName(), attributesContainer.getName())) {
+                  result.addErrors(
                       String.format(
                           COLUMN_DOES_NOT_EXIST,
                           context2,
@@ -159,12 +162,12 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                           attributesContainer.getName()));
                 } else {
                   if (attribute.isId()
-                      && !test.isColumnUnique(attribute.getName(), attributesContainer.getName())) {
+                      && !schemaInfo.isColumnUnique(attribute.getName(), attributesContainer.getName())) {
                     String context3 =
                         String.format(
                             "Invalid role ID for property '%s' in type '%s'",
                             attribute.getQueryable(), typeName);
-                    errors.add(
+                    result.addStrictErrors(
                         String.format(
                             COLUMN_NOT_UNIQUE,
                             context3,
@@ -174,9 +177,9 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                   }
 
                   if (attribute.isSpatial()
-                      && !test.isColumnSpatial(
+                      && !schemaInfo.isColumnSpatial(
                       attributesContainer.getName(), attribute.getName())) {
-                    errors.add(
+                    result.addErrors(
                         String.format(
                             COLUMN_CANNOT_BE_USED_AS,
                             context2,
@@ -185,10 +188,11 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                             "geometry"));
                   }
 
+                  //TODO: strictError on string
                   if (attribute.isTemporal()
-                      && !test.isColumnTemporal(
+                      && !schemaInfo.isColumnTemporal(
                       attributesContainer.getName(), attribute.getName())) {
-                    errors.add(
+                    result.addErrors(
                         String.format(
                             COLUMN_CANNOT_BE_USED_AS,
                             context2,
@@ -200,7 +204,7 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
               }
             });
 
-    return errors;
+    return result.build();
   }
 
   private List<String> getUsedTables(FeatureStoreAttributesContainer attributesContainer) {

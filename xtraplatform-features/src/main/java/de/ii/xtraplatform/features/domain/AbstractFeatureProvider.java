@@ -14,6 +14,7 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2.VALIDATION;
+import de.ii.xtraplatform.features.domain.TypeInfoValidator.ValidationResult;
 import de.ii.xtraplatform.runtime.domain.LogContext;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
@@ -76,30 +77,26 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             return false;
         }
 
-        if (getTypeInfoValidator().isPresent() && getData().getValidateTypes() != VALIDATION.IGNORE) {
-            final boolean[] hasErrors = {false};
+        if (getTypeInfoValidator().isPresent() && getData().getTypeValidation() != VALIDATION.NONE) {
+            final boolean[] isSuccess = {true};
             try {
                 getTypeInfos().values().forEach(typeInfo -> {
-                    LOGGER.info("Validating type '{}'", typeInfo.getName());
+                    LOGGER.info("Validating type '{}' ({})", typeInfo.getName(), getData().getTypeValidation().name().toLowerCase());
 
-                    List<String> errors = getTypeInfoValidator().get().validate(typeInfo);
+                    ValidationResult result = getTypeInfoValidator().get().validate(typeInfo, getData().getTypeValidation());
 
-                    if (!errors.isEmpty()) {
-                        hasErrors[0] = true;
-                        if (getData().getValidateTypes() == VALIDATION.WARN) {
-                            errors.forEach(LOGGER::warn);
-                        } else if (getData().getValidateTypes() == VALIDATION.ERROR) {
-                            errors.forEach(LOGGER::error);
-                        }
-                    }
+                    isSuccess[0] = isSuccess[0] && result.isSuccess();
+                    result.getErrors().forEach(LOGGER::error);
+                    result.getStrictErrors().forEach(result.getMode() == VALIDATION.STRICT ? LOGGER::error : LOGGER::warn);
+                    result.getWarnings().forEach(LOGGER::warn);
                 });
             } catch (Throwable e) {
                 LogContext.error("Cannot validate types", e, LOGGER);
-                return false;
+                isSuccess[0] = false;
             }
 
-            if (hasErrors[0]) {
-                LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), "validation failed");
+            if (!isSuccess[0]) {
+                LOGGER.error("Feature provider with id '{}' could not be started: {} {}", getId(), getData().getTypeValidation().name().toLowerCase(), "validation failed");
                 return false;
             }
         }

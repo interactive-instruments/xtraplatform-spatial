@@ -152,14 +152,13 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         return new PathParserSql(syntax, cql);
     }
 
-    //TODO: to onStarted
+
     @Override
-    protected boolean onStartup() {
-        boolean success = super.onStartup();
-        if (success && Runtime.getRuntime().availableProcessors() > getStreamRunner().getCapacity()) {
+    protected void onStarted() {
+        super.onStarted();
+        if (Runtime.getRuntime().availableProcessors() > getStreamRunner().getCapacity()) {
             LOGGER.info("Recommended max connections for optimal performance under load: {}", getMaxQueries() * Runtime.getRuntime().availableProcessors());
         }
-        return success;
     }
 
     //TODO: implement auto mode for maxConnections=-1, how to get numberOfQueries in Connector?
