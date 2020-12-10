@@ -42,7 +42,7 @@ class StringTemplateFiltersSpec extends Specification {
         when:
             String result = StringTemplateFilters.applyTemplate(template, value)
         then:
-            result.isEmpty()
+            result == value
     }
 
     def 'Value is empty, template is present'() {
@@ -53,6 +53,17 @@ class StringTemplateFiltersSpec extends Specification {
             String result = StringTemplateFilters.applyTemplate(template, value)
         then:
             result.isEmpty()
+    }
+
+    @Ignore
+    def 'Malformed template'() {
+        given:
+            String template = "{replace:'ABC':' '}}"
+            String value = "foobar"
+        when:
+            String result = StringTemplateFilters.applyTemplate(template, value)
+        then:
+            result == value
     }
 
     def 'replace test'() {
@@ -133,6 +144,16 @@ class StringTemplateFiltersSpec extends Specification {
             String result = StringTemplateFilters.applyTemplate(template, value)
         then:
             result == "foo<em>bar</em>"
+    }
+
+    def 'assignTo test'() {
+        given:
+            String template = "{{value | assignTo:'foo'}}"
+            String value = "{{foo}} bar"
+        when:
+            String result = StringTemplateFilters.applyTemplate(template, value)
+        then:
+            result == "{{foo}} bar bar"
     }
 
     def 'Multiple filters'() {
