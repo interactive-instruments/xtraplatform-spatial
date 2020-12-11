@@ -148,12 +148,12 @@ class StringTemplateFiltersSpec extends Specification {
 
     def 'assignTo test'() {
         given:
-            String template = "{{value | assignTo:'foo'}}"
-            String value = "{{foo}} bar"
+            String template = "{{value | append:'bar' | assignTo:'foobar' | toUpper | append:' {{foobar}}'}}"
+            String value = "foo"
         when:
             String result = StringTemplateFilters.applyTemplate(template, value)
         then:
-            result == "{{foo}} bar bar"
+            result == "FOOBAR foobar"
     }
 
     def 'Multiple filters'() {
