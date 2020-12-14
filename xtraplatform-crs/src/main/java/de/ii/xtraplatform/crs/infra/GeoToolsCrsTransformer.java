@@ -51,10 +51,7 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
     GeoToolsCrsTransformer(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
                            EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, int sourceDimension,
                            int targetDimension) throws FactoryException {
-        this.sourceCrs = EpsgCrs.fromString(sourceCrs.getIdentifiers()
-                                                     .iterator()
-                                                     .next()
-                                                     .toString());
+        this.sourceCrs = origSourceCrs;
         this.targetCrs = origTargetCrs;
         this.mathTransform = CRS.findMathTransform(sourceCrs, targetCrs, true);
 
