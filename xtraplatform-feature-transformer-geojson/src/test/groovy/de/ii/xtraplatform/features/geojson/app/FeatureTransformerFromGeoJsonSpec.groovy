@@ -21,14 +21,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import spock.lang.Ignore
 import spock.lang.Specification
-import spock.lang.Unroll
 
 import static groovy.io.FileType.FILES
 
 /**
  * @author zahnen
  */
-@Unroll
 @Ignore//TODO
 class FeatureTransformerFromGeoJsonSpec extends Specification {
 

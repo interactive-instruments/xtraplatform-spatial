@@ -110,47 +110,15 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
         boolean is2dTo3d = !isCrs3d(sourceCrs) && isCrs3d(targetCrs);
         int sourceDimension = isCrs3d(sourceCrs) ? 3 : 2;
         int targetDimension = is3dTo3d ? 3 : 2;
-        CoordinateReferenceSystem geotoolsSourceCrs = isCrs3d(sourceCrs) ? CRS.getHorizontalCRS(crsCache.get(sourceCrs)) : crsCache.get(sourceCrs);
+        CoordinateReferenceSystem geotoolsSourceCrs = is3dTo3d || is3dTo2d ? CRS.getHorizontalCRS(crsCache.get(sourceCrs)) : crsCache.get(sourceCrs);
         CoordinateReferenceSystem geotoolsTargetCrs = is3dTo3d || is2dTo3d ? CRS.getHorizontalCRS(crsCache.get(targetCrs)) : crsCache.get(targetCrs);
-        EpsgCrs epsgTargetCrs = is2dTo3d ? EpsgCrs.fromString(geotoolsTargetCrs.getIdentifiers().iterator().next().toString()) : targetCrs;
 
         try {
-            return new GeoToolsCrsTransformer(geotoolsSourceCrs, geotoolsTargetCrs, sourceCrs, epsgTargetCrs, sourceDimension, targetDimension);
+            return new GeoToolsCrsTransformer(geotoolsSourceCrs, geotoolsTargetCrs, sourceCrs, targetCrs, sourceDimension, targetDimension);
         } catch (FactoryException ex) {
             LOGGER.debug("GeoTools error", ex);
             throw new IllegalArgumentException(ex.getMessage(), ex);
         }
-
-
-        /*if (preserveHeight) {
-            SingleCRS horizontalSourceCrs = CRS.getHorizontalCRS(crsCache.get(sourceCrs));
-            SingleCRS horizontalTargetCrs = CRS.getHorizontalCRS(crsCache.get(targetCrs));
-
-            try {
-                return new GeoToolsCrsTransformer(horizontalSourceCrs, horizontalTargetCrs, sourceCrs, targetCrs, 3, 3);
-            } catch (FactoryException ex) {
-                LOGGER.debug("GeoTools error", ex);
-                throw new IllegalArgumentException(ex.getMessage(), ex);
-            }
-        }
-
-        if (dropHeight) {
-            SingleCRS horizontalSourceCrs = CRS.getHorizontalCRS(crsCache.get(sourceCrs));
-
-            try {
-                return new GeoToolsCrsTransformer(horizontalSourceCrs, crsCache.get(targetCrs), sourceCrs, targetCrs, 3, 2);
-            } catch (FactoryException ex) {
-                LOGGER.debug("GeoTools error", ex);
-                throw new IllegalArgumentException(ex.getMessage(), ex);
-            }
-        }
-
-        try {
-            return new GeoToolsCrsTransformer(crsCache.get(sourceCrs), crsCache.get(targetCrs), sourceCrs, targetCrs, 2, 2);
-        } catch (FactoryException ex) {
-            LOGGER.debug("GeoTools error", ex);
-            throw new IllegalArgumentException(ex.getMessage(), ex);
-        }*/
     }
 
     private EpsgCrs applyWorkarounds(EpsgCrs crs) {

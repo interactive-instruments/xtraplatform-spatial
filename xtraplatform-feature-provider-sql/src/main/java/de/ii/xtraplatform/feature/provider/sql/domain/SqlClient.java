@@ -14,6 +14,7 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Source;
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureSql;
+import java.sql.Connection;
 import scala.concurrent.ExecutionContext;
 
 import java.util.List;
@@ -39,4 +40,6 @@ public interface SqlClient {
     Flow<FeatureSql, String, NotUsed> getMutationFlow(
             Function<FeatureSql, List<Function<FeatureSql, Pair<String, Consumer<String>>>>> mutations,
             ExecutionContext executionContext, Optional<String> id);
+
+    Connection getConnection();
 }

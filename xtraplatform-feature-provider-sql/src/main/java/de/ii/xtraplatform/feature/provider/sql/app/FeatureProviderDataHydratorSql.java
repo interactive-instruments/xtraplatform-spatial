@@ -7,23 +7,28 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.store.domain.entities.EntityHydrator;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
-import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlSchemaCrawler;
+import de.ii.xtraplatform.feature.provider.sql.infra.db.SchemaGeneratorSql;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
+import java.sql.Connection;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
+import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.wiring.BundleWiring;
@@ -45,13 +50,15 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderDataHydratorSql.class);
 
     private final ClassLoader classLoader;
+    private final ConnectorFactory connectorFactory;
 
-    public FeatureProviderDataHydratorSql(@Context BundleContext context) {
+    public FeatureProviderDataHydratorSql(@Context BundleContext context, @Requires ConnectorFactory connectorFactory) {
         this.classLoader = context.getBundle()
                                   .adapt(BundleWiring.class)
                                   .getClassLoader();
         Thread.currentThread()
               .setContextClassLoader(classLoader);
+        this.connectorFactory = connectorFactory;
     }
 
     @Override
@@ -62,7 +69,9 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
         }
 
         try {
-            return cleanupAdditionalInfo(generateNativeCrsIfNecessary(generateTypesIfNecessary(data)));
+            SqlConnector connector = (SqlConnector) connectorFactory.createConnector(data);
+
+            return cleanupAdditionalInfo(generateNativeCrsIfNecessary(generateTypesIfNecessary(data, connector)));
 
         } catch (Throwable e) {
             LOGGER.error("Feature provider with id '{}' could not be hydrated: {}", data.getId(), e.getMessage());
@@ -74,20 +83,22 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
         throw new IllegalStateException();
     }
 
-    private FeatureProviderDataV2 generateTypesIfNecessary(FeatureProviderDataV2 data) {
+    private FeatureProviderDataV2 generateTypesIfNecessary(FeatureProviderDataV2 data,
+        SqlConnector connector) {
         if (data.isAuto() && data.getTypes()
                                  .isEmpty()) {
 
             ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
-
-            SqlSchemaCrawler sqlSchemaCrawler = new SqlSchemaCrawler(connectionInfo, classLoader);
 
             String schema = connectionInfo.getSchemas()
                                           .stream()
                                           .findFirst()
                                           .orElse("public");
 
-            List<FeatureSchema> types = sqlSchemaCrawler.parseSchema(schema);
+            SchemaGeneratorSql schemaGeneratorSql = new SchemaGeneratorSql(connector.getSqlClient(),
+                ImmutableList.of(schema));
+
+            List<FeatureSchema> types = schemaGeneratorSql.generate();
 
             ImmutableMap<String, FeatureSchema> typeMap = types.stream()
                                                              .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))

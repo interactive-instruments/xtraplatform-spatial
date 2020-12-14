@@ -10,7 +10,6 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableConnectionInfoSql
 import de.ii.xtraplatform.features.domain.SchemaBase
-import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 import schemacrawler.crawl.MutableCatalog
 import schemacrawler.crawl.MutableColumn
 import schemacrawler.crawl.MutableColumnDataType
@@ -20,9 +19,8 @@ import schemacrawler.schema.Column
 import schemacrawler.schema.ColumnDataType
 import schemacrawler.schema.JavaSqlType
 import schemacrawler.schema.JavaSqlTypeGroup
-import schemacrawler.schema.SchemaReference
 import schemacrawler.schema.Table
-import spock.lang.Ignore
+import schemacrawler.schemacrawler.SchemaReference
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -30,9 +28,9 @@ import java.sql.Array
 import java.sql.JDBCType
 import java.sql.Timestamp
 
-class SqlSchemaCrawlerPlayground extends Specification {
+class SchemaGeneratorSqlSpec extends Specification {
 
-    @Shared SqlSchemaCrawler sqlSchemaCrawler
+    @Shared SchemaGeneratorSql sqlSchemaCrawler
 
     def setupSpec() {
 
@@ -42,38 +40,7 @@ class SqlSchemaCrawlerPlayground extends Specification {
                 .password("postgres")
                 .build()
 
-        sqlSchemaCrawler = new SqlSchemaCrawler(connectionInfo);
-
-    }
-
-    @Ignore
-    def 'parse schema'() {
-
-        given:
-            String schemaName = "public"
-
-        when:
-            def featureTypeList = sqlSchemaCrawler.parseSchema(schemaName)
-
-        then:
-
-            featureTypeList.size() > 0
-            featureTypeList.get(0).name == "aeronauticcrv"
-            featureTypeList.get(0).sourcePath.get() == "/aeronauticcrv"
-            featureTypeList.get(0).propertyMap.size() > 0
-            featureTypeList.get(0).propertyMap.containsKey("id")
-            featureTypeList.get(0).propertyMap.get("id").type == SchemaBase.Type.INTEGER
-            featureTypeList.get(0).propertyMap.get("id").role.isPresent()
-            featureTypeList.get(0).propertyMap.get("id").role.get() == SchemaBase.Role.ID
-            featureTypeList.get(0).propertyMap.containsKey("ara")
-            featureTypeList.get(0).propertyMap.get("ara").type == SchemaBase.Type.FLOAT
-            featureTypeList.get(0).propertyMap.containsKey("ben")
-            featureTypeList.get(0).propertyMap.get("ben").type == SchemaBase.Type.STRING
-            featureTypeList.get(0).propertyMap.containsKey("geom")
-            featureTypeList.get(0).propertyMap.get("geom").type == SchemaBase.Type.GEOMETRY
-            featureTypeList.get(0).propertyMap.get("geom").type == SchemaBase.Type.GEOMETRY
-            featureTypeList.get(0).propertyMap.get("geom").geometryType.get() == SimpleFeatureGeometry.MULTI_LINE_STRING
-            featureTypeList.get(0).propertyMap.get("geom").additionalInfo.get("crs") == "4326"
+        sqlSchemaCrawler = new SchemaGeneratorSql(connectionInfo);
 
     }
 
