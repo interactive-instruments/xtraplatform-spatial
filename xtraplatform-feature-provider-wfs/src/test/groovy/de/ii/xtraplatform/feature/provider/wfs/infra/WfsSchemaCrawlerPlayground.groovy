@@ -22,11 +22,13 @@ import de.ii.xtraplatform.ogc.api.wfs.GetCapabilities
 import de.ii.xtraplatform.ogc.api.wfs.WfsOperation
 import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder
 import org.codehaus.staxmate.SMInputFactory
+import spock.lang.Ignore
 import spock.lang.Specification
 
+//TODO: use file based MockWfsConnectorHttp
 class WfsSchemaCrawlerPlayground extends Specification {
 
-
+    @Ignore
     def 'parse schema'() {
 
         given:
@@ -67,8 +69,7 @@ class WfsSchemaCrawlerPlayground extends Specification {
 
     }
 
-
-
+    @Ignore
     def 'test complex schema'() {
         given:
         def conn = new ImmutableConnectionInfoWfsHttp.Builder()

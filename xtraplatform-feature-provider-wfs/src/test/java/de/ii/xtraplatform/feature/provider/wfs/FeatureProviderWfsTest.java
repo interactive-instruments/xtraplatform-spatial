@@ -12,9 +12,6 @@ import akka.stream.ActorMaterializer;
 import akka.testkit.javadsl.TestKit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -29,19 +26,19 @@ public class FeatureProviderWfsTest {
     static ActorSystem system;
     static ActorMaterializer materializer;
 
-    @BeforeClass(groups = {"default"})
+    //@BeforeClass(groups = {"default"})
     public static void setup() {
         system = ActorSystem.create();
         materializer = ActorMaterializer.create(system);
     }
 
-    @AfterClass(groups = {"default"})
+    //@AfterClass(groups = {"default"})
     public static void teardown() {
         TestKit.shutdownActorSystem(system);
         system = null;
     }
 
-    @Test(groups = {"default"})
+    //@Test(groups = {"default"})
     public void testGetFeatureStream() throws InterruptedException, ExecutionException, TimeoutException {
         new TestKit(system) {
             {/*

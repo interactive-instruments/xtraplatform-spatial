@@ -14,7 +14,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import spock.lang.Ignore
 import spock.lang.Specification
-import spock.lang.Unroll
 
 import java.util.stream.Collectors
 import java.util.stream.Stream
@@ -29,7 +28,6 @@ class SqlInsertGeneratorSpec extends Specification {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlInsertGeneratorSpec.class);
 
-    @Unroll
     def 'createInsert: #casename'() {
 
         given:
