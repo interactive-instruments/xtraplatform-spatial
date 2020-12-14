@@ -19,8 +19,8 @@ import schemacrawler.schema.Column
 import schemacrawler.schema.ColumnDataType
 import schemacrawler.schema.JavaSqlType
 import schemacrawler.schema.JavaSqlTypeGroup
-import schemacrawler.schema.SchemaReference
 import schemacrawler.schema.Table
+import schemacrawler.schemacrawler.SchemaReference
 import spock.lang.Shared
 import spock.lang.Specification
 
