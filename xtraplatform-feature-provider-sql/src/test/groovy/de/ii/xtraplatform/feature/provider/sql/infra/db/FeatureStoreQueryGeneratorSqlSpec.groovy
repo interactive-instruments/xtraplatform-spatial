@@ -16,7 +16,6 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis
 import de.ii.xtraplatform.feature.transformer.api.MappingTestUtil
 import spock.lang.Shared
 import spock.lang.Specification
-import spock.lang.Unroll
 
 import java.nio.file.Paths
 import java.util.stream.Collectors

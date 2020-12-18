@@ -19,6 +19,7 @@ import de.ii.xtraplatform.feature.provider.sql.app.FeatureSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
+import java.sql.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.concurrent.ExecutionContext;
@@ -129,5 +130,10 @@ public class SqlClientSlick implements SqlClient {
 
             return getMutationSource(feature, toStatements, idConsumers, executionContext);
         });
+    }
+
+    @Override
+    public Connection getConnection() {
+        return session.db().source().createConnection();
     }
 }

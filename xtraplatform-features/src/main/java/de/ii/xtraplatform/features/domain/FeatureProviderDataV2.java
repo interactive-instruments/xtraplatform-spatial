@@ -55,11 +55,11 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
 
     Optional<String> getDefaultLanguage();
 
-    enum VALIDATION {IGNORE,WARN,ERROR}
+    enum VALIDATION {NONE,LAX,STRICT}
 
     @Value.Default
-    default VALIDATION getValidateTypes() {
-        return VALIDATION.IGNORE;
+    default VALIDATION getTypeValidation() {
+        return VALIDATION.NONE;
     }
 
     //behaves exactly like Map<String, FeatureTypeMapping>, but supports mergeable builder deserialization

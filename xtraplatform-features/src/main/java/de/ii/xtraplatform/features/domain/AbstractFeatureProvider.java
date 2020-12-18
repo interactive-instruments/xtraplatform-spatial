@@ -12,9 +12,9 @@ import akka.NotUsed;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2.VALIDATION;
+import de.ii.xtraplatform.features.domain.TypeInfoValidator.ValidationResult;
 import de.ii.xtraplatform.runtime.domain.LogContext;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
@@ -58,14 +58,8 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
     }
 
     @Override
-    protected boolean shouldRegister() {
-        return getConnector().isConnected();
-    }
-
-    @Override
-    protected void onStart() {
+    protected boolean onStartup() {
         if (!getConnector().isConnected()) {
-            this.register = false;
             Optional<Throwable> connectionError = getConnector().getConnectionError();
             String message = connectionError.map(Throwable::getMessage)
                                             .orElse("unknown reason");
@@ -73,55 +67,55 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             if (connectionError.isPresent() && LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Stacktrace:", connectionError.get());
             }
-            return;
+            return false;
         }
 
         Optional<String> runnerError = getRunnerError(getData());
 
         if (runnerError.isPresent()) {
-            this.register = false;
             LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), runnerError.get());
-            return;
+            return false;
         }
 
-        if (getTypeInfoValidator().isPresent() && getData().getValidateTypes() != VALIDATION.IGNORE) {
+        if (getTypeInfoValidator().isPresent() && getData().getTypeValidation() != VALIDATION.NONE) {
+            final boolean[] isSuccess = {true};
             try {
                 getTypeInfos().values().forEach(typeInfo -> {
-                    LOGGER.info("Validating type '{}'", typeInfo.getName());
+                    LOGGER.info("Validating type '{}' ({})", typeInfo.getName(), getData().getTypeValidation().name().toLowerCase());
 
-                    List<String> errors = getTypeInfoValidator().get().validate(typeInfo);
+                    ValidationResult result = getTypeInfoValidator().get().validate(typeInfo, getData().getTypeValidation());
 
-                    if (!errors.isEmpty()) {
-                        if (getData().getValidateTypes() == VALIDATION.WARN) {
-                            errors.forEach(LOGGER::warn);
-                        } else if (getData().getValidateTypes() == VALIDATION.ERROR) {
-                            this.register = false;
-                            errors.forEach(LOGGER::error);
-                        }
-                    }
+                    isSuccess[0] = isSuccess[0] && result.isSuccess();
+                    result.getErrors().forEach(LOGGER::error);
+                    result.getStrictErrors().forEach(result.getMode() == VALIDATION.STRICT ? LOGGER::error : LOGGER::warn);
+                    result.getWarnings().forEach(LOGGER::warn);
                 });
             } catch (Throwable e) {
                 LogContext.error("Cannot validate types", e, LOGGER);
+                isSuccess[0] = false;
             }
 
-            if (!this.register) {
-                LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), "validation failed");
-                return;
+            if (!isSuccess[0]) {
+                LOGGER.error("Feature provider with id '{}' could not be started: {} {}", getId(), getData().getTypeValidation().name().toLowerCase(), "validation failed");
+                return false;
             }
         }
 
-        if (this.register) {
-            String startupInfo = getStartupInfo().map(
-                map -> String.format(" (%s)", map.toString().replace("{", "").replace("}", "")))
-                .orElse("");
-
-            LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(),
-                startupInfo);
-        }
+        return true;
     }
 
     @Override
-    protected void onStop() {
+    protected void onStarted() {
+        String startupInfo = getStartupInfo().map(
+            map -> String.format(" (%s)", map.toString().replace("{", "").replace("}", "")))
+            .orElse("");
+
+        LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(),
+            startupInfo);
+    }
+
+    @Override
+    protected void onShutdown() {
         LOGGER.info("Feature provider with id '{}' stopped.", getId());
     }
 

@@ -28,7 +28,7 @@ public class CodelistEntity extends AbstractPersistentEntity<CodelistData> imple
     private static final Logger LOGGER = LoggerFactory.getLogger(CodelistEntity.class);
 
     @Override
-    protected void onStart() {
+    protected void onStarted() {
         LOGGER.info("Codelist with id '{}' loaded successfully.", getId());
     }
 
@@ -44,10 +44,5 @@ public class CodelistEntity extends AbstractPersistentEntity<CodelistData> imple
     @Override
     public CodelistData getData() {
         return super.getData();
-    }
-
-    @Override
-    protected boolean shouldRegister() {
-        return true;
     }
 }
