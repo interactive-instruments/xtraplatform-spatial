@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -76,6 +77,14 @@ public class StringTemplateFilters {
     }
 
     public static String applyTemplate(String template, String value, Consumer<Boolean> isHtml, String valueSubst) {
+
+        if (Objects.isNull(value) || value.isEmpty()) {
+            return "";
+        }
+        if (Objects.isNull(template) || template.isEmpty()) {
+            return value;
+        }
+
         Pattern valuePattern = Pattern.compile("\\{\\{" + valueSubst + "( ?\\| ?[\\w]+(:'[^']*')*)*\\}\\}");
         Pattern filterPattern = Pattern.compile(" ?\\| ?([\\w]+)((?::'[^']*')*)");
 
@@ -130,7 +139,7 @@ public class StringTemplateFilters {
             formattedValue += template.substring(lastMatch, matcher.start()) + filteredValue;
             lastMatch = matcher.end();
         }
-        formattedValue += template.substring(lastMatch);
+        formattedValue += matcher.matches() ? template.substring(lastMatch) : "";
 
         for (Map.Entry<String, String> entry : assigns.entrySet()) {
             String valueSubst2 = entry.getKey();

@@ -1,11 +1,9 @@
 package de.ii.xtraplatform.stringtemplates.domain
 
-import spock.lang.Ignore
 import spock.lang.Specification
 
 class StringTemplateFiltersSpec extends Specification {
 
-    @Ignore
     def 'All arguments are null'() {
         when:
             String result = StringTemplateFilters.applyTemplate(null, null, null, null)
@@ -13,7 +11,6 @@ class StringTemplateFiltersSpec extends Specification {
             result.isEmpty()
     }
 
-    @Ignore
     def 'Template is null, value is present'() {
         given:
             String template = null
@@ -21,10 +18,9 @@ class StringTemplateFiltersSpec extends Specification {
         when:
             String result = StringTemplateFilters.applyTemplate(template, value)
         then:
-            result.isEmpty()
+            result == value
     }
 
-    @Ignore
     def 'Value is null, template is present'() {
         given:
             String template = "{{value | replace:'ABC':' '}}"
@@ -35,7 +31,6 @@ class StringTemplateFiltersSpec extends Specification {
             result.isEmpty()
     }
 
-    @Ignore
     def 'Template is empty, value is present'() {
         given:
             String template = ""
@@ -56,7 +51,6 @@ class StringTemplateFiltersSpec extends Specification {
             result.isEmpty()
     }
 
-    @Ignore
     def 'Malformed template'() {
         given:
             String template = "{replace:'ABC':' '}}"
@@ -64,7 +58,7 @@ class StringTemplateFiltersSpec extends Specification {
         when:
             String result = StringTemplateFilters.applyTemplate(template, value)
         then:
-            result == value
+            result.isEmpty()
     }
 
     def 'replace test'() {
