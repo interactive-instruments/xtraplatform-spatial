@@ -21,7 +21,7 @@ class GeoToolsCrsTransformerSpec extends Specification{
     def setupSpec() {
         transformerFactory = new GeoToolsCrsTransformerFactory()
     }
-
+    @Ignore
     def 'find transformer - #dim (#src, #trgt)'() {
 
         when:

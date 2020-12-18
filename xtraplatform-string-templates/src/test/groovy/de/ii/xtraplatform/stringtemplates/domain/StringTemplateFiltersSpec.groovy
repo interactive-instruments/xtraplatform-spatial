@@ -35,6 +35,7 @@ class StringTemplateFiltersSpec extends Specification {
             result.isEmpty()
     }
 
+    @Ignore
     def 'Template is empty, value is present'() {
         given:
             String template = ""
