@@ -47,19 +47,17 @@ class GeoToolsCrsTransformerSpec extends Specification {
 
     }
 
-    @Ignore
-    def 'CRS transformer test: source and/or target CRS are null'() {
+    def 'find transformer - #sourceOrTarget CRS is null'() {
         when:
         def transformer = transformerFactory.getTransformer(sourceCrs, targetCrs)
 
         then:
-        !transformer.isPresent()
+        thrown(IllegalArgumentException)
 
         where:
-        src         | trgt        | sourceCrs        | targetCrs
-        "EPSG:5555" | "null"      | EpsgCrs.of(5555) | null
-        "null"      | "EPSG:5555" | null             | EpsgCrs.of(5555)
-        "null"      | "null"      | null             | null
+        sourceOrTarget | sourceCrs        | targetCrs
+        "target"       | EpsgCrs.of(5555) | null
+        "source"       | null             | EpsgCrs.of(5555)
 
     }
 
@@ -75,7 +73,7 @@ class GeoToolsCrsTransformerSpec extends Specification {
         double[] target = gct.transform3d(source, 1, false)
 
         then:
-        target == source
+        target == [48.684236448177785, 7.923077973066519, 131.96] as double[]
     }
 
     def 'CRS transformer test 2D'() {

@@ -91,10 +91,10 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
             return Optional.empty();
         }
         if (!isCrsSupported(sourceCrs)) {
-            throw new IllegalArgumentException(String.format("CRS %s is not supported.", sourceCrs.toSimpleString()));
+            throw new IllegalArgumentException(String.format("CRS %s is not supported.", Objects.nonNull(sourceCrs) ? sourceCrs.toSimpleString() : "null"));
         }
         if (!isCrsSupported(targetCrs)) {
-            throw new IllegalArgumentException(String.format("CRS %s is not supported.", targetCrs.toSimpleString()));
+            throw new IllegalArgumentException(String.format("CRS %s is not supported.", Objects.nonNull(targetCrs) ? targetCrs.toSimpleString() : "null"));
         }
 
         transformerCache.computeIfAbsent(sourceCrs, ignore -> new ConcurrentHashMap<>());
