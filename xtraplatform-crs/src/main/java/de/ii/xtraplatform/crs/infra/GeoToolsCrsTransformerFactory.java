@@ -126,6 +126,10 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
         if (crs.getCode() == 102100) {
             return new ImmutableEpsgCrs.Builder().from(crs).code(3857).build();
         }
+        // FME uses code 900914 instead of 4979, but GeoTools does not support this
+        if (crs.getCode() == 900914) {
+            return new ImmutableEpsgCrs.Builder().from(crs).code(4979).forceAxisOrder(Force.LON_LAT).build();
+        }
         return crs;
     }
 }
