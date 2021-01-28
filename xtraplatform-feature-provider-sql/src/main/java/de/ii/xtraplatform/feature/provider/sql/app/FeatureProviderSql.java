@@ -221,7 +221,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                 maxQueries = numberOfQueries;
             }
         }
-        return maxQueries;
+        return maxQueries <= 0 ? 1 : maxQueries;
     }
 
     @Override
