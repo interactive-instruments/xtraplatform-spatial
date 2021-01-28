@@ -15,6 +15,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.store.domain.entities.AutoEntity;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
+import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import org.immutables.value.Value;
@@ -102,10 +103,9 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
 
         @Override
         public EntityDataBuilder<FeatureProviderDataV2> fillRequiredFieldsWithPlaceholders() {
-            String placeholder = "__DEFAULT__";
-            return this.id(placeholder)
-                .providerType(placeholder)
-                .featureProviderType(placeholder)
+            return this.id(EntityDataDefaults.PLACEHOLDER)
+                .providerType(EntityDataDefaults.PLACEHOLDER)
+                .featureProviderType(EntityDataDefaults.PLACEHOLDER)
                 .connectionInfo(
                 new ConnectionInfo() {
                     @Override

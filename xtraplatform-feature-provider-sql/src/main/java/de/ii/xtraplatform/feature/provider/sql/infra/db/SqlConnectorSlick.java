@@ -129,7 +129,7 @@ public class SqlConnectorSlick implements SqlConnector {
                 maxQueries = numberOfQueries;
             }
         }
-        return maxQueries;
+        return maxQueries <= 0 ? 1 : maxQueries;
     }
 
     @Override

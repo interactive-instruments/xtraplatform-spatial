@@ -133,7 +133,7 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
     //TODO: use SqlClient, query is PGIS specific
     private Map<String, List<String>> getGeometryInfos() {
         Map<String, List<String>> geometry = new HashMap<>();
-        String query = "SELECT f_table_name, type, srid, FROM public.geometry_columns;";
+        String query = "SELECT f_table_name, type, srid FROM public.geometry_columns;";
 
         try {
             Statement stmt = connection.createStatement();
