@@ -54,6 +54,7 @@ class FeatureSchemaToTypeVisitorSpec extends Specification {
                 .lastModified(1586271491161)
                 .providerType("FEATURE")
                 .featureProviderType("SQL")
+                .connectionInfo(FeatureProviderDataFixtures.connectionInfo)
                 .nativeCrs(OgcCrs.CRS84)
                 .defaultLanguage("de")
                 .putTypes2("observationsubject", new ImmutableFeatureSchema.Builder()

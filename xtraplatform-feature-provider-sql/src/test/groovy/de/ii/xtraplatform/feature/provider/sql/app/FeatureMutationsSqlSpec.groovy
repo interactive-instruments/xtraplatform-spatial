@@ -7,23 +7,17 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app
 
-
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.crs.domain.OgcCrs
+import de.ii.xtraplatform.feature.provider.sql.ImmutableOptions
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import spock.lang.Specification
 
 import java.util.function.Function
 
-import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.FULL
-import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MAIN_M_2_N_SCHEMA
-import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_M_2_N_SCHEMA
-import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_ONE_2_ONE_SCHEMA
-import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_SCHEMA
-import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_WITH_CHILDREN
-import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_WITH_CHILDREN
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.*
 
 /**
  * @author zahnen
@@ -36,7 +30,7 @@ class FeatureMutationsSqlSpec extends Specification {
 
         given:
 
-        FeatureMutationsSql inserts = Spy(new FeatureMutationsSql(null, new SqlInsertGenerator2(OgcCrs.CRS84, null,)))
+        FeatureMutationsSql inserts = Spy(new FeatureMutationsSql(null, new SqlInsertGenerator2(OgcCrs.CRS84, null, new ImmutableOptions.Builder().build())))
 
         Map<List<String>, List<Integer>> rows = ImmutableMap.<List<String>, List<Integer>> builder()
                 .put(MAIN_M_2_N_SCHEMA.getFullPath(), ImmutableList.of(3))

@@ -7,9 +7,10 @@
  */
 package de.ii.xtraplatform.crs.infra
 
-
+import de.ii.xtraplatform.crs.domain.CoordinateTuple
 import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -44,6 +45,66 @@ class GeoToolsCrsTransformerSpec extends Specification {
         "3d -> 3d" | "EPSG:5555"  | "CRS84h"     | EpsgCrs.of(5555)  | OgcCrs.CRS84h
         "3d -> 3d" | "CRS84h"     | "EPSG:5555"  | OgcCrs.CRS84h     | EpsgCrs.of(5555)
 
+    }
+
+    def 'find transformer - #sourceOrTarget CRS is null'() {
+        when:
+        def transformer = transformerFactory.getTransformer(sourceCrs, targetCrs)
+
+        then:
+        thrown(IllegalArgumentException)
+
+        where:
+        sourceOrTarget | sourceCrs        | targetCrs
+        "target"       | EpsgCrs.of(5555) | null
+        "source"       | null             | EpsgCrs.of(5555)
+
+    }
+
+
+    def 'CRS transformer test 3D'() {
+        given:
+        EpsgCrs sourceCrs = EpsgCrs.of(5555)
+        EpsgCrs targetCrs = EpsgCrs.of(4979)
+        double[] source = [420735.071, 5392914.343, 131.96]
+
+        when:
+        GeoToolsCrsTransformer gct = (GeoToolsCrsTransformer) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
+        double[] target = gct.transform3d(source, 1, false)
+
+        then:
+        target == [48.684236448177785, 7.923077973066519, 131.96] as double[]
+    }
+
+    def 'CRS transformer test 2D'() {
+        given:
+        EpsgCrs sourceCrs = EpsgCrs.of(4326)
+        EpsgCrs targetCrs = EpsgCrs.of(3857)
+        double x = 50.7164
+        double y = 7.086
+        double rx = 788809.9117611365
+        double ry = 6571280.658009371
+        double[] ra = new double[10]
+        for (int i = 0; i < 10; i += 2) {
+            ra[i] = x
+            ra[i + 1] = y
+        }
+
+        when:
+        GeoToolsCrsTransformer gct = (GeoToolsCrsTransformer) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
+        CoordinateTuple coordinateTuple1 = gct.transform(x, y)
+        CoordinateTuple coordinateTuple2 = gct.transform(new CoordinateTuple(x, y), false)
+        double[] re = gct.transform(ra, 5, false)
+
+        then:
+        coordinateTuple1.getX() == rx
+        coordinateTuple1.getY() == ry
+        coordinateTuple2.getX() == rx
+        coordinateTuple2.getY() == ry
+        for (int i = 0; i < 10; i += 2) {
+            re[i] == rx
+            re[i + 1] == ry
+        }
     }
 
 }
