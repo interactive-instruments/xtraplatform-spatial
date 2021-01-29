@@ -90,13 +90,9 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
 
             ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
 
-            String schema = connectionInfo.getSchemas()
-                                          .stream()
-                                          .findFirst()
-                                          .orElse("public");
+            List<String> schemas = connectionInfo.getSchemas().isEmpty() ? ImmutableList.of("public") : connectionInfo.getSchemas();
 
-            SchemaGeneratorSql schemaGeneratorSql = new SchemaGeneratorSql(connector.getSqlClient(),
-                ImmutableList.of(schema));
+            SchemaGeneratorSql schemaGeneratorSql = new SchemaGeneratorSql(connector.getSqlClient(), schemas);
 
             List<FeatureSchema> types = schemaGeneratorSql.generate();
 
