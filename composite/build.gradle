@@ -1,0 +1,6 @@
+task assemble {
+    dependsOn gradle.includedBuild('xtraplatform-spatial').task(':assembleAll')
+}
+task bintrayUpload {
+    dependsOn gradle.includedBuild('xtraplatform-spatial').task(':bintrayUploadAll')
+}

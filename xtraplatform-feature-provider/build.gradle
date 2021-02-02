@@ -1,6 +1,4 @@
 
-version = '2.2.1'
-
 dependencies {
     compile project(':xtraplatform-feature-provider-api')
 }

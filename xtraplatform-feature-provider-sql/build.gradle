@@ -1,7 +1,5 @@
 apply plugin: 'scala'
 
-version = '2.2.0'
-
 dependencies {
     provided project(':xtraplatform-feature-provider-api')
 

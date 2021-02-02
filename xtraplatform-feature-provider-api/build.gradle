@@ -1,6 +1,4 @@
 
-version = '2.2.1'
-
 dependencies {
     provided project(':xtraplatform-crs-api')
 

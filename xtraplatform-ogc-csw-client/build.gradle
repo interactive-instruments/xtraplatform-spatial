@@ -1,6 +1,4 @@
 
-version = '2.2.0'
-
 
 dependencies {    
     provided project(':xtraplatform-ogc-wfs-api')
