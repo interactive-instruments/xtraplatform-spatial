@@ -139,8 +139,7 @@ public class StringTemplateFilters {
             formattedValue += template.substring(lastMatch, matcher.start()) + filteredValue;
             lastMatch = matcher.end();
         }
-        formattedValue += matcher.matches() ? template.substring(lastMatch) : "";
-
+        formattedValue += template.substring(lastMatch);
         for (Map.Entry<String, String> entry : assigns.entrySet()) {
             String valueSubst2 = entry.getKey();
             String value2 = entry.getValue();

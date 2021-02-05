@@ -58,7 +58,17 @@ class StringTemplateFiltersSpec extends Specification {
         when:
             String result = StringTemplateFilters.applyTemplate(template, value)
         then:
-            result.isEmpty()
+            result == template
+    }
+
+    def 'Template does not follow the pattern'() {
+        given:
+            String template = "foo"
+            String value = "bar"
+        when:
+            String result = StringTemplateFilters.applyTemplate(template, value)
+        then:
+            result == template
     }
 
     def 'replace test'() {
