@@ -23,6 +23,7 @@ public enum SimpleFeatureGeometryFromToWkt implements SimpleFeatureGeometryFrom 
     POLYGON,
     MULTIPOLYGON,
     GEOMETRYCOLLECTION,
+    ANY,
     NONE;
 
     public static SimpleFeatureGeometryFromToWkt fromString(String type) {
@@ -30,6 +31,10 @@ public enum SimpleFeatureGeometryFromToWkt implements SimpleFeatureGeometryFrom 
             if (v.toString().equals(type.toUpperCase())) {
                 return v;
             }
+        }
+        //TODO: special handling for PostGIS GEOMETRY
+        if ("GEOMETRY".equals(type.toUpperCase())) {
+            return ANY;
         }
         return NONE;
     }
@@ -50,6 +55,8 @@ public enum SimpleFeatureGeometryFromToWkt implements SimpleFeatureGeometryFrom 
                 return MULTIPOLYGON;
             case GEOMETRY_COLLECTION:
                 return GEOMETRYCOLLECTION;
+            case ANY:
+                return ANY;
         }
         return NONE;
     }
@@ -79,6 +86,9 @@ public enum SimpleFeatureGeometryFromToWkt implements SimpleFeatureGeometryFrom 
                 break;
             case GEOMETRYCOLLECTION:
                 simpleFeatureGeometry = SimpleFeatureGeometry.GEOMETRY_COLLECTION;
+                break;
+            case ANY:
+                simpleFeatureGeometry = SimpleFeatureGeometry.ANY;
                 break;
         }
 

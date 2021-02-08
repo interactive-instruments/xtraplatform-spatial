@@ -92,10 +92,19 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
                                 continue;
                             }
                             List<String> geometryInfo = geometryInfos.get(table.getName());
-                            String crs = geometryInfo.get(1);
+
+                            // if srid=0, do not set, will use default
+                            try {
+                                int srid = Integer.parseInt(geometryInfo.get(1));
+                                if (srid > 0) {
+                                    featureProperty.additionalInfo(ImmutableMap.of("crs", String.valueOf(srid)));
+                                }
+                            } catch (Throwable e) {
+                                //ignore
+                            }
+
                             featureProperty.geometryType(SimpleFeatureGeometryFromToWkt.fromString(geometryInfo.get(0))
-                                            .toSimpleFeatureGeometry())
-                                    .additionalInfo(ImmutableMap.of("crs", crs));
+                                            .toSimpleFeatureGeometry());
                         }
                         featureType.putPropertyMap(column.getName(), featureProperty.build());
                     }
