@@ -1,6 +1,6 @@
 /**
  * Copyright 2021 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -12,18 +12,18 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
-import de.ii.xtraplatform.store.domain.entities.EntityHydrator;
-import de.ii.xtraplatform.store.domain.entities.handler.Entity;
+import de.ii.xtraplatform.feature.provider.sql.ImmutableOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableConnectionInfoSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.infra.db.SchemaGeneratorSql;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
-import java.sql.Connection;
-import java.util.AbstractMap.SimpleImmutableEntry;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.store.domain.entities.EntityHydrator;
+import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Instantiate;
@@ -36,8 +36,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 @Component
 @Provides(properties = {
@@ -84,25 +89,60 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
     }
 
     private FeatureProviderDataV2 generateTypesIfNecessary(FeatureProviderDataV2 data,
-        SqlConnector connector) {
+                                                           SqlConnector connector) {
         if (data.isAuto() && data.getTypes()
                                  .isEmpty()) {
 
             ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
 
-            List<String> schemas = connectionInfo.getSchemas().isEmpty() ? ImmutableList.of("public") : connectionInfo.getSchemas();
+            List<String> schemas = connectionInfo.getSchemas()
+                                                 .isEmpty() ? ImmutableList.of("public") : connectionInfo.getSchemas();
 
             SchemaGeneratorSql schemaGeneratorSql = new SchemaGeneratorSql(connector.getSqlClient(), schemas);
 
             List<FeatureSchema> types = schemaGeneratorSql.generate();
 
             ImmutableMap<String, FeatureSchema> typeMap = types.stream()
-                                                             .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
-                                                             .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+                                                               .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
+                                                               .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            return new ImmutableFeatureProviderDataV2.Builder()
+            ImmutableFeatureProviderDataV2.Builder builder = new ImmutableFeatureProviderDataV2.Builder()
                     .from(data)
-                    .types(typeMap)
+                    .types(typeMap);
+
+            Map<String, Integer> idCounter = new LinkedHashMap<>();
+            types.forEach(featureSchema -> featureSchema.getProperties()
+                                                        .stream()
+                                                        .filter(FeatureSchema::isId)
+                                                        .map(FeatureSchema::getSourcePath)
+                                                        .filter(Optional::isPresent)
+                                                        .map(Optional::get)
+                                                        .findFirst()
+                                                        .ifPresent(path -> {
+                                                            if (!idCounter.containsKey(path)) {
+                                                                idCounter.put(path, 0);
+                                                            }
+                                                            idCounter.put(path, idCounter.get(path) + 1);
+                                                        }));
+
+            idCounter.entrySet()
+                     .stream()
+                     .max(Comparator.comparingInt(Map.Entry::getValue))
+                     .map(Map.Entry::getKey)
+                     .ifPresent(mostOftenUsedId -> {
+                         if (!Objects.equals(mostOftenUsedId, "id")) {
+                             //LOGGER.debug("CHANGING defaultSortKey to {}", mostOftenUsedId);
+                             ImmutableConnectionInfoSql connectionInfoSql = new ImmutableConnectionInfoSql.Builder().from(data.getConnectionInfo())
+                                                                                                                    .pathSyntax(new ImmutableOptions.Builder().from(((ConnectionInfoSql) data.getConnectionInfo())
+                                                                                                                            .getPathSyntax())
+                                                                                                                                                              .defaultPrimaryKey(mostOftenUsedId)
+                                                                                                                                                              .defaultSortKey(mostOftenUsedId)
+                                                                                                                                                              .build())
+                                                                                                                    .build();
+                             builder.connectionInfo(connectionInfoSql);
+                         }
+                     });
+            return builder
                     .build();
         }
 
@@ -137,20 +177,25 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
     private FeatureProviderDataV2 cleanupAdditionalInfo(FeatureProviderDataV2 data) {
         if (data.isAuto()) {
             return new ImmutableFeatureProviderDataV2.Builder()
-                .from(data)
-                .types(data.getTypes().entrySet().stream()
-                    .map(entry -> new SimpleImmutableEntry<> (entry.getKey(), new ImmutableFeatureSchema.Builder()
-                        .from(entry.getValue())
-                        .additionalInfo(ImmutableMap.of())
-                        .propertyMap(entry.getValue().getPropertyMap().entrySet().stream()
-                            .map(entry2 -> new SimpleImmutableEntry<>(entry2.getKey(), new ImmutableFeatureSchema.Builder()
-                                .from(entry2.getValue())
-                                .additionalInfo(ImmutableMap.of())
-                                .build()))
-                            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
-                        .build()))
-                    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
-                .build();
+                    .from(data)
+                    .types(data.getTypes()
+                               .entrySet()
+                               .stream()
+                               .map(entry -> new SimpleImmutableEntry<>(entry.getKey(), new ImmutableFeatureSchema.Builder()
+                                       .from(entry.getValue())
+                                       .additionalInfo(ImmutableMap.of())
+                                       .propertyMap(entry.getValue()
+                                                         .getPropertyMap()
+                                                         .entrySet()
+                                                         .stream()
+                                                         .map(entry2 -> new SimpleImmutableEntry<>(entry2.getKey(), new ImmutableFeatureSchema.Builder()
+                                                                 .from(entry2.getValue())
+                                                                 .additionalInfo(ImmutableMap.of())
+                                                                 .build()))
+                                                         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
+                                       .build()))
+                               .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
+                    .build();
 
         }
 
