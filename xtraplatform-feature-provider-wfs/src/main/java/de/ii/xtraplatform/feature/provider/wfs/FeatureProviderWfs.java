@@ -1,6 +1,6 @@
 /**
  * Copyright 2020 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -14,6 +14,7 @@ import akka.util.ByteString;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.akka.http.Http;
 import de.ii.xtraplatform.api.exceptions.BadRequest;
 import de.ii.xtraplatform.crs.api.CrsTransformer;
 import de.ii.xtraplatform.crs.api.EpsgCrs;
@@ -46,6 +47,7 @@ import de.ii.xtraplatform.util.xml.XMLNamespaceNormalizer;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Provides;
+import org.apache.felix.ipojo.annotations.Requires;
 import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.codehaus.staxmate.SMInputFactory;
 import org.slf4j.Logger;
@@ -90,9 +92,11 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     private final FeatureQueryEncoderWfs queryEncoder;
     private final MappingStatus mappingStatus;
     private final FeatureProviderDataTransformer data;
+    private final Http http;
 
     FeatureProviderWfs(@Property(name = ".data") FeatureProviderDataTransformer data,
-                       @Property(name = ".connector") WfsConnector connector) {
+                       @Property(name = ".connector") WfsConnector connector, @Requires Http http) {
+        this.http = http;
         ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
 
         this.wfsRequestEncoder = new WfsRequestEncoder();
@@ -325,21 +329,25 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
     private void analyzeCapabilities(FeatureProviderMetadataConsumer metadataConsumer) {
         try {
             analyzeCapabilities(metadataConsumer, null);
-        } catch (WFSException ex) {
+        } catch (Throwable ex) {
             for (WFS.VERSION version : WFS.VERSION.values()) {
                 try {
                     analyzeCapabilities(metadataConsumer, version);
                     return;
-                } catch (WFSException ex2) {
+                } catch (Throwable ex2) {
                     // ignore
                 }
             }
 
             BadRequest pe = new BadRequest("Retrieving or parsing of GetCapabilities failed.");
-            pe.addDetail(ex.getMsg());
-            for (String det : ex.getDetails()) {
-                pe.addDetail(det);
+            if (Objects.nonNull(ex.getCause())) {
+                pe.addDetail(ex.getCause().getMessage());
+            } else {
+                pe.addDetail(ex.getMessage());
             }
+            /*for (String det : ex.getDetails()) {
+                pe.addDetail(det);
+            }*/
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Retrieving or parsing of GetCapabilities failed: {}", ex.getMessage(), ex.getCause());
             }
@@ -402,8 +410,10 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
 
         InputStream source = connector.runWfsOperation(new DescribeFeatureType());
 
+        OGCEntityResolver entityResolver = new OGCEntityResolver(http, ((ConnectionInfoWfsHttp) data.getConnectionInfo()).getUri(), ((WfsConnectorHttp) connector).getHttpClient());
+
         // create mappings
-        GMLSchemaParser gmlSchemaParser = new GMLSchemaParser(ImmutableList.of(schemaConsumer), baseUri);
+        GMLSchemaParser gmlSchemaParser = new GMLSchemaParser(ImmutableList.of(schemaConsumer), baseUri, entityResolver);
 
         gmlSchemaParser.parse(source, featureTypesByNamespace, taskProgress);
     }

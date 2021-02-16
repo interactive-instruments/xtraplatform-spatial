@@ -1,17 +1,20 @@
 /**
  * Copyright 2020 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.feature.provider.wfs;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.provider.api.ConnectionInfo;
 import org.immutables.value.Value;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import java.util.Optional;
 
@@ -26,11 +29,15 @@ import java.util.Optional;
 @JsonDeserialize(builder = ImmutableConnectionInfoWfsHttp.Builder.class)
 public abstract class ConnectionInfoWfsHttp extends WfsInfo implements ConnectionInfo {
 
-    public enum METHOD {GET,POST}
+    public enum METHOD {GET, POST}
 
     public abstract URI getUri();
+
     public abstract METHOD getMethod();
+
     public abstract Optional<String> getUser();
+
     public abstract Optional<String> getPassword();
-    public abstract Map<String,String> getOtherUrls();
+
+    public abstract Map<String, String> getOtherUrls();
 }

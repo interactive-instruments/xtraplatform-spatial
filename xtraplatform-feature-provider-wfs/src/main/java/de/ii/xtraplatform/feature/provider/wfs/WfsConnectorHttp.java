@@ -1,6 +1,6 @@
 /**
  * Copyright 2020 interactive instruments GmbH
- *
+ * <p>
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -58,18 +57,21 @@ public class WfsConnectorHttp implements WfsConnector {
 
     WfsConnectorHttp(@Property(name = ".data") FeatureProviderDataTransformer data, @Requires Dropwizard dropwizard,
                      @Requires Http http) {
-        this.useHttpPost = ((ConnectionInfoWfsHttp) data.getConnectionInfo()).getMethod() == ConnectionInfoWfsHttp.METHOD.POST;
+        ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
+        this.useHttpPost = connectionInfo.getMethod() == ConnectionInfoWfsHttp.METHOD.POST;
         this.metricRegistry = dropwizard.getEnvironment()
                                         .metrics();
 
-        URI host = ((ConnectionInfoWfsHttp) data.getConnectionInfo()).getUri();
+        URI host = connectionInfo.getUri();
+
+        boolean isBasicAuth = connectionInfo.getUser()
+                                            .isPresent() && connectionInfo.getPassword()
+                                                                          .isPresent();
 
         //TODO: get maxParallelRequests and idleTimeout from connectionInfo
-        this.httpClient = http.getHostClient(host, 16, 30);
-
-        /*Optional.ofNullable((ConnectionInfoWfsHttp) data.getConnectionInfo()).ifPresent(connectionInfoWfsHttp -> {
-            akkaHttp.registerHost(connectionInfoWfsHttp.getUri());
-        });*/
+        this.httpClient = isBasicAuth ? http.getHostClient(host, 16, connectionInfo.getUser()
+                                                                                       .get(), connectionInfo.getPassword()
+                                                                                                             .get()) : http.getHostClient(host, 16);
     }
 
     @Override
@@ -115,5 +117,9 @@ public class WfsConnectorHttp implements WfsConnector {
         final String requestUrl = requestEncoder.getAsUrl(wfsOperation);
 
         return httpClient.getAsInputStream(requestUrl);
+    }
+
+    HttpClient getHttpClient() {
+        return httpClient;
     }
 }
