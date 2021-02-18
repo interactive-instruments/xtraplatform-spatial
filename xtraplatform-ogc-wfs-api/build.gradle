@@ -7,8 +7,8 @@ dependencies {
     provided  group: 'de.interactive_instruments', name: 'xtraplatform-akka'
 
     embedded group: 'com.sun.xsom', name: 'xsom', version: '20140925'
-    embedded group: 'com.fasterxml', name: 'aalto-xml', version: '1.0.0'
-    embedded group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1'
+    embedded group: 'com.fasterxml', name: 'aalto-xml', version: '1.2.2'
+    embedded group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.4.0'
 }
  
 jar {

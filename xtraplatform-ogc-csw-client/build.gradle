@@ -4,8 +4,8 @@ dependencies {
     provided project(':xtraplatform-ogc-wfs-api')
 
     //TODO: ???
-    provided group: 'com.fasterxml', name: 'aalto-xml', version: '0.9.11'
-    provided group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1'
+    provided group: 'com.fasterxml', name: 'aalto-xml', version: '1.2.2'
+    provided group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.4.0'
 }
  
 jar {
