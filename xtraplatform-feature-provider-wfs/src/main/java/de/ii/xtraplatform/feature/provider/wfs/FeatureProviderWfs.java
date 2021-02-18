@@ -303,12 +303,7 @@ public class FeatureProviderWfs implements GmlProvider, FeatureProvider.Metadata
 
     @Override
     public boolean shouldSwapCoordinates(EpsgCrs crs) {
-        return supportsCrs(crs) && Stream.concat(Stream.of(data.getNativeCrs()), data.getOtherCrs()
-                                                                                     .stream())
-                                         .filter(epsgCrs -> epsgCrs.getCode() == crs.getCode())
-                                         .findFirst()
-                                         .map(epsgCrs -> epsgCrs.isForceLongitudeFirst() != crs.isForceLongitudeFirst())
-                                         .orElse(false);
+        return supportsCrs(crs) && crs.isForceLongitudeFirst();
     }
 
     @Override
