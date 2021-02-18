@@ -53,6 +53,7 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
     public void analyzeVersion(String version) {
         if (Objects.isNull(lastVersion) || version.compareTo(lastVersion) > 0) {
             connectionInfoBuilder.version(version);
+            this.lastVersion = version;
         }
     }
 
