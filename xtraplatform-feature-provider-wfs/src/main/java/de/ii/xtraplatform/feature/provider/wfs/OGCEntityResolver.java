@@ -112,7 +112,7 @@ public class OGCEntityResolver implements EntityResolver {
       }
     }
 
-    return resolveUrl(systemId);
+    return resolveUrl(actualSystemId);
   }
 
   private InputSource resolveUrl(String url) {
