@@ -11,8 +11,13 @@ import de.ii.xtraplatform.akka.http.HttpClient;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.EntityResolver;
@@ -29,6 +34,7 @@ public class OGCEntityResolver implements EntityResolver {
   private static final Map<String, HttpClient> HTTP_CLIENTS = new HashMap<>();
 
   private final Map<String, String> uris = new HashMap<>();
+  private final Map<String, String> cache = new HashMap<>();
   private final Http http;
 
   public OGCEntityResolver(Http http, URI defaultUri, HttpClient defaultClient) {
@@ -52,11 +58,29 @@ public class OGCEntityResolver implements EntityResolver {
   public InputSource resolveEntity(String publicId, String systemId)
       throws SAXException, IOException {
 
-    if (systemId != null) {
+    String actualSystemId = systemId;
+
+    if (Objects.nonNull(systemId)) {
+      // workarounds for unresolvable mirrors of public schemas, needed for pegelonline
+      if (Objects.equals(publicId, "http://www.opengis.net/gml")) {
+        if (isNotResolvable(systemId)) {
+          actualSystemId = "http://schemas.opengis.net/gml/3.1.1/base/gml.xsd";
+        }
+      }
+      if (Objects.equals(publicId, "http://www.opengis.net/gml/3.2")) {
+        if (isNotResolvable(systemId)) {
+          actualSystemId = "http://schemas.opengis.net/gml/3.2.1/gml.xsd";
+        }
+      }
+      if (Objects.equals(publicId, "http://www.w3.org/1999/xlink")) {
+        if (isNotResolvable(systemId)) {
+          actualSystemId = "http://www.w3.org/1999/xlink.xsd";
+        }
+      }
+
       // workaround for A4I DescribeFeatureType (seen in 10.2.1)
       // also occurs with native XtraServer, moved to general workarounds
-      if (publicId == null && systemId
-          .contains("&REQUEST=DescribeFeatureType&TYPENAMES=ns:AbstractFeature")) {
+      if (Objects.isNull(publicId) && systemId.contains("&REQUEST=DescribeFeatureType&TYPENAMES=ns:AbstractFeature")) {
         return createFakeSchema("http://www.opengis.net/gml/3.2");
       }
 
@@ -74,17 +98,16 @@ public class OGCEntityResolver implements EntityResolver {
         if (!url.equals(systemId)) {
           LOGGER.debug("original systemId: {}", systemId);
           LOGGER.debug("changed systemId: {}", url);
-          return resolveUrl(url);
+          actualSystemId = url;
         }
       }
     }
 
     // ignore multiple imports into the same namespace
-    if (publicId != null) {
-      if (!uris.containsKey(publicId)) {
-        uris.put(publicId, systemId);
-      }
-      if (systemId != null && !systemId.equals(uris.get(publicId))) {
+    if (Objects.nonNull(publicId)) {
+      uris.putIfAbsent(publicId, actualSystemId);
+
+      if (!Objects.equals(actualSystemId, uris.get(publicId))) {
         return createFakeSchema(publicId);
       }
     }
@@ -93,18 +116,47 @@ public class OGCEntityResolver implements EntityResolver {
   }
 
   private InputSource resolveUrl(String url) {
-    try {
-      URI uri = URI.create(url);
+    String response;
 
-      String response = getClientForUri(uri).getAsString(url);
+    if (cache.containsKey(url)) {
+      response = cache.get(url);
+    } else {
+      try {
+        URI uri = URI.create(url);
 
-      InputSource is = new InputSource(new StringReader(response));
-      is.setSystemId(url);
+        response = getClientForUri(uri).getAsString(url);
 
-      return is;
-    } catch (Throwable e) {
-      throw new IllegalStateException("Error parsing application schema: " + e.getMessage(), e);
+        cache.put(url, response);
+      } catch (Throwable e) {
+        throw new IllegalStateException("Error parsing application schema: " + e.getMessage(), e);
+      }
     }
+
+    InputSource is = new InputSource(new StringReader(response));
+    is.setSystemId(url);
+
+    return is;
+  }
+
+  private boolean isNotResolvable(String systemId) {
+    try {
+      URL url = new URL(systemId);
+      URLConnection connection = url.openConnection();
+
+      if (connection instanceof HttpURLConnection) {
+        HttpURLConnection httpConnection = (HttpURLConnection) connection;
+
+        int code = httpConnection.getResponseCode();
+
+        if (code == 200) {
+          return false;
+        }
+      }
+    } catch (Throwable e) {
+      // continue
+    }
+
+    return true;
   }
 
   private InputSource createFakeSchema(String ns) {
