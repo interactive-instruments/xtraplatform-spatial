@@ -13,9 +13,9 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV2.VALIDATION;
-import de.ii.xtraplatform.features.domain.TypeInfoValidator.ValidationResult;
 import de.ii.xtraplatform.runtime.domain.LogContext;
+import de.ii.xtraplatform.store.domain.entities.ValidationResult;
+import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.streams.domain.StreamRunner;
@@ -77,7 +77,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             return false;
         }
 
-        if (getTypeInfoValidator().isPresent() && getData().getTypeValidation() != VALIDATION.NONE) {
+        if (getTypeInfoValidator().isPresent() && getData().getTypeValidation() != MODE.NONE) {
             final boolean[] isSuccess = {true};
             try {
                 getTypeInfos().values().forEach(typeInfo -> {
@@ -87,7 +87,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
                     isSuccess[0] = isSuccess[0] && result.isSuccess();
                     result.getErrors().forEach(LOGGER::error);
-                    result.getStrictErrors().forEach(result.getMode() == VALIDATION.STRICT ? LOGGER::error : LOGGER::warn);
+                    result.getStrictErrors().forEach(result.getMode() == MODE.STRICT ? LOGGER::error : LOGGER::warn);
                     result.getWarnings().forEach(LOGGER::warn);
                 });
             } catch (Throwable e) {

@@ -9,12 +9,13 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.base.Joiner;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV2.VALIDATION;
+import de.ii.xtraplatform.store.domain.entities.ImmutableValidationResult;
+import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelatedContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
-import de.ii.xtraplatform.features.domain.ImmutableValidationResult;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
+import de.ii.xtraplatform.store.domain.entities.ValidationResult;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,7 +46,7 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
 
   @Override
   public ValidationResult validate(
-      String typeName, FeatureStoreAttributesContainer attributesContainer, VALIDATION mode) {
+      String typeName, FeatureStoreAttributesContainer attributesContainer, MODE mode) {
     try (SqlSchemaCrawler schemaCrawler = new SqlSchemaCrawler(sqlClient.getConnection())) {
       Catalog catalog = schemaCrawler.getCatalog(schemas, getUsedTables(attributesContainer));
       Collection<Table> tables = catalog.getTables();
@@ -57,7 +58,7 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
   }
 
   private ValidationResult validate(
-      String typeName, FeatureStoreAttributesContainer attributesContainer, VALIDATION mode, SchemaInfo schemaInfo) {
+      String typeName, FeatureStoreAttributesContainer attributesContainer, MODE mode, SchemaInfo schemaInfo) {
     ImmutableValidationResult.Builder result = ImmutableValidationResult.builder().mode(mode);
 
     if (attributesContainer instanceof FeatureStoreRelatedContainer) {

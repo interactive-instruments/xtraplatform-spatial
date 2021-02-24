@@ -16,6 +16,7 @@ import de.ii.xtraplatform.store.domain.entities.AutoEntity;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
+import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import org.immutables.value.Value;
@@ -56,11 +57,9 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
 
     Optional<String> getDefaultLanguage();
 
-    enum VALIDATION {NONE,LAX,STRICT}
-
     @Value.Default
-    default VALIDATION getTypeValidation() {
-        return VALIDATION.NONE;
+    default MODE getTypeValidation() {
+        return MODE.NONE;
     }
 
     //behaves exactly like Map<String, FeatureTypeMapping>, but supports mergeable builder deserialization
