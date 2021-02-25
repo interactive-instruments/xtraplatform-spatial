@@ -70,7 +70,11 @@ public class FeatureProviderDataWfsFromMetadata extends AbstractFeatureProviderM
     @Override
     public void analyzeFeatureTypeDefaultCrs(String featureTypeName, String crs) {
         //TODO usage with Immutable Builder
-        featureProviderDataBuilder.nativeCrs(new EpsgCrs(crs));
+        EpsgCrs epsgCrs = new EpsgCrs(crs);
+        if (epsgCrs.getCode() == -1) {
+            analyzeFailed(new IllegalArgumentException("Unknown CRS: " + crs));
+        }
+        featureProviderDataBuilder.nativeCrs(epsgCrs);
     }
 
     @Override
