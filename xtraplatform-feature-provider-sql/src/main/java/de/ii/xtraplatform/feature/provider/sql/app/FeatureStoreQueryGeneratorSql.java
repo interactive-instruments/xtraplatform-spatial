@@ -346,7 +346,9 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
         if (additionalFilter.isPresent()) {
             filter.append(" AND ")
-                  .append(additionalFilter.get());
+                  .append("(")
+                  .append(additionalFilter.get())
+                  .append(")");
         }
 
         if (LOGGER.isTraceEnabled()) {
