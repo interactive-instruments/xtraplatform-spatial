@@ -87,7 +87,7 @@ class SqlDialectPostGisSpec extends Specification {
         when:
             Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(bbox, crs)
         then:
-            extent.get().getCoords().toString() == "[2.336059, 50.664734, 7.304131, 55.433815]"
+            extent.get().toArray().toString() == "[2.336059, 50.664734, 7.304131, 55.433815]"
             extent.get().getEpsgCrs().getCode() == 4326
     }
 

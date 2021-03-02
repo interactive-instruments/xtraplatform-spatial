@@ -5,97 +5,38 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-/**
- * bla
- */
 package de.ii.xtraplatform.crs.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.immutables.value.Value;
 
-/**
- *
- * @author fischer
- */
-//TODO: immutable
-public class BoundingBox {
-    private double xmin;
-    private double ymin;
-    private double xmax;
-    private double ymax;
-    private EpsgCrs crs;
+@Value.Immutable
+@Value.Style(builder = "new", deepImmutablesDetection = true)
+@JsonDeserialize(builder = ImmutableBoundingBox.Builder.class)
+public interface BoundingBox {
 
-    public BoundingBox() {
-        this(-180.0, -90.0, 180.0, 90.0, EpsgCrs.of(4326));
-    }
+  static BoundingBox of(double xmin, double ymin, double xmax, double ymax, EpsgCrs crs) {
+    return new ImmutableBoundingBox.Builder().xmin(xmin).ymax(ymin).xmax(xmax).ymax(ymax).epsgCrs(crs).build();
+  }
 
-    public BoundingBox(double xmin, double ymin, double xmax, double ymax, EpsgCrs crs) {
-        this.xmin = xmin;
-        this.xmax = xmax;
-        this.ymin = ymin;
-        this.ymax = ymax;
+  double getXmin();
 
-        this.crs = crs;
-    }
-    
-    public BoundingBox(double[] coords, EpsgCrs crs) {
-        this.xmin = coords[0];
-        this.ymin = coords[1];
-        this.xmax = coords[2];
-        this.ymax = coords[3];
+  double getYmin();
 
-        this.crs = crs;
-    }
-    
-    @JsonIgnore
-    public double [] getCoords(){
-        double [] out = {xmin, ymin, xmax, ymax};
-        return out;
-    }
+  double getXmax();
 
-    public double getXmin() {
-        return xmin;
-    }
+  double getYmax();
 
-    public void setXmin(double xmin) {
-        this.xmin = xmin;
-    }
+  @Value.Default
+  default EpsgCrs getEpsgCrs() {
+    return OgcCrs.CRS84;
+  }
 
-    public double getYmin() {
-        return ymin;
-    }
-
-    public void setYmin(double ymin) {
-        this.ymin = ymin;
-    }
-
-    public double getXmax() {
-        return xmax;
-    }
-
-    public void setXmax(double xmax) {
-        this.xmax = xmax;
-    }
-
-    public double getYmax() {
-         return ymax;
-    }
-
-    public void setYmax(double ymax) {
-        this.ymax = ymax;
-    }
-
-    public EpsgCrs getEpsgCrs() {
-        return crs;
-    }
-
-    public void setEpsgCrs(EpsgCrs crs) {
-        this.crs = crs;
-    }
-
-    @Override
-    public String toString() {
-        return "(" + xmin + ", " + ymin + ", " + xmax + ", " + ymax + ", " + crs.toSimpleString() + ')';
-    }
-    
-    
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default double[] toArray() {
+    return new double[]{getXmin(), getXmax(), getYmin(), getYmax()};
+  }
 }

@@ -39,7 +39,7 @@ public class BoundingBoxTransformerTest {
         EpsgCrs crs = EpsgCrs.of(4326);
 
         // test equality
-        BoundingBox b = new BoundingBox(1, 2, 3, 4, crs);
+        BoundingBox b = BoundingBox.of(1, 2, 3, 4, crs);
         BoundingBox c = bbt.transformBoundingBox(b);
         //Assert.assertEquals(b.toString(), c.toString());
 
@@ -51,10 +51,10 @@ public class BoundingBoxTransformerTest {
             // but this one reflects the behavior (imho) of XtraProxy better
             bbt.setUseRnd(true);
 
-            BoundingBox b1 = new BoundingBox(0, 0, 1, 1, crs);
-            BoundingBox b2 = new BoundingBox(1, 0, 2, 1, crs);
-            BoundingBox b3 = new BoundingBox(1, 1, 3, 1, crs);
-            BoundingBox b4 = new BoundingBox(1, -1, 2, 0, crs);
+            BoundingBox b1 = BoundingBox.of(0, 0, 1, 1, crs);
+            BoundingBox b2 = BoundingBox.of(1, 0, 2, 1, crs);
+            BoundingBox b3 = BoundingBox.of(1, 1, 3, 1, crs);
+            BoundingBox b4 = BoundingBox.of(1, -1, 2, 0, crs);
 
             BoundingBox c1 = bbt.transformBoundingBox(b1);
             BoundingBox c2 = bbt.transformBoundingBox(b2);

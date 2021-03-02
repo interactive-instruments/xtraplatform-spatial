@@ -30,8 +30,7 @@ public abstract class BoundingBoxTransformer implements CrsTransformer{
             throw new CrsTransformationException("Failed to transform bounding box corner point coordinate(s): " + boundingBox.toString());
         }
 
-        BoundingBox envOut = new BoundingBox();
-        envOut.setEpsgCrs(getTargetCrs());
+        double xmin,ymin,xmax,ymax;
               
         // Die BoundingBox ins boxIn (lx,ly,hx,hy) im System crsIn wird in das System 
         // crsOut transformiert. Dabei wird sichergestellt, dass es sich wieder um eine
@@ -40,28 +39,26 @@ public abstract class BoundingBoxTransformer implements CrsTransformer{
         // Minmaxing bestimmt.
         
         if (ul.getX() < ll.getX()) {
-            envOut.setXmin(ul.getX());
+            xmin = ul.getX();
         } else {
-            envOut.setXmin(ll.getX());
+            xmin = ll.getX();
         }
         if (lr.getY() < ll.getY()) {
-            envOut.setYmin(lr.getY());
+            ymin = lr.getY();
         } else {
-            envOut.setYmin(ll.getY());
+            ymin = ll.getY();
         }
         if (ur.getX() > lr.getX()) {
-            envOut.setXmax(ur.getX());
+            xmax = ur.getX();
         } else {
-            envOut.setXmax(lr.getX());
+            xmax = lr.getX();
         }
         if (ul.getY() > ur.getY()) {
-            envOut.setYmax(ul.getY());
+            ymax = ul.getY();
         } else {
-            envOut.setYmax(ur.getY());
+            ymax = ur.getY();
         }
 
-        // DEBUG
-        //System.out.println( envOut.getXmin()+" " +envOut.getYmin()+" "+envOut.getXmax()+" "+envOut.getYmax()+" 1;");
-        return envOut;        
+        return BoundingBox.of(xmin, ymin, xmax, ymax, getTargetCrs());
     }
 }

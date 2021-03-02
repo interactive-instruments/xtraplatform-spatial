@@ -40,7 +40,7 @@ public class SqlDialectPostGis implements SqlDialect {
         List<String> bbox = BBOX_SPLITTER.splitToList(extent);
 
         if (bbox.size() > 4) {
-            return Optional.of(new BoundingBox(Double.parseDouble(bbox.get(1)), Double.parseDouble(bbox.get(2)), Double.parseDouble(bbox.get(3)), Double.parseDouble(bbox.get(4)), crs));
+            return Optional.of(BoundingBox.of(Double.parseDouble(bbox.get(1)), Double.parseDouble(bbox.get(2)), Double.parseDouble(bbox.get(3)), Double.parseDouble(bbox.get(4)), crs));
         }
 
         return Optional.empty();
