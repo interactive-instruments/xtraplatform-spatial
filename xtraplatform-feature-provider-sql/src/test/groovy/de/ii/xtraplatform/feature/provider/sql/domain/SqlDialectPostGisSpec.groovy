@@ -9,7 +9,6 @@ package de.ii.xtraplatform.feature.provider.sql.domain
 
 import de.ii.xtraplatform.crs.domain.BoundingBox
 import de.ii.xtraplatform.crs.domain.EpsgCrs
-import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs
 import org.threeten.extra.Interval
 import spock.lang.Ignore
 import spock.lang.Shared
@@ -83,7 +82,7 @@ class SqlDialectPostGisSpec extends Specification {
     def 'Spatial extent and CRS both present'() {
         given:
             String bbox = "BOX(2.336059,50.664734,7.304131,55.433815)"
-            EpsgCrs crs = new ImmutableEpsgCrs.Builder().code(4326).build()
+            EpsgCrs crs = EpsgCrs.of(4326)
         when:
             Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(bbox, crs)
         then:
@@ -112,7 +111,7 @@ class SqlDialectPostGisSpec extends Specification {
     @Ignore
     def 'Spatial extent is null, CRS is present'() {
         given:
-            EpsgCrs crs = new ImmutableEpsgCrs.Builder().code(4326).build()
+            EpsgCrs crs = EpsgCrs.of(4326)
         when:
             Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(null, crs)
         then:
@@ -122,7 +121,7 @@ class SqlDialectPostGisSpec extends Specification {
     def 'Spatial extent with incomplete coordinates'() {
         given:
             String bbox = "BOX(2.336059,50.664734,7.304131)"
-            EpsgCrs crs = new ImmutableEpsgCrs.Builder().code(4326).build()
+            EpsgCrs crs = EpsgCrs.of(4326)
         when:
             Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(bbox, crs)
         then:
@@ -132,7 +131,7 @@ class SqlDialectPostGisSpec extends Specification {
     def 'Spatial extent in unexpected format'() {
         given:
             String bbox = "2.336059,50.664734,7.304131,55.433815"
-            EpsgCrs crs = new ImmutableEpsgCrs.Builder().code(4326).build()
+            EpsgCrs crs = EpsgCrs.of(4326)
         when:
             Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(bbox, crs)
         then:

@@ -17,7 +17,7 @@ import org.immutables.value.Value;
 public interface BoundingBox {
 
   static BoundingBox of(double xmin, double ymin, double xmax, double ymax, EpsgCrs crs) {
-    return new ImmutableBoundingBox.Builder().xmin(xmin).ymax(ymin).xmax(xmax).ymax(ymax).epsgCrs(crs).build();
+    return new ImmutableBoundingBox.Builder().xmin(xmin).ymin(ymin).xmax(xmax).ymax(ymax).epsgCrs(crs).build();
   }
 
   double getXmin();
@@ -37,6 +37,6 @@ public interface BoundingBox {
   @Value.Derived
   @Value.Auxiliary
   default double[] toArray() {
-    return new double[]{getXmin(), getXmax(), getYmin(), getYmax()};
+    return new double[]{getXmin(), getYmin(), getXmax(), getYmax()};
   }
 }
