@@ -11,6 +11,8 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
+import de.ii.xtraplatform.features.domain.SortKey;
+import de.ii.xtraplatform.features.domain.SortKey.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Option;
@@ -36,6 +38,7 @@ class SqlRowSlick implements SqlRow {
     private final List<Comparable<?>> ids;
     private final List<Object> values;
     private List<String> idColumnNames;
+    private List<SortKey.Direction> idColumnDirections;
     private int priority;
     private FeatureStoreAttributesContainer attributesContainer;
 
@@ -97,20 +100,17 @@ class SqlRowSlick implements SqlRow {
                         .isPresent()) {
             this.attributesContainer = queryOptions.getAttributesContainer()
                                                    .get();
-            this.idColumnNames = attributesContainer.getSortKeys();
-            columnTypes = IntStream.range(0, attributesContainer.getAttributes()
-                                                                .size())
-                                   .mapToObj(i -> String.class)
-                                   .collect(Collectors.toList());
+            this.idColumnNames = queryOptions.getSortKeys();
+            this.idColumnDirections = queryOptions.getSortDirections();
+            columnTypes = queryOptions.getColumnTypes();
 
-            for (int i = 0; i < attributesContainer.getSortKeys()
-                                                   .size(); i++) {
+            for (int i = 0; i < idColumnNames.size(); i++) {
                 try {
                     Object id = result.nextObject();
                     if (id instanceof Comparable<?>) {
                         ids.add((Comparable<?>)id);
                     } else {
-                        LOGGER.error("Sort key '{}' has invalid type '{}'.", attributesContainer.getSortKeys().get(i), id.getClass());
+                        LOGGER.error("Sort key '{}' has invalid type '{}'.", idColumnNames.get(i), id.getClass());
                     }
                 } catch (Throwable e) {
                     break;
@@ -168,7 +168,7 @@ class SqlRowSlick implements SqlRow {
         }
 
         int numberOfIds = getNumberOfCommonElements(idColumnNames, otherSqlRow.getIdColumnNames());
-        int resultIds = compareIdLists(getIds(), otherSqlRow.getIds(), numberOfIds);
+        int resultIds = compareIdLists(getIds(), otherSqlRow.getIds(), numberOfIds, idColumnDirections);
         int result = resultIds == 0 ? priority - otherSqlRow.getPriority() : resultIds;
 
         if (LOGGER.isTraceEnabled()) {
@@ -189,10 +189,14 @@ class SqlRowSlick implements SqlRow {
         return size;
     }
 
-    private static int compareIdLists(List<Comparable<?>> ids1, List<Comparable<?>> ids2, int numberOfIds) {
+    private static int compareIdLists(List<Comparable<?>> ids1, List<Comparable<?>> ids2,
+        int numberOfIds,
+        List<Direction> idColumnDirections) {
         for (int i = 0; i < numberOfIds; i++) {
             int result = 0;
             Comparable<?> id1 = ids1.get(i);
+            int direction = idColumnDirections.get(i) == Direction.DESCENDING ? -1 : 1;
+
             if (id1 instanceof Integer) {
                 result = ((Integer)id1).compareTo((Integer)ids2.get(i));
             } else if (id1 instanceof Long) {
@@ -203,7 +207,7 @@ class SqlRowSlick implements SqlRow {
                 result = ((String)id1).compareTo((String)ids2.get(i));
             }
             if (result != 0) {
-                return result;
+                return result * direction;
             }
         }
         return 0;

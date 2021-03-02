@@ -100,4 +100,12 @@ public interface FeatureProvider2 extends PersistentEntity {
         }
         return (FeatureMetadata) this;
     }
+
+    default boolean supportsSorting() {
+        return false;
+    }
+
+    default boolean supportsHighLoad() {
+        return false;
+    }
 }

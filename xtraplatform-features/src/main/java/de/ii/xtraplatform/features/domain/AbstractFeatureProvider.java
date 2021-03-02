@@ -119,7 +119,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         LOGGER.info("Feature provider with id '{}' stopped.", getId());
     }
 
-    protected abstract FeatureQueryTransformer<U> getQueryTransformer();
+    protected abstract FeatureQueryTransformer<U, V> getQueryTransformer();
 
     protected abstract FeatureProviderConnector<T, U, V> getConnector();
 
@@ -176,7 +176,9 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
                 U transformedQuery = getQueryTransformer().transformQuery(query, ImmutableMap.of());
 
-                Source<T, NotUsed> sourceStream = getConnector().getSourceStream(transformedQuery);
+                V options = getQueryTransformer().getOptions(query);
+
+                Source<T, NotUsed> sourceStream = getConnector().getSourceStream(transformedQuery, options);
 
                 Sink<T, CompletionStage<Result>> sink = getNormalizer().normalizeAndTransform(transformer, query);
 
@@ -220,7 +222,9 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
                 U sqlQueries = getQueryTransformer().transformQuery(query, ImmutableMap.of());
 
-                Source<T, NotUsed> rowStream = getConnector().getSourceStream(sqlQueries);
+                V options = getQueryTransformer().getOptions(query);
+
+                Source<T, NotUsed> rowStream = getConnector().getSourceStream(sqlQueries, options);
 
                 Source<W, CompletionStage<Result>> featureStream = getNormalizer().normalize(rowStream, query, transformer::createFeature, transformer::createProperty);
 
