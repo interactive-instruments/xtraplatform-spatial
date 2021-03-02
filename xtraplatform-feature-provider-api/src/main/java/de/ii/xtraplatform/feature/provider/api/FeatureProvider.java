@@ -22,7 +22,7 @@ public interface FeatureProvider<T extends FeatureConsumer> {
     String getSourceFormat();
 
     default BoundingBox getSpatialExtent(String featureTypeId) {
-        return new BoundingBox(-180.0D, -90.0D, 180.0D, 90.0D, EpsgCrs.of(4326));
+        return BoundingBox.of(-90.0D, -180.0D, 90.0D, 180.0D, EpsgCrs.of(4326));
     }
 
 }

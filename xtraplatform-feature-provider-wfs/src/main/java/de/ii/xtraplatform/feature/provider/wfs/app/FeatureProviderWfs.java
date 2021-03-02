@@ -98,7 +98,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     }
 
     @Override
-    protected FeatureQueryTransformer<String> getQueryTransformer() {
+    protected FeatureQueryTransformer<String, FeatureProviderConnector.QueryOptions> getQueryTransformer() {
         return queryTransformer;
     }
 

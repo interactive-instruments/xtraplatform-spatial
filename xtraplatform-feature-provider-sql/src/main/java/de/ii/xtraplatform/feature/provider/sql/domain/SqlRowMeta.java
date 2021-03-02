@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
+import java.util.List;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
@@ -30,6 +31,10 @@ public interface SqlRowMeta extends SqlRow {
     long getNumberReturned();
 
     OptionalLong getNumberMatched();
+
+    List<Object> getCustomMinKeys();
+
+    List<Object> getCustomMaxKeys();
 
     @Override
     default int compareTo(SqlRow row) {

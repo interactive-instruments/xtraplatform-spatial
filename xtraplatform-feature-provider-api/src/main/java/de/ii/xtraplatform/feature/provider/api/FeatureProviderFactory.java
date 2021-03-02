@@ -24,7 +24,7 @@ import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
  */
 public interface FeatureProviderFactory<T,U,V extends FeatureProviderConnector.QueryOptions> {
 
-    FeatureQueryTransformer<U> getFeatureQueryTransformer();
+    FeatureQueryTransformer<U,V> getFeatureQueryTransformer();
 
     FeatureProviderConnector<T,U,V> getFeatureProviderConnector();
 

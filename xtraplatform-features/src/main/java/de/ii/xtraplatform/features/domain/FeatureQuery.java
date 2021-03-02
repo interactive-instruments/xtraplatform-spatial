@@ -11,10 +11,9 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.ScalarExpression;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import org.immutables.value.Value;
-
 import java.util.List;
 import java.util.Optional;
+import org.immutables.value.Value;
 
 /**
  * @author zahnen
@@ -37,6 +36,8 @@ public abstract class FeatureQuery {
     }
 
     public abstract Optional<CqlFilter> getFilter();
+
+    public abstract List<SortKey> getSortKeys();
 
     @Value.Default
     public boolean hitsOnly() {

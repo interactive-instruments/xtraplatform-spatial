@@ -270,7 +270,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     }
 
     @Override
-    protected FeatureQueryTransformer<SqlQueries> getQueryTransformer() {
+    protected FeatureQueryTransformer<SqlQueries, SqlQueryOptions> getQueryTransformer() {
         return queryTransformer;
     }
 
@@ -522,5 +522,13 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                                                         .build());
     }
 
+    @Override
+    public boolean supportsSorting() {
+        return true;
+    }
 
+    @Override
+    public boolean supportsHighLoad() {
+        return true;
+    }
 }

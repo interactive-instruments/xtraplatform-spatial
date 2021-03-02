@@ -15,6 +15,8 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderDataWfsFromMetadata;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector.QueryOptions;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -70,7 +72,7 @@ import java.util.Optional;
 
 import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 
-public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<String> {
+public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<String, FeatureProviderConnector.QueryOptions> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryTransformerWfs.class);
 
@@ -116,6 +118,11 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
     public String transformQuery(FeatureQuery featureQuery, Map<String, String> additionalQueryParameters) {
 
         return encodeFeatureQuery(featureQuery, additionalQueryParameters);
+    }
+
+    @Override
+    public QueryOptions getOptions(FeatureQuery featureQuery) {
+        return new QueryOptions() {};
     }
 
     public boolean isValid(final FeatureQuery query) {

@@ -68,7 +68,8 @@ public class WfsCapabilitiesAnalyzer extends AbstractFeatureProviderMetadataCons
     @Override
     public void analyzeFeatureTypeBoundingBox(String featureTypeName, String xmin, String ymin, String xmax,
                                               String ymax) {
-        metadata.putFeatureTypesBoundingBox(getFeatureTypeId(featureTypeName), new BoundingBox(Double.parseDouble(xmin), Double.parseDouble(ymin), Double.parseDouble(xmax), Double.parseDouble(ymax), OgcCrs.CRS84));
+        metadata.putFeatureTypesBoundingBox(getFeatureTypeId(featureTypeName), BoundingBox
+            .of(Double.parseDouble(xmin), Double.parseDouble(ymin), Double.parseDouble(xmax), Double.parseDouble(ymax), OgcCrs.CRS84));
     }
 
     @Override
