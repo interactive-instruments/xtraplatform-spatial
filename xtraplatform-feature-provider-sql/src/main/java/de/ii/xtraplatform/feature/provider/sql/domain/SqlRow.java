@@ -27,7 +27,11 @@ public interface SqlRow extends Comparable<SqlRow> {
         return ImmutableList.of();
     }
 
-    default List<String> getIdColumnNames() {
+    default List<Comparable<?>> getSortKeys() {
+        return getIds();
+    }
+
+    default List<String> getSortKeyNames() {
         return ImmutableList.of();
     }
 

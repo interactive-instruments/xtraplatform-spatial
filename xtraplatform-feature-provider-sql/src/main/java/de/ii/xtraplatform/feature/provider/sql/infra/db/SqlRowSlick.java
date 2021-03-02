@@ -15,7 +15,6 @@ import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SortKey.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Option;
 import slick.jdbc.PositionedResult;
 
 import java.math.BigDecimal;
@@ -27,8 +26,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 //TODO: extensive unit tests for compareTo
 class SqlRowSlick implements SqlRow {
@@ -36,14 +33,16 @@ class SqlRowSlick implements SqlRow {
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlRowSlick.class);
 
     private final List<Comparable<?>> ids;
+    private final List<Comparable<?>> sortKeys;
+    private List<String> sortKeyNames;
+    private List<SortKey.Direction> sortKeyDirections;
     private final List<Object> values;
-    private List<String> idColumnNames;
-    private List<SortKey.Direction> idColumnDirections;
     private int priority;
     private FeatureStoreAttributesContainer attributesContainer;
 
     SqlRowSlick() {
         this.ids = new ArrayList<>(32);
+        this.sortKeys = new ArrayList<>(32);
         this.values = new ArrayList<>(128);
     }
 
@@ -79,8 +78,13 @@ class SqlRowSlick implements SqlRow {
     }
 
     @Override
-    public List<String> getIdColumnNames() {
-        return idColumnNames;
+    public List<Comparable<?>> getSortKeys() {
+        return sortKeys;
+    }
+
+    @Override
+    public List<String> getSortKeyNames() {
+        return sortKeyNames;
     }
 
     @Override
@@ -100,17 +104,20 @@ class SqlRowSlick implements SqlRow {
                         .isPresent()) {
             this.attributesContainer = queryOptions.getAttributesContainer()
                                                    .get();
-            this.idColumnNames = queryOptions.getSortKeys();
-            this.idColumnDirections = queryOptions.getSortDirections();
+            this.sortKeyNames = queryOptions.getSortKeys();
+            this.sortKeyDirections = queryOptions.getSortDirections();
             columnTypes = queryOptions.getColumnTypes();
 
-            for (int i = 0; i < idColumnNames.size(); i++) {
+            for (int i = 0; i < sortKeyNames.size(); i++) {
                 try {
                     Object id = result.nextObject();
                     if (id instanceof Comparable<?>) {
-                        ids.add((Comparable<?>)id);
+                        sortKeys.add((Comparable<?>)id);
+                        if (i >= queryOptions.getCustomSortKeys().size()) {
+                            ids.add((Comparable<?>) id);
+                        }
                     } else {
-                        LOGGER.error("Sort key '{}' has invalid type '{}'.", idColumnNames.get(i), id.getClass());
+                        LOGGER.error("Sort key '{}' has invalid type '{}'.", sortKeyNames.get(i), id.getClass());
                     }
                 } catch (Throwable e) {
                     break;
@@ -155,7 +162,7 @@ class SqlRowSlick implements SqlRow {
     void clear() {
         this.values.clear();
         this.ids.clear();
-        this.idColumnNames = null;
+        this.sortKeyNames = null;
         this.priority = 0;
         this.attributesContainer = null;
     }
@@ -167,12 +174,13 @@ class SqlRowSlick implements SqlRow {
             return -1;
         }
 
-        int numberOfIds = getNumberOfCommonElements(idColumnNames, otherSqlRow.getIdColumnNames());
-        int resultIds = compareIdLists(getIds(), otherSqlRow.getIds(), numberOfIds, idColumnDirections);
-        int result = resultIds == 0 ? priority - otherSqlRow.getPriority() : resultIds;
+        int commonSortKeys = getNumberOfCommonElements(sortKeyNames, otherSqlRow.getSortKeyNames());
+        int resultSortKeys = compareSortKeys(getSortKeys(), otherSqlRow.getSortKeys(), commonSortKeys,
+            sortKeyDirections);
+        int result = resultSortKeys == 0 ? priority - otherSqlRow.getPriority() : resultSortKeys;
 
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("Compare: {}[{}{}] <=> {}[{}{}] -> {}({})", getName(), idColumnNames, ids, otherSqlRow.getName(), otherSqlRow.getIdColumnNames(), otherSqlRow.getIds(), result, resultIds);
+            LOGGER.trace("Compare: {}[{}{}] <=> {}[{}{}] -> {}({})", getName(), sortKeyNames, sortKeys, otherSqlRow.getName(), otherSqlRow.getSortKeyNames(), otherSqlRow.getSortKeys(), result, resultSortKeys);
         }
 
         return result;
@@ -189,7 +197,7 @@ class SqlRowSlick implements SqlRow {
         return size;
     }
 
-    private static int compareIdLists(List<Comparable<?>> ids1, List<Comparable<?>> ids2,
+    private static int compareSortKeys(List<Comparable<?>> ids1, List<Comparable<?>> ids2,
         int numberOfIds,
         List<Direction> idColumnDirections) {
         for (int i = 0; i < numberOfIds; i++) {
