@@ -67,4 +67,9 @@ public class SqlDialectPostGis implements SqlDialect {
     return String.format("%s::timestamp(0)", column);
   }
 
+  @Override
+  public String escapeString(String value) {
+    return value.replaceAll("'", "''");
+  }
+
 }
