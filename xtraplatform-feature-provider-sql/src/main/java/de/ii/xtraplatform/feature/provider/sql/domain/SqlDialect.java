@@ -25,4 +25,6 @@ public interface SqlDialect {
 
     String applyToDatetime(String column);
 
+    String escapeString(String value);
+
 }
