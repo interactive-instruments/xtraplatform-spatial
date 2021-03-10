@@ -371,6 +371,9 @@ public class FeatureProviderPgis implements TransformingFeatureProvider<FeatureT
     private Map<String, String> createExtentQueries(Map<String, FeatureTypeMapping> mappings) {
         return mappings.entrySet()
                        .stream()
+                       .filter(featureTypeMappings -> featureTypeMappings.getValue().getMappings().entrySet().stream().anyMatch(stringSourcePathMappingEntry -> stringSourcePathMappingEntry.getValue()
+                                                                                                                                                                                            .getMappingForType(BASE_TYPE)
+                                                                                                                                                                                            .isSpatial()))
                        .map(featureTypeMappings -> {
                            Set<String> multiTables = new HashSet<>();
 
