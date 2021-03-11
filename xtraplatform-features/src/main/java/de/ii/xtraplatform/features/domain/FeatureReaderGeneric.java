@@ -26,11 +26,11 @@ public interface FeatureReaderGeneric extends FeatureReader<Map<String, String>,
 
     void onObjectStart(List<String> path, Map<String, String> context) throws Exception;
 
-    void onObjectEnd(List<String> path) throws Exception;
+    void onObjectEnd(List<String> path, Map<String, String> context) throws Exception;
 
     void onArrayStart(List<String> path, Map<String, String> context) throws Exception;
 
-    void onArrayEnd(List<String> path) throws Exception;
+    void onArrayEnd(List<String> path, Map<String, String> context) throws Exception;
 
     void onValue(List<String> path, String value, Map<String, String> context) throws Exception;
 }

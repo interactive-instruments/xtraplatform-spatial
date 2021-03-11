@@ -116,6 +116,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         return isObject() && getParentPath().isEmpty();
     }
 
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isGeometry() {
+        return getType() == Type.GEOMETRY;
+    }
+
     default <U> U accept(SchemaVisitor<T, U> visitor) {
         return visitor.visit((T) this, getProperties().stream()
                                                       .map(property -> property.accept(visitor))

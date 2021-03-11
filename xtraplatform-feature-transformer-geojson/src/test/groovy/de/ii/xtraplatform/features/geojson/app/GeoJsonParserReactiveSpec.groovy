@@ -119,10 +119,10 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["geometry", "coordinates"], "49.698295103021096", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["geometry"])
+        1 * featureReader.onObjectEnd(["geometry"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onValue(["kennung"], "611320001-1", {})
@@ -175,7 +175,7 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["geometry", "coordinates"], "50.1501333536934", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onArrayStart(["geometry", "coordinates"], {})
@@ -187,13 +187,13 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["geometry", "coordinates"], "51.1501333536934", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["geometry"])
+        1 * featureReader.onObjectEnd(["geometry"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onValue(["kennung"], "580410003-1", {})
@@ -252,7 +252,7 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["geometry", "coordinates"], "49.698295103021096", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onArrayStart(["geometry", "coordinates"], {})
@@ -264,13 +264,13 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["geometry", "coordinates"], "49.69823291309017", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onArrayStart(["geometry", "coordinates"], {})
@@ -288,7 +288,7 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["geometry", "coordinates"], "49.698286680057166", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onArrayStart(["geometry", "coordinates"], {})
@@ -300,10 +300,10 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["geometry", "coordinates"], "49.69836248910692", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onArrayStart(["geometry", "coordinates"], {})
@@ -318,7 +318,7 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["geometry", "coordinates"], "49.698603368350874", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onArrayStart(["geometry", "coordinates"], {})
@@ -330,19 +330,19 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["geometry", "coordinates"], "49.69866280390489", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["geometry"])
+        1 * featureReader.onObjectEnd(["geometry"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onValue(["kennung"], "631510001-1", {})
@@ -383,7 +383,7 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["erfasser", "name"], "John Doe", {})
 
         then:
-        1 * featureReader.onObjectEnd(["erfasser"])
+        1 * featureReader.onObjectEnd(["erfasser"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onValue(["kennung"], "611320001-1", {})
@@ -427,7 +427,7 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["erfasser_array"], "Jane Doe", {})
 
         then:
-        1 * featureReader.onArrayEnd(["erfasser_array"])
+        1 * featureReader.onArrayEnd(["erfasser_array"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onValue(["kennung"], "611320001-1", {})
@@ -483,10 +483,10 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"], "34", {})
 
         then:
-        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"])
+        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["raumreferenz", "ortsangabe"])
+        1 * featureReader.onObjectEnd(["raumreferenz", "ortsangabe"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onObjectStart(["raumreferenz", "ortsangabe"], {})
@@ -501,10 +501,10 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"], "36", {})
 
         then:
-        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"])
+        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["raumreferenz", "ortsangabe"])
+        1 * featureReader.onObjectEnd(["raumreferenz", "ortsangabe"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onObjectStart(["raumreferenz", "ortsangabe"], {})
@@ -519,19 +519,19 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"], "37", {})
 
         then:
-        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"])
+        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["raumreferenz", "ortsangabe"])
+        1 * featureReader.onObjectEnd(["raumreferenz", "ortsangabe"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe"])
+        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["raumreferenz"])
+        1 * featureReader.onObjectEnd(["raumreferenz"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onArrayEnd(["raumreferenz"])
+        1 * featureReader.onArrayEnd(["raumreferenz"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onValue(["kennung"], "611320001-1", {})
@@ -581,10 +581,10 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["geometry", "coordinates"], "50.11336914792363", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["geometry"])
+        1 * featureReader.onObjectEnd(["geometry"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onValue(["kennung"], "580340001-1", {})
@@ -629,13 +629,13 @@ class GeoJsonParserReactiveSpec extends Specification {
         1 * featureReader.onValue(["geometry", "coordinates"], "50.1501333536934", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onArrayEnd(["geometry", "coordinates"])
+        1 * featureReader.onArrayEnd(["geometry", "coordinates"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["geometry"])
+        1 * featureReader.onObjectEnd(["geometry"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onValue(["kennung"], "631510001-1", {})

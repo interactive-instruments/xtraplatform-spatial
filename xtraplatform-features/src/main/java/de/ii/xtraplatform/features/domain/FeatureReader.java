@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalLong;
 
 /**
@@ -24,11 +25,11 @@ public interface FeatureReader<T,U> {
 
     void onObjectStart(List<String> path, U context) throws Exception;
 
-    void onObjectEnd(List<String> path) throws Exception;
+    void onObjectEnd(List<String> path, Map<String, String> context) throws Exception;
 
     void onArrayStart(List<String> path, U context) throws Exception;
 
-    void onArrayEnd(List<String> path) throws Exception;
+    void onArrayEnd(List<String> path, Map<String, String> context) throws Exception;
 
     void onValue(List<String> path, String value, U context) throws Exception;
 }
