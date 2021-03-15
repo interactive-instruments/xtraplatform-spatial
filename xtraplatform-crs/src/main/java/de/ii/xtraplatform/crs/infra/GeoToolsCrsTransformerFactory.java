@@ -16,6 +16,9 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.measure.unit.NonSI;
+import javax.measure.unit.SI;
+import javax.measure.unit.Unit;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
@@ -83,6 +86,18 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
     @Override
     public boolean isCrs3d(EpsgCrs crs) {
         return isCrsSupported(crs) && crsCache.get(crs).getCoordinateSystem().getDimension() == 3;
+    }
+
+    @Override
+    public Unit<?> getCrsUnit(EpsgCrs crs) {
+        if (!isCrsSupported(crs)) {
+            throw new IllegalArgumentException(String.format("CRS %s is not supported.", Objects.nonNull(crs) ? crs.toSimpleString() : "null"));
+        }
+
+        return CRS.getHorizontalCRS(crsCache.get(crs))
+            .getCoordinateSystem()
+            .getAxis(0)
+            .getUnit();
     }
 
     @Override
