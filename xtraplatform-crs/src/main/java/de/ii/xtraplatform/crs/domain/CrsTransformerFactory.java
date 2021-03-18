@@ -11,6 +11,7 @@
 package de.ii.xtraplatform.crs.domain;
 
 import java.util.Optional;
+import javax.measure.unit.Unit;
 
 /**
  *
@@ -23,5 +24,7 @@ public interface CrsTransformerFactory {
     boolean isCrsSupported(EpsgCrs crs);
 
     boolean isCrs3d(EpsgCrs crs);
+
+    Unit<?> getCrsUnit(EpsgCrs crs);
 
 }
