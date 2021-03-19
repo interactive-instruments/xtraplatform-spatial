@@ -11,12 +11,9 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
-import de.ii.xtraplatform.feature.provider.sql.ImmutableOptions;
-import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
-import org.immutables.value.Value;
-
 import java.util.List;
 import java.util.Optional;
+import org.immutables.value.Value;
 
 /**
  * @author zahnen
@@ -48,9 +45,10 @@ public interface ConnectionInfoSql extends ConnectionInfo {
         return true;
     }
 
+    @JsonAlias("pathSyntax")
     @Value.Default
-    default SqlPathSyntax.Options getPathSyntax() {
-        return new ImmutableOptions.Builder().build();
+    default SqlPathDefaults getSourcePathDefaults() {
+        return new ImmutableSqlPathDefaults.Builder().build();
     }
 
     Optional<FeatureActionTrigger> getTriggers();

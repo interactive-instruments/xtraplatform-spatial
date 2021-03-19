@@ -17,6 +17,7 @@ import de.ii.xtraplatform.features.domain.PropertyBase;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
 
@@ -72,7 +73,8 @@ public class FeatureReaderToProcessor<T extends PropertyBase<T, V>, U extends Fe
     }
 
     @Override
-    public void onObjectEnd(List<String> path) throws Exception {
+    public void onObjectEnd(List<String> path,
+        Map<String, String> context) throws Exception {
         this.currentProperty = getCurrentParent();
     }
 
@@ -82,7 +84,8 @@ public class FeatureReaderToProcessor<T extends PropertyBase<T, V>, U extends Fe
     }
 
     @Override
-    public void onArrayEnd(List<String> path) throws Exception {
+    public void onArrayEnd(List<String> path,
+        Map<String, String> context) throws Exception {
         this.currentProperty = getCurrentParent();
     }
 
@@ -99,7 +102,7 @@ public class FeatureReaderToProcessor<T extends PropertyBase<T, V>, U extends Fe
 
         return currentFeature.getProperties()
                              .stream()
-                             .filter(t -> t.getType() == type && t.getSchema().isPresent() && Objects.equals(t.getSchema().get(), schema))
+                             .filter(t -> t.getType() == type && t.getSchema().isPresent() && Objects.equals(t.getSchema().get(), schema) && !t.getSchema().get().isGeometry())
                              .findFirst()
                              .orElseGet(() -> {
                                        T property = featureProcessor.createProperty();

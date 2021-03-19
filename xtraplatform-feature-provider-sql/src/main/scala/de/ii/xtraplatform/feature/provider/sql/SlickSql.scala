@@ -71,7 +71,7 @@ object SlickSql {
   }
 
   private def toDbio[T >: Null](query: String, mapper: JBiFunction[SlickRow, T, T], results: Vector[T]): SqlStreamingAction[Vector[T], T, Effect] =
-    if (results != null) sql"#$query".as[T](toSlick(mapper,  results.head)) else sql"#$query".as[T](toSlick(mapper))
+    if (results != null && results.nonEmpty) sql"#$query".as[T](toSlick(mapper,  results.head)) else sql"#$query".as[T](toSlick(mapper))
 
 
   private def toSlick[T >: Null](mapper: JBiFunction[SlickRow, T, T], results: T): GetResult[T] =

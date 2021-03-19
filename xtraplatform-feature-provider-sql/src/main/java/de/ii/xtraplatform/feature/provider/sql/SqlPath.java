@@ -55,7 +55,7 @@ public interface SqlPath {
         return false;
     }
 
-    String getSortKey();
+    //String getSortKey();
 
     Optional<String> getConstantValue();
 

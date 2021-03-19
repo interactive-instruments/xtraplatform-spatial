@@ -11,7 +11,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSchemaSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlRelation;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.SchemaBase;
@@ -86,11 +88,11 @@ public class MutationSchemaBuilderSql implements SchemaVisitor<SchemaSql, Schema
     }
 
     private SchemaSql switchRelation(SchemaSql parent, SchemaSql child, List<SchemaSql> allChildren) {
-        FeatureStoreRelation childRelation = child.getRelation()
-                                                  .get();
+        SqlRelation childRelation = child.getRelation()
+                                                  .get(0);
 
         //TODO: rebuild schema without mainTable and with reverse relation
-        FeatureStoreRelation newChildRelation = ImmutableFeatureStoreRelation.builder()
+        SqlRelation newChildRelation = ImmutableSqlRelation.builder()
                                                                              .from(childRelation)
                                                                              .sourceContainer(childRelation.getTargetContainer())
                                                                              .sourceField(childRelation.getTargetField())
@@ -106,30 +108,30 @@ public class MutationSchemaBuilderSql implements SchemaVisitor<SchemaSql, Schema
 
         SchemaSql newChild = new ImmutableSchemaSql.Builder().from(parent)
                                                              .properties(newProperties)
-                                                             .relation(newChildRelation)
+                                                             .addRelation(newChildRelation)
                                                              .sourcePath(child.getSourcePath())
                                                              .build();
 
-        List<String> newChildPath = parent.getRelation().isPresent()
+        List<String> newChildPath = !parent.getRelation().isEmpty()
                 ? Lists.newArrayList(Iterables.concat(parent.getParentPath(), childRelation.asPath()))
                 : ImmutableList.of(child.getName());
 
-        newChild = replaceInParentPath(parent.getRelation().isPresent() ? 1 : 0, newChildPath, newChild);
+        newChild = replaceInParentPath(!parent.getRelation().isEmpty() ? 1 : 0, newChildPath, newChild);
 
         //TODO: rebuild mainTable without relation, change nested parentPaths
 
         //TODO: make schema child of mainTable, change nested parentPaths
 
-        Optional<FeatureStoreRelation> newParentRelation = parent.getRelation()
-                                                                 .isPresent()
-                ? Optional.of(ImmutableFeatureStoreRelation.builder()
-                                                           .from(parent.getRelation().get())
-                                                           .sourceContainer(parent.getRelation().get().getSourceContainer())
-                                                           .sourceField(parent.getRelation().get().getSourceField())
+        Optional<SqlRelation> newParentRelation = !parent.getRelation()
+                                                                 .isEmpty()
+                ? Optional.of(ImmutableSqlRelation.builder()
+                                                           .from(parent.getRelation().get(0))
+                                                           .sourceContainer(parent.getRelation().get(0).getSourceContainer())
+                                                           .sourceField(parent.getRelation().get(0).getSourceField())
                                                            .targetContainer(childRelation.getTargetContainer())
                                                            .targetField(childRelation.getTargetField())
                                                            .build())
-                : parent.getRelation();
+                : Optional.empty();
 
         List<String> newParentPath = newParentRelation.isPresent()
                 ? parent.getParentPath()
@@ -140,7 +142,7 @@ public class MutationSchemaBuilderSql implements SchemaVisitor<SchemaSql, Schema
         newParent = new ImmutableSchemaSql.Builder().from(newParent)
                                                     .addProperties(newChild)
                                                     .parentPath(newParentRelation.isPresent() ? newParentPath : ImmutableList.of())
-                                                    .relation(newParentRelation)
+                                                    .relation(newParentRelation.isPresent() ? ImmutableList.of(newParentRelation.get()) : ImmutableList.of())
                                                     .sourcePath(parent.getSourcePath())
                                                     .build();
 
@@ -158,15 +160,15 @@ public class MutationSchemaBuilderSql implements SchemaVisitor<SchemaSql, Schema
 
     //TODO
     private boolean isMerge(SchemaSql schemaSql) {
-        return schemaSql.getRelation()
-                        .isPresent()
+        return !schemaSql.getRelation()
+                        .isEmpty()
                 && schemaSql.getRelation()
-                            .get()
+                            .get(0)
                             .isOne2One()
                 && Objects.equals(schemaSql.getRelation()
-                                           .get()
+                                           .get(0)
                                            .getSourceSortKey(), schemaSql.getRelation()
-                                                                         .get()
+                                                                         .get(0)
                                                                          .getSourceField());
     }
 

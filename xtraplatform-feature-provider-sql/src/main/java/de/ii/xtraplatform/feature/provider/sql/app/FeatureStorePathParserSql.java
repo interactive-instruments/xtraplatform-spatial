@@ -125,7 +125,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                        .findFirst()
                                        .flatMap(syntax::getSortKeyFlag)
                                        .orElse(syntax.getOptions()
-                                                     .getDefaultSortKey());
+                                                     .getSortKey());
             Optional<String> constant = syntax.getConstantFlag(flags);
 
             return Optional.of(ImmutableSqlPath.builder()
@@ -139,7 +139,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                .queryable(queryable.get())
                                                .isSpatial(isSpatial)
                                                .isTemporal(isTemporal)
-                                               .sortKey(sortKey)
+                                               //.sortKey(sortKey)
                                                .constantValue(constant)
                                                .build());
         } else {
@@ -243,7 +243,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                             //TODO: if multiple it should be different instance containers
                             Optional<CqlFilter> filter = Optional.ofNullable(filters.get(instanceContainerName));
 
-                            String sortKey = sortKeys.getOrDefault(instanceContainerName, syntax.getOptions().getDefaultSortKey());
+                            String sortKey = sortKeys.getOrDefault(instanceContainerName, syntax.getOptions().getSortKey());
 
                             instanceContainerBuilder.name(instanceContainerName)
                                                     .sortKey(sortKey)
@@ -261,7 +261,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                     ? instanceConnection.get(instanceConnection.size() - 1)
                                                         .getTargetField()
                                     : syntax.getOptions()
-                                            .getDefaultSortKey();
+                                            .getSortKey();
 
                             String sortKey = sortKeys.getOrDefault(attributesContainerName, defaultSortKey);
 
@@ -341,12 +341,12 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
             String targetField = targetMatcher.group(SqlPathSyntax.MatcherGroups.TARGET_FIELD);
             //TODO: primaryKey flag
             boolean isOne2One = Objects.equals(targetField, syntax.getOptions()
-                                                                  .getDefaultPrimaryKey());
+                                                                  .getPrimaryKey());
 
             //TODO: shouldn't this be targetContainer?
             Optional<CqlFilter> filter = Optional.ofNullable(filters.get(target));
 
-            String sortKey = sortKeys.getOrDefault(sourceContainer, syntax.getOptions().getDefaultSortKey());
+            String sortKey = sortKeys.getOrDefault(sourceContainer, syntax.getOptions().getSortKey());
 
             return ImmutableFeatureStoreRelation.builder()
                                                 .cardinality(isOne2One ? CARDINALITY.ONE_2_ONE : CARDINALITY.ONE_2_N)
@@ -371,7 +371,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                       .matcher(target);
         if (sourceMatcher.find() && junctionMatcher.find() && targetMatcher.find()) {
             String sourceContainer = sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE);
-            String sortKey = sortKeys.getOrDefault(sourceContainer, syntax.getOptions().getDefaultSortKey());
+            String sortKey = sortKeys.getOrDefault(sourceContainer, syntax.getOptions().getSortKey());
 
             return ImmutableFeatureStoreRelation.builder()
                                                 .cardinality(CARDINALITY.M_2_N)

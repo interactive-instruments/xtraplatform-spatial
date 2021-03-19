@@ -11,18 +11,21 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
-import org.immutables.value.Value;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.immutables.value.Value;
 
 public interface SchemaBase<T extends SchemaBase<T>> {
 
     enum Role {
-        ID
+    ID,
+    GEOMETRY,
+    POINT_IN_TIME,
+    PERIOD_START,
+    PERIOD_END
     }
 
     enum Type {
@@ -61,11 +64,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @Value.Auxiliary
     default List<T> getAllNestedProperties() {
         return getProperties().stream()
-                              .flatMap(t -> Stream.concat(
-                                      Stream.of(t),
-                                      t.getAllNestedProperties()
-                                       .stream()
-                              ))
+        .flatMap(t -> Stream.concat(Stream.of(t), t.getAllNestedProperties().stream()))
                               .collect(Collectors.toList());
     }
 
@@ -73,9 +72,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @Value.Derived
     @Value.Auxiliary
     default List<String> getFullPath() {
-        return new ImmutableList.Builder<String>().addAll(getParentPath())
-                                                  .addAll(getPath())
-                                                  .build();
+    return new ImmutableList.Builder<String>().addAll(getParentPath()).addAll(getPath()).build();
     }
 
     @JsonIgnore
@@ -116,9 +113,36 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         return isObject() && getParentPath().isEmpty();
     }
 
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isGeometry() {
+        return getType() == Type.GEOMETRY;
+    }
+
     default <U> U accept(SchemaVisitor<T, U> visitor) {
-        return visitor.visit((T) this, getProperties().stream()
+    return visitor.visit(
+        (T) this,
+        getProperties().stream()
                                                       .map(property -> property.accept(visitor))
+            .collect(Collectors.toList()));
+  }
+
+  //TODO: replace SchemaVisitor with SchemaVisitorTopDown
+  default <U> U accept(SchemaVisitorTopDown<T, U> visitor) {
+    return accept(visitor, ImmutableList.of());
+  }
+
+  default <U> U accept(SchemaVisitorTopDown<T, U> visitor, List<T> parents) {
+    return visitor.visit(
+        (T) this,
+        parents,
+        getProperties().stream()
+            .map(
+                property ->
+                    property.accept(
+                        visitor,
+                        new ImmutableList.Builder<T>().addAll(parents).add((T) this).build()))
                                                       .collect(Collectors.toList()));
     }
 }

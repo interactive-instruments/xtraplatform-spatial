@@ -31,6 +31,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathParser;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
@@ -61,6 +62,7 @@ import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.streams.domain.LogContextStream;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
+import java.util.LinkedHashMap;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -95,6 +97,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     private final FeatureMutationsSql featureMutationsSql;
     private final FeatureSchemaSwapperSql schemaSwapperSql;
     private final PathParserSql pathParser;
+    private final SqlPathParser pathParser3;
     private final TypeInfoValidator typeInfoValidator;
 
     public FeatureProviderSql(@Context BundleContext context,
@@ -125,31 +128,36 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect, data.getNativeCrs()
                                                                                               .orElse(OgcCrs.CRS84));
         this.featureMutationsSql = new FeatureMutationsSql(connector.getSqlClient(), new SqlInsertGenerator2(data.getNativeCrs()
-                                                                                                                 .orElse(OgcCrs.CRS84), crsTransformerFactory, ((ConnectionInfoSql)data.getConnectionInfo()).getPathSyntax()));
+                                                                                                                 .orElse(OgcCrs.CRS84), crsTransformerFactory, ((ConnectionInfoSql)data.getConnectionInfo()).getSourcePathDefaults()));
         this.schemaSwapperSql = createSchemaSwapper((ConnectionInfoSql) data.getConnectionInfo(), cql);
         this.pathParser = createPathParser2((ConnectionInfoSql) data.getConnectionInfo(), cql);
+        this.pathParser3 = createPathParser3((ConnectionInfoSql) data.getConnectionInfo(), cql);
         this.typeInfoValidator = new SqlTypeInfoValidator(((ConnectionInfoSql) data.getConnectionInfo()).getSchemas(), connector.getSqlClient());
     }
 
     public static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql, Cql cql) {
         SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-                                                     .options(connectionInfoSql.getPathSyntax())
+                                                     .options(connectionInfoSql.getSourcePathDefaults())
                                                      .build();
         return new FeatureStorePathParserSql(syntax, cql);
     }
 
     private static FeatureSchemaSwapperSql createSchemaSwapper(ConnectionInfoSql connectionInfoSql, Cql cql) {
         SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-                                                     .options(connectionInfoSql.getPathSyntax())
+                                                     .options(connectionInfoSql.getSourcePathDefaults())
                                                      .build();
         return new FeatureSchemaSwapperSql(syntax, cql);
     }
 
     private static PathParserSql createPathParser2(ConnectionInfoSql connectionInfoSql, Cql cql) {
         SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-                                                     .options(connectionInfoSql.getPathSyntax())
+                                                     .options(connectionInfoSql.getSourcePathDefaults())
                                                      .build();
         return new PathParserSql(syntax, cql);
+    }
+
+    private static SqlPathParser createPathParser3(ConnectionInfoSql connectionInfoSql, Cql cql) {
+        return new SqlPathParser(connectionInfoSql.getSourcePathDefaults(), cql);
     }
 
 
@@ -159,6 +167,15 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         if (Runtime.getRuntime().availableProcessors() > getStreamRunner().getCapacity()) {
             LOGGER.info("Recommended max connections for optimal performance under load: {}", getMaxQueries() * Runtime.getRuntime().availableProcessors());
         }
+        Map<String, List<SchemaSql>> sourceSchema = new LinkedHashMap<>();
+        try{
+        for (FeatureSchema fs: getData().getTypes().values()) {
+            sourceSchema.put(fs.getName(), fs.accept(new MutationSchemaDeriver(pathParser, pathParser3)));
+        }
+        } catch (Throwable e) {
+            boolean br = true;
+        }
+        boolean br = true;
     }
 
     //TODO: implement auto mode for maxConnections=-1, how to get numberOfQueries in Connector?
@@ -433,7 +450,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
         FeatureSchema migrated = schema.get();//FeatureSchemaNamePathSwapper.migrate(schema.get());
 
-        List<SchemaSql> sqlSchema = migrated.accept(new SchemaBuilderSql(pathParser));
+        List<SchemaSql> sqlSchema = migrated.accept(new MutationSchemaDeriver(pathParser, null));
 
         if (sqlSchema.isEmpty()) {
             throw new IllegalStateException("Mutation mapping could not be derived from provider schema.");
@@ -474,7 +491,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         //TODO: multiple mappings per path
         //Multimap<List<String>, FeatureSchema> mapping2 = migrated.accept(new SchemaToMappingVisitor<>());
 
-        List<SchemaSql> sqlSchema = migrated.accept(new SchemaBuilderSql(pathParser));
+        List<SchemaSql> sqlSchema = migrated.accept(new MutationSchemaDeriver(pathParser, null));
 
         if (sqlSchema.isEmpty()) {
             throw new IllegalStateException("Mutation mapping could not be derived from provider schema.");

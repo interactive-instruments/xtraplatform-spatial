@@ -9,7 +9,9 @@ package de.ii.xtraplatform.feature.provider.sql.app
 
 
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSchemaSql
+import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlRelation
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation
 import de.ii.xtraplatform.features.domain.PropertyBase
@@ -121,8 +123,8 @@ class SqlInsertsFixtures {
                             .name("bemerkungpopulationsstadium")
                             .type(SchemaBase.Type.INTEGER)
                             .build())
-                    .relation(ImmutableFeatureStoreRelation.builder()
-                            .cardinality(FeatureStoreRelation.CARDINALITY.ONE_2_ONE)
+                    .addRelation(ImmutableSqlRelation.builder()
+                            .cardinality(SqlRelation.CARDINALITY.ONE_2_ONE)
                             .sourceContainer("osirisobjekt")
                             .sourceField("id")
                             .targetContainer("fundorttiere")
@@ -194,8 +196,8 @@ class SqlInsertsFixtures {
                             .name("bemerkung")
                             .type(SchemaBase.Type.STRING)
                             .build())
-                    .relation(ImmutableFeatureStoreRelation.builder()
-                            .cardinality(FeatureStoreRelation.CARDINALITY.M_2_N)
+                    .addRelation(ImmutableSqlRelation.builder()
+                            .cardinality(SqlRelation.CARDINALITY.M_2_N)
                             .sourceContainer("osirisobjekt")
                             .sourceField("id")
                             .junctionSource("osirisobjekt_id")
@@ -301,8 +303,8 @@ class SqlInsertsFixtures {
                             .name("bemerkungort")
                             .type(SchemaBase.Type.STRING)
                             .build())
-                    .relation(ImmutableFeatureStoreRelation.builder()
-                            .cardinality(FeatureStoreRelation.CARDINALITY.ONE_2_ONE)
+                    .addRelation(ImmutableSqlRelation.builder()
+                            .cardinality(SqlRelation.CARDINALITY.ONE_2_ONE)
                             .sourceContainer("fundorttiere")
                             .sourceField("id")
                             .targetContainer("artbeobachtung")
@@ -371,8 +373,8 @@ class SqlInsertsFixtures {
                             .name("ST_AsText(ST_ForcePolygonCCW(geom))")
                             .type(SchemaBase.Type.GEOMETRY)
                             .build())
-                    .relation(ImmutableFeatureStoreRelation.builder()
-                            .cardinality(FeatureStoreRelation.CARDINALITY.ONE_2_ONE)
+                    .addRelation(ImmutableSqlRelation.builder()
+                            .cardinality(SqlRelation.CARDINALITY.ONE_2_ONE)
                             .sourceContainer("artbeobachtung")
                             .sourceField("geom")
                             .sourceSortKey("id")
@@ -421,8 +423,8 @@ class SqlInsertsFixtures {
                             .name("bemerkung")
                             .type(SchemaBase.Type.STRING)
                             .build())
-                    .relation(ImmutableFeatureStoreRelation.builder()
-                            .cardinality(FeatureStoreRelation.CARDINALITY.M_2_N)
+                    .addRelation(ImmutableSqlRelation.builder()
+                            .cardinality(SqlRelation.CARDINALITY.M_2_N)
                             .sourceContainer("artbeobachtung")
                             .sourceField("id")
                             .junctionSource("artbeobachtung_id")

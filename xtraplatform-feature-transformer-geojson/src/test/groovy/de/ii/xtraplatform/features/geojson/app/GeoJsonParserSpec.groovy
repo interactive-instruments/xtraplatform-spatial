@@ -73,7 +73,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["id"], "24", {})
 
         then:
-        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "POINT"])
+        1 * featureReader.onObjectStart(["geometry"], ['type':'GEOMETRY', "geometryType": "POINT"])
 
         then:
         1 * featureReader.onArrayStart(["geometry"], {})
@@ -85,10 +85,10 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["geometry"], "49.698295103021096", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry"])
+        1 * featureReader.onArrayEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
-        1 * featureReader.onObjectEnd(["geometry"])
+        1 * featureReader.onObjectEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
         1 * featureReader.onValue(["kennung"], "611320001-1", {})
@@ -121,7 +121,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["id"], "20", {})
 
         then:
-        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "MULTI_POINT"])
+        1 * featureReader.onObjectStart(["geometry"], ['type':'GEOMETRY', "geometryType": "MULTI_POINT"])
 
         then:
         1 * featureReader.onArrayStart(["geometry"], {})
@@ -139,10 +139,10 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["geometry"], "51.1501333536934", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry"])
+        1 * featureReader.onArrayEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
-        1 * featureReader.onObjectEnd(["geometry"])
+        1 * featureReader.onObjectEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
         1 * featureReader.onValue(["kennung"], "580410003-1", {})
@@ -175,7 +175,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["id"], "21", {})
 
         then:
-        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "MULTI_POLYGON"])
+        1 * featureReader.onObjectStart(["geometry"], ['type':'GEOMETRY', "geometryType": "MULTI_POLYGON"])
 
         then:
         1 * featureReader.onArrayStart(["geometry"], {})
@@ -199,10 +199,10 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["geometry"], "49.69823291309017", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry"])
+        1 * featureReader.onArrayEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
-        1 * featureReader.onArrayEnd(["geometry"])
+        1 * featureReader.onArrayEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
         1 * featureReader.onArrayStart(["geometry"], {})
@@ -223,7 +223,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["geometry"], "49.69836248910692", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry"])
+        1 * featureReader.onArrayEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
         1 * featureReader.onArrayStart(["geometry"], {})
@@ -241,16 +241,16 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["geometry"], "49.69866280390489", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry"])
+        1 * featureReader.onArrayEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
-        1 * featureReader.onArrayEnd(["geometry"])
+        1 * featureReader.onArrayEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
-        1 * featureReader.onArrayEnd(["geometry"])
+        1 * featureReader.onArrayEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
-        1 * featureReader.onObjectEnd(["geometry"])
+        1 * featureReader.onObjectEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
         1 * featureReader.onValue(["kennung"], "631510001-1", {})
@@ -289,7 +289,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["erfasser", "name"], "John Doe", {})
 
         then:
-        1 * featureReader.onObjectEnd(["erfasser"])
+        1 * featureReader.onObjectEnd(["erfasser"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onValue(["kennung"], "611320001-1", {})
@@ -331,7 +331,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["erfasser_array"], "Jane Doe", {})
 
         then:
-        1 * featureReader.onArrayEnd(["erfasser_array"])
+        1 * featureReader.onArrayEnd(["erfasser_array"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onValue(["kennung"], "611320001-1", {})
@@ -385,10 +385,10 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"], "34", {})
 
         then:
-        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"])
+        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["raumreferenz", "ortsangabe"])
+        1 * featureReader.onObjectEnd(["raumreferenz", "ortsangabe"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onObjectStart(["raumreferenz", "ortsangabe"], {})
@@ -403,10 +403,10 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"], "36", {})
 
         then:
-        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"])
+        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["raumreferenz", "ortsangabe"])
+        1 * featureReader.onObjectEnd(["raumreferenz", "ortsangabe"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onObjectStart(["raumreferenz", "ortsangabe"], {})
@@ -421,19 +421,19 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"], "37", {})
 
         then:
-        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"])
+        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe", "flurstueckskennzeichen"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["raumreferenz", "ortsangabe"])
+        1 * featureReader.onObjectEnd(["raumreferenz", "ortsangabe"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe"])
+        1 * featureReader.onArrayEnd(["raumreferenz", "ortsangabe"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onObjectEnd(["raumreferenz"])
+        1 * featureReader.onObjectEnd(["raumreferenz"], com.google.common.collect.ImmutableMap.of())
 
         then:
-        1 * featureReader.onArrayEnd(["raumreferenz"])
+        1 * featureReader.onArrayEnd(["raumreferenz"], com.google.common.collect.ImmutableMap.of())
 
         then:
         1 * featureReader.onValue(["kennung"], "611320001-1", {})
@@ -466,7 +466,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["id"], "19", {})
 
         then:
-        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "POINT"])
+        1 * featureReader.onObjectStart(["geometry"], ['type':'GEOMETRY', "geometryType": "POINT"])
 
         then:
         1 * featureReader.onArrayStart(["geometry"], {})
@@ -478,10 +478,10 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["geometry"], "50.11336914792363", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry"])
+        1 * featureReader.onArrayEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
-        1 * featureReader.onObjectEnd(["geometry"])
+        1 * featureReader.onObjectEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
         1 * featureReader.onValue(["kennung"], "580340001-1", {})
@@ -508,7 +508,7 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["id"], "21", {})
 
         then:
-        1 * featureReader.onObjectStart(["geometry"], ["geometryType": "MULTI_POINT"])
+        1 * featureReader.onObjectStart(["geometry"], ['type':'GEOMETRY', "geometryType": "MULTI_POINT"])
 
         then:
         1 * featureReader.onArrayStart(["geometry"], {})
@@ -520,10 +520,10 @@ class GeoJsonParserSpec extends Specification {
         1 * featureReader.onValue(["geometry"], "50.1501333536934", {})
 
         then:
-        1 * featureReader.onArrayEnd(["geometry"])
+        1 * featureReader.onArrayEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
-        1 * featureReader.onObjectEnd(["geometry"])
+        1 * featureReader.onObjectEnd(["geometry"], ['type':'GEOMETRY'])
 
         then:
         1 * featureReader.onValue(["kennung"], "631510001-1", {})

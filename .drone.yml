@@ -67,7 +67,7 @@ pipeline:
 
       Branch: <https://github.com/{{ repo.owner }}/{{ repo.name }}/commits/{{ build.branch }}|{{ build.branch }}>
 
-      Author: <@{{ build.author }}>
+      Author: {{ build.author }} <@{{ build.author }}>
 
       Duration: {{ since build.created }}
 

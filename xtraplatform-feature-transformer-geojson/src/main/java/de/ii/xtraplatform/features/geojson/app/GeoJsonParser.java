@@ -165,14 +165,14 @@ public class GeoJsonParser {
                         lastNameIsArrayDepth += 1;
                         depth += 1;
 
-                        Map<String,String> context = inGeometry ? ImmutableMap.of("geometryType", geometryType) : ImmutableMap.of();
+                        Map<String,String> context = inGeometry ? ImmutableMap.of("type", "GEOMETRY", "geometryType", geometryType) : ImmutableMap.of();
 
                         featureReader.onArrayStart(pathTracker.asList(), context);
                         // start nested geo array
                     } else if (inGeometry) {
                         if (endArray > 0) {
                             for (int i = 0; i < endArray - 1; i++) {
-                                featureReader.onArrayEnd(pathTracker.asList());
+                                featureReader.onArrayEnd(pathTracker.asList(), ImmutableMap.of("type", "GEOMETRY"));
                             }
                             endArray = 0;
                         }
@@ -193,12 +193,12 @@ public class GeoJsonParser {
                     } else if (Objects.nonNull(currentName) && (inProperties || inGeometry)) {
                         if (endArray > 0) {
                             for (int i = 0; i < endArray - 1; i++) {
-                                featureReader.onArrayEnd(pathTracker.asList());
+                                featureReader.onArrayEnd(pathTracker.asList(), inGeometry ? ImmutableMap.of("type", "GEOMETRY") : ImmutableMap.of());
                             }
                             endArray = 0;
                         }
 
-                        featureReader.onArrayEnd(pathTracker.asList());
+                        featureReader.onArrayEnd(pathTracker.asList(), inGeometry ? ImmutableMap.of("type", "GEOMETRY") : ImmutableMap.of());
 
                         if (inGeometry)
                             pathTracker.track(depth - featureDepth);
@@ -219,7 +219,7 @@ public class GeoJsonParser {
                     // end nested object
                     if (Objects.nonNull(currentName) || lastNameIsArrayDepth == 0) {
                         if (depth > featureDepth && (inProperties || inGeometry) && !Objects.equals(currentName, "properties")) {
-                            featureReader.onObjectEnd(pathTracker.asList());
+                            featureReader.onObjectEnd(pathTracker.asList(), inGeometry ? ImmutableMap.of("type", "GEOMETRY") : ImmutableMap.of());
                         }
                         // end geo
                         if (inGeometry)
@@ -227,7 +227,7 @@ public class GeoJsonParser {
 
                         depth -= 1;
                     } else if (lastNameIsArrayDepth > 0) {
-                        featureReader.onObjectEnd(pathTracker.asList());
+                        featureReader.onObjectEnd(pathTracker.asList(), ImmutableMap.of());
                     }
 
                     // end all
@@ -276,7 +276,7 @@ public class GeoJsonParser {
 
                                 pathTracker.track(currentName, 1);
 
-                                featureReader.onValue(pathTracker.asList(), parser.getValueAsString(), ImmutableMap.of());
+                                featureReader.onValue(pathTracker.asList(), parser.getValueAsString(), ImmutableMap.of("role", "ID"));
                                 break;
                         }
                         // feature id or props or geo value
@@ -285,7 +285,7 @@ public class GeoJsonParser {
                         if (Objects.nonNull(currentName)) {
                             if (inGeometry && Objects.equals(currentName, "type")) {
                                 geometryType = GeoJsonGeometryType.forString(parser.getValueAsString()).toSimpleFeatureGeometry().toString();
-                                featureReader.onObjectStart(pathTracker.asList(), ImmutableMap.of("geometryType", geometryType));
+                                featureReader.onObjectStart(pathTracker.asList(), ImmutableMap.of("type", "GEOMETRY", "geometryType", geometryType));
                                 break;
                             }
                             pathTracker.track(currentName);
@@ -293,12 +293,12 @@ public class GeoJsonParser {
 
                         if (inGeometry && startArray > 0) {
                             for (int i = 0; i < startArray - 1; i++) {
-                                featureReader.onArrayStart(pathTracker.asList(), ImmutableMap.of("geometryType", geometryType));
+                                featureReader.onArrayStart(pathTracker.asList(), ImmutableMap.of("type", "GEOMETRY", "geometryType", geometryType));
                             }
                             startArray = 0;
                         }
 
-                        featureReader.onValue(pathTracker.asList(), parser.getValueAsString(), ImmutableMap.of());
+                        featureReader.onValue(pathTracker.asList(), parser.getValueAsString(), inGeometry ? ImmutableMap.of("type", "GEOMETRY") : ImmutableMap.of());
 
                         // feature id
                         if (Objects.equals(currentName, "id"))

@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
@@ -154,15 +155,15 @@ public class FeatureMutationsSql {
 
         //TODO
         private boolean isMerge(SchemaSql schemaSql) {
-            return schemaSql.getRelation()
-                            .isPresent()
+            return !schemaSql.getRelation()
+                            .isEmpty()
                     && schemaSql.getRelation()
-                                .get()
+                                .get(0)
                                 .isOne2One()
                     && Objects.equals(schemaSql.getRelation()
-                                               .get()
+                                               .get(0)
                                                .getSourceSortKey(), schemaSql.getRelation()
-                                                                             .get()
+                                                                             .get(0)
                                                                              .getSourceField());
         }
     }
@@ -195,7 +196,7 @@ public class FeatureMutationsSql {
 
         String table = schema.getName();
         String primaryKey = schema.getPrimaryKey()
-                                  .orElse(((SqlInsertGenerator2)generator).getSqlOptions().getDefaultPrimaryKey());
+                                  .orElse(((SqlInsertGenerator2)generator).getSqlOptions().getPrimaryKey());
 
         return featureSql -> new Pair<>(String.format("DELETE FROM %s WHERE %s=%s RETURNING %2$s", table, primaryKey, id), ignore -> {
         });
@@ -209,12 +210,12 @@ public class FeatureMutationsSql {
             return createAttributesInserts(schema, rowCursor.get(schema.getPath()), withId);
         }
 
-        if (!schema.getRelation().isPresent()) {
+        if (schema.getRelation().isEmpty()) {
             return ImmutableList.of();
         }
 
-        FeatureStoreRelation relation = schema.getRelation()
-                                              .get();
+        SqlRelation relation = schema.getRelation()
+                                              .get(0);
 
         String parentName = relation.getSourceContainer();
 
@@ -254,10 +255,10 @@ public class FeatureMutationsSql {
 
         queries.add(generator.createInsert(schema, parentRows, withId));
 
-        if (schema.getRelation()
-                  .isPresent()) {
-            FeatureStoreRelation relation = schema.getRelation()
-                                                  .get();
+        if (!schema.getRelation()
+                  .isEmpty()) {
+            SqlRelation relation = schema.getRelation()
+                                                  .get(0);
 
             if (relation.isM2N()) {
                 queries.add(generator.createJunctionInsert(schema, parentRows));
