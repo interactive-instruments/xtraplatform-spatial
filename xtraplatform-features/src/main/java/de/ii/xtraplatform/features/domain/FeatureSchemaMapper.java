@@ -74,14 +74,14 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
       SimpleFeatureGeometry geometryType = SimpleFeatureGeometry
           .valueOf(context.get("geometryType").toUpperCase());
 
-      if (!objectSchema.getGeometryType().isPresent()) {
+      //if (!objectSchema.getGeometryType().isPresent()) {
         objectSchema = mapping.schemaWithGeometryType(objectSchema, geometryType);
         targetSchemas = Lists.newArrayList(Iterables
             .concat(targetSchemas.subList(0, targetSchemas.size() - 1),
                 ImmutableList.of(objectSchema)));
-      } else {
+      //} else {
         //TODO: warn or reject if not matching
-      }
+      //}
     }
 
     if (objectSchema.isObject() && objectSchema.isArray() && Objects
@@ -130,14 +130,14 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
       SimpleFeatureGeometry geometryType = SimpleFeatureGeometry
           .valueOf(context.get("geometryType").toUpperCase());
 
-      if (!objectSchema.getGeometryType().isPresent()) {
+      //if (!objectSchema.getGeometryType().isPresent()) {
         objectSchema = mapping.schemaWithGeometryType(objectSchema, geometryType);
         targetSchemas = Lists.newArrayList(Iterables
             .concat(targetSchemas.subList(0, targetSchemas.size() - 1),
                 ImmutableList.of(objectSchema)));
-      } else {
+      //} else {
         //TODO: warn or reject if not matching
-      }
+      //}
     }
 
     ensureNestingIsOpen(path, targetSchemas);
