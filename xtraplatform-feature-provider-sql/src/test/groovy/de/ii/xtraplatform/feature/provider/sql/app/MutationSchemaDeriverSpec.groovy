@@ -11,9 +11,10 @@ import de.ii.xtraplatform.cql.app.CqlImpl
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlPathDefaults
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathParser
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
-
+@Ignore
 class MutationSchemaDeriverSpec extends Specification {
 
     @Shared
