@@ -10,6 +10,8 @@ package de.ii.xtraplatform.feature.provider.sql;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlPathDefaults;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathDefaults;
 import org.immutables.value.Value;
 
 import java.util.Arrays;
@@ -346,13 +348,13 @@ public interface SqlPathSyntax {
     }
 
     @Value.Default
-    default Options getOptions() {
-        return new ImmutableOptions.Builder()
+    default SqlPathDefaults getOptions() {
+        return new ImmutableSqlPathDefaults.Builder()
                                .build();
     }
 
     @Value.Derived
     default Pattern getJunctionTablePattern() {
-        return Pattern.compile(getOptions().getJunctionTablePattern());
+        return Pattern.compile(".+_2_.+");
     }
 }

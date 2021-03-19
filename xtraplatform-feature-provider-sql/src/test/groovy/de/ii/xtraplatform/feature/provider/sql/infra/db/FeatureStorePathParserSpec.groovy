@@ -7,15 +7,18 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.infra.db
 
+
 import de.ii.xtraplatform.cql.app.CqlImpl
+import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureStorePathParserSql
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation
 import spock.lang.Shared
 import spock.lang.Specification
-import spock.lang.Unroll
+
+import static de.ii.xtraplatform.features.domain.FeatureStoreRelation.CARDINALITY.*
 
 class FeatureStorePathParserSpec extends Specification {
-/*
+
     @Shared
             pathParser
 
@@ -26,14 +29,13 @@ class FeatureStorePathParserSpec extends Specification {
         pathParser = new FeatureStorePathParserSql(syntax, cql)
     }
 
-    @Unroll
     def 'relations (#description)'() {
 
         given: "a path to a container"
 
         when: "parsing relations"
 
-        def actual = pathParser.toRelations(path)
+        def actual = pathParser.toRelations(path, [:], [:])
 
         then:
         actual == expected
@@ -199,7 +201,7 @@ class FeatureStorePathParserSpec extends Specification {
 
         when: "parsing relations"
 
-        def actual = pathParser.toRelations(path)
+        def actual = pathParser.toRelations(path, [:], [:])
 
         then: "should throw"
 
@@ -215,5 +217,5 @@ class FeatureStorePathParserSpec extends Specification {
 
     }
 
-    */
+
 }

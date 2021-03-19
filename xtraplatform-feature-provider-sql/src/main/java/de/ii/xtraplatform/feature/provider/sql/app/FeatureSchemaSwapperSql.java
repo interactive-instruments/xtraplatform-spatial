@@ -17,6 +17,7 @@ import de.ii.xtraplatform.feature.provider.sql.SqlPath;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
@@ -68,7 +69,7 @@ public class FeatureSchemaSwapperSql {
         return new ImmutableSchemaSql.Builder()
                 .name(featureType.getName())
                 .type(SchemaBase.Type.OBJECT)
-                .target(featureType)
+                //.target(featureType)
                 .addAllPropertiesBuilders(builders)
                 .build();
     }
@@ -107,7 +108,7 @@ public class FeatureSchemaSwapperSql {
 
         boolean hasRelation = tablePathAsList.size() > 1;//(isRoot ? 1 : 0);
 
-        List<FeatureStoreRelation> featureStoreRelations = hasRelation ? toRelations(tablePathAsList, ImmutableMap.of()) : ImmutableList.of();
+        List<SqlRelation> featureStoreRelations = ImmutableList.of();//TODO hasRelation ? toRelations(tablePathAsList, ImmutableMap.of()) : ImmutableList.of();
 
         return createPropertyTree(objectPropertiesCache, sqlPath.get(), featureStoreRelations, originalProperty, parentFullPath);
     }
@@ -115,13 +116,13 @@ public class FeatureSchemaSwapperSql {
     private List<ImmutableSchemaSql.Builder> createPropertyTree(
             Map<String, ImmutableSchemaSql.Builder> objectPropertiesCache,
             SqlPath sqlPath,
-            List<FeatureStoreRelation> relations,
+            List<SqlRelation> relations,
             FeatureSchema originalProperty, List<String> parentFullPath) {
 
         List<ImmutableSchemaSql.Builder> swapped = new ArrayList<>();
 
         if (!relations.isEmpty()) {
-            FeatureStoreRelation relation = relations.get(0);
+            SqlRelation relation = relations.get(0);
             String name = relation.getTargetContainer();
             SchemaBase.Type type = relation.isOne2One()
                     ? SchemaBase.Type.OBJECT
@@ -136,7 +137,7 @@ public class FeatureSchemaSwapperSql {
                         .name(relation.getTargetContainer())
                         .addAllParentPath(parentFullPath)
                         .type(type)
-                        .relation(relation)
+                        .addRelation(relation)
                         .valueType(originalProperty.getValueType())
                         .geometryType(originalProperty.getGeometryType());
 
@@ -177,7 +178,7 @@ public class FeatureSchemaSwapperSql {
                                      .get(0))
                         .addAllParentPath(fullPath)
                         .type(originalProperty.getValueType().orElse(originalProperty.getType()))
-                        .target(originalProperty);
+                        ;//.target(originalProperty);
 
                 objectProperty.addAllPropertiesBuilders(property);
             }
@@ -194,7 +195,7 @@ public class FeatureSchemaSwapperSql {
                                  .get(0))
                     .addAllParentPath(parentFullPath)
                     .type(originalProperty.getValueType().orElse(originalProperty.getType()))
-                    .target(originalProperty);
+                    ;//.target(originalProperty);
 
             swapped.add(property);
         }
@@ -385,7 +386,7 @@ public class FeatureSchemaSwapperSql {
 
                             instanceContainerBuilder.name(instanceContainerName)
                                                     .sortKey(syntax.getOptions()
-                                                                   .getDefaultSortKey())
+                                                                   .getSortKey())
                                                     .attributes(attributes)
                                                     .attributesPosition(instancePos[0])
                                                     .filter(filter);
@@ -399,7 +400,7 @@ public class FeatureSchemaSwapperSql {
                                     ? instanceConnection.get(instanceConnection.size() - 1)
                                                         .getTargetField()
                                     : syntax.getOptions()
-                                            .getDefaultSortKey();
+                                            .getSortKey();
 
 
                             //TODO: get tableFlags/filters; since right now we can only filter on mapped attributes, we might put the filter on the attributesContainer
@@ -476,7 +477,7 @@ public class FeatureSchemaSwapperSql {
             String sourceField = targetMatcher.group(SqlPathSyntax.MatcherGroups.SOURCE_FIELD);
             String targetField = targetMatcher.group(SqlPathSyntax.MatcherGroups.TARGET_FIELD);
             boolean isOne2One = Objects.equals(targetField, syntax.getOptions()
-                                                                  .getDefaultPrimaryKey());
+                                                                  .getPrimaryKey());
 
             Optional<CqlFilter> filter = Optional.ofNullable(filters.get(target));
 
@@ -485,7 +486,7 @@ public class FeatureSchemaSwapperSql {
                                                 .sourceContainer(sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .sourceField(sourceField)
                                                 .sourceSortKey(syntax.getOptions()
-                                                                     .getDefaultPrimaryKey())
+                                                                     .getPrimaryKey())
                                                 .targetContainer(targetMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .targetField(targetField)
                                                 .filter(filter)
@@ -508,7 +509,7 @@ public class FeatureSchemaSwapperSql {
                                                 .sourceContainer(sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .sourceField(junctionMatcher.group(SqlPathSyntax.MatcherGroups.SOURCE_FIELD))
                                                 .sourceSortKey(syntax.getOptions()
-                                                                     .getDefaultPrimaryKey())
+                                                                     .getPrimaryKey())
                                                 .junctionSource(junctionMatcher.group(SqlPathSyntax.MatcherGroups.TARGET_FIELD))
                                                 .junction(junctionMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .junctionTarget(targetMatcher.group(SqlPathSyntax.MatcherGroups.SOURCE_FIELD))

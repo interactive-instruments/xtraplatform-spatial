@@ -9,9 +9,9 @@ package de.ii.xtraplatform.feature.provider.sql.app
 
 import com.google.common.base.Joiner
 import com.google.common.collect.ImmutableList
-import de.ii.xtraplatform.feature.provider.sql.ImmutableOptions
-import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax
+import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlPathDefaults
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathDefaults
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import spock.lang.Specification
@@ -19,7 +19,27 @@ import spock.lang.Specification
 import java.util.stream.Collectors
 import java.util.stream.Stream
 
-import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.*
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MAIN_EXPECTED
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MAIN_FEATURE
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MAIN_M_2_N_EXPECTED
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MAIN_M_2_N_FEATURE
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MAIN_M_2_N_SCHEMA
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MAIN_SCHEMA
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MAIN_WITH_ID_EXPECTED
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_EXPECTED
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_FEATURE
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_EXPECTED
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_FEATURE
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_M_2_N_EXPECTED
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_M_2_N_FEATURE
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_M_2_N_JUNCTION_EXPECTED
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_M_2_N_SCHEMA
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_ONE_2_ONE_EXPECTED
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_ONE_2_ONE_FEATURE
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_ONE_2_ONE_FOREIGN_KEY_EXPECTED
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_ONE_2_ONE_SCHEMA
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_MERGE_SCHEMA
+import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.MERGE_SCHEMA
 
 /**
  * @author zahnen
@@ -27,7 +47,7 @@ import static de.ii.xtraplatform.feature.provider.sql.app.SqlInsertsFixtures.*
 class SqlInsertGeneratorSpec2 extends Specification {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlInsertGeneratorSpec2.class);
-    private static final SqlPathSyntax.Options sqlPathDefaults = new ImmutableOptions.Builder().build();
+    private static final SqlPathDefaults sqlPathDefaults = new ImmutableSqlPathDefaults.Builder().build();
 
     def 'createInsert: #casename'() {
 

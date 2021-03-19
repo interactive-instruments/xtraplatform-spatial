@@ -1,0 +1,153 @@
+/*
+ * Copyright 2021 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+package de.ii.xtraplatform.feature.provider.sql.app
+
+import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSchemaSql
+import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlRelation
+import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation
+import de.ii.xtraplatform.features.domain.SchemaBase
+import de.ii.xtraplatform.features.domain.SchemaBase.Type
+
+class QuerySchemaFixtures {
+
+    static List<SchemaSql> VALUE_ARRAY = [
+            new ImmutableSchemaSql.Builder()
+                    .name("externalprovider")
+                    .sourcePath("externalprovider")
+                    .type(Type.OBJECT)
+                    .sortKey("id")
+                    .primaryKey("id")
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("id")
+                            .type(Type.STRING)
+                            .sourcePath("id")
+                            .parentPath(["externalprovider"])
+                            .role(SchemaBase.Role.ID)
+                            .build())
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("externalprovider_externalprovidername")
+                            .type(Type.VALUE_ARRAY)
+                            .parentPath(["externalprovider"])
+                            .sortKey("id")
+                            .primaryKey("id")
+                            .addRelation(ImmutableSqlRelation.builder()
+                                    .cardinality(SqlRelation.CARDINALITY.ONE_2_N)
+                                    .sourceContainer("externalprovider")
+                                    .sourceField("id")
+                                    .targetContainer("externalprovider_externalprovidername")
+                                    .targetField("externalprovider_fk")
+                                    .build())
+                            .addProperties(new ImmutableSchemaSql.Builder()
+                                    .name("externalprovidername")
+                                    .type(Type.STRING)
+                                    .sourcePath("externalprovidername")
+                                    .parentPath(["externalprovider", "[id=externalprovider_fk]externalprovider_externalprovidername"])
+                                    .build())
+                            .build())
+                    .build()
+    ]
+
+
+    static List<SchemaSql> OBJECT_ARRAY = [
+            new ImmutableSchemaSql.Builder()
+                    .name("explorationsite")
+                    .sourcePath("explorationsite")
+                    .type(Type.OBJECT)
+                    .sortKey("id")
+                    .primaryKey("id")
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("id")
+                            .type(Type.STRING)
+                            .sourcePath("id")
+                            .parentPath(["explorationsite"])
+                            .role(SchemaBase.Role.ID)
+                            .build())
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("task")
+                            .sourcePath("task")
+                            .type(Type.OBJECT_ARRAY)
+                            .parentPath(["explorationsite"])
+                            .sortKey("id")
+                            .primaryKey("id")
+                            .addRelation(ImmutableSqlRelation.builder()
+                                    .cardinality(SqlRelation.CARDINALITY.ONE_2_N)
+                                    .sourceContainer("explorationsite")
+                                    .sourceField("id")
+                                    .targetContainer("explorationsite_task")
+                                    .targetField("explorationsite_fk")
+                                    .build())
+                            .addRelation(ImmutableSqlRelation.builder()
+                                    .cardinality(SqlRelation.CARDINALITY.ONE_2_ONE)
+                                    .sourceContainer("explorationsite_task")
+                                    .sourceField("task_fk")
+                                    .sourceSortKey("id")
+                                    .sourcePrimaryKey("id")
+                                    .targetContainer("task")
+                                    .targetField("id")
+                                    .build())
+                            .addProperties(new ImmutableSchemaSql.Builder()
+                                    .name("projectname")
+                                    .type(Type.STRING)
+                                    .sourcePath("title")
+                                    .parentPath(["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"])
+                                    .build())
+                            .addProperties(new ImmutableSchemaSql.Builder()
+                                    .name("id")
+                                    .type(Type.STRING)
+                                    .sourcePath("href")
+                                    .parentPath(["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"])
+                                    .build())
+                            .build())
+                    .build()
+    ]
+
+    static List<SchemaSql> MERGE = [
+            new ImmutableSchemaSql.Builder()
+                    .name("eignungsflaeche2")
+                    .sourcePath("eignungsflaeche")
+                    .type(Type.OBJECT)
+                    .sortKey("id")
+                    .primaryKey("id")
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("bla")
+                            .type(Type.STRING)
+                            .sourcePath("bla")
+                            .parentPath(["eignungsflaeche"])
+                            .build())
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("osirisobjekt")
+                            .type(Type.OBJECT)
+                            .parentPath(["eignungsflaeche"])
+                            .sortKey("id")
+                            .primaryKey("id")
+                            .addRelation(ImmutableSqlRelation.builder()
+                                    .cardinality(SqlRelation.CARDINALITY.ONE_2_ONE)
+                                    .sourceContainer("eignungsflaeche")
+                                    .sourceField("id")
+                                    .targetContainer("osirisobjekt")
+                                    .targetField("id")
+                                    .build())
+                            .addProperties(new ImmutableSchemaSql.Builder()
+                                    .name("id")
+                                    .type(Type.STRING)
+                                    .sourcePath("id")
+                                    .parentPath(["eignungsflaeche", "[id=id]osirisobjekt"])
+                                    .role(SchemaBase.Role.ID)
+                                    .build())
+                            .addProperties(new ImmutableSchemaSql.Builder()
+                                    .name("kennung")
+                                    .type(Type.STRING)
+                                    .sourcePath("kennung")
+                                    .parentPath(["eignungsflaeche", "[id=id]osirisobjekt"])
+                                    .build())
+                            .build())
+                    .build()
+    ]
+
+}

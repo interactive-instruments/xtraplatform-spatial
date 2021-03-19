@@ -14,6 +14,8 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax.Options;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathDefaults;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,16 +40,16 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
 
     private final EpsgCrs nativeCrs;
     private final CrsTransformerFactory crsTransformerFactory;
-    private final Options sqlOptions;
+    private final SqlPathDefaults sqlOptions;
 
     public SqlInsertGenerator2(EpsgCrs nativeCrs, CrsTransformerFactory crsTransformerFactory,
-        Options sqlOptions) {
+        SqlPathDefaults sqlOptions) {
         this.nativeCrs = nativeCrs;
         this.crsTransformerFactory = crsTransformerFactory;
         this.sqlOptions = sqlOptions;
     }
 
-    Options getSqlOptions() {
+    SqlPathDefaults getSqlOptions() {
         return sqlOptions;
     }
 
@@ -55,10 +57,10 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
             SchemaSql schema,
             List<Integer> parentRows, boolean withId) {
 
-        Optional<FeatureStoreRelation> parentRelation = schema.getRelation();
+        Optional<SqlRelation> parentRelation = schema.getRelation().stream().findFirst();
 
         String primaryKey = schema.getPrimaryKey()
-            .orElse(sqlOptions.getDefaultPrimaryKey());
+            .orElse(sqlOptions.getPrimaryKey());
 
         Set<String> columns = withId
                 ? ImmutableSet.<String>builder().add(primaryKey)
@@ -144,15 +146,15 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
     public Function<FeatureSql, Pair<String, Consumer<String>>> createJunctionInsert(
             SchemaSql schema, List<Integer> parentRows) {
 
-        if (!schema.getRelation()
-                   .isPresent() || !schema.getRelation()
-                                          .get()
+        if (schema.getRelation()
+                   .isEmpty() || !schema.getRelation()
+                                          .get(0)
                                           .isM2N()) {
             throw new IllegalArgumentException();
         }
 
-        FeatureStoreRelation relation = schema.getRelation()
-                                              .get();
+        SqlRelation relation = schema.getRelation()
+                                              .get(0);
 
         String table = relation.getJunction()
                                .get();
@@ -181,17 +183,17 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
     public Function<FeatureSql, Pair<String, Consumer<String>>> createForeignKeyUpdate(
             SchemaSql schema, List<Integer> parentRows) {
 
-        if (!schema.getRelation()
-                   .isPresent() || !(schema.getRelation()
-                                           .get()
+        if (schema.getRelation()
+                   .isEmpty() || !(schema.getRelation()
+                                           .get(0)
                                            .isOne2One() || schema.getRelation()
-                                                                 .get()
+                                                                 .get(0)
                                                                  .isOne2N())) {
             throw new IllegalArgumentException();
         }
 
-        FeatureStoreRelation relation = schema.getRelation()
-                                              .get();
+        SqlRelation relation = schema.getRelation()
+                                              .get(0);
 
         String table = relation.getSourceContainer();
         String refKey = String.format("%s.%s", table, relation.getSourceSortKey());

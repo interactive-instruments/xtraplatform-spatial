@@ -13,11 +13,12 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.sql.SqlPath;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathParser;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
-import de.ii.xtraplatform.features.domain.ReverseSchemaBuilder;
+import de.ii.xtraplatform.features.domain.ReverseSchemaDeriver;
 import de.ii.xtraplatform.features.domain.SchemaBase;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,25 +28,29 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class SchemaBuilderSql implements ReverseSchemaBuilder<SchemaSql> {
+public class MutationSchemaDeriver implements ReverseSchemaDeriver<SchemaSql> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReverseSchemaBuilder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReverseSchemaDeriver.class);
 
     private static final Joiner JOINER = Joiner.on('/')
                                                .skipNulls();
     private static final String IGNORE = "__IGNORE__";
 
     private final PathParserSql pathParser;
+    private final SqlPathParser pathParser3;
     private int ignoreCounter;
 
-    public SchemaBuilderSql(PathParserSql pathParser) {
+    public MutationSchemaDeriver(PathParserSql pathParser,
+        SqlPathParser pathParser3) {
         this.pathParser = pathParser;
+        this.pathParser3 = pathParser3;
         this.ignoreCounter = 0;
     }
 
     @Override
     public SchemaSql create(List<String> path, FeatureSchema targetSchema) {
-        LOGGER.debug("{} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path);
+        LOGGER.debug("OLD {} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path);
+
         return new ImmutableSchemaSql.Builder()
                 .name(path.get(path.size() - 1))
                 .parentPath(path.subList(0, path.size() - 1))
@@ -53,9 +58,20 @@ public class SchemaBuilderSql implements ReverseSchemaBuilder<SchemaSql> {
                 .valueType(targetSchema.getValueType())
                 .geometryType(targetSchema.getGeometryType())
                 .role(targetSchema.getRole())
-                .target(targetSchema.getFullPath())
+                //.target(targetSchema.getFullPath())
                 .sourcePath(targetSchema.getName())
                 .build();
+    }
+
+    @Override
+    public SchemaSql create(String path, FeatureSchema targetSchema) {
+        LOGGER.debug("NEW {} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path);
+
+        if (targetSchema.isValue()) {
+            de.ii.xtraplatform.feature.provider.sql.domain.SqlPath strings = pathParser3.parseColumnPath(path);
+        }
+
+        return null;
     }
 
     @Override
@@ -75,19 +91,19 @@ public class SchemaBuilderSql implements ReverseSchemaBuilder<SchemaSql> {
             throw new IllegalArgumentException("Parse error for SQL path: " + path);
         }
 
-        List<String> tablePathAsList = ReverseSchemaBuilder.SPLITTER.splitToList(sqlPath.get()
+        List<String> tablePathAsList = ReverseSchemaDeriver.SPLITTER.splitToList(sqlPath.get()
                                                                                         .getTablePath());
 
         boolean hasRelation = tablePathAsList.size() > 1;//(isRoot ? 1 : 0);
 
-        List<FeatureStoreRelation> relations = hasRelation ? pathParser.toRelations(tablePathAsList, ImmutableMap.of()) : ImmutableList.of();
+        List<SqlRelation> relations = ImmutableList.of();//TODO hasRelation ? pathParser.toRelations(tablePathAsList, ImmutableMap.of()) : ImmutableList.of();
 
         SchemaSql currentChild = child;
 
         List<SchemaSql> parents = new ArrayList<>();
 
         for (int i = relations.size() - 1; i >= 0; i--) {
-            FeatureStoreRelation relation = relations.get(i);
+            SqlRelation relation = relations.get(i);
 
             SchemaBase.Type type = relation.isOne2One()
                     ? SchemaBase.Type.OBJECT
@@ -105,20 +121,20 @@ public class SchemaBuilderSql implements ReverseSchemaBuilder<SchemaSql> {
         return parents;
     }
 
-    private SchemaSql createParent(FeatureStoreRelation relation, SchemaBase.Type type, SchemaSql child, boolean replace) {
+    private SchemaSql createParent(SqlRelation relation, SchemaBase.Type type, SchemaSql child, boolean replace) {
         LOGGER.debug("OBJECT {}", relation);
 
-        List<String> targetPath = (List<String>) child.getTarget()
-                                                      .get();
+        //List<String> targetPath = (List<String>) child.getTarget()
+        //                                              .get();
         ImmutableSchemaSql.Builder builder = new ImmutableSchemaSql.Builder()
                 .name(relation.getTargetContainer())
                 .type(type)
-                .relation(relation)
+                .addRelation(relation)
                 .parentPath(child.getParentPath()
                                  .subList(0, child.getParentPath()
-                                                  .size() - 1))
-                .target(targetPath.subList(0, targetPath.size() - 1))
-                .sourcePath("");
+                                                  .size() - 1));
+                //.target(targetPath.subList(0, targetPath.size() - 1))
+                //.sourcePath("");
 
         if (replace) {
             builder.parentPath(child.getParentPath()
@@ -126,7 +142,7 @@ public class SchemaBuilderSql implements ReverseSchemaBuilder<SchemaSql> {
                                                      .size() - 1))
                    .properties(child.getProperties())
                    .sourcePath(child.getSourcePath())
-                   .target(child.getTarget());
+                   ;//.target(child.getTarget());
         }
 
         return builder.build();

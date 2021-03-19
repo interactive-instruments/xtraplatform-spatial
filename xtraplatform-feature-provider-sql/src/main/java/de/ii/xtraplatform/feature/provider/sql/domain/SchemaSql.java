@@ -8,28 +8,34 @@
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.SchemaBase;
-import org.immutables.value.Value;
-
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 public interface SchemaSql extends SchemaBase<SchemaSql> {
 
-    @Override
-    @Value.Derived
-    default List<String> getPath() {
-        return getRelation().map(FeatureStoreRelation::asPath)
-                            .orElse(ImmutableList.of(getName()));
-    }
+  List<SqlRelation> getRelation();
 
-    Optional<FeatureStoreRelation> getRelation();
+  Optional<String> getPrimaryKey();
 
-    //TODO
-    Optional<Object> getTarget();
+  Optional<String> getSortKey();
 
-    Optional<String> getPrimaryKey();
+  Optional<CqlFilter> getFilter();
+
+  @Override
+  @Value.Auxiliary
+  @Value.Derived
+  default List<String> getPath() {
+    return getRelation().isEmpty()
+        ? ImmutableList.of(getName())
+        : getRelation().stream()
+            .flatMap(featureStoreRelation -> featureStoreRelation.asPath().stream())
+            .collect(Collectors.toList());
+  }
 }
