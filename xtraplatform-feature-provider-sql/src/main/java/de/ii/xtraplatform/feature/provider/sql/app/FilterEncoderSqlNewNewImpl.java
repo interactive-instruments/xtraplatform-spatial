@@ -276,7 +276,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
             // ISO 8601 intervals include both the start and end instant
             // PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
-            
+
             if (temporalOperation instanceof During) {
                 Interval interval = (Interval) temporalOperation.getValue()
                                                                 .get()
