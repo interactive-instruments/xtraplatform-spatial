@@ -274,6 +274,9 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String expression = children.get(0);
             String operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
 
+            // ISO 8601 intervals include both the start and end instant
+            // PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
+            
             if (temporalOperation instanceof During) {
                 Interval interval = (Interval) temporalOperation.getValue()
                                                                 .get()
@@ -283,16 +286,19 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 } else if (interval.isUnboundedStart()) {
                     operator = TEMPORAL_OPERATORS.get(ImmutableBefore.class);
                     return String.format(expression, "", String.format(" %s TIMESTAMP '%s'", operator, interval.getEnd()
-                                                                                                     .toString()));
+                                                                                                               .plusSeconds(1)
+                                                                                                               .toString()));
                 } else if (interval.isUnboundedEnd()) {
                     operator = TEMPORAL_OPERATORS.get(ImmutableAfter.class);
                     return String.format(expression, "", String.format(" %s TIMESTAMP '%s'", operator, interval.getStart()
-                                                                                                     .toString()));
+                                                                                                               .toString()));
                 }
 
                 String[] interval2 = children.get(1)
                                              .split("/");
-                return String.format(expression, "", String.format(" %s TIMESTAMP %s' AND TIMESTAMP '%s", operator, interval2[0], interval2[1]));
+                return String.format(expression, "", String.format(" %s TIMESTAMP %s' AND TIMESTAMP '%s", operator, interval2[0], interval.getEnd()
+                                                                                                                                          .plusSeconds(1)
+                                                                                                                                          .toString()));
             }
 
             if (temporalOperation instanceof TOverlaps) {
@@ -305,13 +311,14 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     Interval interval = (Interval) temporalOperation.getValue()
                                                                     .get()
                                                                     .getValue();
-                    literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", interval.getStart(), interval.getEnd());
+                    literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", interval.getStart(), interval.getEnd()
+                                                                                                                     .plusSeconds(1));
                     literalInterval = literalInterval.replaceAll("0000-01-01T00:00:00Z", "-infinity");
                 } else {
                     Instant instant = (Instant) temporalOperation.getValue()
                                                                  .get()
                                                                  .getValue();
-                    literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", instant, instant);
+                    literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", instant, instant.plusSeconds(1));
                 }
 
                 return String.format(expression, "", String.format(" %s %s", operator, literalInterval));
