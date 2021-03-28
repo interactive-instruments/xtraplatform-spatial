@@ -15,6 +15,7 @@ import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import com.fasterxml.jackson.core.JsonParseException;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -63,10 +64,12 @@ import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.streams.domain.LogContextStream;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
 import java.util.LinkedHashMap;
+import java.util.concurrent.CompletionException;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.osgi.framework.BundleContext;
+import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
@@ -530,6 +533,16 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         RunnableGraphWithMdc<CompletionStage<MutationResult>> graph = LogContextStream.graphWithMdc(idSource, Sink.seq(), FeatureProviderSql::writeIdsToResult);
 
         return getStreamRunner().run(graph)
+            .exceptionally(throwable -> {
+                Throwable error = throwable.getCause() instanceof PSQLException
+                    || throwable.getCause() instanceof JsonParseException
+                    ? new IllegalArgumentException(throwable.getCause().getMessage())
+                    : throwable.getCause();
+
+                return ImmutableMutationResult.builder()
+                    .error(Optional.ofNullable(error))
+                    .build();
+            })
                                 .toCompletableFuture()
                                 .join();
     }
