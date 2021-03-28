@@ -294,9 +294,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                                                                                .toString()));
                 }
 
-                String[] interval2 = children.get(1)
-                                             .split("/");
-                return String.format(expression, "", String.format(" %s TIMESTAMP %s' AND TIMESTAMP '%s", operator, interval2[0], interval.getEnd()
+                return String.format(expression, "", String.format(" %s TIMESTAMP '%s' AND TIMESTAMP '%s'", operator, interval.getStart()
+                                                                                                                              .toString(), interval.getEnd()
                                                                                                                                           .plusSeconds(1)
                                                                                                                                           .toString()));
             }
@@ -313,7 +312,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                                     .getValue();
                     literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", interval.getStart(), interval.getEnd()
                                                                                                                      .plusSeconds(1));
-                    literalInterval = literalInterval.replaceAll("0000-01-01T00:00:00Z", "-infinity");
+                    literalInterval = literalInterval.replaceAll("'0000-01-01T00:00:00Z'", "'-infinity'");
+                    literalInterval = literalInterval.replaceAll("'\\+10000-01-01T00:00:00Z'", "'infinity'");
                 } else {
                     Instant instant = (Instant) temporalOperation.getValue()
                                                                  .get()
