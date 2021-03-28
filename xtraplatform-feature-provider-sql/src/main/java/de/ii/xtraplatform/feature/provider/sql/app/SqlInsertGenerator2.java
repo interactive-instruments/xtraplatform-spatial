@@ -16,6 +16,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathDefaults;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
 import de.ii.xtraplatform.features.domain.SchemaBase;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.util.LinkedHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +65,7 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
         Map<String, String> valueOverrides = new LinkedHashMap<>();
 
         if (idProperty.isPresent() && id.isPresent()) {
-            valueOverrides.put(idProperty.get().getName(), id.get());
+            valueOverrides.put(idProperty.get().getName(), idProperty.get().getType() == Type.STRING ? String.format("'%s'", id.get()) : id.get());
         }
 
         //TODO: id instead of primaryKey if isPresent
@@ -81,7 +82,7 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
             .collect(ImmutableSet.toImmutableSet());
 
         //TODO: add id if present
-        Set<String> columns = idProperty.isPresent()
+        Set<String> columns = idProperty.isPresent() && id.isPresent()
                 ? ImmutableSet.<String>builder().add(idProperty.get().getName())
                                                 .addAll(columns0)
                                                 .build()
