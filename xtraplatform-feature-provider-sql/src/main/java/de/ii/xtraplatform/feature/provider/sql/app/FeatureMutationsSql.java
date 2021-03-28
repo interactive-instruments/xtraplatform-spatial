@@ -18,7 +18,6 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
-import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaVisitor;
 import org.slf4j.Logger;
@@ -52,7 +51,7 @@ public class FeatureMutationsSql {
 
         RowCursor rowCursor = new RowCursor(schema.getPath());
 
-        return sqlClient.getMutationFlow(feature -> createInstanceInserts(schema, feature.getRowCounts(), rowCursor, false, Optional.empty()), executionContext, Optional.empty());
+        return sqlClient.getMutationFlow(feature -> createInstanceInserts(schema, feature.getRowCounts(), rowCursor, Optional.empty()), executionContext, Optional.empty());
     }
 
 
@@ -60,7 +59,7 @@ public class FeatureMutationsSql {
 
         RowCursor rowCursor = new RowCursor(schema.getPath());
 
-        return sqlClient.getMutationFlow(feature -> createInstanceInserts(schema, feature.getRowCounts(), rowCursor, true, Optional.of(id)), executionContext, Optional.of(id));
+        return sqlClient.getMutationFlow(feature -> createInstanceInserts(schema, feature.getRowCounts(), rowCursor, Optional.of(id)), executionContext, Optional.of(id));
     }
 
     public Source<SqlRow, NotUsed> getDeletionSource(SchemaSql schema, String id) {
@@ -105,12 +104,12 @@ public class FeatureMutationsSql {
     class StatementsVisitor implements SchemaVisitor<SchemaSql, List<Function<FeatureSql, Pair<String, Consumer<String>>>>> {
         private final Map<List<String>, List<Integer>> rowNesting;
         private final RowCursor rowCursor;
-        private final boolean withId;
+        private final Optional<String> id;
 
-        StatementsVisitor(Map<List<String>, List<Integer>> rowNesting, RowCursor rowCursor, boolean withId) {
+        StatementsVisitor(Map<List<String>, List<Integer>> rowNesting, RowCursor rowCursor, Optional<String> id) {
             this.rowNesting = rowNesting;
             this.rowCursor = rowCursor;
-            this.withId = withId;
+            this.id = id;
         }
 
         @Override
@@ -123,7 +122,7 @@ public class FeatureMutationsSql {
             List<Function<FeatureSql, Pair<String, Consumer<String>>>> before = new ArrayList<>();
             List<Function<FeatureSql, Pair<String, Consumer<String>>>> after = new ArrayList<>();
 
-            after.addAll(createObjectInserts(schema, rowNesting, rowCursor, withId));
+            after.addAll(createObjectInserts(schema, rowNesting, rowCursor, id));
 
             for (int i = 0; i < schema.getProperties()
                                       .size(); i++) {
@@ -171,21 +170,22 @@ public class FeatureMutationsSql {
 
     List<Function<FeatureSql, Pair<String, Consumer<String>>>> createInstanceInserts(
             SchemaSql schema, Map<List<String>, List<Integer>> rowNesting,
-            RowCursor rowCursor, boolean withId, Optional<String> id) {
+            RowCursor rowCursor, Optional<String> id) {
+        boolean withId = id.isPresent();
 
-        Stream<Function<FeatureSql, Pair<String, Consumer<String>>>> instance = id.isPresent()
+        Stream<Function<FeatureSql, Pair<String, Consumer<String>>>> instance = withId
                 ? Stream.concat(
                 Stream.of(createInstanceDelete(schema, id.get())),
-                createObjectInserts(schema, rowNesting, rowCursor, withId).stream()
+                createObjectInserts(schema, rowNesting, rowCursor, id).stream()
         )
-                : createObjectInserts(schema, rowNesting, rowCursor, withId).stream();
+                : createObjectInserts(schema, rowNesting, rowCursor, id).stream();
 
         return Stream.concat(
                 instance,
                 schema.getProperties()
                       .stream()
                       .filter(SchemaSql::isObject)
-                      .flatMap(childSchema -> createInstanceInserts(childSchema, rowNesting, rowCursor, false, Optional.empty()).stream())
+                      .flatMap(childSchema -> createInstanceInserts(childSchema, rowNesting, rowCursor, Optional.empty()).stream())
         )
                      .collect(Collectors.toList());
     }
@@ -195,19 +195,18 @@ public class FeatureMutationsSql {
             SchemaSql schema, String id) {
 
         String table = schema.getName();
-        String primaryKey = schema.getPrimaryKey()
-                                  .orElse(((SqlInsertGenerator2)generator).getSqlOptions().getPrimaryKey());
+        String idColumn = schema.getIdProperty().map(SchemaBase::getName).orElseThrow(() -> new IllegalStateException("No property with role ID found for '" + schema.getSourcePath().orElse(schema.getName()) + "'."));
 
-        return featureSql -> new Pair<>(String.format("DELETE FROM %s WHERE %s=%s RETURNING %2$s", table, primaryKey, id), ignore -> {
+        return featureSql -> new Pair<>(String.format("DELETE FROM %s WHERE %s=%s RETURNING %2$s", table, idColumn, id), ignore -> {
         });
     }
 
     List<Function<FeatureSql, Pair<String, Consumer<String>>>> createObjectInserts(
             SchemaSql schema, Map<List<String>, List<Integer>> rowNesting,
-            RowCursor rowCursor, boolean withId) {
+            RowCursor rowCursor, Optional<String> id) {
 
         if (schema.isFeature()) {
-            return createAttributesInserts(schema, rowCursor.get(schema.getPath()), withId);
+            return createAttributesInserts(schema, rowCursor.get(schema.getPath()), id);
         }
 
         if (schema.getRelation().isEmpty()) {
@@ -222,7 +221,7 @@ public class FeatureMutationsSql {
         if (!relation.isM2N() && !relation.isOne2N()) {
             List<Integer> newParentRows = rowCursor.track(schema.getFullPath(), schema.getParentPath(), 0);
 
-            return createAttributesInserts(schema, newParentRows, withId);
+            return createAttributesInserts(schema, newParentRows, id);
         }
 
         //TODO: what are the keys?
@@ -241,19 +240,19 @@ public class FeatureMutationsSql {
                         .mapToObj(currentRow -> {
                             List<Integer> newParentRows = rowCursor.track(schema.getFullPath(), schema.getParentPath(), currentRow);
 
-                            return createAttributesInserts(schema, newParentRows, withId);
+                            return createAttributesInserts(schema, newParentRows, id);
                         })
                         .flatMap(List::stream)
                         .collect(Collectors.toList());
     }
 
     List<Function<FeatureSql, Pair<String, Consumer<String>>>> createAttributesInserts(
-            SchemaSql schema, List<Integer> parentRows, boolean withId) {
+            SchemaSql schema, List<Integer> parentRows, Optional<String> id) {
 
         ImmutableList.Builder<Function<FeatureSql, Pair<String, Consumer<String>>>> queries = ImmutableList.builder();
 
 
-        queries.add(generator.createInsert(schema, parentRows, withId));
+        queries.add(generator.createInsert(schema, parentRows, id));
 
         if (!schema.getRelation()
                   .isEmpty()) {

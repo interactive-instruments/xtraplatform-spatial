@@ -57,7 +57,7 @@ class SqlInsertGeneratorSpec2 extends Specification {
 
         when:
 
-        String query = inserts.createInsert(schema, indices, withId)
+        String query = inserts.createInsert(schema, indices, id)
                 .apply(feature)
                 .first()
 
@@ -69,16 +69,16 @@ class SqlInsertGeneratorSpec2 extends Specification {
 
         where:
 
-        casename                | schema                       | feature                       | withId | indices                      || expected
-        "main"                  | MAIN_SCHEMA                  | MAIN_FEATURE                  | false  | ImmutableList.<Integer> of() || MAIN_EXPECTED
-        "main with id"          | MAIN_SCHEMA                  | MAIN_FEATURE                  | true   | ImmutableList.<Integer> of() || MAIN_WITH_ID_EXPECTED
-        "merge"                 | MERGE_SCHEMA                 | MERGE_FEATURE                 | false  | ImmutableList.of(0)          || MERGE_EXPECTED
-        "m:n 1"                 | MAIN_M_2_N_SCHEMA            | MAIN_M_2_N_FEATURE            | false  | ImmutableList.of(0)          || MAIN_M_2_N_EXPECTED[0]
-        "m:n 2"                 | MAIN_M_2_N_SCHEMA            | MAIN_M_2_N_FEATURE            | false  | ImmutableList.of(1)          || MAIN_M_2_N_EXPECTED[1]
-        "merge + merge"         | MERGE_MERGE_SCHEMA           | MERGE_MERGE_FEATURE           | false  | ImmutableList.of(0, 0)       || MERGE_MERGE_EXPECTED
-        "merge + merge + 1:1"   | MERGE_MERGE_ONE_2_ONE_SCHEMA | MERGE_MERGE_ONE_2_ONE_FEATURE | false  | ImmutableList.of(0, 0)       || MERGE_MERGE_ONE_2_ONE_EXPECTED
-        "merge + merge + m:n 1" | MERGE_MERGE_M_2_N_SCHEMA     | MERGE_MERGE_M_2_N_FEATURE     | false  | ImmutableList.of(0, 0, 0)    || MERGE_MERGE_M_2_N_EXPECTED[0]
-        "merge + merge + m:n 2" | MERGE_MERGE_M_2_N_SCHEMA     | MERGE_MERGE_M_2_N_FEATURE     | false  | ImmutableList.of(0, 0, 1)    || MERGE_MERGE_M_2_N_EXPECTED[1]
+        casename                | schema                       | feature                       | id                 | indices                      || expected
+        "main"                  | MAIN_SCHEMA                  | MAIN_FEATURE                  | Optional.empty()   | ImmutableList.<Integer> of() || MAIN_EXPECTED
+        "main with id"          | MAIN_SCHEMA                  | MAIN_FEATURE                  | Optional.of("100") | ImmutableList.<Integer> of() || MAIN_WITH_ID_EXPECTED
+        "merge"                 | MERGE_SCHEMA                 | MERGE_FEATURE                 | Optional.empty()   | ImmutableList.of(0)          || MERGE_EXPECTED
+        "m:n 1"                 | MAIN_M_2_N_SCHEMA            | MAIN_M_2_N_FEATURE            | Optional.empty()   | ImmutableList.of(0)          || MAIN_M_2_N_EXPECTED[0]
+        "m:n 2"                 | MAIN_M_2_N_SCHEMA            | MAIN_M_2_N_FEATURE            | Optional.empty()   | ImmutableList.of(1)          || MAIN_M_2_N_EXPECTED[1]
+        "merge + merge"         | MERGE_MERGE_SCHEMA           | MERGE_MERGE_FEATURE           | Optional.empty()   | ImmutableList.of(0, 0)       || MERGE_MERGE_EXPECTED
+        "merge + merge + 1:1"   | MERGE_MERGE_ONE_2_ONE_SCHEMA | MERGE_MERGE_ONE_2_ONE_FEATURE | Optional.empty()   | ImmutableList.of(0, 0)       || MERGE_MERGE_ONE_2_ONE_EXPECTED
+        "merge + merge + m:n 1" | MERGE_MERGE_M_2_N_SCHEMA     | MERGE_MERGE_M_2_N_FEATURE     | Optional.empty()   | ImmutableList.of(0, 0, 0)    || MERGE_MERGE_M_2_N_EXPECTED[0]
+        "merge + merge + m:n 2" | MERGE_MERGE_M_2_N_SCHEMA     | MERGE_MERGE_M_2_N_FEATURE     | Optional.empty()   | ImmutableList.of(0, 0, 1)    || MERGE_MERGE_M_2_N_EXPECTED[1]
     }
 
     def 'createForeignKeyUpdate'() {

@@ -71,6 +71,15 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
+    default Optional<T> getIdProperty() {
+        return getProperties().stream()
+            .filter(t -> t.getRole().filter(role -> role == Role.ID).isPresent())
+            .findFirst();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
     default List<String> getFullPath() {
     return new ImmutableList.Builder<String>().addAll(getParentPath()).addAll(getPath()).build();
     }
