@@ -12,11 +12,11 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax.Options;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathDefaults;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
-import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
+import de.ii.xtraplatform.features.domain.SchemaBase;
+import java.util.LinkedHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,28 +55,44 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
 
     public Function<FeatureSql, Pair<String, Consumer<String>>> createInsert(
             SchemaSql schema,
-            List<Integer> parentRows, boolean withId) {
+            List<Integer> parentRows, Optional<String> id) {
 
         Optional<SqlRelation> parentRelation = schema.getRelation().stream().findFirst();
 
+        Optional<SchemaSql> idProperty = schema.getIdProperty();
+
+        Map<String, String> valueOverrides = new LinkedHashMap<>();
+
+        if (idProperty.isPresent() && id.isPresent()) {
+            valueOverrides.put(idProperty.get().getName(), id.get());
+        }
+
+        //TODO: id instead of primaryKey if isPresent
         String primaryKey = schema.getPrimaryKey()
             .orElse(sqlOptions.getPrimaryKey());
 
-        Set<String> columns = withId
-                ? ImmutableSet.<String>builder().add(primaryKey)
-                                                .addAll(schema.getValueNames())
+
+        Set<String> columns0 = schema.getProperties()
+            .stream()
+            //TODO: filter out mutations.ignore=true
+            //TODO: filter out primaryKey if not mutations.ignore=false
+            .filter(property -> !Objects.equals(property.getName(), primaryKey))
+            .map(SchemaBase::getName)
+            .collect(ImmutableSet.toImmutableSet());
+
+        //TODO: add id if present
+        Set<String> columns = idProperty.isPresent()
+                ? ImmutableSet.<String>builder().add(idProperty.get().getName())
+                                                .addAll(columns0)
                                                 .build()
-                : schema.getValueNames()
-                        .stream()
-                        .filter(name -> !Objects.equals(name, primaryKey))
-                        .collect(ImmutableSet.toImmutableSet());
+                : columns0;
 
         //TODO: from Syntax
         List<String> columns2 = columns.stream()
                                        .map(col -> col.startsWith("ST_AsText(ST_ForcePolygonCCW(") ? col.substring("ST_AsText(ST_ForcePolygonCCW(".length(), col.length() - 2) : col)
                                        .collect(Collectors.toList());
 
-        List<String> idKeys = new ArrayList<>();
+        List<String> sortKeys = new ArrayList<>();
 
         if (parentRelation.isPresent()) {
             //TODO: is this merged?
@@ -85,7 +101,7 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
                                                                            .getSourceSortKey(), parentRelation.get()
                                                                                                               .getSourceField())) {
                 //TODO fullPath, sortKey
-                idKeys.add(0, String.format("%s.%s", parentRelation.get()
+                sortKeys.add(0, String.format("%s.%s", parentRelation.get()
                                                                    .getSourceContainer(), parentRelation.get()
                                                                                                         .getSourceSortKey()));
                 if (!columns2.contains(primaryKey)) {
@@ -94,7 +110,7 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
 
             } else if (parentRelation.get()
                                      .isOne2N()) {
-                idKeys.add(0, String.format("%s.%s", parentRelation.get()
+                sortKeys.add(0, String.format("%s.%s", parentRelation.get()
                                                                    .getSourceContainer(), parentRelation.get()
                                                                                                         .getSourceSortKey()));
                 columns2.add(0, parentRelation.get()
@@ -111,11 +127,16 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
         }
         String finalColumnNames = columnNames;
 
-        //TODO: primaryKey instead of id
-        String returningId = parentRelation.isPresent() && parentRelation.get()
-                                                                         .isOne2N() ? " RETURNING null" : " RETURNING " + primaryKey;
-        Optional<String> returningName = parentRelation.isPresent() && parentRelation.get()
-                                                                                     .isOne2N() ? Optional.empty() : Optional.of(tableName + "." + primaryKey);
+        String returningValue = " RETURNING " + (parentRelation.isPresent() && parentRelation.get().isOne2N()
+            ? " null"
+            : idProperty.isPresent()
+                ? idProperty.get().getName()
+                : primaryKey);
+        Optional<String> returningName = parentRelation.isPresent() && parentRelation.get().isOne2N()
+            ? Optional.empty()
+            : idProperty.isPresent()
+                ? Optional.of(tableName + "." + idProperty.get().getName())
+                : Optional.of(tableName + "." + primaryKey);
 
 
         return feature -> {
@@ -125,7 +146,8 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
                 return new Pair<>(null, null);
             }
 
-            String values = getColumnValues(idKeys, columns, currentRow.get().getValues(nativeCrs, crsTransformerFactory), currentRow.get().getIds());
+            //TODO: pass id to getValues if given
+            String values = getColumnValues(sortKeys, columns, currentRow.get().getValues(nativeCrs, crsTransformerFactory), currentRow.get().getIds(), valueOverrides);
 
             if (!values.isEmpty()) {
                 values = "VALUES (" + values + ")";
@@ -133,10 +155,10 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
                 values = "DEFAULT VALUES";
             }
 
-            String query = String.format("INSERT INTO %s %s %s%s;", tableName, finalColumnNames, values, returningId);
+            String query = String.format("INSERT INTO %s %s %s%s;", tableName, finalColumnNames, values, returningValue);
 
-            Consumer<String> idConsumer = returningName.map(name -> (Consumer<String>) id -> feature.putChildrenIds(name, id))
-                                                       .orElse(id -> {
+            Consumer<String> idConsumer = returningName.map(name -> (Consumer<String>) returned -> feature.putChildrenIds(name, returned))
+                                                       .orElse(returned -> {
                                                        });
 
             return new Pair<>(query, idConsumer);
@@ -217,7 +239,7 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
     //TODO: from syntax
     //TODO: separate column and id column names
     String getColumnValues(List<String> idKeys, Set<String> columnNames, Map<String, String> values,
-                           Map<String, String> ids) {
+        Map<String, String> ids, Map<String, String> valueOverrides) {
 
         return Stream.concat(
                 idKeys.stream()
@@ -227,6 +249,9 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
                                //TODO: value transformer?
                                if (name.startsWith("ST_AsText(ST_ForcePolygonCCW(")) {
                                    return String.format("ST_ForcePolygonCW(ST_GeomFromText(%s,25832))", values.get(name)); //TODO srid from config
+                               }
+                               if (valueOverrides.containsKey(name)) {
+                                   return valueOverrides.get(name);
                                }
                                return values.get(name);
                            }))

@@ -339,6 +339,11 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
           .map(ImmutableList::of).orElse(ImmutableList.of());
     }
 
+    if (targetSchemas.isEmpty() && context.containsKey("role")) {
+      targetSchemas = mapping.getTargetSchema(SchemaBase.Role.valueOf(context.get("role")))
+          .map(ImmutableList::of).orElse(ImmutableList.of());
+    }
+
     return targetSchemas;
   }
 }

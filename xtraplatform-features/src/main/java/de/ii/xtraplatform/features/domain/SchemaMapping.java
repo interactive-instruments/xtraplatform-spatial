@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.domain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import de.ii.xtraplatform.features.domain.SchemaBase.Role;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.AbstractMap;
@@ -43,6 +44,11 @@ public interface SchemaMapping<T extends SchemaBase<T>> {
   default Optional<T> getTargetSchema(Type type) {
     return getTargetSchemasByPath().values().stream().flatMap(Collection::stream)
         .filter(ts -> ts.getType() == type).findFirst();
+  }
+
+  default Optional<T> getTargetSchema(Role role) {
+    return getTargetSchemasByPath().values().stream().flatMap(Collection::stream)
+        .filter(ts -> ts.getRole().isPresent() && ts.getRole().get() == role).findFirst();
   }
 
   T schemaWithGeometryType(T schema, SimpleFeatureGeometry geometryType);
