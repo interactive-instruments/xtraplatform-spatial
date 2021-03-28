@@ -10,35 +10,8 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Doubles;
-import de.ii.xtraplatform.cql.domain.CqlToText;
-import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.During;
-import de.ii.xtraplatform.cql.domain.Geometry;
+import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
-import de.ii.xtraplatform.cql.domain.ImmutableAfter;
-import de.ii.xtraplatform.cql.domain.ImmutableBefore;
-import de.ii.xtraplatform.cql.domain.ImmutableContains;
-import de.ii.xtraplatform.cql.domain.ImmutableCrosses;
-import de.ii.xtraplatform.cql.domain.ImmutableDisjoint;
-import de.ii.xtraplatform.cql.domain.ImmutableDuring;
-import de.ii.xtraplatform.cql.domain.ImmutableEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
-import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
-import de.ii.xtraplatform.cql.domain.ImmutablePolygon;
-import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableTOverlaps;
-import de.ii.xtraplatform.cql.domain.ImmutableTouches;
-import de.ii.xtraplatform.cql.domain.ImmutableWithin;
-import de.ii.xtraplatform.cql.domain.In;
-import de.ii.xtraplatform.cql.domain.IsNull;
-import de.ii.xtraplatform.cql.domain.Like;
-import de.ii.xtraplatform.cql.domain.Property;
-import de.ii.xtraplatform.cql.domain.ScalarOperation;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.TOverlaps;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -274,6 +247,53 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String expression = children.get(0);
             String operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
 
+            // ISO 8601 intervals include both the start and end instant
+            // PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
+
+            if (temporalOperation instanceof Before) {
+                TemporalLiteral operand2 = (TemporalLiteral) temporalOperation.getOperands()
+                                                                              .get(1);
+
+                String literalInstant;
+
+                if (operand2.getType() == Interval.class) {
+                    Interval interval = (Interval) temporalOperation.getValue()
+                                                                    .get()
+                                                                    .getValue();
+                    literalInstant = String.format("TIMESTAMP '%s'", interval.getStart());
+                    literalInstant = literalInstant.replaceAll("'0000-01-01T00:00:00Z'", "'-infinity'");
+                } else {
+                    Instant instant = (Instant) temporalOperation.getValue()
+                                                                 .get()
+                                                                 .getValue();
+                    literalInstant = String.format("TIMESTAMP '%s'", instant);
+                }
+
+                return String.format(expression, "", String.format(" %s %s", operator, literalInstant));
+            }
+
+            if (temporalOperation instanceof After) {
+                TemporalLiteral operand2 = (TemporalLiteral) temporalOperation.getOperands()
+                                                                              .get(1);
+
+                String literalInstant;
+
+                if (operand2.getType() == Interval.class) {
+                    Interval interval = (Interval) temporalOperation.getValue()
+                                                                    .get()
+                                                                    .getValue();
+                    literalInstant = String.format("TIMESTAMP '%s'", interval.getEnd());
+                    literalInstant = literalInstant.replaceAll("'9999-12-31T23:59:59Z'", "'infinity'");
+                } else {
+                    Instant instant = (Instant) temporalOperation.getValue()
+                                                                 .get()
+                                                                 .getValue();
+                    literalInstant = String.format("TIMESTAMP '%s'", instant);
+                }
+
+                return String.format(expression, "", String.format(" %s %s", operator, literalInstant));
+            }
+
             if (temporalOperation instanceof During) {
                 Interval interval = (Interval) temporalOperation.getValue()
                                                                 .get()
@@ -283,16 +303,18 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 } else if (interval.isUnboundedStart()) {
                     operator = TEMPORAL_OPERATORS.get(ImmutableBefore.class);
                     return String.format(expression, "", String.format(" %s TIMESTAMP '%s'", operator, interval.getEnd()
-                                                                                                     .toString()));
+                                                                                                               .plusSeconds(1)
+                                                                                                               .toString()));
                 } else if (interval.isUnboundedEnd()) {
                     operator = TEMPORAL_OPERATORS.get(ImmutableAfter.class);
                     return String.format(expression, "", String.format(" %s TIMESTAMP '%s'", operator, interval.getStart()
-                                                                                                     .toString()));
+                                                                                                               .toString()));
                 }
 
-                String[] interval2 = children.get(1)
-                                             .split("/");
-                return String.format(expression, "", String.format(" %s TIMESTAMP %s' AND TIMESTAMP '%s", operator, interval2[0], interval2[1]));
+                return String.format(expression, "", String.format(" %s TIMESTAMP '%s' AND TIMESTAMP '%s'", operator, interval.getStart()
+                                                                                                                              .toString(), interval.getEnd()
+                                                                                                                                          .plusSeconds(1)
+                                                                                                                                          .toString()));
             }
 
             if (temporalOperation instanceof TOverlaps) {
@@ -305,13 +327,15 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     Interval interval = (Interval) temporalOperation.getValue()
                                                                     .get()
                                                                     .getValue();
-                    literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", interval.getStart(), interval.getEnd());
-                    literalInterval = literalInterval.replaceAll("0000-01-01T00:00:00Z", "-infinity");
+                    literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", interval.getStart(), interval.getEnd()
+                                                                                                                     .plusSeconds(1));
+                    literalInterval = literalInterval.replaceAll("'0000-01-01T00:00:00Z'", "'-infinity'");
+                    literalInterval = literalInterval.replaceAll("'\\+10000-01-01T00:00:00Z'", "'infinity'");
                 } else {
                     Instant instant = (Instant) temporalOperation.getValue()
                                                                  .get()
                                                                  .getValue();
-                    literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", instant, instant);
+                    literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", instant, instant.plusSeconds(1));
                 }
 
                 return String.format(expression, "", String.format(" %s %s", operator, literalInterval));

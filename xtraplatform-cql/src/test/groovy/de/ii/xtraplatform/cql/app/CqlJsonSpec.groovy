@@ -809,7 +809,7 @@ class CqlJsonSpec extends Specification {
         {
             "before": {
                 "property": "built",
-                "value": "2015-01-01T00:00:00Z"
+                "value": [ "2015-01-01T00:00:00Z", "2015-01-01T23:59:59Z" ]
             }
         }
         """
@@ -844,7 +844,7 @@ class CqlJsonSpec extends Specification {
             {
                 "during": {
                     "property": "updated",
-                    "value": ["2017-06-10T00:00:00Z","2017-06-11T00:00:00Z"]
+                    "value": ["2017-06-10T00:00:00Z","2017-06-11T23:59:59Z"]
                 }
             }
         """

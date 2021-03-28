@@ -114,6 +114,8 @@ public interface TemporalLiteral extends Temporal, Literal, CqlNode {
                 }
             }*/
 
+            // If the datetime parameter uses dates, not timestamps, the result is always an interval that
+            // starts on the first second of the start date and ends at the last second of the end date.
             try {
                 if (INTERVAL_PATTERN.test(literal)) {
                     // a fully specified datetime interval
@@ -123,9 +125,13 @@ public interface TemporalLiteral extends Temporal, Literal, CqlNode {
                     return Instant.parse(literal);
                 } else if (DATE_PATTERN.test(literal)) {
                     // a date only instant
-                    return LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal))
-                                    .atStartOfDay()
-                                    .toInstant(ZoneOffset.UTC);
+                    Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal))
+                                             .atStartOfDay()
+                                             .toInstant(ZoneOffset.UTC);
+                    Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal))
+                                           .atTime(23,59,59)
+                                           .toInstant(ZoneOffset.UTC);
+                    return Interval.of(start, end);
                 } else if (INTERVAL_OPEN_PATTERN.test(literal)) {
                     // open start and end
                     return Interval.of(MIN_DATE, MAX_DATE);
@@ -143,7 +149,7 @@ public interface TemporalLiteral extends Temporal, Literal, CqlNode {
                                              .atStartOfDay()
                                              .toInstant(ZoneOffset.UTC);
                     Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(literal.indexOf("/") + 1)))
-                                           .atStartOfDay()
+                                           .atTime(23,59,59)
                                            .toInstant(ZoneOffset.UTC);
                     return Interval.of(start, end);
                 } else if (DATE_INTERVAL_OPEN_END_PATTERN.test(literal)) {
@@ -155,7 +161,7 @@ public interface TemporalLiteral extends Temporal, Literal, CqlNode {
                 } else if (DATE_INTERVAL_OPEN_START_PATTERN.test(literal)) {
                     // start open, end date instant
                     Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(literal.indexOf("/") + 1)))
-                                           .atStartOfDay()
+                                           .atTime(23,59,59)
                                            .toInstant(ZoneOffset.UTC);
                     return Interval.of(MIN_DATE, end);
                 }
