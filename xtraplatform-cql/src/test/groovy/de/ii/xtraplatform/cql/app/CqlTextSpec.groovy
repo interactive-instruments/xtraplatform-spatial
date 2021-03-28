@@ -501,7 +501,7 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_24, Cql.Format.TEXT)
 
         then:
-        actual2 == "built BEFORE 2015-01-01T00:00:00Z"
+        actual2 == "built BEFORE 2015-01-01T00:00:00Z/2015-01-01T23:59:59Z"
     }
 
     def 'Updated between June 10, 2017 and June 11, 2017'() {
@@ -520,7 +520,7 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_25, Cql.Format.TEXT)
 
         then:
-        actual2 == "updated DURING 2017-06-10T00:00:00Z/2017-06-11T00:00:00Z"
+        actual2 == "updated DURING 2017-06-10T00:00:00Z/2017-06-11T23:59:59Z"
     }
 
     def 'Updated between 7:30am June 10, 2017 and open end date'() {
