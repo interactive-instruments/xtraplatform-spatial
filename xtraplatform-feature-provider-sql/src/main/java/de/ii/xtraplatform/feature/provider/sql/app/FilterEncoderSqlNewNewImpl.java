@@ -298,14 +298,16 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 Interval interval = (Interval) temporalOperation.getValue()
                                                                 .get()
                                                                 .getValue();
-                if (interval.isUnboundedStart() && interval.isUnboundedEnd()) {
+                boolean unboundedStart = interval.isUnboundedStart() || interval.getStart().equals(TemporalLiteral.MIN_DATE);
+                boolean unboundedEnd = interval.isUnboundedEnd() || interval.getEnd().equals(TemporalLiteral.MAX_DATE);
+                if (unboundedStart && unboundedEnd) {
                     return "TRUE";
-                } else if (interval.isUnboundedStart()) {
+                } else if (unboundedStart) {
                     operator = TEMPORAL_OPERATORS.get(ImmutableBefore.class);
                     return String.format(expression, "", String.format(" %s TIMESTAMP '%s'", operator, interval.getEnd()
                                                                                                                .plusSeconds(1)
                                                                                                                .toString()));
-                } else if (interval.isUnboundedEnd()) {
+                } else if (unboundedEnd) {
                     operator = TEMPORAL_OPERATORS.get(ImmutableAfter.class);
                     return String.format(expression, "", String.format(" %s TIMESTAMP '%s'", operator, interval.getStart()
                                                                                                                .toString()));
