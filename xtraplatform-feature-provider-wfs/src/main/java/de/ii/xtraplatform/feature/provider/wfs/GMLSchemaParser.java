@@ -194,7 +194,7 @@ public class GMLSchemaParser {
                 throw new SchemaParseException("The GML application schema provided by the WFS imports schema '{}', but that schema cannot be accessed. A valid GML application schema is required to determine the layers of the proxy service and its characteristics.. Please contact the WFS provider to correct the schema error.", ex.getCause().getMessage());
             }
             
-            String msg = ex.getMessage();
+            String msg = ex.toString();
             String msgex = "";
             if( msg != null && !msg.isEmpty()){
                 msg = "Parser details: " + msg;
@@ -202,8 +202,8 @@ public class GMLSchemaParser {
                 msgex = msg.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
             }
  
-            LOGGER.error("The GML application schema provided by the WFS is invalid. A valid GML application schema is required to determine the layers of the proxy service and its characteristics.. Please contact the WFS provider to correct the schema error. {}", msg);
-            SchemaParseException spe = new SchemaParseException("The GML application schema provided by the WFS is invalid. A valid GML application schema is required to determine the layers of the proxy service and its characteristics.. Please contact the WFS provider to correct the schema error. {}", "");
+            LOGGER.error("The GML application schema provided by the WFS is invalid. A valid GML application schema is required to determine the layers of the proxy service and its characteristics. Please contact the WFS provider to correct the schema error. {}", msg);
+            SchemaParseException spe = new SchemaParseException("The GML application schema provided by the WFS is invalid. A valid GML application schema is required to determine the layers of the proxy service and its characteristics. Please contact the WFS provider to correct the schema error.");
 
             spe.addDetail(msgex);
             
