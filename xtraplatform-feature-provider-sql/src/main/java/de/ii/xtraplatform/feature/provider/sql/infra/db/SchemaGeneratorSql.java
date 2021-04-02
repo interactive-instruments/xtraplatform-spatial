@@ -53,13 +53,15 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
 
         Catalog catalog;
         try {
+            LOGGER.debug("Crawling SQL schema");
             catalog = schemaCrawler.getCatalog(schemas);
+            LOGGER.debug("Finished crawling SQL schema");
 
             Map<String, List<String>> geometryInfos = getGeometryInfos();
 
             return getFeatureTypes(catalog, geometryInfos);
-        } catch (SchemaCrawlerException e) {
-            throw new IllegalStateException("could not parse schema");
+        } catch (Throwable e) {
+            throw new IllegalStateException("could not crawl schema");
         }
     }
 
