@@ -22,6 +22,7 @@ import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Optional;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
@@ -60,11 +61,11 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
                 LOGGER.info("Feature provider with id '{}' is in auto mode, generating configuration ...", data.getId());
             }
 
-            FeatureProviderDataV2 hydrated = cleanupAdditionalInfo(completeConnectionInfoIfNecessary(connector,
+            FeatureProviderDataV2 hydrated = cleanupAutoPersist(cleanupAdditionalInfo(completeConnectionInfoIfNecessary(connector,
                     generateNativeCrsIfNecessary(
                             generateTypesIfNecessary(connector, data)
                     )
-            ));
+            )));
 
             connectorFactory.disposeConnector(connector);
 
@@ -167,6 +168,18 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
                     .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
                 .build();
 
+        }
+
+        return data;
+    }
+
+    private FeatureProviderDataV2 cleanupAutoPersist(FeatureProviderDataV2 data) {
+        if (data.isAuto() && data.isAutoPersist()) {
+            return new ImmutableFeatureProviderDataV2.Builder()
+                .from(data)
+                .auto(Optional.empty())
+                .autoPersist(Optional.empty())
+                .build();
         }
 
         return data;
