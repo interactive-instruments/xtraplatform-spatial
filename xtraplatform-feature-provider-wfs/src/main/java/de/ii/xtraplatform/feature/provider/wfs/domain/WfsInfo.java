@@ -26,4 +26,7 @@ public interface WfsInfo {
 
     Map<String,String> getNamespaces();
 
+    @Value.Default
+    default boolean getIncludePrefixes() { return false; }
+
 }
