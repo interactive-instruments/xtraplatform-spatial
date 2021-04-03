@@ -33,6 +33,11 @@ public class CodelistEntity extends AbstractPersistentEntity<CodelistData> imple
     }
 
     @Override
+    protected void onReloaded() {
+        LOGGER.info("Codelist with id '{}' reloaded successfully.", getId());
+    }
+
+    @Override
     public String getValue(String key) {
 
         return Optional.ofNullable(getData().getEntries()

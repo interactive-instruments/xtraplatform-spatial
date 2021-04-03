@@ -1,9 +1,8 @@
 /**
  * Copyright 2021 interactive instruments GmbH
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
+ * the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
@@ -30,6 +29,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.felix.ipojo.annotations.Component;
@@ -46,14 +46,14 @@ import org.slf4j.LoggerFactory;
 @Component
 @Provides(
     properties = {
-      @StaticServiceProperty(
-          name = Entity.TYPE_KEY,
-          type = "java.lang.String",
-          value = FeatureProvider2.ENTITY_TYPE),
-      @StaticServiceProperty(
-          name = Entity.SUB_TYPE_KEY,
-          type = "java.lang.String",
-          value = FeatureProviderSql.ENTITY_SUB_TYPE)
+        @StaticServiceProperty(
+            name = Entity.TYPE_KEY,
+            type = "java.lang.String",
+            value = FeatureProvider2.ENTITY_TYPE),
+        @StaticServiceProperty(
+            name = Entity.SUB_TYPE_KEY,
+            type = "java.lang.String",
+            value = FeatureProviderSql.ENTITY_SUB_TYPE)
     })
 @Instantiate
 public class FeatureProviderDataHydratorSql implements EntityHydrator<FeatureProviderDataV2> {
@@ -83,8 +83,8 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
     try {
       SqlConnector connector = (SqlConnector) connectorFactory.createConnector(data);
 
-      return cleanupAdditionalInfo(
-          generateNativeCrsIfNecessary(generateTypesIfNecessary(data, connector)));
+      return cleanupAutoPersist(cleanupAdditionalInfo(
+          generateNativeCrsIfNecessary(generateTypesIfNecessary(data, connector))));
 
     } catch (Throwable e) {
       LOGGER.error(
@@ -113,14 +113,6 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
 
       List<FeatureSchema> types = schemaGeneratorSql.generate();
 
-      ImmutableMap<String, FeatureSchema> typeMap =
-          types.stream()
-              .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
-              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-
-      ImmutableFeatureProviderDataV2.Builder builder =
-          new ImmutableFeatureProviderDataV2.Builder().from(data).types(typeMap);
-
       Map<String, Integer> idCounter = new LinkedHashMap<>();
       types.forEach(
           featureSchema ->
@@ -138,28 +130,49 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
                         idCounter.put(path, idCounter.get(path) + 1);
                       }));
 
-      idCounter.entrySet().stream()
-          .max(Comparator.comparingInt(Map.Entry::getValue))
-          .map(Map.Entry::getKey)
-          .ifPresent(
-              mostOftenUsedId -> {
-                if (!Objects.equals(mostOftenUsedId, "id")) {
-                  // LOGGER.debug("CHANGING defaultSortKey to {}", mostOftenUsedId);
-                  ImmutableConnectionInfoSql connectionInfoSql =
-                      new ImmutableConnectionInfoSql.Builder()
-                          .from(data.getConnectionInfo())
-                          .sourcePathDefaults(
-                              new ImmutableSqlPathDefaults.Builder()
-                                  .from(
-                                      ((ConnectionInfoSql) data.getConnectionInfo())
-                                          .getSourcePathDefaults())
-                                  .primaryKey(mostOftenUsedId)
-                                  .sortKey(mostOftenUsedId)
-                                  .build())
-                          .build();
-                  builder.connectionInfo(connectionInfoSql);
+      String mostOftenUsedId = idCounter.entrySet().stream()
+          .max(Comparator.comparingInt(Entry::getValue))
+          .map(Entry::getKey)
+          .orElse("id");
+
+      ImmutableMap<String, FeatureSchema> typeMap =
+          types.stream()
+              .map(type -> {
+                Optional<String> differingSortKey = type.getIdProperty()
+                    .filter(idProperty -> !Objects.equals(idProperty.getName(), mostOftenUsedId))
+                    .map(FeatureSchema::getName);
+
+                if (differingSortKey.isPresent() && type.getSourcePath().isPresent()) {
+                  return new ImmutableFeatureSchema.Builder().from(type).sourcePath(
+                      String.format("%s{sortKey=%s}", type.getSourcePath().get(), differingSortKey.get()))
+                      .build();
                 }
-              });
+
+                return type;
+              })
+              .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
+              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+      ImmutableFeatureProviderDataV2.Builder builder =
+          new ImmutableFeatureProviderDataV2.Builder().from(data).types(typeMap);
+
+      if (!Objects.equals(mostOftenUsedId, "id")) {
+        // LOGGER.debug("CHANGING defaultSortKey to {}", mostOftenUsedId);
+        ImmutableConnectionInfoSql connectionInfoSql =
+            new ImmutableConnectionInfoSql.Builder()
+                .from(data.getConnectionInfo())
+                .sourcePathDefaults(
+                    new ImmutableSqlPathDefaults.Builder()
+                        .from(
+                            ((ConnectionInfoSql) data.getConnectionInfo())
+                                .getSourcePathDefaults())
+                        .primaryKey(mostOftenUsedId)
+                        .sortKey(mostOftenUsedId)
+                        .build())
+                .build();
+        builder.connectionInfo(connectionInfoSql);
+      }
+
       return builder.build();
     }
 
@@ -212,6 +225,18 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
                                                   Map.Entry::getKey, Map.Entry::getValue)))
                                   .build()))
                   .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
+          .build();
+    }
+
+    return data;
+  }
+
+  private FeatureProviderDataV2 cleanupAutoPersist(FeatureProviderDataV2 data) {
+    if (data.isAuto() && data.isAutoPersist()) {
+      return new ImmutableFeatureProviderDataV2.Builder()
+          .from(data)
+          .auto(Optional.empty())
+          .autoPersist(Optional.empty())
           .build();
     }
 

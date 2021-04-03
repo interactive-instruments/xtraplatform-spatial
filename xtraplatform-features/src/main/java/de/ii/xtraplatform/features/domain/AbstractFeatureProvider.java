@@ -115,6 +115,16 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
     }
 
     @Override
+    protected void onReloaded() {
+        String startupInfo = getStartupInfo().map(
+            map -> String.format(" (%s)", map.toString().replace("{", "").replace("}", "")))
+            .orElse("");
+
+        LOGGER.info("Feature provider with id '{}' reloaded successfully.{}", getId(),
+            startupInfo);
+    }
+
+    @Override
     protected void onShutdown() {
         LOGGER.info("Feature provider with id '{}' stopped.", getId());
     }

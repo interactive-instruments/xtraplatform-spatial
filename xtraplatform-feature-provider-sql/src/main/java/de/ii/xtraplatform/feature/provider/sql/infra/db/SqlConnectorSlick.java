@@ -27,6 +27,7 @@ import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
+import java.util.stream.Collectors;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Invalidate;
@@ -216,7 +217,17 @@ public class SqlConnectorSlick implements SqlConnector {
                 .put("poolName", poolName);
 
         if (!connectionInfo.getSchemas().isEmpty()) {
-            databaseConfig.put("connectionInitSql", String.format("SET search_path TO %s,public;", Joiner.on(',').join(connectionInfo.getSchemas())));
+            String schemas = connectionInfo.getSchemas()
+                .stream()
+                .map(schema -> {
+                    if (!Objects.equals(schema, schema.toLowerCase())) {
+                        return String.format("\"%s\"", schema);
+                    }
+                    return schema;
+                })
+                .collect(Collectors.joining(","));
+
+            databaseConfig.put("connectionInitSql", String.format("SET search_path TO %s,public;", schemas));
         }
 
         return ConfigFactory.parseMap(ImmutableMap.<String, Object>builder()
