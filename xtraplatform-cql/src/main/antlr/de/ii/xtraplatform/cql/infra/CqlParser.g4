@@ -42,7 +42,12 @@ comparisonPredicate : binaryComparisonPredicate
 
 binaryComparisonPredicate : scalarExpression ComparisonOperator scalarExpression;
 
-propertyIsLikePredicate :  scalarExpression (NOT)? LIKE regularExpression;
+
+wildcard : WILDCARD characterLiteral;
+singlechar : SINGLECHAR characterLiteral;
+escapechar : ESCAPECHAR characterLiteral;
+nocase : NOCASE booleanLiteral;
+propertyIsLikePredicate :  scalarExpression (NOT)? LIKE regularExpression (wildcard)? (singlechar)? (escapechar)? (nocase)?;
 
 propertyIsBetweenPredicate : scalarExpression BETWEEN
                              scalarExpression AND scalarExpression;
@@ -134,7 +139,7 @@ multiPolygon : MULTIPOLYGON LEFTPAREN polygonDef (COMMA polygonDef)* RIGHTPAREN;
 
 geometryCollection : GEOMETRYCOLLECTION LEFTPAREN geomLiteral (COMMA geomLiteral)* RIGHTPAREN;
 
-envelope: ENVELOPE LEFTPAREN westBoundLon COMMA eastBoundLon COMMA northBoundLat COMMA southBoundLat (COMMA minElev COMMA maxElev)? RIGHTPAREN;
+envelope: ENVELOPE LEFTPAREN westBoundLon COMMA southBoundLat COMMA (minElev COMMA)? eastBoundLon  COMMA northBoundLat (COMMA maxElev)? RIGHTPAREN;
 
 coordinate : xCoord yCoord (zCoord)?;
 
@@ -171,6 +176,23 @@ temporalExpression : propertyName
                    /*| function*/;
 
 temporalLiteral: TemporalLiteral;
+
+/*
+#=============================================================================#
+# An array predicate evaluates if two array expressions statisfy the
+# specified comparison operator.  The comparion operators include equality,
+# not equal, less than, greater than, less than or equal, greater than or equal,
+# superset, subset and overlap operators.
+#=============================================================================#
+*/
+
+arrayPredicate: arrayExpression ArrayOperator arrayExpression;
+
+arrayExpression: propertyName | function | arrayLiteral;
+
+arrayLiteral: LEFTSQUAREBRACKET arrayElement ( COMMA arrayElement )* RIGHTSQUAREBRACKET;
+
+arrayElement: characterLiteral | numericLiteral | booleanLiteral | temporalLiteral | propertyName | function | arrayLiteral;
 
 
 /*

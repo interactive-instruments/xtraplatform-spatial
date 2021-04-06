@@ -78,6 +78,8 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
             builder.tOverlaps((TOverlaps) node);
         } else if (node instanceof OverlappedBy) {
             builder.overlappedBy((OverlappedBy) node);
+        } else if (node instanceof AnyInteracts) {
+            builder.anyInteracts((AnyInteracts) node);
         } else if (node instanceof Equals) {
             builder.within((Within) node);
         } else if (node instanceof Disjoint) {
@@ -93,8 +95,16 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
         } else if (node instanceof Intersects) {
             builder.intersects((Intersects) node);
         } else if (node instanceof Contains) {
-            builder.contains((Contains) node);
-        }
+            builder.contains((Contains) node); }
+//        } else if (node instanceof AContains)  {
+//            builder.aContains((AContains) node);
+//        } else if (node instanceof AEquals) {
+//            builder.aEquals((AEquals) node);
+//        } else if (node instanceof AOverlaps) {
+//            builder.aOverlaps((AOverlaps) node);
+//        } else if (node instanceof ContainedBy) {
+//            builder.containedBy((ContainedBy) node);
+//        }
 
         return builder.build();
     }
@@ -146,6 +156,10 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
                 getMetBy(),
                 getTOverlaps(),
                 getOverlappedBy()
+//                getAContains(),
+//                getAEquals(),
+//                getAOverlaps(),
+//                getContainedBy()
         )
                             .stream()
                             .filter(Optional::isPresent)

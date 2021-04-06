@@ -125,6 +125,13 @@ public class CqlToText implements CqlVisitor<String> {
             .put(ImmutableContains.class, "CONTAINS")
             .build();
 
+    private final static Map<Class<?>, String> ARRAY_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
+            .put(ImmutableAContains.class, "ACONTAINS")
+            .put(ImmutableAEquals.class, "AEQUALS")
+            .put(ImmutableAOverlaps.class, "AOVERLAPS")
+            .put(ImmutableContainedBy.class, "CONTAINED BY")
+            .build();
+
     private final Optional<java.util.function.BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>>> coordinatesTransformer;
 
     public CqlToText() {
@@ -231,6 +238,12 @@ public class CqlToText implements CqlVisitor<String> {
         String operator = SPATIAL_OPERATORS.get(spatialOperation.getClass());
 
         return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
+    }
+
+    @Override
+    public String visit(ArrayOperation arrayOperation, List<String> children) {
+        String operator = ARRAY_OPERATORS.get(arrayOperation.getClass());
+        return String.format("%s %s %s", children.get(0), operator, children.get(1));
     }
 
     @Override
@@ -375,6 +388,12 @@ public class CqlToText implements CqlVisitor<String> {
                         .stream()
                         .map(argument -> argument.accept(this))
                         .collect(Collectors.joining(",", "(", ")"));
+    }
+
+    @Override
+    public String visit(Like like, List<String> children) {
+        String wildcard = like.getWildCard().equals("%") ? "" : String.format("WILDCARD '%s'", like.getWildCard());
+        return String.format("%s LIKE %s %s", children.get(0), children.get(1), wildcard).trim();
     }
 
 }

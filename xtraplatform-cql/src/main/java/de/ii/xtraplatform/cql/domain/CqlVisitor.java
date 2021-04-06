@@ -18,12 +18,16 @@ public interface CqlVisitor<T> {
             return visit((CqlPredicate) node, children);
         } else if (node instanceof LogicalOperation) {
             return visit((LogicalOperation) node, children);
+        } else if (node instanceof Like) {
+            return visit((Like) node, children);
         } else if (node instanceof ScalarOperation) {
             return visit((ScalarOperation) node, children);
         } else if (node instanceof TemporalOperation) {
             return visit((TemporalOperation) node, children);
         } else if (node instanceof SpatialOperation) {
             return visit((SpatialOperation) node, children);
+        } else if (node instanceof ArrayOperation) {
+            return visit((ArrayOperation) node, children);
         } else if (node instanceof Property) {
             return visit((Property) node, children);
         } else if (node instanceof ScalarLiteral) {
@@ -67,6 +71,8 @@ public interface CqlVisitor<T> {
 
     T visit(SpatialOperation spatialOperation, List<T> children);
 
+    T visit(ArrayOperation arrayOperation, List<T> children);
+
     T visit(Property property, List<T> children);
 
     T visit(ScalarLiteral scalarLiteral, List<T> children);
@@ -92,4 +98,6 @@ public interface CqlVisitor<T> {
     T visit(Geometry.Envelope envelope, List<T> children);
 
     T visit(Function function, List<T> children);
+
+    T visit(Like like, List<T> children);
 }

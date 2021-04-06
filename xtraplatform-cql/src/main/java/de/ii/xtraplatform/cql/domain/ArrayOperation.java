@@ -7,19 +7,8 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-public enum TemporalOperator implements CqlNode {
-    AFTER,
-    BEFORE,
-    BEGINS,
-    BEGUNBY,
-    TCONTAINS,
-    DURING,
-    ENDEDBY,
-    ENDS,
-    TEQUALS,
-    MEETS,
-    METBY,
-    TOVERLAPS,
-    OVERLAPPEDBY,
-    ANYINTERACTS
+public interface ArrayOperation extends BinaryOperation<ArrayLiteral>, CqlNode {
+
+    abstract class Builder<T extends ArrayOperation> extends BinaryOperation.Builder<ArrayLiteral, T> {}
+
 }

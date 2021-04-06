@@ -179,6 +179,11 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 return Not.of(like);
             }
 
+            if (Objects.nonNull(ctx.wildcard())) {
+                ScalarLiteral wildcard = (ScalarLiteral) ctx.wildcard().accept(this);
+                return new ImmutableLike.Builder().from(like).wildCards((String) wildcard.getValue()).build();
+            }
+
             return like;
         }
         return null;
@@ -273,6 +278,9 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             case OVERLAPPEDBY:
                 builder = new ImmutableOverlappedBy.Builder();
                 break;
+            case ANYINTERACTS:
+                builder = new ImmutableAnyInteracts.Builder();
+                break;
             default:
                 throw new IllegalStateException("unknown temporal operator: " + temporalOperator);
         }
@@ -329,6 +337,39 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                       .operand2(spatial2)
                       .build();
     }
+
+//    @Override
+//    public CqlNode visitArrayPredicate(CqlParser.ArrayPredicateContext ctx) {
+//
+//        Vector vector1 = (Vector) ctx.arrayExpression().get(0).accept(this);
+//        Vector vector2 = (Vector) ctx.arrayExpression().get(1).accept(this);
+//
+//        ArrayOperator arrayOperator = ArrayOperator.valueOf(ctx.ArrayOperator()
+//                .getText());
+//
+//        ArrayOperation.Builder<? extends ArrayOperation> builder;
+//
+//        switch (arrayOperator) {
+//            case ACONTAINS:
+//                builder = new ImmutableAContains.Builder();
+//                break;
+//            case AEQUALS:
+//                builder = new ImmutableAEquals.Builder();
+//                break;
+//            case AOVERLAPS:
+//                builder = new ImmutableAOverlaps.Builder();
+//                break;
+//            case CONTAINEDBY:
+//                builder = new ImmutableContainedBy.Builder();
+//                break;
+//            default:
+//                throw new IllegalStateException("unknown array operator: " + arrayOperator);
+//        }
+//
+//        return builder.operand1(vector1)
+//                .operand2(vector2)
+//                .build();
+//    }
 
     /*@Override
     public CqlNode visitExistencePredicate(CqlParser.ExistencePredicateContext ctx) {
@@ -503,7 +544,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                .getText());
             coordinates = ImmutableList.of(southBoundLat, westBoundLon, minElev, northBoundLat, eastBoundLon, maxElev);
         } else {
-            coordinates = ImmutableList.of(westBoundLon, eastBoundLon, northBoundLat, southBoundLat);
+            coordinates = ImmutableList.of(westBoundLon, southBoundLat, eastBoundLon, northBoundLat);
         }
 
         return new ImmutableEnvelope.Builder()
@@ -553,6 +594,11 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 .collect(Collectors.toList());
         return Function.of(functionName, args);
 
+    }
+
+    @Override
+    public CqlNode visitWildcard(CqlParser.WildcardContext ctx) {
+        return ctx.characterLiteral().accept(this);
     }
 
 }

@@ -20,6 +20,7 @@ import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.CqlToText;
 import de.ii.xtraplatform.cql.infra.CqlTextParser;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import io.dropwizard.jackson.Jackson;
 import org.apache.felix.ipojo.annotations.Component;
@@ -55,10 +56,15 @@ public class CqlImpl implements Cql {
 
     @Override
     public CqlFilter read(String cql, Format format) throws CqlParseException {
+        return read(cql, format, OgcCrs.CRS84);
+    }
+
+    @Override
+    public CqlFilter read(String cql, Format format, EpsgCrs crs) throws CqlParseException {
         switch (format) {
 
             case TEXT:
-                return cqlTextParser.parse(cql, OgcCrs.CRS84);
+                return cqlTextParser.parse(cql, crs);
             case JSON:
                 try {
                     return cqlJsonMapper.readValue(cql, CqlFilter.class);

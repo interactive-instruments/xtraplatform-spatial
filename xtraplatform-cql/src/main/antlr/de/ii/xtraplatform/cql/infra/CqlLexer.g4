@@ -2,6 +2,40 @@ lexer grammar CqlLexer;
 
 /*
 #=============================================================================#
+# Enable case-insensitive grammars
+#=============================================================================#
+*/
+
+fragment A : [aA];
+fragment B : [bB];
+fragment C : [cC];
+fragment D : [dD];
+fragment E : [eE];
+fragment F : [fF];
+fragment G : [gG];
+fragment H : [hH];
+fragment I : [iI];
+fragment J : [jJ];
+fragment K : [kK];
+fragment L : [lL];
+fragment M : [mM];
+fragment N : [nN];
+fragment O : [oO];
+fragment P : [pP];
+fragment Q : [qQ];
+fragment R : [rR];
+fragment S : [sS];
+fragment T : [tT];
+fragment U : [uU];
+fragment V : [vV];
+fragment W : [wW];
+fragment X : [xX];
+fragment Y : [yY];
+fragment Z : [zZ];
+
+
+/*
+#=============================================================================#
 # Definition of COMPARISON operators
 #=============================================================================#
 */
@@ -36,11 +70,11 @@ BooleanLiteral : 'true' | 'false';
 #=============================================================================#
 */
 
-AND : 'AND';
+AND : A N D;
 
-OR : 'OR';
+OR : O R;
 
-NOT : 'NOT';
+NOT : N O T;
 
 /*
 #=============================================================================#
@@ -48,13 +82,27 @@ NOT : 'NOT';
 #=============================================================================#
 */
 
-LIKE : 'LIKE';
+LIKE : L I K E;
 
-BETWEEN : 'BETWEEN';
+BETWEEN : B E T W E E N;
 
-IS : 'IS';
+IS : I S;
 
-NULL: 'NULL';
+NULL: N U L L;
+
+/*
+#=============================================================================#
+# Definition of LIKE operator modifiers
+#=============================================================================#
+*/
+
+WILDCARD : W I L D C A R D;
+
+SINGLECHAR : S I N G L E C H A R;
+
+ESCAPECHAR : E S C A P E C H A R;
+
+NOCASE : N O C A S E;
 
 /*
 #=============================================================================#
@@ -68,8 +116,8 @@ NULL: 'NULL';
 #       can be added as extensions.
 #
 */
-SpatialOperator : 'EQUALS' | 'DISJOINT' | 'TOUCHES' | 'WITHIN' | 'OVERLAPS'
-                | 'CROSSES' | 'INTERSECTS' | 'CONTAINS';
+SpatialOperator : E Q U A L S | D I S J O I N T | T O U C H E S | W I T H I N | O V E R L A P S
+                | C R O S S E S | I N T E R S E C T S | C O N T A I N S;
 
 /*
 #=============================================================================#
@@ -80,7 +128,9 @@ SpatialOperator : 'EQUALS' | 'DISJOINT' | 'TOUCHES' | 'WITHIN' | 'OVERLAPS'
 /*
 # only support the ones from original cql for now
 */
-TemporalOperator : 'AFTER' | 'BEFORE' | 'DURING' | 'TEQUALS';
+TemporalOperator : A F T E R | B E F O R E | B E G I N S | B E G U N B Y | T C O N T A I N S | D U R I N G
+                 | E N D E D B Y | E N D S | T E Q U A L S | M E E T S | M E T B Y | T O V E R L A P S
+                 | O V E R L A P P E D B Y | A N Y I N T E R A C T S;
 
 /*
 TemporalOperator : 'AFTER' | 'BEFORE' | 'BEGINS' | 'BEGUNBY' | 'TCONTAINS'
@@ -91,17 +141,24 @@ TemporalOperator : 'AFTER' | 'BEFORE' | 'BEGINS' | 'BEGUNBY' | 'TCONTAINS'
 
 /*
 #=============================================================================#
+# Definition of ARRAY operators
+#=============================================================================#
+*/
+ArrayOperator : A E Q U A L S | A C O N T A I N S | C O N T A I N E D B Y | A O V E R L A P S;
+
+/*
+#=============================================================================#
 # Definition of EXISTENCE/IN operators
 #=============================================================================#
 */
 
-EXISTS : 'EXISTS';
+EXISTS : E X I S T S;
 
-EXIST : 'EXIST';
+EXIST : E X I S T;
 
-DOES : 'DOES';
+DOES : D O E S;
 
-IN: 'IN';
+IN: I N;
 
 /*
 #=============================================================================#
@@ -109,21 +166,21 @@ IN: 'IN';
 #=============================================================================#
 */
 
-POINT: 'POINT';
+POINT: P O I N T;
 
-LINESTRING: 'LINESTRING';
+LINESTRING: L I N E S T R I N G;
 
-POLYGON: 'POLYGON';
+POLYGON: P O L Y G O N;
 
-MULTIPOINT: 'MULTIPOINT';
+MULTIPOINT: M U L T I P O I N T;
 
-MULTILINESTRING: 'MULTILINESTRING';
+MULTILINESTRING: M U L T I L I N E S T R I N G;
 
-MULTIPOLYGON: 'MULTIPOLYGON';
+MULTIPOLYGON: M U L T I P O L Y G O N;
 
-GEOMETRYCOLLECTION: 'GEOMETRYCOLLECTION';
+GEOMETRYCOLLECTION: G E O M E T R Y C O L L E C T I O N;
 
-ENVELOPE: 'ENVELOPE';
+ENVELOPE: E N V E L O P E;
 
 
 
@@ -145,20 +202,20 @@ NumericLiteral : UnsignedNumericLiteral | SignedNumericLiteral;
 
 
 
-Identifier : IdentifierStart (IdentifierPart)*;
+Identifier : IdentifierStart (COLON | PERIOD | IdentifierPart)* | DOUBLEQUOTE Identifier DOUBLEQUOTE;
 
 //CHANGE: moved UNDERSCORE | OCTOTHORP | DOLLAR from identifierStart to identifierPart
 IdentifierStart : ALPHA;
 
-IdentifierPart : ALPHA | DIGIT | UNDERSCORE | OCTOTHORP | DOLLAR;
+IdentifierPart : ALPHA | DIGIT | UNDERSCORE | DOLLAR;
 
 
 
 
 
-BitStringLiteral : 'B' QUOTE (BIT)* QUOTE;
+BitStringLiteral : B QUOTE (BIT)* QUOTE;
 
-HexStringLiteral : 'X' QUOTE (HEXIT)* QUOTE;
+HexStringLiteral : X QUOTE (HEXIT)* QUOTE;
 
 //Character : Str -> mode(STR) ;//ALPHA | DIGIT | SpecialCharacter | QuoteQuote | ' ';
 
@@ -227,7 +284,7 @@ VERTICALBAR : '|';
 
 BIT : '0' | '1';
 
-HEXIT : DIGIT | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'a' | 'b' | 'c' | 'd' | 'e' | 'f';
+HEXIT : DIGIT | A | B | C | D | E | F;
 
 /*
 #=============================================================================#

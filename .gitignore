@@ -9,3 +9,4 @@ build/
 node_modules/
 xtraplatform-manager-wfs-proxy/src/main/resources/manager/
 **/out/
+xtraplatform-cql/src/main/gen/

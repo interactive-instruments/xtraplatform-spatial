@@ -37,4 +37,6 @@ public interface TemporalExpression {
 
     Optional<OverlappedBy> getOverlappedBy();
 
+    Optional<AnyInteracts> getAnyInteracts();
+
 }

@@ -310,7 +310,7 @@ class CqlTextSpec extends Specification {
     def 'Location in the box between -118,33.8 and -117.9,34 in lat/long (geometry 1)'() {
 
         given:
-        String cqlText = "WITHIN(location, ENVELOPE(33.8,-118.0,34.0,-117.9))"
+        String cqlText = "WITHIN(location, ENVELOPE(-118.0,33.8,-117.9,34.0))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -351,7 +351,7 @@ class CqlTextSpec extends Specification {
     def 'More than 5 floors and is within geometry 1 (below)'() {
 
         given:
-        String cqlText = "floors > 5 AND WITHIN(geometry, ENVELOPE(33.8,-118.0,34.0,-117.9))"
+        String cqlText = "floors > 5 AND WITHIN(geometry, ENVELOPE(-118.0,33.8,-117.9,34.0))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -676,5 +676,65 @@ class CqlTextSpec extends Specification {
         then:
         actual2 == cqlTextFull
     }
+
+    def 'Find the Landsat scene with identifier "LC82030282019133LGN00"'() {
+
+        given:
+        String cqlText = "landsat:scene_id = 'LC82030282019133LGN00'"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_34
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_34, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Find any item where the instrument name starts with "OLI"'() {
+
+        given:
+        String cqlText = "eo:instrument LIKE 'OLI#' WILDCARD '#'"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_35
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_35, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+//    def 'Evaluate if the value of an array property contains the specified subset of values'() {
+//
+//        given:
+//        String cqlText = "layer:ids ACONTAINS ['layers-ca', 'layers-us']"
+//
+//        when: 'reading text'
+//        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+//
+//        then:
+//        actual == CqlFilterExamples.EXAMPLE_36
+//
+//        and:
+//
+//        when: 'writing text'
+//        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_36, Cql.Format.TEXT)
+//
+//        then:
+//        actual2 == cqlText
+//    }
 
 }

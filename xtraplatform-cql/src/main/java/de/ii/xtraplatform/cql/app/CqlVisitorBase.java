@@ -7,11 +7,13 @@
  */
 package de.ii.xtraplatform.cql.app;
 
+import de.ii.xtraplatform.cql.domain.ArrayOperation;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.CqlVisitor;
 import de.ii.xtraplatform.cql.domain.Function;
 import de.ii.xtraplatform.cql.domain.Geometry;
+import de.ii.xtraplatform.cql.domain.Like;
 import de.ii.xtraplatform.cql.domain.LogicalOperation;
 import de.ii.xtraplatform.cql.domain.Property;
 import de.ii.xtraplatform.cql.domain.ScalarLiteral;
@@ -51,6 +53,11 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
 
     @Override
     public T visit(SpatialOperation spatialOperation, List<T> children) {
+        return null;
+    }
+
+    @Override
+    public T visit(ArrayOperation arrayOperation, List<T> children) {
         return null;
     }
 
@@ -116,6 +123,11 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
 
     @Override
     public T visit(Function function, List<T> children) {
+        return null;
+    }
+
+    @Override
+    public T visit(Like like, List<T> children) {
         return null;
     }
 
