@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.store.domain.entities.ImmutableValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
@@ -48,7 +49,8 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
   public ValidationResult validate(
       String typeName, FeatureStoreAttributesContainer attributesContainer, MODE mode) {
     try (SqlSchemaCrawler schemaCrawler = new SqlSchemaCrawler(sqlClient.getConnection())) {
-      Catalog catalog = schemaCrawler.getCatalog(schemas, getUsedTables(attributesContainer));
+      Catalog catalog = schemaCrawler.getCatalog(schemas, getUsedTables(attributesContainer),
+          ImmutableList.of());
       Collection<Table> tables = catalog.getTables();
 
       return validate(typeName, attributesContainer, mode, new SchemaInfo(tables));

@@ -23,15 +23,15 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableConnectionInfoSql.Builder.class)
 public interface ConnectionInfoSql extends ConnectionInfo {
 
-    enum Dialect {PGIS}
+    enum Dialect {PGIS,GPKG}
 
-    String getHost();
+    Optional<String> getHost();
 
     String getDatabase();
 
-    String getUser();
+    Optional<String> getUser();
 
-    String getPassword();
+    Optional<String> getPassword();
 
     List<String> getSchemas();
 

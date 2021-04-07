@@ -13,9 +13,12 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlPathDefaults;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectGpkg;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.feature.provider.sql.infra.db.SchemaGeneratorSql;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
@@ -26,6 +29,7 @@ import de.ii.xtraplatform.store.domain.entities.EntityHydrator;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -106,11 +110,14 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
 
       List<String> schemas =
           connectionInfo.getSchemas().isEmpty()
-              ? ImmutableList.of("public")
+              ? connectionInfo.getDialect() == Dialect.GPKG
+              ? ImmutableList.of()
+              : ImmutableList.of("public")
               : connectionInfo.getSchemas();
 
       SchemaGeneratorSql schemaGeneratorSql =
-          new SchemaGeneratorSql(connector.getSqlClient(), schemas);
+          new SchemaGeneratorSql(connector.getSqlClient(), schemas, data.getAutoTypes(), connectionInfo.getDialect() == Dialect.GPKG ? new SqlDialectGpkg()
+              : new SqlDialectPostGis());
 
       List<FeatureSchema> types = schemaGeneratorSql.generate();
 
@@ -238,6 +245,7 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
           .from(data)
           .auto(Optional.empty())
           .autoPersist(Optional.empty())
+          .autoTypes(new ArrayList<>())
           .build();
     }
 

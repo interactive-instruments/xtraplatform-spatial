@@ -12,14 +12,13 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlPathDefaults;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathDefaults;
-import org.immutables.value.Value;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true)

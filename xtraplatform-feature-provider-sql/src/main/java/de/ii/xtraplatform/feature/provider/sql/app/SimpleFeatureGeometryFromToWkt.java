@@ -33,7 +33,7 @@ public enum SimpleFeatureGeometryFromToWkt implements SimpleFeatureGeometryFrom 
             }
         }
         //TODO: special handling for PostGIS GEOMETRY
-        if ("GEOMETRY".equals(type.toUpperCase())) {
+        if ("GEOMETRY".equalsIgnoreCase(type)) {
             return ANY;
         }
         return NONE;

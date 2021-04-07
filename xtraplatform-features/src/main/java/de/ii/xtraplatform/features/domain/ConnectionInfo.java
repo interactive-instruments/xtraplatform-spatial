@@ -117,7 +117,7 @@ public interface ConnectionInfo {
                     p = resetParser(p, tb, ctxt);
 
                     return _deserializeWithNativeTypeId(p, ctxt, "HTTP");
-                } else if (name.equals("host")) {
+                } else if (name.equals("database")) {
                     p = resetParser(p, tb, ctxt);
 
                     return _deserializeWithNativeTypeId(p, ctxt, "SLICK");
