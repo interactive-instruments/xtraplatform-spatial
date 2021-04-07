@@ -19,6 +19,7 @@ import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
+import java.util.List;
 import org.immutables.value.Value;
 
 import java.util.Collection;
@@ -68,6 +69,8 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
     BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
 
     Map<String, Map<String, String>> getCodelists();
+
+    List<String> getAutoTypes();
 
     @JsonIgnore
     @Value.Derived

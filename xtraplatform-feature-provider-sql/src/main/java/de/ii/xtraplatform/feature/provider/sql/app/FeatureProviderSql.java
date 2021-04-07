@@ -27,10 +27,12 @@ import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSchemaMappingSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectGpkg;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathParser;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
@@ -122,7 +124,7 @@ public class FeatureProviderSql extends
     this.crsTransformerFactory = crsTransformerFactory;
     this.connector = (SqlConnector) connectorFactory.createConnector(data);
     //TODO: from config
-    SqlDialect sqlDialect = new SqlDialectPostGis();
+    SqlDialect sqlDialect = ((ConnectionInfoSql) data.getConnectionInfo()).getDialect() == Dialect.PGIS ? new SqlDialectPostGis() : new SqlDialectGpkg();
     this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect, data.getNativeCrs()
         .orElse(OgcCrs.CRS84), crsTransformerFactory);
     this.queryTransformer = new FeatureQueryTransformerSql(getTypeInfos(), queryGeneratorSql,

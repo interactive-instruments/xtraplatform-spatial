@@ -47,9 +47,13 @@ dependencies {
 
     embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.18'
 
+    embedded group: 'org.xerial', name: 'sqlite-jdbc', version: '3.34.0'
+    embedded group: 'de.interactive_instruments', name: 'xtraplatform-spatialite', version: '5.0.1-1'
+
     embedded group: 'us.fatehi', name: 'schemacrawler-api', version: '16.11.6'
     embedded group: 'us.fatehi', name: 'schemacrawler-tools', version: '16.11.6'
     embeddedFlat group: 'us.fatehi', name: 'schemacrawler-postgresql', version: '16.11.6'
+    embeddedFlat group: 'us.fatehi', name: 'schemacrawler-sqlite', version: '16.11.6'
 
     embeddedFlat group: 'com.github.jsqlparser', name: 'jsqlparser', version: '3.2'
 

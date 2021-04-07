@@ -11,12 +11,18 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.sql.app.SimpleFeatureGeometryFromToWkt;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect.GeoInfo;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaGenerator;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import schemacrawler.schema.Catalog;
@@ -38,14 +44,21 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaGeneratorSql.class);
 
+    private final SqlClient sqlClient;
     private final Connection connection;
     private final SqlSchemaCrawler schemaCrawler;
     private final List<String> schemas;
+    private final List<String> includeTables;
+    private final SqlDialect dialect;
 
-    public SchemaGeneratorSql(SqlClient sqlClient, List<String> schemas) {
+    public SchemaGeneratorSql(SqlClient sqlClient, List<String> schemas,
+        List<String> includeTables, SqlDialect dialect) {
+        this.sqlClient = sqlClient;
         this.connection = sqlClient.getConnection();
         this.schemaCrawler = new SqlSchemaCrawler(sqlClient.getConnection());
         this.schemas = schemas;
+        this.includeTables = includeTables;
+        this.dialect = dialect;
     }
 
     @Override
@@ -54,14 +67,17 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
         Catalog catalog;
         try {
             LOGGER.debug("Crawling SQL schema");
-            catalog = schemaCrawler.getCatalog(schemas);
+            catalog = schemaCrawler.getCatalog(schemas, includeTables, dialect.getSystemTables());
             LOGGER.debug("Finished crawling SQL schema");
 
             Map<String, List<String>> geometryInfos = getGeometryInfos();
 
             return getFeatureTypes(catalog, geometryInfos);
         } catch (Throwable e) {
-            throw new IllegalStateException("could not crawl schema");
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Stacktrace:", e);
+            }
+            throw new IllegalStateException("Could not crawl schema: " + e.getMessage());
         }
     }
 
@@ -119,8 +135,8 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
     }
 
     private SchemaBase.Type getFeaturePropertyType(ColumnDataType columnDataType) {
-
-        if ("geometry".equals(columnDataType.getName())) {
+        //TODO: pass GeoInfo to determine geo columns
+        if (SimpleFeatureGeometryFromToWkt.fromString(columnDataType.getName()) != SimpleFeatureGeometryFromToWkt.NONE) {
             return SchemaBase.Type.GEOMETRY;
         }
 
@@ -141,16 +157,17 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
 
     }
 
-    //TODO: use SqlClient, query is PGIS specific
+    //TODO: use SqlClient
     private Map<String, List<String>> getGeometryInfos() {
         Map<String, List<String>> geometry = new HashMap<>();
-        String query = "SELECT f_table_name, type, srid FROM public.geometry_columns;";
+        Map<String, String> dbInfo = sqlClient.getDbInfo();
+        String query = dialect.geometryInfoQuery(dbInfo);
 
         try {
             Statement stmt = connection.createStatement();
             ResultSet rs = stmt.executeQuery(query);
             while (rs.next()) {
-                geometry.put(rs.getString("f_table_name"), ImmutableList.of(rs.getString("type"), rs.getString("srid")));
+                geometry.put(rs.getString(GeoInfo.TABLE), ImmutableList.of(rs.getString(GeoInfo.TYPE), rs.getString(GeoInfo.SRID)));
             }
         } catch (SQLException e) {
             LOGGER.debug("SQL QUERY EXCEPTION", e);
