@@ -10,6 +10,7 @@ pluginManagement {
             url "https://dl.interactive-instruments.de/repository/maven-snapshots/"
         }
         gradlePluginPortal()
+        mavenCentral()
     }
 }
 
