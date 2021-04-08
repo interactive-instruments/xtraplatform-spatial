@@ -30,6 +30,7 @@ public class SpatialiteDataSource extends SQLiteDataSource {
   private static final Path TMP_DIR = Paths.get(System.getProperty(TMP_DIR_PROP));
   private static final String LIB_GEOS = "libgeos.so";
   private static final String LIB_GEOS_C = "libgeos_c.so";
+  private static final String LIB_SQLITE = "libsqlite3.so";
   private static final String MOD_SPATIALITE = "mod_spatialite";
   private static final String MOD_SPATIALITE_SO = "mod_spatialite.so";
 
@@ -45,10 +46,13 @@ public class SpatialiteDataSource extends SQLiteDataSource {
 
       copyLibToTmpDir(LIB_GEOS);
       copyLibToTmpDir(LIB_GEOS_C);
+      copyLibToTmpDir(LIB_SQLITE);
       copyLibToTmpDir(MOD_SPATIALITE_SO);
 
       loadLib(LIB_GEOS);
       loadLib(LIB_GEOS_C);
+      //TODO: should be redundant if libspatialite is built against xerial libsqlite
+      loadLib(LIB_SQLITE);
     } else {
       LOGGER.warn("GeoPackage/Spatialite is not supported for OS '{}-{}'. It might work if you install libspatialite as a system library.", System.getProperty("os.name"), System.getProperty("os.arch"));
     }
