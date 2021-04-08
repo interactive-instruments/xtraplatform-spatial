@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConnection;
 import org.sqlite.SQLiteDataSource;
+import org.sqlite.SQLiteJDBCLoader;
 import org.sqlite.util.OSInfo;
 
 public class SpatialiteDataSource extends SQLiteDataSource {
@@ -36,7 +37,11 @@ public class SpatialiteDataSource extends SQLiteDataSource {
   //TODO: generalize native lib handling in xtraplatform-native
   static {
     if (OSInfo.getOSName().equalsIgnoreCase("LINUX") && OSInfo.getArchName().equals(OSInfo.X86_64)) {
-      OSInfo.getNativeLibFolderPathForCurrentOS();
+      try {
+        SQLiteJDBCLoader.initialize();
+      } catch (Exception e) {
+        LOGGER.error("Could not load SQLite: {}", e.getMessage());
+      }
 
       copyLibToTmpDir(LIB_GEOS);
       copyLibToTmpDir(LIB_GEOS_C);
