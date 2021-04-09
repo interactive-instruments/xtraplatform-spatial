@@ -19,7 +19,7 @@ import java.util.Optional;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableCqlPredicate.Builder.class)
-public interface CqlPredicate extends LogicalExpression, ScalarExpression, SpatialExpression, TemporalExpression, CqlNode {
+public interface CqlPredicate extends LogicalExpression, ScalarExpression, SpatialExpression, TemporalExpression, ArrayExpression, CqlNode {
 
     static CqlPredicate of(CqlNode node) {
         ImmutableCqlPredicate.Builder builder = new ImmutableCqlPredicate.Builder();
@@ -95,16 +95,16 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
         } else if (node instanceof Intersects) {
             builder.intersects((Intersects) node);
         } else if (node instanceof Contains) {
-            builder.contains((Contains) node); }
-//        } else if (node instanceof AContains)  {
-//            builder.aContains((AContains) node);
-//        } else if (node instanceof AEquals) {
-//            builder.aEquals((AEquals) node);
-//        } else if (node instanceof AOverlaps) {
-//            builder.aOverlaps((AOverlaps) node);
-//        } else if (node instanceof ContainedBy) {
-//            builder.containedBy((ContainedBy) node);
-//        }
+            builder.contains((Contains) node);
+        } else if (node instanceof AContains)  {
+            builder.aContains((AContains) node);
+        } else if (node instanceof AEquals) {
+            builder.aEquals((AEquals) node);
+        } else if (node instanceof AOverlaps) {
+            builder.aOverlaps((AOverlaps) node);
+        } else if (node instanceof ContainedBy) {
+            builder.containedBy((ContainedBy) node);
+        }
 
         return builder.build();
     }
@@ -155,11 +155,12 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
                 getMeets(),
                 getMetBy(),
                 getTOverlaps(),
-                getOverlappedBy()
-//                getAContains(),
-//                getAEquals(),
-//                getAOverlaps(),
-//                getContainedBy()
+                getOverlappedBy(),
+                getAnyInteracts(),
+                getAContains(),
+                getAEquals(),
+                getAOverlaps(),
+                getContainedBy()
         )
                             .stream()
                             .filter(Optional::isPresent)

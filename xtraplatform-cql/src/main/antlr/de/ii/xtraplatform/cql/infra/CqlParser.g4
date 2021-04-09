@@ -23,6 +23,7 @@ booleanPrimary : predicate
 predicate : comparisonPredicate
             | spatialPredicate
             | temporalPredicate
+            | arrayPredicate
 //            | existencePredicate
             | inPredicate;
 

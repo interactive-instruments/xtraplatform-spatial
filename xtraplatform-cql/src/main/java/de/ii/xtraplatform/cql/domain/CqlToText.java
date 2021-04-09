@@ -112,6 +112,7 @@ public class CqlToText implements CqlVisitor<String> {
             .put(ImmutableMetBy.class, "METBY")
             .put(ImmutableTOverlaps.class, "TOVERLAPS")
             .put(ImmutableOverlappedBy.class, "OVERLAPPEDBY")
+            .put(ImmutableAnyInteracts.class, "ANYINTERACTS")
             .build();
 
     private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
@@ -357,6 +358,11 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
+    public String visit(ArrayLiteral arrayLiteral, List<String> children) {
+        return (String) arrayLiteral.getValue();
+    }
+
+    @Override
     public String visit(SpatialLiteral spatialLiteral, List<String> children) {
         return ((CqlNode) spatialLiteral.getValue()).accept(this);
     }
@@ -393,7 +399,12 @@ public class CqlToText implements CqlVisitor<String> {
     @Override
     public String visit(Like like, List<String> children) {
         String wildcard = like.getWildCard().equals("%") ? "" : String.format("WILDCARD '%s'", like.getWildCard());
-        return String.format("%s LIKE %s %s", children.get(0), children.get(1), wildcard).trim();
+        String singlechar = like.getSinglechar().equals("_") ? "" : String.format(" SINGLECHAR '%s'", like.getSinglechar());
+        String escapechar = like.getEscapechar().equals("\\") ? "" : String.format(" ESCAPECHAR '%s'", like.getEscapechar());
+        String nocase = like.getNocase().equals(Boolean.TRUE) ? "" : " NOCASE false";
+        return String.format("%s LIKE %s %s%s%s%s", children.get(0), children.get(1), wildcard, singlechar, escapechar, nocase)
+                .trim()
+                .replace("  ", " ");
     }
 
 }

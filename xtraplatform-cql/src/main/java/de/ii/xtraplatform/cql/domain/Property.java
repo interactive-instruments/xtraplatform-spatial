@@ -15,12 +15,11 @@ import org.immutables.value.Value;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Value.Immutable
 @Value.Style(of = "new")
 @JsonDeserialize(as = ImmutableProperty.class)
-public interface Property extends Scalar, Spatial, Temporal, Operand, CqlNode {
+public interface Property extends Scalar, Spatial, Temporal, Operand, Vector, CqlNode {
 
     static Property of(String name) {
         return ImmutableProperty.builder()

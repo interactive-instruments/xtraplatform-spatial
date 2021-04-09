@@ -98,16 +98,15 @@ public interface CqlFilter extends CqlPredicate {
             builder.intersects((Intersects) node);
         } else if (node instanceof Contains) {
             builder.contains((Contains) node);
+        } else if (node instanceof AContains) {
+            builder.aContains((AContains) node);
+        } else if (node instanceof AEquals) {
+            builder.aEquals((AEquals) node);
+        } else if (node instanceof AOverlaps) {
+            builder.aOverlaps((AOverlaps) node);
+        } else if (node instanceof ContainedBy) {
+            builder.containedBy((ContainedBy) node);
         }
-//        } else if (node instanceof AContains) {
-//            builder.aContains((AContains) node);
-//        } else if (node instanceof AEquals) {
-//            builder.aEquals((AEquals) node);
-//        } else if (node instanceof AOverlaps) {
-//            builder.aOverlaps((AOverlaps) node);
-//        } else if (node instanceof ContainedBy) {
-//            builder.containedBy((ContainedBy) node);
-//        }
 
         return builder.build();
     }

@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.cql.app;
 
+import de.ii.xtraplatform.cql.domain.ArrayLiteral;
 import de.ii.xtraplatform.cql.domain.ArrayOperation;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
@@ -68,6 +69,11 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
 
     @Override
     public T visit(TemporalLiteral temporalLiteral, List<T> children) {
+        return null;
+    }
+
+    @Override
+    public T visit(ArrayLiteral arrayLiteral, List<T> children) {
         return null;
     }
 

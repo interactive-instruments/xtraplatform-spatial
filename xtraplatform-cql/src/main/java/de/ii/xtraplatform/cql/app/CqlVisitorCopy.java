@@ -110,6 +110,8 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
             builder = new ImmutableTEquals.Builder();
         } else if (temporalOperation instanceof TOverlaps) {
             builder = new ImmutableTOverlaps.Builder();
+        } else if (temporalOperation instanceof AnyInteracts) {
+            builder = new ImmutableAnyInteracts.Builder();
         }
 
         if (Objects.nonNull(builder)) {
@@ -186,6 +188,11 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
     @Override
     public CqlNode visit(TemporalLiteral temporalLiteral, List<CqlNode> children) {
         return temporalLiteral;
+    }
+
+    @Override
+    public CqlNode visit(ArrayLiteral arrayLiteral, List<CqlNode> children) {
+        return arrayLiteral;
     }
 
     @Override

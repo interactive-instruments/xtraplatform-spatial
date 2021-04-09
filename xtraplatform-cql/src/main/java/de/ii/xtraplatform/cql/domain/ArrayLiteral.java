@@ -31,16 +31,16 @@ public interface ArrayLiteral extends Vector, Literal, CqlNode {
         }
 
         @JsonCreator
-        public Builder(List<Scalar> elements) {
+        public Builder(List<Scalar> literal) {
             super();
-            value(elements);
+            value(literal);
             type(List.class);
         }
 
         @JsonCreator
-        public Builder(String elements) throws CqlParseException {
+        public Builder(String literal) throws CqlParseException {
             super();
-            value(elements);
+            value(literal);
             type(String.class);
         }
     }

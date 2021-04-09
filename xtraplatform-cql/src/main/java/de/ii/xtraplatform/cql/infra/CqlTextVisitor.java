@@ -181,7 +181,22 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
             if (Objects.nonNull(ctx.wildcard())) {
                 ScalarLiteral wildcard = (ScalarLiteral) ctx.wildcard().accept(this);
-                return new ImmutableLike.Builder().from(like).wildCards((String) wildcard.getValue()).build();
+                like = new ImmutableLike.Builder().from(like).wildCards((String) wildcard.getValue()).build();
+            }
+
+            if (Objects.nonNull(ctx.singlechar())) {
+                ScalarLiteral singlechar = (ScalarLiteral) ctx.singlechar().accept(this);
+                like = new ImmutableLike.Builder().from(like).singlechars((String) singlechar.getValue()).build();
+            }
+
+            if (Objects.nonNull(ctx.escapechar())) {
+                ScalarLiteral escapechar = (ScalarLiteral) ctx.escapechar().accept(this);
+                like = new ImmutableLike.Builder().from(like).escapechars((String) escapechar.getValue()).build();
+            }
+
+            if (Objects.nonNull(ctx.nocase())) {
+                ScalarLiteral nocase = (ScalarLiteral) ctx.nocase().accept(this);
+                like = new ImmutableLike.Builder().from(like).nocases((Boolean) nocase.getValue()).build();
             }
 
             return like;
@@ -338,38 +353,47 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                       .build();
     }
 
-//    @Override
-//    public CqlNode visitArrayPredicate(CqlParser.ArrayPredicateContext ctx) {
-//
-//        Vector vector1 = (Vector) ctx.arrayExpression().get(0).accept(this);
-//        Vector vector2 = (Vector) ctx.arrayExpression().get(1).accept(this);
-//
-//        ArrayOperator arrayOperator = ArrayOperator.valueOf(ctx.ArrayOperator()
-//                .getText());
-//
-//        ArrayOperation.Builder<? extends ArrayOperation> builder;
-//
-//        switch (arrayOperator) {
-//            case ACONTAINS:
-//                builder = new ImmutableAContains.Builder();
-//                break;
-//            case AEQUALS:
-//                builder = new ImmutableAEquals.Builder();
-//                break;
-//            case AOVERLAPS:
-//                builder = new ImmutableAOverlaps.Builder();
-//                break;
-//            case CONTAINEDBY:
-//                builder = new ImmutableContainedBy.Builder();
-//                break;
-//            default:
-//                throw new IllegalStateException("unknown array operator: " + arrayOperator);
-//        }
-//
-//        return builder.operand1(vector1)
-//                .operand2(vector2)
-//                .build();
-//    }
+    @Override
+    public CqlNode visitArrayPredicate(CqlParser.ArrayPredicateContext ctx) {
+
+        Vector vector1 = (Vector) ctx.arrayExpression().get(0).accept(this);
+        Vector vector2 = (Vector) ctx.arrayExpression().get(1).accept(this);
+
+        ArrayOperator arrayOperator = ArrayOperator.valueOf(ctx.ArrayOperator()
+                .getText());
+
+        ArrayOperation.Builder<? extends ArrayOperation> builder;
+
+        switch (arrayOperator) {
+            case ACONTAINS:
+                builder = new ImmutableAContains.Builder();
+                break;
+            case AEQUALS:
+                builder = new ImmutableAEquals.Builder();
+                break;
+            case AOVERLAPS:
+                builder = new ImmutableAOverlaps.Builder();
+                break;
+            case CONTAINEDBY:
+                builder = new ImmutableContainedBy.Builder();
+                break;
+            default:
+                throw new IllegalStateException("unknown array operator: " + arrayOperator);
+        }
+
+        return builder.operand1(vector1)
+                .operand2(vector2)
+                .build();
+    }
+
+    @Override
+    public CqlNode visitArrayLiteral(CqlParser.ArrayLiteralContext ctx) {
+        try {
+            return ArrayLiteral.of(ctx.getText());
+        } catch (CqlParseException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
+    }
 
     /*@Override
     public CqlNode visitExistencePredicate(CqlParser.ExistencePredicateContext ctx) {
@@ -599,6 +623,21 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitWildcard(CqlParser.WildcardContext ctx) {
         return ctx.characterLiteral().accept(this);
+    }
+
+    @Override
+    public CqlNode visitSinglechar(CqlParser.SinglecharContext ctx) {
+        return ctx.characterLiteral().accept(this);
+    }
+
+    @Override
+    public CqlNode visitEscapechar(CqlParser.EscapecharContext ctx) {
+        return ctx.characterLiteral().accept(this);
+    }
+
+    @Override
+    public CqlNode visitNocase(CqlParser.NocaseContext ctx) {
+        return ctx.booleanLiteral().accept(this);
     }
 
 }

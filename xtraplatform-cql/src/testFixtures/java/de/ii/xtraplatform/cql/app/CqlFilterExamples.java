@@ -24,7 +24,7 @@ public class CqlFilterExamples {
 
     static final CqlFilter EXAMPLE_3 = CqlFilter.of(Like.of("owner", ScalarLiteral.of("% Jones %")));
 
-    static final CqlFilter EXAMPLE_4 = CqlFilter.of(Like.of("owner", ScalarLiteral.of("Mike%"), "%", "", "", ""));
+    static final CqlFilter EXAMPLE_4 = CqlFilter.of(Like.of("owner", ScalarLiteral.of("Mike%")));
 
     static final CqlFilter EXAMPLE_5 = CqlFilter.of(Not.of(Like.of("owner", ScalarLiteral.of("% Mike %"))));
 
@@ -134,9 +134,13 @@ public class CqlFilterExamples {
 
     static final CqlFilter EXAMPLE_34 = CqlFilter.of(Eq.of("landsat:scene_id", ScalarLiteral.of("LC82030282019133LGN00")));
 
-    static final CqlFilter EXAMPLE_35 = CqlFilter.of(Like.of("eo:instrument", ScalarLiteral.of("OLI#"), "#", "", "", ""));
+    static final CqlFilter EXAMPLE_35 = CqlFilter.of(Like.of("name", ScalarLiteral.of("Smith."), null, ".", null, false));
 
-//    static final CqlFilter EXAMPLE_36 = CqlFilter.of(AContains.of("layer:ids", ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("layers-ca"), ScalarLiteral.of("layers-us")))));
+    static final CqlFilter EXAMPLE_36 = CqlFilter.of(AnyInteracts.of("event_date", getTemporalLiteral("1969-07-16T05:32:00Z/1969-07-24T16:50:35Z")));
+
+    static final CqlFilter EXAMPLE_37 = CqlFilter.of(Lt.of("height", ScalarLiteral.of("floors")));
+
+    static final CqlFilter EXAMPLE_38 = CqlFilter.of(AContains.of("layer:ids", ArrayLiteral.of("['layers-ca','layers-us']")));
 
 
     private static TemporalLiteral getTemporalLiteral(String temporalData) {

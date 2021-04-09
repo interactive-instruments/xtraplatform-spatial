@@ -34,6 +34,8 @@ public interface CqlVisitor<T> {
             return visit((ScalarLiteral) node, children);
         } else if (node instanceof TemporalLiteral) {
             return visit((TemporalLiteral) node, children);
+        } else if (node instanceof ArrayLiteral) {
+            return visit((ArrayLiteral) node, children);
         } else if (node instanceof Geometry.Coordinate) {
             return visit((Geometry.Coordinate) node, children);
         } else if (node instanceof Geometry.Point) {
@@ -78,6 +80,8 @@ public interface CqlVisitor<T> {
     T visit(ScalarLiteral scalarLiteral, List<T> children);
 
     T visit(TemporalLiteral temporalLiteral, List<T> children);
+
+    T visit(ArrayLiteral arrayLiteral, List<T> children);
 
     T visit(SpatialLiteral spatialLiteral, List<T> children);
 

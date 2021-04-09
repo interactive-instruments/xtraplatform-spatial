@@ -697,10 +697,10 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    def 'Find any item where the instrument name starts with "OLI"'() {
+    def 'LIKE operator modifiers'() {
 
         given:
-        String cqlText = "eo:instrument LIKE 'OLI#' WILDCARD '#'"
+        String cqlText = "name LIKE 'Smith.' SINGLECHAR '.' NOCASE false"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -717,21 +717,61 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-//    def 'Evaluate if the value of an array property contains the specified subset of values'() {
+    def 'ANYINTERACTS temporal operator'() {
+
+        given:
+        String cqlText = "event_date ANYINTERACTS 1969-07-16T05:32:00Z/1969-07-24T16:50:35Z"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_36
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_36, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Evaluate if the value of an array property contains the specified subset of values'() {
+
+        given:
+        String cqlText = "layer:ids ACONTAINS ['layers-ca','layers-us']"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_38
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_38, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+//    def 'Both operands are property references'() {
 //
 //        given:
-//        String cqlText = "layer:ids ACONTAINS ['layers-ca', 'layers-us']"
+//        String cqlText = "height < floors"
 //
 //        when: 'reading text'
 //        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 //
 //        then:
-//        actual == CqlFilterExamples.EXAMPLE_36
+//        actual == CqlFilterExamples.EXAMPLE_37
 //
 //        and:
 //
 //        when: 'writing text'
-//        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_36, Cql.Format.TEXT)
+//        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_37, Cql.Format.TEXT)
 //
 //        then:
 //        actual2 == cqlText
