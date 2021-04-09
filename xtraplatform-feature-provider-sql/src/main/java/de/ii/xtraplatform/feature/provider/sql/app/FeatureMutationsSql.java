@@ -20,10 +20,6 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaVisitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import scala.concurrent.ExecutionContext;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,18 +27,22 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import scala.concurrent.ExecutionContext;
 
 public class FeatureMutationsSql {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureMutationsSql.class);
 
-    private final SqlClient sqlClient;
+    private final Supplier<SqlClient> sqlClient;
     private final FeatureStoreInsertGenerator generator;
 
-    public FeatureMutationsSql(SqlClient sqlClient, FeatureStoreInsertGenerator generator) {
+    public FeatureMutationsSql(Supplier<SqlClient> sqlClient, FeatureStoreInsertGenerator generator) {
         this.sqlClient = sqlClient;
         this.generator = generator;
     }
@@ -51,7 +51,7 @@ public class FeatureMutationsSql {
 
         RowCursor rowCursor = new RowCursor(schema.getPath());
 
-        return sqlClient.getMutationFlow(feature -> createInstanceInserts(schema, feature.getRowCounts(), rowCursor, Optional.empty()), executionContext, Optional.empty());
+        return sqlClient.get().getMutationFlow(feature -> createInstanceInserts(schema, feature.getRowCounts(), rowCursor, Optional.empty()), executionContext, Optional.empty());
     }
 
 
@@ -59,13 +59,13 @@ public class FeatureMutationsSql {
 
         RowCursor rowCursor = new RowCursor(schema.getPath());
 
-        return sqlClient.getMutationFlow(feature -> createInstanceInserts(schema, feature.getRowCounts(), rowCursor, Optional.of(id)), executionContext, Optional.of(id));
+        return sqlClient.get().getMutationFlow(feature -> createInstanceInserts(schema, feature.getRowCounts(), rowCursor, Optional.of(id)), executionContext, Optional.of(id));
     }
 
     public Source<SqlRow, NotUsed> getDeletionSource(SchemaSql schema, String id) {
         Pair<String, Consumer<String>> delete = createInstanceDelete(schema, id).apply(null);
 
-        return sqlClient.getSourceStream(delete.first(), ImmutableSqlQueryOptions.builder().build());
+        return sqlClient.get().getSourceStream(delete.first(), ImmutableSqlQueryOptions.builder().build());
     }
 
     //TODO: shouldn't id be part of the feature already?

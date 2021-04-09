@@ -7,9 +7,9 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.app;
 
-import akka.stream.javadsl.RunnableGraph;
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector.QueryOptions;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
@@ -18,7 +18,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
-import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
+import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
 import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
@@ -62,7 +62,6 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     public static final String PROVIDER_TYPE = "WFS";
 
     private final CrsTransformerFactory crsTransformerFactory;
-    private final WfsConnector connector;
     private final FeatureQueryTransformerWfs queryTransformer;
     private final FeatureNormalizerWfs featureNormalizer;
     private final ExtentReader extentReader;
@@ -72,7 +71,8 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
                               @Requires CrsTransformerFactory crsTransformerFactory,
                               @Requires ConnectorFactory connectorFactory,
                               @Property(name = Entity.DATA_KEY) FeatureProviderDataV2 data) {
-        super(context, actorSystemProvider, data, createPathParser((ConnectionInfoWfsHttp) data.getConnectionInfo()));
+        super(context, actorSystemProvider, data, createPathParser((ConnectionInfoWfsHttp) data.getConnectionInfo()),
+            connectorFactory);
 
         Map<String, FeatureType> types = data.getTypes()
                                              .entrySet()
@@ -82,10 +82,9 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
                                              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
         this.crsTransformerFactory = crsTransformerFactory;
-        this.connector = (WfsConnector) connectorFactory.createConnector(data);
         this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), types, data.getTypes(), (ConnectionInfoWfsHttp) data.getConnectionInfo(), data.getNativeCrs().orElse(OgcCrs.CRS84));
         this.featureNormalizer = new FeatureNormalizerWfs(getTypeInfos(), types, data.getTypes(), ((ConnectionInfoWfsHttp) data.getConnectionInfo()).getNamespaces());
-        this.extentReader = new ExtentReaderWfs(connector, crsTransformerFactory, data.getNativeCrs().orElse(OgcCrs.CRS84));
+        this.extentReader = new ExtentReaderWfs(this, crsTransformerFactory, data.getNativeCrs().orElse(OgcCrs.CRS84));
     }
 
     private static FeatureStorePathParser createPathParser(ConnectionInfoWfsHttp connectionInfoWfsHttp) {
@@ -98,13 +97,13 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     }
 
     @Override
-    protected FeatureQueryTransformer<String, FeatureProviderConnector.QueryOptions> getQueryTransformer() {
-        return queryTransformer;
+    protected WfsConnector getConnector() {
+        return (WfsConnector) super.getConnector();
     }
 
     @Override
-    protected FeatureProviderConnector<ByteString, String, FeatureProviderConnector.QueryOptions> getConnector() {
-        return connector;
+    protected FeatureQueryTransformer<String, FeatureProviderConnector.QueryOptions> getQueryTransformer() {
+        return queryTransformer;
     }
 
     @Override
@@ -174,6 +173,6 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
 
     @Override
     public Optional<Metadata> getMetadata() {
-        return connector.getMetadata();
+        return getConnector().getMetadata();
     }
 }

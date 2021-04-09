@@ -13,7 +13,7 @@ import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.store.domain.entities.EntityHydrator;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
-import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
+import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.infra.WfsConnectorHttp;
 import de.ii.xtraplatform.feature.provider.wfs.infra.WfsSchemaCrawler;
@@ -53,23 +53,18 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
 
     @Override
     public FeatureProviderDataV2 hydrateData(FeatureProviderDataV2 data) {
+        if (data.isAuto()) {
+            LOGGER.info("Feature provider with id '{}' is in auto mode, generating configuration ...", data.getId());
+        }
 
         try {
             WfsConnectorHttp connector = (WfsConnectorHttp) connectorFactory.createConnector(data);
 
-            if (data.isAuto()) {
-                LOGGER.info("Feature provider with id '{}' is in auto mode, generating configuration ...", data.getId());
-            }
-
-            FeatureProviderDataV2 hydrated = cleanupAutoPersist(cleanupAdditionalInfo(completeConnectionInfoIfNecessary(connector,
+            return cleanupAutoPersist(cleanupAdditionalInfo(completeConnectionInfoIfNecessary(connector,
                     generateNativeCrsIfNecessary(
                             generateTypesIfNecessary(connector, data)
                     )
             )));
-
-            connectorFactory.disposeConnector(connector);
-
-            return hydrated;
 
 
         } catch (Throwable e) {

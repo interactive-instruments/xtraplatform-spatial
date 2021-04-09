@@ -19,6 +19,7 @@ import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.streams.domain.StreamRunner;
+import java.util.Objects;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +37,16 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
     private final StreamRunner streamRunner;
     private final Map<String, FeatureStoreTypeInfo> typeInfos;
+    private final ConnectorFactory connectorFactory;
+    private FeatureProviderConnector<T, U, V> connector;
 
     protected AbstractFeatureProvider(BundleContext context,
-                                      ActorSystemProvider actorSystemProvider,
-                                      FeatureProviderDataV2 data,
-                                      FeatureStorePathParser pathParser) {
+        ActorSystemProvider actorSystemProvider,
+        FeatureProviderDataV2 data,
+        FeatureStorePathParser pathParser, ConnectorFactory connectorFactory) {
         this.typeInfos = createTypeInfos(pathParser, data.getTypes());
         this.streamRunner = new StreamRunner(context, actorSystemProvider, data.getId(), getRunnerCapacity(data), getRunnerQueueSize(data));
+        this.connectorFactory = connectorFactory;
     }
 
     protected int getRunnerCapacity(FeatureProviderDataV2 data) {
@@ -59,6 +63,8 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
     @Override
     protected boolean onStartup() {
+        this.connector = (FeatureProviderConnector<T, U, V>) connectorFactory.createConnector(getData());
+
         if (!getConnector().isConnected()) {
             Optional<Throwable> connectionError = getConnector().getConnectionError();
             String message = connectionError.map(Throwable::getMessage)
@@ -126,12 +132,15 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
     @Override
     protected void onShutdown() {
+        connectorFactory.disposeConnector(connector);
         LOGGER.info("Feature provider with id '{}' stopped.", getId());
     }
 
     protected abstract FeatureQueryTransformer<U, V> getQueryTransformer();
 
-    protected abstract FeatureProviderConnector<T, U, V> getConnector();
+    protected FeatureProviderConnector<T, U, V> getConnector() {
+        return Objects.requireNonNull(connector);
+    }
 
     protected abstract FeatureNormalizer<T> getNormalizer();
 
