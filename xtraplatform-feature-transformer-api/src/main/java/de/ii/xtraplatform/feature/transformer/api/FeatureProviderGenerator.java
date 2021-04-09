@@ -7,8 +7,8 @@
  */
 package de.ii.xtraplatform.feature.transformer.api;
 
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderMetadataConsumer;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
+import de.ii.xtraplatform.features.domain.FeatureProviderMetadataConsumer;
+import de.ii.xtraplatform.features.domain.FeatureProviderSchemaConsumer;
 
 import java.util.List;
 
