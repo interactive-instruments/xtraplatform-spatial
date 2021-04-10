@@ -307,7 +307,7 @@ class CqlTextSpec extends Specification {
 
     }
 
-    def 'Location in the box between -118,33.8 and -117.9,34 in lat/long (geometry 1)'() {
+    def 'Location in the box between -118,33.8 and -117.9,34 in long/lat (geometry 1)'() {
 
         given:
         String cqlText = "WITHIN(location, ENVELOPE(-118.0,33.8,-117.9,34.0))"
