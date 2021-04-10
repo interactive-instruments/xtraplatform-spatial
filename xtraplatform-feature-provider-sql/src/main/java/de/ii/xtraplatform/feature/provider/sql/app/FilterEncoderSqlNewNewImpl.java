@@ -26,6 +26,7 @@ import org.threeten.extra.Interval;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -222,24 +223,42 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String value = children.size() > 1 ? children.get(1) : "";
             String operator = CqlToText.SCALAR_OPERATORS.get(scalarOperation.getClass());
             String operation = String.format(" %s %s", operator, value);
+            String functionStart = "";
 
             if (scalarOperation instanceof Between) {
                 operation = String.format(" %s %s AND %s", operator, children.get(1), children.get(2));
             } else if (scalarOperation instanceof In) {
                 operation = String.format(" %s (%s)", operator, String.join(", ", children.subList(1, children.size())));
-            } else if (scalarOperation instanceof IsNull /*|| scalarOperation instanceof Exists*/) {
-                //TODO: what is the difference between EXISTS and IS NULL? Postgres only knows the latter.
-                //operator = CqlToText.SCALAR_OPERATORS.get(ImmutableIsNull.class);
+            } else if (scalarOperation instanceof IsNull) {
                 operation = String.format(" %s", operator);
-            } else if (scalarOperation instanceof Like && !Objects.equals("%", ((Like) scalarOperation).getWildCard())) {
-                String wildCard = ((Like) scalarOperation).getWildCard()
-                                                          .replace("*", "\\*");
-                value = value.replaceAll("%", "\\%")
-                             .replaceAll(wildCard, "%");
-                operation = String.format("::varchar %s %s", operator, value);
+            } else if (scalarOperation instanceof Like) {
+                String functionEnd = "";
+                if (!Objects.equals("%", ((Like) scalarOperation).getWildCard())) {
+                    String wildCard = ((Like) scalarOperation).getWildCard();
+                    value = value.replaceAll("%", "\\%")
+                                 .replaceAll(String.format("\\%s",wildCard), "%");
+                }
+                if (!Objects.equals("_", ((Like) scalarOperation).getSinglechar())) {
+                    String singlechar = ((Like) scalarOperation).getSinglechar();
+                    value = value.replaceAll("_", "\\_")
+                                 .replaceAll(String.format("\\%s",singlechar), "_");
+                }
+                if (!Objects.equals("\\", ((Like) scalarOperation).getEscapechar())) {
+                    String escapechar = ((Like) scalarOperation).getEscapechar();
+                    value = value.replaceAll("\\\\", "\\\\")
+                                 .replaceAll(String.format("\\%s",escapechar), "\\");
+                }
+                if (Objects.equals(Boolean.TRUE, ((Like) scalarOperation).getNocase())) {
+                    // TODO in PSQL we could also use ILIKE
+                    functionStart = "LOWER(";
+                    functionEnd = ")";
+                    value = value.toLowerCase();
+                }
+
+                operation = String.format("::varchar%s %s %s", functionEnd, operator, value);
             }
 
-            return String.format(propertyExpression, "", operation);
+            return String.format(propertyExpression, functionStart, operation);
         }
 
         @Override

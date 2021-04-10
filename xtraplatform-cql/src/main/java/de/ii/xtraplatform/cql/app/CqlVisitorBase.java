@@ -132,9 +132,4 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
         return null;
     }
 
-    @Override
-    public T visit(Like like, List<T> children) {
-        return null;
-    }
-
 }

@@ -222,6 +222,15 @@ public class CqlToText implements CqlVisitor<String> {
             return String.format("%s %s (%s)", property, operator, String.join(", ", children.subList(1, children.size())));
         } else if (scalarOperation instanceof IsNull || scalarOperation instanceof Exists) {
             return String.format("%s %s", children.get(0), operator);
+        } else if (scalarOperation instanceof Like) {
+            Like like = (Like) scalarOperation;
+            String wildcard = like.getWildCard().equals("%") ? "" : String.format("WILDCARD '%s'", like.getWildCard());
+            String singlechar = like.getSinglechar().equals("_") ? "" : String.format(" SINGLECHAR '%s'", like.getSinglechar());
+            String escapechar = like.getEscapechar().equals("\\") ? "" : String.format(" ESCAPECHAR '%s'", like.getEscapechar());
+            String nocase = like.getNocase().equals(Boolean.TRUE) ? "" : " NOCASE false";
+            return String.format("%s LIKE %s %s%s%s%s", children.get(0), children.get(1), wildcard, singlechar, escapechar, nocase)
+                         .trim()
+                         .replace("  ", " ");
         }
 
         return String.format("%s %s %s", children.get(0), operator, children.get(1));
@@ -394,17 +403,6 @@ public class CqlToText implements CqlVisitor<String> {
                         .stream()
                         .map(argument -> argument.accept(this))
                         .collect(Collectors.joining(",", "(", ")"));
-    }
-
-    @Override
-    public String visit(Like like, List<String> children) {
-        String wildcard = like.getWildCard().equals("%") ? "" : String.format("WILDCARD '%s'", like.getWildCard());
-        String singlechar = like.getSinglechar().equals("_") ? "" : String.format(" SINGLECHAR '%s'", like.getSinglechar());
-        String escapechar = like.getEscapechar().equals("\\") ? "" : String.format(" ESCAPECHAR '%s'", like.getEscapechar());
-        String nocase = like.getNocase().equals(Boolean.TRUE) ? "" : " NOCASE false";
-        return String.format("%s LIKE %s %s%s%s%s", children.get(0), children.get(1), wildcard, singlechar, escapechar, nocase)
-                .trim()
-                .replace("  ", " ");
     }
 
 }

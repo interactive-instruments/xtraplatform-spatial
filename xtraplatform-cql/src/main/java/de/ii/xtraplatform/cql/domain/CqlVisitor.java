@@ -18,8 +18,6 @@ public interface CqlVisitor<T> {
             return visit((CqlPredicate) node, children);
         } else if (node instanceof LogicalOperation) {
             return visit((LogicalOperation) node, children);
-        } else if (node instanceof Like) {
-            return visit((Like) node, children);
         } else if (node instanceof ScalarOperation) {
             return visit((ScalarOperation) node, children);
         } else if (node instanceof TemporalOperation) {
@@ -102,6 +100,4 @@ public interface CqlVisitor<T> {
     T visit(Geometry.Envelope envelope, List<T> children);
 
     T visit(Function function, List<T> children);
-
-    T visit(Like like, List<T> children);
 }

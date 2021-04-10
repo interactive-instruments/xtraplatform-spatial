@@ -250,9 +250,4 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         return function;
     }
 
-    @Override
-    public CqlNode visit(Like like, List<CqlNode> children) {
-        return like;
-    }
-
 }
