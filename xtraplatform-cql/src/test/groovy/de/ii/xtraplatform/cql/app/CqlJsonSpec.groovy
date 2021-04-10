@@ -104,14 +104,13 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-
     def 'Owner name starts with "Mike"'() {
 
         given:
         String cqlJson = """
         {
             "like": {
-                "wildCards": "%",
+                "wildcard": "%",
                 "property": "owner",
                 "value": "Mike%"
             }
@@ -509,11 +508,7 @@ class CqlJsonSpec extends Specification {
              "within": {
                 "property": "location",
                 "value": { 
-                    "bbox": [33.8,-118,34,-117.9],
-                    "crs": {
-                        "code": 4326,
-                        "forceAxisOrder": "LON_LAT"
-                    }
+                    "bbox": [-118,33.8,-117.9,34]
                 }
               }
         }
@@ -544,10 +539,6 @@ class CqlJsonSpec extends Specification {
                     "value": {
                         "type": "Polygon",
                         "coordinates": [[[-10.0, -10.0],[10.0, -10.0],[10.0, 10.0],[-10.0, -10.0]]],
-                        "crs": {
-                            "code": 4326,
-                            "forceAxisOrder": "LON_LAT"
-                        }
                     }
                 }
             }
@@ -585,11 +576,7 @@ class CqlJsonSpec extends Specification {
                    "within": {
                       "property": "geometry",
                       "value": { 
-                        "bbox": [33.8,-118,34,-117.9],
-                        "crs": {
-                            "code": 4326,
-                            "forceAxisOrder": "LON_LAT"
-                        }
+                        "bbox": [-118,33.8,-117.9,34]
                       }
                    }
                 }
@@ -723,63 +710,6 @@ class CqlJsonSpec extends Specification {
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
-
-    //EXISTS and DOES-NOT-EXIST are deactivated in the parser
-    /*def 'Property "owner" exists'() {
-
-        given:
-        String cqlJson = """
-        {
-            "exists": {
-                "property": "owner"
-            }
-        }
-        """
-
-        when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
-
-        then:
-        actual == CqlFilterExamples.EXAMPLE_22
-
-        and:
-
-        when: 'writing json'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_22, Cql.Format.JSON)
-
-        then:
-        JSONAssert.assertEquals(cqlJson, actual2, true)
-    }
-
-    def 'Property "owner" does not exist'() {
-
-        given:
-        String cqlJson = """
-        {
-            "not": [
-                {
-                    "exists": {
-                        "property": "owner"
-                    }
-                }
-            ]
-        }
-        """
-
-        when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
-
-        then:
-        actual == CqlFilterExamples.EXAMPLE_23
-
-        and:
-
-        when: 'writing json'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_23, Cql.Format.JSON)
-
-        then:
-        JSONAssert.assertEquals(cqlJson, actual2, true)
-    }*/
 
     def 'Built before 2015 (only date, no time information)'() {
 
