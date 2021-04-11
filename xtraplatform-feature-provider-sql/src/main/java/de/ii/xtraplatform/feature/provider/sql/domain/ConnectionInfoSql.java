@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
 
@@ -19,11 +20,16 @@ import org.immutables.value.Value;
  * @author zahnen
  */
 @Value.Immutable
-@Value.Style(builder = "new")
+@Value.Style(builder = "new", deepImmutablesDetection = true)
 @JsonDeserialize(builder = ImmutableConnectionInfoSql.Builder.class)
 public interface ConnectionInfoSql extends ConnectionInfo {
 
     enum Dialect {PGIS,GPKG}
+
+    @Value.Default
+    default Dialect getDialect() {
+        return Dialect.PGIS;
+    }
 
     Optional<String> getHost();
 
@@ -34,11 +40,6 @@ public interface ConnectionInfoSql extends ConnectionInfo {
     Optional<String> getPassword();
 
     List<String> getSchemas();
-
-    @Value.Default
-    default Dialect getDialect() {
-        return Dialect.PGIS;
-    }
 
     @Value.Default
     default boolean getComputeNumberMatched() {
@@ -53,22 +54,63 @@ public interface ConnectionInfoSql extends ConnectionInfo {
 
     Optional<FeatureActionTrigger> getTriggers();
 
+    @Deprecated
     @JsonAlias("maxThreads")
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     @Value.Default
     default int getMaxConnections() {
-        return -1;
+        return getPool().getMaxConnections();
     }
 
+    @Deprecated
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     @Value.Default
     default int getMinConnections() {
-        return getMaxConnections();
+        return getPool().getMinConnections();
+    }
+
+    @Deprecated
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @Value.Default
+    default boolean getInitFailFast() {
+        return getPool().getInitFailFast();
     }
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     @Value.Default
-    default boolean getInitFailFast() {
-        return true;
+    default Pool getPool() {
+        return new ImmutablePool.Builder().build();
+    }
+
+    Map<String,Object> getDriverOptions();
+
+    @Value.Immutable
+    @JsonDeserialize(builder = ImmutablePool.Builder.class)
+    interface Pool {
+
+        @Value.Default
+        default int getMaxConnections() {
+            return -1;
+        }
+
+        @Value.Default
+        default int getMinConnections() {
+            return getMaxConnections();
+        }
+
+        @Value.Default
+        default boolean getInitFailFast() {
+            return true;
+        }
+
+        @Value.Default
+        default String getIdleTimeout() {
+            return "10m";
+        }
+
+        @Value.Default
+        default boolean getReuse() {
+            return false;
+        }
     }
 }
