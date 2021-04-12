@@ -538,7 +538,7 @@ class CqlJsonSpec extends Specification {
                     "property": "location",
                     "value": {
                         "type": "Polygon",
-                        "coordinates": [[[-10.0, -10.0],[10.0, -10.0],[10.0, 10.0],[-10.0, -10.0]]],
+                        "coordinates": [[[-10.0, -10.0],[10.0, -10.0],[10.0, 10.0],[-10.0, -10.0]]]
                     }
                 }
             }
