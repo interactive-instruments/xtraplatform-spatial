@@ -20,7 +20,6 @@ import org.immutables.value.Value;
  * @author zahnen
  */
 @Value.Immutable
-@Value.Style(builder = "new", deepImmutablesDetection = true)
 @JsonDeserialize(builder = ImmutableConnectionInfoSql.Builder.class)
 public interface ConnectionInfoSql extends ConnectionInfo {
 
@@ -31,9 +30,9 @@ public interface ConnectionInfoSql extends ConnectionInfo {
         return Dialect.PGIS;
     }
 
-    Optional<String> getHost();
-
     String getDatabase();
+
+    Optional<String> getHost();
 
     Optional<String> getUser();
 
@@ -41,16 +40,29 @@ public interface ConnectionInfoSql extends ConnectionInfo {
 
     List<String> getSchemas();
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     @Value.Default
-    default boolean getComputeNumberMatched() {
-        return true;
+    //can't use interface, bug in immutables when using attributeBuilderDetection and Default
+    default ImmutablePoolSettings getPool() {
+        return new ImmutablePoolSettings.Builder().build();
     }
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     @JsonAlias("pathSyntax")
     @Value.Default
-    default SqlPathDefaults getSourcePathDefaults() {
+    //can't use interface, bug in immutables when using attributeBuilderDetection and Default
+    default ImmutableSqlPathDefaults getSourcePathDefaults() {
         return new ImmutableSqlPathDefaults.Builder().build();
     }
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @Value.Default
+    //can't use interface, bug in immutables when using attributeBuilderDetection and Default
+    default ImmutableQueryGeneratorSettings getQueryGeneration() {
+        return new ImmutableQueryGeneratorSettings.Builder().build();
+    }
+
+    Map<String,Object> getDriverOptions();
 
     Optional<FeatureActionTrigger> getTriggers();
 
@@ -76,17 +88,15 @@ public interface ConnectionInfoSql extends ConnectionInfo {
         return getPool().getInitFailFast();
     }
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @Deprecated
     @Value.Default
-    default Pool getPool() {
-        return new ImmutablePool.Builder().build();
+    default boolean getComputeNumberMatched() {
+        return getQueryGeneration().getComputeNumberMatched();
     }
 
-    Map<String,Object> getDriverOptions();
-
     @Value.Immutable
-    @JsonDeserialize(builder = ImmutablePool.Builder.class)
-    interface Pool {
+    @JsonDeserialize(builder = ImmutablePoolSettings.Builder.class)
+    interface PoolSettings {
 
         @Value.Default
         default int getMaxConnections() {
@@ -111,6 +121,16 @@ public interface ConnectionInfoSql extends ConnectionInfo {
         @Value.Default
         default boolean getReuse() {
             return false;
+        }
+    }
+
+    @Value.Immutable
+    @JsonDeserialize(builder = ImmutableQueryGeneratorSettings.Builder.class)
+    interface QueryGeneratorSettings {
+
+        @Value.Default
+        default boolean getComputeNumberMatched() {
+            return true;
         }
     }
 }
