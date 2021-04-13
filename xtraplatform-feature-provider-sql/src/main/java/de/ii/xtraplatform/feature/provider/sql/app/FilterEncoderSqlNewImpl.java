@@ -376,7 +376,7 @@ public class FilterEncoderSqlNewImpl implements FilterEncoderSqlNew {
             if (nots.containsKey(i) && nots.get(i)) {
                 expression = "NOT " + expression;
             }
-            sqlConditions.add(ImmutableSqlCondition.builder()
+            sqlConditions.add(new ImmutableSqlCondition.Builder()
                                                    .column(columns.get(i))
                                                    .table(tables.get(i))
                                                    .expression(expression)

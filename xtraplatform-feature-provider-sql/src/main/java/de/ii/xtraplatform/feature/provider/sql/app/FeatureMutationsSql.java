@@ -65,7 +65,7 @@ public class FeatureMutationsSql {
     public Source<SqlRow, NotUsed> getDeletionSource(SchemaSql schema, String id) {
         Pair<String, Consumer<String>> delete = createInstanceDelete(schema, id).apply(null);
 
-        return sqlClient.get().getSourceStream(delete.first(), ImmutableSqlQueryOptions.builder().build());
+        return sqlClient.get().getSourceStream(delete.first(), new ImmutableSqlQueryOptions.Builder().build());
     }
 
     //TODO: shouldn't id be part of the feature already?

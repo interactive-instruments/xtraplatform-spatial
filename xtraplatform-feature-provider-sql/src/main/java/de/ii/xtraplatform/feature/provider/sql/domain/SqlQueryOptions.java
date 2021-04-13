@@ -27,7 +27,7 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
   }
 
   static SqlQueryOptions withColumnTypes(List<Class<?>> columnTypes) {
-    return ImmutableSqlQueryOptions.builder().customColumnTypes(columnTypes).build();
+    return new ImmutableSqlQueryOptions.Builder().customColumnTypes(columnTypes).build();
   }
 
   Optional<FeatureStoreAttributesContainer> getAttributesContainer();

@@ -11,10 +11,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableConnectionInfoSql;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql.Dialect;
-import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlPathDefaults;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectGpkg;
@@ -166,7 +166,7 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
 
       if (!Objects.equals(mostOftenUsedId, "id")) {
         // LOGGER.debug("CHANGING defaultSortKey to {}", mostOftenUsedId);
-        ImmutableConnectionInfoSql connectionInfoSql =
+        ConnectionInfoSql connectionInfoSql =
             new ImmutableConnectionInfoSql.Builder()
                 .from(data.getConnectionInfo())
                 .sourcePathDefaults(

@@ -128,7 +128,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                      .getSortKey());
             Optional<String> constant = syntax.getConstantFlag(flags);
 
-            return Optional.of(ImmutableSqlPath.builder()
+            return Optional.of(new ImmutableSqlPath.Builder()
                                                .tablePath(tablePath)
                                                .tableFlags(tableFlags)
                                                .columns(columns)
