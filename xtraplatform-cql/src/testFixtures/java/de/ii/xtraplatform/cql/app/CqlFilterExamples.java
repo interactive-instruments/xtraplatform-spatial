@@ -14,7 +14,6 @@ import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 
 import java.util.Objects;
-import java.util.Properties;
 
 public class CqlFilterExamples {
 
@@ -24,7 +23,7 @@ public class CqlFilterExamples {
 
     static final CqlFilter EXAMPLE_3 = CqlFilter.of(Like.of("owner", ScalarLiteral.of("% Jones %")));
 
-    static final CqlFilter EXAMPLE_4 = CqlFilter.of(Like.of("owner", ScalarLiteral.of("Mike%")));
+    static final CqlFilter EXAMPLE_4 = CqlFilter.of(Like.of("owner", ScalarLiteral.of("Mike%"), "%", null, null, null));
 
     static final CqlFilter EXAMPLE_5 = CqlFilter.of(Not.of(Like.of("owner", ScalarLiteral.of("% Mike %"))));
 
@@ -134,7 +133,7 @@ public class CqlFilterExamples {
 
     static final CqlFilter EXAMPLE_34 = CqlFilter.of(Eq.of("landsat:scene_id", ScalarLiteral.of("LC82030282019133LGN00")));
 
-    static final CqlFilter EXAMPLE_35 = CqlFilter.of(Like.of("name", ScalarLiteral.of("Smith."), null, ".", null, false));
+    static final CqlFilter EXAMPLE_35 = CqlFilter.of(Like.of("name", ScalarLiteral.of("Smith."), null, ".", "+", false));
 
     static final CqlFilter EXAMPLE_36 = CqlFilter.of(AnyInteracts.of("event_date", getTemporalLiteral("1969-07-16T05:32:00Z/1969-07-24T16:50:35Z")));
 

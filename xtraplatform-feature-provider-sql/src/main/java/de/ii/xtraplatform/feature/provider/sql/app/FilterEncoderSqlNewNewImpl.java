@@ -26,7 +26,6 @@ import org.threeten.extra.Interval;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -233,22 +232,26 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 operation = String.format(" %s", operator);
             } else if (scalarOperation instanceof Like) {
                 String functionEnd = "";
-                if (!Objects.equals("%", ((Like) scalarOperation).getWildCard())) {
-                    String wildCard = ((Like) scalarOperation).getWildCard();
+                if (((Like) scalarOperation).getWildcard().isPresent() &&
+                        !Objects.equals("%", ((Like) scalarOperation).getWildcard().get())) {
+                    Optional<String> wildCard = ((Like) scalarOperation).getWildcard();
                     value = value.replaceAll("%", "\\%")
                                  .replaceAll(String.format("\\%s",wildCard), "%");
                 }
-                if (!Objects.equals("_", ((Like) scalarOperation).getSinglechar())) {
-                    String singlechar = ((Like) scalarOperation).getSinglechar();
+                if (((Like) scalarOperation).getSinglechar().isPresent() &&
+                        !Objects.equals("_", ((Like) scalarOperation).getSinglechar().get())) {
+                    String singlechar = ((Like) scalarOperation).getSinglechar().get();
                     value = value.replaceAll("_", "\\_")
                                  .replaceAll(String.format("\\%s",singlechar), "_");
                 }
-                if (!Objects.equals("\\", ((Like) scalarOperation).getEscapechar())) {
-                    String escapechar = ((Like) scalarOperation).getEscapechar();
+                if (((Like) scalarOperation).getEscapechar().isPresent() &&
+                        !Objects.equals("\\", ((Like) scalarOperation).getEscapechar().get())) {
+                    String escapechar = ((Like) scalarOperation).getEscapechar().get();
                     value = value.replaceAll("\\\\", "\\\\")
                                  .replaceAll(String.format("\\%s",escapechar), "\\");
                 }
-                if (Objects.equals(Boolean.TRUE, ((Like) scalarOperation).getNocase())) {
+                if (((Like) scalarOperation).getNocase().isPresent() &&
+                        Objects.equals(Boolean.TRUE, ((Like) scalarOperation).getNocase().get())) {
                     // TODO in PSQL we could also use ILIKE
                     functionStart = "LOWER(";
                     functionEnd = ")";

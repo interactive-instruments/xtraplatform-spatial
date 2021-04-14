@@ -179,25 +179,31 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 return Not.of(like);
             }
 
-            if (Objects.nonNull(ctx.wildcard())) {
-                ScalarLiteral wildcard = (ScalarLiteral) ctx.wildcard().accept(this);
-                like = new ImmutableLike.Builder().from(like).wildCards((String) wildcard.getValue()).build();
+            List<CqlParser.LikeModifierContext> likeModifiers = ctx.likeModifier();
+
+            for (CqlParser.LikeModifierContext likeModifier : likeModifiers) {
+                if (Objects.nonNull(likeModifier.wildcard())) {
+                    ScalarLiteral wildcard = (ScalarLiteral) likeModifier.wildcard().accept(this);
+                    like = new ImmutableLike.Builder().from(like).wildcard((String) wildcard.getValue()).build();
+                }
+
+                if (Objects.nonNull(likeModifier.singlechar())) {
+                    ScalarLiteral singlechar = (ScalarLiteral) likeModifier.singlechar().accept(this);
+                    like = new ImmutableLike.Builder().from(like).singlechar((String) singlechar.getValue()).build();
+                }
+
+                if (Objects.nonNull(likeModifier.escapechar())) {
+                    ScalarLiteral escapechar = (ScalarLiteral) likeModifier.escapechar().accept(this);
+                    like = new ImmutableLike.Builder().from(like).escapechar((String) escapechar.getValue()).build();
+                }
+
+                if (Objects.nonNull(likeModifier.nocase())) {
+                    ScalarLiteral nocase = (ScalarLiteral) likeModifier.nocase().accept(this);
+                    like = new ImmutableLike.Builder().from(like).nocase((Boolean) nocase.getValue()).build();
+                }
             }
 
-            if (Objects.nonNull(ctx.singlechar())) {
-                ScalarLiteral singlechar = (ScalarLiteral) ctx.singlechar().accept(this);
-                like = new ImmutableLike.Builder().from(like).singlechars((String) singlechar.getValue()).build();
-            }
 
-            if (Objects.nonNull(ctx.escapechar())) {
-                ScalarLiteral escapechar = (ScalarLiteral) ctx.escapechar().accept(this);
-                like = new ImmutableLike.Builder().from(like).escapechars((String) escapechar.getValue()).build();
-            }
-
-            if (Objects.nonNull(ctx.nocase())) {
-                ScalarLiteral nocase = (ScalarLiteral) ctx.nocase().accept(this);
-                like = new ImmutableLike.Builder().from(like).nocases((Boolean) nocase.getValue()).build();
-            }
 
             return like;
         }

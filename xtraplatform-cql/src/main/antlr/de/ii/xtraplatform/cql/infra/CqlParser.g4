@@ -43,12 +43,12 @@ comparisonPredicate : binaryComparisonPredicate
 
 binaryComparisonPredicate : scalarExpression ComparisonOperator scalarExpression;
 
-
+likeModifier: wildcard | singlechar | escapechar | nocase;
 wildcard : WILDCARD characterLiteral;
 singlechar : SINGLECHAR characterLiteral;
 escapechar : ESCAPECHAR characterLiteral;
 nocase : NOCASE booleanLiteral;
-propertyIsLikePredicate :  scalarExpression (NOT)? LIKE regularExpression (wildcard)? (singlechar)? (escapechar)? (nocase)?;
+propertyIsLikePredicate :  scalarExpression (NOT)? LIKE regularExpression (likeModifier)*;
 
 propertyIsBetweenPredicate : scalarExpression BETWEEN
                              scalarExpression AND scalarExpression;

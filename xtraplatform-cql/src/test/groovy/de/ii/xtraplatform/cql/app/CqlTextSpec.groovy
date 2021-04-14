@@ -85,7 +85,7 @@ class CqlTextSpec extends Specification {
     def 'Owner name starts with "Mike"'() {
 
         given:
-        String cqlText = "owner LIKE 'Mike%'"
+        String cqlText = "owner LIKE 'Mike%' WILDCARD '%'"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -700,7 +700,7 @@ class CqlTextSpec extends Specification {
     def 'LIKE operator modifiers'() {
 
         given:
-        String cqlText = "name LIKE 'Smith.' SINGLECHAR '.' NOCASE false"
+        String cqlText = "name LIKE 'Smith.' SINGLECHAR '.' ESCAPECHAR '+' NOCASE false"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)

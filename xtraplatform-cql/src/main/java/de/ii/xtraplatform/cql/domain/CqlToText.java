@@ -8,61 +8,6 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.cql.domain.And;
-import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlNode;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
-import de.ii.xtraplatform.cql.domain.CqlVisitor;
-import de.ii.xtraplatform.cql.domain.Exists;
-import de.ii.xtraplatform.cql.domain.Function;
-import de.ii.xtraplatform.cql.domain.Geometry;
-import de.ii.xtraplatform.cql.domain.ImmutableAfter;
-import de.ii.xtraplatform.cql.domain.ImmutableAnd;
-import de.ii.xtraplatform.cql.domain.ImmutableBefore;
-import de.ii.xtraplatform.cql.domain.ImmutableBegins;
-import de.ii.xtraplatform.cql.domain.ImmutableBegunBy;
-import de.ii.xtraplatform.cql.domain.ImmutableBetween;
-import de.ii.xtraplatform.cql.domain.ImmutableContains;
-import de.ii.xtraplatform.cql.domain.ImmutableCrosses;
-import de.ii.xtraplatform.cql.domain.ImmutableDisjoint;
-import de.ii.xtraplatform.cql.domain.ImmutableDuring;
-import de.ii.xtraplatform.cql.domain.ImmutableEndedBy;
-import de.ii.xtraplatform.cql.domain.ImmutableEnds;
-import de.ii.xtraplatform.cql.domain.ImmutableEq;
-import de.ii.xtraplatform.cql.domain.ImmutableEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableExists;
-import de.ii.xtraplatform.cql.domain.ImmutableGt;
-import de.ii.xtraplatform.cql.domain.ImmutableGte;
-import de.ii.xtraplatform.cql.domain.ImmutableIn;
-import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
-import de.ii.xtraplatform.cql.domain.ImmutableIsNull;
-import de.ii.xtraplatform.cql.domain.ImmutableLike;
-import de.ii.xtraplatform.cql.domain.ImmutableLt;
-import de.ii.xtraplatform.cql.domain.ImmutableLte;
-import de.ii.xtraplatform.cql.domain.ImmutableMeets;
-import de.ii.xtraplatform.cql.domain.ImmutableMetBy;
-import de.ii.xtraplatform.cql.domain.ImmutableNeq;
-import de.ii.xtraplatform.cql.domain.ImmutableNot;
-import de.ii.xtraplatform.cql.domain.ImmutableOr;
-import de.ii.xtraplatform.cql.domain.ImmutableOverlappedBy;
-import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
-import de.ii.xtraplatform.cql.domain.ImmutableTContains;
-import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableTOverlaps;
-import de.ii.xtraplatform.cql.domain.ImmutableTouches;
-import de.ii.xtraplatform.cql.domain.ImmutableWithin;
-import de.ii.xtraplatform.cql.domain.In;
-import de.ii.xtraplatform.cql.domain.IsNull;
-import de.ii.xtraplatform.cql.domain.LogicalOperation;
-import de.ii.xtraplatform.cql.domain.Or;
-import de.ii.xtraplatform.cql.domain.Property;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
-import de.ii.xtraplatform.cql.domain.ScalarOperation;
-import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.threeten.extra.Interval;
 
@@ -224,10 +169,10 @@ public class CqlToText implements CqlVisitor<String> {
             return String.format("%s %s", children.get(0), operator);
         } else if (scalarOperation instanceof Like) {
             Like like = (Like) scalarOperation;
-            String wildcard = like.getWildCard().equals("%") ? "" : String.format("WILDCARD '%s'", like.getWildCard());
-            String singlechar = like.getSinglechar().equals("_") ? "" : String.format(" SINGLECHAR '%s'", like.getSinglechar());
-            String escapechar = like.getEscapechar().equals("\\") ? "" : String.format(" ESCAPECHAR '%s'", like.getEscapechar());
-            String nocase = like.getNocase().equals(Boolean.TRUE) ? "" : " NOCASE false";
+            String wildcard = like.getWildcard().isPresent() ? String.format("WILDCARD '%s'", like.getWildcard().get()) : "";
+            String singlechar = like.getSinglechar().isPresent() ? String.format(" SINGLECHAR '%s'", like.getSinglechar().get()) : "";
+            String escapechar = like.getEscapechar().isPresent() ? String.format(" ESCAPECHAR '%s'", like.getEscapechar().get()) : "";
+            String nocase = like.getNocase().isPresent() ? String.format(" NOCASE %s", like.getNocase().get()) : "";
             return String.format("%s LIKE %s %s%s%s%s", children.get(0), children.get(1), wildcard, singlechar, escapechar, nocase)
                          .trim()
                          .replace("  ", " ");

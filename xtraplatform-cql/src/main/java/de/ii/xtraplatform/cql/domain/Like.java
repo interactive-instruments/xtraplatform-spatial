@@ -26,10 +26,10 @@ public interface Like extends ScalarOperation, CqlNode {
     static Like of(String property, ScalarLiteral scalarLiteral, String wildCard, String singlechar, String escapechar, Boolean nocase) {
         return new ImmutableLike.Builder().property(property)
                                           .value(scalarLiteral)
-                                          .wildCards(Optional.ofNullable(wildCard))
-                                          .singlechars(Optional.ofNullable(singlechar))
-                                          .escapechars(Optional.ofNullable(escapechar))
-                                          .nocases(Optional.ofNullable(nocase))
+                                          .wildcard(Optional.ofNullable(wildCard))
+                                          .singlechar(Optional.ofNullable(singlechar))
+                                          .escapechar(Optional.ofNullable(escapechar))
+                                          .nocase(Optional.ofNullable(nocase))
                                           .build();
     }
 
@@ -42,54 +42,22 @@ public interface Like extends ScalarOperation, CqlNode {
     static Like ofFunction(Function function, ScalarLiteral scalarLiteral, String wildCard, String singlechar, String escapechar, Boolean nocase) {
         return new ImmutableLike.Builder().function(function)
                 .value(scalarLiteral)
-                .wildCards(Optional.ofNullable(wildCard))
-                .singlechars(Optional.ofNullable(singlechar))
-                .escapechars(Optional.ofNullable(escapechar))
-                .nocases(Optional.ofNullable(nocase))
+                .wildcard(Optional.ofNullable(wildCard))
+                .singlechar(Optional.ofNullable(singlechar))
+                .escapechar(Optional.ofNullable(escapechar))
+                .nocase(Optional.ofNullable(nocase))
                 .build();
     }
 
     abstract class Builder extends ScalarOperation.Builder<Like> {
     }
 
-    @Value.Auxiliary
-    Optional<String> getWildCards();
+    Optional<String> getWildcard();
 
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default String getWildCard() {
-        return getWildCards().orElse("%");
-    }
+    Optional<String> getSinglechar();
 
-    @Value.Auxiliary
-    Optional<String> getSinglechars();
+    Optional<String> getEscapechar();
 
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default String getSinglechar() {
-        return getSinglechars().orElse("_");
-    }
-
-    @Value.Auxiliary
-    Optional<String> getEscapechars();
-
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default String getEscapechar() {
-        return getEscapechars().orElse("\\");
-    }
-
-    @Value.Auxiliary
-    Optional<Boolean> getNocases();
-
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default Boolean getNocase() {
-        return getNocases().orElse(Boolean.TRUE);
-    }
+    Optional<Boolean> getNocase();
 
 }
