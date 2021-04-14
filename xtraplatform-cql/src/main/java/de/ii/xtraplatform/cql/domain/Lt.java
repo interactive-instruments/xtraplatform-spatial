@@ -26,6 +26,18 @@ public interface Lt extends ScalarOperation, CqlNode {
                 .build();
     }
 
+    static Lt of(Property property, Property property2) {
+        return new ImmutableLt.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
+    static Lt ofProperties(String property, String property2) {
+        return new ImmutableLt.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     static Lt ofFunction(Function function, ScalarLiteral scalarLiteral) {
         return new ImmutableLt.Builder().function(function)
                 .value(scalarLiteral)

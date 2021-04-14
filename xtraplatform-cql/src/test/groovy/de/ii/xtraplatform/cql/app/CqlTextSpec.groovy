@@ -757,24 +757,24 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-//    def 'Both operands are property references'() {
-//
-//        given:
-//        String cqlText = "height < floors"
-//
-//        when: 'reading text'
-//        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
-//
-//        then:
-//        actual == CqlFilterExamples.EXAMPLE_37
-//
-//        and:
-//
-//        when: 'writing text'
-//        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_37, Cql.Format.TEXT)
-//
-//        then:
-//        actual2 == cqlText
-//    }
+    def 'Both operands are property references'() {
+
+        given:
+        String cqlText = "height < floors"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_37
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_37, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
 
 }

@@ -20,6 +20,8 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
 
     Optional<Property> getProperty();
 
+    Optional<Property> getProperty2();
+
     Optional<T> getValue();
 
     Optional<Function> getFunction();
@@ -38,6 +40,7 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
         return ImmutableList.of(
                 getFunction(),
                 getProperty(),
+                getProperty2(),
                 getValue()
         )
                             .stream()
@@ -49,6 +52,8 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
 
     abstract class Builder<T extends Literal, U extends BinaryOperation<T>> {
         public abstract Builder<T,U> property(Property property);
+
+        public abstract Builder<T,U> property2(Property property);
 
         public abstract Builder<T,U> value(T literal);
 
@@ -62,18 +67,26 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
         }
 
         public Builder<T,U> operand2(Operand operand2) {
-            addOperand(operand2);
+            addOperand2(operand2);
             return this;
         }
 
         @SuppressWarnings("unchecked")
-        public void addOperand(Operand literal) {
-            if (literal instanceof Property) {
-                property((Property) literal);
-            } else if (literal instanceof Literal) {
-                value((T)literal);
-            } else if (literal instanceof Function) {
-                function((Function) literal);
+        public void addOperand(Operand operand) {
+            if (operand instanceof Property) {
+                property((Property) operand);
+            } else if (operand instanceof Literal) {
+                value((T)operand);
+            } else if (operand instanceof Function) {
+                function((Function) operand);
+            }
+        }
+
+        public void addOperand2(Operand operand) {
+            if (operand instanceof Property) {
+                property2((Property) operand);
+            } else {
+                addOperand(operand);
             }
         }
     }
