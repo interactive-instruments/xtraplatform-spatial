@@ -10,7 +10,7 @@ package de.ii.xtraplatform.feature.provider.wfs.infra;
 import com.google.common.base.Strings;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.feature.provider.api.AbstractFeatureProviderMetadataConsumer;
+import de.ii.xtraplatform.features.domain.AbstractFeatureProviderMetadataConsumer;
 import de.ii.xtraplatform.features.domain.ImmutableMetadata;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;

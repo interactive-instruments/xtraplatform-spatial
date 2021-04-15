@@ -31,6 +31,7 @@ public final class FactoryRegistryState<T> implements Registry.State<Factory>, F
     private final BundleContext bundleContext;
     private final Registry.State<Factory> factories;
     private final Map<T, ComponentInstance> instances;
+    private final Map<String, T> instancesByName;
 
     public FactoryRegistryState(String className, String shortName, BundleContext bundleContext,
                                 String... componentProperties) {
@@ -38,6 +39,7 @@ public final class FactoryRegistryState<T> implements Registry.State<Factory>, F
         this.bundleContext = bundleContext;
         this.factories = new RegistryState<>(String.format("%s factory", shortName), bundleContext, componentProperties);
         this.instances = new ConcurrentHashMap<>();
+        this.instancesByName = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -85,6 +87,7 @@ public final class FactoryRegistryState<T> implements Registry.State<Factory>, F
             T connector = (T) bundleContext.getService(connectorRefs[0]);
 
             instances.put(connector, connectorInstance);
+            instancesByName.put(connectorInstance.getInstanceName(), connector);
 
             return connector;
 
@@ -94,9 +97,20 @@ public final class FactoryRegistryState<T> implements Registry.State<Factory>, F
     }
 
     @Override
+    public boolean hasInstance(String instanceId) {
+        return instancesByName.containsKey(instanceId);
+    }
+
+    @Override
+    public T getInstance(String instanceId) {
+        return instancesByName.get(instanceId);
+    }
+
+    @Override
     public void disposeInstance(T instance) {
         if (instances.containsKey(instance)) {
             ComponentInstance componentInstance = instances.remove(instance);
+            instancesByName.remove(componentInstance.getInstanceName());
             componentInstance.dispose();
         }
     }

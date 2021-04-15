@@ -145,7 +145,7 @@ public class SqlPathParser {
 
       if (Objects.nonNull(column)) {
         List<String> columns = MULTI_COLUMN_SPLITTER.splitToList(column);
-        Builder builder = ImmutableSqlPath.builder().name(column).columns(columns);
+        Builder builder = new ImmutableSqlPath.Builder().name(column).columns(columns);
 
         String tablePath = matcher.group(MatcherGroups.PATH.name());
 
@@ -173,7 +173,7 @@ public class SqlPathParser {
     List<SqlPath> sqlPaths = parseTables(path);
 
     if (!sqlPaths.isEmpty()) {
-      return ImmutableSqlPath.builder()
+      return new ImmutableSqlPath.Builder()
           .from(sqlPaths.get(sqlPaths.size() - 1))
           .parentTables(sqlPaths.subList(0, sqlPaths.size() - 1))
           .build();
@@ -195,7 +195,7 @@ public class SqlPathParser {
 
   private SqlPath parseTable(Matcher tableMatcher, boolean hasJoin) {
     String table = tableMatcher.group(MatcherGroups.TABLE.name());
-    Builder builder = ImmutableSqlPath.builder().name(table);
+    Builder builder = new ImmutableSqlPath.Builder().name(table);
 
     if (hasJoin) {
       String sourceField = tableMatcher.group(MatcherGroups.SOURCEFIELD.name());
@@ -279,7 +279,7 @@ public class SqlPathParser {
 
     List<SqlPath> allTables =
         getAllTables(
-            ImmutableSqlPath.builder()
+            new ImmutableSqlPath.Builder()
                 .name(parent.getName())
                 .sortKey(parent.getSortKey().orElse(defaults.getSortKey()))
                 .primaryKey(parent.getPrimaryKey().orElse(defaults.getPrimaryKey()))
@@ -352,7 +352,7 @@ public class SqlPathParser {
     String targetField = target.getJoin().get().second();
     boolean isOne2One = Objects.equals(targetField, source.getPrimaryKey());
 
-    return ImmutableSqlRelation.builder()
+    return new ImmutableSqlRelation.Builder()
         .cardinality(
             isOne2One ? SqlRelation.CARDINALITY.ONE_2_ONE : SqlRelation.CARDINALITY.ONE_2_N)
         .sourceContainer(source.getName())
@@ -375,7 +375,7 @@ public class SqlPathParser {
     String junctionTargetField = target.getJoin().get().first();
     String targetField = target.getJoin().get().second();
 
-    return ImmutableSqlRelation.builder()
+    return new ImmutableSqlRelation.Builder()
         .cardinality(SqlRelation.CARDINALITY.M_2_N)
         .sourceContainer(source.getName())
         .sourceField(sourceField)

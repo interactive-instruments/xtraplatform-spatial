@@ -23,7 +23,11 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureProviderSqlData;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathDefaults;
+import de.ii.xtraplatform.features.domain.ConnectionInfo;
+import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
@@ -68,7 +72,6 @@ import de.ii.xtraplatform.streams.domain.LogContextStream;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.concurrent.CompletionException;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -87,7 +90,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 @EntityComponent
-@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderDataV2.class)
+@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderSqlData.class)
 public class FeatureProviderSql extends
     AbstractFeatureProvider<SqlRow, SqlQueries, SqlQueryOptions> implements FeatureProvider2,
     FeatureQueries, FeatureExtents, FeatureCrs, FeatureTransactions {
@@ -98,7 +101,6 @@ public class FeatureProviderSql extends
   public static final String PROVIDER_TYPE = "SQL";
 
   private final CrsTransformerFactory crsTransformerFactory;
-  private final SqlConnector connector;
   private final FeatureStoreQueryGeneratorSql queryGeneratorSql;
   private final FeatureQueryTransformerSql queryTransformer;
   private final FeatureNormalizerSql featureNormalizer;
@@ -116,19 +118,18 @@ public class FeatureProviderSql extends
       @Requires CrsTransformerFactory crsTransformerFactory,
       @Requires Cql cql,
       @Requires ConnectorFactory connectorFactory,
-      @Property(name = Entity.DATA_KEY) FeatureProviderDataV2 data) {
+      @Property(name = Entity.DATA_KEY) FeatureProviderSqlData data) {
     //TODO: starts akka for every instance, move to singleton
     super(context, actorSystemProvider, data,
-        createPathParser((ConnectionInfoSql) data.getConnectionInfo(), cql));
+        createPathParser(data.getSourcePathDefaults(), cql), connectorFactory);
 
     this.crsTransformerFactory = crsTransformerFactory;
-    this.connector = (SqlConnector) connectorFactory.createConnector(data);
     //TODO: from config
-    SqlDialect sqlDialect = ((ConnectionInfoSql) data.getConnectionInfo()).getDialect() == Dialect.PGIS ? new SqlDialectPostGis() : new SqlDialectGpkg();
+    SqlDialect sqlDialect = data.getConnectionInfo().getDialect() == Dialect.PGIS ? new SqlDialectPostGis() : new SqlDialectGpkg();
     this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect, data.getNativeCrs()
         .orElse(OgcCrs.CRS84), crsTransformerFactory);
     this.queryTransformer = new FeatureQueryTransformerSql(getTypeInfos(), queryGeneratorSql,
-        ((ConnectionInfoSql) data.getConnectionInfo()).getComputeNumberMatched());
+        data.getQueryGeneration().getComputeNumberMatched());
 
     Map<String, FeatureType> types = data.getTypes()
         .entrySet()
@@ -138,49 +139,48 @@ public class FeatureProviderSql extends
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
     this.featureNormalizer = new FeatureNormalizerSql(getTypeInfos(), types);
-    this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect,
+    this.extentReader = new ExtentReaderSql(this::getSqlClient, queryGeneratorSql, sqlDialect,
         data.getNativeCrs()
             .orElse(OgcCrs.CRS84));
-    this.featureMutationsSql = new FeatureMutationsSql(connector.getSqlClient(),
+    this.featureMutationsSql = new FeatureMutationsSql(this::getSqlClient,
         new SqlInsertGenerator2(data.getNativeCrs()
             .orElse(OgcCrs.CRS84), crsTransformerFactory,
-            ((ConnectionInfoSql) data.getConnectionInfo()).getSourcePathDefaults()));
-    this.schemaSwapperSql = createSchemaSwapper((ConnectionInfoSql) data.getConnectionInfo(), cql);
-    this.pathParser = createPathParser2((ConnectionInfoSql) data.getConnectionInfo(), cql);
-    this.pathParser3 = createPathParser3((ConnectionInfoSql) data.getConnectionInfo(), cql);
+            data.getSourcePathDefaults()));
+    this.schemaSwapperSql = createSchemaSwapper(data.getSourcePathDefaults(), cql);
+    this.pathParser = createPathParser2(data.getSourcePathDefaults(), cql);
+    this.pathParser3 = createPathParser3(data.getSourcePathDefaults(), cql);
     this.typeInfoValidator = new SqlTypeInfoValidator(
-        ((ConnectionInfoSql) data.getConnectionInfo()).getSchemas(), connector.getSqlClient());
+        data.getConnectionInfo().getSchemas(), this::getSqlClient);
     this.spatialExtentCache = new HashMap<>();
     this.temporalExtentCache = new HashMap<>();
   }
 
-  public static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql,
+  public static FeatureStorePathParser createPathParser(SqlPathDefaults sqlPathDefaults,
       Cql cql) {
     SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-        .options(connectionInfoSql.getSourcePathDefaults())
+        .options(sqlPathDefaults)
         .build();
     return new FeatureStorePathParserSql(syntax, cql);
   }
 
-  private static FeatureSchemaSwapperSql createSchemaSwapper(ConnectionInfoSql connectionInfoSql,
+  private static FeatureSchemaSwapperSql createSchemaSwapper(SqlPathDefaults sqlPathDefaults,
       Cql cql) {
     SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-        .options(connectionInfoSql.getSourcePathDefaults())
+        .options(sqlPathDefaults)
         .build();
     return new FeatureSchemaSwapperSql(syntax, cql);
   }
 
-  private static PathParserSql createPathParser2(ConnectionInfoSql connectionInfoSql, Cql cql) {
+  private static PathParserSql createPathParser2(SqlPathDefaults sqlPathDefaults, Cql cql) {
     SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-        .options(connectionInfoSql.getSourcePathDefaults())
+        .options(sqlPathDefaults)
         .build();
     return new PathParserSql(syntax, cql);
   }
 
-  private static SqlPathParser createPathParser3(ConnectionInfoSql connectionInfoSql, Cql cql) {
-    return new SqlPathParser(connectionInfoSql.getSourcePathDefaults(), cql);
+  private static SqlPathParser createPathParser3(SqlPathDefaults sqlPathDefaults, Cql cql) {
+    return new SqlPathParser(sqlPathDefaults, cql);
   }
-
 
   @Override
   protected void onStarted() {
@@ -203,10 +203,10 @@ public class FeatureProviderSql extends
 
   //TODO: implement auto mode for maxConnections=-1, how to get numberOfQueries in Connector?
   @Override
-  protected int getRunnerCapacity(FeatureProviderDataV2 data) {
-    ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+  protected int getRunnerCapacity(ConnectionInfo connectionInfo) {
+    ConnectionInfoSql connectionInfoSql = (ConnectionInfoSql) connectionInfo;
 
-    int maxConnections = connectionInfo.getMaxConnections();
+    int maxConnections = connectionInfoSql.getPool().getMaxConnections();
 
     int runnerCapacity = Runtime.getRuntime()
         .availableProcessors();
@@ -229,14 +229,14 @@ public class FeatureProviderSql extends
   }
 
   @Override
-  protected int getRunnerQueueSize(FeatureProviderDataV2 data) {
-    ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+  protected int getRunnerQueueSize(ConnectionInfo connectionInfo) {
+    ConnectionInfoSql connectionInfoSql = (ConnectionInfoSql) connectionInfo;
 
     int maxQueries = getMaxQueries();
 
     int maxConnections;
-    if (connectionInfo.getMaxConnections() > 0) {
-      maxConnections = connectionInfo.getMaxConnections();
+    if (connectionInfoSql.getPool().getMaxConnections() > 0) {
+      maxConnections = connectionInfoSql.getPool().getMaxConnections();
     } else {
       maxConnections = maxQueries * Runtime.getRuntime()
           .availableProcessors();
@@ -265,11 +265,11 @@ public class FeatureProviderSql extends
   }
 
   @Override
-  protected Optional<String> getRunnerError(FeatureProviderDataV2 data) {
+  protected Optional<String> getRunnerError(ConnectionInfo connectionInfo) {
     if (getStreamRunner().getCapacity() == 0) {
-      ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+      ConnectionInfoSql connectionInfoSql = (ConnectionInfoSql) connectionInfo;
 
-      int maxConnections = connectionInfo.getMaxConnections();
+      int maxConnections = connectionInfoSql.getPool().getMaxConnections();
 
       int minRequired = 0;
 
@@ -296,8 +296,8 @@ public class FeatureProviderSql extends
     //TODO: get other infos from connector
 
     return Optional.of(ImmutableMap.of(
-        "min connections", String.valueOf(connector.getMinConnections()),
-        "max connections", String.valueOf(connector.getMaxConnections()),
+        "min connections", String.valueOf(getConnector().getMinConnections()),
+        "max connections", String.valueOf(getConnector().getMaxConnections()),
         "stream capacity", parallelism)
     );
   }
@@ -308,8 +308,8 @@ public class FeatureProviderSql extends
   }
 
   @Override
-  public FeatureProviderDataV2 getData() {
-    return super.getData();
+  public FeatureProviderSqlData getData() {
+    return (FeatureProviderSqlData) super.getData();
   }
 
   @Override
@@ -318,8 +318,12 @@ public class FeatureProviderSql extends
   }
 
   @Override
-  protected FeatureProviderConnector<SqlRow, SqlQueries, SqlQueryOptions> getConnector() {
-    return connector;
+  protected SqlConnector getConnector() {
+    return (SqlConnector) super.getConnector();
+  }
+
+  private SqlClient getSqlClient() {
+    return getConnector().getSqlClient();
   }
 
   @Override

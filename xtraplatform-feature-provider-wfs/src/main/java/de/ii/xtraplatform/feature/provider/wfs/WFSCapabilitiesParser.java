@@ -10,7 +10,7 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs;
 
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderMetadataConsumer;
+import de.ii.xtraplatform.features.domain.FeatureProviderMetadataConsumer;
 import de.ii.xtraplatform.ogc.api.OWS;
 import de.ii.xtraplatform.ogc.api.XLINK;
 import org.codehaus.staxmate.SMInputFactory;

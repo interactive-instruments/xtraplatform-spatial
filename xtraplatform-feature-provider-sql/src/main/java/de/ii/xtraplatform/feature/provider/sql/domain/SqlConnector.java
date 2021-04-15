@@ -88,7 +88,7 @@ public interface SqlConnector extends
               LOGGER.trace("Values query: {}", valueQuery);
             }
 
-            return getSqlClient().getSourceStream(valueQuery, ImmutableSqlQueryOptions.builder()
+            return getSqlClient().getSourceStream(valueQuery, new ImmutableSqlQueryOptions.Builder()
                 .from(options)
                 .attributesContainer(attributesContainers.get(i[0]))
                 .containerPriority(i[0]++)
@@ -127,7 +127,7 @@ public interface SqlConnector extends
 
   default Builder getMetaQueryResult(Object minKey, Object maxKey, Long numberReturned,
       Long numberMatched) {
-    return ImmutableSqlRowMeta.builder()
+    return new ImmutableSqlRowMeta.Builder()
         .minKey(minKey)
         .maxKey(maxKey)
         .numberReturned(Objects.nonNull(numberReturned) ? numberReturned : 0L)

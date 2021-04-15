@@ -17,5 +17,9 @@ public interface FactoryRegistry<T> extends Registry.State<Factory> {
 
     T createInstance(Map<String, Object> configuration, String... factoryProperties);
 
+    boolean hasInstance(String instanceId);
+
+    T getInstance(String instanceId);
+
     void disposeInstance(T instance);
 }

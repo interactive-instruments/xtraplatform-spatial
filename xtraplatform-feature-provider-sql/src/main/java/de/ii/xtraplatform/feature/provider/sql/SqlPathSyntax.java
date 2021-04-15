@@ -29,8 +29,11 @@ public interface SqlPathSyntax {
     }
 
     default boolean isJunctionTable(String pathElement) {
-        return getJunctionTablePattern().matcher(pathElement)
-                                        .find();
+        return getOptions().getJunctionTablePattern()
+            .map(Pattern::compile)
+            .orElse(getJunctionTablePattern())
+            .matcher(pathElement)
+            .find();
     }
 
     default String asPath(List<String> pathElements) {

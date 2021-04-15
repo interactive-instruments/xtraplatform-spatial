@@ -8,9 +8,10 @@
 package de.ii.xtraplatform.feature.provider;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
+import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.domain.WithConnectionInfo;
 import org.apache.felix.ipojo.Factory;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
@@ -65,16 +66,21 @@ public class ConnectorFactoryImpl implements ConnectorFactory, Registry<Factory>
 
     @Override
     public FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV2 featureProviderData) {
+        final String instanceId = "connectors/" + featureProviderData.getId();
         final String providerType = featureProviderData.getFeatureProviderType();
-        final String connectorType = featureProviderData.getConnectionInfo()
+        final String connectorType = ((WithConnectionInfo<?>)featureProviderData).getConnectionInfo()
                                                         .getConnectorType();
+
+        if (connectorFactories.hasInstance(instanceId)) {
+            return connectorFactories.getInstance(instanceId);
+        }
 
         if (!connectorFactories.get(providerType, connectorType).isPresent()) {
             throw new IllegalStateException(String.format("Connector with type %s for provider type %s is not supported.", connectorType, providerType));
         }
 
         try {
-            return connectorFactories.createInstance(ImmutableMap.of(".data", featureProviderData), providerType, connectorType);
+            return connectorFactories.createInstance(ImmutableMap.of(Factory.INSTANCE_NAME_PROPERTY, instanceId, ".data", featureProviderData), providerType, connectorType);
 
         } catch (Throwable e) {
             throw new IllegalStateException(String.format("Connector with type %s for provider type %s could not be created.", connectorType, providerType), e);

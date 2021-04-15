@@ -103,7 +103,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
         FeatureStoreMultiplicityTracker multiplicityTracker = new SqlMultiplicityTracker(multiTables);//getMultiplicityTracker(typeInfo)
 
-        ReadContext readContext = ImmutableReadContext.builder()
+        ReadContext readContext = new ImmutableReadContext.Builder()
                                                       .mainTablePath(typeInfo.getInstanceContainers()
                                                                              .get(0)
                                                                              .getPath())
@@ -183,7 +183,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
         FeatureStoreMultiplicityTracker multiplicityTracker = new SqlMultiplicityTracker(multiTables);//getMultiplicityTracker(typeInfo)
 
-        ReadContext readContext = ImmutableReadContext.builder()
+        ReadContext readContext = new ImmutableReadContext.Builder()
                                                       .featureConsumer(consumer)
                                                       .mainTablePath(typeInfo.getInstanceContainers()
                                                                              .get(0)

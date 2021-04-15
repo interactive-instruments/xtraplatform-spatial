@@ -92,7 +92,7 @@ public class MutationSchemaBuilderSql implements SchemaVisitor<SchemaSql, Schema
                                                   .get(0);
 
         //TODO: rebuild schema without mainTable and with reverse relation
-        SqlRelation newChildRelation = ImmutableSqlRelation.builder()
+        SqlRelation newChildRelation = new ImmutableSqlRelation.Builder()
                                                                              .from(childRelation)
                                                                              .sourceContainer(childRelation.getTargetContainer())
                                                                              .sourceField(childRelation.getTargetField())
@@ -124,7 +124,7 @@ public class MutationSchemaBuilderSql implements SchemaVisitor<SchemaSql, Schema
 
         Optional<SqlRelation> newParentRelation = !parent.getRelation()
                                                                  .isEmpty()
-                ? Optional.of(ImmutableSqlRelation.builder()
+                ? Optional.of(new ImmutableSqlRelation.Builder()
                                                            .from(parent.getRelation().get(0))
                                                            .sourceContainer(parent.getRelation().get(0).getSourceContainer())
                                                            .sourceField(parent.getRelation().get(0).getSourceField())
