@@ -14,6 +14,7 @@ import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.wfs.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.streams.domain.Http;
@@ -79,6 +80,13 @@ public class WfsConnectorHttp implements WfsConnector {
         Map<String, Map<WFS.METHOD, URI>> urls = ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri())));
 
         this.wfsRequestEncoder = new WfsRequestEncoder(connectionInfo.getVersion(), connectionInfo.getGmlVersion(), connectionInfo.getNamespaces(), urls);
+
+        /*
+         workaround for https://github.com/interactive-instruments/ldproxy/issues/225
+         TODO: remove when fixed
+        */
+        Optional.ofNullable(Strings.emptyToNull(connectionInfo.getUri().toString().replace(FeatureProviderWfsData.PLACEHOLDER_URI, "")))
+            .orElseThrow(() -> new IllegalArgumentException("No 'uri' given, required for WFS connection"));
 
         URI host = connectionInfo.getUri();
 

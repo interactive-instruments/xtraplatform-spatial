@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.provider.wfs.infra.WfsConnectorHttp;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 import java.net.URI;
@@ -33,6 +34,7 @@ public interface ConnectionInfoWfsHttp extends ConnectionInfo, WfsInfo {
         return WfsConnectorHttp.CONNECTOR_TYPE;
     }
 
+    @Nullable
     URI getUri();
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json

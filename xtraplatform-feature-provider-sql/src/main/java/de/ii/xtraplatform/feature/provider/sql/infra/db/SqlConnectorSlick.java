@@ -13,6 +13,7 @@ import akka.stream.alpakka.slick.javadsl.SlickSession;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheckRegistry;
 import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
@@ -314,7 +315,8 @@ public class SqlConnectorSlick implements SqlConnector {
                 "properties.serverName", connectionInfo.getHost().orElseThrow(
                     () -> new IllegalArgumentException(
                         "No 'host' given, required for PGIS connection")),
-                "properties.databaseName", connectionInfo.getDatabase(),
+                "properties.databaseName", Optional.ofNullable(Strings.emptyToNull(connectionInfo.getDatabase())).orElseThrow(() -> new IllegalArgumentException(
+                    "No 'database' given, required for PGIS connection")),
                 "properties.assumeMinServerVersion", "9.6",
                 "properties.ApplicationName", applicationName
             ).entrySet().stream(),
