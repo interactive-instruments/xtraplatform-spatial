@@ -16,6 +16,11 @@ class FeatureProviderDataFixtures {
         Optional<String> getConnectionUri() {
             return Optional.empty()
         }
+
+        @Override
+        String getConnectorType() {
+            return "NONE"
+        }
     }
 
     static final FeatureProviderDataV1 ONEO_V1 = new ImmutableFeatureProviderDataV1.Builder()
@@ -57,7 +62,7 @@ class FeatureProviderDataFixtures {
 
 
 
-    static final FeatureProviderDataV2 ONEO_V2 = new ImmutableFeatureProviderDataV2.Builder()
+    static final FeatureProviderDataV2 ONEO_V2 = new ImmutableFeatureProviderCommonData.Builder()
             .id("oneo")
             .createdAt(1586271491161)
             .lastModified(1586271491161)

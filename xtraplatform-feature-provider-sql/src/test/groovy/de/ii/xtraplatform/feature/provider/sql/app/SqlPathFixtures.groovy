@@ -15,7 +15,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlPath
 class SqlPathFixtures {
 
     private static baseTable = { it ->
-        ImmutableSqlPath.builder()
+        new ImmutableSqlPath.Builder()
                 .sortKey("id")
                 .primaryKey("id")
                 .junction(false)
@@ -40,13 +40,13 @@ class SqlPathFixtures {
             .build()
 
     //TODO
-    static SIMPLE_COLUMN = ImmutableSqlPath.builder().sortKey("").primaryKey("").junction(false)
+    static SIMPLE_COLUMN = new ImmutableSqlPath.Builder().sortKey("").primaryKey("").junction(false)
             .name("externalprovidername")
             .columns(["externalprovidername"])
             .build()
 
     //TODO
-    static LEAF_TABLE_COLUMN = ImmutableSqlPath.builder().sortKey("").primaryKey("").junction(false)
+    static LEAF_TABLE_COLUMN = new ImmutableSqlPath.Builder().sortKey("").primaryKey("").junction(false)
             .name("externalprovidername")
             .columns(["externalprovidername"])
             .parentTables([baseTable()
