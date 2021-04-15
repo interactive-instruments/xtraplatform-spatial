@@ -7,6 +7,9 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.app;
 
+import akka.NotUsed;
+import akka.stream.javadsl.Sink;
+import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -20,6 +23,7 @@ import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.ExtentReader;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
 import de.ii.xtraplatform.features.domain.FeatureMetadata;
@@ -28,10 +32,14 @@ import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
+import de.ii.xtraplatform.features.domain.FeatureQueriesPassThrough;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
+import de.ii.xtraplatform.features.domain.FeatureSourceStream;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
+import de.ii.xtraplatform.features.domain.FeatureStream2.Result;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
@@ -42,7 +50,9 @@ import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import javax.ws.rs.core.MediaType;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -53,12 +63,14 @@ import org.threeten.extra.Interval;
 
 @EntityComponent
 @Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderWfs.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderWfsData.class)
-public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, String, FeatureProviderConnector.QueryOptions> implements FeatureProvider2, FeatureQueries, FeatureCrs, FeatureExtents, FeatureMetadata {
+public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, String, FeatureProviderConnector.QueryOptions> implements FeatureProvider2, FeatureQueries, FeatureCrs, FeatureExtents, FeatureMetadata,
+    FeatureQueriesPassThrough<ByteString> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
 
     static final String ENTITY_SUB_TYPE = "feature/wfs";
     public static final String PROVIDER_TYPE = "WFS";
+    private static final MediaType MEDIA_TYPE = new MediaType("application", "gml+xml");
 
     private final CrsTransformerFactory crsTransformerFactory;
     private final FeatureQueryTransformerWfs queryTransformer;
@@ -175,5 +187,49 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     @Override
     public Optional<Metadata> getMetadata() {
         return getConnector().getMetadata();
+    }
+
+    @Override
+    public MediaType getMediaType() {
+        return MEDIA_TYPE;
+    }
+
+    @Override
+    public FeatureSourceStream<ByteString> getFeatureSourceStream(FeatureQuery query) {
+        return new FeatureSourceStream<>() {
+            @Override
+            public CompletionStage<Result> runWith(FeatureConsumer consumer) {
+                Optional<FeatureStoreTypeInfo> typeInfo = Optional
+                    .ofNullable(getTypeInfos().get(query.getType()));
+
+                if (!typeInfo.isPresent()) {
+                    //TODO: put error message into Result, complete successfully
+                    CompletableFuture<Result> promise = new CompletableFuture<>();
+                    promise.completeExceptionally(
+                        new IllegalStateException("No features available for type"));
+                    return promise;
+                }
+
+                String transformedQuery = getQueryTransformer()
+                    .transformQuery(query, ImmutableMap.of());
+
+                FeatureProviderConnector.QueryOptions options = getQueryTransformer()
+                    .getOptions(query);
+
+                Source<ByteString, NotUsed> sourceStream = getConnector()
+                    .getSourceStream(transformedQuery, options);
+
+                Sink<ByteString, CompletionStage<Result>> sink = featureNormalizer
+                    .normalizeAndConsume(consumer, query);
+
+                return getStreamRunner().run(sourceStream, sink);
+            }
+
+            @Override
+            public CompletionStage<Result> runWith2(
+                Sink<ByteString, CompletionStage<Result>> consumer) {
+                return null;
+            }
+        };
     }
 }
