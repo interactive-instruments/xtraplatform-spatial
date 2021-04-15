@@ -12,31 +12,29 @@ import akka.stream.alpakka.slick.javadsl.SlickSession;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheckRegistry;
 import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.dropwizard.domain.Dropwizard;
-import de.ii.xtraplatform.dropwizard.domain.XtraPlatform;
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureProviderSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
-import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql.Dialect;
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureProviderSqlData;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.AbstractMap;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.Map.Entry;
+import java.util.Base64;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.felix.ipojo.annotations.Component;
@@ -52,19 +50,12 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.wiring.BundleWiring;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sqlite.SQLiteConfig;
-import org.sqlite.SQLiteJDBCLoader;
 import scala.reflect.ClassTag$;
 import slick.basic.DatabaseConfig;
 import slick.basic.DatabaseConfig$;
 import slick.jdbc.JdbcDataSource;
 import slick.jdbc.JdbcProfile;
 import slick.jdbc.hikaricp.HikariCPJdbcDataSource;
-
-import java.util.Base64;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 
 /**
  * @author zahnen
@@ -100,7 +91,7 @@ public class SqlConnectorSlick implements SqlConnector {
   private boolean controller;
 
   public SqlConnectorSlick(@Context BundleContext context, @Requires Dropwizard dropwizard,
-      @Property(name = ".data") FeatureProviderDataV2 data) {
+      @Property(name = ".data") FeatureProviderSqlData data) {
     // bundle class loader has to be passed to Slick for initialization
     this.classLoader = context.getBundle()
         .adapt(BundleWiring.class)
@@ -111,14 +102,14 @@ public class SqlConnectorSlick implements SqlConnector {
     this.healthCheckRegistry = dropwizard.getEnvironment().healthChecks();
 
     int maxQueries = getMaxQueries(data);
-    if (connectionInfo.getMaxConnections() > 0) {
-      this.maxConnections = connectionInfo.getMaxConnections();
+    if (connectionInfo.getPool().getMaxConnections() > 0) {
+      this.maxConnections = connectionInfo.getPool().getMaxConnections();
     } else {
       this.maxConnections = maxQueries * Runtime.getRuntime()
           .availableProcessors();
     }
-    if (connectionInfo.getMinConnections() >= 0) {
-      this.minConnections = connectionInfo.getMinConnections();
+    if (connectionInfo.getPool().getMinConnections() >= 0) {
+      this.minConnections = connectionInfo.getPool().getMinConnections();
     } else {
       this.minConnections = maxConnections;
     }
@@ -133,9 +124,9 @@ public class SqlConnectorSlick implements SqlConnector {
   }
 
   //TODO: better way to get maxQueries
-  private int getMaxQueries(FeatureProviderDataV2 data) {
+  private int getMaxQueries(FeatureProviderSqlData data) {
     FeatureStorePathParser pathParser = FeatureProviderSql
-        .createPathParser((ConnectionInfoSql) data.getConnectionInfo(), null);
+        .createPathParser(data.getSourcePathDefaults(), null);
     Map<String, FeatureStoreTypeInfo> typeInfos = AbstractFeatureProvider
         .createTypeInfos(pathParser, data.getTypes());
     int maxQueries = 0;
@@ -235,7 +226,7 @@ public class SqlConnectorSlick implements SqlConnector {
         .put("numThreads", maxConnections)
         .put("minimumIdle", minConnections)
         .put("queueSize", queueSize)
-        .put("initializationFailFast", connectionInfo.getInitFailFast())
+        .put("initializationFailFast", connectionInfo.getPool().getInitFailFast())
         .put("idleTimeout", connectionInfo.getPool().getIdleTimeout())
         .put("poolName", poolName);
 

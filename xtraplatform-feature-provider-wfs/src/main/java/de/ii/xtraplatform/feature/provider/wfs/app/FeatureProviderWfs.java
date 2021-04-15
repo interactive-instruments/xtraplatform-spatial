@@ -9,20 +9,16 @@ package de.ii.xtraplatform.feature.provider.wfs.app;
 
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.features.domain.FeatureProviderConnector.QueryOptions;
-import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.store.domain.entities.EntityComponent;
-import de.ii.xtraplatform.store.domain.entities.handler.Entity;
-import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
+import de.ii.xtraplatform.feature.provider.wfs.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
-import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
+import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
@@ -33,11 +29,20 @@ import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
+import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.Metadata;
+import de.ii.xtraplatform.store.domain.entities.EntityComponent;
+import de.ii.xtraplatform.store.domain.entities.handler.Entity;
+import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
+import java.util.AbstractMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -46,14 +51,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
-import java.util.AbstractMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-
 @EntityComponent
-@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderWfs.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderDataV2.class)
+@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderWfs.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderWfsData.class)
 public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, String, FeatureProviderConnector.QueryOptions> implements FeatureProvider2, FeatureQueries, FeatureCrs, FeatureExtents, FeatureMetadata {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
@@ -70,8 +69,8 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
                               @Requires ActorSystemProvider actorSystemProvider,
                               @Requires CrsTransformerFactory crsTransformerFactory,
                               @Requires ConnectorFactory connectorFactory,
-                              @Property(name = Entity.DATA_KEY) FeatureProviderDataV2 data) {
-        super(context, actorSystemProvider, data, createPathParser((ConnectionInfoWfsHttp) data.getConnectionInfo()),
+                              @Property(name = Entity.DATA_KEY) FeatureProviderWfsData data) {
+        super(context, actorSystemProvider, data, createPathParser(data.getConnectionInfo()),
             connectorFactory);
 
         Map<String, FeatureType> types = data.getTypes()
@@ -82,8 +81,10 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
                                              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
         this.crsTransformerFactory = crsTransformerFactory;
-        this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), types, data.getTypes(), (ConnectionInfoWfsHttp) data.getConnectionInfo(), data.getNativeCrs().orElse(OgcCrs.CRS84));
-        this.featureNormalizer = new FeatureNormalizerWfs(getTypeInfos(), types, data.getTypes(), ((ConnectionInfoWfsHttp) data.getConnectionInfo()).getNamespaces());
+        this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), types, data.getTypes(),
+            data.getConnectionInfo(), data.getNativeCrs().orElse(OgcCrs.CRS84));
+        this.featureNormalizer = new FeatureNormalizerWfs(getTypeInfos(), types, data.getTypes(), data.getConnectionInfo()
+            .getNamespaces());
         this.extentReader = new ExtentReaderWfs(this, crsTransformerFactory, data.getNativeCrs().orElse(OgcCrs.CRS84));
     }
 
@@ -92,8 +93,8 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     }
 
     @Override
-    public FeatureProviderDataV2 getData() {
-        return super.getData();
+    public FeatureProviderWfsData getData() {
+        return (FeatureProviderWfsData) super.getData();
     }
 
     @Override

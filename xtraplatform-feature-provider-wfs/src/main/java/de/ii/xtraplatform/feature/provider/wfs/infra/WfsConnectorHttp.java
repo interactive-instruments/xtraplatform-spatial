@@ -15,6 +15,7 @@ import akka.util.ByteString;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.feature.provider.wfs.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.streams.domain.Http;
 import de.ii.xtraplatform.streams.domain.HttpClient;
 import de.ii.xtraplatform.dropwizard.domain.Dropwizard;
@@ -67,9 +68,9 @@ public class WfsConnectorHttp implements WfsConnector {
     private final Optional<Metadata> metadata;
     private Optional<Throwable> connectionError;
 
-    WfsConnectorHttp(@Property(name = ".data") FeatureProviderDataV2 data, @Requires Dropwizard dropwizard,
+    WfsConnectorHttp(@Property(name = ".data") FeatureProviderWfsData data, @Requires Dropwizard dropwizard,
                      @Requires Http http) {
-        ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
+        ConnectionInfoWfsHttp connectionInfo = data.getConnectionInfo();
 
         this.useHttpPost = connectionInfo.getMethod() == ConnectionInfoWfsHttp.METHOD.POST;
         this.metricRegistry = dropwizard.getEnvironment()

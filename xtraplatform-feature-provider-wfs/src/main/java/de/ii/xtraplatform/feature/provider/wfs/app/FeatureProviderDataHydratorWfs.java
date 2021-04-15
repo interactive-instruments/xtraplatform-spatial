@@ -10,6 +10,9 @@ package de.ii.xtraplatform.feature.provider.wfs.app;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.feature.provider.wfs.domain.FeatureProviderWfsData;
+import de.ii.xtraplatform.feature.provider.wfs.domain.ImmutableFeatureProviderWfsData;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.store.domain.entities.EntityHydrator;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
@@ -20,7 +23,6 @@ import de.ii.xtraplatform.feature.provider.wfs.infra.WfsSchemaCrawler;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Optional;
 import org.apache.felix.ipojo.annotations.Component;
@@ -41,7 +43,7 @@ import java.util.Map;
         @StaticServiceProperty(name = Entity.SUB_TYPE_KEY, type = "java.lang.String", value = FeatureProviderWfs.ENTITY_SUB_TYPE)
 })
 @Instantiate
-public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeatureProviderDataV2> {
+public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeatureProviderWfsData> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderDataHydratorWfs.class);
 
@@ -52,7 +54,7 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
     }
 
     @Override
-    public FeatureProviderDataV2 hydrateData(FeatureProviderDataV2 data) {
+    public FeatureProviderWfsData hydrateData(FeatureProviderWfsData data) {
         if (data.isAuto()) {
             LOGGER.info("Feature provider with id '{}' is in auto mode, generating configuration ...", data.getId());
         }
@@ -77,8 +79,8 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
         throw new IllegalStateException(String.format("Feature provider with id %s   could not be hydrated", data.getId()));
     }
 
-    private FeatureProviderDataV2 completeConnectionInfoIfNecessary(WfsConnectorHttp connector,
-                                                                    FeatureProviderDataV2 data) {
+    private FeatureProviderWfsData completeConnectionInfoIfNecessary(WfsConnectorHttp connector,
+        FeatureProviderWfsData data) {
         ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
 
         if (data.isAuto() && connectionInfo.getNamespaces()
@@ -88,7 +90,7 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
 
             ConnectionInfoWfsHttp connectionInfoWfsHttp = schemaCrawler.completeConnectionInfo();
 
-            return new ImmutableFeatureProviderDataV2.Builder()
+            return new ImmutableFeatureProviderWfsData.Builder()
                     .from(data)
                     .connectionInfo(connectionInfoWfsHttp)
                     .build();
@@ -97,7 +99,7 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
         return data;
     }
 
-    private FeatureProviderDataV2 generateTypesIfNecessary(WfsConnectorHttp connector, FeatureProviderDataV2 data) {
+    private FeatureProviderWfsData generateTypesIfNecessary(WfsConnectorHttp connector, FeatureProviderWfsData data) {
         if (data.isAuto() && data.getTypes()
                                  .isEmpty()) {
 
@@ -111,7 +113,7 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
                                                              .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
                                                              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-            return new ImmutableFeatureProviderDataV2.Builder()
+            return new ImmutableFeatureProviderWfsData.Builder()
                     .from(data)
                     .types(typeMap)
                     .build();
@@ -120,7 +122,7 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
         return data;
     }
 
-    private FeatureProviderDataV2 generateNativeCrsIfNecessary(FeatureProviderDataV2 data) {
+    private FeatureProviderWfsData generateNativeCrsIfNecessary(FeatureProviderWfsData data) {
         if (data.isAuto() && !data.getNativeCrs()
                                   .isPresent()) {
             EpsgCrs nativeCrs = data.getTypes()
@@ -135,7 +137,7 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
                                                                                 .get("crs")))
                                     .orElseGet(() -> OgcCrs.CRS84);
 
-            return new ImmutableFeatureProviderDataV2.Builder()
+            return new ImmutableFeatureProviderWfsData.Builder()
                     .from(data)
                     .nativeCrs(nativeCrs)
                     .build();
@@ -145,9 +147,9 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
         return data;
     }
 
-    private FeatureProviderDataV2 cleanupAdditionalInfo(FeatureProviderDataV2 data) {
+    private FeatureProviderWfsData cleanupAdditionalInfo(FeatureProviderWfsData data) {
         if (data.isAuto()) {
-            return new ImmutableFeatureProviderDataV2.Builder()
+            return new ImmutableFeatureProviderWfsData.Builder()
                 .from(data)
                 .types(data.getTypes().entrySet().stream()
                     .map(entry -> new SimpleImmutableEntry<>(entry.getKey(), new ImmutableFeatureSchema.Builder()
@@ -168,9 +170,9 @@ public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeaturePro
         return data;
     }
 
-    private FeatureProviderDataV2 cleanupAutoPersist(FeatureProviderDataV2 data) {
+    private FeatureProviderWfsData cleanupAutoPersist(FeatureProviderWfsData data) {
         if (data.isAuto() && data.isAutoPersist()) {
-            return new ImmutableFeatureProviderDataV2.Builder()
+            return new ImmutableFeatureProviderWfsData.Builder()
                 .from(data)
                 .auto(Optional.empty())
                 .autoPersist(Optional.empty())

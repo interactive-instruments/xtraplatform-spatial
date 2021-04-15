@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.domain.WithConnectionInfo;
 import org.apache.felix.ipojo.Factory;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
@@ -67,7 +68,7 @@ public class ConnectorFactoryImpl implements ConnectorFactory, Registry<Factory>
     public FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV2 featureProviderData) {
         final String instanceId = "connectors/" + featureProviderData.getId();
         final String providerType = featureProviderData.getFeatureProviderType();
-        final String connectorType = featureProviderData.getConnectionInfo()
+        final String connectorType = ((WithConnectionInfo<?>)featureProviderData).getConnectionInfo()
                                                         .getConnectorType();
 
         if (connectorFactories.hasInstance(instanceId)) {

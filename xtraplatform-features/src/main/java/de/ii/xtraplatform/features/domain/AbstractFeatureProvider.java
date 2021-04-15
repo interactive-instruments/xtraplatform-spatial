@@ -45,19 +45,19 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         FeatureProviderDataV2 data,
         FeatureStorePathParser pathParser, ConnectorFactory connectorFactory) {
         this.typeInfos = createTypeInfos(pathParser, data.getTypes());
-        this.streamRunner = new StreamRunner(context, actorSystemProvider, data.getId(), getRunnerCapacity(data), getRunnerQueueSize(data));
+        this.streamRunner = new StreamRunner(context, actorSystemProvider, data.getId(), getRunnerCapacity(((WithConnectionInfo<?>)data).getConnectionInfo()), getRunnerQueueSize(((WithConnectionInfo<?>)data).getConnectionInfo()));
         this.connectorFactory = connectorFactory;
     }
 
-    protected int getRunnerCapacity(FeatureProviderDataV2 data) {
+    protected int getRunnerCapacity(ConnectionInfo connectionInfo) {
         return StreamRunner.DYNAMIC_CAPACITY;
     }
 
-    protected int getRunnerQueueSize(FeatureProviderDataV2 data) {
+    protected int getRunnerQueueSize(ConnectionInfo connectionInfo) {
         return StreamRunner.DYNAMIC_CAPACITY;
     }
 
-    protected Optional<String> getRunnerError(FeatureProviderDataV2 data) {
+    protected Optional<String> getRunnerError(ConnectionInfo connectionInfo) {
         return Optional.empty();
     }
 
@@ -76,7 +76,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             return false;
         }
 
-        Optional<String> runnerError = getRunnerError(getData());
+        Optional<String> runnerError = getRunnerError(((WithConnectionInfo<?>)getData()).getConnectionInfo());
 
         if (runnerError.isPresent()) {
             LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), runnerError.get());
