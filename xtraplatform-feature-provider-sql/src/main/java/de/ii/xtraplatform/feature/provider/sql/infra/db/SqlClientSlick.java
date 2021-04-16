@@ -21,6 +21,8 @@ import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
+import de.ii.xtraplatform.runtime.domain.LogContext;
+import de.ii.xtraplatform.runtime.domain.LogContext.MARKER;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.Map;
@@ -52,11 +54,17 @@ public class SqlClientSlick implements SqlClient {
 
     @Override
     public CompletableFuture<Collection<SqlRow>> run(String query, SqlQueryOptions options) {
+        if (LOGGER.isDebugEnabled(MARKER.SQL)) {
+            LOGGER.debug(MARKER.SQL, "Executing statement: {}", query);
+        }
         return SlickSql.run(session, query, positionedResult -> new SqlRowSlick().read(positionedResult, options)).toCompletableFuture();
     }
 
     @Override
     public Source<SqlRow, NotUsed> getSourceStream(String query, SqlQueryOptions options) {
+        if (LOGGER.isDebugEnabled(MARKER.SQL)) {
+            LOGGER.debug(MARKER.SQL, "Executing statement: {}", query);
+        }
         return SlickSql.source(session, query, positionedResult -> new SqlRowSlick().read(positionedResult, options));
     }
 

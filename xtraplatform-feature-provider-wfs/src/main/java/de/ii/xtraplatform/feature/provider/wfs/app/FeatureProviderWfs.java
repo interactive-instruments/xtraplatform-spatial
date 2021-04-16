@@ -84,8 +84,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     public FeatureProviderWfs(@Context BundleContext context,
                               @Requires ActorSystemProvider actorSystemProvider,
                               @Requires CrsTransformerFactory crsTransformerFactory,
-                              @Requires ConnectorFactory connectorFactory,
-                              @Property(name = Entity.DATA_KEY) FeatureProviderWfsData data) {
+                              @Requires ConnectorFactory connectorFactory) {
         super(context, actorSystemProvider, connectorFactory);
 
         this.crsTransformerFactory = crsTransformerFactory;

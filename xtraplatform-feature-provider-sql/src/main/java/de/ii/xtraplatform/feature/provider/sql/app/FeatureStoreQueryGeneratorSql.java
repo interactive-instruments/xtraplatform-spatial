@@ -74,7 +74,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
           instanceContainer.getName(), instanceContainer.getSortKey(), where);
       return String.format("SELECT * FROM (%s) AS NR2, (%s) AS NM2", numberReturned, numberMatched);
     } else {
-      return String.format("SELECT *,-1 FROM (%s) AS META", numberReturned);
+      return String.format("SELECT *,-1 AS numberMatched FROM (%s) AS META", numberReturned);
     }
   }
 

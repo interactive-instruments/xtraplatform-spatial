@@ -107,7 +107,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                 if (e instanceof InterruptedException) {
                     throw e;
                 }
-                LogContext.error("Cannot validate types", e, LOGGER);
+                LogContext.error(LOGGER, e, "Cannot validate types");
                 isSuccess[0] = false;
             }
 

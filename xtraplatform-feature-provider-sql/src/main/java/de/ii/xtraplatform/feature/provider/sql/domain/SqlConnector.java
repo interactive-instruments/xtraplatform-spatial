@@ -38,8 +38,6 @@ import java.util.function.IntFunction;
 public interface SqlConnector extends
     FeatureProviderConnector<SqlRow, SqlQueries, SqlQueryOptions> {
 
-  Logger LOGGER = LoggerFactory.getLogger(SqlConnector.class);
-
   //TODO
   SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
 
@@ -83,17 +81,11 @@ public interface SqlConnector extends
       int[] i = {0};
       Source<SqlRow, NotUsed>[] sqlRows = query.getValueQueries()
           .apply(metaResult)
-          .map(valueQuery -> {
-            if (LOGGER.isTraceEnabled()) {
-              LOGGER.trace("Values query: {}", valueQuery);
-            }
-
-            return getSqlClient().getSourceStream(valueQuery, new ImmutableSqlQueryOptions.Builder()
-                .from(options)
-                .attributesContainer(attributesContainers.get(i[0]))
-                .containerPriority(i[0]++)
-                .build());
-          })
+          .map(valueQuery -> getSqlClient().getSourceStream(valueQuery, new ImmutableSqlQueryOptions.Builder()
+              .from(options)
+              .attributesContainer(attributesContainers.get(i[0]))
+              .containerPriority(i[0]++)
+              .build()))
           .toArray((IntFunction<Source<SqlRow, NotUsed>[]>) Source[]::new);
       return mergeAndSort(sqlRows)
           .prepend(Source.single(metaResult));
@@ -109,9 +101,6 @@ public interface SqlConnector extends
       return Source.single(getMetaQueryResult(0L, 0L, 0L, 0L).build());
     }
 
-        /*if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("Meta query: {}", metaQuery.get());
-        }*/
     List<Class<?>> columnTypes = Stream
         .concat(IntStream.range(0, 2 + (options.getCustomSortKeys().size() * 2))
             .mapToObj(i -> Object.class), Stream.of(Long.class, Long.class))
