@@ -26,6 +26,7 @@ import org.immutables.value.Value;
 public interface FeatureProviderSqlData extends FeatureProviderDataV2,
     WithConnectionInfo<ConnectionInfoSql> {
 
+  @Nullable
   @Override
   ConnectionInfoSql getConnectionInfo();
 
@@ -55,10 +56,24 @@ public interface FeatureProviderSqlData extends FeatureProviderDataV2,
   @Override
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
 
-  // apply defaults for sourcePathDefaults and queryGeneration if necessary (cannot be set via @Value.Default due to a bug in immutables)
-  // migrate from old syntax for sourcePathDefaults and queryGeneration in connectionInfo
   @Value.Check
   default FeatureProviderSqlData initNestedDefault() {
+    /*
+     workaround for https://github.com/interactive-instruments/ldproxy/issues/225
+     TODO: remove when fixed
+    */
+    if (Objects.isNull(getConnectionInfo())) {
+      ImmutableFeatureProviderSqlData.Builder builder = new ImmutableFeatureProviderSqlData.Builder()
+          .from(this);
+      builder.connectionInfoBuilder().database("");
+
+      return builder.build();
+    }
+
+    /*
+     - apply defaults for sourcePathDefaults and queryGeneration if necessary (cannot be set via @Value.Default due to a bug in immutables)
+     - migrate from old syntax for sourcePathDefaults and queryGeneration in connectionInfo
+    */
     boolean queryGenerationIsNull = Objects.isNull(getQueryGeneration());
     boolean computeNumberMatchedDiffers =
         !queryGenerationIsNull && getConnectionInfo().getComputeNumberMatched().isPresent()

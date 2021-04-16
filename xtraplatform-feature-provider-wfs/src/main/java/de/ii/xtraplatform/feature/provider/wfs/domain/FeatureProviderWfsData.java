@@ -17,6 +17,8 @@ import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import java.net.URI;
+import java.util.Objects;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -26,12 +28,32 @@ import org.immutables.value.Value;
 public interface FeatureProviderWfsData extends FeatureProviderDataV2,
     WithConnectionInfo<ConnectionInfoWfsHttp> {
 
+  String PLACEHOLDER_URI = "https://place.holder";
+
+  @Nullable
   @Override
   ConnectionInfoWfsHttp getConnectionInfo();
 
   // for json ordering
   @Override
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
+
+  @Value.Check
+  default FeatureProviderWfsData initNestedDefault() {
+    /*
+     workaround for https://github.com/interactive-instruments/ldproxy/issues/225
+     TODO: remove when fixed
+    */
+    if (Objects.isNull(getConnectionInfo()) || Objects.isNull(getConnectionInfo().getUri())) {
+      ImmutableFeatureProviderWfsData.Builder builder = new ImmutableFeatureProviderWfsData.Builder()
+          .from(this);
+      builder.connectionInfoBuilder().uri(URI.create(PLACEHOLDER_URI));
+
+      return builder.build();
+    }
+
+    return this;
+  }
 
   abstract class Builder extends
       FeatureProviderDataV2.Builder<ImmutableFeatureProviderWfsData.Builder> implements

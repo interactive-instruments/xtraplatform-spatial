@@ -11,6 +11,7 @@ import akka.NotUsed;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
@@ -47,6 +48,8 @@ import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
 import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -73,31 +76,46 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     private static final MediaType MEDIA_TYPE = new MediaType("application", "gml+xml");
 
     private final CrsTransformerFactory crsTransformerFactory;
-    private final FeatureQueryTransformerWfs queryTransformer;
-    private final FeatureNormalizerWfs featureNormalizer;
-    private final ExtentReader extentReader;
+    private FeatureQueryTransformerWfs queryTransformer;
+    private FeatureNormalizerWfs featureNormalizer;
+    private ExtentReader extentReader;
+    private FeatureStorePathParser pathParser;
 
     public FeatureProviderWfs(@Context BundleContext context,
                               @Requires ActorSystemProvider actorSystemProvider,
                               @Requires CrsTransformerFactory crsTransformerFactory,
                               @Requires ConnectorFactory connectorFactory,
                               @Property(name = Entity.DATA_KEY) FeatureProviderWfsData data) {
-        super(context, actorSystemProvider, data, createPathParser(data.getConnectionInfo()),
-            connectorFactory);
-
-        Map<String, FeatureType> types = data.getTypes()
-                                             .entrySet()
-                                             .stream()
-                                             .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue()
-                                                                                                                       .accept(new FeatureSchemaToTypeVisitor(entry.getKey()))))
-                                             .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+        super(context, actorSystemProvider, connectorFactory);
 
         this.crsTransformerFactory = crsTransformerFactory;
-        this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), types, data.getTypes(),
-            data.getConnectionInfo(), data.getNativeCrs().orElse(OgcCrs.CRS84));
-        this.featureNormalizer = new FeatureNormalizerWfs(getTypeInfos(), types, data.getTypes(), data.getConnectionInfo()
+    }
+
+    @Override
+    protected boolean onStartup() throws InterruptedException {
+        this.pathParser = createPathParser(getData().getConnectionInfo());
+
+
+        boolean success = super.onStartup();
+
+        if (!success) {
+            return false;
+        }
+
+        Map<String, FeatureType> types = getData().getTypes()
+            .entrySet()
+            .stream()
+            .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue()
+                .accept(new FeatureSchemaToTypeVisitor(entry.getKey()))))
+            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), types, getData().getTypes(),
+            getData().getConnectionInfo(), getData().getNativeCrs().orElse(OgcCrs.CRS84));
+        this.featureNormalizer = new FeatureNormalizerWfs(getTypeInfos(), types, getData().getTypes(), getData().getConnectionInfo()
             .getNamespaces());
-        this.extentReader = new ExtentReaderWfs(this, crsTransformerFactory, data.getNativeCrs().orElse(OgcCrs.CRS84));
+        this.extentReader = new ExtentReaderWfs(this, crsTransformerFactory, getData().getNativeCrs().orElse(OgcCrs.CRS84));
+
+        return true;
     }
 
     private static FeatureStorePathParser createPathParser(ConnectionInfoWfsHttp connectionInfoWfsHttp) {
@@ -112,6 +130,11 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     @Override
     protected WfsConnector getConnector() {
         return (WfsConnector) super.getConnector();
+    }
+
+    @Override
+    protected FeatureStorePathParser getPathParser() {
+        return pathParser;
     }
 
     @Override
