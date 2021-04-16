@@ -83,8 +83,11 @@ public class SqlSchemaCrawler implements Closeable {
         .distinct()
         .collect(tableCollector);
 
-    InclusionRule tablesRule = includeTables.isEmpty() ? new RegularExpressionExclusionRule(excludeTablesPattern)
-        : new RegularExpressionRule(includeTablesPattern, excludeTablesPattern);
+    InclusionRule tablesRule = includeTables.isEmpty() && !excludeTables.isEmpty()
+        ? new RegularExpressionExclusionRule(excludeTablesPattern)
+        : !includeTables.isEmpty() && excludeTables.isEmpty()
+            ? new RegularExpressionInclusionRule(includeTablesPattern)
+            : new RegularExpressionRule(includeTablesPattern, excludeTablesPattern);
 
     LimitOptionsBuilder limitOptionsBuilder =
         LimitOptionsBuilder.builder()

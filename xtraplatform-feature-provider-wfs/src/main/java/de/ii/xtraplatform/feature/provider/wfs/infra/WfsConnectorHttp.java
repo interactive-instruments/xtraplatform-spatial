@@ -32,7 +32,9 @@ import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.wfs.GetCapabilities;
 import de.ii.xtraplatform.ogc.api.wfs.WfsOperation;
 import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder;
+import java.util.Objects;
 import org.apache.felix.ipojo.annotations.Component;
+import org.apache.felix.ipojo.annotations.Invalidate;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -103,6 +105,11 @@ public class WfsConnectorHttp implements WfsConnector {
         wfsRequestEncoder = null;
         useHttpPost = false;
         metadata = Optional.empty();
+    }
+
+    @Invalidate
+    private void onStop() {
+        //TODO: cleanup httpClient
     }
 
 
