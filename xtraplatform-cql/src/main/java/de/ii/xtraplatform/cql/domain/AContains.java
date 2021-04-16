@@ -18,6 +18,12 @@ public interface AContains extends ArrayOperation, CqlNode {
         return new ImmutableAContains.Builder().property(property).value(arrayLiteral).build();
     }
 
+    static AContains of(String property, Property property2) {
+        return new ImmutableAContains.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     abstract class Builder extends ArrayOperation.Builder<AContains> {
     }
 

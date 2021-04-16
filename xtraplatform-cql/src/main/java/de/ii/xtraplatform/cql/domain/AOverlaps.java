@@ -14,6 +14,16 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = AOverlaps.Builder.class)
 public interface AOverlaps extends ArrayOperation, CqlNode {
 
+    static AOverlaps of(String property, ArrayLiteral arrayLiteral) {
+        return new ImmutableAOverlaps.Builder().property(property).value(arrayLiteral).build();
+    }
+
+    static AOverlaps of(String property, Property property2) {
+        return new ImmutableAOverlaps.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     abstract class Builder extends ArrayOperation.Builder<AOverlaps> {
     }
 

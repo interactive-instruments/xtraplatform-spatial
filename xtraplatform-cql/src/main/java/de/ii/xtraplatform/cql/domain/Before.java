@@ -20,6 +20,12 @@ public interface Before extends TemporalOperation, CqlNode {
                                             .build();
     }
 
+    static Before of(String property, Property property2) {
+        return new ImmutableBefore.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     abstract class Builder extends TemporalOperation.Builder<Before> {
     }
 

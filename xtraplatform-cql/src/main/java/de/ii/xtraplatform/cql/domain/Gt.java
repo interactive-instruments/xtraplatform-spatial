@@ -26,6 +26,12 @@ public interface Gt extends ScalarOperation, CqlNode {
                 .build();
     }
 
+    static Gt of(String property, Property property2) {
+        return new ImmutableGt.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     static Gt ofFunction(Function function, ScalarLiteral scalarLiteral) {
         return new ImmutableGt.Builder().function(function)
                 .value(scalarLiteral)

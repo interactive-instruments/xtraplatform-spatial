@@ -27,6 +27,12 @@ public interface Intersects extends SpatialOperation, CqlNode {
                                                 .build();
     }
 
+    static Intersects of(String property, Property property2) {
+        return new ImmutableIntersects.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     abstract class Builder extends SpatialOperation.Builder<Intersects> {
     }
 

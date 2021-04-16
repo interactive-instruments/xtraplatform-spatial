@@ -23,6 +23,12 @@ public interface Exists extends ScalarOperation, CqlNode {
                                             .build();
     }
 
+    static Exists of(String property, Property property2) {
+        return new ImmutableExists.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<Exists> {
     }
 

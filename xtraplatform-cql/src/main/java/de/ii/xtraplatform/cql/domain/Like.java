@@ -33,6 +33,22 @@ public interface Like extends ScalarOperation, CqlNode {
                                           .build();
     }
 
+    static Like of(String property, Property property2) {
+        return new ImmutableLike.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
+    static Like of(String property, Property property2, String wildCard, String singlechar, String escapechar, Boolean nocase) {
+        return new ImmutableLike.Builder().property(property)
+                .property2(property2)
+                .wildcard(Optional.ofNullable(wildCard))
+                .singlechar(Optional.ofNullable(singlechar))
+                .escapechar(Optional.ofNullable(escapechar))
+                .nocase(Optional.ofNullable(nocase))
+                .build();
+    }
+
     static Like ofFunction(Function function, ScalarLiteral scalarLiteral) {
         return new ImmutableLike.Builder().function(function)
                 .value(scalarLiteral)

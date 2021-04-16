@@ -20,6 +20,12 @@ public interface Overlaps extends SpatialOperation, CqlNode {
                                               .build();
     }
 
+    static Overlaps of(String property, Property property2) {
+        return new ImmutableOverlaps.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     abstract class Builder extends SpatialOperation.Builder<Overlaps> {
     }
 

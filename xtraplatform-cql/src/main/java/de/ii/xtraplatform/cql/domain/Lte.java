@@ -26,6 +26,12 @@ public interface Lte extends ScalarOperation, CqlNode {
                 .build();
     }
 
+    static Lte of(String property, Property property2) {
+        return new ImmutableLte.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     static Lte ofFunction(Function function, ScalarLiteral scalarLiteral) {
         return new ImmutableLte.Builder().function(function)
                 .value(scalarLiteral)

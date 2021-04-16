@@ -20,6 +20,12 @@ public interface After extends TemporalOperation, CqlNode {
                                            .build();
     }
 
+    static After of(String property, Property property2) {
+        return new ImmutableAfter.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     abstract class Builder extends TemporalOperation.Builder<After> {
     }
 }

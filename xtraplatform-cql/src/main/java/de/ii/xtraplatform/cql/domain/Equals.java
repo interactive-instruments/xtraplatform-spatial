@@ -20,6 +20,12 @@ public interface Equals extends SpatialOperation, CqlNode {
                                             .build();
     }
 
+    static Equals of(String property, Property property2) {
+        return new ImmutableEquals.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     abstract class Builder extends SpatialOperation.Builder<Equals> {
     }
 

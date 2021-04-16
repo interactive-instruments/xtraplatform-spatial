@@ -26,6 +26,12 @@ public interface Gte extends ScalarOperation, CqlNode {
                 .build();
     }
 
+    static Gte of(String property, Property property2) {
+        return new ImmutableGte.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     abstract class Builder extends ScalarOperation.Builder<Gte> {
     }
 

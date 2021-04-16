@@ -20,6 +20,12 @@ public interface Within extends SpatialOperation, CqlNode {
                                             .build();
     }
 
+    static Within of(String property, Property property2) {
+        return new ImmutableWithin.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     abstract class Builder extends SpatialOperation.Builder<Within> {
     }
 

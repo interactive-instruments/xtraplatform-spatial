@@ -20,6 +20,12 @@ public interface Touches extends SpatialOperation, CqlNode {
                                              .build();
     }
 
+    static Touches of(String property, Property property2) {
+        return new ImmutableTouches.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     abstract class Builder extends SpatialOperation.Builder<Touches> {
     }
 

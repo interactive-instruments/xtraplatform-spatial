@@ -20,6 +20,12 @@ public interface TEquals extends TemporalOperation, CqlNode {
                                              .build();
     }
 
+    static TEquals of(String property, Property property2) {
+        return new ImmutableTEquals.Builder().property(property)
+                .property2(property2)
+                .build();
+    }
+
     abstract class Builder extends TemporalOperation.Builder<TEquals> {
     }
 
