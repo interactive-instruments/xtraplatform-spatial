@@ -91,7 +91,7 @@ public class SqlSchemaCrawler implements Closeable {
 
     LimitOptionsBuilder limitOptionsBuilder =
         LimitOptionsBuilder.builder()
-            //.tableTypes()
+            .tableTypes("BASE TABLE", "TABLE", "VIEW", "MATERIALIZED VIEW")
             .includeTables(tablesRule);
     if (!schemas.isEmpty()) {
       limitOptionsBuilder.includeSchemas(new RegularExpressionInclusionRule(includeSchemas));
