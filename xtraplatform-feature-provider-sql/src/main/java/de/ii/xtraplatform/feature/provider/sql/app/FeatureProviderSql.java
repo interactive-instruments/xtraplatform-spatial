@@ -16,6 +16,7 @@ import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -23,14 +24,20 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.feature.provider.api.ConnectorFactory;
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureProviderSqlData;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathDefaults;
+import de.ii.xtraplatform.features.domain.ConnectionInfo;
+import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSchemaMappingSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectGpkg;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathParser;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
@@ -44,7 +51,6 @@ import de.ii.xtraplatform.features.domain.FeatureDecoder;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
 import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
-import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
@@ -66,7 +72,6 @@ import de.ii.xtraplatform.streams.domain.LogContextStream;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.concurrent.CompletionException;
 import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -85,7 +90,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 @EntityComponent
-@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderDataV2.class)
+@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderSqlData.class)
 public class FeatureProviderSql extends
     AbstractFeatureProvider<SqlRow, SqlQueries, SqlQueryOptions> implements FeatureProvider2,
     FeatureQueries, FeatureExtents, FeatureCrs, FeatureTransactions {
@@ -96,39 +101,83 @@ public class FeatureProviderSql extends
   public static final String PROVIDER_TYPE = "SQL";
 
   private final CrsTransformerFactory crsTransformerFactory;
-  private final SqlConnector connector;
-  private final FeatureStoreQueryGeneratorSql queryGeneratorSql;
-  private final FeatureQueryTransformerSql queryTransformer;
-  private final FeatureNormalizerSql featureNormalizer;
-  private final ExtentReader extentReader;
-  private final FeatureMutationsSql featureMutationsSql;
-  private final FeatureSchemaSwapperSql schemaSwapperSql;
-  private final PathParserSql pathParser;
-  private final SqlPathParser pathParser3;
-  private final TypeInfoValidator typeInfoValidator;
-  private final Map<String, Optional<BoundingBox>> spatialExtentCache;
-  private final Map<String, Optional<Interval>> temporalExtentCache;
+  private final Cql cql;
+
+  private FeatureStoreQueryGeneratorSql queryGeneratorSql;
+  private FeatureQueryTransformerSql queryTransformer;
+  private FeatureNormalizerSql featureNormalizer;
+  private ExtentReader extentReader;
+  private FeatureMutationsSql featureMutationsSql;
+  private FeatureSchemaSwapperSql schemaSwapperSql;
+  private FeatureStorePathParser pathParser;
+  private PathParserSql pathParser2;
+  private SqlPathParser pathParser3;
+  private TypeInfoValidator typeInfoValidator;
+  private Map<String, Optional<BoundingBox>> spatialExtentCache;
+  private Map<String, Optional<Interval>> temporalExtentCache;
 
   public FeatureProviderSql(@Context BundleContext context,
       @Requires ActorSystemProvider actorSystemProvider,
       @Requires CrsTransformerFactory crsTransformerFactory,
       @Requires Cql cql,
-      @Requires ConnectorFactory connectorFactory,
-      @Property(name = Entity.DATA_KEY) FeatureProviderDataV2 data) {
+      @Requires ConnectorFactory connectorFactory) {
     //TODO: starts akka for every instance, move to singleton
-    super(context, actorSystemProvider, data,
-        createPathParser((ConnectionInfoSql) data.getConnectionInfo(), cql));
+    super(context, actorSystemProvider, connectorFactory);
 
     this.crsTransformerFactory = crsTransformerFactory;
-    this.connector = (SqlConnector) connectorFactory.createConnector(data);
+    this.cql = cql;
+
+  }
+
+  public static FeatureStorePathParser createPathParser(SqlPathDefaults sqlPathDefaults,
+      Cql cql) {
+    SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
+        .options(sqlPathDefaults)
+        .build();
+    return new FeatureStorePathParserSql(syntax, cql);
+  }
+
+  private static FeatureSchemaSwapperSql createSchemaSwapper(SqlPathDefaults sqlPathDefaults,
+      Cql cql) {
+    SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
+        .options(sqlPathDefaults)
+        .build();
+    return new FeatureSchemaSwapperSql(syntax, cql);
+  }
+
+  private static PathParserSql createPathParser2(SqlPathDefaults sqlPathDefaults, Cql cql) {
+    SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
+        .options(sqlPathDefaults)
+        .build();
+    return new PathParserSql(syntax, cql);
+  }
+
+  private static SqlPathParser createPathParser3(SqlPathDefaults sqlPathDefaults, Cql cql) {
+    return new SqlPathParser(sqlPathDefaults, cql);
+  }
+
+  @Override
+  protected boolean onStartup() throws InterruptedException {
+    this.pathParser = createPathParser(getData().getSourcePathDefaults(), cql);
+    List<String> validationSchemas = getData().getConnectionInfo().getDialect() == Dialect.PGIS && getData().getConnectionInfo().getSchemas().isEmpty()
+        ? ImmutableList.of("public")
+        : getData().getConnectionInfo().getSchemas();
+    this.typeInfoValidator = new SqlTypeInfoValidator(validationSchemas, this::getSqlClient);
+
+    boolean success = super.onStartup();
+
+    if (!success) {
+      return false;
+    }
+
     //TODO: from config
-    SqlDialect sqlDialect = new SqlDialectPostGis();
-    this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect, data.getNativeCrs()
+    SqlDialect sqlDialect = getData().getConnectionInfo().getDialect() == Dialect.PGIS ? new SqlDialectPostGis() : new SqlDialectGpkg();
+    this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect, getData().getNativeCrs()
         .orElse(OgcCrs.CRS84), crsTransformerFactory);
     this.queryTransformer = new FeatureQueryTransformerSql(getTypeInfos(), queryGeneratorSql,
-        ((ConnectionInfoSql) data.getConnectionInfo()).getComputeNumberMatched());
+        getData().getQueryGeneration().getComputeNumberMatched());
 
-    Map<String, FeatureType> types = data.getTypes()
+    Map<String, FeatureType> types = getData().getTypes()
         .entrySet()
         .stream()
         .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue()
@@ -136,49 +185,21 @@ public class FeatureProviderSql extends
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
     this.featureNormalizer = new FeatureNormalizerSql(getTypeInfos(), types);
-    this.extentReader = new ExtentReaderSql(connector, queryGeneratorSql, sqlDialect,
-        data.getNativeCrs()
+    this.extentReader = new ExtentReaderSql(this::getSqlClient, queryGeneratorSql, sqlDialect,
+        getData().getNativeCrs()
             .orElse(OgcCrs.CRS84));
-    this.featureMutationsSql = new FeatureMutationsSql(connector.getSqlClient(),
-        new SqlInsertGenerator2(data.getNativeCrs()
+    this.featureMutationsSql = new FeatureMutationsSql(this::getSqlClient,
+        new SqlInsertGenerator2(getData().getNativeCrs()
             .orElse(OgcCrs.CRS84), crsTransformerFactory,
-            ((ConnectionInfoSql) data.getConnectionInfo()).getSourcePathDefaults()));
-    this.schemaSwapperSql = createSchemaSwapper((ConnectionInfoSql) data.getConnectionInfo(), cql);
-    this.pathParser = createPathParser2((ConnectionInfoSql) data.getConnectionInfo(), cql);
-    this.pathParser3 = createPathParser3((ConnectionInfoSql) data.getConnectionInfo(), cql);
-    this.typeInfoValidator = new SqlTypeInfoValidator(
-        ((ConnectionInfoSql) data.getConnectionInfo()).getSchemas(), connector.getSqlClient());
+            getData().getSourcePathDefaults()));
+    this.schemaSwapperSql = createSchemaSwapper(getData().getSourcePathDefaults(), cql);
+    this.pathParser2 = createPathParser2(getData().getSourcePathDefaults(), cql);
+    this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql);
     this.spatialExtentCache = new HashMap<>();
     this.temporalExtentCache = new HashMap<>();
-  }
 
-  public static FeatureStorePathParser createPathParser(ConnectionInfoSql connectionInfoSql,
-      Cql cql) {
-    SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-        .options(connectionInfoSql.getSourcePathDefaults())
-        .build();
-    return new FeatureStorePathParserSql(syntax, cql);
+    return true;
   }
-
-  private static FeatureSchemaSwapperSql createSchemaSwapper(ConnectionInfoSql connectionInfoSql,
-      Cql cql) {
-    SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-        .options(connectionInfoSql.getSourcePathDefaults())
-        .build();
-    return new FeatureSchemaSwapperSql(syntax, cql);
-  }
-
-  private static PathParserSql createPathParser2(ConnectionInfoSql connectionInfoSql, Cql cql) {
-    SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder()
-        .options(connectionInfoSql.getSourcePathDefaults())
-        .build();
-    return new PathParserSql(syntax, cql);
-  }
-
-  private static SqlPathParser createPathParser3(ConnectionInfoSql connectionInfoSql, Cql cql) {
-    return new SqlPathParser(connectionInfoSql.getSourcePathDefaults(), cql);
-  }
-
 
   @Override
   protected void onStarted() {
@@ -191,7 +212,7 @@ public class FeatureProviderSql extends
     try {
       for (FeatureSchema fs : getData().getTypes().values()) {
         sourceSchema
-            .put(fs.getName(), fs.accept(new MutationSchemaDeriver(pathParser, pathParser3)));
+            .put(fs.getName(), fs.accept(new MutationSchemaDeriver(pathParser2, pathParser3)));
       }
     } catch (Throwable e) {
       boolean br = true;
@@ -201,10 +222,10 @@ public class FeatureProviderSql extends
 
   //TODO: implement auto mode for maxConnections=-1, how to get numberOfQueries in Connector?
   @Override
-  protected int getRunnerCapacity(FeatureProviderDataV2 data) {
-    ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+  protected int getRunnerCapacity(ConnectionInfo connectionInfo) {
+    ConnectionInfoSql connectionInfoSql = (ConnectionInfoSql) connectionInfo;
 
-    int maxConnections = connectionInfo.getMaxConnections();
+    int maxConnections = connectionInfoSql.getPool().getMaxConnections();
 
     int runnerCapacity = Runtime.getRuntime()
         .availableProcessors();
@@ -227,14 +248,14 @@ public class FeatureProviderSql extends
   }
 
   @Override
-  protected int getRunnerQueueSize(FeatureProviderDataV2 data) {
-    ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+  protected int getRunnerQueueSize(ConnectionInfo connectionInfo) {
+    ConnectionInfoSql connectionInfoSql = (ConnectionInfoSql) connectionInfo;
 
     int maxQueries = getMaxQueries();
 
     int maxConnections;
-    if (connectionInfo.getMaxConnections() > 0) {
-      maxConnections = connectionInfo.getMaxConnections();
+    if (connectionInfoSql.getPool().getMaxConnections() > 0) {
+      maxConnections = connectionInfoSql.getPool().getMaxConnections();
     } else {
       maxConnections = maxQueries * Runtime.getRuntime()
           .availableProcessors();
@@ -263,11 +284,11 @@ public class FeatureProviderSql extends
   }
 
   @Override
-  protected Optional<String> getRunnerError(FeatureProviderDataV2 data) {
+  protected Optional<String> getRunnerError(ConnectionInfo connectionInfo) {
     if (getStreamRunner().getCapacity() == 0) {
-      ConnectionInfoSql connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
+      ConnectionInfoSql connectionInfoSql = (ConnectionInfoSql) connectionInfo;
 
-      int maxConnections = connectionInfo.getMaxConnections();
+      int maxConnections = connectionInfoSql.getPool().getMaxConnections();
 
       int minRequired = 0;
 
@@ -288,14 +309,19 @@ public class FeatureProviderSql extends
   }
 
   @Override
+  protected FeatureStorePathParser getPathParser() {
+    return pathParser;
+  }
+
+  @Override
   protected Optional<Map<String, String>> getStartupInfo() {
     String parallelism = String.valueOf(getStreamRunner().getCapacity());
 
     //TODO: get other infos from connector
 
     return Optional.of(ImmutableMap.of(
-        "min connections", String.valueOf(connector.getMinConnections()),
-        "max connections", String.valueOf(connector.getMaxConnections()),
+        "min connections", String.valueOf(getConnector().getMinConnections()),
+        "max connections", String.valueOf(getConnector().getMaxConnections()),
         "stream capacity", parallelism)
     );
   }
@@ -306,8 +332,8 @@ public class FeatureProviderSql extends
   }
 
   @Override
-  public FeatureProviderDataV2 getData() {
-    return super.getData();
+  public FeatureProviderSqlData getData() {
+    return (FeatureProviderSqlData) super.getData();
   }
 
   @Override
@@ -316,8 +342,12 @@ public class FeatureProviderSql extends
   }
 
   @Override
-  protected FeatureProviderConnector<SqlRow, SqlQueries, SqlQueryOptions> getConnector() {
-    return connector;
+  protected SqlConnector getConnector() {
+    return (SqlConnector) super.getConnector();
+  }
+
+  private SqlClient getSqlClient() {
+    return getConnector().getSqlClient();
   }
 
   @Override
@@ -496,7 +526,7 @@ public class FeatureProviderSql extends
 
     FeatureSchema migrated = schema.get();//FeatureSchemaNamePathSwapper.migrate(schema.get());
 
-    List<SchemaSql> sqlSchema = migrated.accept(new MutationSchemaDeriver(pathParser, null));
+    List<SchemaSql> sqlSchema = migrated.accept(new MutationSchemaDeriver(pathParser2, null));
 
     if (sqlSchema.isEmpty()) {
       throw new IllegalStateException(
@@ -543,7 +573,7 @@ public class FeatureProviderSql extends
     //TODO: multiple mappings per path
     //Multimap<List<String>, FeatureSchema> mapping2 = migrated.accept(new SchemaToMappingVisitor<>());
 
-    List<SchemaSql> sqlSchema = migrated.accept(new MutationSchemaDeriver(pathParser, null));
+    List<SchemaSql> sqlSchema = migrated.accept(new MutationSchemaDeriver(pathParser2, null));
 
     if (sqlSchema.isEmpty()) {
       throw new IllegalStateException(

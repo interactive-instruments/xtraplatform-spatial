@@ -3,7 +3,6 @@ dependencies {
     provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-features')
-    provided project(':xtraplatform-feature-provider-api')
     provided project(':xtraplatform-ogc-wfs-api')
 
     testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.31'

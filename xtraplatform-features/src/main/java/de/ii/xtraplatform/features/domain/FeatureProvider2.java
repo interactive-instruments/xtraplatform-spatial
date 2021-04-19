@@ -61,11 +61,11 @@ public interface FeatureProvider2 extends PersistentEntity {
         return this instanceof FeatureQueriesPassThrough;
     }
 
-    default FeatureQueriesPassThrough passThrough() {
+    default FeatureQueriesPassThrough<?> passThrough() {
         if (!supportsQueries()) {
             throw new UnsupportedOperationException("Queries not supported");
         }
-        return (FeatureQueriesPassThrough) this;
+        return (FeatureQueriesPassThrough<?>) this;
     }
 
     default boolean supportsTransactions() {

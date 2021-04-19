@@ -78,7 +78,7 @@ public class PathParserSql {
 
       try {
         return Optional.of(
-            ImmutableSqlPath.builder()
+            new ImmutableSqlPath.Builder()
                 .tablePath(tablePath)
                 .tableFlags(tableFlags)
                 .columns(columns)

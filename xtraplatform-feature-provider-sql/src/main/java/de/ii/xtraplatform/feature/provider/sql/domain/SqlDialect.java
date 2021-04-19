@@ -9,6 +9,8 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import java.util.List;
+import java.util.Map;
 import org.threeten.extra.Interval;
 
 import java.util.Optional;
@@ -26,5 +28,18 @@ public interface SqlDialect {
     String applyToDatetime(String column);
 
     String escapeString(String value);
+
+    String geometryInfoQuery(Map<String, String> dbInfo);
+
+  List<String> getSystemTables();
+
+  interface GeoInfo {
+        String SCHEMA = "schema";
+        String TABLE = "table";
+        String COLUMN = "column";
+        String DIMENSION = "dimension";
+        String SRID = "srid";
+        String TYPE = "type";
+    }
 
 }

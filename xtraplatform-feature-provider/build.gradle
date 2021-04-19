@@ -1,5 +1,4 @@
 
 dependencies {
-    compile project(':xtraplatform-feature-provider-api')
     compile project(':xtraplatform-features')
 }

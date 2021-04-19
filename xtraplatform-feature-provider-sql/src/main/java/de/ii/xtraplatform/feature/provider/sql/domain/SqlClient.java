@@ -15,6 +15,9 @@ import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Source;
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureSql;
 import java.sql.Connection;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import scala.concurrent.ExecutionContext;
 
 import java.util.List;
@@ -24,6 +27,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public interface SqlClient {
+
+    CompletableFuture<Collection<SqlRow>> run(String query, SqlQueryOptions options);
 
     Source<SqlRow, NotUsed> getSourceStream(String query, SqlQueryOptions options);
 
@@ -42,4 +47,6 @@ public interface SqlClient {
             ExecutionContext executionContext, Optional<String> id);
 
     Connection getConnection();
+
+    Map<String,String> getDbInfo();
 }

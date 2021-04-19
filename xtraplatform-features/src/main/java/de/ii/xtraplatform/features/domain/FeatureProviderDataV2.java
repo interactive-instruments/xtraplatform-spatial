@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.services.domain.ImmutableServiceDataCommon;
 import de.ii.xtraplatform.store.domain.entities.AutoEntity;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
@@ -19,20 +20,17 @@ import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
+import java.util.List;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * @author zahnen
  */
-@Value.Immutable
-@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
-@BuildableMapEncodingEnabled
-@JsonDeserialize(builder = ImmutableFeatureProviderDataV2.Builder.class)
+@JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
 public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
 
     @Override
@@ -51,8 +49,6 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
         return Optional.of(String.format("%s/%s", getProviderType(), getFeatureProviderType()).toLowerCase());
     }
 
-    ConnectionInfo getConnectionInfo();
-
     Optional<EpsgCrs> getNativeCrs();
 
     Optional<String> getDefaultLanguage();
@@ -62,23 +58,18 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
         return MODE.NONE;
     }
 
-    //behaves exactly like Map<String, FeatureTypeMapping>, but supports mergeable builder deserialization
+    //behaves exactly like Map<String, FeatureSchema>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonMerge
     BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
 
     Map<String, Map<String, String>> getCodelists();
 
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default Optional<String> getDataSourceUrl() {
-        return Optional.ofNullable(getConnectionInfo()).flatMap(ConnectionInfo::getConnectionUri);
-    }
+    List<String> getAutoTypes();
 
 
     // custom builder to automatically use keys of types as name of FeatureTypeV2
-    abstract class Builder implements EntityDataBuilder<FeatureProviderDataV2> {
+    abstract class Builder<T extends Builder<T>> implements EntityDataBuilder<FeatureProviderDataV2> {
         @JsonIgnore
         public abstract Map<String, ImmutableFeatureSchema.Builder> getTypes();
 
@@ -86,100 +77,20 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
         public Map<String, ImmutableFeatureSchema.Builder> getTypes2() {
             Map<String, ImmutableFeatureSchema.Builder> types = getTypes();
 
-            return new KeyToNameBuilderMap(types);
-
-            //return new LinkedHashMap<String, ImmutableFeatureType.Builder>(types){};
+            return new ApplyKeyToValueMap<>(types, (key, builder) -> builder.name(key));
         }
 
-        public abstract ImmutableFeatureProviderDataV2.Builder putTypes(String key, ImmutableFeatureSchema.Builder builder);
+        public abstract T putTypes(String key, ImmutableFeatureSchema.Builder builder);
 
         @JsonProperty(value = "types")
-        public ImmutableFeatureProviderDataV2.Builder putTypes2(String key, ImmutableFeatureSchema.Builder builder) {
+        public T putTypes2(String key, ImmutableFeatureSchema.Builder builder) {
             return putTypes(key, builder.name(key));
         }
 
-        public abstract ImmutableFeatureProviderDataV2.Builder id(String id);
+        public abstract T id(String id);
+        public abstract T providerType(String providerType);
+        public abstract T featureProviderType(String featureProviderType);
 
-        @Override
-        public EntityDataBuilder<FeatureProviderDataV2> fillRequiredFieldsWithPlaceholders() {
-            return this.id(EntityDataDefaults.PLACEHOLDER)
-                .providerType(EntityDataDefaults.PLACEHOLDER)
-                .featureProviderType(EntityDataDefaults.PLACEHOLDER)
-                .connectionInfo(
-                new ConnectionInfo() {
-                    @Override
-                    public Optional<String> getConnectionUri() {
-                        return Optional.empty();
-                    }
-                });
-        }
-
-        private static class KeyToNameBuilderMap implements Map<String, ImmutableFeatureSchema.Builder> {
-            private final Map<String, ImmutableFeatureSchema.Builder> types;
-
-            public KeyToNameBuilderMap(Map<String, ImmutableFeatureSchema.Builder> types) {
-                this.types = types;
-            }
-
-            @Override
-            public int size() {
-                return types.size();
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return types.isEmpty();
-            }
-
-            @Override
-            public boolean containsKey(Object o) {
-                return types.containsKey(o);
-            }
-
-            @Override
-            public boolean containsValue(Object o) {
-                return types.containsValue(o);
-            }
-
-            @Override
-            public ImmutableFeatureSchema.Builder get(Object o) {
-                return types.get(o);
-            }
-
-            @Override
-            public ImmutableFeatureSchema.Builder put(String s, ImmutableFeatureSchema.Builder builder) {
-                return types.put(s, builder.name(s));
-            }
-
-            @Override
-            public ImmutableFeatureSchema.Builder remove(Object o) {
-                return types.remove(o);
-            }
-
-            @Override
-            public void putAll(Map<? extends String, ? extends ImmutableFeatureSchema.Builder> map) {
-                types.putAll(map);
-            }
-
-            @Override
-            public void clear() {
-                types.clear();
-            }
-
-            @Override
-            public Set<String> keySet() {
-                return types.keySet();
-            }
-
-            @Override
-            public Collection<ImmutableFeatureSchema.Builder> values() {
-                return types.values();
-            }
-
-            @Override
-            public Set<Entry<String, ImmutableFeatureSchema.Builder>> entrySet() {
-                return types.entrySet();
-            }
-        }
     }
+
 }

@@ -7,22 +7,31 @@
  */
 package de.ii.xtraplatform.feature.provider.sql
 
-import java.util.function.{BiFunction => JBiFunction, Function => JFunction}
-import java.util.{List => JList}
-
 import akka.NotUsed
-import akka.actor.ActorSystem
 import akka.stream.alpakka.slick.javadsl.SlickSession
 import akka.stream.javadsl._
-import slick.dbio.{DBIOAction, Effect, Streaming, SuccessAction}
+import slick.dbio.{DBIOAction, Effect, Streaming}
 import slick.jdbc.PostgresProfile.api._
 import slick.jdbc._
 import slick.sql.SqlStreamingAction
 
+import java.util
+import java.util.concurrent.CompletionStage
+import java.util.function.{BiFunction => JBiFunction, Function => JFunction}
+import java.util.{List => JList}
+import scala.collection.JavaConverters._
 import scala.collection.immutable.Vector
-import scala.concurrent.ExecutionContext
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
 
 object SlickSql {
+
+  def run[T](session: SlickSession,
+             query: String,
+             mapper: JFunction[PositionedResult, T]): CompletionStage[util.Collection[T]] = {
+    implicit val ec: ExecutionContextExecutor = ExecutionContext.global
+    session.db.run(SQLActionBuilder(query, SetParameter.SetUnit).as[T](toSlick(mapper))).map(v => v.asJavaCollection).toJava
+  }
 
   def source[T](
                  session: SlickSession,
@@ -35,22 +44,22 @@ object SlickSql {
   }
 
 
-  def source[T,R >: Null](
-                           session: SlickSession,
-                           executionContext: ExecutionContext,
-                           toStatements: JList[JFunction[T,String]],
-                           resultMapper: JBiFunction[SlickRow, R, R],
-                           feature: T
-               ): Source[R, NotUsed] = {
+  def source[T, R >: Null](
+                            session: SlickSession,
+                            executionContext: ExecutionContext,
+                            toStatements: JList[JFunction[T, String]],
+                            resultMapper: JBiFunction[SlickRow, R, R],
+                            feature: T
+                          ): Source[R, NotUsed] = {
 
     Source.fromPublisher(session.db.stream(toTransaction(feature, executionContext, toStatements, resultMapper)))
   }
 
-  def toTransaction[T,R >: Null] (feature: T,
-                          executionContext: ExecutionContext,
-                          toStatements: JList[JFunction[T,String]],
-                          mapper: JBiFunction[SlickRow, R, R]
-                       ): DBIOAction[Vector[R], Streaming[R], Effect with Effect.Transactional] = {
+  def toTransaction[T, R >: Null](feature: T,
+                                  executionContext: ExecutionContext,
+                                  toStatements: JList[JFunction[T, String]],
+                                  mapper: JBiFunction[SlickRow, R, R]
+                                 ): DBIOAction[Vector[R], Streaming[R], Effect with Effect.Transactional] = {
     implicit val ec: ExecutionContext = executionContext
 
     var streamingAction: DBIOAction[Vector[R], Streaming[R], Effect with Effect] = toDbio(toStatements.get(0).apply(feature), mapper, null)
@@ -58,7 +67,7 @@ object SlickSql {
     for (i <- 1 until toStatements.size()) {
       streamingAction = streamingAction.flatMap(results => {
         val statement = toStatements.get(i).apply(feature)
-        var nextAction : DBIOAction[Vector[R], Streaming[R], Effect] = toDbio("SELECT null", mapper, results)
+        var nextAction: DBIOAction[Vector[R], Streaming[R], Effect] = toDbio("SELECT null", mapper, results)
 
         if (statement != null) {
           nextAction = toDbio(statement, mapper, results)
@@ -71,7 +80,7 @@ object SlickSql {
   }
 
   private def toDbio[T >: Null](query: String, mapper: JBiFunction[SlickRow, T, T], results: Vector[T]): SqlStreamingAction[Vector[T], T, Effect] =
-    if (results != null && results.nonEmpty) sql"#$query".as[T](toSlick(mapper,  results.head)) else sql"#$query".as[T](toSlick(mapper))
+    if (results != null && results.nonEmpty) sql"#$query".as[T](toSlick(mapper, results.head)) else sql"#$query".as[T](toSlick(mapper))
 
 
   private def toSlick[T >: Null](mapper: JBiFunction[SlickRow, T, T], results: T): GetResult[T] =
@@ -84,7 +93,7 @@ object SlickSql {
     GetResult(pr => mapper(pr))
 
   //TODO: remove
-  final class SlickRow (delegate: PositionedResult) {
+  final class SlickRow(delegate: PositionedResult) {
     def nextBoolean(): java.lang.Boolean = delegate.nextBoolean()
 
     def nextBigDecimal(): java.math.BigDecimal = delegate.nextBigDecimal().bigDecimal
@@ -119,4 +128,5 @@ object SlickSql {
 
     def nextTimestamp(): java.sql.Timestamp = delegate.nextTimestamp()
   }
+
 }

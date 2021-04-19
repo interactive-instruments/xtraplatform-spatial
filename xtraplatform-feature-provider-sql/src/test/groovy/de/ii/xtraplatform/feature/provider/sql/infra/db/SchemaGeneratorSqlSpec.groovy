@@ -7,10 +7,11 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.infra.db
 
-import com.google.common.collect.ImmutableList
+
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableConnectionInfoSql
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis
 import de.ii.xtraplatform.features.domain.SchemaBase
 import schemacrawler.crawl.MutableCatalog
 import schemacrawler.crawl.MutableColumn
@@ -42,7 +43,7 @@ class SchemaGeneratorSqlSpec extends Specification {
                 .password("postgres")
                 .build()
 
-        sqlSchemaCrawler = new SchemaGeneratorSql(Mock(SqlClient), []);
+        sqlSchemaCrawler = new SchemaGeneratorSql(Mock(SqlClient), [], [], new SqlDialectPostGis());
 
     }
 
