@@ -43,7 +43,9 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
     //TODO: move operator translation to SqlDialect
     private final static Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
             .put(ImmutableAfter.class, ">")
+            .put(ImmutableMetBy.class, ">=")
             .put(ImmutableBefore.class, "<")
+            .put(ImmutableMeets.class, "<=")
             .put(ImmutableDuring.class, "BETWEEN")
             .put(ImmutableTEquals.class, "=")
             .put(ImmutableTOverlaps.class, "OVERLAPS")
@@ -58,6 +60,13 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             .put(ImmutableCrosses.class, "ST_Crosses")
             .put(ImmutableIntersects.class, "ST_Intersects")
             .put(ImmutableContains.class, "ST_Contains")
+            .build();
+
+    private final static Map<Class<?>, String> ARRAY_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
+            .put(ImmutableAContains.class, "@>")
+            .put(ImmutableAEquals.class, "=")
+            .put(ImmutableAOverlaps.class, "&&")
+            .put(ImmutableContainedBy.class, "<@")
             .build();
 
     private final Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator;
@@ -234,21 +243,21 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 String functionEnd = "";
                 if (((Like) scalarOperation).getWildcard().isPresent() &&
                         !Objects.equals("%", ((Like) scalarOperation).getWildcard().get())) {
-                    Optional<String> wildCard = ((Like) scalarOperation).getWildcard();
+                    String wildCard = ((Like) scalarOperation).getWildcard().get();
                     value = value.replaceAll("%", "\\%")
-                                 .replaceAll(String.format("\\%s",wildCard), "%");
+                                 .replaceAll(String.format("\\%s", wildCard), "%");
                 }
                 if (((Like) scalarOperation).getSinglechar().isPresent() &&
                         !Objects.equals("_", ((Like) scalarOperation).getSinglechar().get())) {
                     String singlechar = ((Like) scalarOperation).getSinglechar().get();
                     value = value.replaceAll("_", "\\_")
-                                 .replaceAll(String.format("\\%s",singlechar), "_");
+                                 .replaceAll(String.format("\\%s", singlechar), "_");
                 }
                 if (((Like) scalarOperation).getEscapechar().isPresent() &&
                         !Objects.equals("\\", ((Like) scalarOperation).getEscapechar().get())) {
                     String escapechar = ((Like) scalarOperation).getEscapechar().get();
                     value = value.replaceAll("\\\\", "\\\\")
-                                 .replaceAll(String.format("\\%s",escapechar), "\\");
+                                 .replaceAll(String.format("\\%s", escapechar), "\\");
                 }
                 if (((Like) scalarOperation).getNocase().isPresent() &&
                         Objects.equals(Boolean.TRUE, ((Like) scalarOperation).getNocase().get())) {
@@ -426,6 +435,14 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                                      .build();
 
             return visit(polygon, ImmutableList.of());
+        }
+
+        @Override
+        public String visit(ArrayOperation arrayOperation, List<String> children) {
+            String expression = children.get(0);
+            String operator = ARRAY_OPERATORS.get(arrayOperation.getClass());
+            String operation = String.format(" %s ARRAY[%s]", operator, children.get(1));
+            return String.format(expression, "", operation);
         }
     }
 
