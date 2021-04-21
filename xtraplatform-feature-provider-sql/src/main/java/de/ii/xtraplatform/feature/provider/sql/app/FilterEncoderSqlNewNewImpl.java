@@ -263,8 +263,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     value = value.replaceAll("\\\\", "\\\\")
                                  .replaceAll(String.format("\\%s", escapechar), "\\");
                 }
-                if (((Like) scalarOperation).getNocase().isPresent() &&
-                        Objects.equals(Boolean.TRUE, ((Like) scalarOperation).getNocase().get())) {
+                if ((((Like) scalarOperation).getNocase().isEmpty()) ||
+                    (((Like) scalarOperation).getNocase().isPresent() && Objects.equals(Boolean.TRUE, ((Like) scalarOperation).getNocase().get()))) {
                     // TODO in PSQL we could also use ILIKE
                     functionStart = "LOWER(";
                     functionEnd = ")";
