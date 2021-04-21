@@ -48,7 +48,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             .put(ImmutableMeets.class, "<=")
             .put(ImmutableDuring.class, "BETWEEN")
             .put(ImmutableTEquals.class, "=")
-            .put(ImmutableTOverlaps.class, "OVERLAPS")
+            .put(ImmutableAnyInteracts.class, "OVERLAPS")
             .build();
 
     private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
@@ -229,6 +229,10 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(ScalarOperation scalarOperation, List<String> children) {
             String propertyExpression = children.get(0);
             String value = children.size() > 1 ? children.get(1) : "";
+            int cutoff = value.indexOf(" WHERE ");
+            if (cutoff != -1) {
+                value = String.format(value.substring(cutoff + 7, value.length() - 1), "", "");
+            }
             String operator = CqlToText.SCALAR_OPERATORS.get(scalarOperation.getClass());
             String operation = String.format(" %s %s", operator, value);
             String functionStart = "";
@@ -350,7 +354,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                                                                                                           .toString()));
             }
 
-            if (temporalOperation instanceof TOverlaps) {
+            if (temporalOperation instanceof AnyInteracts) {
                 TemporalLiteral operand2 = (TemporalLiteral) temporalOperation.getOperands()
                                                                               .get(1);
 
