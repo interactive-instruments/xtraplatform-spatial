@@ -12,7 +12,7 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
@@ -22,21 +22,21 @@ import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.streams.domain.LogContextStream;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
-import org.threeten.extra.Interval;
-
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
+import org.threeten.extra.Interval;
 
 class ExtentReaderSql implements ExtentReader {
 
-    private final SqlConnector sqlConnector;
+    private final Supplier<SqlClient> sqlClient;
     private final FeatureStoreQueryGeneratorSql queryGenerator;
     private final SqlDialect sqlDialect;
     private final EpsgCrs crs;
 
-    ExtentReaderSql(SqlConnector sqlConnector, FeatureStoreQueryGeneratorSql queryGenerator,
+    ExtentReaderSql(Supplier<SqlClient> sqlClient, FeatureStoreQueryGeneratorSql queryGenerator,
                     SqlDialect sqlDialect, EpsgCrs crs) {
-        this.sqlConnector = sqlConnector;
+        this.sqlClient = sqlClient;
         this.queryGenerator = queryGenerator;
         this.sqlDialect = sqlDialect;
         this.crs = crs;
@@ -56,7 +56,7 @@ class ExtentReaderSql implements ExtentReader {
 
         String query = queryGenerator.getExtentQuery(spatialAttributesContainer.get());
 
-        Source<SqlRow, NotUsed> sourceStream = sqlConnector.getSqlClient().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class));
+        Source<SqlRow, NotUsed> sourceStream = sqlClient.get().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class));
 
         return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseExtent((String) sqlRow.getValues()
                                                                                                               .get(0), crs)), Sink.head());
@@ -73,7 +73,7 @@ class ExtentReaderSql implements ExtentReader {
 
         String query = queryGenerator.getTemporalExtentQuery(temporalAttributesContainer.get(), property);
 
-        Source<SqlRow, NotUsed> sourceStream = sqlConnector.getSqlClient().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class, String.class));
+        Source<SqlRow, NotUsed> sourceStream = sqlClient.get().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class, String.class));
 
         return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseTemporalExtent((String) sqlRow.getValues().get(0), (String) sqlRow.getValues().get(1))), Sink.head());
     }
@@ -92,7 +92,7 @@ class ExtentReaderSql implements ExtentReader {
 
         String query = queryGenerator.getTemporalExtentQuery(startAttributesContainer.get(), endAttributesContainer.get(), startProperty, endProperty);
 
-        Source<SqlRow, NotUsed> sourceStream = sqlConnector.getSqlClient().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class, String.class));
+        Source<SqlRow, NotUsed> sourceStream = sqlClient.get().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class, String.class));
 
         return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseTemporalExtent((String) sqlRow.getValues().get(0), (String) sqlRow.getValues().get(1))), Sink.head());
     }

@@ -9,21 +9,14 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import akka.Done;
 import akka.NotUsed;
-import akka.japi.pf.PFBuilder;
+import akka.japi.JavaPartialFunction;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlRowMeta.Builder;
-import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlClientSlick;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -33,12 +26,15 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.CompletionStage;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.postgresql.util.PSQLException;
+import org.postgresql.util.PSQLState;
 
 //TODO: class
 public interface SqlConnector extends
     FeatureProviderConnector<SqlRow, SqlQueries, SqlQueryOptions> {
-
-  Logger LOGGER = LoggerFactory.getLogger(SqlConnector.class);
 
   //TODO
   SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
@@ -61,7 +57,7 @@ public interface SqlConnector extends
 
   @Override
   default Source<SqlRow, NotUsed> getSourceStream(SqlQueries query) {
-    return getSourceStream(query, NO_OPTIONS);
+    return getSourceStream(query, NO_OPTIONS).mapError(PSQL_CONTEXT);
   }
 
   //TODO: reuse instances of SqlRow, SqlColumn? (object pool, e.g. https://github.com/chrisvest/stormpot, implement test with 100000 rows, measure)
@@ -83,23 +79,18 @@ public interface SqlConnector extends
       int[] i = {0};
       Source<SqlRow, NotUsed>[] sqlRows = query.getValueQueries()
           .apply(metaResult)
-          .map(valueQuery -> {
-            if (LOGGER.isTraceEnabled()) {
-              LOGGER.trace("Values query: {}", valueQuery);
-            }
-
-            return getSqlClient().getSourceStream(valueQuery, ImmutableSqlQueryOptions.builder()
-                .from(options)
-                .attributesContainer(attributesContainers.get(i[0]))
-                .containerPriority(i[0]++)
-                .build());
-          })
+          .map(valueQuery -> getSqlClient()
+              .getSourceStream(valueQuery, new ImmutableSqlQueryOptions.Builder()
+                  .from(options)
+                  .attributesContainer(attributesContainers.get(i[0]))
+                  .containerPriority(i[0]++)
+                  .build()))
           .toArray((IntFunction<Source<SqlRow, NotUsed>[]>) Source[]::new);
       return mergeAndSort(sqlRows)
           .prepend(Source.single(metaResult));
     });
 
-    return sqlRowSource;
+    return sqlRowSource.mapError(PSQL_CONTEXT);
   }
 
   //TODO: simplify
@@ -109,9 +100,6 @@ public interface SqlConnector extends
       return Source.single(getMetaQueryResult(0L, 0L, 0L, 0L).build());
     }
 
-        /*if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("Meta query: {}", metaQuery.get());
-        }*/
     List<Class<?>> columnTypes = Stream
         .concat(IntStream.range(0, 2 + (options.getCustomSortKeys().size() * 2))
             .mapToObj(i -> Object.class), Stream.of(Long.class, Long.class))
@@ -119,15 +107,12 @@ public interface SqlConnector extends
 
     return getSqlClient().getSourceStream(metaQuery.get(),
         SqlQueryOptions.withColumnTypes(columnTypes))
-        .map(sqlRow -> getMetaQueryResult(sqlRow.getValues()))
-        .recover(new PFBuilder<Throwable, SqlRowMeta>()
-            .matchAny(throwable -> getMetaQueryResult(0L, 0L, 0L, 0L).build())
-            .build());
+        .map(sqlRow -> getMetaQueryResult(sqlRow.getValues()));
   }
 
   default Builder getMetaQueryResult(Object minKey, Object maxKey, Long numberReturned,
       Long numberMatched) {
-    return ImmutableSqlRowMeta.builder()
+    return new ImmutableSqlRowMeta.Builder()
         .minKey(minKey)
         .maxKey(maxKey)
         .numberReturned(Objects.nonNull(numberReturned) ? numberReturned : 0L)
@@ -175,4 +160,47 @@ public interface SqlConnector extends
     }
     return mergedAndSorted;
   }
+
+  JavaPartialFunction<Throwable, Throwable> PSQL_CONTEXT = new JavaPartialFunction<>() {
+    @Override
+    public Throwable apply(Throwable throwable, boolean isCheck) {
+      if (throwable instanceof PSQLException) {
+        PSQLException e = (PSQLException) throwable;
+        String message = Optional.ofNullable(e.getServerErrorMessage())
+            .map(serverErrorMessage -> {
+              StringBuilder totalMessage = new StringBuilder("\n  ");
+              String msg = serverErrorMessage.getSeverity();
+              if (msg != null) {
+                totalMessage.append(msg).append(": ");
+              }
+              msg = serverErrorMessage.getMessage();
+              if (msg != null) {
+                totalMessage.append(msg);
+              }
+              msg = serverErrorMessage.getDetail();
+              if (msg != null) {
+                totalMessage.append("\n  ").append("Detail: ").append(msg);
+              }
+
+              msg = serverErrorMessage.getHint();
+              if (msg != null) {
+                totalMessage.append("\n  ").append("Hint: ").append(msg);
+              }
+              msg = String.valueOf(serverErrorMessage.getPosition());
+              if (!msg.equals("0")) {
+                totalMessage.append("\n  ").append("Position: ").append(msg);
+              }
+              msg = serverErrorMessage.getWhere();
+              if (msg != null) {
+                totalMessage.append("\n  ").append("Where: ").append(msg);
+              }
+              return totalMessage.toString();
+            })
+            .orElseGet(e::getMessage);
+
+        return new PSQLException("Unexpected SQL query error: " + message, PSQLState.UNKNOWN_STATE);
+      }
+      return throwable;
+    }
+  };
 }

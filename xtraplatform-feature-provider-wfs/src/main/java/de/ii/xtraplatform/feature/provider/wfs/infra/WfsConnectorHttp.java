@@ -14,7 +14,9 @@ import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.feature.provider.wfs.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.streams.domain.Http;
 import de.ii.xtraplatform.streams.domain.HttpClient;
 import de.ii.xtraplatform.dropwizard.domain.Dropwizard;
@@ -30,7 +32,9 @@ import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.wfs.GetCapabilities;
 import de.ii.xtraplatform.ogc.api.wfs.WfsOperation;
 import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder;
+import java.util.Objects;
 import org.apache.felix.ipojo.annotations.Component;
+import org.apache.felix.ipojo.annotations.Invalidate;
 import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
@@ -67,9 +71,9 @@ public class WfsConnectorHttp implements WfsConnector {
     private final Optional<Metadata> metadata;
     private Optional<Throwable> connectionError;
 
-    WfsConnectorHttp(@Property(name = ".data") FeatureProviderDataV2 data, @Requires Dropwizard dropwizard,
+    WfsConnectorHttp(@Property(name = ".data") FeatureProviderWfsData data, @Requires Dropwizard dropwizard,
                      @Requires Http http) {
-        ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
+        ConnectionInfoWfsHttp connectionInfo = data.getConnectionInfo();
 
         this.useHttpPost = connectionInfo.getMethod() == ConnectionInfoWfsHttp.METHOD.POST;
         this.metricRegistry = dropwizard.getEnvironment()
@@ -78,6 +82,13 @@ public class WfsConnectorHttp implements WfsConnector {
         Map<String, Map<WFS.METHOD, URI>> urls = ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri())));
 
         this.wfsRequestEncoder = new WfsRequestEncoder(connectionInfo.getVersion(), connectionInfo.getGmlVersion(), connectionInfo.getNamespaces(), urls);
+
+        /*
+         workaround for https://github.com/interactive-instruments/ldproxy/issues/225
+         TODO: remove when fixed
+        */
+        Optional.ofNullable(Strings.emptyToNull(connectionInfo.getUri().toString().replace(FeatureProviderWfsData.PLACEHOLDER_URI, "")))
+            .orElseThrow(() -> new IllegalArgumentException("No 'uri' given, required for WFS connection"));
 
         URI host = connectionInfo.getUri();
 
@@ -94,6 +105,11 @@ public class WfsConnectorHttp implements WfsConnector {
         wfsRequestEncoder = null;
         useHttpPost = false;
         metadata = Optional.empty();
+    }
+
+    @Invalidate
+    private void onStop() {
+        //TODO: cleanup httpClient
     }
 
 

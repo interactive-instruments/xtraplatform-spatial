@@ -16,7 +16,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 @Value.Immutable
-@Value.Style(deepImmutablesDetection = true, attributeBuilderDetection = true)
 public interface SqlPath {
 
     @Nullable

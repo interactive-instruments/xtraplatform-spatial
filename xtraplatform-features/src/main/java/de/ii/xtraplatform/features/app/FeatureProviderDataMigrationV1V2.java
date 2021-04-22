@@ -8,32 +8,31 @@
 package de.ii.xtraplatform.features.app;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.store.domain.entities.EntityData;
-import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
-import de.ii.xtraplatform.store.domain.entities.EntityMigration;
-import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV1;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureType;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV1;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.store.domain.Identifier;
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Instantiate;
-import org.apache.felix.ipojo.annotations.Provides;
-import org.apache.felix.ipojo.annotations.StaticServiceProperty;
-
+import de.ii.xtraplatform.store.domain.entities.EntityData;
+import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
+import de.ii.xtraplatform.store.domain.entities.EntityMigration;
+import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.felix.ipojo.annotations.Component;
+import org.apache.felix.ipojo.annotations.Instantiate;
+import org.apache.felix.ipojo.annotations.Provides;
+import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 
 @Component
 @Provides(properties = {
@@ -59,7 +58,7 @@ public class FeatureProviderDataMigrationV1V2 implements EntityMigration<Feature
     @Override
     public FeatureProviderDataV2 migrate(FeatureProviderDataV1 entityData) {
 
-        ImmutableFeatureProviderDataV2.Builder builder = new ImmutableFeatureProviderDataV2.Builder()
+        ImmutableFeatureProviderCommonData.Builder builder = new ImmutableFeatureProviderCommonData.Builder()
                 .id(entityData.getId())
                 .createdAt(entityData.getCreatedAt())
                 .lastModified(entityData.getLastModified())

@@ -25,7 +25,7 @@ class SchemaInfo {
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaInfo.class);
 
   private static final String VIEW_COLUMN_NOT_ANALYZABLE =
-      "Cannot analyze constraints and indices for column '{}' in view '{}', most likely it is composed of multiple actual columns.";
+      "Cannot analyze constraints and indices for column '{}' in view '{}', the column might be composed of multiple actual columns or the view might be composed of other views.";
 
   private final Collection<Table> tables;
 
@@ -47,7 +47,10 @@ class SchemaInfo {
   //TODO: unique may be either column constraint, table constraint or index plus primary key
   //TODO: NOT NULL constraints
   public boolean isColumnUnique(String columnName, String tableName) {
-    Optional<Column> optionalColumn = getColumn(tableName, columnName, true);
+    return isColumnUnique(columnName, tableName, true);
+  }
+  public boolean isColumnUnique(String columnName, String tableName, boolean warn) {
+    Optional<Column> optionalColumn = getColumn(tableName, columnName, true, warn);
 
     if (optionalColumn.isPresent()) {
       Column column = optionalColumn.get();
@@ -87,10 +90,10 @@ class SchemaInfo {
   }
 
   public Optional<Column> getColumn(String tableName, String columnName) {
-    return getColumn(tableName, columnName, false);
+    return getColumn(tableName, columnName, false, false);
   }
 
-  public Optional<Column> getColumn(String tableName, String columnName, boolean resolveViews) {
+  public Optional<Column> getColumn(String tableName, String columnName, boolean resolveViews, boolean warn) {
     Optional<Column> optionalColumn =
         tables.stream()
             .filter(t -> t.getName().equals(tableName))
@@ -109,7 +112,9 @@ class SchemaInfo {
           return getColumn(originalColumn.get().first(), originalColumn.get().second());
         }
 
-        LOGGER.warn(VIEW_COLUMN_NOT_ANALYZABLE, columnName, tableName);
+        if (warn) {
+          LOGGER.warn(VIEW_COLUMN_NOT_ANALYZABLE, columnName, tableName);
+        }
       }
     }
 

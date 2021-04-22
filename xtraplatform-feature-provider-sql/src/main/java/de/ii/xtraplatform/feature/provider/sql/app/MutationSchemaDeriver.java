@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 
 public class MutationSchemaDeriver implements ReverseSchemaDeriver<SchemaSql> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReverseSchemaDeriver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MutationSchemaDeriver.class);
 
     private static final Joiner JOINER = Joiner.on('/')
                                                .skipNulls();
@@ -49,7 +49,9 @@ public class MutationSchemaDeriver implements ReverseSchemaDeriver<SchemaSql> {
 
     @Override
     public SchemaSql create(List<String> path, FeatureSchema targetSchema) {
-        LOGGER.debug("OLD {} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path);
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("OLD {} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path);
+        }
 
         return new ImmutableSchemaSql.Builder()
                 .name(path.get(path.size() - 1))
@@ -65,7 +67,9 @@ public class MutationSchemaDeriver implements ReverseSchemaDeriver<SchemaSql> {
 
     @Override
     public SchemaSql create(String path, FeatureSchema targetSchema) {
-        LOGGER.debug("NEW {} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path);
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("NEW {} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path);
+        }
 
         if (targetSchema.isValue()) {
             de.ii.xtraplatform.feature.provider.sql.domain.SqlPath strings = pathParser3.parseColumnPath(path);
@@ -122,7 +126,9 @@ public class MutationSchemaDeriver implements ReverseSchemaDeriver<SchemaSql> {
     }
 
     private SchemaSql createParent(SqlRelation relation, SchemaBase.Type type, SchemaSql child, boolean replace) {
-        LOGGER.debug("OBJECT {}", relation);
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("OBJECT {}", relation);
+        }
 
         //List<String> targetPath = (List<String>) child.getTarget()
         //                                              .get();
@@ -149,7 +155,9 @@ public class MutationSchemaDeriver implements ReverseSchemaDeriver<SchemaSql> {
     }
 
     private SchemaSql addChild(SchemaSql parent, SchemaSql child) {
-        LOGGER.debug("CHILD {} {}", parent.getName(), child.getName());
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("CHILD {} {}", parent.getName(), child.getName());
+        }
 
         SchemaSql toAdd = child;
 

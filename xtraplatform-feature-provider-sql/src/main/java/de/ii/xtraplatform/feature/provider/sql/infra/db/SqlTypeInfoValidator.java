@@ -8,18 +8,20 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
-import de.ii.xtraplatform.store.domain.entities.ImmutableValidationResult;
-import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelatedContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
+import de.ii.xtraplatform.store.domain.entities.ImmutableValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
+import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import schemacrawler.schema.Catalog;
@@ -37,9 +39,9 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
       "%s: column '%s' in table '%s' cannot be used as %s";
 
   private final List<String> schemas;
-  private SqlClient sqlClient;
+  private Supplier<SqlClient> sqlClient;
 
-  public SqlTypeInfoValidator(List<String> schemas, SqlClient sqlClient) {
+  public SqlTypeInfoValidator(List<String> schemas, Supplier<SqlClient> sqlClient) {
     this.schemas = schemas;
     this.sqlClient = sqlClient;
   }
@@ -47,8 +49,9 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
   @Override
   public ValidationResult validate(
       String typeName, FeatureStoreAttributesContainer attributesContainer, MODE mode) {
-    try (SqlSchemaCrawler schemaCrawler = new SqlSchemaCrawler(sqlClient.getConnection())) {
-      Catalog catalog = schemaCrawler.getCatalog(schemas, getUsedTables(attributesContainer));
+    try (SqlSchemaCrawler schemaCrawler = new SqlSchemaCrawler(sqlClient.get().getConnection())) {
+      Catalog catalog = schemaCrawler.getCatalog(schemas, getUsedTables(attributesContainer),
+          ImmutableList.of());
       Collection<Table> tables = catalog.getTables();
 
       return validate(typeName, attributesContainer, mode, new SchemaInfo(tables));

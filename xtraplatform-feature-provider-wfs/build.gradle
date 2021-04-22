@@ -3,7 +3,6 @@ dependencies {
     provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-features')
-    provided project(':xtraplatform-feature-provider-api')
     provided project(':xtraplatform-feature-transformer-api')
     provided project(':xtraplatform-ogc-wfs-api')
     provided project(':xtraplatform-geotools')

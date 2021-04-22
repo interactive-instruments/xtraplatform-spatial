@@ -10,8 +10,7 @@ package de.ii.xtraplatform.feature.provider.wfs.infra;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
-import de.ii.xtraplatform.feature.provider.wfs.GMLSchemaParser;
+import de.ii.xtraplatform.features.domain.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
@@ -20,6 +19,8 @@ import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
 import de.ii.xtraplatform.xml.domain.XMLPathTracker;
 
+import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -28,6 +29,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import javax.xml.namespace.QName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,23 +41,40 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
 
     private final List<FeatureSchema> featureTypes;
     private final Set<String> mappedPaths;
-    private final Map<String, String> crsMap;
+    private final Map<QName, String> crsMap;
     private final XMLNamespaceNormalizer namespaceNormalizer;
+    private final Map<QName, String> typeIds;
 
     private ImmutableFeatureSchema.Builder currentFeatureType;
     private String currentLocalName;
-    private String currentQualifiedName;
+    private String currentPrefixedName;
+    private QName currentQualifiedName;
     private XMLPathTracker currentPath;
     private String currentParentProperty;
     private Map<String, ImmutableFeatureSchema> properties;
 
-    WfsSchemaAnalyzer(Map<String, String> crsMap, Map<String, String> namespaces) {
+    WfsSchemaAnalyzer(List<QName> featureTypes,
+        Map<QName, String> crsMap, Map<String, String> namespaces) {
         this.featureTypes = new ArrayList<>();
         this.currentPath = new XMLPathTracker();
         this.mappedPaths = new HashSet<>();
         this.crsMap = crsMap;
         this.namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
         this.properties = new LinkedHashMap<>();
+        this.typeIds = getTypeIds(featureTypes);
+    }
+
+    private Map<QName, String> getTypeIds(List<QName> featureTypes) {
+        return featureTypes.stream().map(qName -> {
+            boolean hasConflict = featureTypes.stream().anyMatch(
+                qName1 -> Objects.equals(qName.getLocalPart(), qName1.getLocalPart()) && !Objects.equals(qName, qName1));
+
+            String id = hasConflict
+                ? WfsCapabilitiesAnalyzer.getLongFeatureTypeId(namespaceNormalizer.getPrefixedName(qName), namespaceNormalizer)
+                : WfsCapabilitiesAnalyzer.getShortFeatureTypeId(namespaceNormalizer.getPrefixedName(qName), namespaceNormalizer);
+
+            return new SimpleImmutableEntry<>(qName, id);
+        }).collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     public List<FeatureSchema> getFeatureTypes() {
@@ -74,15 +94,16 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
         }
         properties = new LinkedHashMap<>();
         currentParentProperty = null;
-        currentLocalName = localName.toLowerCase();
-        currentQualifiedName = namespaceNormalizer.getQualifiedName(nsUri, localName);
+        currentPrefixedName = namespaceNormalizer.getQualifiedName(nsUri, localName);
+        currentQualifiedName = namespaceNormalizer.getQName(nsUri, localName);
+        currentLocalName = typeIds.get(currentQualifiedName);
         mappedPaths.clear();
         currentPath.clear();
 
         currentFeatureType = new ImmutableFeatureSchema.Builder();
         currentFeatureType.name(currentLocalName)
                 .type(SchemaBase.Type.OBJECT)
-                .sourcePath("/" + currentQualifiedName);
+                .sourcePath("/" + currentPrefixedName);
     }
 
     @Override
@@ -136,9 +157,9 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
                         .type(propertyType.get());
                 if (propertyType.get() == FeatureSchema.Type.GEOMETRY) {
                     property.geometryType(TargetMappingProviderFromGml.GML_GEOMETRY_TYPE.fromString(type).toSimpleFeatureGeometry());
-                    if (crsMap.containsKey(currentLocalName)) {
+                    if (crsMap.containsKey(currentQualifiedName)) {
                         String crs = String
-                            .valueOf(EpsgCrs.fromString(crsMap.get(currentLocalName)).getCode());
+                            .valueOf(EpsgCrs.fromString(crsMap.get(currentQualifiedName)).getCode());
                         property.additionalInfo(ImmutableMap.of(
                                 "crs", crs,
                                 "multiple", String.valueOf(isParentMultiple)));

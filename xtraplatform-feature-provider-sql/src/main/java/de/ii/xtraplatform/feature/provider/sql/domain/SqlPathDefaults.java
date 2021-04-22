@@ -13,7 +13,6 @@ import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@Value.Style(builder = "new")
 @JsonDeserialize(builder = ImmutableSqlPathDefaults.Builder.class)
 public interface SqlPathDefaults {
 

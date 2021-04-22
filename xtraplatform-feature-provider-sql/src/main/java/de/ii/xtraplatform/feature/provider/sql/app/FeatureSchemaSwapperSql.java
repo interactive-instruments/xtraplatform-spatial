@@ -278,7 +278,7 @@ public class FeatureSchemaSwapperSql {
                                                           .replaceAll("]", ""));
             boolean isSpatial = syntax.getSpatialFlag(flags);
 
-            return Optional.of(ImmutableSqlPath.builder()
+            return Optional.of(new ImmutableSqlPath.Builder()
                                                .tablePath(tablePath)
                                                .tableFlags(tableFlags)
                                                .columns(columns)

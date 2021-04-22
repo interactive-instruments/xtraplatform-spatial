@@ -50,7 +50,7 @@ class FeatureProviderDataV2Spec extends Specification {
 
         given:
 
-        FeatureProviderDataV2 data = new ImmutableFeatureProviderDataV2.Builder()
+        FeatureProviderDataV2 data = new ImmutableFeatureProviderCommonData.Builder()
                 .id("geoval")
                 .createdAt(1586271491161)
                 .lastModified(1586271491161)

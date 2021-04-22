@@ -16,6 +16,7 @@ import akka.util.ByteString;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.transformer.api.GmlStreamParser;
 import de.ii.xtraplatform.features.domain.FeatureBase;
+import de.ii.xtraplatform.features.domain.FeatureConsumer;
 import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -93,6 +94,25 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
                                                        .isAtLeastOneFeatureWritten()*/)
                                   .error(Optional.ofNullable(throwable))
                                   .build();
+        }));
+    }
+
+    public Sink<ByteString, CompletionStage<FeatureStream2.Result>> normalizeAndConsume(
+        FeatureConsumer featureConsumer, FeatureQuery featureQuery) {
+        FeatureSchema featureSchema = schemas.get(featureQuery.getType());
+
+        String name = featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
+
+        QName qualifiedName = new QName(namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)), namespaceNormalizer.getLocalName(name));
+
+        Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.consume(qualifiedName, featureConsumer);
+
+        return transformer.mapMaterializedValue((Function<CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (completionStage) -> completionStage.handle((done, throwable) -> {
+            return ImmutableResult.builder()
+                .isEmpty(false/*TODO!readContext.getReadState()
+                                                       .isAtLeastOneFeatureWritten()*/)
+                .error(Optional.ofNullable(throwable))
+                .build();
         }));
     }
 

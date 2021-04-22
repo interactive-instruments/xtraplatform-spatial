@@ -73,7 +73,7 @@ class FeatureQueryTransformerSql implements FeatureQueryTransformer<SqlQueries, 
             metaResult.getMinKey(), metaResult.getMaxKey(), metaResult.getCustomMinKeys(),
             metaResult.getCustomMaxKeys());
 
-    return ImmutableSqlQueries.builder()
+    return new ImmutableSqlQueries.Builder()
         .metaQuery(metaQuery)
         .valueQueries(valueQueries)
         .instanceContainers(typeInfo.getInstanceContainers())
@@ -91,7 +91,7 @@ class FeatureQueryTransformerSql implements FeatureQueryTransformer<SqlQueries, 
 
     List<SortKey> sortKeys = transformSortKeys(featureQuery.getSortKeys(), mainTable);
 
-    return ImmutableSqlQueryOptions.builder()
+    return new ImmutableSqlQueryOptions.Builder()
         .customSortKeys(sortKeys).build();
   }
 

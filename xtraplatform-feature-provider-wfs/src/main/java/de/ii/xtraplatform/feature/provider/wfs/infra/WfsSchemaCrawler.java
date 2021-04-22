@@ -9,7 +9,7 @@ package de.ii.xtraplatform.feature.provider.wfs.infra;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
+import de.ii.xtraplatform.features.domain.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.provider.wfs.GMLSchemaParser;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ImmutableConnectionInfoWfsHttp;
@@ -17,6 +17,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.ogc.api.wfs.DescribeFeatureType;
 import de.ii.xtraplatform.services.domain.TaskProgress;
+import java.util.LinkedHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,17 +62,17 @@ public class WfsSchemaCrawler {
     public List<FeatureSchema> parseSchema() {
         Optional<Metadata> metadata = connector.getMetadata();
 
-        Map<String, QName> featureTypes = metadata.map(Metadata::getFeatureTypes).orElse(ImmutableMap.of());
-        Map<String, String> crsMap = metadata.map(Metadata::getFeatureTypesCrs).orElse(ImmutableMap.of());
+        List<QName> featureTypes = metadata.map(Metadata::getFeatureTypes).orElse(ImmutableList.of());
+        Map<QName, String> crsMap = metadata.map(Metadata::getFeatureTypesCrs).orElse(ImmutableMap.of());
         Map<String, String> namespaces = metadata.map(Metadata::getNamespaces).orElse(ImmutableMap.of());
 
-        WfsSchemaAnalyzer schemaConsumer = new WfsSchemaAnalyzer(crsMap, namespaces);
+        WfsSchemaAnalyzer schemaConsumer = new WfsSchemaAnalyzer(featureTypes, crsMap, namespaces);
         analyzeFeatureTypes(schemaConsumer, featureTypes, new TaskProgressNoop());
 
         return schemaConsumer.getFeatureTypes();
     }
 
-    private void analyzeFeatureTypes(FeatureProviderSchemaConsumer schemaConsumer, Map<String, QName> featureTypes,
+    private void analyzeFeatureTypes(FeatureProviderSchemaConsumer schemaConsumer, List<QName> featureTypes,
                                      TaskProgress taskProgress) {
         Map<String, List<String>> featureTypesByNamespace = getSupportedFeatureTypesPerNamespace(featureTypes);
 
@@ -91,10 +92,10 @@ public class WfsSchemaCrawler {
         gmlSchemaParser.parse(inputStream, featureTypesByNamespace, taskProgress);
     }
 
-    private Map<String, List<String>> getSupportedFeatureTypesPerNamespace(Map<String, QName> featureTypes) {
-        Map<String, List<String>> featureTypesPerNamespace = new HashMap<>();
+    private Map<String, List<String>> getSupportedFeatureTypesPerNamespace(List<QName> featureTypes) {
+        Map<String, List<String>> featureTypesPerNamespace = new LinkedHashMap<>();
 
-        for (QName featureType : featureTypes.values()) {
+        for (QName featureType : featureTypes) {
             if (!featureTypesPerNamespace.containsKey(featureType.getNamespaceURI())) {
                 featureTypesPerNamespace.put(featureType.getNamespaceURI(), new ArrayList<>());
             }

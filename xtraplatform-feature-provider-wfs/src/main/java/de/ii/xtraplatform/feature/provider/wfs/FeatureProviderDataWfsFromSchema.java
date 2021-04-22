@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs;
 
-import de.ii.xtraplatform.feature.provider.api.FeatureProviderSchemaConsumer;
+import de.ii.xtraplatform.features.domain.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ImmutableConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureProviderDataTransformer;

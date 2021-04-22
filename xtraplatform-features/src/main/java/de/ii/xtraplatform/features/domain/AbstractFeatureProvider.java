@@ -19,6 +19,8 @@ import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.streams.domain.StreamRunner;
+import java.io.IOException;
+import java.util.Objects;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,31 +36,37 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
 
-    private final StreamRunner streamRunner;
-    private final Map<String, FeatureStoreTypeInfo> typeInfos;
+    private final BundleContext context;
+    private final ActorSystemProvider actorSystemProvider;
+    private final ConnectorFactory connectorFactory;
+    private StreamRunner streamRunner;
+    private Map<String, FeatureStoreTypeInfo> typeInfos;
+    private FeatureProviderConnector<T, U, V> connector;
 
     protected AbstractFeatureProvider(BundleContext context,
-                                      ActorSystemProvider actorSystemProvider,
-                                      FeatureProviderDataV2 data,
-                                      FeatureStorePathParser pathParser) {
-        this.typeInfos = createTypeInfos(pathParser, data.getTypes());
-        this.streamRunner = new StreamRunner(context, actorSystemProvider, data.getId(), getRunnerCapacity(data), getRunnerQueueSize(data));
-    }
-
-    protected int getRunnerCapacity(FeatureProviderDataV2 data) {
-        return StreamRunner.DYNAMIC_CAPACITY;
-    }
-
-    protected int getRunnerQueueSize(FeatureProviderDataV2 data) {
-        return StreamRunner.DYNAMIC_CAPACITY;
-    }
-
-    protected Optional<String> getRunnerError(FeatureProviderDataV2 data) {
-        return Optional.empty();
+        ActorSystemProvider actorSystemProvider, ConnectorFactory connectorFactory) {
+        this.context = context;
+        this.actorSystemProvider = actorSystemProvider;
+        this.connectorFactory = connectorFactory;
     }
 
     @Override
-    protected boolean onStartup() {
+    protected boolean onStartup() throws InterruptedException {
+        // TODO: delay disposing old connector and streamRunner until all queries are finished
+        if (Objects.nonNull(connector)) {
+            connectorFactory.disposeConnector(connector);
+        }
+        if (Objects.nonNull(streamRunner)) {
+            try {
+                streamRunner.close();
+            } catch (IOException e) {
+                // ignore
+            }
+        }
+        this.typeInfos = createTypeInfos(getPathParser(), getData().getTypes());
+        this.streamRunner = new StreamRunner(context, actorSystemProvider, getData().getId(), getRunnerCapacity(((WithConnectionInfo<?>)getData()).getConnectionInfo()), getRunnerQueueSize(((WithConnectionInfo<?>)getData()).getConnectionInfo()));
+        this.connector = (FeatureProviderConnector<T, U, V>) connectorFactory.createConnector(getData());
+
         if (!getConnector().isConnected()) {
             Optional<Throwable> connectionError = getConnector().getConnectionError();
             String message = connectionError.map(Throwable::getMessage)
@@ -70,7 +78,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             return false;
         }
 
-        Optional<String> runnerError = getRunnerError(getData());
+        Optional<String> runnerError = getRunnerError(((WithConnectionInfo<?>)getData()).getConnectionInfo());
 
         if (runnerError.isPresent()) {
             LOGGER.error("Feature provider with id '{}' could not be started: {}", getId(), runnerError.get());
@@ -80,18 +88,26 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         if (getTypeInfoValidator().isPresent() && getData().getTypeValidation() != MODE.NONE) {
             final boolean[] isSuccess = {true};
             try {
-                getTypeInfos().values().forEach(typeInfo -> {
-                    LOGGER.info("Validating type '{}' ({})", typeInfo.getName(), getData().getTypeValidation().name().toLowerCase());
+                for (FeatureStoreTypeInfo typeInfo : getTypeInfos().values()) {
+                    LOGGER.info("Validating type '{}' ({})", typeInfo.getName(),
+                        getData().getTypeValidation().name().toLowerCase());
 
-                    ValidationResult result = getTypeInfoValidator().get().validate(typeInfo, getData().getTypeValidation());
+                    ValidationResult result = getTypeInfoValidator().get()
+                        .validate(typeInfo, getData().getTypeValidation());
 
                     isSuccess[0] = isSuccess[0] && result.isSuccess();
                     result.getErrors().forEach(LOGGER::error);
-                    result.getStrictErrors().forEach(result.getMode() == MODE.STRICT ? LOGGER::error : LOGGER::warn);
+                    result.getStrictErrors()
+                        .forEach(result.getMode() == MODE.STRICT ? LOGGER::error : LOGGER::warn);
                     result.getWarnings().forEach(LOGGER::warn);
-                });
+
+                    checkForStartupCancel();
+                }
             } catch (Throwable e) {
-                LogContext.error("Cannot validate types", e, LOGGER);
+                if (e instanceof InterruptedException) {
+                    throw e;
+                }
+                LogContext.error(LOGGER, e, "Cannot validate types");
                 isSuccess[0] = false;
             }
 
@@ -115,13 +131,45 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
     }
 
     @Override
-    protected void onShutdown() {
+    protected void onReloaded() {
+        String startupInfo = getStartupInfo().map(
+            map -> String.format(" (%s)", map.toString().replace("{", "").replace("}", "")))
+            .orElse("");
+
+        LOGGER.info("Feature provider with id '{}' reloaded successfully.{}", getId(),
+            startupInfo);
+    }
+
+    @Override
+    protected void onStopped() {
+        connectorFactory.disposeConnector(connector);
         LOGGER.info("Feature provider with id '{}' stopped.", getId());
     }
 
+    @Override
+    protected void onStartupFailure(Throwable throwable) {
+        LogContext.error(LOGGER, throwable, "Feature provider with id '{}' could not be started", getId());
+    }
+
+    protected int getRunnerCapacity(ConnectionInfo connectionInfo) {
+        return StreamRunner.DYNAMIC_CAPACITY;
+    }
+
+    protected int getRunnerQueueSize(ConnectionInfo connectionInfo) {
+        return StreamRunner.DYNAMIC_CAPACITY;
+    }
+
+    protected Optional<String> getRunnerError(ConnectionInfo connectionInfo) {
+        return Optional.empty();
+    }
+
+    protected abstract FeatureStorePathParser getPathParser();
+
     protected abstract FeatureQueryTransformer<U, V> getQueryTransformer();
 
-    protected abstract FeatureProviderConnector<T, U, V> getConnector();
+    protected FeatureProviderConnector<T, U, V> getConnector() {
+        return Objects.requireNonNull(connector);
+    }
 
     protected abstract FeatureNormalizer<T> getNormalizer();
 
@@ -165,7 +213,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
             @Override
             public CompletionStage<Result> runWith(FeatureTransformer2 transformer) {
-                Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(typeInfos.get(query.getType()));
+                Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(query.getType()));
 
                 if (!typeInfo.isPresent()) {
                     //TODO: put error message into Result, complete successfully
@@ -211,7 +259,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             @Override
             public <Y extends PropertyBase<Y,Z>, W extends FeatureBase<Y,Z>, Z extends SchemaBase<Z>> CompletionStage<Result> runWith(
                     FeatureProcessor<Y,W,Z> transformer) {
-                Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(typeInfos.get(query.getType()));
+                Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(query.getType()));
 
                 if (!typeInfo.isPresent()) {
                     //TODO: put error message into Result, complete successfully

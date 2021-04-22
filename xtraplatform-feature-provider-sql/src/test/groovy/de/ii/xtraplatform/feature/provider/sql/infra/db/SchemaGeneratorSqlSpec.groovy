@@ -11,16 +11,20 @@ import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableConnectionInfoSql
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis
 import de.ii.xtraplatform.features.domain.SchemaBase
 import schemacrawler.crawl.MutableCatalog
 import schemacrawler.crawl.MutableColumn
 import schemacrawler.crawl.MutableColumnDataType
+import schemacrawler.crawl.MutablePrimaryKey
 import schemacrawler.crawl.MutableTable
+import schemacrawler.crawl.MutableTableConstraintColumn
 import schemacrawler.schema.Catalog
 import schemacrawler.schema.Column
 import schemacrawler.schema.ColumnDataType
 import schemacrawler.schema.JavaSqlType
 import schemacrawler.schema.JavaSqlTypeGroup
+import schemacrawler.schema.PrimaryKey
 import schemacrawler.schema.Table
 import schemacrawler.schemacrawler.SchemaReference
 import spock.lang.Shared
@@ -42,7 +46,7 @@ class SchemaGeneratorSqlSpec extends Specification {
                 .password("postgres")
                 .build()
 
-        sqlSchemaCrawler = new SchemaGeneratorSql(Mock(SqlClient), []);
+        sqlSchemaCrawler = new SchemaGeneratorSql(Mock(SqlClient), [], [], new SqlDialectPostGis());
 
     }
 
@@ -51,7 +55,7 @@ class SchemaGeneratorSqlSpec extends Specification {
         Catalog mockCatalog = createCatalog()
 
         when: 'crawl the catalog'
-        def featureTypeList = sqlSchemaCrawler.getFeatureTypes(mockCatalog, ImmutableMap.of())
+        def featureTypeList = sqlSchemaCrawler.getFeatureTypes(mockCatalog, ImmutableList.of(), ImmutableMap.of())
 
 
         then: 'check results'
@@ -100,8 +104,11 @@ class SchemaGeneratorSqlSpec extends Specification {
         ColumnDataType columnDataType = new MutableColumnDataType(schema, "serial")
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.INTEGER, Integer.class, JavaSqlTypeGroup.integer))
         column.setColumnDataType(columnDataType)
-        column.markAsPartOfPrimaryKey()
         table.addColumn(column)
+
+        PrimaryKey primaryKey = new MutablePrimaryKey(table, "pkey1")
+        primaryKey.addColumn(new MutableTableConstraintColumn(null, column))
+        table.setPrimaryKey(primaryKey)
 
         column = new MutableColumn(table, "column2")
         columnDataType = new MutableColumnDataType(schema, "varchar")
@@ -129,8 +136,11 @@ class SchemaGeneratorSqlSpec extends Specification {
         columnDataType = new MutableColumnDataType(schema, "serial")
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.INTEGER, Integer.class, JavaSqlTypeGroup.integer))
         column.setColumnDataType(columnDataType)
-        column.markAsPartOfPrimaryKey()
         table.addColumn(column)
+
+        primaryKey = new MutablePrimaryKey(table, "pkey2")
+        primaryKey.addColumn(new MutableTableConstraintColumn(null, column))
+        table.setPrimaryKey(primaryKey)
 
         column = new MutableColumn(table, "column6")
         columnDataType = new MutableColumnDataType(schema, "numeric")
