@@ -22,13 +22,11 @@ public class WfsCapabilitiesAnalyzer extends AbstractFeatureProviderMetadataCons
 
     private final XMLNamespaceNormalizer namespaceNormalizer;
     private final ImmutableMetadata.Builder metadata;
-    private final boolean includePrefixes;
     private String lastVersion;
 
-    public WfsCapabilitiesAnalyzer(boolean includePrefixes) {
+    public WfsCapabilitiesAnalyzer() {
         this.namespaceNormalizer = new XMLNamespaceNormalizer();
         this.metadata = new ImmutableMetadata.Builder();
-        this.includePrefixes = includePrefixes;
     }
 
     public Metadata getMetadata() {
@@ -130,8 +128,6 @@ public class WfsCapabilitiesAnalyzer extends AbstractFeatureProviderMetadataCons
     }
 
     private String getFeatureTypeId(String qualifiedName) {
-        return includePrefixes ?
-                qualifiedName.replace(":", "_").toLowerCase() :
-                namespaceNormalizer.getLocalName(qualifiedName).toLowerCase();
+        return namespaceNormalizer.getLocalName(qualifiedName).toLowerCase();
     }
 }

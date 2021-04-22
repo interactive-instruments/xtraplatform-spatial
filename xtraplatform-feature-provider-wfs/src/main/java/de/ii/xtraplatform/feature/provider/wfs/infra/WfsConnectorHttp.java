@@ -64,7 +64,6 @@ public class WfsConnectorHttp implements WfsConnector {
     private final HttpClient httpClient;
     private final WfsRequestEncoder wfsRequestEncoder;
     private final boolean useHttpPost;
-    private final boolean includePrefixes;
     private final Optional<Metadata> metadata;
     private Optional<Throwable> connectionError;
 
@@ -82,8 +81,6 @@ public class WfsConnectorHttp implements WfsConnector {
 
         URI host = connectionInfo.getUri();
 
-        this.includePrefixes = connectionInfo.getIncludePrefixes();
-
         //TODO: get maxParallelRequests and idleTimeout from connectionInfo
         this.httpClient = http.getHostClient(host, 16, 30);
 
@@ -96,7 +93,6 @@ public class WfsConnectorHttp implements WfsConnector {
         httpClient = null;
         wfsRequestEncoder = null;
         useHttpPost = false;
-        includePrefixes = false;
         metadata = Optional.empty();
     }
 
@@ -104,7 +100,7 @@ public class WfsConnectorHttp implements WfsConnector {
     private Optional<Metadata> crawlMetadata() {
         try {
             InputStream inputStream = runWfsOperation(new GetCapabilities());
-            WfsCapabilitiesAnalyzer metadataConsumer = new WfsCapabilitiesAnalyzer(includePrefixes);
+            WfsCapabilitiesAnalyzer metadataConsumer = new WfsCapabilitiesAnalyzer();
             WFSCapabilitiesParser gmlSchemaParser = new WFSCapabilitiesParser(metadataConsumer, staxFactory);
             gmlSchemaParser.parse(inputStream);
 
