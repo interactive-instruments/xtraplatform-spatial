@@ -777,4 +777,42 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
+    def 'Number of floors NOT between 4 and 8'() {
+        given:
+        String cqlText = "floors NOT BETWEEN 4 AND 8"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_39
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_39, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Owner name is NOT Mike, John, Tom'() {
+        given:
+        String cqlText = "owner NOT IN ('Mike', 'John', 'Tom')"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_40
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_40, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
 }

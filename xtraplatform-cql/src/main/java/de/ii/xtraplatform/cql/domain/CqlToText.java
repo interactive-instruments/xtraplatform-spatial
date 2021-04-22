@@ -147,6 +147,20 @@ public class CqlToText implements CqlVisitor<String> {
                 String isNull = SCALAR_OPERATORS.get(ImmutableIsNull.class);
 
                 return operation.replace(isNull, "IS NOT NULL");
+            } else if (logicalOperation.getPredicates()
+                    .get(0)
+                    .getBetween()
+                    .isPresent()) {
+                String between = SCALAR_OPERATORS.get(ImmutableBetween.class);
+
+                return operation.replace(between, String.format("%s %s", operator, between));
+            } else if (logicalOperation.getPredicates()
+                    .get(0)
+                    .getInOperator()
+                    .isPresent()) {
+                String in = SCALAR_OPERATORS.get(ImmutableIn.class);
+
+                return operation.replace(in, String.format("%s %s", operator, in));
             }
 
             return String.format("NOT (%s)", operation);

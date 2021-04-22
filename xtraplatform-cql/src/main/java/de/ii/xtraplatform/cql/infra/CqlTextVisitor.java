@@ -165,9 +165,9 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         if (Objects.nonNull(ctx.LIKE())) {
 
-            Scalar scalar1 = (Scalar) ctx.scalarExpression()
+            Scalar scalar1 = (Scalar) ctx.scalarExpression().get(0)
                                          .accept(this);
-            Scalar scalar2 = (Scalar) ctx.regularExpression()
+            Scalar scalar2 = (Scalar) ctx.scalarExpression().get(1)
                                          .accept(this);
 
             Like like = new ImmutableLike.Builder()
@@ -219,11 +219,17 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                       .accept(this);
         ScalarLiteral upperValue = (ScalarLiteral) ctx.scalarExpression(2)
                                                       .accept(this);
-        return new ImmutableBetween.Builder()
+
+        Between between = new ImmutableBetween.Builder()
                 .property(property)
                 .lower(lowerValue)
                 .upper(upperValue)
                 .build();
+
+        if (Objects.nonNull(ctx.NOT())) {
+            return Not.of(between);
+        }
+        return between;
     }
 
     @Override
@@ -321,7 +327,8 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                         .get(1)
                                         .accept(this);
         SpatialOperator spatialOperator = SpatialOperator.valueOf(ctx.SpatialOperator()
-                                                                     .getText());
+                                                                     .getText()
+                                                                     .toUpperCase());
 
         SpatialOperation.Builder<? extends SpatialOperation> builder;
 
@@ -419,7 +426,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
     @Override
     public CqlNode visitInPredicate(CqlParser.InPredicateContext ctx) {
-
+        In in;
         List<ScalarLiteral> values = ImmutableList.of(ctx.characterLiteral(), ctx.numericLiteral())
                                                   .stream()
                                                   .flatMap(Collection::stream)
@@ -427,13 +434,17 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                   .collect(Collectors.toList());
 
         if (Objects.isNull(ctx.propertyName())) {
-            return In.of(values);
+            in = In.of(values);
+        } else {
+            in = new ImmutableIn.Builder()
+                    .property((Property) ctx.propertyName().accept(this))
+                    .values(values)
+                    .build();
         }
-
-        return new ImmutableIn.Builder()
-                .property((Property) ctx.propertyName().accept(this))
-                .values(values)
-                .build();
+        if (Objects.nonNull(ctx.NOT())) {
+            return Not.of(in);
+        }
+        return in;
     }
 
     @Override

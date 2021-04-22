@@ -48,9 +48,9 @@ wildcard : WILDCARD characterLiteral;
 singlechar : SINGLECHAR characterLiteral;
 escapechar : ESCAPECHAR characterLiteral;
 nocase : NOCASE booleanLiteral;
-propertyIsLikePredicate :  scalarExpression (NOT)? LIKE regularExpression (likeModifier)*;
+propertyIsLikePredicate :  scalarExpression (NOT)? LIKE scalarExpression (likeModifier)*;
 
-propertyIsBetweenPredicate : scalarExpression BETWEEN
+propertyIsBetweenPredicate : scalarExpression (NOT)? BETWEEN
                              scalarExpression AND scalarExpression;
 
 propertyIsNullPredicate : scalarExpression IS (NOT)? NULL;
@@ -216,7 +216,7 @@ arrayElement: characterLiteral | numericLiteral | booleanLiteral | temporalLiter
 */
 //CHANGE: optional PropertyName for id filters
 //CHANGE: added missing comma
-inPredicate : (propertyName)? IN LEFTPAREN ( characterLiteral |
+inPredicate : (propertyName)? (NOT)? IN LEFTPAREN ( characterLiteral |
                                             numericLiteral |
                                             geomLiteral |
                                             temporalLiteral /*|
