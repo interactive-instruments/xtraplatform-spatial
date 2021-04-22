@@ -43,9 +43,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
     //TODO: move operator translation to SqlDialect
     private final static Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
             .put(ImmutableAfter.class, ">")
-            .put(ImmutableMetBy.class, ">=")
             .put(ImmutableBefore.class, "<")
-            .put(ImmutableMeets.class, "<=")
             .put(ImmutableDuring.class, "BETWEEN")
             .put(ImmutableTEquals.class, "=")
             .put(ImmutableAnyInteracts.class, "OVERLAPS")
