@@ -141,9 +141,14 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
     }
 
     @Override
-    protected void onShutdown() {
+    protected void onStopped() {
         connectorFactory.disposeConnector(connector);
         LOGGER.info("Feature provider with id '{}' stopped.", getId());
+    }
+
+    @Override
+    protected void onStartupFailure(Throwable throwable) {
+        LogContext.error(LOGGER, throwable, "Feature provider with id '{}' could not be started", getId());
     }
 
     protected int getRunnerCapacity(ConnectionInfo connectionInfo) {
