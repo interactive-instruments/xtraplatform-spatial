@@ -68,7 +68,6 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
             LOGGER.debug("Crawling SQL schema");
             Tuple<Catalog, List<String>> catalogAndMatching = schemaCrawler
                 .getCatalogAndMatching(schemas, includeTables, dialect.getSystemTables());
-            LOGGER.debug("MATCHING {}", catalogAndMatching.second());
             LOGGER.debug("Finished crawling SQL schema");
 
             Map<String, List<String>> geometryInfos = getGeometryInfos();
