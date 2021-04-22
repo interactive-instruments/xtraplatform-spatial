@@ -83,7 +83,7 @@ public interface CqlFilter extends CqlPredicate {
         } else if (node instanceof AnyInteracts) {
             builder.anyInteracts((AnyInteracts) node);
         } else if (node instanceof Equals) {
-            builder.within((Within) node);
+            builder.equals((Equals) node);
         } else if (node instanceof Disjoint) {
             builder.disjoint((Disjoint) node);
         } else if (node instanceof Touches) {
