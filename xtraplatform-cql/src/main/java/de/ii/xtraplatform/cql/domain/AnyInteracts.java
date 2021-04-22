@@ -14,6 +14,12 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableAnyInteracts.Builder.class)
 public interface AnyInteracts extends TemporalOperation, CqlNode {
 
+    static AnyInteracts of(Temporal temporal1, Temporal temporal2) {
+        return new ImmutableAnyInteracts.Builder().operand1(temporal1)
+                                                  .operand2(temporal2)
+                                                  .build();
+    }
+
     static AnyInteracts of(String property, TemporalLiteral temporalLiteral) {
         return new ImmutableAnyInteracts.Builder().property(property)
                                             .value(temporalLiteral)
