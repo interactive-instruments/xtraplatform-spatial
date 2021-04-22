@@ -10,6 +10,7 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.sql.app.SimpleFeatureGeometryFromToWkt;
+import de.ii.xtraplatform.feature.provider.sql.app.Tuple;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect.GeoInfo;
@@ -63,16 +64,15 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
 
     @Override
     public List<FeatureSchema> generate() {
-
-        Catalog catalog;
         try {
             LOGGER.debug("Crawling SQL schema");
-            catalog = schemaCrawler.getCatalog(schemas, includeTables, dialect.getSystemTables());
+            Tuple<Catalog, List<String>> catalogAndMatching = schemaCrawler
+                .getCatalogAndMatching(schemas, includeTables, dialect.getSystemTables());
             LOGGER.debug("Finished crawling SQL schema");
 
             Map<String, List<String>> geometryInfos = getGeometryInfos();
 
-            return getFeatureTypes(catalog, geometryInfos);
+            return getFeatureTypes(catalogAndMatching.first(), catalogAndMatching.second(), geometryInfos);
         } catch (Throwable e) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Stacktrace:", e);
@@ -81,12 +81,18 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
         }
     }
 
-    private List<FeatureSchema> getFeatureTypes(Catalog catalog, Map<String, List<String>> geometryInfos) {
+    private List<FeatureSchema> getFeatureTypes(Catalog catalog,
+        List<String> includeTables, Map<String, List<String>> geometryInfos) {
         ImmutableList.Builder<FeatureSchema> featureTypes = new ImmutableList.Builder<>();
 
         for (final Schema schema : catalog.getSchemas()) {
 
+            SchemaInfo schemaInfo = new SchemaInfo(catalog.getTables(schema));
+
             for (final Table table : catalog.getTables(schema)) {
+                if(!includeTables.isEmpty() && !includeTables.contains(table.getName())) {
+                    continue;
+                }
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("Generating type '{}'", table.getName());
                 }
@@ -102,7 +108,7 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
                                 .name(column.getName())
                                 .sourcePath(column.getName())
                                 .type(featurePropertyType);
-                        if (column.isPartOfPrimaryKey()) {
+                        if (schemaInfo.isColumnUnique(column.getName(), table.getName(), false)) {
                             featureProperty.role(SchemaBase.Role.ID);
                         }
                         if (featurePropertyType == SchemaBase.Type.GEOMETRY) {
@@ -128,7 +134,13 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
                     }
                 }
 
-                featureTypes.add(featureType.build());
+                ImmutableFeatureSchema featureSchema = featureType.build();
+
+                if (featureSchema.getProperties().stream().noneMatch(FeatureSchema::isId)) {
+                    LOGGER.warn("No primary key or unique column found for table '{}', you have to adjust the type configuration manually.", table.getName());
+                }
+
+                featureTypes.add(featureSchema);
             }
         }
         return featureTypes.build();

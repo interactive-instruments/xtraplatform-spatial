@@ -39,9 +39,9 @@ public interface Metadata {
 
     Optional<String> getContactEmail();
 
-    Map<String, QName> getFeatureTypes();
+    List<QName> getFeatureTypes();
 
-    Map<String, String> getFeatureTypesCrs();
+    Map<QName, String> getFeatureTypesCrs();
 
     Map<String, BoundingBox> getFeatureTypesBoundingBox();
 

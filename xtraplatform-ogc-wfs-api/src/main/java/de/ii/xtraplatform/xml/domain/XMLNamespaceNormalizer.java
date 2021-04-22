@@ -12,6 +12,7 @@
  */
 package de.ii.xtraplatform.xml.domain;
 
+import javax.xml.namespace.QName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -243,6 +244,24 @@ public class XMLNamespaceNormalizer {
 
     public String getQualifiedName(String uri, String localName) {
         return getNamespacePrefix(uri) + ":" + localName;
+    }
+
+    public QName getQName(String prefixedName) {
+        String prefix = extractPrefix(prefixedName);
+        String namespace = getNamespaceURI(prefix);
+        String localName = getLocalName(prefixedName);
+
+        return new QName(namespace, localName, prefix);
+    }
+
+    public QName getQName(String uri, String localName) {
+        String prefix = getNamespacePrefix(uri);
+
+        return new QName(uri, localName, prefix);
+    }
+
+    public String getPrefixedName(QName qName) {
+        return getQualifiedName(qName.getNamespaceURI(), qName.getLocalPart());
     }
 
     /*
