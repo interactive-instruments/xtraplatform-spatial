@@ -261,7 +261,8 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         Temporal temporal2 = (Temporal) ctx.temporalExpression(1)
                                            .accept(this);
         TemporalOperator temporalOperator = TemporalOperator.valueOf(ctx.TemporalOperator()
-                                                                        .getText());
+                                                                        .getText()
+                                                                        .toUpperCase());
 
         TemporalOperation.Builder<? extends TemporalOperation> builder;
 
@@ -373,7 +374,8 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         Vector vector2 = (Vector) ctx.arrayExpression().get(1).accept(this);
 
         ArrayOperator arrayOperator = ArrayOperator.valueOf(ctx.ArrayOperator()
-                .getText());
+                .getText()
+                .toUpperCase());
 
         ArrayOperation.Builder<? extends ArrayOperation> builder;
 
