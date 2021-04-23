@@ -273,42 +273,25 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             case BEFORE:
                 builder = new ImmutableBefore.Builder();
                 break;
-            case BEGINS:
-                builder = new ImmutableBegins.Builder();
-                break;
-            case BEGUNBY:
-                builder = new ImmutableBegunBy.Builder();
-                break;
-            case TCONTAINS:
-                builder = new ImmutableTContains.Builder();
-                break;
             case DURING:
                 builder = new ImmutableDuring.Builder();
-                break;
-            case ENDEDBY:
-                builder = new ImmutableEndedBy.Builder();
-                break;
-            case ENDS:
-                builder = new ImmutableEnds.Builder();
                 break;
             case TEQUALS:
                 builder = new ImmutableTEquals.Builder();
                 break;
-            case MEETS:
-                builder = new ImmutableMeets.Builder();
-                break;
-            case METBY:
-                builder = new ImmutableMetBy.Builder();
-                break;
-            case TOVERLAPS:
-                builder = new ImmutableTOverlaps.Builder();
-                break;
-            case OVERLAPPEDBY:
-                builder = new ImmutableOverlappedBy.Builder();
-                break;
             case ANYINTERACTS:
                 builder = new ImmutableAnyInteracts.Builder();
                 break;
+            case BEGINS:
+            case BEGUNBY:
+            case TCONTAINS:
+            case ENDEDBY:
+            case ENDS:
+            case MEETS:
+            case METBY:
+            case TOVERLAPS:
+            case OVERLAPPEDBY:
+                throw new IllegalArgumentException(String.format("unsupported temporal operator (%s)", temporalOperator));
             default:
                 throw new IllegalStateException("unknown temporal operator: " + temporalOperator);
         }
@@ -381,24 +364,17 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         switch (arrayOperator) {
             case ACONTAINS:
-                builder = new ImmutableAContains.Builder();
-                break;
             case AEQUALS:
-                builder = new ImmutableAEquals.Builder();
-                break;
             case AOVERLAPS:
-                builder = new ImmutableAOverlaps.Builder();
-                break;
             case CONTAINEDBY:
-                builder = new ImmutableContainedBy.Builder();
-                break;
+                throw new IllegalArgumentException(String.format("unsupported array operator (%s)", arrayOperator));
             default:
                 throw new IllegalStateException("unknown array operator: " + arrayOperator);
         }
 
-        return builder.operand1(vector1)
-                .operand2(vector2)
-                .build();
+//        return builder.operand1(vector1)
+//                .operand2(vector2)
+//                .build();
     }
 
     @Override
