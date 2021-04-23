@@ -23,7 +23,7 @@ import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 
 public class CqlToText implements CqlVisitor<String> {
 
-    private final static Map<Class<?>, String> LOGICAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
+    protected final static Map<Class<?>, String> LOGICAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
             .put(ImmutableAnd.class, "AND")
             .put(ImmutableOr.class, "OR")
             .put(ImmutableNot.class, "NOT")

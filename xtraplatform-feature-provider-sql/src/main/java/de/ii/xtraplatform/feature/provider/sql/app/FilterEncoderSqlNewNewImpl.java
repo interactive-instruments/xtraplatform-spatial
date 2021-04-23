@@ -446,6 +446,25 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String operation = String.format(" %s ARRAY[%s]", operator, children.get(1));
             return String.format(expression, "", operation);
         }
+
+        @Override
+        public String visit(LogicalOperation logicalOperation, List<String> children) {
+            String operator = LOGICAL_OPERATORS.get(logicalOperation.getClass());
+
+            if (Objects.equals(logicalOperation.getClass(), ImmutableNot.class)) {
+                String operation = children.get(0);
+                if (logicalOperation.getPredicates()
+                        .get(0)
+                        .getInOperator()
+                        .isPresent()) {
+                    // replace last IN with NOT IN
+                    int pos = operation.lastIndexOf(" IN ");
+                    int length = operation.length();
+                    return String.format("%s %s %s", operation.substring(0, pos), operator, operation.substring(pos + 1, length));
+                }
+            }
+            return super.visit(logicalOperation, children);
+        }
     }
 
 }
