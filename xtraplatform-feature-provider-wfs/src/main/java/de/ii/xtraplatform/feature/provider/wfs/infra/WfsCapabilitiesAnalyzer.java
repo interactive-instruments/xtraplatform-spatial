@@ -15,6 +15,8 @@ import de.ii.xtraplatform.features.domain.ImmutableMetadata;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
 
+import java.util.ArrayList;
+import java.util.List;
 import javax.xml.namespace.QName;
 import java.util.Objects;
 
@@ -22,11 +24,13 @@ public class WfsCapabilitiesAnalyzer extends AbstractFeatureProviderMetadataCons
 
     private final XMLNamespaceNormalizer namespaceNormalizer;
     private final ImmutableMetadata.Builder metadata;
+    private final List<String> usedShortNames;
     private String lastVersion;
 
     public WfsCapabilitiesAnalyzer() {
         this.namespaceNormalizer = new XMLNamespaceNormalizer();
         this.metadata = new ImmutableMetadata.Builder();
+        this.usedShortNames = new ArrayList<>();
     }
 
     public Metadata getMetadata() {
@@ -51,25 +55,30 @@ public class WfsCapabilitiesAnalyzer extends AbstractFeatureProviderMetadataCons
 
     @Override
     public void analyzeFeatureType(String featureTypeName) {
-        if (featureTypeName.contains(":")) {
-            String prefix = namespaceNormalizer.extractPrefix(featureTypeName);
-            String namespace = namespaceNormalizer.getNamespaceURI(prefix);
-            String localName = namespaceNormalizer.getLocalName(featureTypeName);
-
-            metadata.putFeatureTypes(getFeatureTypeId(featureTypeName), new QName(namespace, localName, prefix));
-        }
+            metadata.addFeatureTypes(namespaceNormalizer.getQName(featureTypeName));
     }
 
     @Override
     public void analyzeFeatureTypeDefaultCrs(String featureTypeName, String crs) {
-        metadata.putFeatureTypesCrs(getFeatureTypeId(featureTypeName), crs);
+        metadata.putFeatureTypesCrs(namespaceNormalizer.getQName(featureTypeName), crs);
     }
 
     @Override
     public void analyzeFeatureTypeBoundingBox(String featureTypeName, String xmin, String ymin, String xmax,
                                               String ymax) {
-        metadata.putFeatureTypesBoundingBox(getFeatureTypeId(featureTypeName), BoundingBox
-            .of(Double.parseDouble(xmin), Double.parseDouble(ymin), Double.parseDouble(xmax), Double.parseDouble(ymax), OgcCrs.CRS84));
+        BoundingBox boundingBox = BoundingBox
+            .of(Double.parseDouble(xmin), Double.parseDouble(ymin), Double.parseDouble(xmax),
+                Double.parseDouble(ymax), OgcCrs.CRS84);
+
+        metadata.putFeatureTypesBoundingBox(getLongFeatureTypeId(featureTypeName, namespaceNormalizer), boundingBox);
+
+        // whether the short or long id is used as type id is decided later in WfsSchemaAnalyzer
+        // we add both here as long as there is no conflict so that ExtentReaderWfs can access the BoundingBox in any case
+        String shortId = getShortFeatureTypeId(featureTypeName, namespaceNormalizer);
+        if (!usedShortNames.contains(shortId)) {
+            usedShortNames.add(shortId);
+            metadata.putFeatureTypesBoundingBox(shortId, boundingBox);
+        }
     }
 
     @Override
@@ -127,7 +136,14 @@ public class WfsCapabilitiesAnalyzer extends AbstractFeatureProviderMetadataCons
         }
     }
 
-    private String getFeatureTypeId(String qualifiedName) {
-        return namespaceNormalizer.getLocalName(qualifiedName).toLowerCase();
+    public static String getShortFeatureTypeId(String prefixedName, XMLNamespaceNormalizer namespaceNormalizer) {
+        return namespaceNormalizer.getLocalName(prefixedName).toLowerCase();
+    }
+
+    public static String getLongFeatureTypeId(String prefixedName, XMLNamespaceNormalizer namespaceNormalizer) {
+        if (!prefixedName.contains(":")) return getShortFeatureTypeId(prefixedName, namespaceNormalizer);
+        return String
+            .format("%s_%s", namespaceNormalizer.extractPrefix(prefixedName).toLowerCase(),
+                namespaceNormalizer.getLocalName(prefixedName).toLowerCase());
     }
 }

@@ -8,6 +8,8 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.feature.provider.sql.app.ImmutableTuple;
+import de.ii.xtraplatform.feature.provider.sql.app.Tuple;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;
@@ -16,14 +18,12 @@ import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import schemacrawler.inclusionrule.InclusionRule;
 import schemacrawler.inclusionrule.RegularExpressionExclusionRule;
 import schemacrawler.inclusionrule.RegularExpressionInclusionRule;
 import schemacrawler.inclusionrule.RegularExpressionRule;
 import schemacrawler.schema.Catalog;
-import schemacrawler.schemacrawler.InfoLevel;
+import schemacrawler.schema.Table;
 import schemacrawler.schemacrawler.LimitOptionsBuilder;
 import schemacrawler.schemacrawler.LoadOptionsBuilder;
 import schemacrawler.schemacrawler.SchemaCrawlerException;
@@ -48,7 +48,15 @@ public class SqlSchemaCrawler implements Closeable {
   public Catalog getCatalog(List<String> schemas, List<String> includeTables,
       List<String> excludeTables)
       throws SchemaCrawlerException {
+    return getCatalogAndMatching(schemas, includeTables, excludeTables).first();
+  }
+
+  public Tuple<Catalog,List<String>> getCatalogAndMatching(List<String> schemas, List<String> includeTables,
+      List<String> excludeTables)
+      throws SchemaCrawlerException {
     Catalog catalog = crawlSchema(schemas, includeTables, excludeTables);
+    List<String> matchingTables = catalog.getTables().stream().map(Table::getName).collect(
+        Collectors.toList());
 
     if (!includeTables.isEmpty() && catalog.getTables().stream()
         .anyMatch(table -> table.getTableType().isView())) {
@@ -59,11 +67,11 @@ public class SqlSchemaCrawler implements Closeable {
           .collect(Collectors.toList());
 
       if (additionalTables.size() > includeTables.size()) {
-        return crawlSchema(schemas, additionalTables, excludeTables);
+        return ImmutableTuple.of(crawlSchema(schemas, additionalTables, excludeTables), matchingTables);
       }
     }
 
-    return catalog;
+    return ImmutableTuple.of(catalog, matchingTables);
   }
 
   private Catalog crawlSchema(List<String> schemas, List<String> includeTables,
@@ -103,10 +111,13 @@ public class SqlSchemaCrawler implements Closeable {
                 .setRetrieveIndexes(true)
                 .setRetrieveIndexInformation(true)
                 .setRetrieveTableColumns(true)
+                .setRetrieveTableConstraintDefinitions(true) //needed???
                 .setRetrieveTableConstraintInformation(true)
                 .setRetrieveTableDefinitionsInformation(true)
                 .setRetrieveTables(true)
+                .setRetrieveUserDefinedColumnDataTypes(true)
                 .setRetrieveViewInformation(true)
+                .setRetrieveViewViewTableUsage(true)
                 .setRetrieveAdditionalColumnAttributes(false)
                 .setRetrieveAdditionalColumnMetadata(false)
                 .setRetrieveAdditionalDatabaseInfo(false)
@@ -122,11 +133,8 @@ public class SqlSchemaCrawler implements Closeable {
                 .setRetrieveServerInfo(false)
                 .setRetrieveSynonymInformation(false)
                 .setRetrieveTableColumnPrivileges(false)
-                .setRetrieveTableConstraintDefinitions(false)
                 .setRetrieveTablePrivileges(false)
                 .setRetrieveTriggerInformation(false)
-                .setRetrieveUserDefinedColumnDataTypes(true)
-                .setRetrieveViewViewTableUsage(false)
                 .setRetrieveWeakAssociations(false)
                 .toOptions());
 

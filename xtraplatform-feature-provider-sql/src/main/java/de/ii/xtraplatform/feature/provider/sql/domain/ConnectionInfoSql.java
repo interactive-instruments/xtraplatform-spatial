@@ -53,7 +53,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
 
     List<String> getSchemas();
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @JsonProperty(value = "pool", access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     //@Value.Default
     //can't use interface, bug in immutables when using attributeBuilderDetection and Default
     //default PoolSettings getPool() {
@@ -68,23 +68,23 @@ public interface ConnectionInfoSql extends ConnectionInfo {
 
     @Deprecated(forRemoval = true, since = "ldproxy 3.0.0")
     @JsonAlias("maxThreads")
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @JsonProperty(value = "maxConnections", access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     OptionalInt getMaxConnections();
 
     @Deprecated(forRemoval = true, since = "ldproxy 3.0.0")
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @JsonProperty(value = "minConnections", access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     OptionalInt getMinConnections();
 
     @Deprecated(forRemoval = true, since = "ldproxy 3.0.0")
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @JsonProperty(value = "initFailFast", access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     Optional<Boolean> getInitFailFast();
 
     @Deprecated(forRemoval = true, since = "ldproxy 3.0.0")
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @JsonProperty(value = "computeNumberMatched", access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     Optional<Boolean> getComputeNumberMatched();
 
     @Deprecated(forRemoval = true, since = "ldproxy 3.0.0")
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+    @JsonProperty(value = "pathSyntax", access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     Optional<SqlPathDefaults> getPathSyntax();
 
     @Value.Check
