@@ -50,8 +50,6 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
             builder.like((Like) node);
         } else if (node instanceof IsNull) {
             builder.isNull((IsNull) node);
-        } else if (node instanceof Exists) {
-            builder.exists((Exists) node);
         } else if (node instanceof After) {
             builder.after((After) node);
         } else if (node instanceof Before) {
@@ -133,7 +131,6 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
                 getLike(),
                 getBetween(),
                 getInOperator(),
-                getExists(),
                 getIsNull(),
                 getEquals(),
                 getDisjoint(),

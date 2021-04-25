@@ -137,7 +137,7 @@ public class CqlFilterExamples {
 
     static final CqlFilter EXAMPLE_36 = CqlFilter.of(AnyInteracts.of("event_date", getTemporalLiteral("1969-07-16T05:32:00Z/1969-07-24T16:50:35Z")));
 
-    static final CqlFilter EXAMPLE_37 = CqlFilter.of(Lt.of("height", Property.of("floors")));
+    static final CqlFilter EXAMPLE_37 = CqlFilter.of(Lt.of("height", "floors"));
 
     static final CqlFilter EXAMPLE_38 = CqlFilter.of(AContains.of("layer:ids", ArrayLiteral.of("['layers-ca','layers-us']")));
 

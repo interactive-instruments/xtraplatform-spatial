@@ -16,21 +16,21 @@ import org.immutables.value.Value;
 public interface Intersects extends SpatialOperation, CqlNode {
 
     static Intersects of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableIntersects.Builder().property(property)
-                                                .value(spatialLiteral)
-                                                .build();
+        return new ImmutableIntersects.Builder().operand1(Property.of(property))
+                                            .operand2(spatialLiteral)
+                                            .build();
+    }
+
+    static Intersects of(String property, String property2) {
+        return new ImmutableIntersects.Builder().operand1(Property.of(property))
+                                            .operand2(Property.of(property2))
+                                            .build();
     }
 
     static Intersects of(String property, BoundingBox boundingBox) {
-        return new ImmutableIntersects.Builder().property(property)
-                                                .value(SpatialLiteral.of(Geometry.Envelope.of(boundingBox)))
+        return new ImmutableIntersects.Builder().operand1(Property.of(property))
+                                                .operand2(SpatialLiteral.of(Geometry.Envelope.of(boundingBox)))
                                                 .build();
-    }
-
-    static Intersects of(String property, Property property2) {
-        return new ImmutableIntersects.Builder().property(property)
-                .property2(property2)
-                .build();
     }
 
     abstract class Builder extends SpatialOperation.Builder<Intersects> {

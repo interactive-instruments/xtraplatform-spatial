@@ -15,13 +15,15 @@ import org.immutables.value.Value;
 public interface AEquals extends ArrayOperation, CqlNode {
 
     static AEquals of(String property, ArrayLiteral arrayLiteral) {
-        return new ImmutableAEquals.Builder().property(property).value(arrayLiteral).build();
+        return new ImmutableAEquals.Builder().operand1(Property.of(property))
+                                             .operand2(arrayLiteral)
+                                             .build();
     }
 
-    static AEquals of(String property, Property property2) {
-        return new ImmutableAEquals.Builder().property(property)
-                .property2(property2)
-                .build();
+    static AEquals of(String property, String property2) {
+        return new ImmutableAEquals.Builder().operand1(Property.of(property))
+                                             .operand2(Property.of(property2))
+                                             .build();
     }
 
     abstract class Builder extends ArrayOperation.Builder<AEquals> {

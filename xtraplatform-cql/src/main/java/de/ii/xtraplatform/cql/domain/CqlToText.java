@@ -40,7 +40,6 @@ public class CqlToText implements CqlVisitor<String> {
             .put(ImmutableBetween.class, "BETWEEN")
             .put(ImmutableIn.class, "IN")
             .put(ImmutableIsNull.class, "IS NULL")
-            .put(ImmutableExists.class, "EXISTS")
             .build();
 
     private final static Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
@@ -135,13 +134,6 @@ public class CqlToText implements CqlVisitor<String> {
                 return operation.replace(like, String.format("%s %s", operator, like));
             } else if (logicalOperation.getPredicates()
                                        .get(0)
-                                       .getExists()
-                                       .isPresent()) {
-                String exists = SCALAR_OPERATORS.get(ImmutableExists.class);
-
-                return operation.replace(exists, "DOES-NOT-EXIST");
-            } else if (logicalOperation.getPredicates()
-                                       .get(0)
                                        .getIsNull()
                                        .isPresent()) {
                 String isNull = SCALAR_OPERATORS.get(ImmutableIsNull.class);
@@ -171,28 +163,40 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(ScalarOperation scalarOperation, List<String> children) {
+    public String visit(BinaryScalarOperation scalarOperation, List<String> children) {
         String operator = SCALAR_OPERATORS.get(scalarOperation.getClass());
-
-        if (scalarOperation instanceof Between) {
-            return String.format("%s %s %s AND %s", children.get(0), operator, children.get(1), children.get(2));
-        } else if (scalarOperation instanceof In) {
-            String property = Objects.equals(children.get(0), ID_PLACEHOLDER) ? "" : children.get(0);
-            return String.format("%s %s (%s)", property, operator, String.join(", ", children.subList(1, children.size())));
-        } else if (scalarOperation instanceof IsNull || scalarOperation instanceof Exists) {
-            return String.format("%s %s", children.get(0), operator);
-        } else if (scalarOperation instanceof Like) {
-            Like like = (Like) scalarOperation;
-            String wildcard = like.getWildcard().isPresent() ? String.format("WILDCARD '%s'", like.getWildcard().get()) : "";
-            String singlechar = like.getSinglechar().isPresent() ? String.format(" SINGLECHAR '%s'", like.getSinglechar().get()) : "";
-            String escapechar = like.getEscapechar().isPresent() ? String.format(" ESCAPECHAR '%s'", like.getEscapechar().get()) : "";
-            String nocase = like.getNocase().isPresent() ? String.format(" NOCASE %s", like.getNocase().get()) : "";
-            return String.format("%s LIKE %s %s%s%s%s", children.get(0), children.get(1), wildcard, singlechar, escapechar, nocase)
-                         .trim()
-                         .replace("  ", " ");
-        }
-
         return String.format("%s %s %s", children.get(0), operator, children.get(1));
+    }
+
+    @Override
+    public String visit(Between between, List<String> children) {
+        String operator = SCALAR_OPERATORS.get(between.getClass());
+        return String.format("%s %s %s AND %s", children.get(0), operator, children.get(1), children.get(2));
+    }
+
+    @Override
+    public String visit(Like like, List<String> children) {
+        String operator = SCALAR_OPERATORS.get(like.getClass());
+        String wildcard = like.getWildcard().isPresent() ? String.format("WILDCARD '%s'", like.getWildcard().get()) : "";
+        String singlechar = like.getSinglechar().isPresent() ? String.format(" SINGLECHAR '%s'", like.getSinglechar().get()) : "";
+        String escapechar = like.getEscapechar().isPresent() ? String.format(" ESCAPECHAR '%s'", like.getEscapechar().get()) : "";
+        String nocase = like.getNocase().isPresent() ? String.format(" NOCASE %s", like.getNocase().get()) : "";
+        return String.format("%s %s %s %s%s%s%s", children.get(0), operator, children.get(1), wildcard, singlechar, escapechar, nocase)
+                     .trim()
+                     .replace("  ", " ");
+    }
+
+    @Override
+    public String visit(In in, List<String> children) {
+        String operator = SCALAR_OPERATORS.get(in.getClass());
+        String property = Objects.equals(children.get(0), ID_PLACEHOLDER) ? "" : children.get(0);
+        return String.format("%s %s (%s)", property, operator, String.join(", ", children.subList(1, children.size())));
+    }
+
+    @Override
+    public String visit(IsNull isNull, List<String> children) {
+        String operator = SCALAR_OPERATORS.get(isNull.getClass());
+        return String.format("%s %s", children.get(0), operator);
     }
 
     @Override

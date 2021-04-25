@@ -15,15 +15,15 @@ import org.immutables.value.Value;
 public interface After extends TemporalOperation, CqlNode {
 
     static After of(String property, TemporalLiteral temporalLiteral) {
-        return new ImmutableAfter.Builder().property(property)
-                                           .value(temporalLiteral)
-                                           .build();
+        return new ImmutableAfter.Builder().operand1(Property.of(property))
+                                             .operand2(temporalLiteral)
+                                             .build();
     }
 
-    static After of(String property, Property property2) {
-        return new ImmutableAfter.Builder().property(property)
-                .property2(property2)
-                .build();
+    static After of(String property, String property2) {
+        return new ImmutableAfter.Builder().operand1(Property.of(property))
+                                             .operand2(Property.of(property2))
+                                             .build();
     }
 
     abstract class Builder extends TemporalOperation.Builder<After> {

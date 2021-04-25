@@ -12,33 +12,39 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableGt.Builder.class)
-public interface Gt extends ScalarOperation, CqlNode {
+public interface Gt extends BinaryScalarOperation, CqlNode {
 
     static Gt of(String property, ScalarLiteral scalarLiteral) {
-        return new ImmutableGt.Builder().property(property)
-                                        .value(scalarLiteral)
+        return new ImmutableGt.Builder().operand1(Property.of(property))
+                                        .operand2(scalarLiteral)
+                                        .build();
+    }
+
+    static Gt of(String property, String property2) {
+        return new ImmutableGt.Builder().operand1(Property.of(property))
+                                        .operand2(Property.of(property2))
                                         .build();
     }
 
     static Gt of(Property property, ScalarLiteral scalarLiteral) {
-        return new ImmutableGt.Builder().property(property)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableGt.Builder().operand1(property)
+                                        .operand2(scalarLiteral)
+                                        .build();
     }
 
-    static Gt of(String property, Property property2) {
-        return new ImmutableGt.Builder().property(property)
-                .property2(property2)
-                .build();
+    static Gt of(Property property, Property property2) {
+        return new ImmutableGt.Builder().operand1(property)
+                                        .operand2(property2)
+                                        .build();
     }
 
     static Gt ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableGt.Builder().function(function)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableGt.Builder().operand1(function)
+                                        .operand2(scalarLiteral)
+                                        .build();
     }
 
-    abstract class Builder extends ScalarOperation.Builder<Gt> {
+    abstract class Builder extends BinaryScalarOperation.Builder<Gt> {
     }
 
 }

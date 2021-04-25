@@ -32,6 +32,12 @@ public interface Not extends LogicalOperation, CqlNode {
                 .build();
     }
 
+    static Not of(NonBinaryScalarOperation scalarOperation) {
+        return new ImmutableNot.Builder()
+                .addPredicates(CqlPredicate.of(scalarOperation))
+                .build();
+    }
+
     @Value.Check
     @Override
     default void check() {

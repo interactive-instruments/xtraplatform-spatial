@@ -12,27 +12,39 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableNeq.Builder.class)
-public interface Neq extends ScalarOperation, CqlNode {
+public interface Neq extends BinaryScalarOperation, CqlNode {
 
-    static Neq of(Property property, ScalarLiteral scalarLiteral) {
-        return new ImmutableNeq.Builder().property(property)
-                                         .value(scalarLiteral)
-                                         .build();
+    static Neq of(String property, ScalarLiteral scalarLiteral) {
+        return new ImmutableNeq.Builder().operand1(Property.of(property))
+                                        .operand2(scalarLiteral)
+                                        .build();
     }
 
-    static Neq of(String property, Property property2) {
-        return new ImmutableNeq.Builder().property(property)
-                .property2(property2)
-                .build();
+    static Neq of(String property, String property2) {
+        return new ImmutableNeq.Builder().operand1(Property.of(property))
+                                        .operand2(Property.of(property2))
+                                        .build();
+    }
+
+    static Neq of(Property property, ScalarLiteral scalarLiteral) {
+        return new ImmutableNeq.Builder().operand1(property)
+                                        .operand2(scalarLiteral)
+                                        .build();
+    }
+
+    static Neq of(Property property, Property property2) {
+        return new ImmutableNeq.Builder().operand1(property)
+                                        .operand2(property2)
+                                        .build();
     }
 
     static Neq ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableNeq.Builder().function(function)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableNeq.Builder().operand1(function)
+                                        .operand2(scalarLiteral)
+                                        .build();
     }
 
-    abstract class Builder extends ScalarOperation.Builder<Neq> {
+    abstract class Builder extends BinaryScalarOperation.Builder<Neq> {
     }
 
 }

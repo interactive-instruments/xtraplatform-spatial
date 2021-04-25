@@ -18,8 +18,16 @@ public interface CqlVisitor<T> {
             return visit((CqlPredicate) node, children);
         } else if (node instanceof LogicalOperation) {
             return visit((LogicalOperation) node, children);
-        } else if (node instanceof ScalarOperation) {
-            return visit((ScalarOperation) node, children);
+        } else if (node instanceof Between) {
+            return visit((Between) node, children);
+        } else if (node instanceof Like) {
+            return visit((Like) node, children);
+        } else if (node instanceof In) {
+            return visit((In) node, children);
+        } else if (node instanceof IsNull) {
+            return visit((IsNull) node, children);
+        } else if (node instanceof BinaryScalarOperation) {
+            return visit((BinaryScalarOperation) node, children);
         } else if (node instanceof TemporalOperation) {
             return visit((TemporalOperation) node, children);
         } else if (node instanceof SpatialOperation) {
@@ -65,7 +73,15 @@ public interface CqlVisitor<T> {
 
     T visit(LogicalOperation logicalOperation, List<T> children);
 
-    T visit(ScalarOperation scalarOperation, List<T> children);
+    T visit(BinaryScalarOperation scalarOperation, List<T> children);
+
+    T visit(Between between, List<T> children);
+
+    T visit(Like like, List<T> children);
+
+    T visit(In in, List<T> children);
+
+    T visit(IsNull isNull, List<T> children);
 
     T visit(TemporalOperation temporalOperation, List<T> children);
 

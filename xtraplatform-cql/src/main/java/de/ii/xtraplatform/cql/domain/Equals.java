@@ -15,15 +15,15 @@ import org.immutables.value.Value;
 public interface Equals extends SpatialOperation, CqlNode {
 
     static Equals of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableEquals.Builder().property(property)
-                                            .value(spatialLiteral)
+        return new ImmutableEquals.Builder().operand1(Property.of(property))
+                                            .operand2(spatialLiteral)
                                             .build();
     }
 
-    static Equals of(String property, Property property2) {
-        return new ImmutableEquals.Builder().property(property)
-                .property2(property2)
-                .build();
+    static Equals of(String property, String property2) {
+        return new ImmutableEquals.Builder().operand1(Property.of(property))
+                                            .operand2(Property.of(property2))
+                                            .build();
     }
 
     abstract class Builder extends SpatialOperation.Builder<Equals> {

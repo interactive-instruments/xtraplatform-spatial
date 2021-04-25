@@ -21,15 +21,15 @@ public interface AnyInteracts extends TemporalOperation, CqlNode {
     }
 
     static AnyInteracts of(String property, TemporalLiteral temporalLiteral) {
-        return new ImmutableAnyInteracts.Builder().property(property)
-                                            .value(temporalLiteral)
-                                            .build();
+        return new ImmutableAnyInteracts.Builder().operand1(Property.of(property))
+                                           .operand2(temporalLiteral)
+                                           .build();
     }
 
-    static AnyInteracts of(String property, Property property2) {
-        return new ImmutableAnyInteracts.Builder().property(property)
-                .property2(property2)
-                .build();
+    static AnyInteracts of(String property, String property2) {
+        return new ImmutableAnyInteracts.Builder().operand1(Property.of(property))
+                                           .operand2(Property.of(property2))
+                                           .build();
     }
 
     abstract class Builder extends TemporalOperation.Builder<AnyInteracts> {

@@ -15,15 +15,15 @@ import org.immutables.value.Value;
 public interface Disjoint extends SpatialOperation, CqlNode {
 
     static Disjoint of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableDisjoint.Builder().property(property)
-                                              .value(spatialLiteral)
-                                              .build();
+        return new ImmutableDisjoint.Builder().operand1(Property.of(property))
+                                             .operand2(spatialLiteral)
+                                             .build();
     }
 
-    static Disjoint of(String property, Property property2) {
-        return new ImmutableDisjoint.Builder().property(property)
-                .property2(property2)
-                .build();
+    static Disjoint of(String property, String property2) {
+        return new ImmutableDisjoint.Builder().operand1(Property.of(property))
+                                             .operand2(Property.of(property2))
+                                             .build();
     }
 
     abstract class Builder extends SpatialOperation.Builder<Disjoint> {

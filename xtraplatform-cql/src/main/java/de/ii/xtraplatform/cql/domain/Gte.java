@@ -12,27 +12,39 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableGte.Builder.class)
-public interface Gte extends ScalarOperation, CqlNode {
+public interface Gte extends BinaryScalarOperation, CqlNode {
+
+    static Gte of(String property, ScalarLiteral scalarLiteral) {
+        return new ImmutableGte.Builder().operand1(Property.of(property))
+                                        .operand2(scalarLiteral)
+                                        .build();
+    }
+
+    static Gte of(String property, String property2) {
+        return new ImmutableGte.Builder().operand1(Property.of(property))
+                                        .operand2(Property.of(property2))
+                                        .build();
+    }
 
     static Gte of(Property property, ScalarLiteral scalarLiteral) {
-        return new ImmutableGte.Builder().property(property)
-                                         .value(scalarLiteral)
-                                         .build();
+        return new ImmutableGte.Builder().operand1(property)
+                                        .operand2(scalarLiteral)
+                                        .build();
+    }
+
+    static Gte of(Property property, Property property2) {
+        return new ImmutableGte.Builder().operand1(property)
+                                        .operand2(property2)
+                                        .build();
     }
 
     static Gte ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableGte.Builder().function(function)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableGte.Builder().operand1(function)
+                                        .operand2(scalarLiteral)
+                                        .build();
     }
 
-    static Gte of(String property, Property property2) {
-        return new ImmutableGte.Builder().property(property)
-                .property2(property2)
-                .build();
-    }
-
-    abstract class Builder extends ScalarOperation.Builder<Gte> {
+    abstract class Builder extends BinaryScalarOperation.Builder<Gte> {
     }
 
 }

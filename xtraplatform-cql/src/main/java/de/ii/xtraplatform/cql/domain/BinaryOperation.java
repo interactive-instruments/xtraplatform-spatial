@@ -18,18 +18,13 @@ import java.util.Optional;
 
 public interface BinaryOperation<T extends Literal> extends CqlNode {
 
-    Optional<Property> getProperty();
+    Optional<Operand> getOperand1();
 
-    Optional<Property> getProperty2();
-
-    Optional<T> getValue();
-
-    Optional<Function> getFunction();
+    Optional<Operand> getOperand2();
 
     @Value.Check
     default void check() {
         int count = getOperands().size();
-
         Preconditions.checkState(count == 2, "a binary operation must have exactly two operands, found %s", count);
     }
 
@@ -38,10 +33,8 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
     @Value.Auxiliary
     default List<Operand> getOperands() {
         return ImmutableList.of(
-                getFunction(),
-                getProperty(),
-                getProperty2(),
-                getValue()
+                getOperand1(),
+                getOperand2()
         )
                             .stream()
                             .filter(Optional::isPresent)
@@ -51,50 +44,18 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
 
 
     abstract class Builder<T extends Literal, U extends BinaryOperation<T>> {
-        public abstract Builder<T,U> property(Property property);
-
-        public abstract Builder<T,U> property2(Property property);
-
-        public abstract Builder<T,U> value(T literal);
-
-        public abstract Builder<T,U> function(Function function);
 
         public abstract U build();
 
-        public Builder<T,U> operand1(Operand operand1) {
-            addOperand(operand1);
-            return this;
-        }
+        public abstract Builder<T,U> operand1(Operand operand1);
 
-        public Builder<T,U> operand2(Operand operand2) {
-            addOperand2(operand2);
-            return this;
-        }
-
-        @SuppressWarnings("unchecked")
-        public void addOperand(Operand operand) {
-            if (operand instanceof Property) {
-                property((Property) operand);
-            } else if (operand instanceof Literal) {
-                value((T)operand);
-            } else if (operand instanceof Function) {
-                function((Function) operand);
-            }
-        }
-
-        public void addOperand2(Operand operand) {
-            if (operand instanceof Property) {
-                property2((Property) operand);
-            } else {
-                addOperand(operand);
-            }
-        }
+        public abstract Builder<T,U> operand2(Operand operand2);
     }
 
     @Override
     default <U> U accept(CqlVisitor<U> visitor) {
         U operand1 = getOperands().get(0)
-                                .accept(visitor);
+                                  .accept(visitor);
         U operand2 = getOperands().get(1)
                                   .accept(visitor);
 

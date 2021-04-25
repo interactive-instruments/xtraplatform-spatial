@@ -15,13 +15,15 @@ import org.immutables.value.Value;
 public interface AContains extends ArrayOperation, CqlNode {
 
     static AContains of(String property, ArrayLiteral arrayLiteral) {
-        return new ImmutableAContains.Builder().property(property).value(arrayLiteral).build();
+        return new ImmutableAContains.Builder().operand1(Property.of(property))
+                                               .operand2(arrayLiteral)
+                                               .build();
     }
 
-    static AContains of(String property, Property property2) {
-        return new ImmutableAContains.Builder().property(property)
-                .property2(property2)
-                .build();
+    static AContains of(String property, String property2) {
+        return new ImmutableAContains.Builder().operand1(Property.of(property))
+                                               .operand2(Property.of(property2))
+                                               .build();
     }
 
     abstract class Builder extends ArrayOperation.Builder<AContains> {

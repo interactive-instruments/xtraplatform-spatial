@@ -12,33 +12,39 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableLte.Builder.class)
-public interface Lte extends ScalarOperation, CqlNode {
+public interface Lte extends BinaryScalarOperation, CqlNode {
 
     static Lte of(String property, ScalarLiteral scalarLiteral) {
-        return new ImmutableLte.Builder().property(property)
-                                         .value(scalarLiteral)
+        return new ImmutableLte.Builder().operand1(Property.of(property))
+                                         .operand2(scalarLiteral)
+                                         .build();
+    }
+
+    static Lte of(String property, String property2) {
+        return new ImmutableLte.Builder().operand1(Property.of(property))
+                                         .operand2(Property.of(property2))
                                          .build();
     }
 
     static Lte of(Property property, ScalarLiteral scalarLiteral) {
-        return new ImmutableLte.Builder().property(property)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableLte.Builder().operand1(property)
+                                         .operand2(scalarLiteral)
+                                         .build();
     }
 
-    static Lte of(String property, Property property2) {
-        return new ImmutableLte.Builder().property(property)
-                .property2(property2)
-                .build();
+    static Lte of(Property property, Property property2) {
+        return new ImmutableLte.Builder().operand1(property)
+                                         .operand2(property2)
+                                         .build();
     }
 
     static Lte ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableLte.Builder().function(function)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableLte.Builder().operand1(function)
+                                         .operand2(scalarLiteral)
+                                         .build();
     }
 
-    abstract class Builder extends ScalarOperation.Builder<Lte> {
+    abstract class Builder extends BinaryScalarOperation.Builder<Lte> {
     }
 
 }

@@ -128,9 +128,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         ComparisonOperator comparisonOperator = ComparisonOperator.valueOfCqlText(ctx.ComparisonOperator()
                                                                                      .getText());
 
-        ScalarOperation.Builder<? extends ScalarOperation> builder;
-
-        //TODO: add all comparison/scalar expressions when implemented
+        BinaryScalarOperation.Builder<? extends BinaryScalarOperation> builder;
 
         switch (comparisonOperator) {
             case EQ:
@@ -203,8 +201,6 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 }
             }
 
-
-
             return like;
         }
         return null;
@@ -213,34 +209,39 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitPropertyIsBetweenPredicate(CqlParser.PropertyIsBetweenPredicateContext ctx) {
 
-        Property property = (Property) ctx.scalarExpression(0)
-                                          .accept(this);
-        ScalarLiteral lowerValue = (ScalarLiteral) ctx.scalarExpression(1)
-                                                      .accept(this);
-        ScalarLiteral upperValue = (ScalarLiteral) ctx.scalarExpression(2)
-                                                      .accept(this);
+        if (Objects.nonNull(ctx.BETWEEN())) {
 
-        Between between = new ImmutableBetween.Builder()
-                .property(property)
-                .lower(lowerValue)
-                .upper(upperValue)
-                .build();
+            Scalar scalar1 = (Scalar) ctx.scalarExpression().get(0)
+                                         .accept(this);
+            Scalar scalar2 = (Scalar) ctx.scalarExpression().get(1)
+                                         .accept(this);
+            Scalar scalar3 = (Scalar) ctx.scalarExpression().get(2)
+                                         .accept(this);
 
-        if (Objects.nonNull(ctx.NOT())) {
-            return Not.of(between);
+            Between between = new ImmutableBetween.Builder()
+                    .operand(scalar1)
+                    .lower(scalar2)
+                    .upper(scalar3)
+                    .build();
+
+            if (Objects.nonNull(ctx.NOT())) {
+                return Not.of(between);
+            }
+
+            return between;
         }
-        return between;
+        return null;
     }
 
     @Override
     public CqlNode visitPropertyIsNullPredicate(CqlParser.PropertyIsNullPredicateContext ctx) {
 
         if (Objects.nonNull(ctx.IS())) {
-            Property property = (Property) ctx.scalarExpression()
-                                              .accept(this);
+            Scalar scalar1 = (Scalar) ctx.scalarExpression()
+                                         .accept(this);
 
             IsNull isNull = new ImmutableIsNull.Builder()
-                    .property(property)
+                    .operand(scalar1)
                     .build();
             if (Objects.nonNull(ctx.NOT())) {
                 return Not.of(ImmutableList.of(CqlPredicate.of(isNull)));
@@ -372,9 +373,11 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 throw new IllegalStateException("unknown array operator: " + arrayOperator);
         }
 
-//        return builder.operand1(vector1)
-//                .operand2(vector2)
-//                .build();
+        /* TODO uncomment after the operators have been implemented
+        return builder.operand1(vector1)
+                      .operand2(vector2)
+                      .build();
+         */
     }
 
     @Override
@@ -385,22 +388,6 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             throw new IllegalArgumentException(e.getMessage());
         }
     }
-
-    /*@Override
-    public CqlNode visitExistencePredicate(CqlParser.ExistencePredicateContext ctx) {
-
-        if (Objects.nonNull(ctx.EXISTS())) {
-            return new ImmutableExists.Builder()
-                    .property(ctx.PropertyName().getText())
-                    .build();
-        } else if (Objects.nonNull(ctx.DOES()) && Objects.nonNull(ctx.NOT()) && Objects.nonNull(ctx.EXIST())) {
-            return Not.of(ImmutableList.of(CqlPredicate.of(new ImmutableExists.Builder()
-                            .property(ctx.PropertyName().getText())
-                            .build())));
-        }
-
-        return null;
-    }*/
 
     @Override
     public CqlNode visitInPredicate(CqlParser.InPredicateContext ctx) {
@@ -414,8 +401,9 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         if (Objects.isNull(ctx.propertyName())) {
             in = In.of(values);
         } else {
+            // TODO IN currently requires a property on the left side and literals on the right side
             in = new ImmutableIn.Builder()
-                    .property((Property) ctx.propertyName().accept(this))
+                    .operand((Property) ctx.propertyName().accept(this))
                     .values(values)
                     .build();
         }

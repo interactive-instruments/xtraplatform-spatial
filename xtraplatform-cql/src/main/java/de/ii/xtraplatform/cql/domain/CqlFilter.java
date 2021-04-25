@@ -52,8 +52,6 @@ public interface CqlFilter extends CqlPredicate {
             builder.like((Like) node);
         } else if (node instanceof IsNull) {
             builder.isNull((IsNull) node);
-        } else if (node instanceof Exists) {
-            builder.exists((Exists) node);
         } else if (node instanceof After) {
             builder.after((After) node);
         } else if (node instanceof Before) {

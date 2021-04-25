@@ -43,25 +43,15 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
     }
 
     @Override
-    public CqlNode visit(ScalarOperation scalarOperation, List<CqlNode> children) {
-        ScalarOperation.Builder<?> builder = null;
+    public CqlNode visit(BinaryScalarOperation scalarOperation, List<CqlNode> children) {
+        BinaryScalarOperation.Builder<?> builder = null;
 
-        if (scalarOperation instanceof Between) {
-            builder = new ImmutableBetween.Builder();
-        } else if (scalarOperation instanceof Eq) {
+        if (scalarOperation instanceof Eq) {
             builder = new ImmutableEq.Builder();
-        } else if (scalarOperation instanceof Exists) {
-            builder = new ImmutableExists.Builder();
         } else if (scalarOperation instanceof Gt) {
             builder = new ImmutableGt.Builder();
         } else if (scalarOperation instanceof Gte) {
             builder = new ImmutableGte.Builder();
-        } else if (scalarOperation instanceof In) {
-            builder = new ImmutableIn.Builder();
-        } else if (scalarOperation instanceof IsNull) {
-            builder = new ImmutableIsNull.Builder();
-        } else if (scalarOperation instanceof Like) {
-            builder = new ImmutableLike.Builder();
         } else if (scalarOperation instanceof Lt) {
             builder = new ImmutableLt.Builder();
         } else if (scalarOperation instanceof Lte) {
@@ -71,8 +61,103 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         }
 
         if (Objects.nonNull(builder)) {
+            int i = 0;
             for (CqlNode cqlNode : children) {
-                builder.addOperand((Operand) cqlNode);
+                switch (i++) {
+                    case 0:
+                        builder.operand1((Operand) cqlNode);
+                        break;
+                    case 1:
+                        builder.operand2((Operand) cqlNode);
+                        break;
+                }
+            }
+            return builder.build();
+        }
+
+        return null;
+    }
+
+    @Override
+    public CqlNode visit(Between between, List<CqlNode> children) {
+        Between.Builder builder = null;
+
+        if (Objects.nonNull(builder)) {
+            int i = 0;
+            for (CqlNode cqlNode : children) {
+                switch (i++) {
+                    case 0:
+                        builder.operand((Scalar) cqlNode);
+                        break;
+                    case 1:
+                        builder.lower((Scalar) cqlNode);
+                        break;
+                    case 2:
+                        builder.upper((Scalar) cqlNode);
+                        break;
+                }
+            }
+            return builder.build();
+        }
+
+        return null;
+    }
+
+    @Override
+    public CqlNode visit(IsNull isNull, List<CqlNode> children) {
+        Between.Builder builder = null;
+
+        if (Objects.nonNull(builder)) {
+            int i = 0;
+            for (CqlNode cqlNode : children) {
+                switch (i++) {
+                    case 0:
+                        builder.operand((Scalar) cqlNode);
+                        break;
+                }
+            }
+            return builder.build();
+        }
+
+        return null;
+    }
+
+    @Override
+    public CqlNode visit(Like like, List<CqlNode> children) {
+        Like.Builder builder = null;
+
+        if (Objects.nonNull(builder)) {
+            int i = 0;
+            for (CqlNode cqlNode : children) {
+                switch (i++) {
+                    case 0:
+                        builder.operand1((Scalar) cqlNode);
+                        break;
+                    case 1:
+                        builder.operand2((Scalar) cqlNode);
+                        break;
+                    // modifiers are set separately
+                }
+            }
+            return builder.build();
+        }
+
+        return null;
+    }
+
+    @Override
+    public CqlNode visit(In in, List<CqlNode> children) {
+        In.Builder builder = null;
+
+        if (Objects.nonNull(builder)) {
+            int i = 0;
+            for (CqlNode cqlNode : children) {
+                switch (i++) {
+                    case 0:
+                        builder.operand((Scalar) cqlNode);
+                        break;
+                    // values are set separately
+                }
             }
             return builder.build();
         }
@@ -115,8 +200,16 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         }
 
         if (Objects.nonNull(builder)) {
+            int i = 0;
             for (CqlNode cqlNode : children) {
-                builder.addOperand((Operand) cqlNode);
+                switch (i++) {
+                    case 0:
+                        builder.operand1((Operand) cqlNode);
+                        break;
+                    case 1:
+                        builder.operand2((Operand) cqlNode);
+                        break;
+                }
             }
             return builder.build();
         }
@@ -147,8 +240,16 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         }
 
         if (Objects.nonNull(builder)) {
+            int i = 0;
             for (CqlNode cqlNode : children) {
-                builder.addOperand((Operand) cqlNode);
+                switch (i++) {
+                    case 0:
+                        builder.operand1((Operand) cqlNode);
+                        break;
+                    case 1:
+                        builder.operand2((Operand) cqlNode);
+                        break;
+                }
             }
             return builder.build();
         }
@@ -171,8 +272,16 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         }
 
         if (Objects.nonNull(builder)) {
+            int i = 0;
             for (CqlNode cqlNode : children) {
-                builder.addOperand((Operand) cqlNode);
+                switch (i++) {
+                    case 0:
+                        builder.operand1((Operand) cqlNode);
+                        break;
+                    case 1:
+                        builder.operand2((Operand) cqlNode);
+                        break;
+                }
             }
             return builder.build();
         }

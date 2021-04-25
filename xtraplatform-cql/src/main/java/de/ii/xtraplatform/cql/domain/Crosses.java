@@ -15,15 +15,15 @@ import org.immutables.value.Value;
 public interface Crosses extends SpatialOperation, CqlNode {
 
     static Crosses of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableCrosses.Builder().property(property)
-                                             .value(spatialLiteral)
-                                             .build();
+        return new ImmutableCrosses.Builder().operand1(Property.of(property))
+                                              .operand2(spatialLiteral)
+                                              .build();
     }
 
-    static Crosses of(String property, Property property2) {
-        return new ImmutableCrosses.Builder().property(property)
-                .property2(property2)
-                .build();
+    static Crosses of(String property, String property2) {
+        return new ImmutableCrosses.Builder().operand1(Property.of(property))
+                                              .operand2(Property.of(property2))
+                                              .build();
     }
 
     abstract class Builder extends SpatialOperation.Builder<Crosses> {

@@ -15,15 +15,15 @@ import org.immutables.value.Value;
 public interface Within extends SpatialOperation, CqlNode {
 
     static Within of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableWithin.Builder().property(property)
-                                            .value(spatialLiteral)
-                                            .build();
+        return new ImmutableWithin.Builder().operand1(Property.of(property))
+                                             .operand2(spatialLiteral)
+                                             .build();
     }
 
-    static Within of(String property, Property property2) {
-        return new ImmutableWithin.Builder().property(property)
-                .property2(property2)
-                .build();
+    static Within of(String property, String property2) {
+        return new ImmutableWithin.Builder().operand1(Property.of(property))
+                                             .operand2(Property.of(property2))
+                                             .build();
     }
 
     abstract class Builder extends SpatialOperation.Builder<Within> {

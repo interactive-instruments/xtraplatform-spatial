@@ -15,15 +15,15 @@ import org.immutables.value.Value;
 public interface Overlaps extends SpatialOperation, CqlNode {
 
     static Overlaps of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableOverlaps.Builder().property(property)
-                                              .value(spatialLiteral)
-                                              .build();
+        return new ImmutableOverlaps.Builder().operand1(Property.of(property))
+                                                .operand2(spatialLiteral)
+                                                .build();
     }
 
-    static Overlaps of(String property, Property property2) {
-        return new ImmutableOverlaps.Builder().property(property)
-                .property2(property2)
-                .build();
+    static Overlaps of(String property, String property2) {
+        return new ImmutableOverlaps.Builder().operand1(Property.of(property))
+                                                .operand2(Property.of(property2))
+                                                .build();
     }
 
     abstract class Builder extends SpatialOperation.Builder<Overlaps> {

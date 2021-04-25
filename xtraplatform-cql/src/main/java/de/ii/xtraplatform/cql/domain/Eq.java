@@ -12,33 +12,39 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableEq.Builder.class)
-public interface Eq extends ScalarOperation, CqlNode {
+public interface Eq extends BinaryScalarOperation, CqlNode {
 
     static Eq of(String property, ScalarLiteral scalarLiteral) {
-        return new ImmutableEq.Builder().property(property)
-                                        .value(scalarLiteral)
+        return new ImmutableEq.Builder().operand1(Property.of(property))
+                                        .operand2(scalarLiteral)
+                                        .build();
+    }
+
+    static Eq of(String property, String property2) {
+        return new ImmutableEq.Builder().operand1(Property.of(property))
+                                        .operand2(Property.of(property2))
                                         .build();
     }
 
     static Eq of(Property property, ScalarLiteral scalarLiteral) {
-        return new ImmutableEq.Builder().property(property)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableEq.Builder().operand1(property)
+                                        .operand2(scalarLiteral)
+                                        .build();
     }
 
-    static Eq of(String property, Property property2) {
-        return new ImmutableEq.Builder().property(property)
-                .property2(property2)
-                .build();
+    static Eq of(Property property, Property property2) {
+        return new ImmutableEq.Builder().operand1(property)
+                                        .operand2(property2)
+                                        .build();
     }
 
     static Eq ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableEq.Builder().function(function)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableEq.Builder().operand1(function)
+                                        .operand2(scalarLiteral)
+                                        .build();
     }
 
-    abstract class Builder extends ScalarOperation.Builder<Eq> {
+    abstract class Builder extends BinaryScalarOperation.Builder<Eq> {
     }
 
 }
