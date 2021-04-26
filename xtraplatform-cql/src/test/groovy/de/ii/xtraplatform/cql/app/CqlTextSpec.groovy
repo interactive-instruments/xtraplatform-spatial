@@ -444,47 +444,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-
-    // EXISTS and DOES-NOT-EXIST are deactivated in the parser
-
-    /*def 'Property "owner" exists'() {
-        given:
-        String cqlText = "owner EXISTS"
-
-        when: 'reading text'
-        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
-
-        then:
-        actual == CqlFilterExamples.EXAMPLE_22
-
-        and:
-
-        when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_22, Cql.Format.TEXT)
-
-        then:
-        actual2 == cqlText
-    }
-
-    def 'Property "owner" does not exist'() {
-        given:
-        String cqlText = "owner DOES-NOT-EXIST"
-
-        when: 'reading text'
-        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
-
-        then:
-        actual == CqlFilterExamples.EXAMPLE_23
-
-        and:
-
-        when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_23, Cql.Format.TEXT)
-
-        then:
-        actual2 == cqlText
-    }*/
-
     def 'Built before 2015 (only date, no time information)'() {
         given:
         String cqlText = "built BEFORE 2015-01-01"
@@ -737,6 +696,7 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
+    /* Array operators are not yet supported
     def 'Evaluate if the value of an array property contains the specified subset of values'() {
 
         given:
@@ -756,6 +716,7 @@ class CqlTextSpec extends Specification {
         then:
         actual2 == cqlText
     }
+     */
 
     def 'Both operands are property references'() {
 
