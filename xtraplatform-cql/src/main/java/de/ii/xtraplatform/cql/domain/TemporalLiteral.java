@@ -16,6 +16,7 @@ import org.threeten.extra.Interval;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -122,7 +123,8 @@ public interface TemporalLiteral extends Temporal, Literal, CqlNode {
                     return Interval.parse(literal);
                 } else if (INSTANT_PATTERN.test(literal)) {
                     // a fully specified datetime instant
-                    return Instant.parse(literal);
+                    // Instant does not support timezones, convert to UTC
+                    return ZonedDateTime.parse(literal).toInstant();
                 } else if (DATE_PATTERN.test(literal)) {
                     // a date only instant
                     Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal))

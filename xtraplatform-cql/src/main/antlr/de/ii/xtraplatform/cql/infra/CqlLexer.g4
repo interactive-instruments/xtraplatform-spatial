@@ -340,7 +340,7 @@ DateDay : DIGIT DIGIT;
 
 UtcTime : TimeHour ':' TimeMinute ':' TimeSecond (TimeZoneOffset)?;
 
-TimeZoneOffset : 'Z' | Sign TimeHour;
+TimeZoneOffset : 'Z' | Sign TimeHour ':' TimeMinute;
 
 TimeHour : DIGIT DIGIT;
 
