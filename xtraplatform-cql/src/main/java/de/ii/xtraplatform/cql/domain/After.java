@@ -7,23 +7,31 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableAfter.Builder.class)
+@JsonDeserialize(as = After.class)
 public interface After extends TemporalOperation, CqlNode {
 
+    @JsonCreator
+    static After of(List<Operand> operands) {
+        return new ImmutableAfter.Builder().operands(operands)
+                                                 .build();
+    }
+
     static After of(String property, TemporalLiteral temporalLiteral) {
-        return new ImmutableAfter.Builder().operand1(Property.of(property))
-                                             .operand2(temporalLiteral)
-                                             .build();
+        return new ImmutableAfter.Builder().operands(ImmutableList.of(Property.of(property),temporalLiteral))
+                                           .build();
     }
 
     static After of(String property, String property2) {
-        return new ImmutableAfter.Builder().operand1(Property.of(property))
-                                             .operand2(Property.of(property2))
-                                             .build();
+        return new ImmutableAfter.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
+                                           .build();
     }
 
     abstract class Builder extends TemporalOperation.Builder<After> {

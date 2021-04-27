@@ -7,7 +7,12 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -18,9 +23,8 @@ import java.util.Optional;
 
 public interface BinaryOperation<T extends Literal> extends CqlNode {
 
-    Optional<Operand> getOperand1();
-
-    Optional<Operand> getOperand2();
+    @JsonValue
+    List<Operand> getOperands();
 
     @Value.Check
     default void check() {
@@ -28,28 +32,12 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
         Preconditions.checkState(count == 2, "a binary operation must have exactly two operands, found %s", count);
     }
 
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default List<Operand> getOperands() {
-        return ImmutableList.of(
-                getOperand1(),
-                getOperand2()
-        )
-                            .stream()
-                            .filter(Optional::isPresent)
-                            .map(Optional::get)
-                            .collect(ImmutableList.toImmutableList());
-    }
-
-
     abstract class Builder<T extends Literal, U extends BinaryOperation<T>> {
 
         public abstract U build();
 
-        public abstract Builder<T,U> operand1(Operand operand1);
-
-        public abstract Builder<T,U> operand2(Operand operand2);
+        @JsonValue
+        public abstract Builder<T,U> operands(Iterable<? extends Operand> operands);
     }
 
     @Override

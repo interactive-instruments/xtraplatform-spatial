@@ -7,22 +7,30 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = AContains.Builder.class)
+@JsonDeserialize(as = AContains.class)
 public interface AContains extends ArrayOperation, CqlNode {
 
+    @JsonCreator
+    static AContains of(List<Operand> operands) {
+        return new ImmutableAContains.Builder().operands(operands)
+                                               .build();
+    }
+
     static AContains of(String property, ArrayLiteral arrayLiteral) {
-        return new ImmutableAContains.Builder().operand1(Property.of(property))
-                                               .operand2(arrayLiteral)
+        return new ImmutableAContains.Builder().operands(ImmutableList.of(Property.of(property),arrayLiteral))
                                                .build();
     }
 
     static AContains of(String property, String property2) {
-        return new ImmutableAContains.Builder().operand1(Property.of(property))
-                                               .operand2(Property.of(property2))
+        return new ImmutableAContains.Builder().operands(ImmutableList.of(Property.of(property),Property.of(property2)))
                                                .build();
     }
 

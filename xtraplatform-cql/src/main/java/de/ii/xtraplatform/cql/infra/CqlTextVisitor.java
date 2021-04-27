@@ -112,7 +112,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                 .accept(this);
         }
         if (Objects.nonNull(ctx.NOT())) {
-            return Not.of(ImmutableList.of(CqlPredicate.of(booleanPrimary)));
+            return Not.of(CqlPredicate.of(booleanPrimary));
         }
 
         return booleanPrimary;
@@ -153,8 +153,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 throw new IllegalStateException("unknown comparison operator: " + comparisonOperator);
         }
 
-        return builder.operand1(scalar1)
-                      .operand2(scalar2)
+        return builder.operands(ImmutableList.of(scalar1,scalar2))
                       .build();
     }
 
@@ -169,8 +168,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                          .accept(this);
 
             Like like = new ImmutableLike.Builder()
-                    .operand1(scalar1)
-                    .operand2(scalar2)
+                    .operands(ImmutableList.of(scalar1,scalar2))
                     .build();
 
             if (Objects.nonNull(ctx.NOT())) {
@@ -187,12 +185,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
                 if (Objects.nonNull(likeModifier.singlechar())) {
                     ScalarLiteral singlechar = (ScalarLiteral) likeModifier.singlechar().accept(this);
-                    like = new ImmutableLike.Builder().from(like).singlechar((String) singlechar.getValue()).build();
+                    like = new ImmutableLike.Builder().from(like).singleChar((String) singlechar.getValue()).build();
                 }
 
                 if (Objects.nonNull(likeModifier.escapechar())) {
                     ScalarLiteral escapechar = (ScalarLiteral) likeModifier.escapechar().accept(this);
-                    like = new ImmutableLike.Builder().from(like).escapechar((String) escapechar.getValue()).build();
+                    like = new ImmutableLike.Builder().from(like).escapeChar((String) escapechar.getValue()).build();
                 }
 
                 if (Objects.nonNull(likeModifier.nocase())) {
@@ -219,7 +217,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                          .accept(this);
 
             Between between = new ImmutableBetween.Builder()
-                    .operand(scalar1)
+                    .value(scalar1)
                     .lower(scalar2)
                     .upper(scalar3)
                     .build();
@@ -244,7 +242,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                     .operand(scalar1)
                     .build();
             if (Objects.nonNull(ctx.NOT())) {
-                return Not.of(ImmutableList.of(CqlPredicate.of(isNull)));
+                return Not.of(CqlPredicate.of(isNull));
             }
 
             return isNull;
@@ -297,8 +295,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 throw new IllegalStateException("unknown temporal operator: " + temporalOperator);
         }
 
-        return builder.operand1(temporal1)
-                      .operand2(temporal2)
+        return builder.operands(ImmutableList.of(temporal1,temporal2))
                       .build();
     }
 
@@ -346,8 +343,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 throw new IllegalStateException("unknown spatial operator: " + spatialOperator);
         }
 
-        return builder.operand1(spatial1)
-                      .operand2(spatial2)
+        return builder.operands(ImmutableList.of(spatial1,spatial2))
                       .build();
     }
 
@@ -403,8 +399,8 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         } else {
             // TODO IN currently requires a property on the left side and literals on the right side
             in = new ImmutableIn.Builder()
-                    .operand((Property) ctx.propertyName().accept(this))
-                    .values(values)
+                    .value((Property) ctx.propertyName().accept(this))
+                    .list(values)
                     .build();
         }
         if (Objects.nonNull(ctx.NOT())) {

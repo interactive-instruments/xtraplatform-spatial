@@ -7,22 +7,30 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = ContainedBy.Builder.class)
+@JsonDeserialize(as = ContainedBy.class)
 public interface ContainedBy extends ArrayOperation, CqlNode {
 
+    @JsonCreator
+    static ContainedBy of(List<Operand> operands) {
+        return new ImmutableContainedBy.Builder().operands(operands)
+                                               .build();
+    }
+
     static ContainedBy of(String property, ArrayLiteral arrayLiteral) {
-        return new ImmutableContainedBy.Builder().operand1(Property.of(property))
-                                                 .operand2(arrayLiteral)
+        return new ImmutableContainedBy.Builder().operands(ImmutableList.of(Property.of(property), arrayLiteral))
                                                  .build();
     }
 
     static ContainedBy of(String property, String property2) {
-        return new ImmutableContainedBy.Builder().operand1(Property.of(property))
-                                                 .operand2(Property.of(property2))
+        return new ImmutableContainedBy.Builder().operands(ImmutableList.of(Property.of(property),Property.of(property2)))
                                                  .build();
     }
 

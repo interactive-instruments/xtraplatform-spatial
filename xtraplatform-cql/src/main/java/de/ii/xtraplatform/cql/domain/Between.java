@@ -22,20 +22,20 @@ import java.util.Optional;
 public interface Between extends NonBinaryScalarOperation, CqlNode {
 
     static Between of(String property, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
-        return new ImmutableBetween.Builder().operand(Property.of(property))
+        return new ImmutableBetween.Builder().value(Property.of(property))
                                              .lower(scalarLiteral1)
                                              .upper(scalarLiteral2)
                                              .build();
     }
 
     static Between ofFunction(Function function, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
-        return new ImmutableBetween.Builder().operand(function)
+        return new ImmutableBetween.Builder().value(function)
                                              .lower(scalarLiteral1)
                                              .upper(scalarLiteral2)
                                              .build();
     }
 
-    Optional<Scalar> getOperand();
+    Optional<Scalar> getValue();
 
     Optional<Scalar> getLower();
 
@@ -52,7 +52,7 @@ public interface Between extends NonBinaryScalarOperation, CqlNode {
     @Value.Auxiliary
     default List<Operand> getOperands() {
         return ImmutableList.of(
-                getOperand(),
+                getValue(),
                 getLower(),
                 getUpper()
         )
@@ -66,7 +66,7 @@ public interface Between extends NonBinaryScalarOperation, CqlNode {
 
         public abstract Between build();
 
-        public abstract Between.Builder operand(Scalar operand);
+        public abstract Between.Builder value(Scalar operand);
 
         public abstract Between.Builder lower(Scalar lower);
 
@@ -75,7 +75,7 @@ public interface Between extends NonBinaryScalarOperation, CqlNode {
 
     @Override
     default <U> U accept(CqlVisitor<U> visitor) {
-        U operand = getOperand().get()
+        U operand = getValue().get()
                                   .accept(visitor);
         U lower = getLower().get()
                             .accept(visitor);

@@ -7,22 +7,30 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = AOverlaps.Builder.class)
+@JsonDeserialize(as = AOverlaps.class)
 public interface AOverlaps extends ArrayOperation, CqlNode {
 
+    @JsonCreator
+    static AOverlaps of(List<Operand> operands) {
+        return new ImmutableAOverlaps.Builder().operands(operands)
+                                               .build();
+    }
+
     static AOverlaps of(String property, ArrayLiteral arrayLiteral) {
-        return new ImmutableAOverlaps.Builder().operand1(Property.of(property))
-                                               .operand2(arrayLiteral)
+        return new ImmutableAOverlaps.Builder().operands(ImmutableList.of(Property.of(property), arrayLiteral))
                                                .build();
     }
 
     static AOverlaps of(String property, String property2) {
-        return new ImmutableAOverlaps.Builder().operand1(Property.of(property))
-                                               .operand2(Property.of(property2))
+        return new ImmutableAOverlaps.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                                .build();
     }
 

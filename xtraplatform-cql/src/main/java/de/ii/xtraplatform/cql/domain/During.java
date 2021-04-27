@@ -7,30 +7,37 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 import org.threeten.extra.Interval;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableDuring.Builder.class)
+@JsonDeserialize(as = During.class)
 public interface During extends TemporalOperation, CqlNode {
+
+    @JsonCreator
+    static During of(List<Operand> operands) {
+        return new ImmutableDuring.Builder().operands(operands)
+                                              .build();
+    }
 
     static During of(String property, TemporalLiteral temporalLiteral) {
         if (!Objects.equals(temporalLiteral.getType(), Interval.class)) {
             throw new IllegalArgumentException(String.format("not a valid interval: %s", temporalLiteral));
         }
-        return new ImmutableDuring.Builder().operand1(Property.of(property))
-                                            .operand2(temporalLiteral)
+        return new ImmutableDuring.Builder().operands(ImmutableList.of(Property.of(property), temporalLiteral))
                                             .build();
     }
 
     static During of(String property, String property2) {
-        return new ImmutableDuring.Builder().operand1(Property.of(property))
-                                            .operand2(Property.of(property2))
+        return new ImmutableDuring.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                             .build();
     }
 
@@ -41,18 +48,18 @@ public interface During extends TemporalOperation, CqlNode {
     @Override
     default void check() {
         TemporalOperation.super.check();
-        Preconditions.checkState( getOperand1().get() instanceof Property ||
-                                          (getOperand1().get() instanceof TemporalLiteral &&
-                                                  Objects.equals(((TemporalLiteral) getOperand1().get()).getType(), Instant.class)),
+        Preconditions.checkState( getOperands().get(0) instanceof Property ||
+                                          (getOperands().get(0) instanceof TemporalLiteral &&
+                                                  Objects.equals(((TemporalLiteral) getOperands().get(0)).getType(), Instant.class)),
                                  "The left hand side of DURING must be a property or time instant, found %s",
-                                  getOperand1().get() instanceof Property
-                                          ? ((Property) getOperand1().get()).getName()
-                                          : ((TemporalLiteral) getOperand1().get()).getValue());
-        Preconditions.checkState( getOperand2().get() instanceof TemporalLiteral &&
-                                         Objects.equals(((TemporalLiteral) getOperand2().get()).getType(), Interval.class),
+                                  getOperands().get(0) instanceof Property
+                                          ? ((Property) getOperands().get(0)).getName()
+                                          : ((TemporalLiteral) getOperands().get(0)).getValue());
+        Preconditions.checkState( getOperands().get(1) instanceof TemporalLiteral &&
+                                         Objects.equals(((TemporalLiteral) getOperands().get(1)).getType(), Interval.class),
                                  "The right hand side of DURING must be a time interval, found %s",
-                                  getOperand2().get() instanceof Property
-                                          ? ((Property) getOperand2().get()).getName()
-                                          : ((TemporalLiteral) getOperand2().get()).getValue());
+                                  getOperands().get(1) instanceof Property
+                                          ? ((Property) getOperands().get(1)).getName()
+                                          : ((TemporalLiteral) getOperands().get(1)).getValue());
     }
 }

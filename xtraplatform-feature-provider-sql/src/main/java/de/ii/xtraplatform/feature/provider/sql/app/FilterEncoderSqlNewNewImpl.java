@@ -309,9 +309,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(BinaryScalarOperation scalarOperation, List<String> children) {
             String operator = SCALAR_OPERATORS.get(scalarOperation.getClass());
 
-            Scalar op1 = (Scalar) scalarOperation.getOperand1().get();
-            Scalar op2 = (Scalar) scalarOperation.getOperand2().get();
-            List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
+            List<String> expressions = processBinary(scalarOperation.getOperands(), children);
 
             String operation = String.format(" %s %s", operator, expressions.get(1));
             return String.format(expressions.get(0), "", operation);
@@ -321,11 +319,10 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(Like like, List<String> children) {
             String operator = SCALAR_OPERATORS.get(like.getClass());
 
-            Scalar op1 = like.getOperand1().get();
-            Scalar op2 = like.getOperand2().get();
-            List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
+            List<String> expressions = processBinary(like.getOperands(), children);
 
             // we may need to change the second expression
+            Scalar op2 = (Scalar) like.getOperands().get(1);
             String secondExpression = expressions.get(1);
 
             String functionStart = "";
@@ -338,15 +335,15 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     secondExpression = secondExpression.replaceAll("%", "\\%")
                                                        .replaceAll(String.format("\\%s", wildCard), "%");
                 }
-                if (like.getSinglechar().isPresent() &&
-                        !Objects.equals("_", like.getSinglechar().get())) {
-                    String singlechar = like.getSinglechar().get();
+                if (like.getSingleChar().isPresent() &&
+                        !Objects.equals("_", like.getSingleChar().get())) {
+                    String singlechar = like.getSingleChar().get();
                     secondExpression = secondExpression.replaceAll("_", "\\_")
                                                        .replaceAll(String.format("\\%s", singlechar), "_");
                 }
-                if (like.getEscapechar().isPresent() &&
-                        !Objects.equals("\\", like.getEscapechar().get())) {
-                    String escapechar = like.getEscapechar().get();
+                if (like.getEscapeChar().isPresent() &&
+                        !Objects.equals("\\", like.getEscapeChar().get())) {
+                    String escapechar = like.getEscapeChar().get();
                     secondExpression = secondExpression.replaceAll("\\\\", "\\\\")
                                                        .replaceAll(String.format("\\%s", escapechar), "\\");
                 }
@@ -371,7 +368,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String operator = SCALAR_OPERATORS.get(in.getClass());
 
             String mainExpression = "";
-            Scalar op1 = in.getOperand().get();
+            Scalar op1 = in.getValue().get();
             if (op1 instanceof Property) {
                 mainExpression = children.get(0);
             } else if (op1 instanceof ScalarLiteral) {
@@ -391,7 +388,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String operator = SCALAR_OPERATORS.get(isNull.getClass());
 
             String mainExpression = "";
-            Scalar op1 = isNull.getOperand().get();
+            Operand op1 = isNull.getOperand().get();
             if (op1 instanceof Property) {
                 mainExpression = children.get(0);
             } else if (op1 instanceof ScalarLiteral) {
@@ -410,7 +407,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(Between between, List<String> children) {
             String operator = SCALAR_OPERATORS.get(between.getClass());
 
-            Scalar op1 = between.getOperand().get();
+            Scalar op1 = between.getValue().get();
             Scalar op2 = between.getLower().get();
             Scalar op3 = between.getUpper().get();
             List<String> expressions = processTernary(ImmutableList.of(op1, op2, op3), children);
@@ -456,8 +453,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(TemporalOperation temporalOperation, List<String> children) {
             String operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
 
-            Temporal op1 = (Temporal) temporalOperation.getOperand1().get();
-            Temporal op2 = (Temporal) temporalOperation.getOperand2().get();
+            Temporal op1 = (Temporal) temporalOperation.getOperands().get(0);
+            Temporal op2 = (Temporal) temporalOperation.getOperands().get(1);
 
             // TODO The behaviour of the temporal predicates should be improved by 
             //      distinguishing datetime properties of different granularity in
@@ -542,9 +539,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(SpatialOperation spatialOperation, List<String> children) {
             String operator = SPATIAL_OPERATORS.get(spatialOperation.getClass());
 
-            Spatial op1 = (Spatial) spatialOperation.getOperand1().get();
-            Spatial op2 = (Spatial) spatialOperation.getOperand2().get();
-            List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
+            List<String> expressions = processBinary(spatialOperation.getOperands(), children);
 
             return String.format(expressions.get(0), String.format("%s(", operator), String.format(", %s)", expressions.get(1)));
         }
@@ -613,19 +608,25 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(LogicalOperation logicalOperation, List<String> children) {
             String operator = LOGICAL_OPERATORS.get(logicalOperation.getClass());
 
-            if (Objects.equals(logicalOperation.getClass(), ImmutableNot.class)) {
-                String operation = children.get(0);
-                if (logicalOperation.getPredicates()
-                        .get(0)
-                        .getInOperator()
-                        .isPresent()) {
-                    // replace last IN with NOT IN
-                    int pos = operation.lastIndexOf(" IN ");
-                    int length = operation.length();
-                    return String.format("%s %s %s", operation.substring(0, pos), operator, operation.substring(pos + 1, length));
-                }
-            }
             return super.visit(logicalOperation, children);
+        }
+
+        @Override
+        public String visit(Not not, List<String> children) {
+            String operator = LOGICAL_OPERATORS.get(not.getClass());
+
+            String operation = children.get(0);
+            if (not.getPredicate()
+                                .get()
+                                .getInOperator()
+                                .isPresent()) {
+                // replace last IN with NOT IN
+                int pos = operation.lastIndexOf(" IN ");
+                int length = operation.length();
+                return String.format("%s %s %s", operation.substring(0, pos), operator, operation.substring(pos + 1, length));
+            }
+
+            return super.visit(not, children);
         }
     }
 

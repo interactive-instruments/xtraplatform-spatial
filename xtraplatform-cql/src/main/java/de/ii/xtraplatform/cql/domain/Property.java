@@ -7,7 +7,9 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Splitter;
@@ -18,9 +20,10 @@ import java.util.Map;
 
 @Value.Immutable
 @Value.Style(of = "new")
-@JsonDeserialize(as = ImmutableProperty.class)
+@JsonDeserialize(builder = ImmutableProperty.Builder.class)
 public interface Property extends Scalar, Spatial, Temporal, Operand, Vector, CqlNode {
 
+    @JsonCreator
     static Property of(String name) {
         return ImmutableProperty.builder()
                 .name(name)
@@ -34,8 +37,7 @@ public interface Property extends Scalar, Spatial, Temporal, Operand, Vector, Cq
                 .build();
     }
 
-    @JsonValue
-    @Value.Parameter
+    @JsonProperty("property")
     String getName();
 
     @JsonIgnore

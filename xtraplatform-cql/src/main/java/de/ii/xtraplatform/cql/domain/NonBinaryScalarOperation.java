@@ -8,21 +8,13 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Preconditions;
 import org.immutables.value.Value;
 
 import java.util.List;
 
 public interface NonBinaryScalarOperation extends CqlNode {
-
-    @JsonIgnore
-    List<Operand> getOperands();
-
-    @Value.Check
-    default void check() {
-        getOperands().stream()
-                     .forEach(operand -> Preconditions.checkState(operand instanceof Scalar, "a scalar operation must have scalar operands, found %s", operand.getClass().getSimpleName()));
-   }
 
     abstract class Builder<T extends NonBinaryScalarOperation> {}
 }

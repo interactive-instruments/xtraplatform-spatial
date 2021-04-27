@@ -14,7 +14,7 @@ import org.immutables.value.Value;
 import java.util.List;
 
 @Value.Immutable
-@JsonDeserialize(builder = ArrayLiteral.Builder.class)
+@JsonDeserialize(builder = ImmutableArrayLiteral.Builder.class)
 public interface ArrayLiteral extends Vector, Literal, CqlNode {
 
     static ArrayLiteral of(String elements) throws CqlParseException {

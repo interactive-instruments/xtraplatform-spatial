@@ -7,22 +7,30 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableDisjoint.Builder.class)
+@JsonDeserialize(as = Disjoint.class)
 public interface Disjoint extends SpatialOperation, CqlNode {
 
+    @JsonCreator
+    static Disjoint of(List<Operand> operands) {
+        return new ImmutableDisjoint.Builder().operands(operands)
+                                             .build();
+    }
+
     static Disjoint of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableDisjoint.Builder().operand1(Property.of(property))
-                                             .operand2(spatialLiteral)
+        return new ImmutableDisjoint.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
                                              .build();
     }
 
     static Disjoint of(String property, String property2) {
-        return new ImmutableDisjoint.Builder().operand1(Property.of(property))
-                                             .operand2(Property.of(property2))
+        return new ImmutableDisjoint.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                              .build();
     }
 

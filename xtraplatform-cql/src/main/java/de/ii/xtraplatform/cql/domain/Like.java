@@ -8,6 +8,8 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -22,62 +24,54 @@ import java.util.Optional;
 public interface Like extends NonBinaryScalarOperation, CqlNode {
 
     static Like of(String property, ScalarLiteral scalarLiteral) {
-        return new ImmutableLike.Builder().operand1(Property.of(property))
-                                          .operand2(scalarLiteral)
+        return new ImmutableLike.Builder().operands(ImmutableList.of(Property.of(property),scalarLiteral))
                                           .build();
     }
 
     static Like of(String property, ScalarLiteral scalarLiteral, String wildCard, String singlechar, String escapechar, Boolean nocase) {
-        return new ImmutableLike.Builder().operand1(Property.of(property))
-                                          .operand2(scalarLiteral)
+        return new ImmutableLike.Builder().operands(ImmutableList.of(Property.of(property),scalarLiteral))
                                           .wildcard(Optional.ofNullable(wildCard))
-                                          .singlechar(Optional.ofNullable(singlechar))
-                                          .escapechar(Optional.ofNullable(escapechar))
+                                          .singleChar(Optional.ofNullable(singlechar))
+                                          .escapeChar(Optional.ofNullable(escapechar))
                                           .nocase(Optional.ofNullable(nocase))
                                           .build();
     }
 
     static Like of(String property, String property2) {
-        return new ImmutableLike.Builder().operand1(Property.of(property))
-                                          .operand2(Property.of(property2))
+        return new ImmutableLike.Builder().operands(ImmutableList.of(Property.of(property),Property.of(property2)))
                                           .build();
     }
 
     static Like of(String property, String property2, String wildCard, String singlechar, String escapechar, Boolean nocase) {
-        return new ImmutableLike.Builder().operand1(Property.of(property))
-                                          .operand2(Property.of(property2))
+        return new ImmutableLike.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                           .wildcard(Optional.ofNullable(wildCard))
-                                          .singlechar(Optional.ofNullable(singlechar))
-                                          .escapechar(Optional.ofNullable(escapechar))
+                                          .singleChar(Optional.ofNullable(singlechar))
+                                          .escapeChar(Optional.ofNullable(escapechar))
                                           .nocase(Optional.ofNullable(nocase))
                                           .build();
     }
 
     static Like ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableLike.Builder().operand1(function)
-                                          .operand2(scalarLiteral)
+        return new ImmutableLike.Builder().operands(ImmutableList.of(function, scalarLiteral))
                                           .build();
     }
 
     static Like ofFunction(Function function, ScalarLiteral scalarLiteral, String wildCard, String singlechar, String escapechar, Boolean nocase) {
-        return new ImmutableLike.Builder().operand1(function)
-                                          .operand2(scalarLiteral)
+        return new ImmutableLike.Builder().operands(ImmutableList.of(function, scalarLiteral))
                                           .wildcard(Optional.ofNullable(wildCard))
-                                          .singlechar(Optional.ofNullable(singlechar))
-                                          .escapechar(Optional.ofNullable(escapechar))
+                                          .singleChar(Optional.ofNullable(singlechar))
+                                          .escapeChar(Optional.ofNullable(escapechar))
                                           .nocase(Optional.ofNullable(nocase))
                                           .build();
     }
 
-    Optional<Scalar> getOperand1();
-
-    Optional<Scalar> getOperand2();
+    List<Operand> getOperands();
 
     Optional<String> getWildcard();
 
-    Optional<String> getSinglechar();
+    Optional<String> getSingleChar();
 
-    Optional<String> getEscapechar();
+    Optional<String> getEscapeChar();
 
     Optional<Boolean> getNocase();
 
@@ -87,27 +81,19 @@ public interface Like extends NonBinaryScalarOperation, CqlNode {
         Preconditions.checkState(count == 2, "a LIKE operation must have exactly two operands, found %s", count);
     }
 
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default List<Operand> getOperands() {
-        return ImmutableList.of(
-                getOperand1(),
-                getOperand2()
-        )
-                            .stream()
-                            .filter(Optional::isPresent)
-                            .map(Optional::get)
-                            .collect(ImmutableList.toImmutableList());
-    }
-
     abstract class Builder {
 
         public abstract Like build();
 
-        public abstract Like.Builder operand1(Scalar operand);
+        public abstract Like.Builder operands(Iterable<? extends Operand> operands);
 
-        public abstract Like.Builder operand2(Scalar operand);
+        public abstract Like.Builder wildcard(Optional<String> wildcard);
+
+        public abstract Like.Builder singleChar(Optional<String> singlechar);
+
+        public abstract Like.Builder escapeChar(Optional<String> escapechar);
+
+        public abstract Like.Builder nocase(Optional<Boolean> nocase);
     }
 
     @Override

@@ -7,7 +7,9 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -25,67 +27,60 @@ public interface In extends CqlNode, NonBinaryScalarOperation {
 
     String ID_PLACEHOLDER = "_ID_";
 
+    static In of(String property, List<ScalarLiteral> values) {
+        return new ImmutableIn.Builder().value(Property.of(property))
+                                        .list(values)
+                                        .build();
+    }
+
     static In of(String property, ScalarLiteral... values) {
-        return new ImmutableIn.Builder().operand(Property.of(property))
-                                        .values(Arrays.asList(values))
+        return new ImmutableIn.Builder().value(Property.of(property))
+                                        .list(Arrays.asList(values))
                                         .build();
     }
 
     static In of(ScalarLiteral... values) {
-        return new ImmutableIn.Builder().operand(Property.of(ID_PLACEHOLDER))
-                                        .addValues(values)
+        return new ImmutableIn.Builder().value(Property.of(ID_PLACEHOLDER))
+                                        .addList(values)
                                         .build();
     }
 
     static In of(List<ScalarLiteral> values) {
-        return new ImmutableIn.Builder().operand(Property.of(ID_PLACEHOLDER))
-                                        .values(values)
+        return new ImmutableIn.Builder().value(Property.of(ID_PLACEHOLDER))
+                                        .list(values)
                                         .build();
     }
 
     @Value.Check
     default void check() {
-        int count = getValues().size();
+        int count = getList().size();
         Preconditions.checkState(count > 0, "an IN operation must have at least one value, found %s", count);
-        count = getOperands().size();
-        Preconditions.checkState(count == 1, "an IN operation must have exactly one operand, found %s", count);
-    }
-
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default List<Operand> getOperands() {
-        return ImmutableList.of(
-                getOperand()
-        )
-                            .stream()
-                            .filter(Optional::isPresent)
-                            .map(Optional::get)
-                            .collect(ImmutableList.toImmutableList());
+        Preconditions.checkState(getValue().isPresent(), "an IN operation must have exactly one operand, found 0");
     }
 
     abstract class Builder {
 
         public abstract In build();
 
-        public abstract In.Builder operand(Scalar operand);
+        public abstract In.Builder value(Scalar property);
     }
 
+    /* TODO not yet supported
     @Value.Default
     default Boolean getNocase() {
         return Boolean.TRUE;
     }
+     */
 
-    Optional<Scalar> getOperand();
+    Optional<Scalar> getValue();
 
-    List<ScalarLiteral> getValues();
+    List<Scalar> getList();
 
     @Override
     default <T> T accept(CqlVisitor<T> visitor) {
-        List<T> children = Stream.concat(Stream.of(getOperand().get()), getValues().stream())
+        List<T> children = Stream.concat(Stream.of(getValue().get()), getList().stream())
                                  .map(value -> value.accept(visitor))
                                  .collect(Collectors.toList());
-
 
         return visitor.visit(this, children);
     }

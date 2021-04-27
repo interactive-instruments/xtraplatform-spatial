@@ -16,6 +16,8 @@ public interface CqlVisitor<T> {
             return visit((CqlFilter) node, children);
         } else if (node instanceof CqlPredicate) {
             return visit((CqlPredicate) node, children);
+        } else if (node instanceof Not) {
+            return visit((Not) node, children);
         } else if (node instanceof LogicalOperation) {
             return visit((LogicalOperation) node, children);
         } else if (node instanceof Between) {
@@ -70,6 +72,8 @@ public interface CqlVisitor<T> {
     T visit(CqlFilter cqlFilter, List<T> children);
 
     T visit(CqlPredicate cqlPredicate, List<T> children);
+
+    T visit(Not not, List<T> children);
 
     T visit(LogicalOperation logicalOperation, List<T> children);
 

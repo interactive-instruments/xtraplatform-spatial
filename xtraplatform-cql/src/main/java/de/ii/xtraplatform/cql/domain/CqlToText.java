@@ -122,44 +122,47 @@ public class CqlToText implements CqlVisitor<String> {
     public String visit(LogicalOperation logicalOperation, List<String> children) {
         String operator = LOGICAL_OPERATORS.get(logicalOperation.getClass());
 
-        if (Objects.equals(logicalOperation.getClass(), ImmutableNot.class)) {
-            String operation = children.get(0);
-
-            if (logicalOperation.getPredicates()
-                                .get(0)
-                                .getLike()
-                                .isPresent()) {
-                String like = SCALAR_OPERATORS.get(ImmutableLike.class);
-
-                return operation.replace(like, String.format("%s %s", operator, like));
-            } else if (logicalOperation.getPredicates()
-                                       .get(0)
-                                       .getIsNull()
-                                       .isPresent()) {
-                String isNull = SCALAR_OPERATORS.get(ImmutableIsNull.class);
-
-                return operation.replace(isNull, "IS NOT NULL");
-            } else if (logicalOperation.getPredicates()
-                    .get(0)
-                    .getBetween()
-                    .isPresent()) {
-                String between = SCALAR_OPERATORS.get(ImmutableBetween.class);
-
-                return operation.replace(between, String.format("%s %s", operator, between));
-            } else if (logicalOperation.getPredicates()
-                    .get(0)
-                    .getInOperator()
-                    .isPresent()) {
-                String in = SCALAR_OPERATORS.get(ImmutableIn.class);
-
-                return operation.replace(in, String.format("%s %s", operator, in));
-            }
-
-            return String.format("NOT (%s)", operation);
-        }
-
         return children.stream()
                        .collect(Collectors.joining(String.format(" %s ", operator), "(", ")"));
+    }
+
+    @Override
+    public String visit(Not not, List<String> children) {
+        String operator = LOGICAL_OPERATORS.get(not.getClass());
+
+        String operation = children.get(0);
+
+        if (not.getPredicate()
+               .get()
+               .getLike()
+               .isPresent()) {
+            String like = SCALAR_OPERATORS.get(ImmutableLike.class);
+
+            return operation.replace(like, String.format("%s %s", operator, like));
+        } else if (not.getPredicate()
+                      .get()
+                      .getIsNull()
+                      .isPresent()) {
+            String isNull = SCALAR_OPERATORS.get(ImmutableIsNull.class);
+
+            return operation.replace(isNull, "IS NOT NULL");
+        } else if (not.getPredicate()
+                      .get()
+                      .getBetween()
+                      .isPresent()) {
+            String between = SCALAR_OPERATORS.get(ImmutableBetween.class);
+
+            return operation.replace(between, String.format("%s %s", operator, between));
+        } else if (not.getPredicate()
+                      .get()
+                      .getInOperator()
+                      .isPresent()) {
+            String in = SCALAR_OPERATORS.get(ImmutableIn.class);
+
+            return operation.replace(in, String.format("%s %s", operator, in));
+        }
+
+        return String.format("NOT (%s)", operation);
     }
 
     @Override
@@ -178,8 +181,8 @@ public class CqlToText implements CqlVisitor<String> {
     public String visit(Like like, List<String> children) {
         String operator = SCALAR_OPERATORS.get(like.getClass());
         String wildcard = like.getWildcard().isPresent() ? String.format("WILDCARD '%s'", like.getWildcard().get()) : "";
-        String singlechar = like.getSinglechar().isPresent() ? String.format(" SINGLECHAR '%s'", like.getSinglechar().get()) : "";
-        String escapechar = like.getEscapechar().isPresent() ? String.format(" ESCAPECHAR '%s'", like.getEscapechar().get()) : "";
+        String singlechar = like.getSingleChar().isPresent() ? String.format(" SINGLECHAR '%s'", like.getSingleChar().get()) : "";
+        String escapechar = like.getEscapeChar().isPresent() ? String.format(" ESCAPECHAR '%s'", like.getEscapeChar().get()) : "";
         String nocase = like.getNocase().isPresent() ? String.format(" NOCASE %s", like.getNocase().get()) : "";
         return String.format("%s %s %s %s%s%s%s", children.get(0), operator, children.get(1), wildcard, singlechar, escapechar, nocase)
                      .trim()

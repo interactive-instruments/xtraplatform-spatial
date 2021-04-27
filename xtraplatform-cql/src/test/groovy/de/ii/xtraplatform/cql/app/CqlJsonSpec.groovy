@@ -27,10 +27,7 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
             {
-                "gt": {
-                    "property": "floors",
-                    "value": 5
-                }
+                "gt": [ { "property": "floors" }, 5 ]
             } 
         """
 
@@ -55,10 +52,7 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
             {
-                 "lte": {
-                     "property": "taxes",
-                     "value": 500
-                 }
+                 "lte": [ { "property": "taxes" }, 500 ]
             }
         """
 
@@ -83,8 +77,7 @@ class CqlJsonSpec extends Specification {
         String cqlJson = """
         {
             "like": {
-                "property": "owner",
-                "value": "% Jones %"
+                "operands" : [ { "property": "owner" }, "% Jones %" ]
             }
         }
         """
@@ -111,8 +104,7 @@ class CqlJsonSpec extends Specification {
         {
             "like": {
                 "wildcard": "%",
-                "property": "owner",
-                "value": "Mike%"
+                "operands": [ { "property": "owner" }, "Mike%" ]
             }
         }
         """
@@ -137,14 +129,11 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "not": [
-                {
+            "not": {
                     "like": {
-                        "property": "owner",
-                        "value": "% Mike %"
+                        "operands": [ { "property": "owner" }, "% Mike %" ]
                     }
                 }
-            ]
         }
         """
 
@@ -168,11 +157,8 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "eq": {
-                "property": "swimming_pool",
-                "value": true
-            }
-          }
+            "eq": [ { "property": "swimming_pool" }, true ]
+        }
         """
 
         when: 'reading json'
@@ -197,16 +183,10 @@ class CqlJsonSpec extends Specification {
             {
                 "and": [
                     {
-                        "gt": {
-                            "property": "floors",
-                            "value": 5
-                        }
+                        "gt": [ { "property": "floors" }, 5 ]
                     },
                     {
-                        "eq": {
-                            "property": "swimming_pool",
-                            "value": true
-                        }
+                        "eq": [ { "property": "swimming_pool" }, true ]
                     }
                 ]
             }
@@ -234,34 +214,26 @@ class CqlJsonSpec extends Specification {
         String cqlJson = """
         {
             "and": [
-                {
-                    "eq": {
-                        "property": "swimming_pool",
-                        "value": true
+                    {
+                        "eq": [ { "property": "swimming_pool" }, true ]
+                    },
+                    {
+                        "or": [
+                            {
+                                "gt": [ { "property": "floors" }, 5 ]
+                            },
+                            {
+                                "like": {
+                                    "operands": [ { "property": "material" }, "brick%" ]
+                                }
+                            },
+                            {
+                                "like": {
+                                    "operands": [ { "property": "material" }, "%brick" ]
+                                }
+                            }                        
+                        ]
                     }
-                },
-                {
-                    "or": [
-                        {
-                            "gt": {
-                                "property": "floors",
-                                "value": 5
-                            }
-                        },
-                        {
-                            "like": {
-                                "property": "material",
-                                "value": "brick%"
-                            }
-                        },
-                        {
-                            "like": {
-                                "property": "material",
-                                "value": "%brick"
-                            }
-                        }
-                    ]
-                }
             ]
         }
         """
@@ -290,24 +262,24 @@ class CqlJsonSpec extends Specification {
                 {
                     "and": [
                         {
-                            "gt": {
-                                "property": "floors",
-                                "value": 5
-                            }
+                            "gt": [
+                                {"property": "floors"},
+                                5
+                            ]
                         },
                         {
-                            "eq": {
-                                "property": "material",
-                                "value": "brick"
-                            }
+                            "eq": [
+                                {"property": "material"},
+                                "brick"
+                            ]
                         }
                     ]
                 },
                 {
-                    "eq": {
-                        "property": "swimming_pool",
-                        "value": true
-                    }
+                    "eq": [
+                        { "property": "swimming_pool" },
+                        true
+                    ]
                 }
             ]
         }
@@ -335,20 +307,20 @@ class CqlJsonSpec extends Specification {
         {
             "or": [
                 {
-                    "not": [
+                    "not":
                         {
-                            "lt": {
-                                "property": "floors",
-                                "value": 5
-                            }
+                            "lt": [
+                                {"property": "floors"},
+                                5
+                            ]
                         }
-                    ]
+                   
                 },
                 {
-                    "eq": {
-                        "property": "swimming_pool",
-                        "value": true
-                    }
+                    "eq": [
+                        {"property": "swimming_pool"},
+                        true
+                    ]
                 }
             ]
         }
@@ -379,23 +351,27 @@ class CqlJsonSpec extends Specification {
                     "or": [
                         {
                             "like": {
-                                "property": "owner",
-                                "value": "mike%"
+                                "operands": [
+                                    {"property": "owner"},
+                                    "mike%"
+                                ]
                             }
                         },
                         {
                             "like": {
-                                "property": "owner",
-                                "value": "Mike%"
+                                "operands": [
+                                    {"property": "owner"},
+                                    "Mike%"
+                                ]
                             }
                         }
                     ]
                 },
                 {
-                    "lt": {
-                        "property": "floors",
-                        "value": 4
-                    }
+                    "lt": [
+                        {"property": "floors"},
+                        4
+                    ]
                 }
             ]
         }
@@ -421,10 +397,10 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "before": {
-                "property": "built",
-                "value": "2015-01-01T00:00:00Z"
-            }
+            "before": [
+                {"property": "built"},
+                "2015-01-01T00:00:00Z"
+            ]
         }
         """
 
@@ -449,10 +425,10 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "after": {
-                "property": "built",
-                "value": "2012-06-05T00:00:00Z"
-            }
+            "after": [
+                {"property": "built"},
+                "2012-06-05T00:00:00Z"
+            ]
         }
         """
 
@@ -477,10 +453,10 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
             {
-                "during": {
-                    "property": "updated",
-                    "value": ["2017-06-10T07:30:00Z","2017-06-11T10:30:00Z"]
-                }
+                "during": [
+                    {"property": "updated"},
+                    ["2017-06-10T07:30:00Z","2017-06-11T10:30:00Z"]
+                ]
             }
         """
 
@@ -505,12 +481,10 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-             "within": {
-                "property": "location",
-                "value": { 
-                    "bbox": [-118,33.8,-117.9,34]
-                }
-              }
+             "within": [
+                {"property": "location"},
+                { "bbox": [-118,33.8,-117.9,34] }
+             ] 
         }
         """
 
@@ -534,13 +508,13 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
             {
-                "intersects": {
-                    "property": "location",
-                    "value": {
+                "intersects": [
+                    {"property": "location"},
+                    {
                         "type": "Polygon",
                         "coordinates": [[[-10.0, -10.0],[10.0, -10.0],[10.0, 10.0],[-10.0, -10.0]]]
                     }
-                }
+                ]
             }
         """
 
@@ -567,18 +541,18 @@ class CqlJsonSpec extends Specification {
         {
             "and": [
                 {
-                    "gt": {
-                        "property": "floors",
-                        "value": 5
-                    }
+                    "gt": [
+                        {"property": "floors"},
+                        5
+                    ]
                 },
                 {
-                   "within": {
-                      "property": "geometry",
-                      "value": { 
+                   "within": [
+                      {"property": "geometry"},
+                      { 
                         "bbox": [-118,33.8,-117.9,34]
                       }
-                   }
+                   ]
                 }
             ]
         }
@@ -605,7 +579,7 @@ class CqlJsonSpec extends Specification {
         String cqlJson = """
         {
             "between": {
-                "property": "floors",
+                "value": {"property": "floors"},
                 "lower": 4,
                 "upper": 8
             }
@@ -633,9 +607,8 @@ class CqlJsonSpec extends Specification {
         String cqlJson = """
         {
             "in": {
-                "property": "owner",
-                "values": [ "Mike", "John", "Tom" ],
-                "nocase" : true
+                "value": {"property": "owner"},
+                "list": [ "Mike", "John", "Tom" ]
             }
         }
         """
@@ -686,13 +659,12 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "not": [
+            "not": 
                 {
                     "isNull": {
                         "property": "owner"
                     }
                 }
-            ]
         }
         """
 
@@ -716,10 +688,10 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "before": {
-                "property": "built",
-                "value": "2015-01-01"
-            }
+            "before": [
+                {"property": "built"},
+                "2015-01-01"
+            ]
         }
         """
 
@@ -737,10 +709,10 @@ class CqlJsonSpec extends Specification {
         then:
         String cqlJson2 = """
         {
-            "before": {
-                "property": "built",
-                "value": [ "2015-01-01T00:00:00Z", "2015-01-01T23:59:59Z" ]
-            }
+            "before": [
+                {"property": "built"},
+                [ "2015-01-01T00:00:00Z", "2015-01-01T23:59:59Z" ]
+            ]
         }
         """
         JSONAssert.assertEquals(cqlJson2, actual2, true)
@@ -751,10 +723,10 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
             {
-                "during": {
-                    "property": "updated",
-                    "value": ["2017-06-10","2017-06-11"]
-                }
+                "during": [
+                    {"property": "updated"},
+                    ["2017-06-10","2017-06-11"]
+                ]
             }
         """
 
@@ -772,10 +744,10 @@ class CqlJsonSpec extends Specification {
         then:
         String cqlJson2 = """
             {
-                "during": {
-                    "property": "updated",
-                    "value": ["2017-06-10T00:00:00Z","2017-06-11T23:59:59Z"]
-                }
+                "during": [
+                    {"property": "updated"},
+                    ["2017-06-10T00:00:00Z","2017-06-11T23:59:59Z"]
+                ]
             }
         """
         JSONAssert.assertEquals(cqlJson2, actual2, true)
@@ -786,10 +758,10 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
             {
-                "during": {
-                    "property": "updated",
-                    "value": ["2017-06-10T07:30:00Z","9999-12-31T23:59:59Z"]
-                }
+                "during": [
+                    {"property": "updated"},
+                    ["2017-06-10T07:30:00Z","9999-12-31T23:59:59Z"]
+                ]
             }
         """
 
@@ -812,10 +784,10 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
             {
-                "during": {
-                    "property": "updated",
-                    "value": ["0000-01-01T00:00:00Z","2017-06-11T10:30:00Z"]
-                }
+                "during": [
+                    {"property": "updated"},
+                    ["0000-01-01T00:00:00Z","2017-06-11T10:30:00Z"]
+               ] 
             }
         """
 
@@ -838,10 +810,10 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
             {
-                "during": {
-                    "property": "updated",
-                    "value": ["0000-01-01T00:00:00Z","9999-12-31T23:59:59Z"]
-                }
+                "during": [
+                    {"property": "updated"},
+                    ["0000-01-01T00:00:00Z","9999-12-31T23:59:59Z"]
+                ]
             }
         """
 
@@ -864,13 +836,13 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
             {
-                "eq": {
-                    "function": {
+                "eq": [
+                    {"function": {
                         "name": "pos",
                         "arguments": []
-                    },
-                    "value": 1
-                }
+                    }},
+                    1
+                ]
             } 
         """
 
@@ -893,13 +865,13 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
             {
-                "gte": {
-                    "function": {
+                "gte": [
+                    {"function": {
                         "name": "indexOf",
-                        "arguments": ["names", "'Mike'"]
-                    },
-                    "value": 5
-                }
+                        "arguments": [ { "property": "names" }, "Mike" ]
+                    }},
+                    5
+                ]
             } 
         """
 
@@ -922,13 +894,13 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
             {
-                "eq": {
-                    "function": {
+                "eq": [
+                    {"function": {
                         "name": "year",
                         "arguments": ["2012-06-05T00:00:00Z"]
-                    },
-                    "value": 2012
-                }
+                    }},
+                    2012
+                ]
             } 
         """
 

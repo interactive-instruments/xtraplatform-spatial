@@ -7,22 +7,30 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = AEquals.Builder.class)
+@JsonDeserialize(as = AEquals.class)
 public interface AEquals extends ArrayOperation, CqlNode {
 
+    @JsonCreator
+    static AEquals of(List<Operand> operands) {
+        return new ImmutableAEquals.Builder().operands(operands)
+                                               .build();
+    }
+
     static AEquals of(String property, ArrayLiteral arrayLiteral) {
-        return new ImmutableAEquals.Builder().operand1(Property.of(property))
-                                             .operand2(arrayLiteral)
+        return new ImmutableAEquals.Builder().operands(ImmutableList.of(Property.of(property), arrayLiteral))
                                              .build();
     }
 
     static AEquals of(String property, String property2) {
-        return new ImmutableAEquals.Builder().operand1(Property.of(property))
-                                             .operand2(Property.of(property2))
+        return new ImmutableAEquals.Builder().operands(ImmutableList.of(Property.of(property),Property.of(property2)))
                                              .build();
     }
 

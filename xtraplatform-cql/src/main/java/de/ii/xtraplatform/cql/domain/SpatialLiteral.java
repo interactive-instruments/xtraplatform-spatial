@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(builder = SpatialLiteral.Builder.class)
+@JsonDeserialize(builder = ImmutableSpatialLiteral.Builder.class)
 public interface SpatialLiteral extends Spatial, Literal, CqlNode {
 
     static SpatialLiteral of(String literal) throws CqlParseException {

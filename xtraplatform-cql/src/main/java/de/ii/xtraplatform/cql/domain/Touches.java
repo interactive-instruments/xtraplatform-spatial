@@ -7,22 +7,30 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableTouches.Builder.class)
+@JsonDeserialize(as = Touches.class)
 public interface Touches extends SpatialOperation, CqlNode {
 
+    @JsonCreator
+    static Touches of(List<Operand> operands) {
+        return new ImmutableTouches.Builder().operands(operands)
+                                             .build();
+    }
+
     static Touches of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableTouches.Builder().operand1(Property.of(property))
-                                              .operand2(spatialLiteral)
+        return new ImmutableTouches.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
                                               .build();
     }
 
     static Touches of(String property, String property2) {
-        return new ImmutableTouches.Builder().operand1(Property.of(property))
-                                              .operand2(Property.of(property2))
+        return new ImmutableTouches.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                               .build();
     }
 

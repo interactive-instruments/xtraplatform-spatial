@@ -34,12 +34,13 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
             return Or.of(children.stream()
                                  .map(cqlNode -> (CqlPredicate) cqlNode)
                                  .collect(Collectors.toList()));
-        } else if (logicalOperation instanceof Not) {
-            return Not.of(children.stream()
-                                  .map(cqlNode -> (CqlPredicate) cqlNode)
-                                  .collect(Collectors.toList()));
         }
         return null;
+    }
+
+    @Override
+    public CqlNode visit(Not not, List<CqlNode> children) {
+        return Not.of((CqlPredicate) children.get(0));
     }
 
     @Override
@@ -61,18 +62,10 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         }
 
         if (Objects.nonNull(builder)) {
-            int i = 0;
-            for (CqlNode cqlNode : children) {
-                switch (i++) {
-                    case 0:
-                        builder.operand1((Operand) cqlNode);
-                        break;
-                    case 1:
-                        builder.operand2((Operand) cqlNode);
-                        break;
-                }
-            }
-            return builder.build();
+            return builder.operands(children.stream()
+                                            .filter(child -> child instanceof Scalar)
+                                            .map(child -> (Scalar) child)
+                                            .collect(Collectors.toUnmodifiableList())).build();
         }
 
         return null;
@@ -87,7 +80,7 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
             for (CqlNode cqlNode : children) {
                 switch (i++) {
                     case 0:
-                        builder.operand((Scalar) cqlNode);
+                        builder.value((Scalar) cqlNode);
                         break;
                     case 1:
                         builder.lower((Scalar) cqlNode);
@@ -112,7 +105,7 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
             for (CqlNode cqlNode : children) {
                 switch (i++) {
                     case 0:
-                        builder.operand((Scalar) cqlNode);
+                        builder.value((Scalar) cqlNode);
                         break;
                 }
             }
@@ -127,19 +120,11 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         Like.Builder builder = null;
 
         if (Objects.nonNull(builder)) {
-            int i = 0;
-            for (CqlNode cqlNode : children) {
-                switch (i++) {
-                    case 0:
-                        builder.operand1((Scalar) cqlNode);
-                        break;
-                    case 1:
-                        builder.operand2((Scalar) cqlNode);
-                        break;
-                    // modifiers are set separately
-                }
-            }
-            return builder.build();
+            // modifiers are set separately
+            return builder.operands(children.stream()
+                                            .filter(child -> child instanceof Scalar)
+                                            .map(child -> (Scalar) child)
+                                            .collect(Collectors.toUnmodifiableList())).build();
         }
 
         return null;
@@ -154,7 +139,7 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
             for (CqlNode cqlNode : children) {
                 switch (i++) {
                     case 0:
-                        builder.operand((Scalar) cqlNode);
+                        builder.value((Scalar) cqlNode);
                         break;
                     // values are set separately
                 }
@@ -200,18 +185,10 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         }
 
         if (Objects.nonNull(builder)) {
-            int i = 0;
-            for (CqlNode cqlNode : children) {
-                switch (i++) {
-                    case 0:
-                        builder.operand1((Operand) cqlNode);
-                        break;
-                    case 1:
-                        builder.operand2((Operand) cqlNode);
-                        break;
-                }
-            }
-            return builder.build();
+            return builder.operands(children.stream()
+                                            .filter(child -> child instanceof Temporal)
+                                            .map(child -> (Temporal) child)
+                                            .collect(Collectors.toUnmodifiableList())).build();
         }
 
         return null;
@@ -240,18 +217,10 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         }
 
         if (Objects.nonNull(builder)) {
-            int i = 0;
-            for (CqlNode cqlNode : children) {
-                switch (i++) {
-                    case 0:
-                        builder.operand1((Operand) cqlNode);
-                        break;
-                    case 1:
-                        builder.operand2((Operand) cqlNode);
-                        break;
-                }
-            }
-            return builder.build();
+            return builder.operands(children.stream()
+                                            .filter(child -> child instanceof Spatial)
+                                            .map(child -> (Spatial) child)
+                                            .collect(Collectors.toUnmodifiableList())).build();
         }
 
         return null;
@@ -272,18 +241,10 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         }
 
         if (Objects.nonNull(builder)) {
-            int i = 0;
-            for (CqlNode cqlNode : children) {
-                switch (i++) {
-                    case 0:
-                        builder.operand1((Operand) cqlNode);
-                        break;
-                    case 1:
-                        builder.operand2((Operand) cqlNode);
-                        break;
-                }
-            }
-            return builder.build();
+            return builder.operands(children.stream()
+                                            .filter(child -> child instanceof Vector)
+                                            .map(child -> (Vector) child)
+                                            .collect(Collectors.toUnmodifiableList())).build();
         }
 
         return null;
