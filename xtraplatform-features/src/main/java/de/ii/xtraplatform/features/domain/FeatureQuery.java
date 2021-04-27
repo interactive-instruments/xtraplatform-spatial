@@ -69,9 +69,6 @@ public abstract class FeatureQuery {
         return false;
     }
 
-    @Value.Derived
-    public boolean hasIdFilter() {
-        return getFilter().flatMap(ScalarExpression::getInOperator)
-                       .isPresent();
-    }
+    @Value.Default
+    public boolean returnsSingleFeature() { return false; }
 }

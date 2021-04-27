@@ -109,7 +109,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                                                                              .getPath())
                                                       .multiTables(multiTables)
                                                       .multiplicityTracker(multiplicityTracker)
-                                                      .isIdFilter(featureQuery.hasIdFilter())
+                                                      .isIdFilter(featureQuery.returnsSingleFeature())
                                                       .readState(ModifiableReadState.create())
                                                       .build();
 
@@ -190,7 +190,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                                                                              .getPath())
                                                       .multiTables(multiTables)
                                                       .multiplicityTracker(multiplicityTracker)
-                                                      .isIdFilter(query.hasIdFilter())
+                                                      .isIdFilter(query.returnsSingleFeature())
                                                       .readState(ModifiableReadState.create())
                                                       .build();
 

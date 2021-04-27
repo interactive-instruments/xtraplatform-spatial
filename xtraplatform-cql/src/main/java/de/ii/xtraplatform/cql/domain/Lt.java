@@ -7,32 +7,49 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
-@Value.Immutable
-@JsonDeserialize(builder = ImmutableLt.Builder.class)
-public interface Lt extends ScalarOperation, CqlNode {
+import java.util.List;
 
-    static Lt of(String property, ScalarLiteral scalarLiteral) {
-        return new ImmutableLt.Builder().property(property)
-                                        .value(scalarLiteral)
+@Value.Immutable
+@JsonDeserialize(as = Lt.class)
+public interface Lt extends BinaryScalarOperation, CqlNode {
+
+    @JsonCreator
+    static Lt of(List<Operand> operands) {
+        return new ImmutableLt.Builder().operands(operands)
                                         .build();
     }
 
+    static Lt of(String property, ScalarLiteral scalarLiteral) {
+        return new ImmutableLt.Builder().operands(ImmutableList.of(Property.of(property),scalarLiteral))
+                                         .build();
+    }
+
+    static Lt of(String property, String property2) {
+        return new ImmutableLt.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
+                                         .build();
+    }
+
     static Lt of(Property property, ScalarLiteral scalarLiteral) {
-        return new ImmutableLt.Builder().property(property)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableLt.Builder().operands(ImmutableList.of(property,scalarLiteral))
+                                         .build();
+    }
+
+    static Lt of(Property property, Property property2) {
+        return new ImmutableLt.Builder().operands(ImmutableList.of(property, property2))
+                                         .build();
     }
 
     static Lt ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableLt.Builder().function(function)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableLt.Builder().operands(ImmutableList.of(function, scalarLiteral))
+                                         .build();
     }
 
-    abstract class Builder extends ScalarOperation.Builder<Lt> {
+    abstract class Builder extends BinaryScalarOperation.Builder<Lt> {
     }
 
 }

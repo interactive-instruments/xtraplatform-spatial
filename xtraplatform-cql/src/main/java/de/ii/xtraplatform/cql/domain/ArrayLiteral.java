@@ -11,28 +11,30 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableSpatialLiteral.Builder.class)
-public interface SpatialLiteral extends Spatial, Literal, CqlNode {
+@JsonDeserialize(builder = ImmutableArrayLiteral.Builder.class)
+public interface ArrayLiteral extends Vector, Literal, CqlNode {
 
-    static SpatialLiteral of(String literal) throws CqlParseException {
-        return new SpatialLiteral.Builder(literal).build();
+    static ArrayLiteral of(String elements) throws CqlParseException {
+        return new ArrayLiteral.Builder(elements).build();
     }
 
-    static SpatialLiteral of(Geometry<?> literal) {
-        return new SpatialLiteral.Builder(literal).build();
+    static ArrayLiteral of(List<Scalar> elements) {
+        return new ArrayLiteral.Builder(elements).build();
     }
 
-    class Builder extends ImmutableSpatialLiteral.Builder {
+    class Builder extends ImmutableArrayLiteral.Builder {
         public Builder() {
             super();
         }
 
         @JsonCreator
-        public Builder(Geometry<?> literal) {
+        public Builder(List<Scalar> literal) {
             super();
             value(literal);
-            type(Geometry.class);
+            type(List.class);
         }
 
         @JsonCreator
@@ -42,4 +44,5 @@ public interface SpatialLiteral extends Spatial, Literal, CqlNode {
             type(String.class);
         }
     }
+
 }

@@ -7,6 +7,9 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -16,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
@@ -25,15 +29,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Value.Immutable
-@JsonDeserialize(as = ImmutableFunction.class)
+@JsonDeserialize(builder = ImmutableFunction.Builder.class)
+@JsonSerialize(using = Function.FunctionSerializer.class)
 public interface Function extends CqlNode, Scalar, Temporal, Operand {
 
     String getName();
 
-    @JsonDeserialize(using = OperandDeserializer.class)
-    @JsonSerialize(using = OperandSerializer.class)
     List<Operand> getArguments();
 
+    @JsonCreator
     static Function of(String name, List<Operand> arguments) {
         return new ImmutableFunction.Builder()
                 .name(name)
@@ -52,44 +56,34 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
         return visitor.visit(this, arguments);
     }
 
-    class OperandDeserializer extends JsonDeserializer<List<Operand>> {
+    class FunctionSerializer extends StdSerializer<Function> {
 
-        @Override
-        public List<Operand> deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-
-            ImmutableList.Builder<Operand> operands = new ImmutableList.Builder<>();
-            Iterator<JsonNode> nodes = ((JsonNode) p.readValueAsTree()).elements();
-            while (nodes.hasNext()) {
-                String element = nodes.next().asText();
-                try {
-                    Operand temporalLiteral = TemporalLiteral.of(element);
-                    operands.add(temporalLiteral);
-                } catch (CqlParseException e) {
-                    if (element.startsWith("'") && element.endsWith("'")) {
-                        operands.add(ScalarLiteral.of(element.substring(1, element.length() - 1)));
-                    } else {
-                        operands.add(Property.of(element));
-                    }
-                }
-            }
-
-            return operands.build();
+        protected FunctionSerializer() {
+            this(null);
         }
-    }
 
-    class OperandSerializer extends JsonSerializer<List<Operand>> {
+        protected FunctionSerializer(Class<Function> t) {
+            super(t);
+        }
 
         @Override
-        public void serialize(List<Operand> value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        public void serialize(Function value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            gen.writeStartObject();
+            gen.writeFieldName("function");
+            gen.writeStartObject();
+            gen.writeStringField("name", value.getName());
+            gen.writeFieldName("arguments");
             gen.writeStartArray();
-            for (Operand operand : value) {
+            for (Operand operand : value.getArguments()) {
                 if (operand instanceof ScalarLiteral) {
-                    gen.writeString(String.format("'%s'", ((ScalarLiteral) operand).getValue().toString()));
+                    gen.writeString(String.format("%s", ((ScalarLiteral) operand).getValue().toString()));
                 } else {
                     gen.writeObject(operand);
                 }
             }
             gen.writeEndArray();
+            gen.writeEndObject();
+            gen.writeEndObject();
         }
     }
 }

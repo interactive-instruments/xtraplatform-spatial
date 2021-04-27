@@ -38,6 +38,8 @@ public interface Geometry<T> extends CqlNode {
 
     List<T> getCoordinates();
 
+    @Value.Auxiliary
+    @JsonIgnore
     Optional<EpsgCrs> getCrs();
 
     @Value.Immutable

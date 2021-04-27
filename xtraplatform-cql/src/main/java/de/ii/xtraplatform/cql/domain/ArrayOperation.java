@@ -7,14 +7,8 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.immutables.value.Value;
+public interface ArrayOperation extends BinaryOperation<ArrayLiteral>, CqlNode {
 
-@Value.Immutable
-@JsonDeserialize(as = Ends.class)
-public interface Ends extends TemporalOperation, CqlNode {
-
-    abstract class Builder extends TemporalOperation.Builder<Ends> {
-    }
+    abstract class Builder<T extends ArrayOperation> extends BinaryOperation.Builder<ArrayLiteral, T> {}
 
 }

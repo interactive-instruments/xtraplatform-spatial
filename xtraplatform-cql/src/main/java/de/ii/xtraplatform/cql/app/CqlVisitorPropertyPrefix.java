@@ -23,8 +23,10 @@ public class CqlVisitorPropertyPrefix extends CqlVisitorCopy {
 
     @Override
     public CqlNode visit(Property property, List<CqlNode> children) {
-        if (!property.getName().startsWith(prefix)) {
-            return Property.of(prefix + property.getName(), property.getNestedFilters());
+        // strip double quotes from the property name
+        String propertyName = property.getName().replaceAll("^\"|\"$", "");
+        if (!propertyName.startsWith(prefix)) {
+            return Property.of(prefix + propertyName, property.getNestedFilters());
         }
         return property;
     }

@@ -7,64 +7,80 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-//TODO: not a Binary-/ScalarOperation, either remove extends or allow more operands in Binary-/ScalarOperation
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableIn.Builder.class)
-public interface In extends CqlNode, ScalarOperation {
+public interface In extends CqlNode, NonBinaryScalarOperation {
 
     String ID_PLACEHOLDER = "_ID_";
 
+    static In of(String property, List<ScalarLiteral> values) {
+        return new ImmutableIn.Builder().value(Property.of(property))
+                                        .list(values)
+                                        .build();
+    }
+
     static In of(String property, ScalarLiteral... values) {
-        return new ImmutableIn.Builder().property(property)
-                                        .values(Arrays.asList(values))
+        return new ImmutableIn.Builder().value(Property.of(property))
+                                        .list(Arrays.asList(values))
                                         .build();
     }
 
     static In of(ScalarLiteral... values) {
-        return new ImmutableIn.Builder().property(ID_PLACEHOLDER)
-                                        .addValues(values)
+        return new ImmutableIn.Builder().value(Property.of(ID_PLACEHOLDER))
+                                        .addList(values)
                                         .build();
     }
 
     static In of(List<ScalarLiteral> values) {
-        return new ImmutableIn.Builder().property(ID_PLACEHOLDER)
-                                        .values(values)
+        return new ImmutableIn.Builder().value(Property.of(ID_PLACEHOLDER))
+                                        .list(values)
                                         .build();
     }
 
-    abstract class Builder extends ScalarOperation.Builder<In> {
-    }
-
     @Value.Check
-    @Override
     default void check() {
-        int count = getValues().size();
+        int count = getList().size();
         Preconditions.checkState(count > 0, "an IN operation must have at least one value, found %s", count);
-        Preconditions.checkState(getProperty().isPresent(), "property is missing");
+        Preconditions.checkState(getValue().isPresent(), "an IN operation must have exactly one operand, found 0");
     }
 
+    abstract class Builder {
+
+        public abstract In build();
+
+        public abstract In.Builder value(Scalar property);
+    }
+
+    /* TODO not yet supported
     @Value.Default
     default Boolean getNocase() {
         return Boolean.TRUE;
     }
+     */
 
-    List<ScalarLiteral> getValues();
+    Optional<Scalar> getValue();
+
+    List<Scalar> getList();
 
     @Override
     default <T> T accept(CqlVisitor<T> visitor) {
-        List<T> children = Stream.concat(Stream.of(getProperty().get()), getValues().stream())
+        List<T> children = Stream.concat(Stream.of(getValue().get()), getList().stream())
                                  .map(value -> value.accept(visitor))
                                  .collect(Collectors.toList());
-
 
         return visitor.visit(this, children);
     }

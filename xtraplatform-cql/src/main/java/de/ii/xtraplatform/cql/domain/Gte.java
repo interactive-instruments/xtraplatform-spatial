@@ -7,26 +7,49 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableGte.Builder.class)
-public interface Gte extends ScalarOperation, CqlNode {
+@JsonDeserialize(as = Gte.class)
+public interface Gte extends BinaryScalarOperation, CqlNode {
+
+    @JsonCreator
+    static Gte of(List<Operand> operands) {
+        return new ImmutableGte.Builder().operands(operands)
+                                        .build();
+    }
+
+    static Gte of(String property, ScalarLiteral scalarLiteral) {
+        return new ImmutableGte.Builder().operands(ImmutableList.of(Property.of(property),scalarLiteral))
+                                        .build();
+    }
+
+    static Gte of(String property, String property2) {
+        return new ImmutableGte.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
+                                        .build();
+    }
 
     static Gte of(Property property, ScalarLiteral scalarLiteral) {
-        return new ImmutableGte.Builder().property(property)
-                                         .value(scalarLiteral)
-                                         .build();
+        return new ImmutableGte.Builder().operands(ImmutableList.of(property,scalarLiteral))
+                                        .build();
+    }
+
+    static Gte of(Property property, Property property2) {
+        return new ImmutableGte.Builder().operands(ImmutableList.of(property, property2))
+                                        .build();
     }
 
     static Gte ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableGte.Builder().function(function)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableGte.Builder().operands(ImmutableList.of(function, scalarLiteral))
+                                        .build();
     }
 
-    abstract class Builder extends ScalarOperation.Builder<Gte> {
+    abstract class Builder extends BinaryScalarOperation.Builder<Gte> {
     }
 
 }

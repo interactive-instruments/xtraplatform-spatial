@@ -7,8 +7,15 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-public interface ScalarOperation extends BinaryOperation<ScalarLiteral>, CqlNode {
+import java.util.Optional;
 
-    abstract class Builder<T extends ScalarOperation> extends BinaryOperation.Builder<ScalarLiteral, T> {}
+public interface ArrayExpression {
 
+    Optional<AContains> getAContains();
+
+    Optional<AEquals> getAEquals();
+
+    Optional<AOverlaps> getAOverlaps();
+
+    Optional<ContainedBy> getContainedBy();
 }

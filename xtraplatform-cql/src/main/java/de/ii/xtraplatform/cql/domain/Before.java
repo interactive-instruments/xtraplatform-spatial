@@ -7,16 +7,30 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableBefore.Builder.class)
+@JsonDeserialize(as = Before.class)
 public interface Before extends TemporalOperation, CqlNode {
 
+    @JsonCreator
+    static Before of(List<Operand> operands) {
+        return new ImmutableBefore.Builder().operands(operands)
+                                               .build();
+    }
+
     static Before of(String property, TemporalLiteral temporalLiteral) {
-        return new ImmutableBefore.Builder().property(property)
-                                            .value(temporalLiteral)
+        return new ImmutableBefore.Builder().operands(ImmutableList.of(Property.of(property), temporalLiteral))
+                                            .build();
+    }
+
+    static Before of(String property, String property2) {
+        return new ImmutableBefore.Builder().operands(ImmutableList.of(Property.of(property),Property.of(property2)))
                                             .build();
     }
 

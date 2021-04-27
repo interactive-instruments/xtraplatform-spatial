@@ -7,11 +7,14 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableBegins.Builder.class)
+@JsonDeserialize(as = Begins.class)
 public interface Begins extends TemporalOperation, CqlNode {
 
     abstract class Builder extends TemporalOperation.Builder<Begins> {

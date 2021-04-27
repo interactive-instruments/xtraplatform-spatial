@@ -7,7 +7,17 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.google.common.base.Preconditions;
+import org.immutables.value.Value;
+
 public interface SpatialOperation extends BinaryOperation<SpatialLiteral>, CqlNode {
+
+    @Value.Check
+    @Override
+    default void check() {
+        BinaryOperation.super.check();
+        getOperands().forEach(operand -> Preconditions.checkState(operand instanceof Spatial, "a spatial operation must have spatial operands, found %s", operand.getClass().getSimpleName()));
+    }
 
     abstract class Builder<T extends SpatialOperation> extends BinaryOperation.Builder<SpatialLiteral, T> {}
 

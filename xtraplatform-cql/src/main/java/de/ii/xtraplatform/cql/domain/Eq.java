@@ -7,32 +7,50 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableEq.Builder.class)
-public interface Eq extends ScalarOperation, CqlNode {
+@JsonDeserialize(as = Eq.class)
+public interface Eq extends BinaryScalarOperation, CqlNode {
+
+    @JsonCreator
+    static Eq of(List<Operand> operands) {
+        return new ImmutableEq.Builder().operands(operands)
+                                        .build();
+    }
 
     static Eq of(String property, ScalarLiteral scalarLiteral) {
-        return new ImmutableEq.Builder().property(property)
-                                        .value(scalarLiteral)
+        return new ImmutableEq.Builder().operands(ImmutableList.of(Property.of(property),scalarLiteral))
+                                        .build();
+    }
+
+    static Eq of(String property, String property2) {
+        return new ImmutableEq.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                         .build();
     }
 
     static Eq of(Property property, ScalarLiteral scalarLiteral) {
-        return new ImmutableEq.Builder().property(property)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableEq.Builder().operands(ImmutableList.of(property,scalarLiteral))
+                                        .build();
+    }
+
+    static Eq of(Property property, Property property2) {
+        return new ImmutableEq.Builder().operands(ImmutableList.of(property, property2))
+                                        .build();
     }
 
     static Eq ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableEq.Builder().function(function)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableEq.Builder().operands(ImmutableList.of(function, scalarLiteral))
+                                        .build();
     }
 
-    abstract class Builder extends ScalarOperation.Builder<Eq> {
+    abstract class Builder extends BinaryScalarOperation.Builder<Eq> {
     }
 
 }

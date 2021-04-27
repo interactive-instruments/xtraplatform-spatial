@@ -9,3 +9,6 @@ build/
 node_modules/
 xtraplatform-manager-wfs-proxy/src/main/resources/manager/
 **/out/
+xtraplatform-cql/src/main/gen/
+.DS_Store
+xtraplatform-cql/src/main/antlr/de/ii/xtraplatform/cql/infra/gen/

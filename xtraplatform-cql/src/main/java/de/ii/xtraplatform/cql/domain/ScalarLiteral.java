@@ -7,11 +7,12 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(builder = ScalarLiteral.Builder.class)
+@JsonDeserialize(builder = ImmutableScalarLiteral.Builder.class)
 public interface ScalarLiteral extends Scalar, Literal, CqlNode {
 
     static ScalarLiteral of(Double literal) {
@@ -43,30 +44,35 @@ public interface ScalarLiteral extends Scalar, Literal, CqlNode {
             super();
         }
 
+        @JsonCreator
         public Builder(Double literal) {
             super();
             value(literal);
             type(Double.class);
         }
 
+        @JsonCreator
         public Builder(Integer literal) {
             super();
             value(literal);
             type(Integer.class);
         }
 
+        @JsonCreator
         public Builder(Long literal) {
             super();
             value(literal);
             type(Long.class);
         }
 
+        @JsonCreator
         public Builder(Boolean literal) {
             super();
             value(literal);
             type(Boolean.class);
         }
 
+        @JsonCreator
         public Builder(String literal) {
             this(literal, false);
         }

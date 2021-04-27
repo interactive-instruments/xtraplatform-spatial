@@ -7,19 +7,7 @@
  */
 package de.ii.xtraplatform.cql.app;
 
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
-import de.ii.xtraplatform.cql.domain.CqlVisitor;
-import de.ii.xtraplatform.cql.domain.Function;
-import de.ii.xtraplatform.cql.domain.Geometry;
-import de.ii.xtraplatform.cql.domain.LogicalOperation;
-import de.ii.xtraplatform.cql.domain.Property;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
-import de.ii.xtraplatform.cql.domain.ScalarOperation;
-import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
+import de.ii.xtraplatform.cql.domain.*;
 
 import java.util.List;
 
@@ -40,9 +28,24 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
     }
 
     @Override
-    public T visit(ScalarOperation scalarOperation, List<T> children) {
+    public T visit(Not not, List<T> children) {
         return null;
     }
+
+    @Override
+    public T visit(BinaryScalarOperation scalarOperation, List<T> children) { return null; }
+
+    @Override
+    public T visit(Between between, List<T> children) { return null; }
+
+    @Override
+    public T visit(Like like, List<T> children) { return null; }
+
+    @Override
+    public T visit(In in, List<T> children) { return null; }
+
+    @Override
+    public T visit(IsNull isNull, List<T> children) { return null; }
 
     @Override
     public T visit(TemporalOperation temporalOperation, List<T> children) {
@@ -55,12 +58,22 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
     }
 
     @Override
+    public T visit(ArrayOperation arrayOperation, List<T> children) {
+        return null;
+    }
+
+    @Override
     public T visit(ScalarLiteral scalarLiteral, List<T> children) {
         return null;
     }
 
     @Override
     public T visit(TemporalLiteral temporalLiteral, List<T> children) {
+        return null;
+    }
+
+    @Override
+    public T visit(ArrayLiteral arrayLiteral, List<T> children) {
         return null;
     }
 

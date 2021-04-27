@@ -7,17 +7,14 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.base.Preconditions;
 import org.immutables.value.Value;
 
 import java.util.List;
 
-@Value.Immutable
-@JsonDeserialize(as = BegunBy.class)
-public interface BegunBy extends TemporalOperation, CqlNode {
+public interface NonBinaryScalarOperation extends CqlNode {
 
-    abstract class Builder extends TemporalOperation.Builder<BegunBy> {
-    }
-
+    abstract class Builder<T extends NonBinaryScalarOperation> {}
 }

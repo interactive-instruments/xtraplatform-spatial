@@ -7,32 +7,49 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
+import java.util.List;
+
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableGt.Builder.class)
-public interface Gt extends ScalarOperation, CqlNode {
+@JsonDeserialize(as = Gt.class)
+public interface Gt extends BinaryScalarOperation, CqlNode {
+
+    @JsonCreator
+    static Gt of(List<Operand> operands) {
+        return new ImmutableGt.Builder().operands(operands)
+                                        .build();
+    }
 
     static Gt of(String property, ScalarLiteral scalarLiteral) {
-        return new ImmutableGt.Builder().property(property)
-                                        .value(scalarLiteral)
+        return new ImmutableGt.Builder().operands(ImmutableList.of(Property.of(property),scalarLiteral))
+                                        .build();
+    }
+
+    static Gt of(String property, String property2) {
+        return new ImmutableGt.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                         .build();
     }
 
     static Gt of(Property property, ScalarLiteral scalarLiteral) {
-        return new ImmutableGt.Builder().property(property)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableGt.Builder().operands(ImmutableList.of(property,scalarLiteral))
+                                        .build();
+    }
+
+    static Gt of(Property property, Property property2) {
+        return new ImmutableGt.Builder().operands(ImmutableList.of(property, property2))
+                                        .build();
     }
 
     static Gt ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableGt.Builder().function(function)
-                .value(scalarLiteral)
-                .build();
+        return new ImmutableGt.Builder().operands(ImmutableList.of(function, scalarLiteral))
+                                        .build();
     }
 
-    abstract class Builder extends ScalarOperation.Builder<Gt> {
+    abstract class Builder extends BinaryScalarOperation.Builder<Gt> {
     }
 
 }

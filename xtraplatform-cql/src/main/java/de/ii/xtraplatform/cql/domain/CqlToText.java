@@ -8,61 +8,6 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.cql.domain.And;
-import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlNode;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
-import de.ii.xtraplatform.cql.domain.CqlVisitor;
-import de.ii.xtraplatform.cql.domain.Exists;
-import de.ii.xtraplatform.cql.domain.Function;
-import de.ii.xtraplatform.cql.domain.Geometry;
-import de.ii.xtraplatform.cql.domain.ImmutableAfter;
-import de.ii.xtraplatform.cql.domain.ImmutableAnd;
-import de.ii.xtraplatform.cql.domain.ImmutableBefore;
-import de.ii.xtraplatform.cql.domain.ImmutableBegins;
-import de.ii.xtraplatform.cql.domain.ImmutableBegunBy;
-import de.ii.xtraplatform.cql.domain.ImmutableBetween;
-import de.ii.xtraplatform.cql.domain.ImmutableContains;
-import de.ii.xtraplatform.cql.domain.ImmutableCrosses;
-import de.ii.xtraplatform.cql.domain.ImmutableDisjoint;
-import de.ii.xtraplatform.cql.domain.ImmutableDuring;
-import de.ii.xtraplatform.cql.domain.ImmutableEndedBy;
-import de.ii.xtraplatform.cql.domain.ImmutableEnds;
-import de.ii.xtraplatform.cql.domain.ImmutableEq;
-import de.ii.xtraplatform.cql.domain.ImmutableEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableExists;
-import de.ii.xtraplatform.cql.domain.ImmutableGt;
-import de.ii.xtraplatform.cql.domain.ImmutableGte;
-import de.ii.xtraplatform.cql.domain.ImmutableIn;
-import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
-import de.ii.xtraplatform.cql.domain.ImmutableIsNull;
-import de.ii.xtraplatform.cql.domain.ImmutableLike;
-import de.ii.xtraplatform.cql.domain.ImmutableLt;
-import de.ii.xtraplatform.cql.domain.ImmutableLte;
-import de.ii.xtraplatform.cql.domain.ImmutableMeets;
-import de.ii.xtraplatform.cql.domain.ImmutableMetBy;
-import de.ii.xtraplatform.cql.domain.ImmutableNeq;
-import de.ii.xtraplatform.cql.domain.ImmutableNot;
-import de.ii.xtraplatform.cql.domain.ImmutableOr;
-import de.ii.xtraplatform.cql.domain.ImmutableOverlappedBy;
-import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
-import de.ii.xtraplatform.cql.domain.ImmutableTContains;
-import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableTOverlaps;
-import de.ii.xtraplatform.cql.domain.ImmutableTouches;
-import de.ii.xtraplatform.cql.domain.ImmutableWithin;
-import de.ii.xtraplatform.cql.domain.In;
-import de.ii.xtraplatform.cql.domain.IsNull;
-import de.ii.xtraplatform.cql.domain.LogicalOperation;
-import de.ii.xtraplatform.cql.domain.Or;
-import de.ii.xtraplatform.cql.domain.Property;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
-import de.ii.xtraplatform.cql.domain.ScalarOperation;
-import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.threeten.extra.Interval;
 
@@ -78,7 +23,7 @@ import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 
 public class CqlToText implements CqlVisitor<String> {
 
-    private final static Map<Class<?>, String> LOGICAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
+    protected final static Map<Class<?>, String> LOGICAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
             .put(ImmutableAnd.class, "AND")
             .put(ImmutableOr.class, "OR")
             .put(ImmutableNot.class, "NOT")
@@ -95,7 +40,6 @@ public class CqlToText implements CqlVisitor<String> {
             .put(ImmutableBetween.class, "BETWEEN")
             .put(ImmutableIn.class, "IN")
             .put(ImmutableIsNull.class, "IS NULL")
-            .put(ImmutableExists.class, "EXISTS")
             .build();
 
     private final static Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
@@ -112,6 +56,7 @@ public class CqlToText implements CqlVisitor<String> {
             .put(ImmutableMetBy.class, "METBY")
             .put(ImmutableTOverlaps.class, "TOVERLAPS")
             .put(ImmutableOverlappedBy.class, "OVERLAPPEDBY")
+            .put(ImmutableAnyInteracts.class, "ANYINTERACTS")
             .build();
 
     private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
@@ -123,6 +68,13 @@ public class CqlToText implements CqlVisitor<String> {
             .put(ImmutableCrosses.class, "CROSSES")
             .put(ImmutableIntersects.class, "INTERSECTS")
             .put(ImmutableContains.class, "CONTAINS")
+            .build();
+
+    private final static Map<Class<?>, String> ARRAY_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
+            .put(ImmutableAContains.class, "ACONTAINS")
+            .put(ImmutableAEquals.class, "AEQUALS")
+            .put(ImmutableAOverlaps.class, "AOVERLAPS")
+            .put(ImmutableContainedBy.class, "CONTAINED BY")
             .build();
 
     private final Optional<java.util.function.BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>>> coordinatesTransformer;
@@ -170,53 +122,84 @@ public class CqlToText implements CqlVisitor<String> {
     public String visit(LogicalOperation logicalOperation, List<String> children) {
         String operator = LOGICAL_OPERATORS.get(logicalOperation.getClass());
 
-        if (Objects.equals(logicalOperation.getClass(), ImmutableNot.class)) {
-            String operation = children.get(0);
-
-            if (logicalOperation.getPredicates()
-                                .get(0)
-                                .getLike()
-                                .isPresent()) {
-                String like = SCALAR_OPERATORS.get(ImmutableLike.class);
-
-                return operation.replace(like, String.format("%s %s", operator, like));
-            } else if (logicalOperation.getPredicates()
-                                       .get(0)
-                                       .getExists()
-                                       .isPresent()) {
-                String exists = SCALAR_OPERATORS.get(ImmutableExists.class);
-
-                return operation.replace(exists, "DOES-NOT-EXIST");
-            } else if (logicalOperation.getPredicates()
-                                       .get(0)
-                                       .getIsNull()
-                                       .isPresent()) {
-                String isNull = SCALAR_OPERATORS.get(ImmutableIsNull.class);
-
-                return operation.replace(isNull, "IS NOT NULL");
-            }
-
-            return String.format("NOT (%s)", operation);
-        }
-
         return children.stream()
                        .collect(Collectors.joining(String.format(" %s ", operator), "(", ")"));
     }
 
     @Override
-    public String visit(ScalarOperation scalarOperation, List<String> children) {
-        String operator = SCALAR_OPERATORS.get(scalarOperation.getClass());
+    public String visit(Not not, List<String> children) {
+        String operator = LOGICAL_OPERATORS.get(not.getClass());
 
-        if (scalarOperation instanceof Between) {
-            return String.format("%s %s %s AND %s", children.get(0), operator, children.get(1), children.get(2));
-        } else if (scalarOperation instanceof In) {
-            String property = Objects.equals(children.get(0), ID_PLACEHOLDER) ? "" : children.get(0);
-            return String.format("%s %s (%s)", property, operator, String.join(", ", children.subList(1, children.size())));
-        } else if (scalarOperation instanceof IsNull || scalarOperation instanceof Exists) {
-            return String.format("%s %s", children.get(0), operator);
+        String operation = children.get(0);
+
+        if (not.getPredicate()
+               .get()
+               .getLike()
+               .isPresent()) {
+            String like = SCALAR_OPERATORS.get(ImmutableLike.class);
+
+            return operation.replace(like, String.format("%s %s", operator, like));
+        } else if (not.getPredicate()
+                      .get()
+                      .getIsNull()
+                      .isPresent()) {
+            String isNull = SCALAR_OPERATORS.get(ImmutableIsNull.class);
+
+            return operation.replace(isNull, "IS NOT NULL");
+        } else if (not.getPredicate()
+                      .get()
+                      .getBetween()
+                      .isPresent()) {
+            String between = SCALAR_OPERATORS.get(ImmutableBetween.class);
+
+            return operation.replace(between, String.format("%s %s", operator, between));
+        } else if (not.getPredicate()
+                      .get()
+                      .getInOperator()
+                      .isPresent()) {
+            String in = SCALAR_OPERATORS.get(ImmutableIn.class);
+
+            return operation.replace(in, String.format("%s %s", operator, in));
         }
 
+        return String.format("NOT (%s)", operation);
+    }
+
+    @Override
+    public String visit(BinaryScalarOperation scalarOperation, List<String> children) {
+        String operator = SCALAR_OPERATORS.get(scalarOperation.getClass());
         return String.format("%s %s %s", children.get(0), operator, children.get(1));
+    }
+
+    @Override
+    public String visit(Between between, List<String> children) {
+        String operator = SCALAR_OPERATORS.get(between.getClass());
+        return String.format("%s %s %s AND %s", children.get(0), operator, children.get(1), children.get(2));
+    }
+
+    @Override
+    public String visit(Like like, List<String> children) {
+        String operator = SCALAR_OPERATORS.get(like.getClass());
+        String wildcard = like.getWildcard().isPresent() ? String.format("WILDCARD '%s'", like.getWildcard().get()) : "";
+        String singlechar = like.getSingleChar().isPresent() ? String.format(" SINGLECHAR '%s'", like.getSingleChar().get()) : "";
+        String escapechar = like.getEscapeChar().isPresent() ? String.format(" ESCAPECHAR '%s'", like.getEscapeChar().get()) : "";
+        String nocase = like.getNocase().isPresent() ? String.format(" NOCASE %s", like.getNocase().get()) : "";
+        return String.format("%s %s %s %s%s%s%s", children.get(0), operator, children.get(1), wildcard, singlechar, escapechar, nocase)
+                     .trim()
+                     .replace("  ", " ");
+    }
+
+    @Override
+    public String visit(In in, List<String> children) {
+        String operator = SCALAR_OPERATORS.get(in.getClass());
+        String property = Objects.equals(children.get(0), ID_PLACEHOLDER) ? "" : children.get(0);
+        return String.format("%s %s (%s)", property, operator, String.join(", ", children.subList(1, children.size())));
+    }
+
+    @Override
+    public String visit(IsNull isNull, List<String> children) {
+        String operator = SCALAR_OPERATORS.get(isNull.getClass());
+        return String.format("%s %s", children.get(0), operator);
     }
 
     @Override
@@ -231,6 +214,12 @@ public class CqlToText implements CqlVisitor<String> {
         String operator = SPATIAL_OPERATORS.get(spatialOperation.getClass());
 
         return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
+    }
+
+    @Override
+    public String visit(ArrayOperation arrayOperation, List<String> children) {
+        String operator = ARRAY_OPERATORS.get(arrayOperation.getClass());
+        return String.format("%s %s %s", children.get(0), operator, children.get(1));
     }
 
     @Override
@@ -341,6 +330,11 @@ public class CqlToText implements CqlVisitor<String> {
         }
         return temporalLiteral.getValue()
                               .toString();
+    }
+
+    @Override
+    public String visit(ArrayLiteral arrayLiteral, List<String> children) {
+        return (String) arrayLiteral.getValue();
     }
 
     @Override

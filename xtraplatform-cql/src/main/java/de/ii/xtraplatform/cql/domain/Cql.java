@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
+
 import java.util.Collection;
 import java.util.List;
 
@@ -15,6 +17,8 @@ public interface Cql {
     enum Format {TEXT, JSON}
 
     CqlFilter read(String cql, Format format) throws CqlParseException;
+
+    CqlFilter read(String cql, Format format, EpsgCrs crs) throws CqlParseException;
 
     String write(CqlFilter cql, Format format);
 

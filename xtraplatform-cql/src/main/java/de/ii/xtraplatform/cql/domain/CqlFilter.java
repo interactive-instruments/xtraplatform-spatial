@@ -52,8 +52,6 @@ public interface CqlFilter extends CqlPredicate {
             builder.like((Like) node);
         } else if (node instanceof IsNull) {
             builder.isNull((IsNull) node);
-        } else if (node instanceof Exists) {
-            builder.exists((Exists) node);
         } else if (node instanceof After) {
             builder.after((After) node);
         } else if (node instanceof Before) {
@@ -80,8 +78,10 @@ public interface CqlFilter extends CqlPredicate {
             builder.tOverlaps((TOverlaps) node);
         } else if (node instanceof OverlappedBy) {
             builder.overlappedBy((OverlappedBy) node);
+        } else if (node instanceof AnyInteracts) {
+            builder.anyInteracts((AnyInteracts) node);
         } else if (node instanceof Equals) {
-            builder.within((Within) node);
+            builder.equals((Equals) node);
         } else if (node instanceof Disjoint) {
             builder.disjoint((Disjoint) node);
         } else if (node instanceof Touches) {
@@ -96,6 +96,14 @@ public interface CqlFilter extends CqlPredicate {
             builder.intersects((Intersects) node);
         } else if (node instanceof Contains) {
             builder.contains((Contains) node);
+        } else if (node instanceof AContains) {
+            builder.aContains((AContains) node);
+        } else if (node instanceof AEquals) {
+            builder.aEquals((AEquals) node);
+        } else if (node instanceof AOverlaps) {
+            builder.aOverlaps((AOverlaps) node);
+        } else if (node instanceof ContainedBy) {
+            builder.containedBy((ContainedBy) node);
         }
 
         return builder.build();

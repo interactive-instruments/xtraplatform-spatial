@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +61,7 @@ class FeatureQueryTransformerSql implements FeatureQueryTransformer<SqlQueries, 
 
     List<SortKey> sortKeys = transformSortKeys(featureQuery.getSortKeys(), mainTable);
 
-    Optional<String> metaQuery = featureQuery.hasIdFilter()
+    Optional<String> metaQuery = featureQuery.returnsSingleFeature()
         ? Optional.empty()
         : Optional.of(queryGenerator
             .getMetaQuery(mainTable, featureQuery.getLimit(), featureQuery.getOffset(),

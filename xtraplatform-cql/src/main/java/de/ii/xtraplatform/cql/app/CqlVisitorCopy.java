@@ -7,88 +7,7 @@
  */
 package de.ii.xtraplatform.cql.app;
 
-import de.ii.xtraplatform.cql.domain.After;
-import de.ii.xtraplatform.cql.domain.And;
-import de.ii.xtraplatform.cql.domain.Before;
-import de.ii.xtraplatform.cql.domain.Begins;
-import de.ii.xtraplatform.cql.domain.BegunBy;
-import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.Contains;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlNode;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
-import de.ii.xtraplatform.cql.domain.CqlVisitor;
-import de.ii.xtraplatform.cql.domain.Crosses;
-import de.ii.xtraplatform.cql.domain.Disjoint;
-import de.ii.xtraplatform.cql.domain.During;
-import de.ii.xtraplatform.cql.domain.EndedBy;
-import de.ii.xtraplatform.cql.domain.Ends;
-import de.ii.xtraplatform.cql.domain.Eq;
-import de.ii.xtraplatform.cql.domain.Equals;
-import de.ii.xtraplatform.cql.domain.Exists;
-import de.ii.xtraplatform.cql.domain.Function;
-import de.ii.xtraplatform.cql.domain.Geometry;
-import de.ii.xtraplatform.cql.domain.Gt;
-import de.ii.xtraplatform.cql.domain.Gte;
-import de.ii.xtraplatform.cql.domain.ImmutableAfter;
-import de.ii.xtraplatform.cql.domain.ImmutableBefore;
-import de.ii.xtraplatform.cql.domain.ImmutableBegins;
-import de.ii.xtraplatform.cql.domain.ImmutableBegunBy;
-import de.ii.xtraplatform.cql.domain.ImmutableBetween;
-import de.ii.xtraplatform.cql.domain.ImmutableContains;
-import de.ii.xtraplatform.cql.domain.ImmutableCrosses;
-import de.ii.xtraplatform.cql.domain.ImmutableDisjoint;
-import de.ii.xtraplatform.cql.domain.ImmutableDuring;
-import de.ii.xtraplatform.cql.domain.ImmutableEndedBy;
-import de.ii.xtraplatform.cql.domain.ImmutableEnds;
-import de.ii.xtraplatform.cql.domain.ImmutableEq;
-import de.ii.xtraplatform.cql.domain.ImmutableEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableExists;
-import de.ii.xtraplatform.cql.domain.ImmutableGt;
-import de.ii.xtraplatform.cql.domain.ImmutableGte;
-import de.ii.xtraplatform.cql.domain.ImmutableIn;
-import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
-import de.ii.xtraplatform.cql.domain.ImmutableIsNull;
-import de.ii.xtraplatform.cql.domain.ImmutableLike;
-import de.ii.xtraplatform.cql.domain.ImmutableLt;
-import de.ii.xtraplatform.cql.domain.ImmutableLte;
-import de.ii.xtraplatform.cql.domain.ImmutableMeets;
-import de.ii.xtraplatform.cql.domain.ImmutableMetBy;
-import de.ii.xtraplatform.cql.domain.ImmutableNeq;
-import de.ii.xtraplatform.cql.domain.ImmutableOverlappedBy;
-import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
-import de.ii.xtraplatform.cql.domain.ImmutableTContains;
-import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableTOverlaps;
-import de.ii.xtraplatform.cql.domain.ImmutableTouches;
-import de.ii.xtraplatform.cql.domain.ImmutableWithin;
-import de.ii.xtraplatform.cql.domain.In;
-import de.ii.xtraplatform.cql.domain.Intersects;
-import de.ii.xtraplatform.cql.domain.IsNull;
-import de.ii.xtraplatform.cql.domain.Like;
-import de.ii.xtraplatform.cql.domain.LogicalOperation;
-import de.ii.xtraplatform.cql.domain.Lt;
-import de.ii.xtraplatform.cql.domain.Lte;
-import de.ii.xtraplatform.cql.domain.Meets;
-import de.ii.xtraplatform.cql.domain.MetBy;
-import de.ii.xtraplatform.cql.domain.Neq;
-import de.ii.xtraplatform.cql.domain.Not;
-import de.ii.xtraplatform.cql.domain.Operand;
-import de.ii.xtraplatform.cql.domain.Or;
-import de.ii.xtraplatform.cql.domain.OverlappedBy;
-import de.ii.xtraplatform.cql.domain.Overlaps;
-import de.ii.xtraplatform.cql.domain.Property;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
-import de.ii.xtraplatform.cql.domain.ScalarOperation;
-import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.TContains;
-import de.ii.xtraplatform.cql.domain.TEquals;
-import de.ii.xtraplatform.cql.domain.TOverlaps;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
-import de.ii.xtraplatform.cql.domain.Touches;
-import de.ii.xtraplatform.cql.domain.Within;
+import de.ii.xtraplatform.cql.domain.*;
 
 import java.util.List;
 import java.util.Objects;
@@ -115,34 +34,25 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
             return Or.of(children.stream()
                                  .map(cqlNode -> (CqlPredicate) cqlNode)
                                  .collect(Collectors.toList()));
-        } else if (logicalOperation instanceof Not) {
-            return Not.of(children.stream()
-                                  .map(cqlNode -> (CqlPredicate) cqlNode)
-                                  .collect(Collectors.toList()));
         }
         return null;
     }
 
     @Override
-    public CqlNode visit(ScalarOperation scalarOperation, List<CqlNode> children) {
-        ScalarOperation.Builder<?> builder = null;
+    public CqlNode visit(Not not, List<CqlNode> children) {
+        return Not.of((CqlPredicate) children.get(0));
+    }
 
-        if (scalarOperation instanceof Between) {
-            builder = new ImmutableBetween.Builder();
-        } else if (scalarOperation instanceof Eq) {
+    @Override
+    public CqlNode visit(BinaryScalarOperation scalarOperation, List<CqlNode> children) {
+        BinaryScalarOperation.Builder<?> builder = null;
+
+        if (scalarOperation instanceof Eq) {
             builder = new ImmutableEq.Builder();
-        } else if (scalarOperation instanceof Exists) {
-            builder = new ImmutableExists.Builder();
         } else if (scalarOperation instanceof Gt) {
             builder = new ImmutableGt.Builder();
         } else if (scalarOperation instanceof Gte) {
             builder = new ImmutableGte.Builder();
-        } else if (scalarOperation instanceof In) {
-            builder = new ImmutableIn.Builder();
-        } else if (scalarOperation instanceof IsNull) {
-            builder = new ImmutableIsNull.Builder();
-        } else if (scalarOperation instanceof Like) {
-            builder = new ImmutableLike.Builder();
         } else if (scalarOperation instanceof Lt) {
             builder = new ImmutableLt.Builder();
         } else if (scalarOperation instanceof Lte) {
@@ -152,8 +62,87 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         }
 
         if (Objects.nonNull(builder)) {
+            return builder.operands(children.stream()
+                                            .filter(child -> child instanceof Scalar)
+                                            .map(child -> (Scalar) child)
+                                            .collect(Collectors.toUnmodifiableList())).build();
+        }
+
+        return null;
+    }
+
+    @Override
+    public CqlNode visit(Between between, List<CqlNode> children) {
+        Between.Builder builder = null;
+
+        if (Objects.nonNull(builder)) {
+            int i = 0;
             for (CqlNode cqlNode : children) {
-                builder.addOperand((Operand) cqlNode);
+                switch (i++) {
+                    case 0:
+                        builder.value((Scalar) cqlNode);
+                        break;
+                    case 1:
+                        builder.lower((Scalar) cqlNode);
+                        break;
+                    case 2:
+                        builder.upper((Scalar) cqlNode);
+                        break;
+                }
+            }
+            return builder.build();
+        }
+
+        return null;
+    }
+
+    @Override
+    public CqlNode visit(IsNull isNull, List<CqlNode> children) {
+        Between.Builder builder = null;
+
+        if (Objects.nonNull(builder)) {
+            int i = 0;
+            for (CqlNode cqlNode : children) {
+                switch (i++) {
+                    case 0:
+                        builder.value((Scalar) cqlNode);
+                        break;
+                }
+            }
+            return builder.build();
+        }
+
+        return null;
+    }
+
+    @Override
+    public CqlNode visit(Like like, List<CqlNode> children) {
+        Like.Builder builder = null;
+
+        if (Objects.nonNull(builder)) {
+            // modifiers are set separately
+            return builder.operands(children.stream()
+                                            .filter(child -> child instanceof Scalar)
+                                            .map(child -> (Scalar) child)
+                                            .collect(Collectors.toUnmodifiableList())).build();
+        }
+
+        return null;
+    }
+
+    @Override
+    public CqlNode visit(In in, List<CqlNode> children) {
+        In.Builder builder = null;
+
+        if (Objects.nonNull(builder)) {
+            int i = 0;
+            for (CqlNode cqlNode : children) {
+                switch (i++) {
+                    case 0:
+                        builder.value((Scalar) cqlNode);
+                        break;
+                    // values are set separately
+                }
             }
             return builder.build();
         }
@@ -191,13 +180,15 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
             builder = new ImmutableTEquals.Builder();
         } else if (temporalOperation instanceof TOverlaps) {
             builder = new ImmutableTOverlaps.Builder();
+        } else if (temporalOperation instanceof AnyInteracts) {
+            builder = new ImmutableAnyInteracts.Builder();
         }
 
         if (Objects.nonNull(builder)) {
-            for (CqlNode cqlNode : children) {
-                builder.addOperand((Operand) cqlNode);
-            }
-            return builder.build();
+            return builder.operands(children.stream()
+                                            .filter(child -> child instanceof Temporal)
+                                            .map(child -> (Temporal) child)
+                                            .collect(Collectors.toUnmodifiableList())).build();
         }
 
         return null;
@@ -226,10 +217,34 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         }
 
         if (Objects.nonNull(builder)) {
-            for (CqlNode cqlNode : children) {
-                builder.addOperand((Operand) cqlNode);
-            }
-            return builder.build();
+            return builder.operands(children.stream()
+                                            .filter(child -> child instanceof Spatial)
+                                            .map(child -> (Spatial) child)
+                                            .collect(Collectors.toUnmodifiableList())).build();
+        }
+
+        return null;
+    }
+
+    @Override
+    public CqlNode visit(ArrayOperation arrayOperation, List<CqlNode> children) {
+        ArrayOperation.Builder<?> builder = null;
+
+        if (arrayOperation instanceof AContains) {
+            builder = new ImmutableAContains.Builder();
+        } else if (arrayOperation instanceof AEquals) {
+            builder = new ImmutableAEquals.Builder();
+        } else if (arrayOperation instanceof AOverlaps) {
+            builder = new ImmutableAOverlaps.Builder();
+        } else if (arrayOperation instanceof ContainedBy) {
+            builder = new ImmutableContainedBy.Builder();
+        }
+
+        if (Objects.nonNull(builder)) {
+            return builder.operands(children.stream()
+                                            .filter(child -> child instanceof Vector)
+                                            .map(child -> (Vector) child)
+                                            .collect(Collectors.toUnmodifiableList())).build();
         }
 
         return null;
@@ -243,6 +258,11 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
     @Override
     public CqlNode visit(TemporalLiteral temporalLiteral, List<CqlNode> children) {
         return temporalLiteral;
+    }
+
+    @Override
+    public CqlNode visit(ArrayLiteral arrayLiteral, List<CqlNode> children) {
+        return arrayLiteral;
     }
 
     @Override

@@ -85,7 +85,7 @@ class CqlTextSpec extends Specification {
     def 'Owner name starts with "Mike"'() {
 
         given:
-        String cqlText = "owner LIKE 'Mike%'"
+        String cqlText = "owner LIKE 'Mike%' WILDCARD '%'"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -307,10 +307,10 @@ class CqlTextSpec extends Specification {
 
     }
 
-    def 'Location in the box between -118,33.8 and -117.9,34 in lat/long (geometry 1)'() {
+    def 'Location in the box between -118,33.8 and -117.9,34 in long/lat (geometry 1)'() {
 
         given:
-        String cqlText = "WITHIN(location, ENVELOPE(33.8,-118.0,34.0,-117.9))"
+        String cqlText = "WITHIN(location, ENVELOPE(-118.0,33.8,-117.9,34.0))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -351,7 +351,7 @@ class CqlTextSpec extends Specification {
     def 'More than 5 floors and is within geometry 1 (below)'() {
 
         given:
-        String cqlText = "floors > 5 AND WITHIN(geometry, ENVELOPE(33.8,-118.0,34.0,-117.9))"
+        String cqlText = "floors > 5 AND WITHIN(geometry, ENVELOPE(-118.0,33.8,-117.9,34.0))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -443,47 +443,6 @@ class CqlTextSpec extends Specification {
         then:
         actual2 == cqlText
     }
-
-
-    // EXISTS and DOES-NOT-EXIST are deactivated in the parser
-
-    /*def 'Property "owner" exists'() {
-        given:
-        String cqlText = "owner EXISTS"
-
-        when: 'reading text'
-        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
-
-        then:
-        actual == CqlFilterExamples.EXAMPLE_22
-
-        and:
-
-        when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_22, Cql.Format.TEXT)
-
-        then:
-        actual2 == cqlText
-    }
-
-    def 'Property "owner" does not exist'() {
-        given:
-        String cqlText = "owner DOES-NOT-EXIST"
-
-        when: 'reading text'
-        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
-
-        then:
-        actual == CqlFilterExamples.EXAMPLE_23
-
-        and:
-
-        when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_23, Cql.Format.TEXT)
-
-        then:
-        actual2 == cqlText
-    }*/
 
     def 'Built before 2015 (only date, no time information)'() {
         given:
@@ -675,6 +634,146 @@ class CqlTextSpec extends Specification {
 
         then:
         actual2 == cqlTextFull
+    }
+
+    def 'Find the Landsat scene with identifier "LC82030282019133LGN00"'() {
+
+        given:
+        String cqlText = "landsat:scene_id = 'LC82030282019133LGN00'"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_34
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_34, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'LIKE operator modifiers'() {
+
+        given:
+        String cqlText = "name LIKE 'Smith.' SINGLECHAR '.' ESCAPECHAR '+' NOCASE false"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_35
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_35, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'ANYINTERACTS temporal operator'() {
+
+        given:
+        String cqlText = "event_date ANYINTERACTS 1969-07-16T05:32:00Z/1969-07-24T16:50:35Z"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_36
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_36, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    /* Array operators are not yet supported
+    def 'Evaluate if the value of an array property contains the specified subset of values'() {
+
+        given:
+        String cqlText = "layer:ids ACONTAINS ['layers-ca','layers-us']"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_38
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_38, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+     */
+
+    def 'Both operands are property references'() {
+
+        given:
+        String cqlText = "height < floors"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_37
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_37, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Number of floors NOT between 4 and 8'() {
+        given:
+        String cqlText = "floors NOT BETWEEN 4 AND 8"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_39
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_39, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Owner name is NOT Mike, John, Tom'() {
+        given:
+        String cqlText = "owner NOT IN ('Mike', 'John', 'Tom')"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_40
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_40, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
     }
 
 }

@@ -10,15 +10,16 @@ package de.ii.xtraplatform.cql.domain;
 import com.google.common.base.Preconditions;
 import org.immutables.value.Value;
 
-public interface TemporalOperation extends BinaryOperation<TemporalLiteral>, CqlNode {
+public interface BinaryScalarOperation extends BinaryOperation<ScalarLiteral>, CqlNode {
 
     @Value.Check
     @Override
     default void check() {
         BinaryOperation.super.check();
-        getOperands().forEach(operand -> Preconditions.checkState(operand instanceof Temporal, "a temporal operation must have temporal operands, found %s", operand.getClass().getSimpleName()));
+        getOperands().stream()
+                     .forEach(operand -> Preconditions.checkState(operand instanceof Scalar, "a scalar operation must have scalar operands, found %s", operand.getClass().getSimpleName()));
     }
 
-    abstract class Builder<T extends TemporalOperation> extends BinaryOperation.Builder<TemporalLiteral, T> {}
+    abstract class Builder<T extends BinaryScalarOperation> extends BinaryOperation.Builder<ScalarLiteral, T> {}
 
 }

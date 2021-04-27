@@ -35,6 +35,4 @@ public interface ScalarExpression {
 
     Optional<IsNull> getIsNull();
 
-    Optional<Exists> getExists();
-
 }

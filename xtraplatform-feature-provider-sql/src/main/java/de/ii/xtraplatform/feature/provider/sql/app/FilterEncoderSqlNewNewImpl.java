@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,7 +47,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             .put(ImmutableBefore.class, "<")
             .put(ImmutableDuring.class, "BETWEEN")
             .put(ImmutableTEquals.class, "=")
-            .put(ImmutableTOverlaps.class, "OVERLAPS")
+            .put(ImmutableAnyInteracts.class, "OVERLAPS")
             .build();
 
     private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
@@ -58,6 +59,13 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             .put(ImmutableCrosses.class, "ST_Crosses")
             .put(ImmutableIntersects.class, "ST_Intersects")
             .put(ImmutableContains.class, "ST_Contains")
+            .build();
+
+    private final static Map<Class<?>, String> ARRAY_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
+            .put(ImmutableAContains.class, "@>")
+            .put(ImmutableAEquals.class, "=")
+            .put(ImmutableAOverlaps.class, "&&")
+            .put(ImmutableContainedBy.class, "<@")
             .build();
 
     private final Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator;
@@ -116,7 +124,9 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         @Override
         public String visit(Property property, List<String> children) {
-            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), ID_PLACEHOLDER) && attribute.isId());
+            // strip double quotes from the property name
+            String propertyName = property.getName().replaceAll("^\"|\"$", "");
+            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(propertyName, attribute.getQueryable()) || (Objects.equals(propertyName, ID_PLACEHOLDER) && attribute.isId());
             Optional<String> column = attributesContainer.getAttributes()
                                                          .stream()
                                                          .filter(propertyMatches)
@@ -124,7 +134,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                          .map(FeatureStoreAttribute::getName);
 
             if (!column.isPresent()) {
-                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", property.getName()));
+                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName));
             }
 
             List<String> aliases = isUserFilter ? aliasesGenerator.apply(attributesContainer)
@@ -150,7 +160,9 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         @Override
         public String visit(Property property, List<String> children) {
             //TODO: fast enough? maybe pass all typeInfos to constructor and create map?
-            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), ID_PLACEHOLDER) && attribute.isId());
+            // strip double quotes from the property name
+            String propertyName = property.getName().replaceAll("^\"|\"$", "");
+            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(propertyName, attribute.getQueryable()) || (Objects.equals(propertyName, ID_PLACEHOLDER) && attribute.isId());
             Optional<FeatureStoreAttributesContainer> table = instanceContainer.getAllAttributesContainers()
                                                                                .stream()
                                                                                .filter(attributesContainer -> attributesContainer.getAttributes()
@@ -170,7 +182,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                                                               }));
 
             if (!table.isPresent() || !column.isPresent()) {
-                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", property.getName()));
+                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName));
             }
 
             if (LOGGER.isTraceEnabled()) {
@@ -215,143 +227,325 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             return super.visit(function, children);
         }
 
-        //TODO: unary + nnary
-        @Override
-        public String visit(ScalarOperation scalarOperation, List<String> children) {
-            String propertyExpression = children.get(0);
-            String value = children.size() > 1 ? children.get(1) : "";
-            String operator = CqlToText.SCALAR_OPERATORS.get(scalarOperation.getClass());
-            String operation = String.format(" %s %s", operator, value);
+        private String reduceSelectToColumn(String expression) {
+            return String.format(expression.substring(expression.indexOf(" WHERE ") + 7, expression.length() - 1), "", "");
+        }
 
-            if (scalarOperation instanceof Between) {
-                operation = String.format(" %s %s AND %s", operator, children.get(1), children.get(2));
-            } else if (scalarOperation instanceof In) {
-                operation = String.format(" %s (%s)", operator, String.join(", ", children.subList(1, children.size())));
-            } else if (scalarOperation instanceof IsNull /*|| scalarOperation instanceof Exists*/) {
-                //TODO: what is the difference between EXISTS and IS NULL? Postgres only knows the latter.
-                //operator = CqlToText.SCALAR_OPERATORS.get(ImmutableIsNull.class);
-                operation = String.format(" %s", operator);
-            } else if (scalarOperation instanceof Like && !Objects.equals("%", ((Like) scalarOperation).getWildCard())) {
-                String wildCard = ((Like) scalarOperation).getWildCard()
-                                                          .replace("*", "\\*");
-                value = value.replaceAll("%", "\\%")
-                             .replaceAll(wildCard, "%");
-                operation = String.format("::varchar %s %s", operator, value);
+        private String replaceColumnWithLiteral(String expression, String column, String literal) {
+            return expression.replace(String.format("%%1$s%1$s%%2$s",column),String.format("%%1$s%1$s%%2$s",literal));
+        }
+
+        private String replaceColumnWithInterval(String expression, String column) {
+            return expression.replace(String.format("%%1$s%1$s%%2$s",column),String.format("%%1$s(%1$s,%1$s)%%2$s",column));
+        }
+
+        private boolean operandIsOfType(Operand operand, Class... classes) {
+            return Arrays.stream(classes).anyMatch(clazz -> clazz.isInstance(operand));
+        }
+
+        private List<String> processBinary(List<Operand> operands, List<String> children) {
+            // The two operands may be either a property reference or a literal.
+            // If there is at least one property reference, that fragment will
+            // be used as the basis (mainExpression). If the other operand is
+            // a property reference, too, it is in the same table and the second
+            // fragment will be reduced to qualified column name (second expression).
+            String mainExpression = children.get(0);
+            String secondExpression = children.get(1);
+            boolean op1hasSelect = operandIsOfType(operands.get(0), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
+            boolean op2hasSelect = operandIsOfType(operands.get(1), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
+            if (op1hasSelect) {
+                if (op2hasSelect) {
+                    secondExpression = reduceSelectToColumn(children.get(1));
+                }
+            } else {
+                // the unusual case that a literal is on the left side
+                if (op2hasSelect) {
+                    secondExpression = reduceSelectToColumn(children.get(1));
+                    mainExpression = replaceColumnWithLiteral(children.get(1), secondExpression, children.get(0));
+                } else {
+                    mainExpression = String.format("%%1$s%1$s%%2$s", children.get(0));
+                }
             }
 
-            return String.format(propertyExpression, "", operation);
+            return ImmutableList.of(mainExpression, secondExpression);
+        }
+
+        private List<String> processTernary(List<Operand> operands, List<String> children) {
+            // The three operands may be either a property reference or a literal.
+            // If there is at least one property reference, that fragment will
+            // be used as the basis (mainExpression). If another operand is
+            // a property reference, too, it is in the same table and the
+            // fragment will be reduced to qualified column name (second or third
+            // expression).
+            String mainExpression = children.get(0);
+            String secondExpression = children.get(1);
+            String thirdExpression = children.get(2);
+            boolean op1hasSelect = operandIsOfType(operands.get(0), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
+            boolean op2hasSelect = operandIsOfType(operands.get(1), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
+            boolean op3hasSelect = operandIsOfType(operands.get(2), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
+            if (op1hasSelect) {
+                if (op2hasSelect)
+                    secondExpression = reduceSelectToColumn(children.get(1));
+                if (op3hasSelect)
+                    thirdExpression = reduceSelectToColumn(children.get(2));
+            } else {
+                // the unusual case that a literal is on the left side
+                if (op2hasSelect && !op3hasSelect) {
+                    secondExpression = reduceSelectToColumn(children.get(1));
+                    mainExpression = replaceColumnWithLiteral(children.get(1), secondExpression, children.get(0));
+                } else if (!op2hasSelect && op3hasSelect) {
+                    thirdExpression = reduceSelectToColumn(children.get(2));
+                    mainExpression = replaceColumnWithLiteral(children.get(2), thirdExpression, children.get(0));
+                } else if (op2hasSelect && op3hasSelect) {
+                    secondExpression = reduceSelectToColumn(children.get(1));
+                    mainExpression = replaceColumnWithLiteral(children.get(1), secondExpression, children.get(0));
+                    thirdExpression = reduceSelectToColumn(children.get(2));
+                } else if (!op2hasSelect && !op3hasSelect) {
+                    // special case of three literals, we need to build the SQL expression
+                    mainExpression = String.format("%%1$s%1$s%%2$s", children.get(0));
+                }
+            }
+
+            return ImmutableList.of(mainExpression, secondExpression, thirdExpression);
+        }
+
+        @Override
+        public String visit(BinaryScalarOperation scalarOperation, List<String> children) {
+            String operator = SCALAR_OPERATORS.get(scalarOperation.getClass());
+
+            List<String> expressions = processBinary(scalarOperation.getOperands(), children);
+
+            String operation = String.format(" %s %s", operator, expressions.get(1));
+            return String.format(expressions.get(0), "", operation);
+        }
+
+        @Override
+        public String visit(Like like, List<String> children) {
+            String operator = SCALAR_OPERATORS.get(like.getClass());
+
+            List<String> expressions = processBinary(like.getOperands(), children);
+
+            // we may need to change the second expression
+            Scalar op2 = (Scalar) like.getOperands().get(1);
+            String secondExpression = expressions.get(1);
+
+            String functionStart = "";
+            String functionEnd = "";
+            // modifiers only work with a literal as the second value
+            if (op2 instanceof ScalarLiteral) {
+                if (like.getWildcard().isPresent() &&
+                        !Objects.equals("%", like.getWildcard().get())) {
+                    String wildCard = like.getWildcard().get();
+                    secondExpression = secondExpression.replaceAll("%", "\\%")
+                                                       .replaceAll(String.format("\\%s", wildCard), "%");
+                }
+                if (like.getSingleChar().isPresent() &&
+                        !Objects.equals("_", like.getSingleChar().get())) {
+                    String singlechar = like.getSingleChar().get();
+                    secondExpression = secondExpression.replaceAll("_", "\\_")
+                                                       .replaceAll(String.format("\\%s", singlechar), "_");
+                }
+                if (like.getEscapeChar().isPresent() &&
+                        !Objects.equals("\\", like.getEscapeChar().get())) {
+                    String escapechar = like.getEscapeChar().get();
+                    secondExpression = secondExpression.replaceAll("\\\\", "\\\\")
+                                                       .replaceAll(String.format("\\%s", escapechar), "\\");
+                }
+            }
+            if ((like.getNocase().isEmpty()) ||
+                    (like.getNocase().isPresent() && Objects.equals(Boolean.TRUE, like.getNocase().get()))) {
+                functionStart = "LOWER(";
+                functionEnd = ")";
+                if (op2 instanceof ScalarLiteral) {
+                    secondExpression = secondExpression.toLowerCase();
+                } else if (op2 instanceof Property) {
+                    secondExpression = String.format("LOWER(%s::varchar)", secondExpression.toLowerCase());
+                }
+            }
+
+            String operation = String.format("::varchar%s %s %s", functionEnd, operator, secondExpression);
+            return String.format(expressions.get(0), functionStart, operation);
+        }
+
+        @Override
+        public String visit(In in, List<String> children) {
+            String operator = SCALAR_OPERATORS.get(in.getClass());
+
+            String mainExpression = "";
+            Scalar op1 = in.getValue().get();
+            if (op1 instanceof Property) {
+                mainExpression = children.get(0);
+            } else if (op1 instanceof ScalarLiteral) {
+                // special case of a literal, we need to build the SQL expression
+                mainExpression = String.format("%%1$s%1$s%%2$s", children.get(0));
+            } else {
+                throw new IllegalArgumentException(String.format("In: Cannot process operand of type %s with value %s.", op1.getClass().getSimpleName(), mainExpression));
+            }
+
+            // mainExpression is either a literal value or a SELECT expression
+            String operation = String.format(" %s (%s)", operator, String.join(", ", children.subList(1, children.size())));
+            return String.format(mainExpression, "", operation);
+        }
+
+        @Override
+        public String visit(IsNull isNull, List<String> children) {
+            String operator = SCALAR_OPERATORS.get(isNull.getClass());
+
+            String mainExpression = "";
+            Operand op1 = isNull.getOperand().get();
+            if (op1 instanceof Property) {
+                mainExpression = children.get(0);
+            } else if (op1 instanceof ScalarLiteral) {
+                // special case of a literal (which will never be NULL), we need to build the SQL expression
+                mainExpression = String.format("%%1$s%1$s%%2$s", children.get(0));
+            } else {
+                throw new IllegalArgumentException(String.format("IsNull: Cannot process operand of type %s with value %s.", op1.getClass().getSimpleName(), mainExpression));
+            }
+
+            // mainExpression is either a literal value or a SELECT expression
+            String operation = String.format(" %s", operator);
+            return String.format(mainExpression, "", operation);
+        }
+
+        @Override
+        public String visit(Between between, List<String> children) {
+            String operator = SCALAR_OPERATORS.get(between.getClass());
+
+            Scalar op1 = between.getValue().get();
+            Scalar op2 = between.getLower().get();
+            Scalar op3 = between.getUpper().get();
+            List<String> expressions = processTernary(ImmutableList.of(op1, op2, op3), children);
+
+            String operation = String.format(" %s %s AND %s", operator, expressions.get(1), expressions.get(2));
+            return String.format(expressions.get(0), "", operation);
+        }
+
+        private Instant getStart(TemporalLiteral literal) {
+            return (literal.getType() == Interval.class)
+                    ? ((Interval) literal.getValue()).getStart()
+                    : (Instant) literal.getValue();
+        }
+
+        private String getStartAsString(TemporalLiteral literal) {
+            return String.format("TIMESTAMP '%s'", getStart(literal))
+                         .replace("'0000-01-01T00:00:00Z'", "'-infinity'");
+        }
+
+        private Instant getEnd(TemporalLiteral literal) {
+            return (literal.getType() == Interval.class)
+                    ? ((Interval) literal.getValue()).getEnd()
+                    : (Instant) literal.getValue();
+        }
+
+        private String getEndAsString(TemporalLiteral literal) {
+            return String.format("TIMESTAMP '%s'", getEnd(literal))
+                         .replace("'9999-12-31T23:59:59Z'", "'infinity'");
+        }
+
+        private Instant getEndExclusive(TemporalLiteral literal) {
+            return (literal.getType() == Interval.class)
+                    ? ((Interval) literal.getValue()).getEnd().plusSeconds(1)
+                    : (Instant) literal.getValue();
+        }
+
+        private String getEndExclusiveAsString(TemporalLiteral literal) {
+            return String.format("TIMESTAMP '%s'", getEndExclusive(literal))
+                         .replace("'+10000-01-01T00:00:00Z'", "'infinity'");
         }
 
         @Override
         public String visit(TemporalOperation temporalOperation, List<String> children) {
-            String expression = children.get(0);
             String operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
 
-            // ISO 8601 intervals include both the start and end instant
-            // PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
+            Temporal op1 = (Temporal) temporalOperation.getOperands().get(0);
+            Temporal op2 = (Temporal) temporalOperation.getOperands().get(1);
 
-            if (temporalOperation instanceof Before) {
-                TemporalLiteral operand2 = (TemporalLiteral) temporalOperation.getOperands()
-                                                                              .get(1);
+            // TODO The behaviour of the temporal predicates should be improved by 
+            //      distinguishing datetime properties of different granularity in
+            //      the provider schema; at least second and day, but a more flexible 
+            //      solution would be better.
+            //      The public review of CQL resulted in a number of comments on the
+            //      temporal predicates, partly also relates to this - wait for their 
+            //      resolution.
 
-                String literalInstant;
+            if (temporalOperation instanceof TEquals) {
+                // Both side are a property or an instant, this was checked when the operation was built.
+                if (op1 instanceof TemporalLiteral) {
+                    children = ImmutableList.of(String.format("TIMESTAMP %s", children.get(0)), children.get(1));
+                }
+                if (op2 instanceof TemporalLiteral) {
+                    children = ImmutableList.of(children.get(0), String.format("TIMESTAMP %s", children.get(1)));
+                }
+                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
+                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
 
-                if (operand2.getType() == Interval.class) {
-                    Interval interval = (Interval) temporalOperation.getValue()
-                                                                    .get()
-                                                                    .getValue();
-                    literalInstant = String.format("TIMESTAMP '%s'", interval.getStart());
-                    literalInstant = literalInstant.replaceAll("'0000-01-01T00:00:00Z'", "'-infinity'");
-                } else {
-                    Instant instant = (Instant) temporalOperation.getValue()
-                                                                 .get()
-                                                                 .getValue();
-                    literalInstant = String.format("TIMESTAMP '%s'", instant);
+            } else if (temporalOperation instanceof Before) {
+                if (op1 instanceof TemporalLiteral) {
+                    children = ImmutableList.of(getEndAsString((TemporalLiteral) op1), children.get(1));
+                }
+                if (op2 instanceof TemporalLiteral) {
+                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2));
+                }
+                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
+                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
+
+            } else if (temporalOperation instanceof After) {
+                if (op1 instanceof TemporalLiteral) {
+                    children = ImmutableList.of(getStartAsString((TemporalLiteral) op1), children.get(1));
+                }
+                if (op2 instanceof TemporalLiteral) {
+                    children = ImmutableList.of(children.get(0), getEndAsString((TemporalLiteral) op2));
+                }
+                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
+                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
+
+            } else if (temporalOperation instanceof During) {
+                // The left hand side is a property or an instant, this was checked when the operation was built.
+                // The right hand side is an interval, this was checked when the operation was built.
+                Temporal op2a = op2;
+                Temporal op2b = op2;
+                if (op2 instanceof TemporalLiteral) {
+                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
+                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
+                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
+                } else if (op2 instanceof Property) {
+                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
+                }
+                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
+                return String.format(expressions.get(0), "", String.format(" %s %s AND %s", operator, expressions.get(1), expressions.get(2)));
+
+            } else if (temporalOperation instanceof AnyInteracts) {
+                // ISO 8601 intervals include both the start and end instant
+                // PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
+                if (op1 instanceof Property) {
+                    // need to change "column" to "(column,column)"
+                    children = ImmutableList.of(replaceColumnWithInterval(children.get(0), reduceSelectToColumn(children.get(0))), children.get(1));
+                } else if (op1 instanceof TemporalLiteral) {
+                    // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
+                    children = ImmutableList.of(String.format("(%s, %s)", getStartAsString((TemporalLiteral) op1), getEndExclusiveAsString((TemporalLiteral) op1)), children.get(1));
                 }
 
-                return String.format(expression, "", String.format(" %s %s", operator, literalInstant));
-            }
-
-            if (temporalOperation instanceof After) {
-                TemporalLiteral operand2 = (TemporalLiteral) temporalOperation.getOperands()
-                                                                              .get(1);
-
-                String literalInstant;
-
-                if (operand2.getType() == Interval.class) {
-                    Interval interval = (Interval) temporalOperation.getValue()
-                                                                    .get()
-                                                                    .getValue();
-                    literalInstant = String.format("TIMESTAMP '%s'", interval.getEnd());
-                    literalInstant = literalInstant.replaceAll("'9999-12-31T23:59:59Z'", "'infinity'");
-                } else {
-                    Instant instant = (Instant) temporalOperation.getValue()
-                                                                 .get()
-                                                                 .getValue();
-                    literalInstant = String.format("TIMESTAMP '%s'", instant);
+                if (op2 instanceof Property) {
+                    // need to change "column" to "(column,column)"
+                    children = ImmutableList.of(children.get(0),replaceColumnWithInterval(children.get(1), reduceSelectToColumn(children.get(1))));
+                } else if (op2 instanceof TemporalLiteral) {
+                    // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
+                    children = ImmutableList.of(children.get(0), String.format("(%s, %s)", getStartAsString((TemporalLiteral) op2), getEndExclusiveAsString((TemporalLiteral) op2)));
                 }
-
-                return String.format(expression, "", String.format(" %s %s", operator, literalInstant));
+                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
+                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
             }
 
-            if (temporalOperation instanceof During) {
-                Interval interval = (Interval) temporalOperation.getValue()
-                                                                .get()
-                                                                .getValue();
-                boolean unboundedStart = interval.isUnboundedStart() || interval.getStart().equals(TemporalLiteral.MIN_DATE);
-                boolean unboundedEnd = interval.isUnboundedEnd() || interval.getEnd().equals(TemporalLiteral.MAX_DATE);
-                if (unboundedStart && unboundedEnd) {
-                    return "TRUE";
-                } else if (unboundedStart) {
-                    operator = TEMPORAL_OPERATORS.get(ImmutableBefore.class);
-                    return String.format(expression, "", String.format(" %s TIMESTAMP '%s'", operator, interval.getEnd()
-                                                                                                               .plusSeconds(1)
-                                                                                                               .toString()));
-                } else if (unboundedEnd) {
-                    operator = TEMPORAL_OPERATORS.get(ImmutableAfter.class);
-                    return String.format(expression, "", String.format(" %s TIMESTAMP '%s'", operator, interval.getStart()
-                                                                                                               .toString()));
-                }
-
-                return String.format(expression, "", String.format(" %s TIMESTAMP '%s' AND TIMESTAMP '%s'", operator, interval.getStart()
-                                                                                                                              .toString(), interval.getEnd()
-                                                                                                                                          .plusSeconds(1)
-                                                                                                                                          .toString()));
-            }
-
-            if (temporalOperation instanceof TOverlaps) {
-                TemporalLiteral operand2 = (TemporalLiteral) temporalOperation.getOperands()
-                                                                              .get(1);
-
-                String literalInterval;
-
-                if (operand2.getType() == Interval.class) {
-                    Interval interval = (Interval) temporalOperation.getValue()
-                                                                    .get()
-                                                                    .getValue();
-                    literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", interval.getStart(), interval.getEnd()
-                                                                                                                     .plusSeconds(1));
-                    literalInterval = literalInterval.replaceAll("'0000-01-01T00:00:00Z'", "'-infinity'");
-                    literalInterval = literalInterval.replaceAll("'\\+10000-01-01T00:00:00Z'", "'infinity'");
-                } else {
-                    Instant instant = (Instant) temporalOperation.getValue()
-                                                                 .get()
-                                                                 .getValue();
-                    literalInterval = String.format("(TIMESTAMP '%s', TIMESTAMP '%s')", instant, instant.plusSeconds(1));
-                }
-
-                return String.format(expression, "", String.format(" %s %s", operator, literalInterval));
-            }
-
-            return String.format(expression, "", String.format(" %s TIMESTAMP %s", operator, children.get(1)));
+            throw new IllegalArgumentException(String.format("unsupported temporal operator: %s", operator));
         }
 
         @Override
         public String visit(SpatialOperation spatialOperation, List<String> children) {
-            String expression = children.get(0);
             String operator = SPATIAL_OPERATORS.get(spatialOperation.getClass());
 
-            return String.format(expression, String.format("%s(", operator), String.format(", %s)", children.get(1)));
+            List<String> expressions = processBinary(spatialOperation.getOperands(), children);
+
+            return String.format(expressions.get(0), String.format("%s(", operator), String.format(", %s)", expressions.get(1)));
         }
 
         @Override
@@ -404,6 +598,39 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                                      .build();
 
             return visit(polygon, ImmutableList.of());
+        }
+
+        @Override
+        public String visit(ArrayOperation arrayOperation, List<String> children) {
+            String expression = children.get(0);
+            String operator = ARRAY_OPERATORS.get(arrayOperation.getClass());
+            String operation = String.format(" %s ARRAY[%s]", operator, children.get(1));
+            return String.format(expression, "", operation);
+        }
+
+        @Override
+        public String visit(LogicalOperation logicalOperation, List<String> children) {
+            String operator = LOGICAL_OPERATORS.get(logicalOperation.getClass());
+
+            return super.visit(logicalOperation, children);
+        }
+
+        @Override
+        public String visit(Not not, List<String> children) {
+            String operator = LOGICAL_OPERATORS.get(not.getClass());
+
+            String operation = children.get(0);
+            if (not.getPredicate()
+                                .get()
+                                .getInOperator()
+                                .isPresent()) {
+                // replace last IN with NOT IN
+                int pos = operation.lastIndexOf(" IN ");
+                int length = operation.length();
+                return String.format("%s %s %s", operation.substring(0, pos), operator, operation.substring(pos + 1, length));
+            }
+
+            return super.visit(not, children);
         }
     }
 

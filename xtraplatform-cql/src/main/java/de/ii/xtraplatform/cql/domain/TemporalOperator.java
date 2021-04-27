@@ -20,5 +20,6 @@ public enum TemporalOperator implements CqlNode {
     MEETS,
     METBY,
     TOVERLAPS,
-    OVERLAPPEDBY
+    OVERLAPPEDBY,
+    ANYINTERACTS
 }
