@@ -39,7 +39,8 @@ public class CqlPropertyChecker extends CqlVisitorBase<List<String>> {
 
     @Override
     public List<String> visit(Property property, List<List<String>> children) {
-        String propertyName = property.getName();
+        // strip double quotes
+        String propertyName = property.getName().replaceAll("^\"|\"$", "");
         if (!allowedProperties.contains(propertyName)) {
             invalidProperties.add(propertyName);
         }

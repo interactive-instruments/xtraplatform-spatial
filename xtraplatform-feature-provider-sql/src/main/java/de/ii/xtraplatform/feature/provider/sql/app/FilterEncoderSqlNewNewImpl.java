@@ -124,7 +124,9 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         @Override
         public String visit(Property property, List<String> children) {
-            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), ID_PLACEHOLDER) && attribute.isId());
+            // strip double quotes from the property name
+            String propertyName = property.getName().replaceAll("^\"|\"$", "");
+            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(propertyName, attribute.getQueryable()) || (Objects.equals(propertyName, ID_PLACEHOLDER) && attribute.isId());
             Optional<String> column = attributesContainer.getAttributes()
                                                          .stream()
                                                          .filter(propertyMatches)
@@ -132,7 +134,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                          .map(FeatureStoreAttribute::getName);
 
             if (!column.isPresent()) {
-                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", property.getName()));
+                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName));
             }
 
             List<String> aliases = isUserFilter ? aliasesGenerator.apply(attributesContainer)
@@ -158,7 +160,9 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         @Override
         public String visit(Property property, List<String> children) {
             //TODO: fast enough? maybe pass all typeInfos to constructor and create map?
-            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(property.getName(), attribute.getQueryable()) || (Objects.equals(property.getName(), ID_PLACEHOLDER) && attribute.isId());
+            // strip double quotes from the property name
+            String propertyName = property.getName().replaceAll("^\"|\"$", "");
+            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(propertyName, attribute.getQueryable()) || (Objects.equals(propertyName, ID_PLACEHOLDER) && attribute.isId());
             Optional<FeatureStoreAttributesContainer> table = instanceContainer.getAllAttributesContainers()
                                                                                .stream()
                                                                                .filter(attributesContainer -> attributesContainer.getAttributes()
@@ -178,7 +182,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                                                                               }));
 
             if (!table.isPresent() || !column.isPresent()) {
-                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", property.getName()));
+                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName));
             }
 
             if (LOGGER.isTraceEnabled()) {
