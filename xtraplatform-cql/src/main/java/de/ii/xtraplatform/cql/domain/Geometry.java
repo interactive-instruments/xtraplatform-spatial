@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -38,8 +39,8 @@ public interface Geometry<T> extends CqlNode {
 
     List<T> getCoordinates();
 
-    @Value.Auxiliary
     @JsonIgnore
+    @JacksonInject("filterCrs")
     Optional<EpsgCrs> getCrs();
 
     @Value.Immutable
