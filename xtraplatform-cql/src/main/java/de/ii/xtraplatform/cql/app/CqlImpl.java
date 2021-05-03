@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.cql.app;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @Provides
@@ -66,6 +68,7 @@ public class CqlImpl implements Cql {
             case TEXT:
                 return cqlTextParser.parse(cql, crs);
             case JSON:
+                cqlJsonMapper.setInjectableValues(new InjectableValues.Std().addValue("filterCrs", Optional.ofNullable(crs)));
                 try {
                     return cqlJsonMapper.readValue(cql, CqlFilter.class);
                 } catch (IOException e) {
