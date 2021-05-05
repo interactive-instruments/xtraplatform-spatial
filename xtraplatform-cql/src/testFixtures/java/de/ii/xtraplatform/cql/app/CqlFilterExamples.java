@@ -145,6 +145,19 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_40 = CqlFilter.of(Not.of(In.of("owner", ScalarLiteral.of("Mike"), ScalarLiteral.of("John"), ScalarLiteral.of("Tom"))));
 
+    public static final CqlFilter EXAMPLE_TEQUALS = CqlFilter.of(TEquals.of("built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
+
+    public static final CqlFilter EXAMPLE_DISJOINT = CqlFilter.of(Disjoint.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+
+    public static final CqlFilter EXAMPLE_EQUALS = CqlFilter.of(Equals.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+
+    public static final CqlFilter EXAMPLE_TOUCHES = CqlFilter.of(Touches.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+
+    public static final CqlFilter EXAMPLE_OVERLAPS = CqlFilter.of(Overlaps.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+
+    public static final CqlFilter EXAMPLE_CROSSES = CqlFilter.of(Crosses.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+
+    public static final CqlFilter EXAMPLE_CONTAINS = CqlFilter.of(Contains.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
     private static TemporalLiteral getTemporalLiteral(String temporalData) {
         try {
