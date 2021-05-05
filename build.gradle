@@ -8,7 +8,7 @@ allprojects {
 }
 
 ext {
-    versionSuffix = project.findProperty('isSnapshot') == 'true' ? '-SNAPSHOT' : ''
+    versionSuffix = project.findProperty('snapshot') == 'true' ? '-SNAPSHOT' : ''
 }
 
 version = '4.6.0' + versionSuffix

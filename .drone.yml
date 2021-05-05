@@ -20,7 +20,7 @@ pipeline:
     image: openjdk:11-slim
     commands:
       - export GRADLE_USER_HOME=$${DRONE_WORKSPACE}/.gradle
-      - ./gradlew build -PisSnapshot=true
+      - ./gradlew build -Psnapshot=true
     when:
       event: [push, pull_request]
 
@@ -36,7 +36,7 @@ pipeline:
     image: openjdk:11-slim
     commands:
       - export GRADLE_USER_HOME=$${DRONE_WORKSPACE}/.gradle
-      - ./gradlew publish -PisSnapshot=true -PdeployUser=$SNAPSHOT_USER -PdeployPassword=$SNAPSHOT_PASS
+      - ./gradlew publish -Psnapshot=true -PdeployUser=$SNAPSHOT_USER -PdeployPassword=$SNAPSHOT_PASS
     secrets: [ snapshot_user, snapshot_pass]
     when:
       event: push
