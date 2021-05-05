@@ -34,8 +34,6 @@ subprojects {
 
 apply from: 'immutables.gradle'
 
-apply from: 'snapshot.gradle'
-
 apply from: 'unit-tests.gradle'
 
 //apply from: 'integration-tests.gradle'
