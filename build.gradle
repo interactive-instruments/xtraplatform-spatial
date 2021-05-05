@@ -1,5 +1,5 @@
 plugins {
-    id 'de.interactive_instruments.xtraplatform-feature' version '3.5.0'
+    id 'de.interactive_instruments.xtraplatform-feature' version '3.5.1'
     id 'com.github.hierynomus.license-report' version '0.15.0' apply false
 }
 
@@ -8,13 +8,13 @@ allprojects {
 }
 
 ext {
-    versionSuffix = project.findProperty('isSnapshot') == 'true' ? '-SNAPSHOT' : ''
+    versionSuffix = project.findProperty('snapshot') == 'true' ? '-SNAPSHOT' : ''
 }
 
 version = '4.6.0' + versionSuffix
 
 dependencies {
-    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '3.5.0-SNAPSHOT'
+    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '3.5.0'
 
     bundle subprojects
 }
@@ -33,8 +33,6 @@ subprojects {
 }
 
 apply from: 'immutables.gradle'
-
-apply from: 'snapshot.gradle'
 
 apply from: 'unit-tests.gradle'
 
