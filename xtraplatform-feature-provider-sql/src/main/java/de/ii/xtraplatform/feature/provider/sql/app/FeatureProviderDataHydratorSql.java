@@ -84,10 +84,8 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
     }
 
     try {
-      SqlConnector connector = (SqlConnector) connectorFactory.createConnector(data);
-
       return cleanupAutoPersist(cleanupAdditionalInfo(
-          generateNativeCrsIfNecessary(generateTypesIfNecessary(data, connector))));
+          generateNativeCrsIfNecessary(generateTypesIfNecessary(data))));
 
     } catch (Throwable e) {
       LOGGER.error(
@@ -100,76 +98,82 @@ public class FeatureProviderDataHydratorSql implements EntityHydrator<FeaturePro
     throw new IllegalStateException();
   }
 
-  private FeatureProviderSqlData generateTypesIfNecessary(
-      FeatureProviderSqlData data, SqlConnector connector) {
+  private FeatureProviderSqlData generateTypesIfNecessary(FeatureProviderSqlData data) {
     if (data.isAuto() && data.getTypes().isEmpty()) {
+      SqlConnector connector = (SqlConnector) connectorFactory.createConnector(data);
 
-      ConnectionInfoSql connectionInfo = data.getConnectionInfo();
+      try {
+        ConnectionInfoSql connectionInfo = data.getConnectionInfo();
 
-      List<String> schemas =
-          connectionInfo.getSchemas().isEmpty()
-              ? connectionInfo.getDialect() == Dialect.GPKG
-              ? ImmutableList.of()
-              : ImmutableList.of("public")
-              : connectionInfo.getSchemas();
+        List<String> schemas =
+            connectionInfo.getSchemas().isEmpty()
+                ? connectionInfo.getDialect() == Dialect.GPKG
+                ? ImmutableList.of()
+                : ImmutableList.of("public")
+                : connectionInfo.getSchemas();
 
-      SchemaGeneratorSql schemaGeneratorSql =
-          new SchemaGeneratorSql(connector.getSqlClient(), schemas, data.getAutoTypes(), connectionInfo.getDialect() == Dialect.GPKG ? new SqlDialectGpkg()
-              : new SqlDialectPostGis());
+        SchemaGeneratorSql schemaGeneratorSql =
+            new SchemaGeneratorSql(connector.getSqlClient(), schemas, data.getAutoTypes(),
+                connectionInfo.getDialect() == Dialect.GPKG ? new SqlDialectGpkg()
+                    : new SqlDialectPostGis());
 
-      List<FeatureSchema> types = schemaGeneratorSql.generate();
+        List<FeatureSchema> types = schemaGeneratorSql.generate();
 
-      Map<String, Integer> idCounter = new LinkedHashMap<>();
-      types.forEach(
-          featureSchema ->
-              featureSchema.getProperties().stream()
-                  .filter(FeatureSchema::isId)
-                  .map(FeatureSchema::getSourcePath)
-                  .filter(Optional::isPresent)
-                  .map(Optional::get)
-                  .findFirst()
-                  .ifPresent(
-                      path -> {
-                        if (!idCounter.containsKey(path)) {
-                          idCounter.put(path, 0);
-                        }
-                        idCounter.put(path, idCounter.get(path) + 1);
-                      }));
+        Map<String, Integer> idCounter = new LinkedHashMap<>();
+        types.forEach(
+            featureSchema ->
+                featureSchema.getProperties().stream()
+                    .filter(FeatureSchema::isId)
+                    .map(FeatureSchema::getSourcePath)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .findFirst()
+                    .ifPresent(
+                        path -> {
+                          if (!idCounter.containsKey(path)) {
+                            idCounter.put(path, 0);
+                          }
+                          idCounter.put(path, idCounter.get(path) + 1);
+                        }));
 
-      String mostOftenUsedId = idCounter.entrySet().stream()
-          .max(Comparator.comparingInt(Entry::getValue))
-          .map(Entry::getKey)
-          .orElse("id");
+        String mostOftenUsedId = idCounter.entrySet().stream()
+            .max(Comparator.comparingInt(Entry::getValue))
+            .map(Entry::getKey)
+            .orElse("id");
 
-      ImmutableMap<String, FeatureSchema> typeMap =
-          types.stream()
-              .map(type -> {
-                Optional<String> differingSortKey = type.getIdProperty()
-                    .filter(idProperty -> !Objects.equals(idProperty.getName(), mostOftenUsedId))
-                    .map(FeatureSchema::getName);
+        ImmutableMap<String, FeatureSchema> typeMap =
+            types.stream()
+                .map(type -> {
+                  Optional<String> differingSortKey = type.getIdProperty()
+                      .filter(idProperty -> !Objects.equals(idProperty.getName(), mostOftenUsedId))
+                      .map(FeatureSchema::getName);
 
-                if (differingSortKey.isPresent() && type.getSourcePath().isPresent()) {
-                  return new ImmutableFeatureSchema.Builder().from(type).sourcePath(
-                      String.format("%s{sortKey=%s}", type.getSourcePath().get(), differingSortKey.get()))
-                      .build();
-                }
+                  if (differingSortKey.isPresent() && type.getSourcePath().isPresent()) {
+                    return new ImmutableFeatureSchema.Builder().from(type).sourcePath(
+                        String.format("%s{sortKey=%s}", type.getSourcePath().get(),
+                            differingSortKey.get()))
+                        .build();
+                  }
 
-                return type;
-              })
-              .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
-              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+                  return type;
+                })
+                .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
+                .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-      ImmutableFeatureProviderSqlData.Builder builder =
-          new ImmutableFeatureProviderSqlData.Builder().from(data).types(typeMap);
+        ImmutableFeatureProviderSqlData.Builder builder =
+            new ImmutableFeatureProviderSqlData.Builder().from(data).types(typeMap);
 
-      if (!Objects.equals(mostOftenUsedId, "id")) {
-        // LOGGER.debug("CHANGING defaultSortKey to {}", mostOftenUsedId);
-        builder.sourcePathDefaultsBuilder()
-            .primaryKey(mostOftenUsedId)
-            .sortKey(mostOftenUsedId);
+        if (!Objects.equals(mostOftenUsedId, "id")) {
+          // LOGGER.debug("CHANGING defaultSortKey to {}", mostOftenUsedId);
+          builder.sourcePathDefaultsBuilder()
+              .primaryKey(mostOftenUsedId)
+              .sortKey(mostOftenUsedId);
+        }
+
+        return builder.build();
+      } finally {
+        connectorFactory.disposeConnector(connector);
       }
-
-      return builder.build();
     }
 
     return data;
