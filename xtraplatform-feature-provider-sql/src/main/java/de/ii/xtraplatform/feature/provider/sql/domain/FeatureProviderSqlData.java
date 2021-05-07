@@ -30,7 +30,7 @@ public interface FeatureProviderSqlData extends FeatureProviderDataV2,
   @Override
   ConnectionInfoSql getConnectionInfo();
 
-  @JsonProperty(value = "sourcePathDefaults", access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+  //@JsonProperty(value = "sourcePathDefaults", access = JsonProperty.Access.WRITE_ONLY) // means only read from json
   //@Value.Default
   //can't use interface, bug in immutables when using attributeBuilderDetection and Default
   //default SqlPathDefaults getSourcePathDefaults() {

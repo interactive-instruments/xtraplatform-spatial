@@ -101,6 +101,8 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
                                                                     .name(table.getName())
                                                                     .sourcePath("/" + table.getName().toLowerCase());
 
+                boolean idFound = false;
+
                 for (final Column column : table.getColumns()) {
                     SchemaBase.Type featurePropertyType = getFeaturePropertyType(column.getColumnDataType());
                     if (featurePropertyType != SchemaBase.Type.UNKNOWN) {
@@ -108,8 +110,9 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
                                 .name(column.getName())
                                 .sourcePath(column.getName())
                                 .type(featurePropertyType);
-                        if (schemaInfo.isColumnUnique(column.getName(), table.getName(), false)) {
+                        if (!idFound && schemaInfo.isColumnUnique(column.getName(), table.getName(), false)) {
                             featureProperty.role(SchemaBase.Role.ID);
+                            idFound = true;
                         }
                         if (featurePropertyType == SchemaBase.Type.GEOMETRY) {
                             if (!geometryInfos.containsKey(table.getName())) {
