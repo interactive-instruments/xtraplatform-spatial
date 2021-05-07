@@ -68,6 +68,8 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         this.connector = (FeatureProviderConnector<T, U, V>) connectorFactory.createConnector(getData());
 
         if (!getConnector().isConnected()) {
+            connectorFactory.disposeConnector(connector);
+
             Optional<Throwable> connectionError = getConnector().getConnectionError();
             String message = connectionError.map(Throwable::getMessage)
                                             .orElse("unknown reason");
