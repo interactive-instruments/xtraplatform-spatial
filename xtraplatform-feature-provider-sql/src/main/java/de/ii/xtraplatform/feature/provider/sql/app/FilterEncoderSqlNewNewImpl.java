@@ -15,6 +15,7 @@ import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNewNew;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
@@ -586,6 +587,41 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         @Override
         public String visit(Geometry.Envelope envelope, List<String> children) {
             List<Double> c = envelope.getCoordinates();
+
+            // TODO we should get this information from the CRS
+            EpsgCrs crs = envelope.getCrs().orElse(OgcCrs.CRS84);
+            int epsgCode = crs.getCode();
+            boolean hasDiscontinuityAt180DegreeLongitude = ImmutableList.of(4326, 4979, 4259, 4269).contains(epsgCode);
+
+            if (c.get(0)>c.get(2) && hasDiscontinuityAt180DegreeLongitude) {
+                // special case, the bbox crosses the antimeridian, we create convert this to a MultiPolygon
+                List<Coordinate> coordinates1 = ImmutableList.of(
+                        Coordinate.of(c.get(0), c.get(1)),
+                        Coordinate.of(180.0, c.get(1)),
+                        Coordinate.of(180.0, c.get(3)),
+                        Coordinate.of(c.get(0), c.get(3)),
+                        Coordinate.of(c.get(0), c.get(1))
+                );
+                List<Coordinate> coordinates2 = ImmutableList.of(
+                        Coordinate.of(-180, c.get(1)),
+                        Coordinate.of(c.get(2), c.get(1)),
+                        Coordinate.of(c.get(2), c.get(3)),
+                        Coordinate.of(-180, c.get(3)),
+                        Coordinate.of(-180, c.get(1))
+                );
+                Geometry.Polygon polygon1 = new ImmutablePolygon.Builder().addCoordinates(coordinates1)
+                                                                          .crs(crs)
+                                                                          .build();
+                Geometry.Polygon polygon2 = new ImmutablePolygon.Builder().addCoordinates(coordinates2)
+                                                                          .crs(crs)
+                                                                          .build();
+                Geometry.MultiPolygon twoEnvelopes = new ImmutableMultiPolygon.Builder().addCoordinates(polygon1, polygon2)
+                                                                                        .crs(crs)
+                                                                                        .build();
+                return visit(twoEnvelopes, ImmutableList.of());
+            }
+
+            // standard case
             List<Coordinate> coordinates = ImmutableList.of(
                     Coordinate.of(c.get(0), c.get(1)),
                     Coordinate.of(c.get(2), c.get(1)),
@@ -594,7 +630,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     Coordinate.of(c.get(0), c.get(1))
             );
             Geometry.Polygon polygon = new ImmutablePolygon.Builder().addCoordinates(coordinates)
-                                                                     .crs(envelope.getCrs())
+                                                                     .crs(crs)
                                                                      .build();
 
             return visit(polygon, ImmutableList.of());
