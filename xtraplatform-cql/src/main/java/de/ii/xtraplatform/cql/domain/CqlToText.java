@@ -358,7 +358,7 @@ public class CqlToText implements CqlVisitor<String> {
             }
             return sj.toString();
         } else {
-            return property.getName();
+            return property.getPath().get(property.getPath().size() - 1);
         }
     }
 

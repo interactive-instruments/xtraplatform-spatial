@@ -28,6 +28,13 @@ public interface Between extends NonBinaryScalarOperation, CqlNode {
                                              .build();
     }
 
+    static Between of(Property property, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
+        return new ImmutableBetween.Builder().value(property)
+                .lower(scalarLiteral1)
+                .upper(scalarLiteral2)
+                .build();
+    }
+
     static Between ofFunction(Function function, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
         return new ImmutableBetween.Builder().value(function)
                                              .lower(scalarLiteral1)
