@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import com.google.common.io.CharStreams;
+import com.google.common.io.Resources;
 import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
@@ -86,29 +87,46 @@ public class OGCEntityResolver implements EntityResolver {
         }
 
         //LOGGER.info(" --- {} --- {} ", systemId, publicId);
-        if (publicId != null && publicId.equals("http://www.opengis.net/gml")) {
-            if (!isAvailable(systemId)) {
-                return new InputSource("http://schemas.opengis.net/gml/3.1.1/base/gml.xsd");
-            }
-        }
-        if (publicId != null && publicId.equals("http://www.opengis.net/gml/3.2")) {
-            if (!isAvailable(systemId)) {
-                return new InputSource("http://schemas.opengis.net/gml/3.2.1/gml.xsd");
-            }
-        }
-        if (publicId != null && publicId.equals("http://www.w3.org/1999/xlink")) {
-            if (!isAvailable(systemId)) {
-                return new InputSource("http://www.w3.org/1999/xlink.xsd");
-            }
-        }
-
-        if (publicId != null && publicId.equals("http://www.aixm.aero/schema/5.1")) {
-            if (!isAvailable(systemId)) {
-                return new InputSource("http://www.aixm.aero/gallery/content/public/schema/5.1/AIXM_Features.xsd");
+        if (publicId != null) {
+            switch (publicId) {
+                case "http://www.opengis.net/gml/3.2":
+                    return getSchemaFromBundle(publicId, "/schemas/gml/3.2.2/gml.xsd");
+                case "http://www.w3.org/1999/xlink":
+                    return getSchemaFromBundle(publicId, "/schemas/w3c/xlink.xsd");
+                case "http://www.w3.org/XML/1998/namespace":
+                    return getSchemaFromBundle(publicId, "/schemas/w3c/xml.xsd");
+                case "http://www.isotc211.org/2005/gco":
+                    return getSchemaFromBundle(publicId, "/schemas/iso/gco/1.0/gco.xsd");
+                case "http://www.isotc211.org/2005/gmd":
+                    return getSchemaFromBundle(publicId, "/schemas/iso/gmd/1.0/gmd.xsd");
+                case "http://www.isotc211.org/2005/gmx":
+                    return getSchemaFromBundle(publicId, "/schemas/iso/gmx/1.0/gmx.xsd");
+                case "http://www.isotc211.org/2005/gsr":
+                    return getSchemaFromBundle(publicId, "/schemas/iso/gsr/1.0/gsr.xsd");
+                case "http://www.isotc211.org/2005/gss":
+                    return getSchemaFromBundle(publicId, "/schemas/iso/gss/1.0/gss.xsd");
+                case "http://www.isotc211.org/2005/gts":
+                    return getSchemaFromBundle(publicId, "/schemas/iso/gts/1.0/gts.xsd");
+                case "http://www.opengis.net/gml":
+                    return getSchemaFromBundle(publicId, "/schemas/gml/3.1.1/base/gml.xsd");
+                case "http://www.w3.org/2001/SMIL20/":
+                    return getSchemaFromBundle(publicId, "/schemas/gml/3.1.1/smil/smil20.xsd");
+                case "http://www.aixm.aero/schema/5.1":
+                    if (!isAvailable(systemId)) {
+                        return new InputSource("http://www.aixm.aero/gallery/content/public/schema/5.1/AIXM_Features.xsd");
+                    }
+                    break;
             }
         }
 
         if (systemId != null) {
+            // read embedded schema document
+            if (publicId == null && systemId.startsWith("bundle:")) {
+                InputSource is = new InputSource(systemId);
+                is.setSystemId(systemId);
+                return is;
+            }
+
             // Workaround for broken Schema in dwd-WFS
             if (systemId.endsWith("gml.xsd") && systemId.contains("kunden.dwd.de")) {
                 return new InputSource("http://schemas.opengis.net/gml/3.2.1/gml.xsd");
@@ -157,6 +175,14 @@ public class OGCEntityResolver implements EntityResolver {
         }
 
         return null;
+    }
+
+    private InputSource getSchemaFromBundle(String publicId, String schemaPath) throws IOException {
+        URL url = Resources.getResource(OGCEntityResolver.class, schemaPath);
+        InputSource is = new InputSource(url.openStream());
+        is.setPublicId(publicId);
+        is.setSystemId(url.toString());
+        return is;
     }
 
     private boolean isAvailable(String systemId) {
