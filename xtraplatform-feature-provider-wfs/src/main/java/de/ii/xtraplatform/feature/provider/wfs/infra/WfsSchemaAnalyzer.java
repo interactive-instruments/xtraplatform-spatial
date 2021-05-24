@@ -152,6 +152,8 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
             Optional<FeatureSchema.Type> propertyType = getPropertyType(type, isParentMultiple, isComplex, isObject);
             if (propertyType.isPresent()) {
                 String fieldNameGml = currentPath.toFieldNameGml();
+                if (fieldNameGml.equals("id"))
+                    fieldNameGml = "_id_";
                 property.name(getShortPropertyName(fieldNameGml))
                         .sourcePath(getSourcePath(currentPath.asList()))
                         .type(propertyType.get());
