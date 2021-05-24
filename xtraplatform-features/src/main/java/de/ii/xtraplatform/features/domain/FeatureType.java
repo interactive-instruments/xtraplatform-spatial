@@ -79,7 +79,11 @@ public interface FeatureType extends Buildable<FeatureType> {
                                                            for (Map.Entry<String, String> entry : getAdditionalInfo().entrySet()) {
                                                                String prefix = entry.getKey();
                                                                String uri = entry.getValue();
-                                                               resolvedElement = resolvedElement.replaceAll(prefix + ":", uri + ":");
+                                                               if (prefix.isBlank()) {
+                                                                   if (resolvedElement.startsWith(":"))
+                                                                       resolvedElement = uri + resolvedElement;
+                                                               } else
+                                                                   resolvedElement = resolvedElement.replaceAll(prefix + ":", uri + ":");
                                                            }
 
                                                            return resolvedElement;
