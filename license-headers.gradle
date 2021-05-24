@@ -21,6 +21,9 @@ subprojects {
                 "**/*.ico",
                 "**/*.xcf",
                 "**/*.txt",
+                "**/*.xsd",
+                "**/*.xml",
+                "**/*.rdf",
                 "**/*.yml",
                 "**/*.json"])
         ext.year = Calendar.getInstance().get(Calendar.YEAR)
