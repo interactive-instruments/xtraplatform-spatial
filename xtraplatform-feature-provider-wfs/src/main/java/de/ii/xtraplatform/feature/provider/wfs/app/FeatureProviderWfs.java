@@ -11,7 +11,6 @@ import akka.NotUsed;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
@@ -46,10 +45,8 @@ import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
-import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
+import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
 import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -57,7 +54,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.ws.rs.core.MediaType;
 import org.apache.felix.ipojo.annotations.Context;
-import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
@@ -171,7 +167,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
         }
 
         try {
-            RunnableGraphWithMdc<CompletionStage<Optional<BoundingBox>>> extentGraph = extentReader.getExtent(typeInfo.get());
+            RunnableGraphWrapper<Optional<BoundingBox>> extentGraph = extentReader.getExtent(typeInfo.get());
             return getStreamRunner().run(extentGraph)
                                     .exceptionally(throwable -> Optional.empty())
                                     .toCompletableFuture()

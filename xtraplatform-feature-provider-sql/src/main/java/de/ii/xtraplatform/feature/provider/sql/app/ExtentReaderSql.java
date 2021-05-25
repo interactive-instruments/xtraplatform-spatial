@@ -21,9 +21,8 @@ import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.streams.domain.LogContextStream;
-import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
+import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import org.threeten.extra.Interval;
 
@@ -44,7 +43,7 @@ class ExtentReaderSql implements ExtentReader {
 
 
     @Override
-    public RunnableGraphWithMdc<CompletionStage<Optional<BoundingBox>>> getExtent(FeatureStoreTypeInfo typeInfo) {
+    public RunnableGraphWrapper<Optional<BoundingBox>> getExtent(FeatureStoreTypeInfo typeInfo) {
         //TODO: multiple main tables
         FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
                                                                   .get(0);
@@ -62,7 +61,7 @@ class ExtentReaderSql implements ExtentReader {
                                                                                                               .get(0), crs)), Sink.head());
     }
 
-    public RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String property) {
+    public RunnableGraphWrapper<Optional<Interval>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String property) {
         FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
                 .get(0);
         Optional<FeatureStoreAttributesContainer> temporalAttributesContainer = instanceContainer.getTemporalAttributesContainer(property);
@@ -78,7 +77,7 @@ class ExtentReaderSql implements ExtentReader {
         return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseTemporalExtent((String) sqlRow.getValues().get(0), (String) sqlRow.getValues().get(1))), Sink.head());
     }
 
-    public RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String startProperty, String endProperty) {
+    public RunnableGraphWrapper<Optional<Interval>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String startProperty, String endProperty) {
         FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
                 .get(0);
         Optional<FeatureStoreAttributesContainer> startAttributesContainer = instanceContainer.getTemporalAttributesContainer(startProperty);

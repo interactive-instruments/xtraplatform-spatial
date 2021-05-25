@@ -10,9 +10,7 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 import akka.Done;
 import akka.NotUsed;
 import akka.japi.function.Function2;
-import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
-import akka.stream.javadsl.RunnableGraph;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -20,35 +18,35 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
-import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureProviderSqlData;
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathDefaults;
-import de.ii.xtraplatform.features.domain.ConnectionInfo;
-import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql.Dialect;
+import de.ii.xtraplatform.feature.provider.sql.domain.FeatureProviderSqlData;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSchemaMappingSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectGpkg;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis;
+import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathDefaults;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathParser;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlTypeInfoValidator;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
+import de.ii.xtraplatform.features.domain.ConnectionInfo;
+import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureDecoder;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
+import de.ii.xtraplatform.features.domain.FeatureMutationPipeline;
 import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
@@ -60,8 +58,8 @@ import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
-import de.ii.xtraplatform.features.domain.FeatureTransformer;
 import de.ii.xtraplatform.features.domain.FeatureType;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureMutationPipeline;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
@@ -69,25 +67,22 @@ import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
 import de.ii.xtraplatform.streams.domain.LogContextStream;
-import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
+import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import org.apache.felix.ipojo.annotations.Context;
-import org.apache.felix.ipojo.annotations.Property;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.osgi.framework.BundleContext;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
-
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 @EntityComponent
 @Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderSqlData.class)
@@ -390,7 +385,7 @@ public class FeatureProviderSql extends
           FeatureStoreAttribute::getName).ifPresent(spatialProperty -> LOGGER.debug("Computing spatial extent for '{}.{}'", typeName, spatialProperty));
 
       try {
-        RunnableGraphWithMdc<CompletionStage<Optional<BoundingBox>>> extentGraph = extentReader
+        RunnableGraphWrapper<Optional<BoundingBox>> extentGraph = extentReader
             .getExtent(typeInfo.get());
         return getStreamRunner().run(extentGraph)
             .exceptionally(throwable -> Optional.empty())
@@ -430,7 +425,7 @@ public class FeatureProviderSql extends
       LOGGER.debug("Computing temporal extent for '{}.{}'", typeName, property);
 
       try {
-        RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> extentGraph = ((ExtentReaderSql) extentReader)
+        RunnableGraphWrapper<Optional<Interval>> extentGraph = ((ExtentReaderSql) extentReader)
             .getTemporalExtent(typeInfo.get(), property);
 
         return computeTemporalExtent(extentGraph);
@@ -455,7 +450,7 @@ public class FeatureProviderSql extends
       LOGGER.debug("Computing temporal extent for '{}.{}' and '{}.{}'", typeName, startProperty, typeName, endProperty);
 
       try {
-        RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> extentGraph = ((ExtentReaderSql) extentReader)
+        RunnableGraphWrapper<Optional<Interval>> extentGraph = ((ExtentReaderSql) extentReader)
             .getTemporalExtent(typeInfo.get(), startProperty, endProperty);
 
         return computeTemporalExtent(extentGraph);
@@ -468,7 +463,7 @@ public class FeatureProviderSql extends
   }
 
   private Optional<Interval> computeTemporalExtent(
-      RunnableGraphWithMdc<CompletionStage<Optional<Interval>>> extentComputation) {
+      RunnableGraphWrapper<Optional<Interval>> extentComputation) {
     return getStreamRunner().run(extentComputation)
         .exceptionally(throwable -> {
           LOGGER.warn("Cannot compute temporal extent: {}",
@@ -481,12 +476,6 @@ public class FeatureProviderSql extends
         })
         .toCompletableFuture()
         .join();
-  }
-
-  @Override
-  public List<String> addFeaturesFromStream(String featureType, CrsTransformer crsTransformer,
-      Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream) {
-    return null;
   }
 
 
@@ -505,12 +494,6 @@ public class FeatureProviderSql extends
 
     //TODO:
     return writeFeatures(featureType, featureSource, Optional.of(id));
-  }
-
-  @Override
-  public void updateFeatureFromStream(String featureType, String id, CrsTransformer crsTransformer,
-      Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream) {
-
   }
 
   @Override
@@ -544,7 +527,7 @@ public class FeatureProviderSql extends
                       .error(Optional.ofNullable(throwable))
                       .build();
                 }));
-    RunnableGraphWithMdc<CompletionStage<MutationResult>> graph = LogContextStream
+    RunnableGraphWrapper<MutationResult> graph = LogContextStream
         .graphWithMdc(deletionSource, Sink.ignore(), Keep.left());
 
     return getStreamRunner().run(graph)
@@ -588,40 +571,13 @@ public class FeatureProviderSql extends
         .targetSchema(mutationSchemaSql)
         .build();
 
-    Source<FeatureSql, ?> features = featureSource
-        .decode(mapping4, ModifiableFeatureSql::create, ModifiablePropertySql::create);
-
-    Flow<FeatureSql, String, NotUsed> creator = id.isPresent()
-        ? featureMutationsSql
-        .getUpdaterFlow(mutationSchemaSql, getStreamRunner().getDispatcher(), id.get())
-        : featureMutationsSql.getCreatorFlow(mutationSchemaSql, getStreamRunner().getDispatcher());
-
-    Sink<String, CompletionStage<MutationResult>> of = Flow.of(String.class)
-        .watchTermination(
-            (Function2<NotUsed, CompletionStage<Done>, CompletionStage<ImmutableMutationResult.Builder>>) (notUsed, completionStage) -> completionStage
-                .handle((done, throwable) -> {
-                  return ImmutableMutationResult.builder()
-                      .error(Optional.ofNullable(throwable));
-                }))
-        .toMat(Sink.seq(), FeatureProviderSql::writeIdsToResult);
-
-    //combined
-    Source<String, CompletionStage<ImmutableMutationResult.Builder>> idSource = features
-        .viaMat(creator, Keep.right())
-        //TODO: only catches errors from downstream
-        .watchTermination(
-            (Function2<NotUsed, CompletionStage<Done>, CompletionStage<ImmutableMutationResult.Builder>>) (notUsed, completionStage) -> completionStage
-                .handle((done, throwable) -> {
-                  return ImmutableMutationResult.builder()
-                      .error(Optional.ofNullable(throwable));
-                }));
-
-    // result is
-    RunnableGraphWithMdc<CompletionStage<MutationResult>> graph = LogContextStream
-        .graphWithMdc(idSource, Sink.seq(), FeatureProviderSql::writeIdsToResult);
-
-    return getStreamRunner().run(graph)
-        .exceptionally(throwable -> {
+    FeatureMutationPipeline<PropertySql, FeatureSql, SchemaSql> featureMutationPipeline = ImmutableFeatureMutationPipeline.<PropertySql, FeatureSql, SchemaSql>builder()
+        .decoderWithSource(featureSource)
+        .mapping(mapping4)
+        .featureCreator(ModifiableFeatureSql::create)
+        .propertyCreator(ModifiablePropertySql::create)
+        .encoder(new FeatureEncoderSql(featureMutationsSql, getStreamRunner().getDispatcher(), id))
+        .exceptionHandler(throwable -> {
           Throwable error = throwable.getCause() instanceof PSQLException
               || throwable.getCause() instanceof JsonParseException
               ? new IllegalArgumentException(throwable.getCause().getMessage())
@@ -631,15 +587,11 @@ public class FeatureProviderSql extends
               .error(Optional.ofNullable(error))
               .build();
         })
+        .build();
+
+    return getStreamRunner().run(featureMutationPipeline)
         .toCompletableFuture()
         .join();
-  }
-
-  private static CompletionStage<MutationResult> writeIdsToResult(
-      CompletionStage<ImmutableMutationResult.Builder> resultStage,
-      CompletionStage<List<String>> idsStage) {
-    return resultStage.thenCombine(idsStage, (result, ids) -> result.ids(ids)
-        .build());
   }
 
   @Override

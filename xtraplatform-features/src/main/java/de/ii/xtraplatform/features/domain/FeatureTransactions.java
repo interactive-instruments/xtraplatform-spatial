@@ -32,13 +32,9 @@ public interface FeatureTransactions {
         Optional<Throwable> getError();
     }
 
-    List<String> addFeaturesFromStream(String featureType, CrsTransformer crsTransformer, Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream);
-
-    MutationResult createFeatures(String featureType, FeatureDecoder.WithSource featureSource);
+  MutationResult createFeatures(String featureType, FeatureDecoder.WithSource featureSource);
 
     MutationResult updateFeature(String featureType, FeatureDecoder.WithSource featureSource, String id);
 
-    void updateFeatureFromStream(String featureType, String id, CrsTransformer crsTransformer, Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream);
-
-    MutationResult deleteFeature(String featureType, String id);
+  MutationResult deleteFeature(String featureType, String id);
 }

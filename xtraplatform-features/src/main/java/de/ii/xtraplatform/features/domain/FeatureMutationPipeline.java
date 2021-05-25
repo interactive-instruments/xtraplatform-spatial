@@ -12,13 +12,12 @@ import akka.NotUsed;
 import akka.japi.function.Function2;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
-import org.immutables.value.Value;
-
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import org.immutables.value.Value;
 
 @Value.Immutable
-public interface FeatureMutationPipeline<U extends PropertyBase<U,W>, V extends FeatureBase<U,W>, W extends SchemaBase<W>> extends FeaturePipeline<U, V, W, String, CompletionStage<FeatureTransactions.MutationResult>> {
+public interface FeatureMutationPipeline<U extends PropertyBase<U,W>, V extends FeatureBase<U,W>, W extends SchemaBase<W>> extends FeaturePipeline<U, V, W, String, FeatureTransactions.MutationResult> {
 
     @Value.Derived
     @Value.Auxiliary

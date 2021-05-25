@@ -21,9 +21,8 @@ import de.ii.xtraplatform.features.domain.FeatureMetadata;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.streams.domain.LogContextStream;
-import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
+import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 
 public class ExtentReaderWfs implements ExtentReader {
 
@@ -36,7 +35,7 @@ public class ExtentReaderWfs implements ExtentReader {
     }
 
     @Override
-    public RunnableGraphWithMdc<CompletionStage<Optional<BoundingBox>>> getExtent(FeatureStoreTypeInfo typeInfo) {
+    public RunnableGraphWrapper<Optional<BoundingBox>> getExtent(FeatureStoreTypeInfo typeInfo) {
 
         Optional<BoundingBox> boundingBox = featureMetadata.getMetadata()
                                                       .map(Metadata::getFeatureTypesBoundingBox)
