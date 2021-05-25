@@ -12,10 +12,8 @@ package de.ii.xtraplatform.features.geojson.app;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  *
@@ -24,14 +22,12 @@ import java.util.stream.Collectors;
 // TODO: make XMLPathTracker extension of this
 public class JsonPathTracker {
 
-    private final String[] localPath;
-    private int length;
-    private static final Joiner JOINER = Joiner.on('.')
-                                               .skipNulls();
+    private static final Joiner JOINER = Joiner.on('.').skipNulls();
+
+    private final List<String> localPath;
 
     public JsonPathTracker() {
-        this.localPath = new String[64];
-        this.length = 0;
+        this.localPath = new ArrayList<>(64);
     }
 
     public void track(int depth) {
@@ -51,28 +47,23 @@ public class JsonPathTracker {
         if (depth <= 0) {
             return;
         }
-        if (depth <= length/*localPath.size()*/) {
-            //localPath.subList(depth - 1, localPath.size()).clear();
-            length = depth - 1;
+        if (depth <= localPath.size()) {
+            localPath.subList(depth - 1, localPath.size()).clear();
         }
     }
 
     public void track(String localName) {
-        localPath[length] = localName;
-        length++;
+        localPath.add(localName);
     }
 
     @Override
     public String toString() {
-        //return JOINER.join(localPath.build());
-        if (length == 0) return "";
-        return Arrays.stream(localPath, 0, length)
-                     .collect(Collectors.joining("."));
+        if (localPath.isEmpty()) return "";
+        return JOINER.join(localPath);
     }
 
     public List<String> asList() {
-        if (length == 0) return ImmutableList.of();
-        return Arrays.stream(localPath, 0, length)
-                     .collect(ImmutableList.toImmutableList());
+        if (localPath.isEmpty()) return ImmutableList.of();
+        return ImmutableList.copyOf(localPath);
     }
 }

@@ -9,7 +9,9 @@ package de.ii.xtraplatform.features.geojson.app
 
 import de.ii.xtraplatform.features.domain.Feature
 import de.ii.xtraplatform.features.domain.FeatureProcessor
+import de.ii.xtraplatform.features.domain.FeatureReader
 import de.ii.xtraplatform.features.domain.FeatureReaderGeneric
+import de.ii.xtraplatform.features.domain.FeatureSchemaMapper
 import de.ii.xtraplatform.features.domain.ModifiableFeature
 import de.ii.xtraplatform.features.domain.ModifiableProperty
 import de.ii.xtraplatform.features.domain.Property
@@ -23,7 +25,7 @@ import spock.lang.Specification
 /**
  * @author zahnen
  */
-@Ignore
+//@Ignore
 class FeatureReaderToProcessorSpec extends Specification {
 
     static final Logger LOGGER = LoggerFactory.getLogger(FeatureReaderToProcessorSpec.class)
@@ -34,8 +36,9 @@ class FeatureReaderToProcessorSpec extends Specification {
         given:
 
         FeatureProcessor<Property, Feature, Schema> featureProcessor = Mock()
-        FeatureReaderGeneric featureReader = new FeatureReaderToProcessor<Property, Feature, Schema>(featureProcessor)
-        GeoJsonParser parser = new GeoJsonParser(featureReader)
+        FeatureReader<Schema, Schema> featureReader = new FeatureReaderToProcessor<Property, Feature, Schema>(featureProcessor)
+        FeatureSchemaMapper<Schema> featureSchemaMapper = new FeatureSchemaMapper<>(null, featureReader)
+        GeoJsonParser parser = new GeoJsonParser(featureSchemaMapper)
 
         def source = new File('src/test/resources/nested_array_object.json').text
 
