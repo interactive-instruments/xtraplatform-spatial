@@ -21,6 +21,8 @@ import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.streams.domain.LogContextStream;
+import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -43,7 +45,7 @@ class ExtentReaderSql implements ExtentReader {
 
 
     @Override
-    public RunnableGraphWrapper<Optional<BoundingBox>> getExtent(FeatureStoreTypeInfo typeInfo) {
+    public Stream<Optional<BoundingBox>> getExtent(FeatureStoreTypeInfo typeInfo) {
         //TODO: multiple main tables
         FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
                                                                   .get(0);
@@ -55,10 +57,12 @@ class ExtentReaderSql implements ExtentReader {
 
         String query = queryGenerator.getExtentQuery(spatialAttributesContainer.get());
 
-        Source<SqlRow, NotUsed> sourceStream = sqlClient.get().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class));
-
-        return LogContextStream.graphWithMdc(sourceStream.map(sqlRow -> sqlDialect.parseExtent((String) sqlRow.getValues()
-                                                                                                              .get(0), crs)), Sink.head());
+        //TODO: test
+        return Reactive.Source
+            .akka(sqlClient.get().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class)))
+            .via(Reactive.Transformer.map(sqlRow -> sqlDialect.parseExtent((String) sqlRow.getValues()
+                .get(0), crs)))
+            .to(Reactive.Sink.head());
     }
 
     public RunnableGraphWrapper<Optional<Interval>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String property) {

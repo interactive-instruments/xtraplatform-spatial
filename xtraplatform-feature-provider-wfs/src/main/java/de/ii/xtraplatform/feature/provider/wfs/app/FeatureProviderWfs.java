@@ -39,13 +39,13 @@ import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.FeatureSourceStream;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
-import de.ii.xtraplatform.features.domain.FeatureStream2.Result;
+import de.ii.xtraplatform.features.domain.FeatureStream2.ResultOld;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
-import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
-import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
+import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Objects;
@@ -53,9 +53,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.ws.rs.core.MediaType;
-import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Requires;
-import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
@@ -77,11 +75,10 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     private ExtentReader extentReader;
     private FeatureStorePathParser pathParser;
 
-    public FeatureProviderWfs(@Context BundleContext context,
-                              @Requires ActorSystemProvider actorSystemProvider,
-                              @Requires CrsTransformerFactory crsTransformerFactory,
-                              @Requires ConnectorFactory connectorFactory) {
-        super(context, actorSystemProvider, connectorFactory);
+    public FeatureProviderWfs(@Requires CrsTransformerFactory crsTransformerFactory,
+                              @Requires ConnectorFactory connectorFactory,
+                              @Requires Reactive reactive) {
+        super(connectorFactory, reactive);
 
         this.crsTransformerFactory = crsTransformerFactory;
     }
@@ -167,8 +164,9 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
         }
 
         try {
-            RunnableGraphWrapper<Optional<BoundingBox>> extentGraph = extentReader.getExtent(typeInfo.get());
-            return getStreamRunner().run(extentGraph)
+            Stream<Optional<BoundingBox>> extentGraph = extentReader.getExtent(typeInfo.get());
+
+            return extentGraph.on(getStreamRunner()).run()
                                     .exceptionally(throwable -> Optional.empty())
                                     .toCompletableFuture()
                                     .join();
@@ -216,13 +214,13 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     public FeatureSourceStream<ByteString> getFeatureSourceStream(FeatureQuery query) {
         return new FeatureSourceStream<>() {
             @Override
-            public CompletionStage<Result> runWith(FeatureConsumer consumer) {
+            public CompletionStage<ResultOld> runWith(FeatureConsumer consumer) {
                 Optional<FeatureStoreTypeInfo> typeInfo = Optional
                     .ofNullable(getTypeInfos().get(query.getType()));
 
                 if (!typeInfo.isPresent()) {
                     //TODO: put error message into Result, complete successfully
-                    CompletableFuture<Result> promise = new CompletableFuture<>();
+                    CompletableFuture<ResultOld> promise = new CompletableFuture<>();
                     promise.completeExceptionally(
                         new IllegalStateException("No features available for type"));
                     return promise;
@@ -237,15 +235,30 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
                 Source<ByteString, NotUsed> sourceStream = getConnector()
                     .getSourceStream(transformedQuery, options);
 
-                Sink<ByteString, CompletionStage<Result>> sink = featureNormalizer
+                Sink<ByteString, CompletionStage<ResultOld>> sink = featureNormalizer
                     .normalizeAndConsume(consumer, query);
+
+                //TODO: test
+                /*ImmutableReactiveStream<ByteString, ByteString, FeaturePipeline.Result.Builder, FeaturePipeline.Result> stream = ImmutableReactiveStream
+                    .<ByteString, ByteString, FeaturePipeline.Result.Builder, FeaturePipeline.Result>builder()
+                    .source(ReactiveStream.Source.of(sourceStream))
+                    .sink(ReactiveStream.Sink.of(sink))
+                    .resultInitializer(() -> ImmutableResult.builder()
+                        .isEmpty(false)//TODO!readContext.getReadState().isAtLeastOneFeatureWritten()
+                        .build())
+                    .exceptionHandler(throwable -> ImmutableResult.builder()
+                        .isEmpty(false)
+                        .error(throwable)
+                        .build())
+                    .build();
+                return getStreamRunner().run(stream);*/
 
                 return getStreamRunner().run(sourceStream, sink);
             }
 
             @Override
-            public CompletionStage<Result> runWith2(
-                Sink<ByteString, CompletionStage<Result>> consumer) {
+            public CompletionStage<ResultOld> runWith2(
+                Sink<ByteString, CompletionStage<ResultOld>> consumer) {
                 return null;
             }
         };

@@ -1,12 +1,15 @@
 package de.ii.xtraplatform.features.domain;
 
+import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import de.ii.xtraplatform.streams.domain.Reactive.TranformerCustomFuseable;
 import de.ii.xtraplatform.streams.domain.Reactive.TranformerCustomFuseableIn;
+import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomSource;
 import java.util.Objects;
 import java.util.function.Consumer;
 
 public abstract class FeatureEventTransformer implements
     TranformerCustomFuseable<Object, FeatureEventConsumer>,
+    TransformerCustomSource<Object, Object, FeatureTokenSource>,
     FeatureEventConsumer {
 
   private final FeatureTokenReader tokenReader;
@@ -54,6 +57,11 @@ public abstract class FeatureEventTransformer implements
   @Override
   public FeatureEventConsumer fuseableSink() {
     return this;
+  }
+
+  @Override
+  public FeatureTokenSource getCustomSource(Source<Object> source) {
+    return new FeatureTokenSource(source);
   }
 
   protected final FeatureEventConsumer getDownstream() {

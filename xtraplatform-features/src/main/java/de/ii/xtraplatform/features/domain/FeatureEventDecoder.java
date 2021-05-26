@@ -1,12 +1,15 @@
 package de.ii.xtraplatform.features.domain;
 
+import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import de.ii.xtraplatform.streams.domain.Reactive.TranformerCustomFuseableIn;
 import de.ii.xtraplatform.streams.domain.Reactive.TranformerCustomFuseableOut;
+import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomSource;
 import java.util.Objects;
 import java.util.function.Consumer;
 
 public abstract class FeatureEventDecoder<T> implements
-    TranformerCustomFuseableOut<T, Object, FeatureEventConsumer> {
+    TranformerCustomFuseableOut<T, Object, FeatureEventConsumer>,
+    TransformerCustomSource<T, Object, FeatureTokenSource> {
 
   private FeatureEventConsumer downstream;
 
@@ -44,6 +47,11 @@ public abstract class FeatureEventDecoder<T> implements
   @Override
   public final void onComplete() {
     cleanup();
+  }
+
+  @Override
+  public FeatureTokenSource getCustomSource(Source<Object> source) {
+    return new FeatureTokenSource(source);
   }
 
   protected final FeatureEventConsumer getDownstream() {

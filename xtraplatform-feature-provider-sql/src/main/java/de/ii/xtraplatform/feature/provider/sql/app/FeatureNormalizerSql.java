@@ -29,20 +29,15 @@ import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreMultiplicityTracker;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
-import de.ii.xtraplatform.features.domain.FeatureStream2;
+import de.ii.xtraplatform.features.domain.FeatureStream2.ResultOld;
 import de.ii.xtraplatform.features.domain.FeatureTransformer2;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableCollectionMetadata;
-import de.ii.xtraplatform.features.domain.ImmutableResult;
+import de.ii.xtraplatform.features.domain.ImmutableResultOld;
 import de.ii.xtraplatform.features.domain.PropertyBase;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.runtime.domain.LogContext;
 import de.ii.xtraplatform.streams.domain.LogContextStream;
-import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -50,6 +45,10 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
+import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
@@ -70,7 +69,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
     }
 
     @Override
-    public Sink<SqlRow, CompletionStage<FeatureStream2.Result>> normalizeAndTransform(
+    public Sink<SqlRow, CompletionStage<ResultOld>> normalizeAndTransform(
             FeatureTransformer2 featureTransformer, FeatureQuery featureQuery) {
 
         FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());
@@ -86,7 +85,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
     }
 
     @Override
-    public <U extends PropertyBase<U,W>, V extends FeatureBase<U,W>, W extends SchemaBase<W>> Source<V, CompletionStage<FeatureStream2.Result>> normalize(
+    public <U extends PropertyBase<U,W>, V extends FeatureBase<U,W>, W extends SchemaBase<W>> Source<V, CompletionStage<ResultOld>> normalize(
             Source<SqlRow, NotUsed> sourceStream, FeatureQuery featureQuery, Supplier<V> featureCreator,
             Supplier<U> propertyCreator) {
 
@@ -117,9 +116,10 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
         SubSource<V, NotUsed> folded = subSource.fold(featureCreator.get(), handleRow(readContext, propertyCreator));
 
-        Source<V, CompletionStage<FeatureStream2.Result>> featureSource = folded.concatSubstreams()
-                                                                                .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
-                                                                                    return ImmutableResult.builder()
+        Source<V, CompletionStage<ResultOld>> featureSource = folded.concatSubstreams()
+                                                                                .watchTermination((Function2<NotUsed, CompletionStage<Done>, CompletionStage<ResultOld>>) (notUsed, completionStage) -> completionStage.handle((done, throwable) -> {
+                                                                                    return ImmutableResultOld
+                                                                                        .builder()
                                                                                                           .isEmpty(!readContext.getReadState()
                                                                                                                                .isAtLeastOneFeatureWritten())
                                                                                                           .error(Optional.ofNullable(throwable))
@@ -164,13 +164,13 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
 
 
     //TODO: query only needed for IdFilter exceptions, should happen further up
-    private static Sink<SqlRow, CompletionStage<FeatureStream2.Result>> consume(FeatureStoreTypeInfo typeInfo,
+    private static Sink<SqlRow, CompletionStage<ResultOld>> consume(FeatureStoreTypeInfo typeInfo,
                                                                                 FeatureConsumer consumer,
                                                                                 FeatureQuery query) {
         return consume(ImmutableList.of(typeInfo), consumer, query);
     }
 
-    private static Sink<SqlRow, CompletionStage<FeatureStream2.Result>> consume(
+    private static Sink<SqlRow, CompletionStage<ResultOld>> consume(
             final List<FeatureStoreTypeInfo> typeInfos,
             final FeatureConsumer consumer, FeatureQuery query) {
 
@@ -194,13 +194,13 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                                                       .readState(ModifiableReadState.create())
                                                       .build();
 
-        Flow<SqlRow, NotUsed, CompletionStage<FeatureStream2.Result>> consumerFlow =
+        Flow<SqlRow, NotUsed, CompletionStage<ResultOld>> consumerFlow =
                 Flow.fromFunction((Function<SqlRow, NotUsed>) sqlRow -> {
                     handleRow(sqlRow, readContext);
 
                     return NotUsed.getInstance();
                 })
-                    .watchTermination(LogContextStream.withMdc((Function2<NotUsed, CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (notUsed, completionStage) -> completionStage.handle(LogContext.withMdc((done, throwable) -> {
+                    .watchTermination(LogContextStream.withMdc((Function2<NotUsed, CompletionStage<Done>, CompletionStage<ResultOld>>) (notUsed, completionStage) -> completionStage.handle(LogContext.withMdc((done, throwable) -> {
                         Throwable error = throwable;
 
                         if (Objects.nonNull(error)) {
@@ -227,7 +227,7 @@ public class FeatureNormalizerSql implements FeatureNormalizer<SqlRow> {
                             }
                         }
 
-                        return ImmutableResult.builder()
+                        return ImmutableResultOld.builder()
                                               .isEmpty(!readContext.getReadState()
                                                                    .isAtLeastOneFeatureWritten())
                                               .error(Optional.ofNullable(error))

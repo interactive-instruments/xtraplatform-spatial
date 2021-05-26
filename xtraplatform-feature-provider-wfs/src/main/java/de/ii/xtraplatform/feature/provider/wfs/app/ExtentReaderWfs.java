@@ -9,8 +9,6 @@ package de.ii.xtraplatform.feature.provider.wfs.app;
 
 import static de.ii.xtraplatform.dropwizard.domain.LambdaWithException.mayThrow;
 
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -20,8 +18,8 @@ import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureMetadata;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.Metadata;
-import de.ii.xtraplatform.streams.domain.LogContextStream;
-import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
+import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.util.Optional;
 
 public class ExtentReaderWfs implements ExtentReader {
@@ -35,13 +33,15 @@ public class ExtentReaderWfs implements ExtentReader {
     }
 
     @Override
-    public RunnableGraphWrapper<Optional<BoundingBox>> getExtent(FeatureStoreTypeInfo typeInfo) {
+    public Stream<Optional<BoundingBox>> getExtent(FeatureStoreTypeInfo typeInfo) {
 
         Optional<BoundingBox> boundingBox = featureMetadata.getMetadata()
                                                       .map(Metadata::getFeatureTypesBoundingBox)
                                                       .flatMap(boundingBoxes -> Optional.ofNullable(boundingBoxes.get(typeInfo.getName())))
                                                       .flatMap(boundingBox1 -> crsTransformer.map(mayThrow(crsTransformer1 -> crsTransformer1.transformBoundingBox(boundingBox1))));
 
-        return LogContextStream.graphWithMdc(Source.single(boundingBox), Sink.head());
+        //TODO: test
+        return Reactive.Source.single(boundingBox)
+            .to(Reactive.Sink.head());
     }
 }

@@ -6,53 +6,31 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.Keep;
-import akka.stream.javadsl.RunnableGraph;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import de.ii.xtraplatform.streams.domain.LogContextStream;
-import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.Optional;
 import org.immutables.value.Value;
 
-@Value.Immutable
-public interface FeaturePipeline<U extends PropertyBase<U, W>, V extends FeatureBase<U, W>, W extends SchemaBase<W>, X, Y> extends
-    RunnableGraphWrapper<Y> {
+public interface FeaturePipeline {
 
-  @Value.Auxiliary
-  FeatureDecoder.WithSource getDecoderWithSource();
+  @Value.Immutable
+  interface Result extends ResultBase {
+    abstract class Builder extends ResultBase.Builder<Result, Builder> {}
+  }
 
-  @Value.Auxiliary
-  SchemaMapping<W> getMapping();
+  interface ResultBase {
 
-  @Value.Auxiliary
-  Supplier<V> getFeatureCreator();
+    abstract class Builder<T extends ResultBase, U extends Builder<T,U>> {
+      public abstract U isEmpty(boolean isEmpty);
+      public abstract U error(Throwable error);
+      public abstract T build();
+    }
 
-  @Value.Auxiliary
-  Supplier<U> getPropertyCreator();
+    @Value.Derived
+    default boolean isSuccess() {
+      return getError().isEmpty();
+    }
 
-  @Value.Auxiliary
-  FeatureEncoder<X, U, V, W> getEncoder();
+    boolean isEmpty();
 
-  @Value.Auxiliary
-  Sink<X, CompletionStage<Y>> getSink();
-
-  @Override
-  Function<Throwable, Y> getExceptionHandler();
-
-  @Override
-  @Value.Lazy
-  default RunnableGraph<CompletionStage<Y>> getGraph() {
-    Source<V, ?> featureSource = getDecoderWithSource()
-        .decode(getMapping(), getFeatureCreator(), getPropertyCreator());
-
-    Flow<V, X, ?> encoderFlow = getEncoder().flow(getMapping().getTargetSchema());
-
-    Sink<V, CompletionStage<Y>> encoderSink = encoderFlow.toMat(getSink(), Keep.right());
-
-    return LogContextStream.graphWithMdc(featureSource, encoderSink).getGraph();
+    Optional<Throwable> getError();
   }
 }

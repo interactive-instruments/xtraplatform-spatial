@@ -1,40 +1,30 @@
 /**
  * Copyright 2021 interactive instruments GmbH
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
+ * the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.features.domain;
 
-import akka.Done;
-import akka.stream.javadsl.RunnableGraph;
-import de.ii.xtraplatform.crs.domain.CrsTransformer;
-import org.immutables.value.Value;
-
+import de.ii.xtraplatform.features.domain.FeaturePipeline.ResultBase;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
+import org.immutables.value.Value;
 
 public interface FeatureTransactions {
 
-    @Value.Immutable
-    interface MutationResult {
+  @Value.Immutable
+  interface MutationResult extends FeaturePipeline.ResultBase {
 
-        @Value.Derived
-        default boolean isSuccess() {
-            return !getError().isPresent();
-        }
-
-        List<String> getIds();
-
-        Optional<Throwable> getError();
+    abstract class Builder extends ResultBase.Builder<MutationResult, MutationResult.Builder> {
+      public abstract Builder addIds(String... ids);
     }
 
-  MutationResult createFeatures(String featureType, FeatureDecoder.WithSource featureSource);
+    List<String> getIds();
+  }
 
-    MutationResult updateFeature(String featureType, FeatureDecoder.WithSource featureSource, String id);
+  MutationResult createFeatures(String featureType, FeatureTokenSource featureTokenSource);
+
+  MutationResult updateFeature(String type, String id, FeatureTokenSource featureTokenSource);
 
   MutationResult deleteFeature(String featureType, String id);
 }

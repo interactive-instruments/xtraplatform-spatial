@@ -8,8 +8,6 @@
 package de.ii.xtraplatform.features.geojson.app
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.javadsl.Flow
 import akka.stream.javadsl.Source
 import akka.testkit.javadsl.TestKit
 import akka.util.ByteString
@@ -17,6 +15,7 @@ import com.typesafe.config.Config
 import de.ii.xtraplatform.features.domain.FeatureEventConsumer
 import de.ii.xtraplatform.features.domain.FeatureEventDecoder
 import de.ii.xtraplatform.features.domain.SchemaBase
+import de.ii.xtraplatform.features.geojson.domain.FeatureEventDecoderGeoJson
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 import de.ii.xtraplatform.streams.app.ReactiveAkka
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider
@@ -28,7 +27,6 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import java.util.function.Consumer
-import java.util.function.Function
 
 /**
  * @author zahnen

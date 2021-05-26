@@ -7,47 +7,39 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import akka.Done;
 import akka.NotUsed;
-import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.runtime.domain.LogContext;
+import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
-import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
-import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
-import de.ii.xtraplatform.streams.domain.StreamRunner;
+import de.ii.xtraplatform.streams.domain.Reactive;
 import java.io.IOException;
-import java.util.Objects;
-import org.osgi.framework.BundleContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConnector.QueryOptions> extends AbstractPersistentEntity<FeatureProviderDataV2> implements FeatureProvider2, FeatureQueries {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
 
-    private final BundleContext context;
-    private final ActorSystemProvider actorSystemProvider;
     private final ConnectorFactory connectorFactory;
-    private StreamRunner streamRunner;
+    private final Reactive reactive;
+    private Reactive.Runner streamRunner;
     private Map<String, FeatureStoreTypeInfo> typeInfos;
     private FeatureProviderConnector<T, U, V> connector;
 
-    protected AbstractFeatureProvider(BundleContext context,
-        ActorSystemProvider actorSystemProvider, ConnectorFactory connectorFactory) {
-        this.context = context;
-        this.actorSystemProvider = actorSystemProvider;
+    protected AbstractFeatureProvider(ConnectorFactory connectorFactory, Reactive reactive) {
         this.connectorFactory = connectorFactory;
+        this.reactive = reactive;
     }
 
     @Override
@@ -64,7 +56,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             }
         }
         this.typeInfos = createTypeInfos(getPathParser(), getData().getTypes());
-        this.streamRunner = new StreamRunner(context, actorSystemProvider, getData().getId(), getRunnerCapacity(((WithConnectionInfo<?>)getData()).getConnectionInfo()), getRunnerQueueSize(((WithConnectionInfo<?>)getData()).getConnectionInfo()));
+        this.streamRunner = reactive.runner(getData().getId(), getRunnerCapacity(((WithConnectionInfo<?>)getData()).getConnectionInfo()), getRunnerQueueSize(((WithConnectionInfo<?>)getData()).getConnectionInfo()));
         this.connector = (FeatureProviderConnector<T, U, V>) connectorFactory.createConnector(getData());
 
         if (!getConnector().isConnected()) {
@@ -154,11 +146,11 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
     }
 
     protected int getRunnerCapacity(ConnectionInfo connectionInfo) {
-        return StreamRunner.DYNAMIC_CAPACITY;
+        return Reactive.Runner.DYNAMIC_CAPACITY;
     }
 
     protected int getRunnerQueueSize(ConnectionInfo connectionInfo) {
-        return StreamRunner.DYNAMIC_CAPACITY;
+        return Reactive.Runner.DYNAMIC_CAPACITY;
     }
 
     protected Optional<String> getRunnerError(ConnectionInfo connectionInfo) {
@@ -179,7 +171,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return typeInfos;
     }
 
-    protected StreamRunner getStreamRunner() {
+    protected Reactive.Runner getStreamRunner() {
         return streamRunner;
     }
 
@@ -214,12 +206,12 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return new FeatureStream2() {
 
             @Override
-            public CompletionStage<Result> runWith(FeatureTransformer2 transformer) {
+            public CompletionStage<ResultOld> runWith(FeatureTransformer2 transformer) {
                 Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(query.getType()));
 
                 if (!typeInfo.isPresent()) {
                     //TODO: put error message into Result, complete successfully
-                    CompletableFuture<Result> promise = new CompletableFuture<>();
+                    CompletableFuture<ResultOld> promise = new CompletableFuture<>();
                     promise.completeExceptionally(new IllegalStateException("No features available for type"));
                     return promise;
                 }
@@ -230,65 +222,11 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
                 Source<T, NotUsed> sourceStream = getConnector().getSourceStream(transformedQuery, options);
 
-                Sink<T, CompletionStage<Result>> sink = getNormalizer().normalizeAndTransform(transformer, query);
+                Sink<T, CompletionStage<ResultOld>> sink = getNormalizer().normalizeAndTransform(transformer, query);
 
                 return getStreamRunner().run(sourceStream, sink);
             }
 
-            @Override
-            public CompletionStage<Result> runWith(Sink<Feature, CompletionStage<Done>> transformer) {
-                /*Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(typeInfos.get(query.getType()));
-
-                if (!typeInfo.isPresent()) {
-                    //TODO: put error message into Result, complete successfully
-                    CompletableFuture<Result> promise = new CompletableFuture<>();
-                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
-                    return promise;
-                }
-
-                SqlQueries sqlQueries = queryTransformer.transformQuery(query);
-
-                Source<SqlRow, NotUsed> rowStream = connector.getSourceStream(sqlQueries);
-
-                Source<Feature<?>, CompletionStage<Result>> featureStream = featureNormalizer.normalize(rowStream, query);
-
-                return featureStream.toMat(transformer, Keep.left())
-                                    .run(materializer);*/
-
-                return null;
-            }
-
-            @Override
-            public <Y extends PropertyBase<Y,Z>, W extends FeatureBase<Y,Z>, Z extends SchemaBase<Z>> CompletionStage<Result> runWith(
-                    FeatureProcessor<Y,W,Z> transformer) {
-                Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(query.getType()));
-
-                if (!typeInfo.isPresent()) {
-                    //TODO: put error message into Result, complete successfully
-                    CompletableFuture<Result> promise = new CompletableFuture<>();
-                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
-                    return promise;
-                }
-
-                U sqlQueries = getQueryTransformer().transformQuery(query, ImmutableMap.of());
-
-                V options = getQueryTransformer().getOptions(query);
-
-                Source<T, NotUsed> rowStream = getConnector().getSourceStream(sqlQueries, options);
-
-                Source<W, CompletionStage<Result>> featureStream = getNormalizer().normalize(rowStream, query, transformer::createFeature, transformer::createProperty);
-
-                Sink<W, CompletionStage<Done>> sink = Sink.foreach(feature -> {
-
-            /*if (!numberReturned.isDone() && feature.getProperties().containsKey(ImmutableList.of("numberReturned"))) {
-                numberReturned.complete(Long.getLong(feature.getProperties().get(ImmutableList.of("numberReturned"))));
-            }*/
-
-                    transformer.process(feature);
-                });
-
-                return getStreamRunner().run(featureStream, sink, Keep.left());
-            }
         };
     }
 

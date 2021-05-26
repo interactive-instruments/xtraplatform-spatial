@@ -21,20 +21,19 @@ import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
-import de.ii.xtraplatform.features.domain.FeatureStream2;
+import de.ii.xtraplatform.features.domain.FeatureStream2.ResultOld;
 import de.ii.xtraplatform.features.domain.FeatureTransformer2;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureType;
-import de.ii.xtraplatform.features.domain.ImmutableResult;
+import de.ii.xtraplatform.features.domain.ImmutableResultOld;
 import de.ii.xtraplatform.features.domain.PropertyBase;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
-
-import javax.xml.namespace.QName;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
+import javax.xml.namespace.QName;
 
 public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
 
@@ -67,7 +66,7 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
     }
 
     @Override
-    public Sink<ByteString, CompletionStage<FeatureStream2.Result>> normalizeAndTransform(
+    public Sink<ByteString, CompletionStage<ResultOld>> normalizeAndTransform(
             FeatureTransformer2 featureTransformer, FeatureQuery featureQuery) {
 
         FeatureType featureType = types.get(featureQuery.getType());
@@ -88,8 +87,8 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
 
         Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(qualifiedName, featureType1, featureTransformer, featureQuery.getFields(), featureQuery.skipGeometry(), ImmutableMap.of());
 
-        return transformer.mapMaterializedValue((Function<CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (completionStage) -> completionStage.handle((done, throwable) -> {
-            return ImmutableResult.builder()
+        return transformer.mapMaterializedValue((Function<CompletionStage<Done>, CompletionStage<ResultOld>>) (completionStage) -> completionStage.handle((done, throwable) -> {
+            return ImmutableResultOld.builder()
                                   .isEmpty(false/*TODO!readContext.getReadState()
                                                        .isAtLeastOneFeatureWritten()*/)
                                   .error(Optional.ofNullable(throwable))
@@ -97,7 +96,7 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
         }));
     }
 
-    public Sink<ByteString, CompletionStage<FeatureStream2.Result>> normalizeAndConsume(
+    public Sink<ByteString, CompletionStage<ResultOld>> normalizeAndConsume(
         FeatureConsumer featureConsumer, FeatureQuery featureQuery) {
         FeatureSchema featureSchema = schemas.get(featureQuery.getType());
 
@@ -107,8 +106,8 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
 
         Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.consume(qualifiedName, featureConsumer);
 
-        return transformer.mapMaterializedValue((Function<CompletionStage<Done>, CompletionStage<FeatureStream2.Result>>) (completionStage) -> completionStage.handle((done, throwable) -> {
-            return ImmutableResult.builder()
+        return transformer.mapMaterializedValue((Function<CompletionStage<Done>, CompletionStage<ResultOld>>) (completionStage) -> completionStage.handle((done, throwable) -> {
+            return ImmutableResultOld.builder()
                 .isEmpty(false/*TODO!readContext.getReadState()
                                                        .isAtLeastOneFeatureWritten()*/)
                 .error(Optional.ofNullable(throwable))
@@ -117,7 +116,7 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
     }
 
     @Override
-    public <V extends PropertyBase<V, X>, W extends FeatureBase<V, X>, X extends SchemaBase<X>> Source<W, CompletionStage<FeatureStream2.Result>> normalize(Source<ByteString, NotUsed> sourceStream, FeatureQuery featureQuery, Supplier<W> featureCreator, Supplier<V> propertyCreator) {
+    public <V extends PropertyBase<V, X>, W extends FeatureBase<V, X>, X extends SchemaBase<X>> Source<W, CompletionStage<ResultOld>> normalize(Source<ByteString, NotUsed> sourceStream, FeatureQuery featureQuery, Supplier<W> featureCreator, Supplier<V> propertyCreator) {
         return null;
     }
 }

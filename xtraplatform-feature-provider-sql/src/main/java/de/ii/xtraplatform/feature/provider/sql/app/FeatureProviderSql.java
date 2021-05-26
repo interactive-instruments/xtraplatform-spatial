@@ -7,11 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import akka.Done;
 import akka.NotUsed;
-import akka.japi.function.Function2;
-import akka.stream.javadsl.Keep;
-import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.google.common.collect.ImmutableList;
@@ -44,9 +40,7 @@ import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
-import de.ii.xtraplatform.features.domain.FeatureDecoder;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
-import de.ii.xtraplatform.features.domain.FeatureMutationPipeline;
 import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
@@ -57,16 +51,19 @@ import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
+import de.ii.xtraplatform.features.domain.FeatureTokenSource;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
+import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
 import de.ii.xtraplatform.features.domain.FeatureType;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureMutationPipeline;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
-import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
-import de.ii.xtraplatform.streams.domain.LogContextStream;
+import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
+import de.ii.xtraplatform.streams.domain.Reactive.Sink;
+import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -75,10 +72,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-import org.apache.felix.ipojo.annotations.Context;
 import org.apache.felix.ipojo.annotations.Requires;
-import org.osgi.framework.BundleContext;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,13 +105,12 @@ public class FeatureProviderSql extends
   private Map<String, Optional<BoundingBox>> spatialExtentCache;
   private Map<String, Optional<Interval>> temporalExtentCache;
 
-  public FeatureProviderSql(@Context BundleContext context,
-      @Requires ActorSystemProvider actorSystemProvider,
-      @Requires CrsTransformerFactory crsTransformerFactory,
+  public FeatureProviderSql(@Requires CrsTransformerFactory crsTransformerFactory,
       @Requires Cql cql,
-      @Requires ConnectorFactory connectorFactory) {
+      @Requires ConnectorFactory connectorFactory,
+      @Requires Reactive reactive) {
     //TODO: starts akka for every instance, move to singleton
-    super(context, actorSystemProvider, connectorFactory);
+    super(connectorFactory, reactive);
 
     this.crsTransformerFactory = crsTransformerFactory;
     this.cql = cql;
@@ -385,9 +378,10 @@ public class FeatureProviderSql extends
           FeatureStoreAttribute::getName).ifPresent(spatialProperty -> LOGGER.debug("Computing spatial extent for '{}.{}'", typeName, spatialProperty));
 
       try {
-        RunnableGraphWrapper<Optional<BoundingBox>> extentGraph = extentReader
+        Stream<Optional<BoundingBox>> extentGraph = extentReader
             .getExtent(typeInfo.get());
-        return getStreamRunner().run(extentGraph)
+
+        return extentGraph.on(getStreamRunner()).run()
             .exceptionally(throwable -> Optional.empty())
             .toCompletableFuture()
             .join();
@@ -481,19 +475,16 @@ public class FeatureProviderSql extends
 
   @Override
   public MutationResult createFeatures(String featureType,
-      FeatureDecoder.WithSource featureSource) {
+      FeatureTokenSource featureTokenSource) {
 
     //TODO: where does crs transformation happen?
     // decoder should write source crs to Feature, encoder should transform to target crs
-    return writeFeatures(featureType, featureSource, Optional.empty());
+    return writeFeatures(featureType, featureTokenSource, Optional.empty());
   }
 
   @Override
-  public MutationResult updateFeature(String featureType, FeatureDecoder.WithSource featureSource,
-      String id) {
-
-    //TODO:
-    return writeFeatures(featureType, featureSource, Optional.of(id));
+  public MutationResult updateFeature(String featureType, String featureId, FeatureTokenSource featureTokenSource) {
+    return writeFeatures(featureType, featureTokenSource, Optional.of(featureId));
   }
 
   @Override
@@ -518,26 +509,39 @@ public class FeatureProviderSql extends
 
     SchemaSql mutationSchemaSql = sqlSchema.get(0).accept(new MutationSchemaBuilderSql());
 
-    Source<SqlRow, CompletionStage<MutationResult>> deletionSource = featureMutationsSql
+    Source<SqlRow, NotUsed> deletionSource = featureMutationsSql
         .getDeletionSource(mutationSchemaSql, id)
-        .watchTermination(
+        /*.watchTermination(
             (Function2<NotUsed, CompletionStage<Done>, CompletionStage<MutationResult>>) (notUsed, completionStage) -> completionStage
                 .handle((done, throwable) -> {
                   return ImmutableMutationResult.builder()
                       .error(Optional.ofNullable(throwable))
                       .build();
-                }));
-    RunnableGraphWrapper<MutationResult> graph = LogContextStream
-        .graphWithMdc(deletionSource, Sink.ignore(), Keep.left());
+                }))*/;
+    //RunnableGraphWrapper<MutationResult> graph = LogContextStream
+    //    .graphWithMdc(deletionSource, Sink.ignore(), Keep.left());
 
-    return getStreamRunner().run(graph)
+    /*ReactiveStream<SqlRow, SqlRow, MutationResult.Builder, MutationResult> reactiveStream = ImmutableReactiveStream.<SqlRow, SqlRow, MutationResult.Builder, MutationResult>builder()
+        .source(ReactiveStream.Source.of(deletionSource))
+        .emptyResult(ImmutableMutationResult.builder())
+        .build();*/
+
+    //TODO: test
+    RunnableStream<MutationResult> deletionStream = Reactive.Source.akka(deletionSource)
+        .to(Sink.ignore())
+        .withResult(ImmutableMutationResult.builder())
+        .handleError(ImmutableMutationResult.Builder::error)
+        .handleEnd(Builder::build)
+        .on(getStreamRunner());
+
+    return deletionStream.run()
         .toCompletableFuture()
         .join();
   }
 
   private MutationResult writeFeatures(String featureType,
-      FeatureDecoder.WithSource featureSource,
-      Optional<String> id) {
+      FeatureTokenSource featureTokenSource,
+      Optional<String> featureId) {
 
     Optional<FeatureSchema> schema = Optional.ofNullable(getData().getTypes()
         .get(featureType));
@@ -571,25 +575,40 @@ public class FeatureProviderSql extends
         .targetSchema(mutationSchemaSql)
         .build();
 
-    FeatureMutationPipeline<PropertySql, FeatureSql, SchemaSql> featureMutationPipeline = ImmutableFeatureMutationPipeline.<PropertySql, FeatureSql, SchemaSql>builder()
-        .decoderWithSource(featureSource)
+    //TODO: test
+    RunnableStream<MutationResult> mutationStream = featureTokenSource
+        //TODO .via(newFeatureObjectBuilder())
+        //TODO .via(new FeatureEncoderSql())
+        .to(Sink.ignore())
+        .withResult((Builder)ImmutableMutationResult.builder())
+        .handleError((result, throwable) -> {
+          Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
+              ? new IllegalArgumentException(throwable.getMessage())
+              : throwable;
+          return result.error(error);
+        })
+        //TODO .handleItem(MutationResult.Builder::addIds)
+        .handleEnd(Builder::build)
+        .on(getStreamRunner());
+
+    /*FeaturePipeline<SchemaSql, PropertySql, FeatureSql, String, MutationResult.Builder, MutationResult> featureMutationPipeline = ImmutableFeaturePipeline
+        .<SchemaSql, PropertySql, FeatureSql, String, MutationResult.Builder, MutationResult>builder()
+        .decoderWithSource(featureTokenSource)
         .mapping(mapping4)
         .featureCreator(ModifiableFeatureSql::create)
         .propertyCreator(ModifiablePropertySql::create)
-        .encoder(new FeatureEncoderSql(featureMutationsSql, getStreamRunner().getDispatcher(), id))
-        .exceptionHandler(throwable -> {
-          Throwable error = throwable.getCause() instanceof PSQLException
-              || throwable.getCause() instanceof JsonParseException
-              ? new IllegalArgumentException(throwable.getCause().getMessage())
-              : throwable.getCause();
-
-          return ImmutableMutationResult.builder()
-              .error(Optional.ofNullable(error))
-              .build();
+        .encoder(new FeatureEncoderSql(featureMutationsSql, getStreamRunner().getDispatcher(), featureId))
+        .emptyResult(ImmutableMutationResult.builder())
+        .resultCombiner(MutationResult.Builder::addIds)
+        .exceptionHandler((result, throwable) -> {
+          Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
+              ? new IllegalArgumentException(throwable.getMessage())
+              : throwable;
+          return result.error(error);
         })
-        .build();
+        .build();*/
 
-    return getStreamRunner().run(featureMutationPipeline)
+    return mutationStream.run()
         .toCompletableFuture()
         .join();
   }

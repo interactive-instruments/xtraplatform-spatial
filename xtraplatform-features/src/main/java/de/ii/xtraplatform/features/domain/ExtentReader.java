@@ -8,9 +8,11 @@
 package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.crs.domain.BoundingBox;
-import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
+import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.util.Optional;
 
 public interface ExtentReader {
-    RunnableGraphWrapper<Optional<BoundingBox>> getExtent(FeatureStoreTypeInfo typeInfo);
+
+    Stream<Optional<BoundingBox>> getExtent(FeatureStoreTypeInfo typeInfo);
 }

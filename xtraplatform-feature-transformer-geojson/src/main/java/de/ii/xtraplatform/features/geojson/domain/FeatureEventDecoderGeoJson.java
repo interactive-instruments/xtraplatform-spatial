@@ -1,4 +1,4 @@
-package de.ii.xtraplatform.features.geojson.app;
+package de.ii.xtraplatform.features.geojson.domain;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -6,6 +6,8 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.async.ByteArrayFeeder;
 import de.ii.xtraplatform.features.domain.FeatureEventDecoder;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.geojson.app.GeoJsonGeometryType;
+import de.ii.xtraplatform.features.geojson.app.JsonPathTracker;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
