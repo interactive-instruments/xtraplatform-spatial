@@ -639,9 +639,31 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         @Override
         public String visit(ArrayOperation arrayOperation, List<String> children) {
             String expression = children.get(0);
-            String operator = ARRAY_OPERATORS.get(arrayOperation.getClass());
-            String operation = String.format(" %s ARRAY[%s]", operator, children.get(1));
-            return String.format(expression, "", operation);
+            String elements = children.get(1);
+            int elementCount = elements.split(",").length;
+            if (arrayOperation instanceof AContains) {
+                return String.format(expression, "", " IN " + elements + " GROUP BY %2$s.%3$s HAVING count(*) = " + elementCount + " ORDER BY %2$s.%3$s");
+            } else if (arrayOperation instanceof AEquals) {
+                return "AEQUALS";
+            } else if (arrayOperation instanceof AOverlaps) {
+                return String.format(expression, "", " IN " + elements + " GROUP BY %2$s.%3$s HAVING count(*) < " + elementCount + " ORDER BY %2$s.%3$s");
+            } else if (arrayOperation instanceof ContainedBy) {
+                return "CONTAINEDBY";
+            }
+            throw new IllegalArgumentException("unsupported array operator");
+        }
+
+        @Override
+        public String visit(ArrayLiteral arrayLiteral, List<String> children) {
+            if (arrayLiteral.getValue() instanceof String) {
+                return (String) arrayLiteral.getValue();
+            } else {
+                List<String> elements = ((List<Scalar>) arrayLiteral.getValue()).stream()
+                        .map(e -> e.accept(this))
+                        .map(e -> String.format("%s", e))
+                        .collect(Collectors.toList());
+                return String.format("(%s)", String.join(",", elements));
+            }
         }
 
         @Override

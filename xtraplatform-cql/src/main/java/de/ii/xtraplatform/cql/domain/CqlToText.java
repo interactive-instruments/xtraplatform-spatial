@@ -334,7 +334,15 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(ArrayLiteral arrayLiteral, List<String> children) {
-        return (String) arrayLiteral.getValue();
+        if (arrayLiteral.getValue() instanceof String) {
+            return (String) arrayLiteral.getValue();
+        } else {
+            List<String> elements = ((List<Scalar>) arrayLiteral.getValue()).stream()
+                    .map(e -> e.accept(this))
+                    .map(e -> String.format("%s", e))
+                    .collect(Collectors.toList());
+            return String.format("[%s]", String.join(",", elements));
+        }
     }
 
     @Override

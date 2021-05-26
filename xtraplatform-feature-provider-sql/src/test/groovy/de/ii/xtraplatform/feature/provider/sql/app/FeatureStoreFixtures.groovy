@@ -223,4 +223,13 @@ class FeatureStoreFixtures {
                     .build())
             .build()
 
+    static FeatureStoreInstanceContainer LAYER = ImmutableFeatureStoreInstanceContainer.builder()
+            .name("container")
+            .sortKey("id")
+            .addAttributes(ImmutableFeatureStoreAttribute.builder()
+                    .name("layers")
+                    .path(ImmutableList.of("container", "layers"))
+                    .build())
+            .build()
+
 }

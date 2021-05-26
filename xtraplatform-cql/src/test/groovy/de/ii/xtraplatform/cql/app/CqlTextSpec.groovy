@@ -694,7 +694,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    /* Array operators are not yet supported
     def 'Evaluate if the value of an array property contains the specified subset of values'() {
 
         given:
@@ -714,7 +713,6 @@ class CqlTextSpec extends Specification {
         then:
         actual2 == cqlText
     }
-     */
 
     def 'Both operands are property references'() {
 
@@ -820,12 +818,12 @@ class CqlTextSpec extends Specification {
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_NESTED_2
+        actual == CqlFilterExamples.EXAMPLE_NESTED_WITH_ARRAYS
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_NESTED_2, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_NESTED_WITH_ARRAYS, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText
