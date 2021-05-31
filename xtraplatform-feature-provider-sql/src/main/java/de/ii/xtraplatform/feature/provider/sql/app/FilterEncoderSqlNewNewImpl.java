@@ -641,12 +641,28 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String expression = children.get(0);
             String elements = children.get(1);
             int elementCount = elements.split(",").length;
+
+            String propertyName = ((Property) arrayOperation.getOperands().get(0)).getName();
+            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(propertyName, attribute.getQueryable()) || (Objects.equals(propertyName, ID_PLACEHOLDER) && attribute.isId());
+            Optional<FeatureStoreAttributesContainer> table = instanceContainer.getAllAttributesContainers()
+                    .stream()
+                    .filter(attributesContainer -> attributesContainer.getAttributes()
+                            .stream()
+                            .anyMatch(propertyMatches))
+                    .findFirst();
+            List<String> aliases = aliasesGenerator.apply(table.get())
+                    .stream()
+                    .map(s -> "A" + s)
+                    .collect(Collectors.toList());
+
             if (arrayOperation instanceof AContains) {
-                return String.format(expression, "", " IN " + elements + " GROUP BY %2$s.%3$s HAVING count(*) = " + elementCount + " ORDER BY %2$s.%3$s");
+                String arrayQuery = String.format(" IN %s GROUP BY %s.%s HAVING count(*) = %s", elements, aliases.get(0), instanceContainer.getSortKey(), elementCount);
+                return String.format(expression, "", arrayQuery);
             } else if (arrayOperation instanceof AEquals) {
                 return "AEQUALS";
             } else if (arrayOperation instanceof AOverlaps) {
-                return String.format(expression, "", " IN " + elements + " GROUP BY %2$s.%3$s HAVING count(*) < " + elementCount + " ORDER BY %2$s.%3$s");
+                String arrayQuery = String.format(" IN %s GROUP BY %s.%s HAVING count(*) < %s", elements, aliases.get(0), instanceContainer.getSortKey(), elementCount);
+                return String.format(expression, "", arrayQuery);
             } else if (arrayOperation instanceof ContainedBy) {
                 return "CONTAINEDBY";
             }
