@@ -281,8 +281,9 @@ public class GMLSchemaParser {
 
         if (propertyType.isSimpleType()) {
             if (propertyType.asSimpleType().getPrimitiveType() != null) {
-                propertyType = propertyType.asSimpleType().getPrimitiveType();
-                propertyTypeName = propertyType.getName();
+                propertyTypeName = propertyType.asSimpleType().getName().matches("int|long")
+                        ? "int"
+                        : propertyType.asSimpleType().getPrimitiveType().getName();
             } else if (propertyType.asSimpleType().asUnion() != null) {
                 propertyTypeName = "string";
             }
