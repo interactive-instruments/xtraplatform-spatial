@@ -654,14 +654,29 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     .stream()
                     .map(s -> "A" + s)
                     .collect(Collectors.toList());
+            Optional<String> column = table.flatMap(attributesContainer -> attributesContainer.getAttributes()
+                                                                                              .stream()
+                                                                                              .filter(propertyMatches)
+                                                                                              .findFirst()
+                                                                                              .map(attribute -> {
+                                                                                                  if (attribute.isTemporal()) {
+                                                                                                      return sqlDialect.applyToDatetime(attribute.getName());
+                                                                                                  }
+                                                                                                  return attribute.getName();
+                                                                                              }));
+
+            if (!table.isPresent() || !column.isPresent()) {
+                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName));
+            }
+            String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column.get());
 
             if (arrayOperation instanceof AContains) {
-                String arrayQuery = String.format(" IN %s GROUP BY %s.%s HAVING count(*) = %s", elements, aliases.get(0), instanceContainer.getSortKey(), elementCount);
+                String arrayQuery = String.format(" IN %s GROUP BY %s.%s HAVING count(distinct %s) = %s", elements, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
                 return String.format(expression, "", arrayQuery);
             } else if (arrayOperation instanceof AEquals) {
                 return "AEQUALS";
             } else if (arrayOperation instanceof AOverlaps) {
-                String arrayQuery = String.format(" IN %s GROUP BY %s.%s HAVING count(*) < %s", elements, aliases.get(0), instanceContainer.getSortKey(), elementCount);
+                String arrayQuery = String.format(" IN %s GROUP BY %s.%s HAVING count(distinct %s) < %s", elements, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
                 return String.format(expression, "", arrayQuery);
             } else if (arrayOperation instanceof ContainedBy) {
                 return "CONTAINEDBY";
