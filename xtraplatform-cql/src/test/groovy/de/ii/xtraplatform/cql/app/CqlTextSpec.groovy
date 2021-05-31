@@ -812,7 +812,7 @@ class CqlTextSpec extends Specification {
 
     def 'Array predicate with nested filter'() {
         given:
-        String cqlText = "theme[scheme = 'profile'].concept ACONTAINS ['DLKM','BasisDLM','DLM50']"
+        String cqlText = "theme[scheme = 'profile'].concept ACONTAINS ['DLKM','Basis-DLM','DLM50']"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)

@@ -173,7 +173,7 @@ public class CqlFilterExamples {
             ScalarLiteral.of(2)));
 
     public static final CqlFilter EXAMPLE_NESTED_WITH_ARRAYS = CqlFilter.of(AContains.of(Property.of("theme.concept",
-            ImmutableMap.of("theme", CqlFilter.of(Eq.of("theme.scheme", ScalarLiteral.of("profile"))))), ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("DLKM"), ScalarLiteral.of("BasisDLM"), ScalarLiteral.of("DLM50")))));
+            ImmutableMap.of("theme", CqlFilter.of(Eq.of("theme.scheme", ScalarLiteral.of("profile"))))), ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("DLKM"), ScalarLiteral.of("Basis-DLM"), ScalarLiteral.of("DLM50")))));
 
     private static TemporalLiteral getTemporalLiteral(String temporalData) {
         try {
