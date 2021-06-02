@@ -671,18 +671,18 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column.get());
 
             if (arrayOperation instanceof AContains) {
-                String arrayQuery = String.format(" IN %s GROUP BY %s.%s HAVING count(distinct %s) = %s", elements, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
+                String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s", elements, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
                 return String.format(expression, "", arrayQuery);
             } else if (arrayOperation instanceof AEquals) {
-                String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s AND count(distinct case when %4$s in %1$s then %4$s else null end) = %5$s",
+                String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s AND count(case when %4$s not in %1$s then %4$s else null end) = 0",
                         elements, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
                 return String.format(expression, "", arrayQuery);
             } else if (arrayOperation instanceof AOverlaps) {
-                String arrayQuery = String.format(" IN %s", elements);
+                String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s", elements, aliases.get(0), instanceContainer.getSortKey());
                 return String.format(expression, "", arrayQuery);
             } else if (arrayOperation instanceof ContainedBy) {
-                String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s HAVING count(distinct %4$s) > %5$s AND count(distinct case when %4$s in %1$s then %4$s else null end) > %5$s",
-                        elements, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
+                String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(case when %4$s not in %1$s then %4$s else null end) = 0",
+                        elements, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn);
                 return String.format(expression, "", arrayQuery);
             }
             throw new IllegalArgumentException("unsupported array operator");
