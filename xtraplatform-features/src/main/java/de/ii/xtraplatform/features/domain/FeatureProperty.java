@@ -24,7 +24,8 @@ public interface FeatureProperty extends Buildable<FeatureProperty> {
     //TODO: Role with ID, SPATIAL, TEMPORAL, REFERENCE, REFERENCE_EMBED
     //TODO: more specific types, in addition or instead of Type
     enum Role {
-        ID
+        ID,
+        TYPE
     }
 
     enum Type {
@@ -68,6 +69,13 @@ public interface FeatureProperty extends Buildable<FeatureProperty> {
     @Value.Auxiliary
     default boolean isId() {
         return getRole().filter(role -> role == Role.ID).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isType() {
+        return getRole().filter(role -> role == Role.TYPE).isPresent();
     }
 
     @JsonIgnore

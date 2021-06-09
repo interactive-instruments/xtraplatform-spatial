@@ -21,11 +21,12 @@ import org.immutables.value.Value;
 public interface SchemaBase<T extends SchemaBase<T>> {
 
     enum Role {
-    ID,
-    GEOMETRY,
-    POINT_IN_TIME,
-    PERIOD_START,
-    PERIOD_END
+        ID,
+        GEOMETRY,
+        POINT_IN_TIME,
+        PERIOD_START,
+        PERIOD_END,
+        TYPE
     }
 
     enum Type {
