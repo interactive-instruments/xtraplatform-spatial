@@ -353,6 +353,15 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
         instanceQuery == "SELECT A.id AS SKEY, A.floors, A.owner, A.swimming_pool, A.material, A.geometry, A.height FROM container A WHERE (A.id >= null AND A.id <= null) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.height < AA.floors)) ORDER BY 1"
     }
 
+    def 'ACONTAINS array operator'() {
+        when:
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.LAYER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_ACONTAINS), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.LAYER, Optional.of(CqlFilterExamples.EXAMPLE_ACONTAINS), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        then:
+        metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA JOIN layers AB ON (AA.id=AB.id) WHERE AB.layers IN ('layers-ca','layers-us') GROUP BY AA.id HAVING count(distinct AB.layers) = 2) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA JOIN layers AB ON (AA.id=AB.id) WHERE AB.layers IN ('layers-ca','layers-us') GROUP BY AA.id HAVING count(distinct AB.layers) = 2) ORDER BY 1) AS NM) AS NM2"
+        instanceQuery == "SELECT A.id AS SKEY FROM container A WHERE (A.id >= null AND A.id <= null) AND (A.id IN (SELECT AA.id FROM container AA JOIN layers AB ON (AA.id=AB.id) WHERE AB.layers IN ('layers-ca','layers-us') GROUP BY AA.id HAVING count(distinct AB.layers) = 2)) ORDER BY 1"
+    }
+
     def 'Number of floors NOT between 4 and 8'() {
         when:
         String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.FLOORS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_39), Collections.emptyList(), true)

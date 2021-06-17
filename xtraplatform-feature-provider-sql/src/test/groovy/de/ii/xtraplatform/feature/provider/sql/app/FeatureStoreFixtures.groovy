@@ -223,4 +223,24 @@ class FeatureStoreFixtures {
                     .build())
             .build()
 
+    static FeatureStoreInstanceContainer LAYER = ImmutableFeatureStoreInstanceContainer.builder()
+            .name("container")
+            .sortKey("id")
+            .addRelatedContainers(ImmutableFeatureStoreRelatedContainer.builder()
+                    .name("layers")
+                    .sortKey("id")
+                    .addInstanceConnection(ImmutableFeatureStoreRelation.builder()
+                            .cardinality(FeatureStoreRelation.CARDINALITY.ONE_2_N)
+                            .sourceContainer("container")
+                            .sourceField("id")
+                            .targetContainer("layers")
+                            .targetField("id")
+                            .build())
+                    .addAttributes(ImmutableFeatureStoreAttribute.builder()
+                            .name("layers")
+                            .path(ImmutableList.of("container", "layers"))
+                            .build())
+                    .build())
+            .build();
+
 }

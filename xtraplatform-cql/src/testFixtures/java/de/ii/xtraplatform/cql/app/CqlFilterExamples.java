@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 
+import java.util.Collections;
 import java.util.Objects;
 
 public class CqlFilterExamples {
@@ -139,7 +140,7 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_37 = CqlFilter.of(Lt.of("height", "floors"));
 
-    public static final CqlFilter EXAMPLE_38 = CqlFilter.of(AContains.of("layer:ids", ArrayLiteral.of("['layers-ca','layers-us']")));
+    public static final CqlFilter EXAMPLE_38 = CqlFilter.of(AContains.of("layer:ids", ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("layers-ca"), ScalarLiteral.of("layers-us")))));
 
     public static final CqlFilter EXAMPLE_39 = CqlFilter.of(Not.of(Between.of("floors", ScalarLiteral.of(4), ScalarLiteral.of(8))));
 
@@ -158,6 +159,21 @@ public class CqlFilterExamples {
     public static final CqlFilter EXAMPLE_CROSSES = CqlFilter.of(Crosses.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
     public static final CqlFilter EXAMPLE_CONTAINS = CqlFilter.of(Contains.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+
+    public static final CqlFilter EXAMPLE_ACONTAINS = CqlFilter.of(AContains.of("layers", ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("layers-ca"), ScalarLiteral.of("layers-us")))));
+
+    public static final CqlFilter EXAMPLE_NESTED = CqlFilter.of(Between.of(Property.of("filterValues.measure",
+        ImmutableMap.of("filterValues", CqlFilter.of(Eq.of("filterValues.property", ScalarLiteral.of("d30"))))),
+        ScalarLiteral.of(0.5),
+        ScalarLiteral.of(2)));
+
+    public static final CqlFilter EXAMPLE_NESTED_FUNCTION = CqlFilter.of(Between.of(Property.of("filterValues.measure",
+            ImmutableMap.of("filterValues", CqlFilter.of(Eq.ofFunction(Function.of("position", Collections.emptyList()), ScalarLiteral.of(2))))),
+            ScalarLiteral.of(0.5),
+            ScalarLiteral.of(2)));
+
+    public static final CqlFilter EXAMPLE_NESTED_WITH_ARRAYS = CqlFilter.of(AContains.of(Property.of("theme.concept",
+            ImmutableMap.of("theme", CqlFilter.of(Eq.of("theme.scheme", ScalarLiteral.of("profile"))))), ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("DLKM"), ScalarLiteral.of("Basis-DLM"), ScalarLiteral.of("DLM50")))));
 
     private static TemporalLiteral getTemporalLiteral(String temporalData) {
         try {

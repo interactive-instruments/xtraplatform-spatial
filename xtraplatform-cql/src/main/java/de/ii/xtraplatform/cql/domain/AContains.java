@@ -29,6 +29,11 @@ public interface AContains extends ArrayOperation, CqlNode {
                                                .build();
     }
 
+    static AContains of(Property property, ArrayLiteral arrayLiteral) {
+        return new ImmutableAContains.Builder().operands(ImmutableList.of(property,arrayLiteral))
+                .build();
+    }
+
     static AContains of(String property, String property2) {
         return new ImmutableAContains.Builder().operands(ImmutableList.of(Property.of(property),Property.of(property2)))
                                                .build();
