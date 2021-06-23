@@ -196,12 +196,18 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             }
 
             Optional<CqlFilter> userFilter;
+            FeatureStoreAttributesContainer userFilterTable;
             if (!property.getNestedFilters()
                          .isEmpty()) {
                 Map<String, CqlFilter> userFilters = property.getNestedFilters();
                 userFilter = userFilters.values()
                                         .stream()
                                         .findFirst();
+                String userFilterPropertyName = ((Property) userFilter.get().getEq().get().getOperands().get(0)).getName();
+                Predicate<FeatureStoreAttribute> userFilterPropertyMatches = attribute -> Objects.equals(userFilterPropertyName, attribute.getQueryable()) || (Objects.equals(userFilterPropertyName, ID_PLACEHOLDER) && attribute.isId());
+                userFilterTable = getTable(userFilterPropertyMatches, userFilterPropertyName);
+                String userFilterColumn = getColumn(userFilterTable, userFilterPropertyMatches, userFilterPropertyName);
+
             } else {
                 userFilter = Optional.empty();
             }
