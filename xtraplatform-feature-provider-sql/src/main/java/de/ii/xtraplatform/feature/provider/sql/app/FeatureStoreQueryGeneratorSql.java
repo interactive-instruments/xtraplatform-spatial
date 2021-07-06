@@ -338,7 +338,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
             .flatMap(relation -> toJoins(relation, aliasesIterator,
                     getFilter(attributeContainer, relation, Optional.empty())))
             .collect(Collectors.joining(" "));
-    return String.format("%s %s", userFilterJoin, join);
+    return String.format("%1$s%3$s%2$s", userFilterJoin, join, userFilterJoin.isEmpty() || join.isEmpty() ? "" : " ");
   }
 
   private Stream<String> toJoins(FeatureStoreRelation relation, ListIterator<String> aliases,
