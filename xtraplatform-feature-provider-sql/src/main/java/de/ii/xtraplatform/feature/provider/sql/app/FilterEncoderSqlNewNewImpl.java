@@ -202,7 +202,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                         .values()
                                         .stream()
                                         .findFirst();
-                String userFilterPropertyName = ((Property) ((BinaryScalarOperation) userFilter.get().getExpressions().get(0)).getOperands().get(0)).getName();
+                String userFilterPropertyName = getUserFilterPropertyName(userFilter.get());
                 Predicate<FeatureStoreAttribute> userFilterPropertyMatches = attribute -> Objects.equals(userFilterPropertyName, attribute.getQueryable()) || (Objects.equals(userFilterPropertyName, ID_PLACEHOLDER) && attribute.isId());
                 userFilterTable = getTable(userFilterPropertyMatches, userFilterPropertyName);
             } else {
@@ -216,6 +216,20 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                         .apply(userFilterTable, userFilter);
 
             return String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %%1$s%5$s%%2$s)", instanceContainer.getName(), aliases.get(0), instanceContainer.getSortKey(), join, qualifiedColumn);
+        }
+
+        private String getUserFilterPropertyName(CqlFilter userFilter) {
+            CqlNode nestedFilter = userFilter.getExpressions().get(0);
+            if (nestedFilter instanceof BinaryScalarOperation) {
+                return ((Property) ((BinaryScalarOperation) nestedFilter).getOperands().get(0)).getName();
+            } else if (nestedFilter instanceof TemporalOperation) {
+                return ((Property) ((TemporalOperation) nestedFilter).getOperands().get(0)).getName();
+            } else if (nestedFilter instanceof SpatialOperation) {
+                return ((Property) ((SpatialOperation) nestedFilter).getOperands().get(0)).getName();
+            } else if (nestedFilter instanceof de.ii.xtraplatform.cql.domain.Function) {
+                return ((de.ii.xtraplatform.cql.domain.Function) nestedFilter).getName();
+            }
+            throw new IllegalArgumentException("unsupported nested filter");
         }
 
         @Override
