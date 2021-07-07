@@ -298,7 +298,7 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM observationsubject A WHERE A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND AB.property = 'd30') WHERE AB.measure > 0.1) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM observationsubject A WHERE A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND AB.property = 'd30') WHERE AB.measure > 0.1) ORDER BY 1) AS NM) AS NM2"
         instanceQueries == [
                 "SELECT A.id AS SKEY FROM observationsubject A WHERE (A.id >= 1 AND A.id <= 10) AND (A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND AB.property = 'd30') WHERE AB.measure > 0.1)) ORDER BY 1",
-                "SELECT A.id AS SKEY, B.id AS SKEY_1, B.measure, B.property FROM observationsubject A JOIN filterValues B ON (A.id=B.observationsubjectid) WHERE (A.id >= 1 AND A.id <= 10) AND (A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND AB.property = 'd30') WHERE AB.measure > 0.1)) ORDER BY 1,2"
+                "SELECT A.id AS SKEY, B.id AS SKEY_1, B.measure, B.property, B.updated, B.location FROM observationsubject A JOIN filterValues B ON (A.id=B.observationsubjectid) WHERE (A.id >= 1 AND A.id <= 10) AND (A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND AB.property = 'd30') WHERE AB.measure > 0.1)) ORDER BY 1,2"
         ]
     }
 
@@ -443,6 +443,28 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Contains(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Contains(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.geometry FROM container A WHERE (A.id >= null AND A.id <= null) AND (A.id IN (SELECT AA.id FROM container AA  WHERE ST_Contains(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326)))) ORDER BY 1"
+    }
+
+    def 'Property with a nested temporal filter'() {
+        when:
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.MEASURE, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_NESTED_TEMPORAL), Collections.emptyList(), true)
+        List<String> instanceQueries = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.MEASURE, Optional.of(CqlFilterExamples.EXAMPLE_NESTED_TEMPORAL), Collections.emptyList(), 1, 10, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList())
+        then:
+        metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM observationsubject A WHERE A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND AB.updated > TIMESTAMP '2012-06-05T00:00:00Z') WHERE AB.measure > 0.1) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM observationsubject A WHERE A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND AB.updated > TIMESTAMP '2012-06-05T00:00:00Z') WHERE AB.measure > 0.1) ORDER BY 1) AS NM) AS NM2"
+        instanceQueries == [
+                "SELECT A.id AS SKEY FROM observationsubject A WHERE (A.id >= 1 AND A.id <= 10) AND (A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND AB.updated > TIMESTAMP '2012-06-05T00:00:00Z') WHERE AB.measure > 0.1)) ORDER BY 1",
+                "SELECT A.id AS SKEY, B.id AS SKEY_1, B.measure, B.property, B.updated, B.location FROM observationsubject A JOIN filterValues B ON (A.id=B.observationsubjectid) WHERE (A.id >= 1 AND A.id <= 10) AND (A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND AB.updated > TIMESTAMP '2012-06-05T00:00:00Z') WHERE AB.measure > 0.1)) ORDER BY 1,2"]
+    }
+
+    def 'Property with a nested spatial filter'() {
+        when:
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.MEASURE, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_NESTED_SPATIAL), Collections.emptyList(), true)
+        List<String> instanceQueries = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.MEASURE, Optional.of(CqlFilterExamples.EXAMPLE_NESTED_SPATIAL), Collections.emptyList(), 1, 10, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList())
+        then:
+        metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM observationsubject A WHERE A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND ST_Touches(AB.location, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) WHERE AB.measure > 0.1) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM observationsubject A WHERE A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND ST_Touches(AB.location, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) WHERE AB.measure > 0.1) ORDER BY 1) AS NM) AS NM2"
+        instanceQueries == [
+                "SELECT A.id AS SKEY FROM observationsubject A WHERE (A.id >= 1 AND A.id <= 10) AND (A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND ST_Touches(AB.location, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) WHERE AB.measure > 0.1)) ORDER BY 1",
+                "SELECT A.id AS SKEY, B.id AS SKEY_1, B.measure, B.property, B.updated, B.location FROM observationsubject A JOIN filterValues B ON (A.id=B.observationsubjectid) WHERE (A.id >= 1 AND A.id <= 10) AND (A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND ST_Touches(AB.location, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) WHERE AB.measure > 0.1)) ORDER BY 1,2"]
     }
 
 }

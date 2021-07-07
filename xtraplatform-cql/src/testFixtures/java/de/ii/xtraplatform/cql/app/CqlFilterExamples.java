@@ -161,6 +161,22 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_CONTAINS = CqlFilter.of(Contains.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
+    public static final CqlFilter EXAMPLE_NESTED_TEMPORAL = CqlFilter.of(
+            Gt.of(Property.of("filterValues.measure",
+                    ImmutableMap.of("filterValues", CqlFilter.of(After.of("filterValues.updated", TemporalLiteral.of("2012-06-05T00:00:00Z"))))),
+                    ScalarLiteral.of(0.1)));
+
+    public static final CqlFilter EXAMPLE_NESTED_SPATIAL = CqlFilter.of(
+            Gt.of(Property.of("filterValues.measure",
+                    ImmutableMap.of("filterValues", CqlFilter.of(Touches.of("filterValues.location", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0)))))),
+                    ScalarLiteral.of(0.1)));
+
+    public static final CqlFilter EXAMPLE_NESTED_FUNCTION = CqlFilter.of(
+            Gt.of(Property.of("filterValues.measure",
+                    ImmutableMap.of("filterValues", CqlFilter.of(Eq.ofFunction(
+                            Function.of("pos", ImmutableList.of()), ScalarLiteral.of(1))))),
+                    ScalarLiteral.of(0.1)));
+
     private static TemporalLiteral getTemporalLiteral(String temporalData) {
         try {
             return TemporalLiteral.of(temporalData);
