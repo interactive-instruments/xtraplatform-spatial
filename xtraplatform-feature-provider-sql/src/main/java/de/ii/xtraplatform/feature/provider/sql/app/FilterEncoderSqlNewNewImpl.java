@@ -220,14 +220,18 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         private String getUserFilterPropertyName(CqlFilter userFilter) {
             CqlNode nestedFilter = userFilter.getExpressions().get(0);
+            Operand operand = null;
             if (nestedFilter instanceof BinaryScalarOperation) {
-                return ((Property) ((BinaryScalarOperation) nestedFilter).getOperands().get(0)).getName();
+                operand = ((BinaryScalarOperation) nestedFilter).getOperands().get(0);
             } else if (nestedFilter instanceof TemporalOperation) {
-                return ((Property) ((TemporalOperation) nestedFilter).getOperands().get(0)).getName();
+                operand = ((TemporalOperation) nestedFilter).getOperands().get(0);
             } else if (nestedFilter instanceof SpatialOperation) {
-                return ((Property) ((SpatialOperation) nestedFilter).getOperands().get(0)).getName();
-            } else if (nestedFilter instanceof de.ii.xtraplatform.cql.domain.Function) {
-                return ((de.ii.xtraplatform.cql.domain.Function) nestedFilter).getName();
+                operand = ((SpatialOperation) nestedFilter).getOperands().get(0);
+            }
+            if (operand instanceof Property) {
+                return ((Property) operand).getName();
+            } else if (operand instanceof de.ii.xtraplatform.cql.domain.Function) {
+                return operand.accept(this);
             }
             throw new IllegalArgumentException("unsupported nested filter");
         }
