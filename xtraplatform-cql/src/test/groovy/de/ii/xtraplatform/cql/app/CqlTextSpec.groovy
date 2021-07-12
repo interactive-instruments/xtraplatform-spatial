@@ -774,18 +774,18 @@ class CqlTextSpec extends Specification {
 
     def 'Nested regular filter'() {
         given:
-        String cqlText = "filterValues[property = 'd30'].measure BETWEEN 0.5 AND 2"
+        String cqlText = "filterValues[property = 'd30'].measure > 0.1"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_NESTED
+        actual == CqlFilterExamples.EXAMPLE_32
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_NESTED, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_32, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText
@@ -793,7 +793,7 @@ class CqlTextSpec extends Specification {
 
     def 'Nested filter with a function'() {
         given:
-        String cqlText = "filterValues[position() = 2].measure BETWEEN 0.5 AND 2"
+        String cqlText = "filterValues[position() = 1].measure > 0.1"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)

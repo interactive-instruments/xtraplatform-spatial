@@ -73,61 +73,41 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
 
     @Override
     public CqlNode visit(Between between, List<CqlNode> children) {
-        Between.Builder builder = null;
+        Between.Builder builder = new ImmutableBetween.Builder();
 
-        if (Objects.nonNull(builder)) {
-            int i = 0;
-            for (CqlNode cqlNode : children) {
-                switch (i++) {
-                    case 0:
-                        builder.value((Scalar) cqlNode);
-                        break;
-                    case 1:
-                        builder.lower((Scalar) cqlNode);
-                        break;
-                    case 2:
-                        builder.upper((Scalar) cqlNode);
-                        break;
-                }
+        int i = 0;
+        for (CqlNode cqlNode : children) {
+            switch (i++) {
+                case 0:
+                    builder.value((Scalar) cqlNode);
+                    break;
+                case 1:
+                    builder.lower((Scalar) cqlNode);
+                    break;
+                case 2:
+                    builder.upper((Scalar) cqlNode);
+                    break;
             }
-            return builder.build();
         }
-
-        return null;
+        return builder.build();
     }
 
     @Override
     public CqlNode visit(IsNull isNull, List<CqlNode> children) {
-        Between.Builder builder = null;
-
-        if (Objects.nonNull(builder)) {
-            int i = 0;
-            for (CqlNode cqlNode : children) {
-                switch (i++) {
-                    case 0:
-                        builder.value((Scalar) cqlNode);
-                        break;
-                }
-            }
-            return builder.build();
-        }
-
-        return null;
+        IsNull.Builder builder = new ImmutableIsNull.Builder();
+        builder.operand((Scalar) children.get(0));
+        return builder.build();
     }
 
     @Override
     public CqlNode visit(Like like, List<CqlNode> children) {
-        Like.Builder builder = null;
+        Like.Builder builder = new ImmutableLike.Builder();
 
-        if (Objects.nonNull(builder)) {
-            // modifiers are set separately
-            return builder.operands(children.stream()
-                                            .filter(child -> child instanceof Scalar)
-                                            .map(child -> (Scalar) child)
-                                            .collect(Collectors.toUnmodifiableList())).build();
-        }
-
-        return null;
+        // modifiers are set separately
+        return builder.operands(children.stream()
+                                        .filter(child -> child instanceof Scalar)
+                                        .map(child -> (Scalar) child)
+                                        .collect(Collectors.toUnmodifiableList())).build();
     }
 
     @Override
