@@ -324,12 +324,12 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     ListIterator<String> aliasesIterator = aliases.listIterator();
 
     FeatureStoreRelatedContainer relatedUserFilterContainer = (FeatureStoreRelatedContainer) userFilterAttributeContainer;
-    String userFilterJoin = relatedUserFilterContainer.getInstanceConnection()
+    String userFilterJoin = userFilter.isPresent() ? relatedUserFilterContainer.getInstanceConnection()
             .stream()
             .flatMap(relation -> toJoins(relation, aliasesIterator,
                     getFilter(userFilterAttributeContainer, relation, userFilter)))
-            .collect(Collectors.joining(" "));
-    String userFilterTargetField = relatedUserFilterContainer.getInstanceConnection().get(0).getTargetField();
+            .collect(Collectors.joining(" ")) : "";
+    String userFilterTargetField = userFilter.isPresent() ? relatedUserFilterContainer.getInstanceConnection().get(0).getTargetField() : "";
 
     FeatureStoreRelatedContainer relatedContainer = (FeatureStoreRelatedContainer) attributeContainer;
     String join = relatedContainer.getInstanceConnection()
