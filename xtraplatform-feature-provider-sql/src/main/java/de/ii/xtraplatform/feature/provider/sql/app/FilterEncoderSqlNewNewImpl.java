@@ -229,6 +229,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 operand = ((SpatialOperation) nestedFilter).getOperands().get(0);
             } else if (nestedFilter instanceof Like) {
                 operand = ((Like) nestedFilter).getOperands().get(0);
+            } else if (nestedFilter instanceof In) {
+                operand = ((In) nestedFilter).getValue().get();
             }
             if (operand instanceof Property) {
                 return ((Property) operand).getName();

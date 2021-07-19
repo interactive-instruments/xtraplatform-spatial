@@ -171,11 +171,14 @@ public class CqlFilterExamples {
                     ImmutableMap.of("filterValues", CqlFilter.of(Touches.of("filterValues.location", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0)))))),
                     ScalarLiteral.of(0.1)));
 
+    public static final CqlFilter EXAMPLE_IN_WITH_FUNCTION = CqlFilter.of(In.ofFunction(
+            Function.of("pos", ImmutableList.of()), ImmutableList.of(ScalarLiteral.of(1), ScalarLiteral.of(3))));
+
     public static final CqlFilter EXAMPLE_NESTED_FUNCTION = CqlFilter.of(
-            Gt.of(Property.of("filterValues.measure",
-                    ImmutableMap.of("filterValues", CqlFilter.of(Eq.ofFunction(
-                            Function.of("position", ImmutableList.of()), ScalarLiteral.of(1))))),
-                    ScalarLiteral.of(0.1)));
+            Between.of(Property.of("filterValues.measure",
+                    ImmutableMap.of("filterValues", EXAMPLE_IN_WITH_FUNCTION)),
+                    ScalarLiteral.of(1),
+                    ScalarLiteral.of(5)));
 
     public static final CqlFilter EXAMPLE_NESTED_WITH_ARRAYS = CqlFilter.of(AContains.of(Property.of("theme.concept",
             ImmutableMap.of("theme", CqlFilter.of(Eq.of("theme.scheme", ScalarLiteral.of("profile"))))), ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("DLKM"), ScalarLiteral.of("Basis-DLM"), ScalarLiteral.of("DLM50")))));

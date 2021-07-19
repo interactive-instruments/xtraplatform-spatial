@@ -467,4 +467,15 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
                 "SELECT A.id AS SKEY, B.id AS SKEY_1, B.measure, B.property, B.updated, B.location FROM observationsubject A JOIN filterValues B ON (A.id=B.observationsubjectid) WHERE (A.id >= 1 AND A.id <= 10) AND (A.id IN (SELECT AA.id FROM observationsubject AA JOIN filterValues AB ON (AA.id=AB.observationsubjectid AND ST_Touches(AB.location, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) WHERE AB.measure > 0.1)) ORDER BY 1,2"]
     }
 
+    def 'Property with a nested filter with a function'() {
+        when:
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.MEASURE, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_NESTED_FUNCTION), Collections.emptyList(), true)
+        List<String> instanceQueries = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.MEASURE, Optional.of(CqlFilterExamples.EXAMPLE_NESTED_FUNCTION), Collections.emptyList(), 1, 10, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList())
+        then:
+        metaQuery == ""
+        instanceQueries == [
+                "",
+                ""]
+    }
+
 }

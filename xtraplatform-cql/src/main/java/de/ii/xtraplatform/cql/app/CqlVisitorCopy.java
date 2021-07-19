@@ -7,8 +7,10 @@
  */
 package de.ii.xtraplatform.cql.app;
 
+import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -112,22 +114,15 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
 
     @Override
     public CqlNode visit(In in, List<CqlNode> children) {
-        In.Builder builder = null;
+        ImmutableIn.Builder builder = new ImmutableIn.Builder();
 
-        if (Objects.nonNull(builder)) {
-            int i = 0;
-            for (CqlNode cqlNode : children) {
-                switch (i++) {
-                    case 0:
-                        builder.value((Scalar) cqlNode);
-                        break;
-                    // values are set separately
-                }
-            }
-            return builder.build();
+        builder.value((Scalar) children.get(0));
+        ArrayList<Scalar> list = new ArrayList<>();
+        for (int i = 1; i < children.size(); i++) {
+            list.add((Scalar) children.get(i));
         }
-
-        return null;
+        builder.list(list);
+        return builder.build();
     }
 
     @Override
