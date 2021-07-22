@@ -7,8 +7,10 @@
  */
 package de.ii.xtraplatform.cql.app;
 
+import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -73,81 +75,54 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
 
     @Override
     public CqlNode visit(Between between, List<CqlNode> children) {
-        Between.Builder builder = null;
+        Between.Builder builder = new ImmutableBetween.Builder();
 
-        if (Objects.nonNull(builder)) {
-            int i = 0;
-            for (CqlNode cqlNode : children) {
-                switch (i++) {
-                    case 0:
-                        builder.value((Scalar) cqlNode);
-                        break;
-                    case 1:
-                        builder.lower((Scalar) cqlNode);
-                        break;
-                    case 2:
-                        builder.upper((Scalar) cqlNode);
-                        break;
-                }
+        int i = 0;
+        for (CqlNode cqlNode : children) {
+            switch (i++) {
+                case 0:
+                    builder.value((Scalar) cqlNode);
+                    break;
+                case 1:
+                    builder.lower((Scalar) cqlNode);
+                    break;
+                case 2:
+                    builder.upper((Scalar) cqlNode);
+                    break;
             }
-            return builder.build();
         }
-
-        return null;
+        return builder.build();
     }
 
     @Override
     public CqlNode visit(IsNull isNull, List<CqlNode> children) {
-        Between.Builder builder = null;
-
-        if (Objects.nonNull(builder)) {
-            int i = 0;
-            for (CqlNode cqlNode : children) {
-                switch (i++) {
-                    case 0:
-                        builder.value((Scalar) cqlNode);
-                        break;
-                }
-            }
-            return builder.build();
-        }
-
-        return null;
+        IsNull.Builder builder = new ImmutableIsNull.Builder();
+        builder.operand((Scalar) children.get(0));
+        return builder.build();
     }
 
     @Override
     public CqlNode visit(Like like, List<CqlNode> children) {
-        Like.Builder builder = null;
+        Like.Builder builder = new ImmutableLike.Builder();
 
-        if (Objects.nonNull(builder)) {
-            // modifiers are set separately
-            return builder.operands(children.stream()
-                                            .filter(child -> child instanceof Scalar)
-                                            .map(child -> (Scalar) child)
-                                            .collect(Collectors.toUnmodifiableList())).build();
-        }
-
-        return null;
+        // modifiers are set separately
+        return builder.operands(children.stream()
+                                        .filter(child -> child instanceof Scalar)
+                                        .map(child -> (Scalar) child)
+                                        .collect(Collectors.toUnmodifiableList())).build();
     }
 
     @Override
     public CqlNode visit(In in, List<CqlNode> children) {
-        In.Builder builder = null;
+        ImmutableIn.Builder builder = new ImmutableIn.Builder();
 
-        if (Objects.nonNull(builder)) {
-            int i = 0;
-            for (CqlNode cqlNode : children) {
-                switch (i++) {
-                    case 0:
-                        builder.value((Scalar) cqlNode);
-                        break;
-                    // values are set separately
-                }
-            }
-            return builder.build();
+        builder.value((Scalar) children.get(0));
+        ArrayList<Scalar> list = new ArrayList<>();
+        for (int i = 1; i < children.size(); i++) {
+            list.add((Scalar) children.get(i));
         }
-
-        return null;
+        builder.list(list);
+        return builder.build();
     }
 
     @Override

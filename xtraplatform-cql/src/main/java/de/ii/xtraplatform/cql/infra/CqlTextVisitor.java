@@ -402,7 +402,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                   .map(v -> (ScalarLiteral) v.accept(this))
                                                   .collect(Collectors.toList());
 
-        if (Objects.isNull(ctx.propertyName())) {
+        if (Objects.nonNull(ctx.function())) {
+            in = new ImmutableIn.Builder()
+                    .value((Function) ctx.function().accept(this))
+                    .list(values)
+                    .build();
+        } else if (Objects.isNull(ctx.propertyName())) {
             in = In.of(values);
         } else {
             // TODO IN currently requires a property on the left side and literals on the right side

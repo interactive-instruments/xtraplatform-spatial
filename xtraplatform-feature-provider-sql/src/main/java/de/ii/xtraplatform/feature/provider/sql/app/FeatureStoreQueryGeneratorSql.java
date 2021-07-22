@@ -44,7 +44,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
       CrsTransformerFactory crsTransformerFactory) {
     this.sqlDialect = sqlDialect;
     this.filterEncoder = new FilterEncoderSqlNewNewImpl(this::getAliases,
-        (attributeContainer, aliases) -> userFilter -> getJoins(attributeContainer, aliases,
+        (attributeContainer, aliases) -> (userFilterAttributeContainer, userFilter) -> getJoins(attributeContainer, userFilterAttributeContainer, aliases,
             userFilter), nativeCrs, sqlDialect, crsTransformerFactory);
   }
 
@@ -326,6 +326,32 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         .flatMap(relation -> toJoins(relation, aliasesIterator,
             getFilter(attributeContainer, relation, userFilter)))
         .collect(Collectors.joining(" "));
+  }
+
+  private String getJoins(FeatureStoreAttributesContainer attributeContainer, FeatureStoreAttributesContainer userFilterAttributeContainer, List<String> aliases,
+                          Optional<CqlFilter> userFilter) {
+
+    if (!(attributeContainer instanceof FeatureStoreRelatedContainer)) {
+      return "";
+    }
+    ListIterator<String> aliasesIterator = aliases.listIterator();
+
+    FeatureStoreRelatedContainer relatedUserFilterContainer = (FeatureStoreRelatedContainer) userFilterAttributeContainer;
+    String userFilterJoin = userFilter.isPresent() ? relatedUserFilterContainer.getInstanceConnection()
+            .stream()
+            .flatMap(relation -> toJoins(relation, aliasesIterator,
+                    getFilter(userFilterAttributeContainer, relation, userFilter)))
+            .collect(Collectors.joining(" ")) : "";
+    String userFilterTargetField = userFilter.isPresent() ? relatedUserFilterContainer.getInstanceConnection().get(0).getTargetField() : "";
+
+    FeatureStoreRelatedContainer relatedContainer = (FeatureStoreRelatedContainer) attributeContainer;
+    String join = relatedContainer.getInstanceConnection()
+            .stream()
+            .filter(container -> !container.getTargetField().equals(userFilterTargetField))
+            .flatMap(relation -> toJoins(relation, aliasesIterator,
+                    getFilter(attributeContainer, relation, Optional.empty())))
+            .collect(Collectors.joining(" "));
+    return String.format("%1$s%3$s%2$s", userFilterJoin, join, userFilterJoin.isEmpty() || join.isEmpty() ? "" : " ");
   }
 
   private Stream<String> toJoins(FeatureStoreRelation relation, ListIterator<String> aliases,
