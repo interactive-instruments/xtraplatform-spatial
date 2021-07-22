@@ -25,5 +25,5 @@ public interface FeatureStoreQueryGenerator<T> {
         List<SortKey> sortKeys, Object minKey,
         Object maxKey, List<Object> customMinKeys, List<Object> customMaxKeys);
 
-    T getExtentQuery(FeatureStoreAttributesContainer attributesContainer);
+    T getExtentQuery(FeatureStoreInstanceContainer instanceContainer, FeatureStoreAttributesContainer attributesContainer);
 }
