@@ -25,6 +25,7 @@ import de.ii.xtraplatform.features.domain.SortKey.Direction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -135,7 +136,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
   }
 
   @Override
-  public String getExtentQuery(FeatureStoreAttributesContainer attributesContainer) {
+  public String getExtentQuery(FeatureStoreInstanceContainer instanceContainer, FeatureStoreAttributesContainer attributesContainer) {
 
     List<String> aliases = getAliases(attributesContainer);
     String attributeContainerAlias = aliases.get(aliases.size() - 1);
@@ -150,11 +151,14 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
     String join = getJoins(attributesContainer, aliases, Optional.empty());
 
+    Optional<String> filter = getFilter(instanceContainer, Optional.empty());
+    String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
+
     return String
-        .format("SELECT %s FROM %s%s%s", column, mainTable, join.isEmpty() ? "" : " ", join);
+        .format("SELECT %s FROM %s%s%s%s", column, mainTable, join.isEmpty() ? "" : " ", join, where);
   }
 
-  public String getTemporalExtentQuery(FeatureStoreAttributesContainer attributesContainer,
+  public String getTemporalExtentQuery(FeatureStoreInstanceContainer instanceContainer, FeatureStoreAttributesContainer attributesContainer,
       String property) {
     List<String> aliases = getAliases(attributesContainer);
     String attributeContainerAlias = aliases.get(aliases.size() - 1);
@@ -167,11 +171,14 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         .get();
     String join = getJoins(attributesContainer, aliases, Optional.empty());
 
-    return String.format("SELECT MIN(%s), MAX(%s) FROM %s%s%s", column, column, table,
-        join.isEmpty() ? "" : " ", join);
+    Optional<String> filter = getFilter(instanceContainer, Optional.empty());
+    String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
+
+    return String.format("SELECT MIN(%s), MAX(%s) FROM %s%s%s%s", column, column, table,
+        join.isEmpty() ? "" : " ", join, where);
   }
 
-  public String getTemporalExtentQuery(FeatureStoreAttributesContainer startAttributesContainer,
+  public String getTemporalExtentQuery(FeatureStoreInstanceContainer instanceContainer, FeatureStoreAttributesContainer startAttributesContainer,
       FeatureStoreAttributesContainer endAttributesContainer,
       String startProperty, String endProperty) {
     if (startAttributesContainer.equals(endAttributesContainer)) {
@@ -190,8 +197,11 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
           .get();
       String join = getJoins(startAttributesContainer, aliases, Optional.empty());
 
-      return String.format("SELECT MIN(%s), MAX(%s) FROM %s%s%s", startColumn, endColumn, table,
-          join.isEmpty() ? "" : " ", join);
+      Optional<String> filter = getFilter(instanceContainer, Optional.empty());
+      String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
+
+      return String.format("SELECT MIN(%s), MAX(%s) FROM %s%s%s%s", startColumn, endColumn, table,
+          join.isEmpty() ? "" : " ", join, where);
 
     } else {
       List<String> startAliases = getAliases(startAttributesContainer);
@@ -221,9 +231,12 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
       String endTableWithJoins = String
           .format("%s%s%s", endTable, endTableJoin.isEmpty() ? "" : " ", endTableJoin);
 
+      Optional<String> filter = getFilter(instanceContainer, Optional.empty());
+      String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
+
       return String
-          .format("SELECT * FROM (SELECT MIN(%s) FROM %s) AS A, (SELECT MAX(%s) from %s) AS B;",
-              startColumn, startTableWithJoins, endColumn, endTableWithJoins);
+          .format("SELECT * FROM (SELECT MIN(%s) FROM %s%s) AS A, (SELECT MAX(%s) from %s%s) AS B;",
+              startColumn, startTableWithJoins, where, endColumn, endTableWithJoins, where);
     }
 
   }
