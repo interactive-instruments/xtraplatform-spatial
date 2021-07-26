@@ -25,7 +25,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     GEOMETRY,
     POINT_IN_TIME,
     PERIOD_START,
-    PERIOD_END
+    PERIOD_END,
+    TYPE
     }
 
     enum Type {
@@ -134,6 +135,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @Value.Auxiliary
     default boolean isId() {
         return getRole().filter(role -> role == Role.ID).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isType() {
+        return getRole().filter(role -> role == Role.TYPE).isPresent();
     }
 
     default <U> U accept(SchemaVisitor<T, U> visitor) {
