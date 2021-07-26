@@ -12,6 +12,7 @@ import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -40,13 +41,16 @@ import de.ii.xtraplatform.features.domain.FeatureSourceStream;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureStream2.ResultOld;
+import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
+import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -70,6 +74,8 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     private static final MediaType MEDIA_TYPE = new MediaType("application", "gml+xml");
 
     private final CrsTransformerFactory crsTransformerFactory;
+    private final EntityRegistry entityRegistry;
+
     private FeatureQueryTransformerWfs queryTransformer;
     private FeatureNormalizerWfs featureNormalizer;
     private ExtentReader extentReader;
@@ -77,10 +83,12 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
 
     public FeatureProviderWfs(@Requires CrsTransformerFactory crsTransformerFactory,
                               @Requires ConnectorFactory connectorFactory,
-                              @Requires Reactive reactive) {
-        super(connectorFactory, reactive);
+                              @Requires Reactive reactive,
+                              @Requires EntityRegistry entityRegistry) {
+        super(connectorFactory, reactive, crsTransformerFactory);
 
         this.crsTransformerFactory = crsTransformerFactory;
+        this.entityRegistry = entityRegistry;
     }
 
     @Override
@@ -137,6 +145,20 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     @Override
     protected FeatureNormalizer<ByteString> getNormalizer() {
         return featureNormalizer;
+    }
+
+    @Override
+    protected FeatureTokenDecoder<ByteString> getDecoder(FeatureQuery query) {
+        return null;
+    }
+
+    @Override
+    protected Map<String, Codelist> getCodelists() {
+        //TODO
+        getData().getCodelists();
+
+        return entityRegistry.getEntitiesForType(Codelist.class).stream().map(codelist -> new SimpleImmutableEntry<>(codelist.getId(), codelist)).collect(
+            ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
 
