@@ -12,6 +12,7 @@ import akka.stream.javadsl.Source;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -45,20 +46,23 @@ import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
+import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.FeatureTokenSource;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
-import de.ii.xtraplatform.features.domain.SchemaMapping;
+import de.ii.xtraplatform.features.domain.SchemaMappingBase;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
+import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
@@ -66,12 +70,15 @@ import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
 import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
@@ -91,6 +98,7 @@ public class FeatureProviderSql extends
 
   private final CrsTransformerFactory crsTransformerFactory;
   private final Cql cql;
+  private final EntityRegistry entityRegistry;
 
   private FeatureStoreQueryGeneratorSql queryGeneratorSql;
   private FeatureQueryTransformerSql queryTransformer;
@@ -108,12 +116,14 @@ public class FeatureProviderSql extends
   public FeatureProviderSql(@Requires CrsTransformerFactory crsTransformerFactory,
       @Requires Cql cql,
       @Requires ConnectorFactory connectorFactory,
-      @Requires Reactive reactive) {
+      @Requires Reactive reactive,
+      @Requires EntityRegistry entityRegistry) {
     //TODO: starts akka for every instance, move to singleton
-    super(connectorFactory, reactive);
+    super(connectorFactory, reactive, crsTransformerFactory);
 
     this.crsTransformerFactory = crsTransformerFactory;
     this.cql = cql;
+    this.entityRegistry = entityRegistry;
 
   }
 
@@ -317,6 +327,20 @@ public class FeatureProviderSql extends
   @Override
   protected Optional<TypeInfoValidator> getTypeInfoValidator() {
     return Optional.ofNullable(typeInfoValidator);
+  }
+
+  @Override
+  protected FeatureTokenDecoder<SqlRow> getDecoder(FeatureQuery query) {
+    return new FeatureDecoderSql(ImmutableList.of(getTypeInfos().get(query.getType())), getData().getTypes().get(query.getType()), query);
+  }
+
+  @Override
+  protected Map<String, Codelist> getCodelists() {
+    //TODO
+    getData().getCodelists();
+
+    return entityRegistry.getEntitiesForType(Codelist.class).stream().map(codelist -> new SimpleImmutableEntry<>(codelist.getId(), codelist)).collect(
+        ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   @Override
@@ -571,7 +595,7 @@ public class FeatureProviderSql extends
 
     SchemaSql mutationSchemaSql = sqlSchema.get(0).accept(new MutationSchemaBuilderSql());
 
-    SchemaMapping<SchemaSql> mapping4 = new ImmutableSchemaMappingSql.Builder()
+    SchemaMappingBase<SchemaSql> mapping4 = new ImmutableSchemaMappingSql.Builder()
         .targetSchema(mutationSchemaSql)
         .build();
 
@@ -590,23 +614,6 @@ public class FeatureProviderSql extends
         //TODO .handleItem(MutationResult.Builder::addIds)
         .handleEnd(Builder::build)
         .on(getStreamRunner());
-
-    /*FeaturePipeline<SchemaSql, PropertySql, FeatureSql, String, MutationResult.Builder, MutationResult> featureMutationPipeline = ImmutableFeaturePipeline
-        .<SchemaSql, PropertySql, FeatureSql, String, MutationResult.Builder, MutationResult>builder()
-        .decoderWithSource(featureTokenSource)
-        .mapping(mapping4)
-        .featureCreator(ModifiableFeatureSql::create)
-        .propertyCreator(ModifiablePropertySql::create)
-        .encoder(new FeatureEncoderSql(featureMutationsSql, getStreamRunner().getDispatcher(), featureId))
-        .emptyResult(ImmutableMutationResult.builder())
-        .resultCombiner(MutationResult.Builder::addIds)
-        .exceptionHandler((result, throwable) -> {
-          Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
-              ? new IllegalArgumentException(throwable.getMessage())
-              : throwable;
-          return result.error(error);
-        })
-        .build();*/
 
     return mutationStream.run()
         .toCompletableFuture()

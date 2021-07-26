@@ -43,7 +43,15 @@ public interface SqlRow extends Comparable<SqlRow> {
         return ImmutableList.of();
     }
 
-    @Override
+    default List<Boolean> getSpatialAttributes() {
+        return ImmutableList.of();
+    }
+
+    default List<Boolean> getTemporalAttributes() {
+      return ImmutableList.of();
+  }
+
+  @Override
     default int compareTo(SqlRow sqlRow) {
         return 0;
     }

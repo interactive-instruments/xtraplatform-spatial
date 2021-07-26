@@ -10,9 +10,11 @@ package de.ii.xtraplatform.feature.provider.sql.infra.db;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
+import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SortKey.Direction;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import slick.jdbc.PositionedResult;
@@ -91,6 +93,26 @@ class SqlRowSlick implements SqlRow {
     public List<List<String>> getColumnPaths() {
         if (Objects.nonNull(attributesContainer)) {
             return attributesContainer.getAttributePaths();
+        }
+        return ImmutableList.of();
+    }
+
+    @Override
+    public List<Boolean> getSpatialAttributes() {
+        if (Objects.nonNull(attributesContainer)) {
+            return attributesContainer.getAttributes().stream().map(
+                FeatureStoreAttribute::isSpatial).collect(
+                Collectors.toList());
+        }
+        return ImmutableList.of();
+    }
+
+    @Override
+    public List<Boolean> getTemporalAttributes() {
+        if (Objects.nonNull(attributesContainer)) {
+            return attributesContainer.getAttributes().stream().map(
+                FeatureStoreAttribute::isTemporal).collect(
+                Collectors.toList());
         }
         return ImmutableList.of();
     }
@@ -228,6 +250,7 @@ class SqlRowSlick implements SqlRow {
                 ", name='" + getName() + '\'' +
                 ", values=" + values +
                 ", priority=" + priority +
+                ", path=" + getPath() +
                 '}';
     }
 

@@ -7,13 +7,32 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
-import de.ii.xtraplatform.features.domain.SchemaMapping;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import de.ii.xtraplatform.features.domain.SchemaMappingBase;
+import de.ii.xtraplatform.features.domain.SchemaToMappingVisitor;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
-public interface SchemaMappingSql extends SchemaMapping<SchemaSql> {
+public interface SchemaMappingSql extends SchemaMappingBase<SchemaSql> {
+
+    @Value.Derived
+    @Value.Auxiliary
+    default Map<List<String>, List<SchemaSql>> getTargetSchemasByPath() {
+        return getTargetSchema().accept(new SchemaToMappingVisitor<>())
+            .asMap()
+            .entrySet()
+            .stream()
+            //TODO: removal of first path element only makes sense for geojson, so change in parser
+            .map(entry -> new AbstractMap.SimpleImmutableEntry<>(
+                entry.getKey().subList(1, entry.getKey().size()), Lists.newArrayList(entry.getValue())))
+            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
 
     @Override
     default SchemaSql schemaWithGeometryType(SchemaSql schema, SimpleFeatureGeometry geometryType) {
