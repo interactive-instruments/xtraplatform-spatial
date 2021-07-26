@@ -27,8 +27,8 @@ import spock.lang.Specification
  */
 //@Ignore
 class FeatureReaderToProcessorSpec extends Specification {
-
-    static final Logger LOGGER = LoggerFactory.getLogger(FeatureReaderToProcessorSpec.class)
+//TODO: FeatureObjectEncoderSpec
+ /*   static final Logger LOGGER = LoggerFactory.getLogger(FeatureReaderToProcessorSpec.class)
 
     //TODO: test schema assignment
     def 'build feature'() {
@@ -117,5 +117,5 @@ class FeatureReaderToProcessorSpec extends Specification {
                                                                      .schema(Optional.empty())
                                                                      .value("611320001-1"))
 
-    }
+    }*/
 }

@@ -12,8 +12,10 @@ import akka.testkit.javadsl.TestKit
 import com.typesafe.config.Config
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowFixtures
+import de.ii.xtraplatform.features.domain.FeatureSchema
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder
 import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema
 import de.ii.xtraplatform.streams.app.ReactiveAkka
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider
 import de.ii.xtraplatform.streams.domain.Reactive
@@ -69,12 +71,12 @@ class FeatureDecoderSqlSpec extends Specification {
 
     def setup() {
         collectionDecoder = new FeatureDecoderSql(
-                SqlRowFixtures.TYPE_INFOS, getData().getTypes().get(query.getType()),
+                SqlRowFixtures.TYPE_INFOS, new ImmutableFeatureSchema.Builder().name("test").build(),
                 ImmutableFeatureQuery.builder()
                         .type("biotop")
                         .build())
         singleDecoder = new FeatureDecoderSql(
-                SqlRowFixtures.TYPE_INFOS, getData().getTypes().get(query.getType()),
+                SqlRowFixtures.TYPE_INFOS, new ImmutableFeatureSchema.Builder().name("test").build(),
                 ImmutableFeatureQuery.builder()
                         .type("biotop")
                         .returnsSingleFeature(true)

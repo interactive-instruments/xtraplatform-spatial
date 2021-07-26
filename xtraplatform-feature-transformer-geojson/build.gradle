@@ -5,7 +5,7 @@ dependencies {
     provided project(':xtraplatform-ogc-wfs-api')
     provided project(':xtraplatform-feature-transformer-api')
 
-    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.5.31'
+    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.6.15'
 
     //TODO: gradle 6 fixtures
     testImplementation project(':xtraplatform-features')

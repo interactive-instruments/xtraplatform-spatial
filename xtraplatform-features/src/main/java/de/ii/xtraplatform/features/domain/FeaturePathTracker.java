@@ -44,7 +44,7 @@ public class FeaturePathTracker {
     }
 
     private void shorten(final int depth) {
-        if (depth <= 0) {
+        if (depth < 0) {
             return;
         }
         if (depth < localPath.size()) {
