@@ -10,16 +10,12 @@ package de.ii.xtraplatform.features.domain.transform;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
-import de.ii.xtraplatform.features.domain.ImmutableFeaturePropertyTransformerCodelist;
-import de.ii.xtraplatform.features.domain.ImmutableFeaturePropertyTransformerNullValue;
-import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten.INCLUDE;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +75,7 @@ public interface PropertyTransformations {
                         .flattenedPathProvider(flattenedPathProvider)
                         .build()));
 
-            mapping.getFlattenObjects()
+            /*mapping.getFlattenObjects()
                 .ifPresent(flatten -> transformations.get(property)
                     .add(ImmutableFeaturePropertyTransformerFlatten.builder()
                         .parameter(flatten)
@@ -93,7 +89,7 @@ public interface PropertyTransformations {
                         .parameter(flatten)
                         .include(INCLUDE.ARRAYS)
                         .flattenedPathProvider(flattenedPathProvider)
-                        .build()));
+                        .build()));*/
         });
 
         return transformations;
