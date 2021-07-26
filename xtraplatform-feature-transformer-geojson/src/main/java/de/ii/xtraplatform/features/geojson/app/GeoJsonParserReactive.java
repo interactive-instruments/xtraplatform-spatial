@@ -15,6 +15,7 @@ import akka.stream.Inlet;
 import akka.stream.Outlet;
 import akka.stream.SinkShape;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Sink;
 import akka.stream.stage.AbstractInHandler;
 import akka.stream.stage.AbstractOutHandler;
 import akka.stream.stage.GraphStage;
@@ -27,7 +28,7 @@ import de.ii.xtraplatform.features.domain.FeatureReaderGeneric;
 import de.ii.xtraplatform.features.domain.FeatureSchemaMapper;
 import de.ii.xtraplatform.features.domain.PropertyBase;
 import de.ii.xtraplatform.features.domain.SchemaBase;
-import de.ii.xtraplatform.features.domain.SchemaMapping;
+import de.ii.xtraplatform.features.domain.SchemaMappingBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -42,18 +43,18 @@ import java.util.function.Supplier;
  * @author zahnen
  */
 public class GeoJsonParserReactive {
-/*
+
     public static Sink<ByteString, CompletionStage<Done>> sink(final FeatureReaderGeneric featureReader) {
         return Sink.fromGraph(new FeatureSinkFromGeoJson(featureReader));
     }
 
-    public static <V extends PropertyBase<V>, W extends FeatureBase<V>> Sink<ByteString, CompletionStage<Done>> sinkOf(
+    /*public static <V extends PropertyBase<V>, W extends FeatureBase<V>> Sink<ByteString, CompletionStage<Done>> sinkOf(
             final FeatureTypeV2 featureType, final FeatureProcessor<V, W> featureProcessor) {
         return GeoJsonParserReactive.sink(new FeatureSchemaMapper(featureType, new FeatureReaderToProcessor<>(featureProcessor)));
-    }
-*/
+    }*/
+
     public static <U extends SchemaBase<U>, V extends PropertyBase<V,U>, W extends FeatureBase<V,U>> Flow<ByteString, W, NotUsed> flowOf(
-            final SchemaMapping<U> mapping, final Supplier<W> featureCreator, final Supplier<V> propertyCreator) {
+            final SchemaMappingBase<U> mapping, final Supplier<W> featureCreator, final Supplier<V> propertyCreator) {
 
         return Flow.fromGraph(new FeatureFlowFromGeoJson<>(mapping, featureCreator, propertyCreator));
     }
@@ -141,11 +142,11 @@ public class GeoJsonParserReactive {
 
     static final class FeatureFlowFromGeoJson<V extends PropertyBase<V,U>, W extends FeatureBase<V,U>, U extends SchemaBase<U>> extends GraphStage<FlowShape<ByteString, W>> {
 
-        private final SchemaMapping<U> schemaMapping;
+        private final SchemaMappingBase<U> schemaMapping;
         private final Supplier<W> featureCreator;
         private final Supplier<V> propertyCreator;
 
-        public FeatureFlowFromGeoJson(SchemaMapping<U> schemaMapping,
+        public FeatureFlowFromGeoJson(SchemaMappingBase<U> schemaMapping,
                                       Supplier<W> featureCreator, Supplier<V> propertyCreator) {
             this.schemaMapping = schemaMapping;
             this.featureCreator = featureCreator;

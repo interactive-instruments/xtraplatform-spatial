@@ -15,7 +15,7 @@ import akka.util.ByteString
 import com.google.common.collect.ImmutableList
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping
 import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping
-import de.ii.xtraplatform.features.geojson.domain.GeoJsonStreamParser
+
 import de.ii.xtraplatform.features.geojson.domain.MappingSwapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -30,7 +30,7 @@ import static groovy.io.FileType.FILES
 @Ignore//TODO
 class FeatureTransformerFromGeoJsonSpec extends Specification {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(FeatureTransformerFromGeoJsonSpec.class)
+    /*static final Logger LOGGER = LoggerFactory.getLogger(FeatureTransformerFromGeoJsonSpec.class)
 
     def system = ActorSystem.create()
     def materializer = ActorMaterializer.create(system)
@@ -133,5 +133,5 @@ class FeatureTransformerFromGeoJsonSpec extends Specification {
                                 .putMappings("SQL", new MappingSwapper.MappingReadFromWrite("/fundortpflanzen/[id=id]osirisobjekt/[id=osirisobjekt_id]osirisobjekt_2_raumreferenz/[raumreferenz_id=id]raumreferenz/[id=raumreferenz_id]raumreferenz_2_ortsangabe/[ortsangabe_id=id]ortsangaben/[id=ortsangaben_id]ortsangaben_flurstueckskennzeichen/flurstueckskennzeichen", null))
                                 .build())
                 .build();
-    }
+    }*/
 }
