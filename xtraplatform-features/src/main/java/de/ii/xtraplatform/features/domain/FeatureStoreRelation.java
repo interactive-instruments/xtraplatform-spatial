@@ -31,6 +31,8 @@ public interface FeatureStoreRelation {
 
     String getSourceField();
 
+    Optional<String> getSourceFilter();
+
     @Value.Default
     default String getSourceSortKey() {
         return getSourceField();

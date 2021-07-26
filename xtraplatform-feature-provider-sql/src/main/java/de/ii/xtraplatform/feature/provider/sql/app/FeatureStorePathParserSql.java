@@ -15,6 +15,7 @@ import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPath;
 import de.ii.xtraplatform.feature.provider.sql.SqlFeatureTypeParser;
 import de.ii.xtraplatform.feature.provider.sql.SqlPath;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
+import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax.MatcherGroups;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
@@ -151,7 +152,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
     private List<FeatureStoreInstanceContainer> toInstanceContainers(List<SqlPath> sqlPaths) {
         LinkedHashMap<String, List<SqlPath>> groupedPaths = sqlPaths.stream()
-                                                                    .collect(Collectors.groupingBy(SqlPath::getTablePath, LinkedHashMap::new, Collectors.toList()));
+                                                                    .collect(Collectors.groupingBy(SqlPath::getTablePathWithFilter, LinkedHashMap::new, Collectors.toList()));
 
         LinkedHashMap<String, ImmutableFeatureStoreInstanceContainer.Builder> instanceContainerBuilders = new LinkedHashMap<>();
 
@@ -371,12 +372,15 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                       .matcher(target);
         if (sourceMatcher.find() && junctionMatcher.find() && targetMatcher.find()) {
             String sourceContainer = sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE);
+            Optional<String> sourceFilter = Optional.ofNullable(sourceMatcher.group(MatcherGroups.TABLE_FLAGS))
+                .flatMap(syntax::getFilterFlagExpression);
             String sortKey = sortKeys.getOrDefault(sourceContainer, syntax.getOptions().getSortKey());
 
             return ImmutableFeatureStoreRelation.builder()
                                                 .cardinality(CARDINALITY.M_2_N)
                                                 .sourceContainer(sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
                                                 .sourceField(junctionMatcher.group(SqlPathSyntax.MatcherGroups.SOURCE_FIELD))
+                                                .sourceFilter(sourceFilter)
                                                 .sourceSortKey(sortKey)
                                                 .junctionSource(junctionMatcher.group(SqlPathSyntax.MatcherGroups.TARGET_FIELD))
                                                 .junction(junctionMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))

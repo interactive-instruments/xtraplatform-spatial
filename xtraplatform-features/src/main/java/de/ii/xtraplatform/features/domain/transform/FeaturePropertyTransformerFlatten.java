@@ -9,22 +9,35 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface FeaturePropertyTransformerRename extends FeaturePropertySchemaTransformer {
+public interface FeaturePropertyTransformerFlatten extends FeaturePropertySchemaTransformer {
 
-    String TYPE = "RENAME";
+    String TYPE = "FLATTEN";
 
     @Override
     default String getType() {
         return TYPE;
     }
 
+    enum INCLUDE {ALL, OBJECTS, ARRAYS}
+
+    @Value.Default
+    default INCLUDE include() {
+        return INCLUDE.ALL;
+    }
+
+    BiFunction<String, String, String> flattenedPathProvider();
+
     @Override
     default FeatureSchema transform(FeatureSchema input) {
-        return new ImmutableFeatureSchema.Builder().from(input)
-                                                     .name(getParameter())
-                                                     .build();
+        String flattenedPath = flattenedPathProvider().apply(getParameter(), input.getName());
+        return new ImmutableFeatureSchema.Builder()
+            .from(input)
+            .name(flattenedPath)
+            .build();
     }
 }

@@ -8,8 +8,6 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.features.app.ImmutableCoordinatesWriterFeatureTokens;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
@@ -38,7 +36,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
 
   @Override
   public void onObjectStart(ModifiableContext context) {
-    if (context.currentSchema()
+    if (context.schema()
     .filter(SchemaBase::isGeometry)
     .isPresent()
         || context.geometryType().isPresent()) {

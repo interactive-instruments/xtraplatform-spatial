@@ -16,7 +16,9 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.FeatureStream.Result.Builder;
+import de.ii.xtraplatform.features.domain.transform.FeaturePropertySchemaTransformer;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.runtime.domain.LogContext;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
@@ -268,7 +270,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
                 FeatureTokenSource featureTokenSource = source.via(decoder);
 
-                FeatureTokenTransformerMapping mapper = new FeatureTokenTransformerMapping();
+                FeatureTokenTransformerMapping mapper = new FeatureTokenTransformerMapping(propertyTransformations, query);
 
                 Map<String, List<FeaturePropertyValueTransformer>> propertyValueTransformations = propertyTransformations
                     .map(pt -> pt.getValueTransformations(getCodelists()))

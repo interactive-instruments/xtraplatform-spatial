@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.domain;
+package de.ii.xtraplatform.features.domain.transform;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -46,6 +46,12 @@ public interface PropertyTransformation extends Buildable<PropertyTransformation
     Optional<String> getRename();
 
     Optional<String> getRemove();
+
+    Optional<String> getFlatten();
+
+    Optional<String> getFlattenObjects();
+
+    Optional<String> getFlattenArrays();
 
     Optional<String> getStringFormat();
 

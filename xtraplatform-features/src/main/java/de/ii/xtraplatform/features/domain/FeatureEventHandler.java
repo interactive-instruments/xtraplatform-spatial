@@ -35,6 +35,9 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     @Nullable
     Type valueType();
 
+    @Nullable
+    FeatureSchema customSchema();
+
     @Value.Default
     default boolean inGeometry() {
       return false;
@@ -64,6 +67,12 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     @Value.Default
     default int schemaIndex() {
       return -1;
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
+    default Optional<FeatureSchema> schema() {
+      return Optional.ofNullable(customSchema()).or(this::currentSchema);
     }
 
     @Value.Derived
@@ -152,6 +161,8 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     ModifiableContext setValue(String value);
 
     ModifiableContext setValueType(SchemaBase.Type valueType);
+
+    ModifiableContext setCustomSchema(FeatureSchema schema);
 
     ModifiableContext setInGeometry(boolean inGeometry);
 

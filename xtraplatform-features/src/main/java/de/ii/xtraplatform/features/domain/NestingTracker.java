@@ -7,9 +7,12 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import com.google.common.base.Joiner;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
+import de.ii.xtraplatform.features.domain.transform.FeaturePropertySchemaTransformer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,27 +27,44 @@ public class NestingTracker {
   private final FeatureEventHandler<ModifiableContext> downstream;
   private final ModifiableContext context;
   private final List<String> mainPath;
+  private final boolean flattenObjects;
+  private final boolean flattenArrays;
   private final List<String> nestingStack;
   private final List<List<String>> pathStack;
+  private final List<String> flattened;
 
   public NestingTracker(FeatureEventHandler<ModifiableContext> downstream,
-      ModifiableContext context, List<String> mainPath) {
+      ModifiableContext context, List<String> mainPath,
+      boolean flattenObjects, boolean flattenArrays) {
     this.downstream = downstream;
     this.context = context;
     this.mainPath = mainPath;
+    this.flattenObjects = flattenObjects;
+    this.flattenArrays = flattenArrays;
     this.nestingStack = new ArrayList<>();
     this.pathStack = new ArrayList<>();
+    this.flattened = new ArrayList<>();
   }
 
   public void openArray() {
-    downstream.onArrayStart(context);
+    if (!flattenArrays) {
+      downstream.onArrayStart(context);
+    } else {
+      flattened.add(context.schema().get().getName());
+    }
     context.setInArray(true);
     nestingStack.add("A");
     pathStack.add(context.pathTracker().asList());
   }
 
   public void openObject() {
-    downstream.onObjectStart(context);
+    if (flattenArrays && inArray()) {
+      flattened.add(String.valueOf(context.index()));
+    } else if (!flattenObjects || (!flattenArrays && inArray())) {
+      downstream.onObjectStart(context);
+    } else{
+      flattened.add(context.schema().get().getName());
+    }
     context.setInObject(true);
     nestingStack.add("O");
     pathStack.add(context.pathTracker().asList());
@@ -58,7 +78,13 @@ public class NestingTracker {
       return;
     }
     context.pathTracker().track(getCurrentNestingPath());
-    downstream.onObjectEnd(context);
+    if (flattenArrays && isObjectInArray()) {
+      flattened.remove(flattened.size()-1);
+    } else if (!flattenObjects || (!flattenArrays && isObjectInArray())) {
+      downstream.onObjectEnd(context);
+    } else {
+      flattened.remove(flattened.size()-1);
+    }
     nestingStack.remove(nestingStack.size() - 1);
     pathStack.remove(pathStack.size() - 1);
     if (!nestingStack.contains("O")) {
@@ -77,7 +103,11 @@ public class NestingTracker {
       return;
     }
     context.pathTracker().track(getCurrentNestingPath());
-    downstream.onArrayEnd(context);
+    if (!flattenArrays) {
+      downstream.onArrayEnd(context);
+    } else {
+      flattened.remove(flattened.size()-1);
+    }
     nestingStack.remove(nestingStack.size() - 1);
     pathStack.remove(pathStack.size() - 1);
     if (!nestingStack.contains("A")) {
@@ -121,6 +151,10 @@ public class NestingTracker {
     return isNested() && Objects.equals(nestingStack.get(nestingStack.size() - 1), "O");
   }
 
+  public boolean isObjectInArray() {
+    return inObject() && nestingStack.size() > 1 && Objects.equals(nestingStack.get(nestingStack.size() - 2), "A");
+  }
+
   public boolean isNotMain(List<String> nextPath) {
     return !Objects.equals(nextPath, mainPath);
   }
@@ -161,4 +195,10 @@ public class NestingTracker {
     return Objects.equals(longer.subList(0, shorter.size()), shorter);
   }
 
+  public String getFlattenedPropertyPath(String separator, String name) {
+    flattened.add(name);
+    String path = Joiner.on(separator).join(flattened);
+    flattened.remove(flattened.size()-1);
+    return path;
+  }
 }

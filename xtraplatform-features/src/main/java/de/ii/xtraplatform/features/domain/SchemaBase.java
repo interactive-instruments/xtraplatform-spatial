@@ -129,6 +129,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         return getType() == Type.GEOMETRY;
     }
 
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isId() {
+        return getRole().filter(role -> role == Role.ID).isPresent();
+    }
+
     default <U> U accept(SchemaVisitor<T, U> visitor) {
     return visitor.visit(
         (T) this,

@@ -74,6 +74,7 @@ public class FeatureSchemaToTypeVisitor implements SchemaVisitor<FeatureSchema, 
             return additionalInfo;
         }
 
+        //TODO: no longer needed
         if (schema.getObjectType().isPresent() && Objects.equals(schema.getObjectType().get(), "Link")) {
             if (Objects.equals(name, "href")) {
                 return ImmutableMap.of("role", "LINKHREF");

@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;

@@ -149,6 +149,18 @@ public interface SqlPathSyntax {
     }
 
 
+    default Optional<String> getFilterFlagExpression(String flags) {
+        Matcher matcher = Pattern.compile(getFilterFlagPattern())
+            .matcher(flags);
+
+        if (matcher.find()) {
+            return Optional.of(matcher.group());
+        }
+
+        return Optional.empty();
+    }
+
+
     //TODO: start end separator for flags
     @Value.Derived
     default String getPriorityFlagPattern() {

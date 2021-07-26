@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql;
 
+import java.util.Map.Entry;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
@@ -59,4 +60,20 @@ public interface SqlPath {
     Optional<String> getConstantValue();
 
     Map<String, String> getTableFlags();
+
+    @Value.Derived
+    default String getTablePathWithFilter() {
+        String tablePathWithFilter = getTablePath();
+
+        for (Entry<String, String> entry : getTableFlags().entrySet()) {
+            String table = entry.getKey();
+            String flag = entry.getValue();
+
+            if (flag.startsWith("{filter=")) {
+                tablePathWithFilter = tablePathWithFilter.replace(table, table + flag);
+            }
+        }
+
+        return tablePathWithFilter;
+    }
 }

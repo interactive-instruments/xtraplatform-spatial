@@ -10,6 +10,20 @@ package de.ii.xtraplatform.stringtemplates.domain;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.commonmark.Extension;
 import org.commonmark.ext.gfm.tables.TablesExtension;
 import org.commonmark.node.Link;
@@ -20,19 +34,6 @@ import org.commonmark.renderer.html.CoreHtmlNodeRenderer;
 import org.commonmark.renderer.html.HtmlRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * @author zahnen
@@ -69,7 +70,7 @@ public class StringTemplateFilters {
     }
 
     public static String applyTemplate(String template, String value) {
-        return applyTemplate(template, value, isHtml -> {}, "value");
+        return applyTemplate(template, value, isHtml -> {});
     }
 
     public static String applyTemplate(String template, String value, Consumer<Boolean> isHtml) {
@@ -77,16 +78,29 @@ public class StringTemplateFilters {
     }
 
     public static String applyTemplate(String template, String value, Consumer<Boolean> isHtml, String valueSubst) {
-
         if (Objects.isNull(value) || value.isEmpty()) {
             return "";
         }
+
         if (Objects.isNull(template) || template.isEmpty()) {
             return value;
         }
 
-        Pattern valuePattern = Pattern.compile("\\{\\{" + valueSubst + "( ?\\| ?[\\w]+(:'[^']*')*)*\\}\\}");
-        Pattern filterPattern = Pattern.compile(" ?\\| ?([\\w]+)((?::'[^']*')*)");
+        return applyTemplate(template, isHtml, key -> Objects.equals(key, valueSubst) ? Optional.of(value) : Optional.empty());
+    }
+
+    public static String applyTemplate(String template, Function<String, Optional<String>> valueLookup) {
+        return applyTemplate(template, isHtml -> {}, valueLookup);
+    }
+
+    static Pattern valuePattern = Pattern.compile("\\{\\{([\\w.]+)( ?\\| ?[\\w]+(:'[^']*')*)*\\}\\}");
+    static Pattern filterPattern = Pattern.compile(" ?\\| ?([\\w]+)((?::'[^']*')*)");
+
+    public static String applyTemplate(String template, Consumer<Boolean> isHtml, Function<String, Optional<String>> valueLookup) {
+
+        if (Objects.isNull(template) || template.isEmpty()) {
+            return "";
+        }
 
         String formattedValue = "";
         Matcher matcher = valuePattern.matcher(template);
@@ -95,7 +109,8 @@ public class StringTemplateFilters {
 
         int lastMatch = 0;
         while (matcher.find()) {
-            String filteredValue = value;
+            String key = matcher.group(1);
+            String filteredValue = Optional.ofNullable(key).flatMap(valueLookup).orElse("");
             Matcher matcher2 = filterPattern.matcher(template.substring(matcher.start(), matcher.end()));
             while (matcher2.find()) {
                 String filter = matcher2.group(1);

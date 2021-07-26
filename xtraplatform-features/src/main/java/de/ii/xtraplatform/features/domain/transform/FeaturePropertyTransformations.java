@@ -7,8 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import de.ii.xtraplatform.features.domain.FeatureProperty;
-
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -27,8 +26,8 @@ public interface FeaturePropertyTransformations<T> {
         return transform(wrapper, getSchema(wrapper));
     }*/
 
-    default Optional<T> transform(T wrapper, FeatureProperty schema) {
-        FeatureProperty transformedSchema = schema;
+    default Optional<T> transform(T wrapper, FeatureSchema schema) {
+        FeatureSchema transformedSchema = schema;
 
         for (FeaturePropertySchemaTransformer schemaTransformer : getSchemaTransformers()) {
             if (Objects.nonNull(transformedSchema)) {
@@ -45,6 +44,6 @@ public interface FeaturePropertyTransformations<T> {
         return transform(wrapper, transformedSchema, transformedValue);
     }
 
-    Optional<T> transform(T wrapper, FeatureProperty transformedSchema, String transformedValue);
+    Optional<T> transform(T wrapper, FeatureSchema transformedSchema, String transformedValue);
 
 }

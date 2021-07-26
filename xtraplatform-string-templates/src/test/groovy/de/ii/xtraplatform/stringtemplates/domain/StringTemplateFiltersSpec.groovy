@@ -33,7 +33,7 @@ class StringTemplateFiltersSpec extends Specification {
             String template = "{{value | replace:'ABC':' '}}"
             String value = null
         when:
-            String result = StringTemplateFilters.applyTemplate(template, value)
+            String result = StringTemplateFilters.applyTemplate(template, (String)value)
         then:
             result.isEmpty()
     }

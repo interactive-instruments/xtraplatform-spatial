@@ -35,12 +35,12 @@ public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSche
 
   @Override
   public final void onFeatureStart(ModifiableContext context) {
-    if (context.currentSchema().isEmpty()) {
+    if (context.schema().isEmpty()) {
       return;
     }
 
     this.currentFeature = createFeature();
-    currentFeature.schema(context.currentSchema().get());
+    currentFeature.schema(context.schema().get());
 
     currentFeature.collectionMetadata(context.metadata());
 
@@ -57,11 +57,11 @@ public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSche
 
   @Override
   public final void onObjectStart(ModifiableContext context) {
-    if (context.currentSchema().isEmpty()) {
+    if (context.schema().isEmpty()) {
       return;
     }
 
-    this.currentObjectOrArray = createProperty(PropertyBase.Type.OBJECT, context.path(), context.currentSchema().get());
+    this.currentObjectOrArray = createProperty(PropertyBase.Type.OBJECT, context.path(), context.schema().get());
   }
 
   @Override
@@ -71,11 +71,11 @@ public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSche
 
   @Override
   public final void onArrayStart(ModifiableContext context) {
-    if (context.currentSchema().isEmpty()) {
+    if (context.schema().isEmpty()) {
       return;
     }
 
-    this.currentObjectOrArray = createProperty(PropertyBase.Type.ARRAY, context.path(), context.currentSchema().get());
+    this.currentObjectOrArray = createProperty(PropertyBase.Type.ARRAY, context.path(), context.schema().get());
   }
 
   @Override
@@ -85,11 +85,11 @@ public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSche
 
   @Override
   public final void onValue(ModifiableContext context) {
-    if (context.currentSchema().isEmpty() || Objects.isNull(context.value())) {
+    if (context.schema().isEmpty() || Objects.isNull(context.value())) {
       return;
     }
 
-    createProperty(PropertyBase.Type.VALUE, context.path(), context.currentSchema().get(), context.value());
+    createProperty(PropertyBase.Type.VALUE, context.path(), context.schema().get(), context.value());
   }
 
   @Override

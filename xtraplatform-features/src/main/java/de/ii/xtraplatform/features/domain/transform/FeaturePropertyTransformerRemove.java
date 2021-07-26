@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import de.ii.xtraplatform.features.domain.FeatureProperty;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ public interface FeaturePropertyTransformerRemove extends FeaturePropertySchemaT
     boolean isOverview();
 
     @Override
-    default FeatureProperty transform(FeatureProperty input) {
+    default FeatureSchema transform(FeatureSchema input) {
         Condition condition = Condition.NEVER;
         try {
             condition = Condition.valueOf(getParameter().toUpperCase());

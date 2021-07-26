@@ -5,25 +5,24 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.domain;
+package de.ii.xtraplatform.features.domain.transform;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
-import de.ii.xtraplatform.features.domain.transform.FeaturePropertySchemaTransformer;
-import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
-import de.ii.xtraplatform.features.domain.transform.ImmutableFeaturePropertyTransformerDateFormat;
-import de.ii.xtraplatform.features.domain.transform.ImmutableFeaturePropertyTransformerRemove;
-import de.ii.xtraplatform.features.domain.transform.ImmutableFeaturePropertyTransformerRename;
-import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import de.ii.xtraplatform.features.domain.ImmutableFeaturePropertyTransformerCodelist;
+import de.ii.xtraplatform.features.domain.ImmutableFeaturePropertyTransformerNullValue;
+import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten.INCLUDE;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface PropertyTransformations {
 
@@ -48,7 +47,13 @@ public interface PropertyTransformations {
 
     Map<String, PropertyTransformation> getTransformations();
 
-    default Map<String, List<FeaturePropertySchemaTransformer>> getSchemaTransformations(boolean isOverview) {
+    default Map<String, List<FeaturePropertySchemaTransformer>> getSchemaTransformations(
+        boolean isOverview) {
+        return getSchemaTransformations(isOverview, (separator, name) -> name);
+    }
+
+    default Map<String, List<FeaturePropertySchemaTransformer>> getSchemaTransformations(
+        boolean isOverview, BiFunction<String, String, String> flattenedPathProvider) {
         Map<String, List<FeaturePropertySchemaTransformer>> transformations = new LinkedHashMap<>();
 
         getTransformations().forEach((property, mapping) -> {
@@ -66,6 +71,29 @@ public interface PropertyTransformations {
                                                                                                      .parameter(remove)
                                                                                                      .isOverview(isOverview)
                                                                                                      .build()));
+
+            mapping.getFlatten()
+                .ifPresent(flatten -> transformations.get(property)
+                    .add(ImmutableFeaturePropertyTransformerFlatten.builder()
+                        .parameter(flatten)
+                        .flattenedPathProvider(flattenedPathProvider)
+                        .build()));
+
+            mapping.getFlattenObjects()
+                .ifPresent(flatten -> transformations.get(property)
+                    .add(ImmutableFeaturePropertyTransformerFlatten.builder()
+                        .parameter(flatten)
+                        .include(INCLUDE.OBJECTS)
+                        .flattenedPathProvider(flattenedPathProvider)
+                        .build()));
+
+            mapping.getFlattenArrays()
+                .ifPresent(flatten -> transformations.get(property)
+                    .add(ImmutableFeaturePropertyTransformerFlatten.builder()
+                        .parameter(flatten)
+                        .include(INCLUDE.ARRAYS)
+                        .flattenedPathProvider(flattenedPathProvider)
+                        .build()));
         });
 
         return transformations;
@@ -84,14 +112,18 @@ public interface PropertyTransformations {
 
             mapping.getNull()
                     .ifPresent(nullValue -> transformations.get(property)
-                                                           .add(ImmutableFeaturePropertyTransformerNullValue.builder()
+                                                           .add(
+                                                               ImmutableFeaturePropertyTransformerNullValue
+                                                                   .builder()
                                                                                                             .propertyName(property)
                                                                                                             .parameter(nullValue)
                                                                                                             .build()));
 
             mapping.getStringFormat()
                    .ifPresent(stringFormat -> transformations.get(property)
-                                                             .add(ImmutableFeaturePropertyTransformerStringFormat.builder()
+                                                             .add(
+                                                                 ImmutableFeaturePropertyTransformerStringFormat
+                                                                     .builder()
                                                                                                                  .propertyName(property)
                                                                                                                  .parameter(stringFormat)
                                                                                                                  .substitutions(substitutions)
@@ -107,7 +139,9 @@ public interface PropertyTransformations {
 
             mapping.getCodelist()
                    .ifPresent(codelist -> transformations.get(property)
-                                                         .add(ImmutableFeaturePropertyTransformerCodelist.builder()
+                                                         .add(
+                                                             ImmutableFeaturePropertyTransformerCodelist
+                                                                 .builder()
                                                                                                          .propertyName(property)
                                                                                                          .parameter(codelist)
                                                                                                          .codelists(codelists)
