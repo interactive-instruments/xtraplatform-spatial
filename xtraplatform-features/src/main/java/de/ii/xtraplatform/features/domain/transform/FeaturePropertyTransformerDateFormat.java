@@ -9,6 +9,8 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,12 +39,23 @@ public interface FeaturePropertyTransformerDateFormat extends FeaturePropertyVal
         return ImmutableList.of(FeatureProperty.Type.DATETIME);
     }
 
+    @Value.Default
+    default ZoneId getDefaultTimeZone() {
+        return ZoneId.of("UTC");
+    }
+
     @Override
     default String transform(String input) {
+        //TODO: variable fractions
         try {
             DateTimeFormatter parser = DateTimeFormatter.ofPattern("yyyy-MM-dd[['T'][' ']HH:mm:ss][.SSS][X]");
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(getParameter());
             TemporalAccessor ta = parser.parseBest(input, OffsetDateTime::from, LocalDateTime::from, LocalDate::from);
+            if (ta instanceof LocalDateTime) {
+                ta = ((LocalDateTime)ta).atZone(getDefaultTimeZone());
+            } else if (ta instanceof LocalDate) {
+                ta = ((LocalDate)ta).atStartOfDay(getDefaultTimeZone());
+            }
 
             return formatter.format(ta);
         } catch (Exception e) {

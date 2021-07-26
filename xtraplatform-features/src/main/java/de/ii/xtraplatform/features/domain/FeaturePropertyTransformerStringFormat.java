@@ -5,9 +5,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.stringtemplates.domain;
+package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
+import de.ii.xtraplatform.stringtemplates.domain.StringTemplateFilters;
+import java.util.Map;
+import java.util.Map.Entry;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -20,7 +23,7 @@ public interface FeaturePropertyTransformerStringFormat extends FeaturePropertyV
         return TYPE;
     }
 
-    String getServiceUrl();
+    Map<String, String> getSubstitutions();
 
     //TODO: double cols
     @Override
@@ -30,7 +33,9 @@ public interface FeaturePropertyTransformerStringFormat extends FeaturePropertyV
 
         String formattedValue = StringTemplateFilters.applyTemplate(getParameter(), input);
 
-        formattedValue = formattedValue.replace("{{serviceUrl}}", getServiceUrl());
+        for (Entry<String, String> entry : getSubstitutions().entrySet()) {
+            formattedValue = formattedValue.replace("{{" + entry.getKey() + "}}", entry.getValue());
+        }
 
         int subst = formattedValue.indexOf("}}");
         if (subst > -1) {
