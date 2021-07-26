@@ -51,15 +51,15 @@ public class FeatureTokenTransformerMapping extends FeatureTokenTransformer {
         .map(pt -> pt.getSchemaTransformations(isOverview, this::getFlattenedPropertyPath))
         .orElse(ImmutableMap.of());
 
-    boolean flattenObjects = propertySchemaTransformers.containsKey("*")
-        && propertySchemaTransformers.get("*")
+    boolean flattenObjects = propertySchemaTransformers.containsKey(PropertyTransformations.WILDCARD)
+        && propertySchemaTransformers.get(PropertyTransformations.WILDCARD)
         .stream()
         .anyMatch(featurePropertySchemaTransformer -> featurePropertySchemaTransformer instanceof FeaturePropertyTransformerFlatten
         && (((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer).include() == INCLUDE.ALL
         || ((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer).include() == INCLUDE.OBJECTS));
 
-    boolean flattenArrays = propertySchemaTransformers.containsKey("*")
-        && propertySchemaTransformers.get("*")
+    boolean flattenArrays = propertySchemaTransformers.containsKey(PropertyTransformations.WILDCARD)
+        && propertySchemaTransformers.get(PropertyTransformations.WILDCARD)
         .stream()
         .anyMatch(featurePropertySchemaTransformer -> featurePropertySchemaTransformer instanceof FeaturePropertyTransformerFlatten
             && (((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer).include() == INCLUDE.ALL

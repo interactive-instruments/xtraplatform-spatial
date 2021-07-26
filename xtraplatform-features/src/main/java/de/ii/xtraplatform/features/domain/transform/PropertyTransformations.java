@@ -24,6 +24,8 @@ public interface PropertyTransformations {
 
     Logger LOGGER = LoggerFactory.getLogger(PropertyTransformations.class);
 
+    String WILDCARD = "*";
+
     default PropertyTransformations withSubstitutions(Map<String, String> substitutions) {
         Map<String, PropertyTransformation> transformations = this.getTransformations();
 
