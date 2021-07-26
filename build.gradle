@@ -8,13 +8,13 @@ allprojects {
 }
 
 ext {
-    versionSuffix = project.findProperty('snapshot') == 'true' ? '-SNAPSHOT' : ''
+    versionSuffix = (project.hasProperty('branch') && project.getProperty('branch') != 'master' ? ('-' + project.getProperty('branch')) : '') + (project.findProperty('snapshot') == 'true' ? '-SNAPSHOT' : '')
 }
 
-version = '4.7.0' + versionSuffix
+version = '5.0.0' + versionSuffix
 
 dependencies {
-    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '3.5.1'
+    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '4.0.0-streams-SNAPSHOT'
 
     bundle subprojects
 }
