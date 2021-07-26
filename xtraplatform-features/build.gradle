@@ -1,8 +1,23 @@
 
 dependencies {
+    provided project(':xtraplatform-codelists')
     provided project(':xtraplatform-cql')
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-geometries')
 }
 
-
+//TODO: replace with gradle 6 test fixtures
+apply plugin: 'groovy'
+sourceSets.main.groovy.srcDirs += file('src/testFixtures/groovy')
+dependencies {
+    compileOnly "org.codehaus.groovy:groovy:3.0.6"
+    compileOnly "org.spockframework:spock-core:2.0-M4-groovy-3.0"
+}
+jar {
+    manifest {
+        instructionFirst 'Import-Package', "!groovy.*"
+        instructionFirst 'Import-Package', "!spock.lang*"
+        instructionFirst 'Import-Package', "!org.codehaus.groovy*"
+        instructionFirst 'Import-Package', "!org.spockframework.*"
+    }
+}

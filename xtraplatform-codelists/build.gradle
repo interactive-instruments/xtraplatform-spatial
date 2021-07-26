@@ -1,6 +1,5 @@
 
 dependencies {
-    provided project(':xtraplatform-features')
-    provided project(':xtraplatform-feature-transformer-api')
     provided project(":xtraplatform-string-templates")
+    provided project(":xtraplatform-ogc-wfs-api")
 }
