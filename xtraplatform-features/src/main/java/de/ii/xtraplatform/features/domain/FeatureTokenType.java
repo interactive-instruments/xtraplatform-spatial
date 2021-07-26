@@ -1,6 +1,6 @@
 package de.ii.xtraplatform.features.domain;
 
-enum FeatureTokenType {
+public enum FeatureTokenType {
   INPUT,
   FEATURE,
   OBJECT,

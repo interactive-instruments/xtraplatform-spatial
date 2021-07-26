@@ -1,30 +1,29 @@
 package de.ii.xtraplatform.features.domain;
 
-import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalLong;
 
-public class FeatureTokenReader {
+//TODO: is there any real use case for this?
+public class FeatureTokenReader<T extends ModifiableContext> {
 
-  private final FeatureEventConsumer eventConsumer;
+  private final FeatureEventHandler<T> eventHandler;
 
   private FeatureTokenType currentType;
   private int contextIndex;
+  private T context;
 
-  private Long numberReturned;
-  private Long numberMatched;
-
-  private List<String> path;
-  private String value;
-  private SchemaBase.Type valueType;
-  private Optional<SimpleFeatureGeometry> geometryType;
-
+  //TODO
   public FeatureTokenReader(FeatureEventConsumer eventConsumer) {
-    this.eventConsumer = eventConsumer;
+    this.eventHandler = null;
+  }
+
+  public FeatureTokenReader(FeatureEventHandler<T> eventHandler, T context) {
+    this.eventHandler = eventHandler;
+    this.context = context;
   }
 
   public void onToken(Object token) {
@@ -36,32 +35,40 @@ public class FeatureTokenReader {
     } else {
       readContext(token);
     }
+
+    if (token == FeatureTokenType.INPUT_END) {
+      emitEvent();
+    }
   }
 
   private void initEvent(FeatureTokenType token) {
     this.currentType = token;
     this.contextIndex = 0;
-    this.path = ImmutableList.of();
-    this.geometryType = Optional.empty();
-    this.valueType = Type.UNKNOWN;
-    this.value = null;
+
+    context.pathTracker().track(0);
+    context.setGeometryType(Optional.empty());
+    context.setValueType(Type.UNKNOWN);
+    context.setValue(null);
   }
 
   private void readContext(Object context) {
     switch (currentType) {
       case INPUT:
-        if (contextIndex == 0 && context instanceof Long) {
-          this.numberReturned = (Long) context;
+        if (contextIndex == 0 && context instanceof Boolean) {
+          this.context.metadata().isSingleFeature((Boolean) context);
+        } else if (contextIndex == 0 && context instanceof Long) {
+          this.context.metadata().numberReturned((Long) context);
         } else if (contextIndex == 1 && context instanceof Long) {
-          this.numberMatched = (Long) context;
+          this.context.metadata().numberMatched((Long) context);
         }
         break;
       case FEATURE:
+        tryReadPath(context);
         break;
       case OBJECT:
         tryReadPath(context);
         if (contextIndex == 1 && context instanceof SimpleFeatureGeometry) {
-          this.geometryType = Optional.of((SimpleFeatureGeometry) context);
+          this.context.setGeometryType((SimpleFeatureGeometry) context);
         }
         break;
       case ARRAY:
@@ -70,9 +77,9 @@ public class FeatureTokenReader {
       case VALUE:
         tryReadPath(context);
         if (contextIndex == 1 && context instanceof String) {
-          this.value = (String) context;
+          this.context.setValue((String) context);
         } else if (contextIndex == 2 && context instanceof SchemaBase.Type) {
-          this.valueType = (SchemaBase.Type) context;
+          this.context.setValueType((SchemaBase.Type) context);
         }
         break;
       case ARRAY_END:
@@ -87,40 +94,39 @@ public class FeatureTokenReader {
 
   private void tryReadPath(Object context) {
     if (contextIndex == 0 && context instanceof List) {
-      this.path = (List<String>) context;
+      //TODO: too expensive
+      this.context.pathTracker().track((List<String>) context);
     }
   }
 
   private void emitEvent() {
     switch (currentType) {
       case INPUT:
-        eventConsumer.onStart(Objects.nonNull(numberReturned) ? OptionalLong.of(numberReturned)
-                : OptionalLong.empty(),
-            Objects.nonNull(numberMatched) ? OptionalLong.of(numberMatched) : OptionalLong.empty());
+        eventHandler.onStart(context);
         break;
       case FEATURE:
-        eventConsumer.onFeatureStart();
+        eventHandler.onFeatureStart(context);
         break;
       case OBJECT:
-        eventConsumer.onObjectStart(path, geometryType);
+        eventHandler.onObjectStart(context);
         break;
       case ARRAY:
-        eventConsumer.onArrayStart(path);
+        eventHandler.onArrayStart(context);
         break;
       case VALUE:
-        eventConsumer.onValue(path, value, valueType);
+        eventHandler.onValue(context);
         break;
       case ARRAY_END:
-        eventConsumer.onArrayEnd();
+        eventHandler.onArrayEnd(context);
         break;
       case OBJECT_END:
-        eventConsumer.onObjectEnd();
+        eventHandler.onObjectEnd(context);
         break;
       case FEATURE_END:
-        eventConsumer.onFeatureEnd();
+        eventHandler.onFeatureEnd(context);
         break;
       case INPUT_END:
-        eventConsumer.onEnd();
+        eventHandler.onEnd(context);
         break;
     }
   }

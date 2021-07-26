@@ -6,14 +6,14 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import de.ii.xtraplatform.features.domain.FeaturePipeline.ResultBase;
+import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
 import java.util.List;
 import org.immutables.value.Value;
 
 public interface FeatureTransactions {
 
   @Value.Immutable
-  interface MutationResult extends FeaturePipeline.ResultBase {
+  interface MutationResult extends FeatureStream.ResultBase {
 
     abstract class Builder extends ResultBase.Builder<MutationResult, MutationResult.Builder> {
       public abstract Builder addIds(String... ids);

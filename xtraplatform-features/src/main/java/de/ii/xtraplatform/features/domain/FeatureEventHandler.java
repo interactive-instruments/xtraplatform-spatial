@@ -1,84 +1,183 @@
 package de.ii.xtraplatform.features.domain;
 
+import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalLong;
+import java.util.OptionalInt;
+import javax.annotation.Nullable;
+import org.immutables.value.Value;
 
-//TODO: more comfortable variant of consumer, use in encoder/transformer
-public abstract class FeatureEventHandler implements FeatureEventConsumer{
+public interface FeatureEventHandler<T extends ModifiableContext> {
 
   interface Context {
-    boolean inGeometry();
-    boolean inObject();
-    boolean inArray();
+
+    ModifiableCollectionMetadata metadata();
+
     List<String> path();
+
     Optional<SimpleFeatureGeometry> geometryType();
+
+    OptionalInt geometryDimension();
+
+    @Nullable
     String value();
+
+    @Nullable
     Type valueType();
+
+    @Value.Default
+    default boolean inGeometry() {
+      return false;
+    }
+
+    @Value.Default
+    default boolean inObject() {
+      return false;
+    }
+
+    @Value.Default
+    default boolean inArray() {
+      return false;
+    }
+
+    List<Integer> indexes();
+
+    @Value.Derived
+    default long index() {
+      return indexes().isEmpty() ? 0 : indexes().get(0);
+    }
+
+    FeatureQuery query();
+
+    SchemaMapping mapping();
+
+    @Value.Default
+    default int schemaIndex() {
+      return -1;
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
+    default Optional<FeatureSchema> currentSchema() {
+      List<String> path = path();
+
+      if (path.isEmpty()) {
+        return Optional.ofNullable(mapping().getTargetSchema());
+      }
+
+      List<FeatureSchema> targetSchemas = mapping().getTargetSchemas(path);
+
+      if (targetSchemas.isEmpty()) {
+        //LOGGER.warn("No mapping found for path {}.", path);
+        return Optional.empty();
+      }
+
+      int schemaIndex = schemaIndex() > -1 ? schemaIndex() : targetSchemas.size() - 1;
+      FeatureSchema targetSchema = targetSchemas.get(schemaIndex);
+
+      return Optional.ofNullable(targetSchema);
+    }
+
+    @Value.Derived
+    @Value.Auxiliary
+    default List<FeatureSchema> parentSchemas() {
+      List<String> path = path();
+
+      if (path.isEmpty()) {
+        return ImmutableList.of();
+      }
+
+      List<List<FeatureSchema>> parentSchemas = mapping().getParentSchemas(path);
+
+      if (parentSchemas.isEmpty()) {
+        return ImmutableList.of();
+      }
+
+      int schemaIndex = schemaIndex() > -1 ? schemaIndex() : parentSchemas.size() - 1;
+      return parentSchemas.get(schemaIndex);
+    }
   }
 
-  @Override
-  public final void onStart(OptionalLong numberReturned, OptionalLong numberMatched) {
+  interface ModifiableContext extends Context {
 
+    //TODO: default values are not cached by Modifiable
+    @Value.Default
+    default ModifiableCollectionMetadata metadata() {
+      ModifiableCollectionMetadata collectionMetadata = ModifiableCollectionMetadata
+          .create();
+
+      setMetadata(collectionMetadata);
+
+      return collectionMetadata;
+    }
+
+    //TODO: default values are not cached by Modifiable
+    @Value.Default
+    default FeaturePathTracker pathTracker() {
+      FeaturePathTracker pathTracker = new FeaturePathTracker();
+
+      setPathTracker(pathTracker);
+
+      return pathTracker;
+    }
+
+    @Value.Derived
+    @Override
+    default List<String> path() {
+      return pathTracker().asList();
+    }
+
+    ModifiableContext setMetadata(ModifiableCollectionMetadata collectionMetadata);
+
+    ModifiableContext setPathTracker(FeaturePathTracker pathTracker);
+
+    ModifiableContext setGeometryType(SimpleFeatureGeometry geometryType);
+
+    ModifiableContext setGeometryType(Optional<SimpleFeatureGeometry> geometryType);
+
+    ModifiableContext setGeometryDimension(int geometryDimension);
+
+    ModifiableContext setGeometryDimension(OptionalInt geometryDimension);
+
+    ModifiableContext setValue(String value);
+
+    ModifiableContext setValueType(SchemaBase.Type valueType);
+
+    ModifiableContext setInGeometry(boolean inGeometry);
+
+    ModifiableContext setInObject(boolean inObject);
+
+    ModifiableContext setInArray(boolean inArray);
+
+    ModifiableContext setIndexes(Iterable<Integer> indexes);
+
+    ModifiableContext setQuery(FeatureQuery query);
+
+    ModifiableContext setMapping(SchemaMapping mapping);
+
+    ModifiableContext setSchemaIndex(int schemaIndex);
   }
 
-  @Override
-  public final void onEnd() {
+  //T createContext();
 
-  }
+  void onStart(T context);
 
-  @Override
-  public final void onFeatureStart() {
+  void onEnd(T context);
 
-  }
+  void onFeatureStart(T context);
 
-  @Override
-  public final void onFeatureEnd() {
+  void onFeatureEnd(T context);
 
-  }
+  void onObjectStart(T context);
 
-  @Override
-  public final void onObjectStart(List<String> path, Optional<SimpleFeatureGeometry> geometryType) {
+  void onObjectEnd(T context);
 
-  }
+  void onArrayStart(T context);
 
-  @Override
-  public final void onObjectEnd() {
+  void onArrayEnd(T context);
 
-  }
-
-  @Override
-  public final void onArrayStart(List<String> path) {
-
-  }
-
-  @Override
-  public final void onArrayEnd() {
-
-  }
-
-  @Override
-  public final void onValue(List<String> path, String value, Type valueType) {
-
-  }
-
-  public abstract void onStart(Context context);
-
-  public abstract void onEnd(Context context);
-
-  public abstract void onFeatureStart(Context context);
-
-  public abstract void onFeatureEnd(Context context);
-
-  public abstract void onObjectStart(Context context);
-
-  public abstract void onObjectEnd(Context context);
-
-  public abstract void onArrayStart(Context context);
-
-  public abstract void onArrayEnd(Context context);
-
-  public abstract void onValue(Context context);
+  void onValue(T context);
 }

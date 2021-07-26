@@ -11,11 +11,19 @@ import akka.NotUsed;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.codelists.domain.Codelist;
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
+import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
+import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.features.domain.FeatureStream.Result.Builder;
+import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
 import de.ii.xtraplatform.runtime.domain.LogContext;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
+import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.List;
@@ -33,13 +41,16 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
     private final ConnectorFactory connectorFactory;
     private final Reactive reactive;
+    private final CrsTransformerFactory crsTransformerFactory;
     private Reactive.Runner streamRunner;
     private Map<String, FeatureStoreTypeInfo> typeInfos;
     private FeatureProviderConnector<T, U, V> connector;
 
-    protected AbstractFeatureProvider(ConnectorFactory connectorFactory, Reactive reactive) {
+    protected AbstractFeatureProvider(ConnectorFactory connectorFactory, Reactive reactive,
+        CrsTransformerFactory crsTransformerFactory) {
         this.connectorFactory = connectorFactory;
         this.reactive = reactive;
+        this.crsTransformerFactory = crsTransformerFactory;
     }
 
     @Override
@@ -183,6 +194,10 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return Optional.empty();
     }
 
+    protected abstract FeatureTokenDecoder<T> getDecoder(FeatureQuery query);
+
+    protected abstract Map<String, Codelist> getCodelists();
+
     public static Map<String, FeatureStoreTypeInfo> createTypeInfos(
             FeatureStorePathParser pathParser, Map<String, FeatureSchema> featureTypes) {
         return featureTypes.entrySet()
@@ -227,6 +242,63 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                 return getStreamRunner().run(sourceStream, sink);
             }
 
+        };
+    }
+
+    @Override
+    public FeatureStream getFeatureStream(FeatureQuery query) {
+        return new FeatureStream() {
+            @Override
+            public <X> CompletionStage<Result> runWith(FeatureTokenEncoder<X, ?> encoder,
+                Reactive.Sink<X, ?> sink,
+                Optional<PropertyTransformations> propertyTransformations) {
+                Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(query.getType()));
+
+                if (!typeInfo.isPresent()) {
+                    throw new IllegalStateException("No features available for type");
+                }
+
+                //TODO: encapsulate in FeatureQueryRunnerSql
+                U transformedQuery = getQueryTransformer().transformQuery(query, ImmutableMap.of());
+                V options = getQueryTransformer().getOptions(query);
+                Source<T, NotUsed> sourceStream = getConnector().getSourceStream(transformedQuery, options);
+                Reactive.Source<T> source = Reactive.Source.akka(sourceStream);
+
+                FeatureTokenDecoder<T> decoder = getDecoder(query);
+
+                FeatureTokenSource featureTokenSource = source.via(decoder);
+
+                FeatureTokenTransformerMapping mapper = new FeatureTokenTransformerMapping();
+
+                Map<String, List<FeaturePropertyValueTransformer>> propertyValueTransformations = propertyTransformations
+                    .map(pt -> pt.getValueTransformations(getCodelists()))
+                    .orElse(ImmutableMap.of());
+                Optional<CrsTransformer> crsTransformer = query.getCrs().flatMap(
+                    targetCrs -> crsTransformerFactory
+                        .getTransformer(getData().getNativeCrs().orElse(OgcCrs.CRS84), targetCrs));
+                FeatureTokenTransformerValueMappings valueMapper = new FeatureTokenTransformerValueMappings(
+                    propertyValueTransformations,
+                    crsTransformer);
+
+                Reactive.Source<X> byteSource = featureTokenSource.via(mapper).via(valueMapper).via(encoder);
+
+                Stream<Result> stream = byteSource.to(sink)
+                    .withResult((Builder)ImmutableResult.builder().isEmpty(true))
+                    .handleError((result, throwable) -> {
+                        /*TODO Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
+                            ? new IllegalArgumentException(throwable.getMessage())
+                            : throwable;*/
+                        return result.error(throwable);
+                    })
+                    .handleItem((builder, x) -> builder.isEmpty(false))
+                    .handleEnd(Builder::build);
+
+                RunnableStream<Result> runnableStream = stream.on(streamRunner);
+
+                CompletionStage<Result> completionStage = runnableStream.run();
+
+                return completionStage;
+            }
         };
     }
 

@@ -36,6 +36,23 @@ public interface PropertyBase<T extends PropertyBase<T,U>, U extends SchemaBase<
 
     List<T> getNestedProperties();
 
+    List<String> getPropertyPath();
+
+    @Value.Derived
+    default boolean isValue() {
+        return getType() == Type.VALUE;
+    }
+
+    @Value.Derived
+    default boolean isObject() {
+        return getType() == Type.OBJECT;
+    }
+
+    @Value.Derived
+    default boolean isArray() {
+        return getType() == Type.ARRAY;
+    }
+
 
 
     PropertyBase<T,U> schema(Optional<U> schema);
@@ -51,5 +68,7 @@ public interface PropertyBase<T extends PropertyBase<T,U>, U extends SchemaBase<
     PropertyBase<T,U> parent(T parent);
 
     PropertyBase<T,U> addNestedProperties(T element);
+
+    PropertyBase<T,U> propertyPath(Iterable<String> path);
 
 }

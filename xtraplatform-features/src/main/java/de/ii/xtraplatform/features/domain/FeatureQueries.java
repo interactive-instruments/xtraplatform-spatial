@@ -13,4 +13,7 @@ public interface FeatureQueries {
 
     long getFeatureCount(FeatureQuery featureQuery);
 
+    default FeatureStream getFeatureStream(FeatureQuery query) {
+        throw new UnsupportedOperationException();
+    }
 }

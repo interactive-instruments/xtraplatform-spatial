@@ -24,12 +24,12 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureSchemaMapper.class);
 
-  private final SchemaMapping<T> mapping;
+  private final SchemaMappingBase<T> mapping;
   private final FeatureReader<T, T> delegate;
   private List<T> currentNesting;
   private List<String> currentNestingPath;
 
-  public FeatureSchemaMapper(SchemaMapping<T> mapping,
+  public FeatureSchemaMapper(SchemaMappingBase<T> mapping,
       FeatureReader<T, T> delegate) {
     this.mapping = mapping;
     this.delegate = delegate;

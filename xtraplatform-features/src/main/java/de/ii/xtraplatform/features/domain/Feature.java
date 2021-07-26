@@ -11,6 +11,6 @@ import org.immutables.value.Value;
 
 @Value.Modifiable
 @Value.Style(set = "*")
-public interface Feature extends FeatureBase<Property, Schema> {
+public interface Feature extends FeatureBase<Property, FeatureSchema> {
 
 }
