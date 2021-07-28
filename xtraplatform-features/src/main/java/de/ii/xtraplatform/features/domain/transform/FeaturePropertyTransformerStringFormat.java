@@ -7,16 +7,16 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
 import de.ii.xtraplatform.stringtemplates.domain.StringTemplateFilters;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Objects;
 import org.immutables.value.Value;
 
 @Value.Immutable
 public interface FeaturePropertyTransformerStringFormat extends FeaturePropertyValueTransformer {
 
     String TYPE = "STRING_FORMAT";
+    String DEFAULT_SUBSTITUTION_KEY = "value";
 
     @Override
     default String getType() {
@@ -25,37 +25,12 @@ public interface FeaturePropertyTransformerStringFormat extends FeaturePropertyV
 
     Map<String, String> getSubstitutions();
 
-    //TODO: double cols
     @Override
     default String transform(String input) {
-        //boolean more = false;
-        //if (currentFormatter == null) {
-
-        String formattedValue = StringTemplateFilters.applyTemplate(getParameter(), input);
-
-        for (Entry<String, String> entry : getSubstitutions().entrySet()) {
-            formattedValue = formattedValue.replace("{{" + entry.getKey() + "}}", entry.getValue());
-        }
-
-        int subst = formattedValue.indexOf("}}");
-        if (subst > -1) {
-            formattedValue = formattedValue.substring(0, formattedValue.indexOf("{{")) + input + formattedValue.substring(subst + 2);
-            //more = formattedValue.contains("}}");
-        }
-        /*} else {
-            int subst = currentFormatter.indexOf("}}");
-            if (subst > -1) {
-                property.value = currentFormatter.substring(0, currentFormatter.indexOf("{{")) + value + currentFormatter.substring(subst + 2);
-                more = property.value.contains("}}");
-            }
-        }
-        if (more) {
-            this.currentFormatter = property.value;
-            return;
-        } else {
-            currentFormatter = null;
-        }*/
-
-        return formattedValue;
+        return StringTemplateFilters.applyTemplate(getParameter(), key -> Objects.isNull(key)
+            ? null
+            : Objects.equals(key, DEFAULT_SUBSTITUTION_KEY) || getPropertyName().filter(key::equals).isPresent()
+                ? input
+                : getSubstitutions().get(key));
     }
 }

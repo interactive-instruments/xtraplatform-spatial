@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertySchemaTransformer;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten.INCLUDE;
@@ -21,19 +20,19 @@ import java.util.OptionalInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FeatureTokenTransformerMapping extends FeatureTokenTransformer {
+public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransformer {
 
   private static final Logger LOGGER = LoggerFactory
-      .getLogger(FeatureTokenTransformerMapping.class);
+      .getLogger(FeatureTokenTransformerSchemaMappings.class);
 
-  private final Optional<PropertyTransformations> propertyTransformations;
+  private final PropertyTransformations propertyTransformations;
   private final boolean isOverview;
   private Map<String, List<FeaturePropertySchemaTransformer>> propertySchemaTransformers;
   private ModifiableContext newContext;
   private NestingTracker nestingTracker;
 
-  public FeatureTokenTransformerMapping(
-      Optional<PropertyTransformations> propertyTransformations, FeatureQuery query) {
+  public FeatureTokenTransformerSchemaMappings(
+      PropertyTransformations propertyTransformations, FeatureQuery query) {
     this.propertyTransformations = propertyTransformations;
     this.isOverview = !query.returnsSingleFeature();
   }
@@ -47,9 +46,7 @@ public class FeatureTokenTransformerMapping extends FeatureTokenTransformer {
         .setQuery(getContext().query())
         .setMetadata(getContext().metadata());
 
-    this.propertySchemaTransformers = propertyTransformations
-        .map(pt -> pt.getSchemaTransformations(isOverview, this::getFlattenedPropertyPath))
-        .orElse(ImmutableMap.of());
+    this.propertySchemaTransformers = propertyTransformations.getSchemaTransformations(isOverview, this::getFlattenedPropertyPath);
 
     boolean flattenObjects = propertySchemaTransformers.containsKey(PropertyTransformations.WILDCARD)
         && propertySchemaTransformers.get(PropertyTransformations.WILDCARD)

@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.Optional;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,9 @@ public interface FeaturePropertyTransformerDateFormat extends FeaturePropertyVal
     Logger LOGGER = LoggerFactory.getLogger(FeaturePropertyTransformerDateFormat.class);
 
     String TYPE = "DATE_FORMAT";
+    ZoneId UTC = ZoneId.of("UTC");
+    String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZZZZZ";
+    String DATE_FORMAT = "yyyy-MM-dd";
 
     @Override
     default String getType() {
@@ -39,10 +43,7 @@ public interface FeaturePropertyTransformerDateFormat extends FeaturePropertyVal
         return ImmutableList.of(FeatureProperty.Type.DATETIME);
     }
 
-    @Value.Default
-    default ZoneId getDefaultTimeZone() {
-        return ZoneId.of("UTC");
-    }
+    Optional<ZoneId> getDefaultTimeZone();
 
     @Override
     default String transform(String input) {
@@ -51,10 +52,12 @@ public interface FeaturePropertyTransformerDateFormat extends FeaturePropertyVal
             DateTimeFormatter parser = DateTimeFormatter.ofPattern("yyyy-MM-dd[['T'][' ']HH:mm:ss][.SSS][X]");
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(getParameter());
             TemporalAccessor ta = parser.parseBest(input, OffsetDateTime::from, LocalDateTime::from, LocalDate::from);
-            if (ta instanceof LocalDateTime) {
-                ta = ((LocalDateTime)ta).atZone(getDefaultTimeZone());
+            if (ta instanceof OffsetDateTime) {
+                ta = ((OffsetDateTime)ta).atZoneSameInstant(UTC);
+            } else if (ta instanceof LocalDateTime) {
+                ta = ((LocalDateTime)ta).atZone(getDefaultTimeZone().orElse(UTC)).withZoneSameInstant(UTC);
             } else if (ta instanceof LocalDate) {
-                ta = ((LocalDate)ta).atStartOfDay(getDefaultTimeZone());
+                ta = ((LocalDate)ta).atStartOfDay(getDefaultTimeZone().orElse(UTC)).withZoneSameInstant(UTC);
             }
 
             return formatter.format(ta);

@@ -7,14 +7,18 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
+import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerDateFormat.UTC;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
+import java.time.ZoneId;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -37,8 +41,13 @@ public interface PropertyTransformations {
 
             @Override
             public Map<String, List<FeaturePropertyValueTransformer>> getValueTransformations(
-                Map<String, Codelist> codelists) {
-                return PropertyTransformations.super.getValueTransformations(codelists, substitutions);
+                Map<String, Codelist> codelists, Optional<ZoneId> defaultTimeZone) {
+                return PropertyTransformations.super.getValueTransformations(codelists, defaultTimeZone, substitutions);
+            }
+
+            @Override
+            public PropertyTransformations mergeInto(PropertyTransformations source) {
+                return PropertyTransformations.super.mergeInto(source).withSubstitutions(substitutions);
             }
         };
     }
@@ -97,11 +106,12 @@ public interface PropertyTransformations {
         return transformations;
     }
 
-    default Map<String, List<FeaturePropertyValueTransformer>> getValueTransformations(Map<String, Codelist> codelists) {
-        return getValueTransformations(codelists, ImmutableMap.of());
+    default Map<String, List<FeaturePropertyValueTransformer>> getValueTransformations(Map<String, Codelist> codelists, Optional<ZoneId> defaultTimeZone) {
+        return getValueTransformations(codelists, defaultTimeZone, ImmutableMap.of());
     }
 
     default Map<String, List<FeaturePropertyValueTransformer>> getValueTransformations(Map<String, Codelist> codelists,
+                                                                                        Optional<ZoneId> defaultTimeZone,
                                                                                         Map<String, String> substitutions) {
         Map<String, List<FeaturePropertyValueTransformer>> transformations = new LinkedHashMap<>();
 
@@ -132,6 +142,7 @@ public interface PropertyTransformations {
                                                            .add(ImmutableFeaturePropertyTransformerDateFormat.builder()
                                                                                                              .propertyName(property)
                                                                                                              .parameter(dateFormat)
+                                                                                                             .defaultTimeZone(defaultTimeZone)
                                                                                                              .build()));
 
 
@@ -169,5 +180,19 @@ public interface PropertyTransformations {
                                        return new AbstractMap.SimpleEntry<>(transformation.getKey().replaceAll("\\[[^\\]]*\\]", ""), transformation.getValue());
                                    })
                                    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    default PropertyTransformations mergeInto(PropertyTransformations source) {
+        Map<String, PropertyTransformation> mergedTransformations = new LinkedHashMap<>(source.getTransformations());
+
+        getTransformations().forEach((key, transformation) -> {
+            if (mergedTransformations.containsKey(key)) {
+                mergedTransformations.put(key, transformation.mergeInto(mergedTransformations.get(key)));
+            } else {
+                mergedTransformations.put(key, transformation);
+            }
+        });
+
+        return () -> mergedTransformations;
     }
 }

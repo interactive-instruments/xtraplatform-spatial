@@ -7,6 +7,10 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerDateFormat.DATETIME_FORMAT;
+import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerDateFormat.DATE_FORMAT;
+import static de.ii.xtraplatform.features.domain.transform.PropertyTransformations.WILDCARD;
+
 import akka.NotUsed;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -16,8 +20,10 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.FeatureStream.Result.Builder;
-import de.ii.xtraplatform.features.domain.transform.FeaturePropertySchemaTransformer;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
+import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.runtime.domain.LogContext;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
@@ -28,8 +34,10 @@ import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.io.IOException;
 import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -270,11 +278,33 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
                 FeatureTokenSource featureTokenSource = source.via(decoder);
 
-                FeatureTokenTransformerMapping mapper = new FeatureTokenTransformerMapping(propertyTransformations, query);
+                FeatureSchema featureSchema = getData().getTypes().get(query.getType());
+                Map<String, PropertyTransformation> providerTransformationMap = featureSchema.accept(
+                    (schema, visitedProperties) -> java.util.stream.Stream
+                        .concat(
+                            schema.getTransformations().isEmpty()
+                                ? schema.isTemporal()
+                                    ? java.util.stream.Stream
+                                        .of(new SimpleImmutableEntry<>(
+                                            String.join(".", schema.getFullPath()),
+                                            new ImmutablePropertyTransformation.Builder().dateFormat(
+                                                schema.getType() == Type.DATETIME ? DATETIME_FORMAT : DATE_FORMAT).build()))
+                                            : java.util.stream.Stream.empty()
+                                : java.util.stream.Stream
+                                    .of(new SimpleImmutableEntry<>(
+                                        schema.getFullPath().isEmpty() ? WILDCARD : String.join(".", schema.getFullPath()),
+                                        schema.getTransformations().get())),
+                            visitedProperties.stream().flatMap(m -> m.entrySet().stream())
+                        )
+                        .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue)));
+                PropertyTransformations providerTransformations = () -> providerTransformationMap;
 
-                Map<String, List<FeaturePropertyValueTransformer>> propertyValueTransformations = propertyTransformations
-                    .map(pt -> pt.getValueTransformations(getCodelists()))
-                    .orElse(ImmutableMap.of());
+                PropertyTransformations mergedTransformations = propertyTransformations
+                    .map(p -> p.mergeInto(providerTransformations)).orElse(providerTransformations);
+
+                FeatureTokenTransformerSchemaMappings mapper = new FeatureTokenTransformerSchemaMappings(mergedTransformations, query);
+
+                Map<String, List<FeaturePropertyValueTransformer>> propertyValueTransformations = mergedTransformations.getValueTransformations(getCodelists(), getData().getNativeTimeZone());
                 Optional<CrsTransformer> crsTransformer = query.getCrs().flatMap(
                     targetCrs -> crsTransformerFactory
                         .getTransformer(getData().getNativeCrs().orElse(OgcCrs.CRS84), targetCrs));

@@ -22,11 +22,11 @@ public interface SchemaBase<T extends SchemaBase<T>> {
 
     enum Role {
     ID,
-    GEOMETRY,
-    POINT_IN_TIME,
-    PERIOD_START,
-    PERIOD_END,
-    TYPE
+    TYPE,
+    PRIMARY_GEOMETRY,
+    PRIMARY_INSTANT,
+    PRIMARY_INTERVAL_START,
+    PRIMARY_INTERVAL_END
     }
 
     enum Type {
@@ -35,6 +35,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         STRING,
         BOOLEAN,
         DATETIME,
+        DATE,
         GEOMETRY,
         OBJECT,
         VALUE_ARRAY,

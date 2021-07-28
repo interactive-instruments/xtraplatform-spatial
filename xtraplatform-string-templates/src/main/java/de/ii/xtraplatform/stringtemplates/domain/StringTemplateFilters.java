@@ -86,17 +86,17 @@ public class StringTemplateFilters {
             return value;
         }
 
-        return applyTemplate(template, isHtml, key -> Objects.equals(key, valueSubst) ? Optional.of(value) : Optional.empty());
+        return applyTemplate(template, isHtml, key -> Objects.equals(key, valueSubst) ? value : null);
     }
 
-    public static String applyTemplate(String template, Function<String, Optional<String>> valueLookup) {
+    public static String applyTemplate(String template, Function<String, String> valueLookup) {
         return applyTemplate(template, isHtml -> {}, valueLookup);
     }
 
     static Pattern valuePattern = Pattern.compile("\\{\\{([\\w.]+)( ?\\| ?[\\w]+(:'[^']*')*)*\\}\\}");
     static Pattern filterPattern = Pattern.compile(" ?\\| ?([\\w]+)((?::'[^']*')*)");
 
-    public static String applyTemplate(String template, Consumer<Boolean> isHtml, Function<String, Optional<String>> valueLookup) {
+    public static String applyTemplate(String template, Consumer<Boolean> isHtml, Function<String, String> valueLookup) {
 
         if (Objects.isNull(template) || template.isEmpty()) {
             return "";
@@ -110,7 +110,7 @@ public class StringTemplateFilters {
         int lastMatch = 0;
         while (matcher.find()) {
             String key = matcher.group(1);
-            String filteredValue = Optional.ofNullable(key).flatMap(valueLookup).orElse("");
+            String filteredValue = Objects.requireNonNullElse(valueLookup.apply(key), "");
             Matcher matcher2 = filterPattern.matcher(template.substring(matcher.start(), matcher.end()));
             while (matcher2.find()) {
                 String filter = matcher2.group(1);

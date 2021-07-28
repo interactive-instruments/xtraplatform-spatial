@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 @BuildableMapEncodingEnabled
 @JsonDeserialize(builder = ImmutableFeatureSchema.Builder.class)
-@JsonPropertyOrder({"sourcePath", "type", "role", "valueType", "geometryType", "objectType", "label", "description", "transformers", "constraints", "properties"})
+@JsonPropertyOrder({"sourcePath", "type", "role", "valueType", "geometryType", "objectType", "label", "description", "transformations", "constraints", "properties"})
 public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<FeatureSchema> {
 
     @JsonIgnore
@@ -73,7 +74,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
 
     Optional<String> getConstantValue();
 
-    Map<String, String> getTransformers();
+    Optional<PropertyTransformation> getTransformations();
 
     Optional<SchemaConstraints> getConstraints();
 

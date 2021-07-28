@@ -18,6 +18,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.crs.domain.OgcCrs
+import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 import spock.lang.Shared
 import spock.lang.Specification
@@ -80,7 +81,7 @@ class FeatureSchemaToTypeVisitorSpec extends Specification {
                         )
                         .putProperties2("shortName", new ImmutableFeatureSchema.Builder()
                                 .sourcePath("shortname")
-                                .transformers(ImmutableMap.of("codelist", "nullValues"))
+                                .transformations(new ImmutablePropertyTransformation.Builder().codelist("nullValues").build())
                         )
                         .putProperties2("geomLowerPoint", new ImmutableFeatureSchema.Builder()
                                 .sourcePath("geomlowerpoint")
