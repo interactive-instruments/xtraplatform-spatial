@@ -7,11 +7,11 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import de.ii.xtraplatform.streams.domain.Reactive.TranformerCustomFuseableIn;
+import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomFuseableIn;
 import java.util.function.Consumer;
 
 public abstract class FeatureEventEncoder<T> implements
-    TranformerCustomFuseableIn<Object, T, FeatureEventConsumer>,
+    TransformerCustomFuseableIn<Object, T, FeatureEventConsumer>,
     FeatureEventConsumer {
 
   private final FeatureTokenReader tokenReader;

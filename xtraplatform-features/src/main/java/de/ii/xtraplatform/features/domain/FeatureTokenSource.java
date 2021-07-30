@@ -8,7 +8,8 @@
 package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.streams.domain.Reactive.BasicStream;
-import de.ii.xtraplatform.streams.domain.Reactive.Sink;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkReducedTransformed;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
 
@@ -26,7 +27,12 @@ public class FeatureTokenSource implements Source<Object> {
   }
 
   @Override
-  public <V> BasicStream<Object, V> to(Sink<Object, V> sink) {
+  public <V> BasicStream<Object, V> to(SinkReduced<Object, V> sink) {
+    return delegate.to(sink);
+  }
+
+  @Override
+  public <V, W> BasicStream<V, W> to(SinkReducedTransformed<Object, V, W> sink) {
     return delegate.to(sink);
   }
 }

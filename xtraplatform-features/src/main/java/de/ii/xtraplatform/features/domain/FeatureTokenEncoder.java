@@ -8,18 +8,18 @@
 package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
-import de.ii.xtraplatform.streams.domain.Reactive.Sink;
-import de.ii.xtraplatform.streams.domain.Reactive.TranformerCustomFuseableIn;
+import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomFuseableIn;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public abstract class FeatureTokenEncoder<T, U extends ModifiableContext> implements
-    TranformerCustomFuseableIn<Object, T, FeatureEventHandler<U>>,
+public abstract class FeatureTokenEncoder<U extends ModifiableContext> implements
+    TransformerCustomFuseableIn<Object, byte[], FeatureEventHandler<U>>,
+    //TODO: TransformerCustomSink<Object, byte[], FeatureTokenSinkReduced<?>>,
     FeatureEventHandler<U>,
     FeatureTokenContext<U> {
 
   private final FeatureTokenReader tokenReader;
-  private Consumer<T> downstream;
+  private Consumer<byte[]> downstream;
   private Runnable afterInit;
 
   protected FeatureTokenEncoder() {
@@ -27,7 +27,7 @@ public abstract class FeatureTokenEncoder<T, U extends ModifiableContext> implem
   }
 
   @Override
-  public final void init(Consumer<T> push) {
+  public final void init(Consumer<byte[]> push) {
     this.downstream = push;
     init();
   }
@@ -47,7 +47,7 @@ public abstract class FeatureTokenEncoder<T, U extends ModifiableContext> implem
     return this;
   }
 
-  protected final void push(T t) {
+  protected final void push(byte[] t) {
     downstream.accept(t);
   }
 

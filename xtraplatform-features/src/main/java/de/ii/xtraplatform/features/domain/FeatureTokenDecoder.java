@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
-import de.ii.xtraplatform.streams.domain.Reactive.TranformerCustomFuseableIn;
+import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomFuseableIn;
 import de.ii.xtraplatform.streams.domain.Reactive.TranformerCustomFuseableOut;
 import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomSource;
 import java.util.Objects;
@@ -29,14 +29,15 @@ public abstract class FeatureTokenDecoder<T> implements
 
   @Override
   public final boolean canFuse(
-      TranformerCustomFuseableIn<Object, ?, ?> tranformerCustomFuseableIn) {
-    boolean isTransformerFuseable = TranformerCustomFuseableOut.super.canFuse(tranformerCustomFuseableIn);
+      TransformerCustomFuseableIn<Object, ?, ?> transformerCustomFuseableIn) {
+    boolean isTransformerFuseable = TranformerCustomFuseableOut.super.canFuse(
+        transformerCustomFuseableIn);
 
     //TODO: not required here because ModifiableContext is the base context, so enforced by FeatureTokenContext
     // move to FeatureTokenTransformer
-    if (isTransformerFuseable && tranformerCustomFuseableIn instanceof FeatureTokenContext<?>) {
-      if (!ModifiableContext.class.isAssignableFrom(((FeatureTokenContext<?>) tranformerCustomFuseableIn).getContextInterface())) {
-        throw new IllegalStateException("Cannot fuse FeatureTokenTransformer: " + ((FeatureTokenContext<?>) tranformerCustomFuseableIn).getContextInterface() + " does not extend " + this.getContextInterface());
+    if (isTransformerFuseable && transformerCustomFuseableIn instanceof FeatureTokenContext<?>) {
+      if (!ModifiableContext.class.isAssignableFrom(((FeatureTokenContext<?>) transformerCustomFuseableIn).getContextInterface())) {
+        throw new IllegalStateException("Cannot fuse FeatureTokenTransformer: " + ((FeatureTokenContext<?>) transformerCustomFuseableIn).getContextInterface() + " does not extend " + this.getContextInterface());
       }
     }
 
@@ -45,14 +46,14 @@ public abstract class FeatureTokenDecoder<T> implements
 
   @Override
   public final void fuse(
-      TranformerCustomFuseableIn<Object, ?, ? extends FeatureEventHandler> tranformerCustomFuseableIn) {
-    if (!canFuse(tranformerCustomFuseableIn)) {
+      TransformerCustomFuseableIn<Object, ?, ? extends FeatureEventHandler> transformerCustomFuseableIn) {
+    if (!canFuse(transformerCustomFuseableIn)) {
       throw new IllegalArgumentException();
     }
     if (Objects.isNull(downstream)) {
-      this.downstream = tranformerCustomFuseableIn.fuseableSink();
+      this.downstream = transformerCustomFuseableIn.fuseableSink();
 
-      tranformerCustomFuseableIn.afterInit(this::init);
+      transformerCustomFuseableIn.afterInit(this::init);
       //init();
     }
   }

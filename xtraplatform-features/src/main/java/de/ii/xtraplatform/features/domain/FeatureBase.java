@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import java.util.Map;
 import org.immutables.value.Value;
 
 import java.util.List;

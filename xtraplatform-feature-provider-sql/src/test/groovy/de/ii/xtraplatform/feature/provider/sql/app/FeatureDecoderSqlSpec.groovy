@@ -12,7 +12,6 @@ import akka.testkit.javadsl.TestKit
 import com.typesafe.config.Config
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowFixtures
-import de.ii.xtraplatform.features.domain.FeatureSchema
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder
 import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema
@@ -93,8 +92,8 @@ class FeatureDecoderSqlSpec extends Specification {
         Reactive.Source.iterable(sqlRows)
     }
 
-    static Reactive.Sink<Object, List<Object>> ListSink() {
-        Reactive.Sink.reduce([], (list2, element) -> {
+    static Reactive.SinkReduced<Object, List<Object>> ListSink() {
+        Reactive.SinkReduced.reduce([], (list2, element) -> {
             list2 << element
             return list2
         })

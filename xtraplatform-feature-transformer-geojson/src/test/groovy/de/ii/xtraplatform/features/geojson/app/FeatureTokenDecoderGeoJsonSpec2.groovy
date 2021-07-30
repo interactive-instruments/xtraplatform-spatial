@@ -83,8 +83,8 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
         Reactive.Source.akka(Source.from([ByteString.fromString(new File(path).text).toArray()]))
     }
 
-    static Reactive.Sink<Object, List<Object>> ListSink() {
-        Reactive.Sink.reduce([], (list2, element) -> {
+    static Reactive.SinkReduced<Object, List<Object>> ListSink() {
+        Reactive.SinkReduced.reduce([], (list2, element) -> {
             list2 << element
             return list2
         })

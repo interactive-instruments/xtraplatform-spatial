@@ -9,6 +9,9 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkReducedTransformed;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import org.immutables.value.Value;
@@ -21,6 +24,16 @@ public interface FeatureStream {
     abstract class Builder extends ResultBase.Builder<Result, Builder> {
 
     }
+  }
+
+  @Value.Immutable
+  interface ResultReduced<T> extends ResultBase {
+
+    abstract class Builder<T> extends ResultBase.Builder<ResultReduced<T>, Builder<T>> {
+
+    }
+
+    T reduced();
   }
 
   interface ResultBase {
@@ -44,6 +57,11 @@ public interface FeatureStream {
     Optional<Throwable> getError();
   }
 
-  <X> CompletionStage<Result> runWith(FeatureTokenEncoder<X, ?> encoder, Sink<X, ?> sink,
-      Optional<PropertyTransformations> propertyTransformations);
+  <X> CompletionStage<ResultReduced<X>> runWith(SinkReduced<Object, X> sink, Optional<PropertyTransformations> propertyTransformations);
+
+  CompletionStage<Result> runWith(Sink<Object> sink, Optional<PropertyTransformations> propertyTransformations);
+
+  CompletionStage<Result> runWith(SinkTransformed<Object, byte[]> sink, Optional<PropertyTransformations> propertyTransformations);
+
+  CompletionStage<ResultReduced<byte[]>> runWith(SinkReducedTransformed<Object, byte[], byte[]> sink, Optional<PropertyTransformations> propertyTransformations);
 }

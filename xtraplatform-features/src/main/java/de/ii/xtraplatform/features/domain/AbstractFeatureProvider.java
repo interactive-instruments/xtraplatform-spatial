@@ -30,8 +30,13 @@ import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.BasicStream;
 import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkReducedTransformed;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
+import de.ii.xtraplatform.streams.domain.Reactive.StreamWithResult;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -258,10 +263,97 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
     @Override
     public FeatureStream getFeatureStream(FeatureQuery query) {
         return new FeatureStream() {
+
             @Override
-            public <X> CompletionStage<Result> runWith(FeatureTokenEncoder<X, ?> encoder,
-                Reactive.Sink<X, ?> sink,
+            public <X> CompletionStage<ResultReduced<X>> runWith(SinkReduced<Object, X> sink,
                 Optional<PropertyTransformations> propertyTransformations) {
+
+                FeatureTokenSource byteSource = getFeatureTokenSource(propertyTransformations);
+
+                BasicStream<Object, X> to = byteSource.to(sink);
+
+                RunnableStream<ResultReduced<X>> runnableStream = to.withResult(
+                        ImmutableResultReduced.<X>builder().isEmpty(true))
+                    .handleError((result, throwable) -> {
+                        /*TODO Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
+                            ? new IllegalArgumentException(throwable.getMessage())
+                            : throwable;*/
+                        return result.error(throwable);
+                    })
+                    .handleItem((builder, x) -> builder.reduced((X) x).isEmpty(false))
+                    .handleEnd(ResultReduced.Builder::build)
+                    .on(streamRunner);
+
+                return runnableStream.run();
+            }
+
+            @Override
+            public CompletionStage<Result> runWith(Reactive.Sink<Object> sink,
+                Optional<PropertyTransformations> propertyTransformations) {
+
+                FeatureTokenSource byteSource = getFeatureTokenSource(propertyTransformations);
+
+                RunnableStream<Result> runnableStream = byteSource.to(sink)
+                    .withResult((Builder)ImmutableResult.builder().isEmpty(true))
+                    .handleError((result, throwable) -> {
+                        /*TODO Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
+                            ? new IllegalArgumentException(throwable.getMessage())
+                            : throwable;*/
+                        return result.error(throwable);
+                    })
+                    .handleItem((builder, x) -> builder.isEmpty(false))
+                    .handleEnd(Builder::build)
+                    .on(streamRunner);
+
+                return runnableStream.run();
+            }
+
+            @Override
+            public CompletionStage<Result> runWith(SinkTransformed<Object, byte[]> sink,
+                Optional<PropertyTransformations> propertyTransformations) {
+                FeatureTokenSource tokenSource = getFeatureTokenSource(propertyTransformations);
+
+                RunnableStream<Result> runnableStream = tokenSource.to(sink)
+                    .withResult((Builder)ImmutableResult.builder().isEmpty(true))
+                    .handleError((result, throwable) -> {
+                        /*TODO Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
+                            ? new IllegalArgumentException(throwable.getMessage())
+                            : throwable;*/
+                        return result.error(throwable);
+                    })
+                    .handleItem((builder, x) -> builder.isEmpty(false))
+                    .handleEnd(Builder::build)
+                    .on(streamRunner);
+
+                return runnableStream.run();
+            }
+
+            @Override
+            public CompletionStage<ResultReduced<byte[]>> runWith(
+                SinkReducedTransformed<Object, byte[], byte[]> sink,
+                Optional<PropertyTransformations> propertyTransformations) {
+                    FeatureTokenSource tokenSource = getFeatureTokenSource(propertyTransformations);
+
+                    RunnableStream<ResultReduced<byte[]>> runnableStream = tokenSource.to(sink)
+                        .withResult(ImmutableResultReduced.<byte[]>builder()
+                            .reduced(new byte[0])
+                            .isEmpty(true))
+                        .handleError((result, throwable) -> {
+                        /*TODO Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
+                            ? new IllegalArgumentException(throwable.getMessage())
+                            : throwable;*/
+                            return result.error(throwable);
+                        })
+                        .handleItem((builder, bytes) -> builder.reduced(bytes).isEmpty(bytes.length > 0))
+                        .handleEnd(ResultReduced.Builder::build)
+                        .on(streamRunner);
+
+                    return runnableStream.run();
+            }
+
+            private FeatureTokenSource getFeatureTokenSource(
+                Optional<PropertyTransformations> propertyTransformations) {
+
                 Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(query.getType()));
 
                 if (!typeInfo.isPresent()) {
@@ -284,12 +376,12 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                         .concat(
                             schema.getTransformations().isEmpty()
                                 ? schema.isTemporal()
-                                    ? java.util.stream.Stream
-                                        .of(new SimpleImmutableEntry<>(
-                                            String.join(".", schema.getFullPath()),
-                                            new ImmutablePropertyTransformation.Builder().dateFormat(
-                                                schema.getType() == Type.DATETIME ? DATETIME_FORMAT : DATE_FORMAT).build()))
-                                            : java.util.stream.Stream.empty()
+                                ? java.util.stream.Stream
+                                .of(new SimpleImmutableEntry<>(
+                                    String.join(".", schema.getFullPath()),
+                                    new ImmutablePropertyTransformation.Builder().dateFormat(
+                                        schema.getType() == Type.DATETIME ? DATETIME_FORMAT : DATE_FORMAT).build()))
+                                : java.util.stream.Stream.empty()
                                 : java.util.stream.Stream
                                     .of(new SimpleImmutableEntry<>(
                                         schema.getFullPath().isEmpty() ? WILDCARD : String.join(".", schema.getFullPath()),
@@ -312,24 +404,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                     propertyValueTransformations,
                     crsTransformer);
 
-                Reactive.Source<X> byteSource = featureTokenSource.via(mapper).via(valueMapper).via(encoder);
-
-                Stream<Result> stream = byteSource.to(sink)
-                    .withResult((Builder)ImmutableResult.builder().isEmpty(true))
-                    .handleError((result, throwable) -> {
-                        /*TODO Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
-                            ? new IllegalArgumentException(throwable.getMessage())
-                            : throwable;*/
-                        return result.error(throwable);
-                    })
-                    .handleItem((builder, x) -> builder.isEmpty(false))
-                    .handleEnd(Builder::build);
-
-                RunnableStream<Result> runnableStream = stream.on(streamRunner);
-
-                CompletionStage<Result> completionStage = runnableStream.run();
-
-                return completionStage;
+                return featureTokenSource.via(mapper).via(valueMapper);
             }
         };
     }

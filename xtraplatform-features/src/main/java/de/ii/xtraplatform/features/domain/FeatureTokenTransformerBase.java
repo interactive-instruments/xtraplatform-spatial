@@ -9,14 +9,14 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
-import de.ii.xtraplatform.streams.domain.Reactive.TranformerCustomFuseable;
-import de.ii.xtraplatform.streams.domain.Reactive.TranformerCustomFuseableIn;
+import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomFuseable;
+import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomFuseableIn;
 import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomSource;
 import java.util.Objects;
 import java.util.function.Consumer;
 
 public abstract class FeatureTokenTransformerBase<T extends ModifiableContext> implements
-    TranformerCustomFuseable<Object, FeatureEventHandler>,
+    TransformerCustomFuseable<Object, FeatureEventHandler>,
     TransformerCustomSource<Object, Object, FeatureTokenSource>,
     FeatureEventHandler<T>,
     FeatureTokenContext<T> {
@@ -32,12 +32,13 @@ public abstract class FeatureTokenTransformerBase<T extends ModifiableContext> i
 
   @Override
   public final boolean canFuse(
-      TranformerCustomFuseableIn<Object, ?, ?> tranformerCustomFuseableIn) {
-    boolean isTransformerFuseable = TranformerCustomFuseable.super.canFuse(tranformerCustomFuseableIn);
+      TransformerCustomFuseableIn<Object, ?, ?> transformerCustomFuseableIn) {
+    boolean isTransformerFuseable = TransformerCustomFuseable.super.canFuse(
+        transformerCustomFuseableIn);
 
-    if (isTransformerFuseable && tranformerCustomFuseableIn instanceof FeatureTokenContext<?>) {
-      if (!ModifiableContext.class.isAssignableFrom(((FeatureTokenContext<?>) tranformerCustomFuseableIn).getContextInterface())) {
-        throw new IllegalStateException("Cannot fuse FeatureTokenTransformer: " + ((FeatureTokenContext<?>) tranformerCustomFuseableIn).getContextInterface() + " does not extend " + this.getContextInterface());
+    if (isTransformerFuseable && transformerCustomFuseableIn instanceof FeatureTokenContext<?>) {
+      if (!ModifiableContext.class.isAssignableFrom(((FeatureTokenContext<?>) transformerCustomFuseableIn).getContextInterface())) {
+        throw new IllegalStateException("Cannot fuse FeatureTokenTransformer: " + ((FeatureTokenContext<?>) transformerCustomFuseableIn).getContextInterface() + " does not extend " + this.getContextInterface());
       }
     }
 
@@ -46,15 +47,15 @@ public abstract class FeatureTokenTransformerBase<T extends ModifiableContext> i
 
   @Override
   public final void fuse(
-      TranformerCustomFuseableIn<Object, ?, ? extends FeatureEventHandler> tranformerCustomFuseableIn) {
-    if (!canFuse(tranformerCustomFuseableIn)) {
+      TransformerCustomFuseableIn<Object, ?, ? extends FeatureEventHandler> transformerCustomFuseableIn) {
+    if (!canFuse(transformerCustomFuseableIn)) {
       throw new IllegalArgumentException();
     }
     if (Objects.isNull(downstream)) {
-      this.downstream = tranformerCustomFuseableIn.fuseableSink();
+      this.downstream = transformerCustomFuseableIn.fuseableSink();
       //TODO this.tokenReader = new FeatureTokenReader<>(this, createContext());
 
-      tranformerCustomFuseableIn.afterInit(this::init);
+      transformerCustomFuseableIn.afterInit(this::init);
       //init();
     }
   }
