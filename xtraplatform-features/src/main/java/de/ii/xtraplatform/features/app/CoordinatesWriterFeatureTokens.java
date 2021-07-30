@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.app;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.geometries.domain.CoordinatesWriter;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.io.IOException;
 import org.immutables.value.Value;
 
@@ -19,9 +20,18 @@ public abstract class CoordinatesWriterFeatureTokens implements CoordinatesWrite
   @Value.Parameter
   public abstract ModifiableContext getContext();
 
+  @Value.Derived
+  public boolean isPoint() {
+    return getContext().geometryType()
+        .filter(geoType -> geoType == SimpleFeatureGeometry.POINT)
+        .isPresent();
+  }
+
   @Override
   public void onStart() throws IOException {
-    getDelegate().onArrayStart(getContext());
+    if (!isPoint()) {
+      getDelegate().onArrayStart(getContext());
+    }
     getDelegate().onArrayStart(getContext());
   }
 
@@ -52,6 +62,8 @@ public abstract class CoordinatesWriterFeatureTokens implements CoordinatesWrite
   @Override
   public void onEnd() throws IOException {
     getDelegate().onArrayEnd(getContext());
-    getDelegate().onArrayEnd(getContext());
+    if (!isPoint()) {
+      getDelegate().onArrayEnd(getContext());
+    }
   }
 }

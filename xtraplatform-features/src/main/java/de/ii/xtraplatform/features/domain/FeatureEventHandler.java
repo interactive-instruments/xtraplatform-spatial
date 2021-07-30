@@ -12,6 +12,7 @@ import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import javax.annotation.Nullable;
@@ -68,6 +69,8 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     default int schemaIndex() {
       return -1;
     }
+
+    Map<String, String> transformed();
 
     @Value.Derived
     @Value.Auxiliary
@@ -177,6 +180,8 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     ModifiableContext setMapping(SchemaMapping mapping);
 
     ModifiableContext setSchemaIndex(int schemaIndex);
+
+    ModifiableContext putTransformed(String key, String value);
   }
 
   //T createContext();

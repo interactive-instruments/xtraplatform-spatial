@@ -64,7 +64,9 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
     this.nestingTracker = new NestingTracker(getDownstream(), newContext, ImmutableList.of(), flattenObjects, flattenArrays);
 
-
+    if (flattenObjects) {
+      newContext.putTransformed(FeaturePropertyTransformerFlatten.TYPE, "TRUE");
+    }
 
     getDownstream().onStart(newContext);
   }

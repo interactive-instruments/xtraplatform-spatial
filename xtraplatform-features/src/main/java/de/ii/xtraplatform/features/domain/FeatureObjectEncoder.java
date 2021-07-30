@@ -7,12 +7,15 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
+import de.ii.xtraplatform.features.domain.PropertyBase.Type;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSchema>, U extends FeatureBase<T, FeatureSchema>, W> extends
-    FeatureTokenEncoder<W, ModifiableContext> {
+public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSchema>, U extends FeatureBase<T, FeatureSchema>> extends
+    FeatureTokenEncoder<ModifiableContext> {
 
   private U currentFeature;
   private T currentObjectOrArray;
@@ -89,7 +92,7 @@ public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSche
       return;
     }
 
-    createProperty(PropertyBase.Type.VALUE, context.path(), context.schema().get(), context.value());
+    createProperty(PropertyBase.Type.VALUE, context.path(), context.schema().get(), context.value(), context.transformed());
   }
 
   @Override
@@ -103,10 +106,11 @@ public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSche
   }
 
   private T createProperty(Property.Type type, List<String> path, FeatureSchema schema) {
-    return createProperty(type, path, schema, null);
+    return createProperty(type, path, schema, null, ImmutableMap.of());
   }
 
-  private T createProperty(Property.Type type, List<String> path, FeatureSchema schema, String value) {
+  private T createProperty(Type type, List<String> path, FeatureSchema schema,
+      String value, Map<String, String> transformed) {
 
     /*return currentFeature.getProperties()
         .stream()
@@ -118,7 +122,8 @@ public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSche
           property.type(type)
               .schema(schema)
               .propertyPath(path)
-              .value(value);
+              .value(value)
+              .transformed(transformed);
 
           if (Objects.nonNull(currentObjectOrArray)) {
             property.parent(currentObjectOrArray);

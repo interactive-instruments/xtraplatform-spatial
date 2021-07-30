@@ -118,8 +118,8 @@ public interface PropertyTransformations {
         getTransformations().forEach((property, mapping) -> {
             transformations.putIfAbsent(property, new ArrayList<>());
 
-            mapping.getNull()
-                    .ifPresent(nullValue -> transformations.get(property)
+            mapping.getNullify()
+                    .forEach(nullValue -> transformations.get(property)
                                                            .add(
                                                                ImmutableFeaturePropertyTransformerNullValue
                                                                    .builder()
