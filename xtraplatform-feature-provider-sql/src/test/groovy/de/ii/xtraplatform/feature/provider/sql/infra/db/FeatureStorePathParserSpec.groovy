@@ -35,7 +35,7 @@ class FeatureStorePathParserSpec extends Specification {
 
         when: "parsing relations"
 
-        def actual = pathParser.toRelations(path, [:], [:])
+        def actual = pathParser.toRelations(path, [:], [:], [:])
 
         then:
         actual == expected
@@ -201,7 +201,7 @@ class FeatureStorePathParserSpec extends Specification {
 
         when: "parsing relations"
 
-        def actual = pathParser.toRelations(path, [:], [:])
+        def actual = pathParser.toRelations(path, [:], [:], [:])
 
         then: "should throw"
 

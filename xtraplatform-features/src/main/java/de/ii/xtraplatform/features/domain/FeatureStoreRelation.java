@@ -42,6 +42,8 @@ public interface FeatureStoreRelation {
 
     String getTargetField();
 
+    Optional<String> getTargetFilter();
+
     Optional<String> getJunction();
 
     Optional<String> getJunctionSource();

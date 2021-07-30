@@ -38,7 +38,8 @@ public class SchemaToMappingVisitor<T extends SchemaBase<T>> implements SchemaVi
     public Multimap<List<String>, T> visit(T schema, List<Multimap<List<String>, T>> visitedProperties) {
         List<String> path = useTargetPath
             ? schema.getPath()
-            : SPLITTER.splitToList(schema.getSourcePath().orElse(""));
+            //TODO: static cleanup method in PathParser
+            : SPLITTER.splitToList(schema.getSourcePath().map(sourcePath -> sourcePath.replaceAll("\\{constant=.*?\\}", "")).orElse(""));
 
         return Stream.concat(
                 path.isEmpty()

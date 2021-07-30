@@ -348,7 +348,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
   private String toJoin(String targetContainer, String targetAlias, String targetField,
       String sourceContainer,
       String sourceField, Optional<String> sqlFilter) {
-    String additionalFilter = sqlFilter.map(s -> " AND " + s)
+    String additionalFilter = sqlFilter.map(s -> " AND (" + s + ")")
         .orElse("");
     String targetTable = targetContainer;
 

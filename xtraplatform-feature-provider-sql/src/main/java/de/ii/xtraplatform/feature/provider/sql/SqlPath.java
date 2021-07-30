@@ -70,7 +70,7 @@ public interface SqlPath {
             String flag = entry.getValue();
 
             if (flag.startsWith("{filter=")) {
-                tablePathWithFilter = tablePathWithFilter.replace(table, table + flag);
+                tablePathWithFilter = tablePathWithFilter.replaceFirst("(\\/|])(" + table + ")(\\/|$)", "$1$2" + flag + "$3");
             }
         }
 

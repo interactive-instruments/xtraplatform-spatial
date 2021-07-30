@@ -78,12 +78,28 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
         return mergedPaths;
     }
 
-    //TODO: test with mappings without sortPriority, e.g. daraa
     private int sortByPriority(String path1, String path2) {
         OptionalInt priority1 = syntax.getPriorityFlag(path1);
         OptionalInt priority2 = syntax.getPriorityFlag(path2);
 
-        return !priority1.isPresent() ? 1 : !priority2.isPresent() ? -1 : priority1.getAsInt() - priority2.getAsInt();
+        //TODO: special handling for geoval [observedproperty_fk=code]observedproperty/symbol
+        // find more general solution
+        if (path1.indexOf('/',1) < path1.lastIndexOf('/')
+            && path2.indexOf('/',1) < path2.lastIndexOf('/')) {
+            String table1 = path1.substring(0, path1.lastIndexOf('/'));
+            String table2 = path2.substring(0, path2.lastIndexOf('/'));
+
+            if (table2.indexOf('/', 1) < table2.lastIndexOf('/'))
+                if (!Objects.equals(table2, table1) && table2.startsWith(table1)) {
+                    return -1;
+                }
+        }
+
+        return priority1.isEmpty()
+            ? 1
+            : priority2.isEmpty()
+                ? -1
+                : priority1.getAsInt() - priority2.getAsInt();
     }
 
     //TODO: merge into toInstanceContainers
@@ -214,18 +230,24 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                         if (!instanceContainerBuilders.containsKey(instanceContainerName)) {
                             instanceContainerBuilders.put(instanceContainerName, ImmutableFeatureStoreInstanceContainer.builder());
                         }
+
+                        Map<String, String> stringFilters = columnPaths.stream()
+                            .flatMap(sqlPath -> sqlPath.getTableFlags()
+                                .entrySet()
+                                .stream())
+                            .filter(entry2 -> syntax.getFilterFlag(entry2.getValue())
+                                .isPresent())
+                            .map(entry2 -> new AbstractMap.SimpleImmutableEntry<>(entry2.getKey(), syntax.getFilterFlag(entry2.getValue())
+                                .get()))
+                            .distinct()
+                            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
                         //TODO: needed for SqlConnectorSlick
-                        Map<String, CqlFilter> filters = Objects.isNull(cql) ? ImmutableMap.of() : columnPaths.stream()
-                                                                    .flatMap(sqlPath -> sqlPath.getTableFlags()
-                                                                                               .entrySet()
-                                                                                               .stream())
-                                                                    .filter(entry2 -> syntax.getFilterFlag(entry2.getValue())
-                                                                                            .isPresent())
-                                                                    .map(entry2 -> new AbstractMap.SimpleImmutableEntry<>(entry2.getKey(), syntax.getFilterFlag(entry2.getValue())
-                                                                                                                                                 .get()))
-                                                                    .distinct()
+                        Map<String, CqlFilter> filters = Objects.isNull(cql) ? ImmutableMap.of() : stringFilters.entrySet().stream()
                                                                     .map(entry2 -> new AbstractMap.SimpleImmutableEntry<>(entry2.getKey(), cql.read(entry2.getValue(), Cql.Format.TEXT)))
                                                                     .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+
 
                         Map<String, String> sortKeys = columnPaths.stream()
                                                                     .flatMap(sqlPath -> sqlPath.getTableFlags()
@@ -254,7 +276,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
                             instancePos[0] = 0;
                         } else {
-                            List<FeatureStoreRelation> instanceConnection = toRelations(tablePathAsList, filters, sortKeys);
+                            List<FeatureStoreRelation> instanceConnection = toRelations(tablePathAsList, filters, stringFilters, sortKeys);
 
                             String defaultSortKey = syntax.isJunctionTable(attributesContainerName)
                                     //TODO: oneo uses columns.get(columns.size()-1) instead, thats not a good default value
@@ -291,7 +313,9 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
     }
 
     private List<FeatureStoreRelation> toRelations(List<String> path,
-                                                   Map<String, CqlFilter> filters, Map<String, String> sortKeys) {
+        Map<String, CqlFilter> filters,
+        Map<String, String> stringFilters,
+        Map<String, String> sortKeys) {
 
         if (path.size() < 2) {
             throw new IllegalArgumentException(String.format("not a valid relation path: %s", path));
@@ -299,39 +323,45 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
         if (path.size() > 2) {
             return IntStream.range(2, path.size())
-                            .mapToObj(i -> toRelations(path.get(i - 2), path.get(i - 1), path.get(i), i == path.size() - 1, filters, sortKeys))
+                            .mapToObj(i -> toRelations(path.get(i - 2), path.get(i - 1), path.get(i), i == path.size() - 1, filters, stringFilters, sortKeys))
                             .flatMap(Function.identity())
                             .collect(Collectors.toList());
         }
 
         return IntStream.range(1, path.size())
-                        .mapToObj(i -> toRelation(path.get(i - 1), path.get(i), filters, sortKeys))
+                        .mapToObj(i -> toRelation(path.get(i - 1), path.get(i), filters, stringFilters, sortKeys))
                         .collect(Collectors.toList());
     }
 
-    private Stream<FeatureStoreRelation> toRelations(String source, String link, String target, boolean isLast,
-                                                     Map<String, CqlFilter> filters, Map<String, String> sortKeys) {
+    private Stream<FeatureStoreRelation> toRelations(String source, String link, String target,
+        boolean isLast,
+        Map<String, CqlFilter> filters,
+        Map<String, String> stringFilters,
+        Map<String, String> sortKeys) {
         if (syntax.isJunctionTable(source)) {
             if (isLast) {
-                return Stream.of(toRelation(link, target, filters, sortKeys));
+                return Stream.of(toRelation(link, target, filters, stringFilters, sortKeys));
             } else {
                 return Stream.empty();
             }
         }
         if (syntax.isJunctionTable(target) && !isLast) {
-            return Stream.of(toRelation(source, link, filters, sortKeys));
+            return Stream.of(toRelation(source, link, filters, stringFilters, sortKeys));
         }
 
         if (syntax.isJunctionTable(link)) {
             return Stream.of(toRelation(source, link, target, sortKeys));
         }
 
-        return Stream.of(toRelation(source, link, filters, sortKeys), toRelation(link, target, filters, sortKeys));
+        return Stream.of(toRelation(source, link, filters, stringFilters, sortKeys), toRelation(link, target, filters,
+            stringFilters, sortKeys));
     }
 
     //TODO: support sortKey flag on table instead of getDefaultPrimaryKey
     private FeatureStoreRelation toRelation(String source, String target,
-                                            Map<String, CqlFilter> filters, Map<String, String> sortKeys) {
+        Map<String, CqlFilter> filters,
+        Map<String, String> stringFilters,
+        Map<String, String> sortKeys) {
         Matcher sourceMatcher = syntax.getTablePattern()
                                       .matcher(source);
         Matcher targetMatcher = syntax.getJoinedTablePattern()
@@ -339,13 +369,16 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
         if (sourceMatcher.find() && targetMatcher.find()) {
             String sourceContainer = sourceMatcher.group(SqlPathSyntax.MatcherGroups.TABLE);
             String sourceField = targetMatcher.group(SqlPathSyntax.MatcherGroups.SOURCE_FIELD);
+            String targetContainer = targetMatcher.group(MatcherGroups.TABLE);
             String targetField = targetMatcher.group(SqlPathSyntax.MatcherGroups.TARGET_FIELD);
             //TODO: primaryKey flag
             boolean isOne2One = Objects.equals(targetField, syntax.getOptions()
                                                                   .getPrimaryKey());
 
             //TODO: shouldn't this be targetContainer?
-            Optional<CqlFilter> filter = Optional.ofNullable(filters.get(target));
+            Optional<String> sourceFilter = Optional.ofNullable(stringFilters.get(sourceContainer)).map(f -> String.format("{filter=%s}", f));
+            Optional<String> targetFilter = Optional.ofNullable(stringFilters.get(targetContainer)).map(f -> String.format("{filter=%s}", f));
+            Optional<CqlFilter> targetFilter2 = Optional.ofNullable(filters.get(targetContainer));
 
             String sortKey = sortKeys.getOrDefault(sourceContainer, syntax.getOptions().getSortKey());
 
@@ -354,9 +387,11 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                                                 .sourceContainer(sourceContainer)
                                                 .sourceField(sourceField)
                                                 .sourceSortKey(sortKey)
-                                                .targetContainer(targetMatcher.group(SqlPathSyntax.MatcherGroups.TABLE))
+                                                .sourceFilter(sourceFilter)
+                                                .targetContainer(targetContainer)
                                                 .targetField(targetField)
-                                                .filter(filter)
+                                                .targetFilter(targetFilter)
+                                                .filter(targetFilter2)
                                                 .build();
         }
 
