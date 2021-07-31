@@ -36,6 +36,10 @@ public abstract class ToChars implements DoubleArrayProcessor {
             Axis axis = Axis.fromInt[i % dimension];
             String value = String.valueOf(coordinates[i]);
 
+            /*
+            TODO: will not be applied when no transformations are given
+             move to separate step
+            */
             if (getPrecision() > 0) {
                 BigDecimal bd = new BigDecimal(value).setScale(getPrecision(), RoundingMode.HALF_UP);
                 value = bd.toPlainString();
@@ -62,7 +66,6 @@ public abstract class ToChars implements DoubleArrayProcessor {
 
     @Override
     public void onFlush() throws IOException {
-        this.isFirst = true;
 
         getCoordinatesProcessor().onFlush();
     }
