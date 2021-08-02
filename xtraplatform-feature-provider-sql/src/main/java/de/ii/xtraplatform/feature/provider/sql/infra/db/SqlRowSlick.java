@@ -233,6 +233,10 @@ class SqlRowSlick implements SqlRow {
                 result = ((Long)id1).compareTo((Long)ids2.get(i));
             } else if (id1 instanceof Short) {
                 result = ((Short)id1).compareTo((Short)ids2.get(i));
+            } else if (id1 instanceof Date) {
+                result = ((Date)id1).compareTo((Date)ids2.get(i));
+            } else if (id1 instanceof Timestamp) {
+                result = ((Timestamp)id1).compareTo((Timestamp)ids2.get(i));
             } else {
                 result = ((String)id1).compareTo((String)ids2.get(i));
             }

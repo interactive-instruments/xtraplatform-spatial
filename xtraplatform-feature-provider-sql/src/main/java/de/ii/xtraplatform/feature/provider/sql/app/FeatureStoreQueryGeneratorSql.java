@@ -469,12 +469,18 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         .append(".")
         .append(keyField)
         .append(" >= ")
-        .append(minKey instanceof String ? String.format("'%s'", sqlDialect.escapeString((String)minKey)) : minKey)
+        .append(formatLiteral(minKey))
         .append(" AND ")
         .append(alias)
         .append(".")
         .append(keyField)
         .append(" <= ")
-        .append(maxKey instanceof String ? String.format("'%s'", sqlDialect.escapeString((String)maxKey)) : maxKey);
+        .append(formatLiteral(maxKey));
+  }
+
+  private String formatLiteral(Object literal) {
+    return literal instanceof Number
+        ? String.valueOf(literal)
+        : String.format("'%s'", sqlDialect.escapeString(String.valueOf(literal)));
   }
 }
