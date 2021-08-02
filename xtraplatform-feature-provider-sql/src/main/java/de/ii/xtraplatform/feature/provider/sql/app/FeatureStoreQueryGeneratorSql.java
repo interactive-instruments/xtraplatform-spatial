@@ -324,11 +324,8 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     ListIterator<String> aliasesIterator = aliases.listIterator();
 
     FeatureStoreRelatedContainer relatedUserFilterContainer = (FeatureStoreRelatedContainer) userFilterAttributeContainer;
-    String userFilterJoin = userFilter.isPresent() ? relatedUserFilterContainer.getInstanceConnection()
-            .stream()
-            .flatMap(relation -> toJoins(relation, aliasesIterator,
-                    getFilter(userFilterAttributeContainer, relation, userFilter)))
-            .collect(Collectors.joining(" ")) : "";
+    String userFilterJoin = userFilter.isPresent() ? toJoins(relatedUserFilterContainer.getInstanceConnection().get(0), aliasesIterator,
+            getFilter(userFilterAttributeContainer, relatedUserFilterContainer.getInstanceConnection().get(0), userFilter)).collect(Collectors.joining(" ")) : "";
     String userFilterTargetField = userFilter.isPresent() ? relatedUserFilterContainer.getInstanceConnection().get(0).getTargetField() : "";
 
     FeatureStoreRelatedContainer relatedContainer = (FeatureStoreRelatedContainer) attributeContainer;
@@ -379,7 +376,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     String targetTable = targetContainer;
 
     if (additionalFilter.contains("row_number")) {
-      targetTable = String.format("(SELECT *,row_number() OVER () FROM %s)", targetContainer);
+      targetTable = String.format("(SELECT *, row_number() OVER (ORDER BY %s) AS row_number FROM %s)", targetField, targetContainer);
     }
 
     return String.format("JOIN %1$s %2$s ON (%4$s.%5$s=%2$s.%3$s%6$s)", targetTable, targetAlias,

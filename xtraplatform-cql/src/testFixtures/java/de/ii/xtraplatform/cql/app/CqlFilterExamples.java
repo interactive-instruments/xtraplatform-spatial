@@ -172,7 +172,7 @@ public class CqlFilterExamples {
                     ScalarLiteral.of(0.1)));
 
     public static final CqlFilter EXAMPLE_IN_WITH_FUNCTION = CqlFilter.of(In.ofFunction(
-            Function.of("pos", ImmutableList.of()), ImmutableList.of(ScalarLiteral.of(1), ScalarLiteral.of(3))));
+            Function.of("position", ImmutableList.of()), ImmutableList.of(ScalarLiteral.of(1), ScalarLiteral.of(3))));
 
     public static final CqlFilter EXAMPLE_NESTED_FUNCTION = CqlFilter.of(
             Between.of(Property.of("filterValues.measure",

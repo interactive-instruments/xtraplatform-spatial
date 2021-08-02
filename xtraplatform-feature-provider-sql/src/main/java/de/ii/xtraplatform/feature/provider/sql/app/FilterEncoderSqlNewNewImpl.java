@@ -203,8 +203,12 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                                         .stream()
                                         .findFirst();
                 String userFilterPropertyName = getUserFilterPropertyName(userFilter.get());
-                Predicate<FeatureStoreAttribute> userFilterPropertyMatches = attribute -> Objects.equals(userFilterPropertyName, attribute.getQueryable()) || (Objects.equals(userFilterPropertyName, ID_PLACEHOLDER) && attribute.isId());
-                userFilterTable = getTable(userFilterPropertyMatches, userFilterPropertyName);
+                if (userFilterPropertyName.contains("row_number")) {
+                    userFilterTable = table;
+                } else {
+                    Predicate<FeatureStoreAttribute> userFilterPropertyMatches = attribute -> Objects.equals(userFilterPropertyName, attribute.getQueryable()) || (Objects.equals(userFilterPropertyName, ID_PLACEHOLDER) && attribute.isId());
+                    userFilterTable = getTable(userFilterPropertyMatches, userFilterPropertyName);
+                }
             } else {
                 userFilter = Optional.empty();
             }
@@ -231,6 +235,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 operand = ((Like) nestedFilter).getOperands().get(0);
             } else if (nestedFilter instanceof In) {
                 operand = ((In) nestedFilter).getValue().get();
+            } else if (nestedFilter instanceof Between) {
+                operand = ((Between) nestedFilter).getValue().get();
             }
             if (operand instanceof Property) {
                 return ((Property) operand).getName();
@@ -402,6 +408,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String mainExpression = "";
             Scalar op1 = in.getValue().get();
             if (op1 instanceof Property) {
+                mainExpression = children.get(0);
+            } else if (op1 instanceof de.ii.xtraplatform.cql.domain.Function) {
                 mainExpression = children.get(0);
             } else if (op1 instanceof ScalarLiteral) {
                 // special case of a literal, we need to build the SQL expression
