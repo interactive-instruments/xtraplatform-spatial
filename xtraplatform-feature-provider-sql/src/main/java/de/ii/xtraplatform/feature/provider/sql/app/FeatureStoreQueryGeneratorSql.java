@@ -43,8 +43,9 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
       CrsTransformerFactory crsTransformerFactory) {
     this.sqlDialect = sqlDialect;
     this.filterEncoder = new FilterEncoderSqlNewNewImpl(this::getAliases,
-        (attributeContainer, aliases) -> (userFilterAttributeContainer, userFilter) -> getJoins(attributeContainer, userFilterAttributeContainer, aliases,
-            userFilter), nativeCrs, sqlDialect, crsTransformerFactory);
+        (attributeContainer, aliases) -> (userFilterAttributeContainer, userFilter) -> (instanceFilter)
+            -> getJoins(attributeContainer, userFilterAttributeContainer, aliases,
+              userFilter, instanceFilter), nativeCrs, sqlDialect, crsTransformerFactory);
   }
 
   @Override
@@ -311,12 +312,13 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     return relatedContainer.getInstanceConnection()
         .stream()
         .flatMap(relation -> toJoins(relation, aliasesIterator,
-            getFilter(attributeContainer, relation, userFilter)))
+            getFilter(attributeContainer, relation, userFilter), Optional.empty()))
         .collect(Collectors.joining(" "));
   }
 
-  private String getJoins(FeatureStoreAttributesContainer attributeContainer, FeatureStoreAttributesContainer userFilterAttributeContainer, List<String> aliases,
-                          Optional<CqlFilter> userFilter) {
+  private String getJoins(FeatureStoreAttributesContainer attributeContainer,
+      FeatureStoreAttributesContainer userFilterAttributeContainer, List<String> aliases,
+      Optional<CqlFilter> userFilter, Optional<String> instanceFilter) {
 
     if (!(attributeContainer instanceof FeatureStoreRelatedContainer)) {
       return "";
@@ -325,7 +327,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
     FeatureStoreRelatedContainer relatedUserFilterContainer = (FeatureStoreRelatedContainer) userFilterAttributeContainer;
     String userFilterJoin = userFilter.isPresent() ? toJoins(relatedUserFilterContainer.getInstanceConnection().get(0), aliasesIterator,
-            getFilter(userFilterAttributeContainer, relatedUserFilterContainer.getInstanceConnection().get(0), userFilter)).collect(Collectors.joining(" ")) : "";
+            getFilter(userFilterAttributeContainer, relatedUserFilterContainer.getInstanceConnection().get(0), userFilter), instanceFilter).collect(Collectors.joining(" ")) : "";
     String userFilterTargetField = userFilter.isPresent() ? relatedUserFilterContainer.getInstanceConnection().get(0).getTargetField() : "";
 
     FeatureStoreRelatedContainer relatedContainer = (FeatureStoreRelatedContainer) attributeContainer;
@@ -333,13 +335,13 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
             .stream()
             .filter(container -> !container.getTargetField().equals(userFilterTargetField))
             .flatMap(relation -> toJoins(relation, aliasesIterator,
-                    getFilter(attributeContainer, relation, Optional.empty())))
+                    getFilter(attributeContainer, relation, Optional.empty()), instanceFilter))
             .collect(Collectors.joining(" "));
     return String.format("%1$s%3$s%2$s", userFilterJoin, join, userFilterJoin.isEmpty() || join.isEmpty() ? "" : " ");
   }
 
   private Stream<String> toJoins(FeatureStoreRelation relation, ListIterator<String> aliases,
-      Optional<String> sqlFilter) {
+      Optional<String> sqlFilter, Optional<String> sourceFilter) {
     List<String> joins = new ArrayList<>();
 
     if (relation.isM2N()) {
@@ -350,10 +352,10 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
       joins.add(toJoin(relation.getJunction()
           .get(), junctionAlias, relation.getJunctionSource()
-          .get(), sourceAlias, relation.getSourceField(), sqlFilter));
+          .get(), sourceAlias, relation.getSourceField(), sqlFilter, sourceFilter));
       joins.add(toJoin(relation.getTargetContainer(), targetAlias, relation.getTargetField(),
           junctionAlias, relation.getJunctionTarget()
-              .get(), sqlFilter));
+              .get(), sqlFilter, Optional.empty()));
 
     } else {
       String sourceAlias = aliases.next();
@@ -362,7 +364,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
       joins.add(
           toJoin(relation.getTargetContainer(), targetAlias, relation.getTargetField(), sourceAlias,
-              relation.getSourceField(), sqlFilter));
+              relation.getSourceField(), sqlFilter, sourceFilter));
     }
 
     return joins.stream();
@@ -370,7 +372,8 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
   private String toJoin(String targetContainer, String targetAlias, String targetField,
       String sourceContainer,
-      String sourceField, Optional<String> sqlFilter) {
+      String sourceField, Optional<String> sqlFilter,
+      Optional<String> sourceFilter) {
     String additionalFilter = sqlFilter.map(s -> " AND " + s)
         .orElse("");
     String targetTable = targetContainer;
