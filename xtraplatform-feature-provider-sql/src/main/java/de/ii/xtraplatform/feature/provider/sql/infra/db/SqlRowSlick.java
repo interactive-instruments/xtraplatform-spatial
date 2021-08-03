@@ -133,7 +133,14 @@ class SqlRowSlick implements SqlRow {
             for (int i = 0; i < sortKeyNames.size(); i++) {
                 try {
                     Object id = result.nextObject();
-                    if (id instanceof Comparable<?>) {
+                    if (Objects.isNull(id)) {
+                        sortKeys.add(null);
+                        if (i >= queryOptions.getCustomSortKeys().size()) {
+                            throw new IllegalStateException(
+                                String.format("Primary sort key %s of table %s may not be null.",
+                                    sortKeyNames.get(i), attributesContainer.getName()));
+                        }
+                    } else if (id instanceof Comparable<?>) {
                         sortKeys.add((Comparable<?>)id);
                         if (i >= queryOptions.getCustomSortKeys().size()) {
                             ids.add((Comparable<?>) id);
@@ -225,20 +232,25 @@ class SqlRowSlick implements SqlRow {
         for (int i = 0; i < numberOfIds; i++) {
             int result = 0;
             Comparable<?> id1 = ids1.get(i);
+            Comparable<?> id2 = ids2.get(i);
             int direction = idColumnDirections.get(i) == Direction.DESCENDING ? -1 : 1;
 
-            if (id1 instanceof Integer) {
-                result = ((Integer)id1).compareTo((Integer)ids2.get(i));
+            if (Objects.isNull(id1)) {
+                result = -1;
+            } else if (Objects.isNull(id2)) {
+                result = 1;
+            } else if (id1 instanceof Integer) {
+                result = ((Integer)id1).compareTo((Integer) id2);
             } else if (id1 instanceof Long) {
-                result = ((Long)id1).compareTo((Long)ids2.get(i));
+                result = ((Long)id1).compareTo((Long) id2);
             } else if (id1 instanceof Short) {
-                result = ((Short)id1).compareTo((Short)ids2.get(i));
+                result = ((Short)id1).compareTo((Short) id2);
             } else if (id1 instanceof Date) {
-                result = ((Date)id1).compareTo((Date)ids2.get(i));
+                result = ((Date)id1).compareTo((Date) id2);
             } else if (id1 instanceof Timestamp) {
-                result = ((Timestamp)id1).compareTo((Timestamp)ids2.get(i));
+                result = ((Timestamp)id1).compareTo((Timestamp) id2);
             } else {
-                result = ((String)id1).compareTo((String)ids2.get(i));
+                result = ((String)id1).compareTo((String) id2);
             }
             if (result != 0) {
                 return result * direction;

@@ -22,6 +22,7 @@ import de.ii.xtraplatform.features.domain.FeatureStoreRelatedContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SortKey.Direction;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -479,8 +480,14 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
   }
 
   private String formatLiteral(Object literal) {
-    return literal instanceof Number
-        ? String.valueOf(literal)
-        : String.format("'%s'", sqlDialect.escapeString(String.valueOf(literal)));
+    if (literal instanceof Number) {
+      return String.valueOf(literal);
+    }
+
+    String literalString = literal instanceof Timestamp
+        ? String.valueOf(((Timestamp) literal).toInstant())
+        : String.valueOf(literal);
+
+    return String.format("'%s'", sqlDialect.escapeString(literalString));
   }
 }
