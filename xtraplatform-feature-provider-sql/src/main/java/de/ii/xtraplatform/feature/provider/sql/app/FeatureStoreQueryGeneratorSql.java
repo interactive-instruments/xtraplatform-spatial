@@ -26,6 +26,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -480,6 +481,9 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
   }
 
   private String formatLiteral(Object literal) {
+    if (Objects.isNull(literal)) {
+      return "NULL";
+    }
     if (literal instanceof Number) {
       return String.valueOf(literal);
     }
