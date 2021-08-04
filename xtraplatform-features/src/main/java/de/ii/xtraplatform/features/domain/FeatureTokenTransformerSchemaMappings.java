@@ -102,6 +102,13 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       newContext.setGeometryType(context.geometryType());
       newContext.setGeometryDimension(context.geometryDimension());
 
+      //TODO: warn or error if types do not match?
+      if (context.geometryType().isPresent() && context.schema().get().getGeometryType().isPresent()) {
+        if (context.geometryType().get() != context.schema().get().getGeometryType().get()) {
+          newContext.setCustomSchema(new ImmutableFeatureSchema.Builder().from(context.schema().get()).geometryType(context.geometryType().get()).build());
+        }
+      }
+
       getDownstream().onObjectStart(newContext);
     }
     if (context.schema()

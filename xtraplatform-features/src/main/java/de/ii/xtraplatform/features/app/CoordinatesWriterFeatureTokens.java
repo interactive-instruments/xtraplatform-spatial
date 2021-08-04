@@ -23,7 +23,8 @@ public abstract class CoordinatesWriterFeatureTokens implements CoordinatesWrite
   @Value.Derived
   public boolean isPoint() {
     return getContext().geometryType()
-        .filter(geoType -> geoType == SimpleFeatureGeometry.POINT)
+        .filter(geoType -> geoType == SimpleFeatureGeometry.POINT
+            || geoType == SimpleFeatureGeometry.MULTI_POINT)
         .isPresent();
   }
 
