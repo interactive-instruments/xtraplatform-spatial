@@ -30,9 +30,9 @@ public interface FeaturePropertyTransformerCodelist extends FeaturePropertyValue
     Map<String, Codelist> getCodelists();
 
     @Override
-    default String transform(String input) {
+    default String transform(String currentPropertyPath, String input) {
         if (!getCodelists().containsKey(getParameter())) {
-            LOGGER.warn("Skipping {} transformation for property '{}', codelist '{}' not found.", getType(), getPropertyName(), getParameter());
+            LOGGER.warn("Skipping {} transformation for property '{}', codelist '{}' not found.", getType(), getPropertyPath(), getParameter());
 
             return input;
         }

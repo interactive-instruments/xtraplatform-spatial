@@ -36,6 +36,8 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     @Nullable
     Type valueType();
 
+    Map<String,String> valueBuffer();
+
     @Nullable
     FeatureSchema customSchema();
 
@@ -71,6 +73,11 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     }
 
     Map<String, String> transformed();
+
+    @Value.Default
+    default boolean isBuffering() {
+      return false;
+    }
 
     @Value.Derived
     @Value.Auxiliary
@@ -165,6 +172,8 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
 
     ModifiableContext setValueType(SchemaBase.Type valueType);
 
+    ModifiableContext putValueBuffer(String key, String value);
+
     ModifiableContext setCustomSchema(FeatureSchema schema);
 
     ModifiableContext setInGeometry(boolean inGeometry);
@@ -182,6 +191,8 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     ModifiableContext setSchemaIndex(int schemaIndex);
 
     ModifiableContext putTransformed(String key, String value);
+
+    ModifiableContext setIsBuffering(boolean inArray);
   }
 
   //T createContext();

@@ -8,11 +8,10 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
-import de.ii.xtraplatform.features.domain.transform.FeaturePropertySchemaTransformer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +60,9 @@ public class NestingTracker {
     if (flattenArrays && inArray()) {
       flattened.add(String.valueOf(context.index()));
     } else if (!flattenObjects || (!flattenArrays && inArray())) {
-      downstream.onObjectStart(context);
+      if (!context.isBuffering()) {
+        downstream.onObjectStart(context);
+      }
     } else{
       flattened.add(context.schema().get().getName());
     }
@@ -81,7 +82,9 @@ public class NestingTracker {
     if (flattenArrays && isObjectInArray()) {
       flattened.remove(flattened.size()-1);
     } else if (!flattenObjects || (!flattenArrays && isObjectInArray())) {
-      downstream.onObjectEnd(context);
+      if (!context.isBuffering()) {
+        downstream.onObjectEnd(context);
+      }
     } else {
       flattened.remove(flattened.size()-1);
     }
@@ -92,6 +95,8 @@ public class NestingTracker {
     }
     if (!pathStack.isEmpty()) {
       context.pathTracker().track(getCurrentNestingPath());
+    } else {
+      context.pathTracker().track(ImmutableList.of());
     }
   }
 
@@ -125,9 +130,9 @@ public class NestingTracker {
       }
       return;
     }
-    if (Objects.equals(nestingStack.get(nestingStack.size() - 1), "O")) {
+    if (inObject()) {
       closeObject();
-    } else if (Objects.equals(nestingStack.get(nestingStack.size() - 1), "A")) {
+    } else if (inArray()) {
       closeArray();
     }
   }

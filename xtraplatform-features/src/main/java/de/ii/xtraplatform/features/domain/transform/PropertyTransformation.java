@@ -49,6 +49,8 @@ public interface PropertyTransformation extends Buildable<PropertyTransformation
 
     Optional<String> getFlatten();
 
+    Optional<String> getReduceStringFormat();
+
     //Optional<String> getFlattenObjects();
 
     //Optional<String> getFlattenArrays();

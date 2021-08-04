@@ -7,31 +7,49 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.features.app.ImmutableCoordinatesWriterFeatureTokens;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.features.domain.transform.TransformerChain;
 import de.ii.xtraplatform.geometries.domain.CoordinatesTransformer;
 import de.ii.xtraplatform.geometries.domain.ImmutableCoordinatesTransformer;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.io.IOException;
-import java.util.List;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 public class FeatureTokenTransformerValueMappings extends FeatureTokenTransformer {
 
-  private final Map<String, List<FeaturePropertyValueTransformer>> propertyValueTransformers;
+  private final PropertyTransformations propertyTransformations;
+  private final Map<String, Codelist> codelists;
+  private final Optional<ZoneId> nativeTimeZone;
   private final Optional<CrsTransformer> crsTransformer;
+  private TransformerChain<String, FeaturePropertyValueTransformer> valueTransformerChain;
   private ImmutableCoordinatesTransformer.Builder coordinatesTransformerBuilder;
   private int targetDimension;
 
-  public FeatureTokenTransformerValueMappings(
-      Map<String, List<FeaturePropertyValueTransformer>> propertyValueTransformers,
+  public FeatureTokenTransformerValueMappings(PropertyTransformations propertyTransformations,
+      Map<String, Codelist> codelists, Optional<ZoneId> nativeTimeZone,
       Optional<CrsTransformer> crsTransformer) {
-    this.propertyValueTransformers = propertyValueTransformers;
+    this.propertyTransformations = propertyTransformations;
+    this.codelists = codelists;
+    this.nativeTimeZone = nativeTimeZone;
     this.crsTransformer = crsTransformer;
+  }
+
+  @Override
+  public void onStart(ModifiableContext context) {
+    //TODO: slow, precompute, same for original in decoder
+    SchemaMapping schemaMapping = SchemaMapping.withTargetPaths(getContext().mapping());
+
+    this.valueTransformerChain = propertyTransformations.getValueTransformations(
+        schemaMapping, codelists, nativeTimeZone, context.valueBuffer()::get);
+
+    super.onStart(context);
   }
 
   @Override
@@ -92,13 +110,18 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
         throw new IllegalArgumentException(e);
       }
     } else {
+      String path = context.pathTracker().toString();
       String value = context.value();
-      for (FeaturePropertyValueTransformer valueTransformer : propertyValueTransformers.getOrDefault(context.pathTracker().toString(),
-          ImmutableList.of())) {
-        value = valueTransformer.transform(value);
-        if (Objects.isNull(value))
-          break;
+
+      if (!context.valueBuffer().isEmpty()) {
+        context.valueBuffer().forEach((key, val) -> {
+          if (key.startsWith(path + ".")) {
+            context.putValueBuffer(key, valueTransformerChain.transform(key, val));
+          }
+        });
       }
+      value = valueTransformerChain.transform(path, value);
+
 
       // skip, if the value has been transformed to null
       if (Objects.nonNull(value)) {

@@ -8,8 +8,8 @@
 package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.stringtemplates.domain.StringTemplateFilters;
-import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -23,14 +23,28 @@ public interface FeaturePropertyTransformerStringFormat extends FeaturePropertyV
         return TYPE;
     }
 
-    Map<String, String> getSubstitutions();
+    Function<String, String> getSubstitutionLookup();
 
     @Override
-    default String transform(String input) {
-        return StringTemplateFilters.applyTemplate(getParameter(), key -> Objects.isNull(key)
-            ? null
-            : Objects.equals(key, DEFAULT_SUBSTITUTION_KEY) || getPropertyName().filter(key::equals).isPresent()
-                ? input
-                : getSubstitutions().get(key));
+    default String transform(String currentPropertyPath, String input) {
+        Function<String, String> lookup = key -> {
+            if (Objects.isNull(key)) {
+                return null;
+            }
+            if (Objects.equals(key, DEFAULT_SUBSTITUTION_KEY) || Objects.equals(getPropertyPath(), key)) {
+                return input;
+            }
+
+            String lookupWithKey = getSubstitutionLookup().apply(key);
+
+            if (Objects.nonNull(lookupWithKey)) {
+                return lookupWithKey;
+            }
+
+            return getSubstitutionLookup().apply(currentPropertyPath + "." + key);
+        };
+
+        return StringTemplateFilters.applyTemplate(getParameter(), lookup);
     }
+
 }

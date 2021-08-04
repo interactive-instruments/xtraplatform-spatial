@@ -10,7 +10,6 @@ package de.ii.xtraplatform.features.domain.transform;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -33,7 +32,7 @@ public interface FeaturePropertyTransformerFlatten extends FeaturePropertySchema
     BiFunction<String, String, String> flattenedPathProvider();
 
     @Override
-    default FeatureSchema transform(FeatureSchema input) {
+    default FeatureSchema transform(String currentPropertyPath, FeatureSchema input) {
         String flattenedPath = flattenedPathProvider().apply(getParameter(), input.getName());
         return new ImmutableFeatureSchema.Builder()
             .from(input)

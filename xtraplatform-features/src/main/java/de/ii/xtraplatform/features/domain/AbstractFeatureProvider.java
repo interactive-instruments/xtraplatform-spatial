@@ -396,12 +396,11 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
                 FeatureTokenTransformerSchemaMappings mapper = new FeatureTokenTransformerSchemaMappings(mergedTransformations, query);
 
-                Map<String, List<FeaturePropertyValueTransformer>> propertyValueTransformations = mergedTransformations.getValueTransformations(getCodelists(), getData().getNativeTimeZone());
                 Optional<CrsTransformer> crsTransformer = query.getCrs().flatMap(
                     targetCrs -> crsTransformerFactory
                         .getTransformer(getData().getNativeCrs().orElse(OgcCrs.CRS84), targetCrs));
                 FeatureTokenTransformerValueMappings valueMapper = new FeatureTokenTransformerValueMappings(
-                    propertyValueTransformations,
+                    mergedTransformations, getCodelists(), getData().getNativeTimeZone(),
                     crsTransformer);
 
                 return featureTokenSource.via(mapper).via(valueMapper);

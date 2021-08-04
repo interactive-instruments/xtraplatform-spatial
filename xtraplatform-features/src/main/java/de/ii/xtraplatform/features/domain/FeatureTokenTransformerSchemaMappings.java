@@ -1,19 +1,20 @@
 /**
  * Copyright 2021 interactive instruments GmbH
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
+ * the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.features.domain.transform.FeaturePropertyContextTransformer;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertySchemaTransformer;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten.INCLUDE;
+import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerObjectReduce;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.features.domain.transform.TransformerChain;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -27,9 +28,11 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
   private final PropertyTransformations propertyTransformations;
   private final boolean isOverview;
-  private Map<String, List<FeaturePropertySchemaTransformer>> propertySchemaTransformers;
+  //private Map<String, List<FeaturePropertySchemaTransformer>> propertySchemaTransformers;
   private ModifiableContext newContext;
   private NestingTracker nestingTracker;
+  private TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> schemaTransformerChain;
+  private TransformerChain<ModifiableContext, FeaturePropertyContextTransformer> contextTransformerChain;
 
   public FeatureTokenTransformerSchemaMappings(
       PropertyTransformations propertyTransformations, FeatureQuery query) {
@@ -46,23 +49,34 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
         .setQuery(getContext().query())
         .setMetadata(getContext().metadata());
 
-    this.propertySchemaTransformers = propertyTransformations.getSchemaTransformations(isOverview, this::getFlattenedPropertyPath);
+    //this.propertySchemaTransformers = propertyTransformations.getSchemaTransformations(isOverview, this::getFlattenedPropertyPath);
+    this.schemaTransformerChain = propertyTransformations.getSchemaTransformations(
+        schemaMapping, isOverview, this::getFlattenedPropertyPath);
+    this.contextTransformerChain = propertyTransformations.getContextTransformations(
+        schemaMapping);
 
-    boolean flattenObjects = propertySchemaTransformers.containsKey(PropertyTransformations.WILDCARD)
-        && propertySchemaTransformers.get(PropertyTransformations.WILDCARD)
+    boolean flattenObjects = schemaTransformerChain.has(PropertyTransformations.WILDCARD)
+        && schemaTransformerChain.get(PropertyTransformations.WILDCARD)
         .stream()
-        .anyMatch(featurePropertySchemaTransformer -> featurePropertySchemaTransformer instanceof FeaturePropertyTransformerFlatten
-        && (((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer).include() == INCLUDE.ALL
-        || ((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer).include() == INCLUDE.OBJECTS));
+        .anyMatch(featurePropertySchemaTransformer ->
+            featurePropertySchemaTransformer instanceof FeaturePropertyTransformerFlatten
+                && (((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer).include()
+                == INCLUDE.ALL
+                || ((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer).include()
+                == INCLUDE.OBJECTS));
 
-    boolean flattenArrays = propertySchemaTransformers.containsKey(PropertyTransformations.WILDCARD)
-        && propertySchemaTransformers.get(PropertyTransformations.WILDCARD)
+    boolean flattenArrays = schemaTransformerChain.has(PropertyTransformations.WILDCARD)
+        && schemaTransformerChain.get(PropertyTransformations.WILDCARD)
         .stream()
-        .anyMatch(featurePropertySchemaTransformer -> featurePropertySchemaTransformer instanceof FeaturePropertyTransformerFlatten
-            && (((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer).include() == INCLUDE.ALL
-            || ((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer).include() == INCLUDE.ARRAYS));
+        .anyMatch(featurePropertySchemaTransformer ->
+            featurePropertySchemaTransformer instanceof FeaturePropertyTransformerFlatten
+                && (((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer).include()
+                == INCLUDE.ALL
+                || ((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer).include()
+                == INCLUDE.ARRAYS));
 
-    this.nestingTracker = new NestingTracker(getDownstream(), newContext, ImmutableList.of(), flattenObjects, flattenArrays);
+    this.nestingTracker = new NestingTracker(getDownstream(), newContext, ImmutableList.of(),
+        flattenObjects, flattenArrays);
 
     if (flattenObjects) {
       newContext.putTransformed(FeaturePropertyTransformerFlatten.TYPE, "TRUE");
@@ -84,7 +98,13 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   @Override
   public void onFeatureEnd(ModifiableContext context) {
     while (nestingTracker.isNested()) {
-      nestingTracker.close();
+      //nestingTracker.close();
+      if (nestingTracker.inObject()) {
+        //nestingTracker.closeObject();
+        closeObject();
+      } else if (nestingTracker.inArray()) {
+        nestingTracker.closeArray();
+      }
     }
 
     getDownstream().onFeatureEnd(newContext);
@@ -119,6 +139,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
     handleNesting(context.schema().get(), context.parentSchemas(), context.indexes());
   }
+
   //TODO: geometry arrays
   @Override
   public void onObjectEnd(ModifiableContext context) {
@@ -164,33 +185,36 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       newContext.pathTracker().track(context.schema().get().getFullPath());
     }
 
-    for (FeaturePropertySchemaTransformer schemaTransformer : propertySchemaTransformers.getOrDefault(newContext.pathTracker().toString(),
-        ImmutableList.of())) {
-      FeatureSchema transform = schemaTransformer.transform(newContext.schema().get());
-      if (Objects.isNull(transform)) {
-        return;
-      }
-      newContext.setCustomSchema(transform);
-    }
-
-    for (FeaturePropertySchemaTransformer schemaTransformer : propertySchemaTransformers.getOrDefault("*",
-        ImmutableList.of())) {
-      FeatureSchema transform = schemaTransformer.transform(newContext.schema().get());
-      if (Objects.isNull(transform)) {
-        return;
-      }
-      newContext.setCustomSchema(transform);
-    }
-
     newContext.setValue(context.value());
     newContext.setValueType(context.valueType());
 
+    contextTransformerChain.transform(
+        newContext.pathTracker().toString(), newContext);
+
+    FeatureSchema transform1 = schemaTransformerChain.transform(
+        newContext.pathTracker().toString(), context.schema().get());
+
+    if (Objects.isNull(transform1)) {
+      //newContext.setDoNotPush(false);
+      newContext.setCustomSchema(null);
+      return;
+    }
+
+    newContext.setCustomSchema(transform1);
+
     try {
-      getDownstream().onValue(newContext);
+      if (!shouldSkipProperty()) {
+        getDownstream().onValue(newContext);
+      } else {
+        boolean br = true;
+      }
     } catch (Throwable e) {
       throw e;
     } finally {
       newContext.setCustomSchema(null);
+      //newContext.setDoNotPush(false);
+      newContext.setValue(null);
+      newContext.setValueType(null);
     }
 
   }
@@ -203,15 +227,24 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
             (/*nestingTracker.inObject() && nestingTracker.isSamePath(schema.getFullPath()) ||*/
                 (nestingTracker.inArray() && nestingTracker.isSamePath(schema.getFullPath())
                     && nestingTracker.hasParentIndexChanged(indexes))))) {
-      nestingTracker.close();
+
+      //nestingTracker.close();
+      if (nestingTracker.inObject()) {
+        //nestingTracker.closeObject();
+        closeObject();
+      } else if (nestingTracker.inArray()) {
+        nestingTracker.closeArray();
+      }
     }
 
     if (nestingTracker.inObject() && newContext.inArray() && nestingTracker
-        .doesStartWithPreviousPath(schema.getFullPath()) && nestingTracker
+        .isSamePath(schema.getFullPath()) && nestingTracker
         .hasIndexChanged(indexes)) {
-      nestingTracker.closeObject();
+      //nestingTracker.closeObject();
+      closeObject();
       newContext.setIndexes(indexes);
-      nestingTracker.openObject();
+      //nestingTracker.openObject();
+      openObject(schema);
     }
 
     if (schema.isArray() && /*nestingTracker.isFirst(indexes) &&*/ !nestingTracker
@@ -222,14 +255,69 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     } else if (schema.isObject() && schema.isArray() && nestingTracker.isFirst(indexes)) {
       newContext.pathTracker().track(schema.getFullPath());
       newContext.setIndexes(indexes);
-      nestingTracker.openObject();
+      //nestingTracker.openObject();
+      openObject(schema);
     } else if (schema.isObject() && !schema.isArray() && !nestingTracker
         .isSamePath(schema.getFullPath())) {
       openParents(parentSchemas, indexes);
       newContext.pathTracker().track(schema.getFullPath());
-      nestingTracker.openObject();
+      //nestingTracker.openObject();
+      openObject(schema);
     } else if (schema.isValue() && (!schema.isArray() || nestingTracker.isFirst(indexes))) {
       openParents(parentSchemas, indexes);
+    }
+  }
+
+  private void openObject(FeatureSchema schema) {
+    contextTransformerChain.transform(
+        newContext.pathTracker().toString(), newContext);
+
+    FeatureSchema transform1 = schemaTransformerChain.transform(
+        newContext.pathTracker().toString(), schema);
+
+    if (Objects.isNull(transform1)) {
+      newContext.setCustomSchema(null);
+      return;
+    }
+
+    newContext.setCustomSchema(transform1);
+
+    nestingTracker.openObject();
+
+    newContext.setCustomSchema(null);
+  }
+
+  private void closeObject() {
+    newContext.pathTracker().track(nestingTracker.getCurrentNestingPath());
+    String path = newContext.pathTracker().toString();
+
+    if (newContext.transformed().containsKey(path) && newContext.transformed().get(path).equals(
+        FeaturePropertyTransformerObjectReduce.TYPE)) {
+      //newContext.setIndexes(context.indexes());
+
+      contextTransformerChain.transform(path, newContext);
+
+      try {
+        if (!shouldSkipProperty()) {
+          getDownstream().onValue(newContext);
+        }
+      } catch (Throwable e) {
+        throw e;
+      } finally {
+
+        newContext.setCustomSchema(null);
+        newContext.setValue(null);
+        newContext.setValueType(null);
+        newContext.valueBuffer().clear();
+
+        newContext.setIsBuffering(true);
+
+        nestingTracker.closeObject();
+
+        newContext.setIsBuffering(false);
+      }
+    } else {
+      nestingTracker.closeObject();
     }
   }
 
@@ -254,5 +342,17 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
   private String getFlattenedPropertyPath(String separator, String name) {
     return nestingTracker.getFlattenedPropertyPath(separator, name);
+  }
+
+  private boolean shouldSkipProperty() {
+    return newContext.isBuffering()
+      || !propertyIsInFields(newContext.pathTracker().toString());
+  }
+
+  protected boolean propertyIsInFields(String property) {
+    return newContext.query().getFields().isEmpty()
+        || newContext.query().getFields().contains("*")
+        || newContext.query().getFields().stream()
+        .anyMatch(field -> Objects.equals(field, property));
   }
 }

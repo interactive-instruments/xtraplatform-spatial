@@ -7,14 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-public interface FeaturePropertyTransformer<T> {
+import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 
-    String getType();
-
-    String getPropertyPath();
-
-    String getParameter();
-
-    T transform(String currentPropertyPath, T input);
+public interface FeaturePropertyContextTransformer extends FeaturePropertyTransformer<ModifiableContext> {
 
 }

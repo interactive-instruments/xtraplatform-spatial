@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import java.util.Objects;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -22,9 +23,13 @@ public interface FeaturePropertyTransformerRename extends FeaturePropertySchemaT
     }
 
     @Override
-    default FeatureSchema transform(FeatureSchema input) {
-        return new ImmutableFeatureSchema.Builder().from(input)
-                                                     .name(getParameter())
-                                                     .build();
+    default FeatureSchema transform(String currentPropertyPath, FeatureSchema schema) {
+        if (Objects.equals(currentPropertyPath, getPropertyPath())) {
+            return new ImmutableFeatureSchema.Builder().from(schema)
+                .name(getParameter())
+                .build();
+        }
+
+        return schema;
     }
 }

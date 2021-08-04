@@ -9,8 +9,8 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
+import de.ii.xtraplatform.features.domain.SchemaBase;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Optional;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -39,14 +39,14 @@ public interface FeaturePropertyTransformerDateFormat extends FeaturePropertyVal
     }
 
     @Override
-    default List<FeatureProperty.Type> getSupportedPropertyTypes() {
-        return ImmutableList.of(FeatureProperty.Type.DATETIME);
+    default List<SchemaBase.Type> getSupportedPropertyTypes() {
+        return ImmutableList.of(SchemaBase.Type.DATETIME);
     }
 
     Optional<ZoneId> getDefaultTimeZone();
 
     @Override
-    default String transform(String input) {
+    default String transform(String currentPropertyPath, String input) {
         //TODO: variable fractions
         try {
             DateTimeFormatter parser = DateTimeFormatter.ofPattern("yyyy-MM-dd[['T'][' ']HH:mm:ss][.SSS][X]");
@@ -62,7 +62,7 @@ public interface FeaturePropertyTransformerDateFormat extends FeaturePropertyVal
 
             return formatter.format(ta);
         } catch (Exception e) {
-            LOGGER.warn("{} transformation for property '{}' with value '{}' failed: {}", getType(), getPropertyName().orElse(""), input, e.getMessage());
+            LOGGER.warn("{} transformation for property '{}' with value '{}' failed: {}", getType(), getPropertyPath(), input, e.getMessage());
         }
 
         return input;

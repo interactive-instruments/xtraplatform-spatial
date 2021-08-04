@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
-import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
+import de.ii.xtraplatform.features.domain.SchemaBase;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -25,12 +25,12 @@ public interface FeaturePropertyTransformerNullValue extends FeaturePropertyValu
     }
 
     @Override
-    default List<FeatureProperty.Type> getSupportedPropertyTypes() {
-        return ImmutableList.of(FeatureProperty.Type.STRING, FeatureProperty.Type.INTEGER, FeatureProperty.Type.FLOAT);
+    default List<SchemaBase.Type> getSupportedPropertyTypes() {
+        return ImmutableList.of(SchemaBase.Type.STRING, SchemaBase.Type.INTEGER, SchemaBase.Type.FLOAT);
     }
 
     @Override
-    default String transform(String input) {
+    default String transform(String currentPropertyPath, String input) {
         if (input.matches(getParameter()))
             return null;
 
