@@ -75,7 +75,7 @@ public abstract class CoordinatesTransformer extends Writer {
     @Value.Derived
     protected Optional<DoubleArrayProcessor> getTransformationPipeline() {
         DoubleArrayProcessor lastTransformation = ImmutableToChars.of(getCoordinatesWriter(), getPrecision());
-        boolean doTransform = false;
+        boolean doTransform = getPrecision()>0;
 
         //last
         if (isSwapXY()) {
