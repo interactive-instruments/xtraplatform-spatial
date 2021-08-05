@@ -9,7 +9,60 @@ package de.ii.xtraplatform.features.domain
 
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 
+import static de.ii.xtraplatform.features.domain.SchemaBase.Role
+import static de.ii.xtraplatform.features.domain.SchemaBase.Type
+
 class FeatureTokenFixtures {
+
+    public static final FeatureSchema SCHEMA = new ImmutableFeatureSchema.Builder()
+            .name("biotop")
+            .type(Type.OBJECT)
+            .sourcePath("/biotop")
+            .putProperties2("id",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.STRING)
+                            .role(Role.ID)
+                            .sourcePath("id"))
+            .putProperties2("kennung",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.STRING)
+                            .sourcePath("kennung"))
+            .putProperties2("erfasser",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.OBJECT)
+                            .putProperties2("name",
+                                    new ImmutableFeatureSchema.Builder()
+                                            .type(Type.STRING)
+                                            .sourcePath("name")))
+            .putProperties2("erfasser_required",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.OBJECT)
+                            .constraints(new ImmutableSchemaConstraints.Builder()
+                                    .required(true)
+                                    .build())
+                            .putProperties2("name",
+                                    new ImmutableFeatureSchema.Builder()
+                                            .type(Type.STRING)
+                                            .sourcePath("name")))
+            .putProperties2("erfasser_array",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.VALUE_ARRAY)
+                            .valueType(Type.STRING)
+                            .sourcePath("name"))
+            .putProperties2("erfasser_array_required",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.VALUE_ARRAY)
+                            .valueType(Type.STRING)
+                            .constraints(new ImmutableSchemaConstraints.Builder()
+                                    .required(true)
+                                    .build())
+                            .sourcePath("name"))
+            .build()
+
+    public static final SchemaMapping MAPPING = new ImmutableSchemaMapping.Builder()
+            .targetSchema(SCHEMA)
+            .useTargetPaths(true)
+            .build()
 
     public static final List<Object> SINGLE_FEATURE = [
             FeatureTokenType.INPUT,
@@ -18,11 +71,11 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["id"],
             "24",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
@@ -35,11 +88,11 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["biotop", "id"],
             "24",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.VALUE,
             ["biotop", "kennung"],
             "611320001-1",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
@@ -51,7 +104,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["id"],
             "24",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.OBJECT,
             ["geometry"],
             SimpleFeatureGeometry.POINT,
@@ -60,17 +113,17 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["geometry"],
             "8.18523495507722",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "49.698295103021096",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.OBJECT_END,
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
@@ -82,7 +135,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["id"],
             "20",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.OBJECT,
             ["geometry"],
             SimpleFeatureGeometry.MULTI_POINT,
@@ -91,25 +144,25 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["geometry"],
             "6.406233970262905",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "50.1501333536934",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "7.406233970262905",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "51.1501333536934",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.OBJECT_END,
             FeatureTokenType.VALUE,
             ["kennung"],
             "580410003-1",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
@@ -121,7 +174,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["id"],
             "21",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.OBJECT,
             ["geometry"],
             SimpleFeatureGeometry.MULTI_POLYGON,
@@ -134,19 +187,19 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["geometry"],
             "8.18523495507722",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "49.698295103021096",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "8.185283687843047",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "49.69823291309017",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.ARRAY,
@@ -156,38 +209,38 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["geometry"],
             "8.185681115675656",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "49.698286680057166",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "8.185796151881165",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "49.69836248910692",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.ARRAY,
             ["geometry"],
             FeatureTokenType.VALUE,
             ["geometry"],
             "8.186313615874417",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "49.698603368350874",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "8.18641074595947",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "49.69866280390489",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.ARRAY_END,
@@ -195,7 +248,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["kennung"],
             "631510001-1",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
@@ -207,18 +260,56 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["id"],
             "24",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.OBJECT,
             ["erfasser"],
             FeatureTokenType.VALUE,
             ["erfasser", "name"],
             "John Doe",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.OBJECT_END,
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
-            SchemaBase.Type.STRING,
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> SINGLE_FEATURE_NESTED_OBJECT_EMPTY = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.OBJECT,
+            ["erfasser"],
+            FeatureTokenType.OBJECT_END,
+            FeatureTokenType.VALUE,
+            ["kennung"],
+            "611320001-1",
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> SINGLE_FEATURE_NESTED_OBJECT_EMPTY_REQUIRED = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.OBJECT,
+            ["erfasser_required"],
+            FeatureTokenType.OBJECT_END,
+            FeatureTokenType.VALUE,
+            ["kennung"],
+            "611320001-1",
+            Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
@@ -230,22 +321,60 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["id"],
             "24",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.ARRAY,
             ["erfasser_array"],
             FeatureTokenType.VALUE,
             ["erfasser_array"],
             "John Doe",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.VALUE,
             ["erfasser_array"],
             "Jane Doe",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
-            SchemaBase.Type.STRING,
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> SINGLE_FEATURE_VALUE_ARRAY_EMPTY = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["erfasser_array"],
+            FeatureTokenType.ARRAY_END,
+            FeatureTokenType.VALUE,
+            ["kennung"],
+            "611320001-1",
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> SINGLE_FEATURE_VALUE_ARRAY_EMPTY_REQUIRED = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["erfasser_array_required"],
+            FeatureTokenType.ARRAY_END,
+            FeatureTokenType.VALUE,
+            ["kennung"],
+            "611320001-1",
+            Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
@@ -257,7 +386,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["id"],
             "24",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.ARRAY,
             ["raumreferenz"],
             FeatureTokenType.OBJECT,
@@ -269,13 +398,13 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["raumreferenz", "ortsangabe", "kreisschluessel"],
             "11",
-            SchemaBase.Type.INTEGER,
+            Type.INTEGER,
             FeatureTokenType.ARRAY,
             ["raumreferenz", "ortsangabe", "flurstueckskennzeichen"],
             FeatureTokenType.VALUE,
             ["raumreferenz", "ortsangabe", "flurstueckskennzeichen"],
             "34",
-            SchemaBase.Type.INTEGER,
+            Type.INTEGER,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.OBJECT_END,
             FeatureTokenType.OBJECT,
@@ -285,11 +414,11 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["raumreferenz", "ortsangabe", "flurstueckskennzeichen"],
             "35",
-            SchemaBase.Type.INTEGER,
+            Type.INTEGER,
             FeatureTokenType.VALUE,
             ["raumreferenz", "ortsangabe", "flurstueckskennzeichen"],
             "36",
-            SchemaBase.Type.INTEGER,
+            Type.INTEGER,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.OBJECT_END,
             FeatureTokenType.OBJECT,
@@ -297,13 +426,13 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["raumreferenz", "ortsangabe", "kreisschluessel"],
             "12",
-            SchemaBase.Type.INTEGER,
+            Type.INTEGER,
             FeatureTokenType.ARRAY,
             ["raumreferenz", "ortsangabe", "flurstueckskennzeichen"],
             FeatureTokenType.VALUE,
             ["raumreferenz", "ortsangabe", "flurstueckskennzeichen"],
             "37",
-            SchemaBase.Type.INTEGER,
+            Type.INTEGER,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.OBJECT_END,
             FeatureTokenType.ARRAY_END,
@@ -312,7 +441,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
@@ -325,7 +454,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["id"],
             "19",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.OBJECT,
             ["geometry"],
             SimpleFeatureGeometry.POINT,
@@ -334,33 +463,33 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["geometry"],
             "6.295202392345018",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "50.11336914792363",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.OBJECT_END,
             FeatureTokenType.VALUE,
             ["kennung"],
             "580340001-1",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.FEATURE,
             FeatureTokenType.VALUE,
             ["id"],
             "20",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.VALUE,
             ["kennung"],
             "580410003-1",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.FEATURE,
             FeatureTokenType.VALUE,
             ["id"],
             "21",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.OBJECT,
             ["geometry"],
             SimpleFeatureGeometry.MULTI_POINT,
@@ -369,17 +498,17 @@ class FeatureTokenFixtures {
             FeatureTokenType.VALUE,
             ["geometry"],
             "6.406233970262905",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.VALUE,
             ["geometry"],
             "50.1501333536934",
-            SchemaBase.Type.FLOAT,
+            Type.FLOAT,
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.OBJECT_END,
             FeatureTokenType.VALUE,
             ["kennung"],
             "631510001-1",
-            SchemaBase.Type.STRING,
+            Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]

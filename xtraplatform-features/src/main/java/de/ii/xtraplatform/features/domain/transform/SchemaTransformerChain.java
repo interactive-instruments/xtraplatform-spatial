@@ -94,7 +94,7 @@ public class SchemaTransformerChain implements
         .isEmpty()) {
       for (FeaturePropertySchemaTransformer schemaTransformer : schemaTransformations.get(
           keyPath)) {
-        transformed = schemaTransformer.transform(propertyPath, schema);
+        transformed = schemaTransformer.transform(propertyPath, transformed);
         if (Objects.isNull(transformed)) {
           return null;
         }
@@ -106,7 +106,7 @@ public class SchemaTransformerChain implements
       for (FeaturePropertySchemaTransformer schemaTransformer : schemaTransformations.getOrDefault(
           PropertyTransformations.WILDCARD,
           ImmutableList.of())) {
-        transformed = schemaTransformer.transform(propertyPath, schema);
+        transformed = schemaTransformer.transform(propertyPath, transformed);
         if (Objects.isNull(transformed)) {
           return null;
         }

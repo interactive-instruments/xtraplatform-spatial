@@ -173,6 +173,7 @@ class FeatureTokenReaderSpec extends Specification {
             context.path() == ["geometry"]
             context.value() == "6.406233970262905"
             context.valueType() == SchemaBase.Type.FLOAT
+            context.indexes() == [1]
         })
 
         then:
@@ -180,6 +181,7 @@ class FeatureTokenReaderSpec extends Specification {
             context.path() == ["geometry"]
             context.value() == "50.1501333536934"
             context.valueType() == SchemaBase.Type.FLOAT
+            context.indexes() == [2]
         })
 
         then:

@@ -76,7 +76,7 @@ public class ValueTransformerChain implements
         .isEmpty()) {
       for (FeaturePropertyValueTransformer valueTransformer : valueTransformations.get(
           keyPath)) {
-        transformed = valueTransformer.transform(propertyPath, value);
+        transformed = valueTransformer.transform(propertyPath, transformed);
       }
     }
 

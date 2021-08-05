@@ -1,9 +1,8 @@
 /**
  * Copyright 2021 interactive instruments GmbH
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
+ * the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.features.domain;
 
@@ -26,6 +25,8 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
 
     List<String> path();
 
+    String pathAsString();
+
     Optional<SimpleFeatureGeometry> geometryType();
 
     OptionalInt geometryDimension();
@@ -36,7 +37,7 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     @Nullable
     Type valueType();
 
-    Map<String,String> valueBuffer();
+    Map<String, String> valueBuffer();
 
     @Nullable
     FeatureSchema customSchema();
@@ -58,7 +59,7 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
 
     List<Integer> indexes();
 
-    @Value.Derived
+    @Value.Lazy
     default long index() {
       return indexes().isEmpty() ? 0 : indexes().get(0);
     }
@@ -79,14 +80,12 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
       return false;
     }
 
-    @Value.Derived
-    @Value.Auxiliary
+    @Value.Lazy
     default Optional<FeatureSchema> schema() {
       return Optional.ofNullable(customSchema()).or(this::currentSchema);
     }
 
-    @Value.Derived
-    @Value.Auxiliary
+    @Value.Lazy
     default Optional<FeatureSchema> currentSchema() {
       List<String> path = path();
 
@@ -107,8 +106,7 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
       return Optional.ofNullable(targetSchema);
     }
 
-    @Value.Derived
-    @Value.Auxiliary
+    @Value.Lazy
     default List<FeatureSchema> parentSchemas() {
       List<String> path = path();
 
@@ -124,6 +122,11 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
 
       int schemaIndex = schemaIndex() > -1 ? schemaIndex() : parentSchemas.size() - 1;
       return parentSchemas.get(schemaIndex);
+    }
+
+    @Value.Lazy
+    default boolean isRequired() {
+      return schema().filter(FeatureSchema::isRequired).isPresent();
     }
   }
 
@@ -150,10 +153,47 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
       return pathTracker;
     }
 
-    @Value.Derived
+    @Value.Lazy
     @Override
     default List<String> path() {
       return pathTracker().asList();
+    }
+
+    @Value.Lazy
+    @Override
+    default String pathAsString() {
+      return pathTracker().toString();
+    }
+
+    @Value.Lazy
+    default boolean shouldSkip() {
+      return isBuffering()
+          || currentSchema().isEmpty()
+          || !shouldInclude(currentSchema().get(), parentSchemas(), pathAsString());
+    }
+
+    private boolean shouldInclude(FeatureSchema schema,
+        List<FeatureSchema> parentSchemas,
+        String path) {
+      return schema.isId()
+          || (schema.isGeometry() && !query().skipGeometry())
+          //TODO: enable if projected output needs to be schema valid
+          // || isRequired(schema, parentSchemas)
+          || (!schema.isId() && !schema.isGeometry() && propertyIsInFields(path));
+    }
+
+    default boolean propertyIsInFields(String property) {
+      return query().getFields().isEmpty()
+          || query().getFields().contains("*")
+          || query().getFields().stream()
+          .anyMatch(field -> field.startsWith(property));
+    }
+
+    default boolean isRequired(FeatureSchema schema, List<FeatureSchema> parentSchemas) {
+      return schema.isRequired()
+          && (parentSchemas.size() <= 1 || parentSchemas.stream()
+          .limit(parentSchemas.size() - 1)
+          .allMatch(FeatureSchema::isRequired));
     }
 
     ModifiableContext setMetadata(ModifiableCollectionMetadata collectionMetadata);

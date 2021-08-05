@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowMeta;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
@@ -73,7 +72,8 @@ public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow> {
         .setMapping(new ImmutableSchemaMapping.Builder().targetSchema(featureSchema).build())
         .setQuery(featureQuery);
     this.geometryDecoder = new GeometryDecoderWkt(getDownstream(), context);
-    this.nestingTracker = new NestingTracker(getDownstream(), context, mainTablePath, false, false);
+    this.nestingTracker = new NestingTracker(getDownstream(), context, mainTablePath, false, false,
+        false);
   }
 
   @Override

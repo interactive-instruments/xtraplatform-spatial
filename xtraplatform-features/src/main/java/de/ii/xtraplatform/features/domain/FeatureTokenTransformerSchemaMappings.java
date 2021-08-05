@@ -27,17 +27,14 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       .getLogger(FeatureTokenTransformerSchemaMappings.class);
 
   private final PropertyTransformations propertyTransformations;
-  private final boolean isOverview;
-  //private Map<String, List<FeaturePropertySchemaTransformer>> propertySchemaTransformers;
   private ModifiableContext newContext;
   private NestingTracker nestingTracker;
   private TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> schemaTransformerChain;
   private TransformerChain<ModifiableContext, FeaturePropertyContextTransformer> contextTransformerChain;
 
   public FeatureTokenTransformerSchemaMappings(
-      PropertyTransformations propertyTransformations, FeatureQuery query) {
+      PropertyTransformations propertyTransformations) {
     this.propertyTransformations = propertyTransformations;
-    this.isOverview = !query.returnsSingleFeature();
   }
 
   @Override
@@ -51,7 +48,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
     //this.propertySchemaTransformers = propertyTransformations.getSchemaTransformations(isOverview, this::getFlattenedPropertyPath);
     this.schemaTransformerChain = propertyTransformations.getSchemaTransformations(
-        schemaMapping, isOverview, this::getFlattenedPropertyPath);
+        schemaMapping, !context.query().returnsSingleFeature(), this::getFlattenedPropertyPath);
     this.contextTransformerChain = propertyTransformations.getContextTransformations(
         schemaMapping);
 
@@ -76,7 +73,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
                 == INCLUDE.ARRAYS));
 
     this.nestingTracker = new NestingTracker(getDownstream(), newContext, ImmutableList.of(),
-        flattenObjects, flattenArrays);
+        flattenObjects, flattenArrays, true);
 
     if (flattenObjects) {
       newContext.putTransformed(FeaturePropertyTransformerFlatten.TYPE, "TRUE");
@@ -129,7 +126,9 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
         }
       }
 
-      getDownstream().onObjectStart(newContext);
+      if (!newContext.shouldSkip()) {
+        getDownstream().onObjectStart(newContext);
+      }
     }
     if (context.schema()
         .filter(FeatureSchema::isObject)
@@ -149,13 +148,15 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       newContext.setInGeometry(false);
       newContext.setGeometryType(Optional.empty());
       newContext.setGeometryDimension(OptionalInt.empty());
-      getDownstream().onObjectEnd(newContext);
+      if (!newContext.shouldSkip()) {
+        getDownstream().onObjectEnd(newContext);
+      }
     }
   }
 
   @Override
   public void onArrayStart(ModifiableContext context) {
-    if (context.inGeometry()) {
+    if (context.inGeometry() && !newContext.shouldSkip()) {
       getDownstream().onArrayStart(newContext);
     }
     if (context.schema()
@@ -169,7 +170,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
   @Override
   public void onArrayEnd(ModifiableContext context) {
-    if (context.inGeometry()) {
+    if (context.inGeometry() && !newContext.shouldSkip()) {
       getDownstream().onArrayEnd(newContext);
     }
   }
@@ -179,44 +180,47 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     if (context.schema().isEmpty()) {
       return;
     }
-
-    if (!context.inGeometry()) {
-      handleNesting(context.schema().get(), context.parentSchemas(), context.indexes());
-      newContext.pathTracker().track(context.schema().get().getFullPath());
+    if (context.inGeometry()) {
+      newContext.setValue(context.value());
+      newContext.setValueType(context.valueType());
+      pushValue();
+      return;
     }
 
+    handleNesting(context.schema().get(), context.parentSchemas(), context.indexes());
+    newContext.pathTracker().track(context.schema().get().getFullPath());
     newContext.setValue(context.value());
     newContext.setValueType(context.valueType());
 
     contextTransformerChain.transform(
         newContext.pathTracker().toString(), newContext);
 
-    FeatureSchema transform1 = schemaTransformerChain.transform(
+    FeatureSchema transformed = schemaTransformerChain.transform(
         newContext.pathTracker().toString(), context.schema().get());
 
-    if (Objects.isNull(transform1)) {
-      //newContext.setDoNotPush(false);
-      newContext.setCustomSchema(null);
+    if (Objects.isNull(transformed)) {
+      clearValueContext();
       return;
     }
 
-    newContext.setCustomSchema(transform1);
+    newContext.setCustomSchema(transformed);
+    pushValue();
+  }
 
+  private void pushValue() {
     try {
-      if (!shouldSkipProperty()) {
+      if (!newContext.shouldSkip()) {
         getDownstream().onValue(newContext);
-      } else {
-        boolean br = true;
       }
-    } catch (Throwable e) {
-      throw e;
     } finally {
-      newContext.setCustomSchema(null);
-      //newContext.setDoNotPush(false);
-      newContext.setValue(null);
-      newContext.setValueType(null);
+      clearValueContext();
     }
+  }
 
+  private void clearValueContext() {
+    newContext.setCustomSchema(null);
+    newContext.setValue(null);
+    newContext.setValueType(null);
   }
 
   private void handleNesting(FeatureSchema schema, List<FeatureSchema> parentSchemas,
@@ -298,7 +302,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       contextTransformerChain.transform(path, newContext);
 
       try {
-        if (!shouldSkipProperty()) {
+        if (!newContext.shouldSkip()) {
           getDownstream().onValue(newContext);
         }
       } catch (Throwable e) {
@@ -322,7 +326,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   }
 
   private void openParents(List<FeatureSchema> parentSchemas, List<Integer> indexes) {
-    if (parentSchemas.isEmpty()) {
+    if (parentSchemas.size() < 2) {
       return;
     }
 
@@ -344,15 +348,5 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     return nestingTracker.getFlattenedPropertyPath(separator, name);
   }
 
-  private boolean shouldSkipProperty() {
-    return newContext.isBuffering()
-      || !propertyIsInFields(newContext.pathTracker().toString());
-  }
 
-  protected boolean propertyIsInFields(String property) {
-    return newContext.query().getFields().isEmpty()
-        || newContext.query().getFields().contains("*")
-        || newContext.query().getFields().stream()
-        .anyMatch(field -> Objects.equals(field, property));
-  }
 }

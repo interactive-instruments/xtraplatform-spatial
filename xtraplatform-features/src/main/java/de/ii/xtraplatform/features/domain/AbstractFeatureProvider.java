@@ -21,7 +21,6 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.FeatureStream.Result.Builder;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
-import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
@@ -35,8 +34,6 @@ import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReducedTransformed;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
-import de.ii.xtraplatform.streams.domain.Reactive.Stream;
-import de.ii.xtraplatform.streams.domain.Reactive.StreamWithResult;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -394,7 +391,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                 PropertyTransformations mergedTransformations = propertyTransformations
                     .map(p -> p.mergeInto(providerTransformations)).orElse(providerTransformations);
 
-                FeatureTokenTransformerSchemaMappings mapper = new FeatureTokenTransformerSchemaMappings(mergedTransformations, query);
+                FeatureTokenTransformerSchemaMappings mapper = new FeatureTokenTransformerSchemaMappings(mergedTransformations);
 
                 Optional<CrsTransformer> crsTransformer = query.getCrs().flatMap(
                     targetCrs -> crsTransformerFactory
@@ -403,7 +400,9 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                     mergedTransformations, getCodelists(), getData().getNativeTimeZone(),
                     crsTransformer);
 
-                return featureTokenSource.via(mapper).via(valueMapper);
+                FeatureTokenTransformerRemoveEmptyOptionals cleaner = new FeatureTokenTransformerRemoveEmptyOptionals();
+
+                return featureTokenSource.via(mapper).via(valueMapper).via(cleaner);
             }
         };
     }

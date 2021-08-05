@@ -10,11 +10,11 @@ package de.ii.xtraplatform.features.domain;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-//TODO: is there any real use case for this?
 public class FeatureTokenReader<T extends ModifiableContext> {
 
   private final FeatureEventHandler<T> eventHandler;
@@ -22,6 +22,7 @@ public class FeatureTokenReader<T extends ModifiableContext> {
   private FeatureTokenType currentType;
   private int contextIndex;
   private T context;
+  private List<String> nestingStack;
 
   //TODO
   public FeatureTokenReader(FeatureEventConsumer eventConsumer) {
@@ -31,6 +32,7 @@ public class FeatureTokenReader<T extends ModifiableContext> {
   public FeatureTokenReader(FeatureEventHandler<T> eventHandler, T context) {
     this.eventHandler = eventHandler;
     this.context = context;
+    this.nestingStack = new ArrayList<>();
   }
 
   public void onToken(Object token) {
@@ -56,6 +58,31 @@ public class FeatureTokenReader<T extends ModifiableContext> {
     context.setGeometryType(Optional.empty());
     context.setValueType(Type.UNKNOWN);
     context.setValue(null);
+
+    switch (currentType) {
+      case OBJECT:
+        if (inArray()) {
+          this.context.indexes().set(this.context.indexes().size() - 1, this.context.indexes().get(this.context.indexes().size() - 1) + 1);
+        }
+        push("O");
+        break;
+      case ARRAY:
+        this.context.indexes().add(0);
+        push("A");
+        break;
+      case VALUE:
+        if (inArray()) {
+          this.context.indexes().set(this.context.indexes().size() - 1, this.context.indexes().get(this.context.indexes().size() - 1) + 1);
+        }
+        break;
+      case ARRAY_END:
+        this.context.indexes().remove(this.context.indexes().size() - 1);
+        pop();
+        break;
+      case OBJECT_END:
+        pop();
+        break;
+    }
   }
 
   private void readContext(Object context) {
@@ -138,4 +165,15 @@ public class FeatureTokenReader<T extends ModifiableContext> {
     }
   }
 
+  private boolean inArray() {
+    return !nestingStack.isEmpty() && nestingStack.get(nestingStack.size() -1).equals("A");
+  }
+
+  private void push(String type) {
+    nestingStack.add(type);
+  }
+
+  private void pop() {
+    nestingStack.remove(nestingStack.size() - 1);
+  }
 }

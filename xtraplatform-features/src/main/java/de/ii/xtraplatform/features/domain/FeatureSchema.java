@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
@@ -50,6 +51,11 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     @JsonAlias("path")
     @Override
     Optional<String> getSourcePath();
+
+    @Value.Default
+    default List<String> getSourcePaths() {
+        return getSourcePath().map(ImmutableList::of).orElse(ImmutableList.of());
+    }
 
     @Value.Default
     @Override
@@ -231,6 +237,14 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
         return false;
     }
 
+    //TODO
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isRequired() {
+        return getConstraints().filter(SchemaConstraints::isRequired).isPresent();
+    }
+
     @Value.Check
     default FeatureSchema normalizeConstants() {
         if (!getPropertyMap().isEmpty() && getPropertyMap().values()
@@ -258,6 +272,24 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
             return new ImmutableFeatureSchema.Builder().from(this)
                                                        .propertyMap(properties)
                                                        .build();
+        }
+
+        return this;
+    }
+
+    @Value.Check
+    default FeatureSchema backwardsCompatibility() {
+        // migrate double column syntax to multiple sourcePaths
+        if (getSourcePath().filter(path -> path.lastIndexOf(':') > path.lastIndexOf('/')).isPresent()) {
+            String path1 = getSourcePath().get().substring(0, getSourcePath().get().lastIndexOf(':'));
+            String path2 = path1.substring(0, path1.lastIndexOf('/') + 1) + getSourcePath().get().substring(getSourcePath().get().lastIndexOf(':') + 1);
+
+            return new ImmutableFeatureSchema.Builder().from(this)
+                //TODO
+                .sourcePath(path1)
+                .addSourcePaths(path1)
+                .addSourcePaths(path2)
+                .build();
         }
 
         return this;

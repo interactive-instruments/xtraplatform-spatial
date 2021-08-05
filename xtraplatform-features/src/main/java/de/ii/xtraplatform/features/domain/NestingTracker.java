@@ -31,44 +31,48 @@ public class NestingTracker {
   private final List<String> nestingStack;
   private final List<List<String>> pathStack;
   private final List<String> flattened;
+  private final boolean skippable;
 
   public NestingTracker(FeatureEventHandler<ModifiableContext> downstream,
       ModifiableContext context, List<String> mainPath,
-      boolean flattenObjects, boolean flattenArrays) {
+      boolean flattenObjects, boolean flattenArrays, boolean skippable) {
     this.downstream = downstream;
     this.context = context;
     this.mainPath = mainPath;
     this.flattenObjects = flattenObjects;
     this.flattenArrays = flattenArrays;
+    this.skippable = skippable;
     this.nestingStack = new ArrayList<>();
     this.pathStack = new ArrayList<>();
     this.flattened = new ArrayList<>();
   }
 
   public void openArray() {
-    if (!flattenArrays) {
-      downstream.onArrayStart(context);
-    } else {
+    if (flattenArrays) {
       flattened.add(context.schema().get().getName());
+    } else {
+      if (!skippable || !context.shouldSkip()) {
+          downstream.onArrayStart(context);
+      }
     }
+
+    push("A", context.pathTracker().asList());
     context.setInArray(true);
-    nestingStack.add("A");
-    pathStack.add(context.pathTracker().asList());
   }
 
   public void openObject() {
     if (flattenArrays && inArray()) {
       flattened.add(String.valueOf(context.index()));
-    } else if (!flattenObjects || (!flattenArrays && inArray())) {
-      if (!context.isBuffering()) {
-        downstream.onObjectStart(context);
-      }
-    } else{
+    } else if (flattenObjects && (flattenArrays || !inArray())) {
       flattened.add(context.schema().get().getName());
+    } else {
+      if (!skippable || !context.shouldSkip()) {
+          downstream.onObjectStart(context);
+      }
     }
+
+    push("O", context.pathTracker().asList());
     context.setInObject(true);
-    nestingStack.add("O");
-    pathStack.add(context.pathTracker().asList());
   }
 
   public void closeObject() {
@@ -78,18 +82,21 @@ public class NestingTracker {
       }
       return;
     }
+
     context.pathTracker().track(getCurrentNestingPath());
+
     if (flattenArrays && isObjectInArray()) {
       flattened.remove(flattened.size()-1);
-    } else if (!flattenObjects || (!flattenArrays && isObjectInArray())) {
-      if (!context.isBuffering()) {
+    } else if (flattenObjects && (flattenArrays || !isObjectInArray())) {
+      flattened.remove(flattened.size()-1);
+    } else {
+      if (!skippable || !context.shouldSkip()) {
         downstream.onObjectEnd(context);
       }
-    } else {
-      flattened.remove(flattened.size()-1);
     }
-    nestingStack.remove(nestingStack.size() - 1);
-    pathStack.remove(pathStack.size() - 1);
+
+    pop();
+
     if (!nestingStack.contains("O")) {
       context.setInObject(false);
     }
@@ -108,13 +115,16 @@ public class NestingTracker {
       return;
     }
     context.pathTracker().track(getCurrentNestingPath());
-    if (!flattenArrays) {
-      downstream.onArrayEnd(context);
-    } else {
+    if (flattenArrays) {
       flattened.remove(flattened.size()-1);
+    } else {
+      if (!skippable || !context.shouldSkip()) {
+        downstream.onArrayEnd(context);
+      }
     }
-    nestingStack.remove(nestingStack.size() - 1);
-    pathStack.remove(pathStack.size() - 1);
+
+    pop();
+
     if (!nestingStack.contains("A")) {
       context.setInArray(false);
     }
@@ -136,6 +146,17 @@ public class NestingTracker {
       closeArray();
     }
   }
+
+  private void push(String type, List<String> path) {
+    nestingStack.add(type);
+    pathStack.add(path);
+  }
+
+  private void pop() {
+    nestingStack.remove(nestingStack.size() - 1);
+    pathStack.remove(pathStack.size() - 1);
+  }
+
 
   public List<String> getCurrentNestingPath() {
     if (pathStack.isEmpty()) {
