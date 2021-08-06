@@ -18,7 +18,11 @@ import de.ii.xtraplatform.geometries.domain.ImmutableCoordinatesTransformer;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.io.IOException;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -114,11 +118,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
       String value = context.value();
 
       if (!context.valueBuffer().isEmpty()) {
-        context.valueBuffer().forEach((key, val) -> {
-          if (key.startsWith(path + ".")) {
-            context.putValueBuffer(key, valueTransformerChain.transform(key, val));
-          }
-        });
+        transformValueBuffer(context, path);
       }
       value = valueTransformerChain.transform(path, value);
 
@@ -130,4 +130,21 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
       }
     }
   }
+
+  private void transformValueBuffer(ModifiableContext context, String path) {
+    for(Iterator<Entry<String, String>> it = context.valueBuffer().entrySet().iterator(); it.hasNext(); ) {
+      Map.Entry<String, String> entry = it.next();
+      String key = entry.getKey();
+
+      if (key.startsWith(path + ".")) {
+        String transformed = valueTransformerChain.transform(key, entry.getValue());
+        if (Objects.nonNull(transformed)) {
+          context.putValueBuffer(key, transformed);
+        } else {
+          it.remove();
+        }
+      }
+    }
+  }
+
 }
