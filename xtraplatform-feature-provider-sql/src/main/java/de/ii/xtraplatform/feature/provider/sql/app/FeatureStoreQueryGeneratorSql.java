@@ -352,9 +352,9 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
       joins.add(toJoin(relation.getJunction()
           .get(), junctionAlias, relation.getJunctionSource()
-          .get(), sourceAlias, relation.getSourceField(), sqlFilter, sourceFilter));
+          .get(), relation.getSourceContainer(), sourceAlias, relation.getSourceField(), sqlFilter, sourceFilter));
       joins.add(toJoin(relation.getTargetContainer(), targetAlias, relation.getTargetField(),
-          junctionAlias, relation.getJunctionTarget()
+          relation.getJunctionSource().get(), junctionAlias, relation.getJunctionTarget()
               .get(), sqlFilter, Optional.empty()));
 
     } else {
@@ -363,7 +363,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
       aliases.previous();
 
       joins.add(
-          toJoin(relation.getTargetContainer(), targetAlias, relation.getTargetField(), sourceAlias,
+          toJoin(relation.getTargetContainer(), targetAlias, relation.getTargetField(), relation.getSourceContainer(), sourceAlias,
               relation.getSourceField(), sqlFilter, sourceFilter));
     }
 
@@ -371,19 +371,20 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
   }
 
   private String toJoin(String targetContainer, String targetAlias, String targetField,
-      String sourceContainer,
-      String sourceField, Optional<String> sqlFilter,
-      Optional<String> sourceFilter) {
+      String sourceContainer, String sourceAlias, String sourceField,
+      Optional<String> sqlFilter, Optional<String> sourceFilter) {
     String additionalFilter = sqlFilter.map(s -> " AND " + s)
         .orElse("");
     String targetTable = targetContainer;
 
     if (additionalFilter.contains("row_number")) {
-      targetTable = String.format("(SELECT *, row_number() OVER (ORDER BY %s) AS row_number FROM %s)", targetField, targetContainer);
+      String sourceFilterPart = sourceFilter.isPresent() ? String.format(" WHERE %s ORDER BY 1", sourceFilter.get()) : "";
+      targetTable = String.format("(SELECT A.%1$s, B.*, row_number() OVER (PARTITION BY B.%2$s ORDER BY B.%2$s) AS row_number FROM %3$s A JOIN %4$s B ON (A.%1$s=B.%2$s)%5$s)",
+              sourceField, targetField, sourceContainer, targetContainer, sourceFilterPart);
     }
 
     return String.format("JOIN %1$s %2$s ON (%4$s.%5$s=%2$s.%3$s%6$s)", targetTable, targetAlias,
-        targetField, sourceContainer, sourceField, additionalFilter);
+        targetField, sourceAlias, sourceField, additionalFilter);
   }
 
   private Optional<String> getFilter(FeatureStoreInstanceContainer instanceContainer,
