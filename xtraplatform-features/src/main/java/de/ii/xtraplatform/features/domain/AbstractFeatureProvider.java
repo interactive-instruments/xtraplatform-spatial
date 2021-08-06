@@ -12,7 +12,6 @@ import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransf
 import static de.ii.xtraplatform.features.domain.transform.PropertyTransformations.WILDCARD;
 
 import akka.NotUsed;
-import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
@@ -42,7 +41,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,8 +186,6 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return Objects.requireNonNull(connector);
     }
 
-    protected abstract FeatureNormalizer<T> getNormalizer();
-
     protected Map<String, FeatureStoreTypeInfo> getTypeInfos() {
         return typeInfos;
     }
@@ -215,9 +211,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return featureTypes.entrySet()
                            .stream()
                            .map(entry -> {
-                               FeatureType featureType = entry.getValue()
-                                                         .accept(new FeatureSchemaToTypeVisitor(entry.getKey()));
-                               List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(featureType);
+                               List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(entry.getValue());
                                FeatureStoreTypeInfo typeInfo = ImmutableFeatureStoreTypeInfo.builder()
                                                                                             .name(entry.getKey())
                                                                                             .instanceContainers(instanceContainers)
@@ -226,35 +220,6 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                                return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), typeInfo);
                            })
                            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    @Override
-    public FeatureStream2 getFeatureStream2(FeatureQuery query) {
-        return new FeatureStream2() {
-
-            @Override
-            public CompletionStage<ResultOld> runWith(FeatureTransformer2 transformer) {
-                Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(query.getType()));
-
-                if (!typeInfo.isPresent()) {
-                    //TODO: put error message into Result, complete successfully
-                    CompletableFuture<ResultOld> promise = new CompletableFuture<>();
-                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
-                    return promise;
-                }
-
-                U transformedQuery = getQueryTransformer().transformQuery(query, ImmutableMap.of());
-
-                V options = getQueryTransformer().getOptions(query);
-
-                Source<T, NotUsed> sourceStream = getConnector().getSourceStream(transformedQuery, options);
-
-                Sink<T, CompletionStage<ResultOld>> sink = getNormalizer().normalizeAndTransform(transformer, query);
-
-                return getStreamRunner().run(sourceStream, sink);
-            }
-
-        };
     }
 
     @Override

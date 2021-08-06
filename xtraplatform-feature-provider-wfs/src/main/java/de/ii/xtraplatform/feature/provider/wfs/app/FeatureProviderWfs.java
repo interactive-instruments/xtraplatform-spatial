@@ -28,7 +28,6 @@ import de.ii.xtraplatform.features.domain.FeatureConsumer;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
 import de.ii.xtraplatform.features.domain.FeatureMetadata;
-import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
@@ -102,6 +101,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
             return false;
         }
 
+        //TODO: remove FeatureSchemaToTypeVisitor
         Map<String, FeatureType> types = getData().getTypes()
             .entrySet()
             .stream()
@@ -140,11 +140,6 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     @Override
     protected FeatureQueryTransformer<String, FeatureProviderConnector.QueryOptions> getQueryTransformer() {
         return queryTransformer;
-    }
-
-    @Override
-    protected FeatureNormalizer<ByteString> getNormalizer() {
-        return featureNormalizer;
     }
 
     @Override

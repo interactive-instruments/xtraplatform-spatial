@@ -261,8 +261,14 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
                                                                                              String constantValue = entry.getValue().getType() == Type.STRING ? String.format("'%s'", entry.getValue()
                                                                                                                                                                                            .getConstantValue()
                                                                                                                                                                                            .get()) : entry.getValue().getConstantValue().get();
+                                                                                             String constantSourcePath = String.format(
+                                                                                                 "constant_%s_%d{constant=%s}",
+                                                                                                 getName(),
+                                                                                                 constantCounter[0]++,
+                                                                                                 constantValue);
                                                                                              return new AbstractMap.SimpleEntry<>(entry.getKey(), new ImmutableFeatureSchema.Builder().from(entry.getValue())
-                                                                                                                                                                                      .sourcePath(String.format("constant_%s_%d{constant=%s}", getName(), constantCounter[0]++, constantValue))
+                                                                                                                                                                                      .sourcePath(constantSourcePath)
+                                                                                                                                                                                        .addSourcePaths(constantSourcePath)
                                                                                                                                                                                       .build());
                                                                                          }
                                                                                          return entry;

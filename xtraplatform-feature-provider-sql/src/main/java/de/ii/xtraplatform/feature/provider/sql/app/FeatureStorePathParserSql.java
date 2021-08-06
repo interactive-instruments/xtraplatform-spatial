@@ -16,19 +16,16 @@ import de.ii.xtraplatform.feature.provider.sql.SqlFeatureTypeParser;
 import de.ii.xtraplatform.feature.provider.sql.SqlPath;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax;
 import de.ii.xtraplatform.feature.provider.sql.SqlPathSyntax.MatcherGroups;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation.CARDINALITY;
-import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelatedContainer;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,6 +38,8 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
@@ -57,9 +56,9 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
     }
 
     @Override
-    public List<FeatureStoreInstanceContainer> parse(FeatureType featureType) {
+    public List<FeatureStoreInstanceContainer> parse(FeatureSchema schema) {
 
-        List<String> paths = mappingParser.parse(featureType);
+        List<String> paths = mappingParser.parse(schema);
 
         List<SqlPath> sortedPaths = paths.stream()
                                          .sorted(this::sortByPriority)

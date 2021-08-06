@@ -7,13 +7,23 @@
  */
 package de.ii.xtraplatform.feature.provider.sql;
 
-import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.features.domain.FeatureProperty;
-import de.ii.xtraplatform.features.domain.FeatureType;
-
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.SchemaToSourcePathsVisitor;
+import java.util.AbstractMap;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SqlFeatureTypeParser {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(SqlFeatureTypeParser.class);
 
     private final SqlPathSyntax syntax;
 
@@ -22,20 +32,49 @@ public class SqlFeatureTypeParser {
     }
 
 
-    public List<String> parse(FeatureType featureType) {
-        return featureType.getProperties()
-                          .values()
-                                  .stream()
-                                  .map(this::toPathWithFlags)
-                                  .collect(ImmutableList.toImmutableList());
+    public List<String> parse(FeatureSchema schema) {
+
+      Map<List<String>, List<FeatureSchema>> accept = schema.accept(
+          new SchemaToSourcePathsVisitor<>()).asMap()
+          .entrySet()
+          .stream()
+          .sorted(Comparator.comparing(entry -> syntax.getPriorityFlag(entry.getKey().get(entry.getKey().size()-1)).orElse(10000)))
+          .map(entry -> new AbstractMap.SimpleImmutableEntry<>(
+              entry.getKey(), Lists.newArrayList(entry.getValue())))
+          .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+      Map<List<String>, Integer> pathCounter = new HashMap<>();
+
+      List<String> collect1 = accept.entrySet().stream()
+          .flatMap(entry -> entry.getValue().stream()
+              .filter(FeatureSchema::isValue)
+              .map(property -> toPathWithFlags2(entry.getKey(), property, pathCounter)))
+          .collect(Collectors.toList());
+
+      return collect1;
     }
 
-    private String toPathWithFlags(FeatureProperty property) {
-        String path = property.getPath();
+    private String toPathWithFlags2(List<String> path, FeatureSchema property,
+        Map<List<String>, Integer> pathCounter) {
+                pathCounter.computeIfPresent(property.getFullPath(), (p, i) -> i + 1);
+                pathCounter.putIfAbsent(property.getFullPath(), 0);
+                int index = pathCounter.get(property.getFullPath());
 
-        path = syntax.setQueryableFlag(path, property.getName());
+                if (property.getSourcePaths().size() <= index) {
+                  LOGGER.warn("No source path found: {} {}", property.getFullPath(), index);
+                  return "";
+                }
+      String current = property.getSourcePaths().get(index);
+                current = current.indexOf('{') > -1
+                    ? current.substring(0, current.indexOf('{'))
+                    : current;
+      String[] split = current.split("/");
+      String sourcePath = "/" + String.join("/", path.subList(0, path.size()-split.length))
+                    + "/" + current;
 
-        boolean isOid = property.isId();
+                sourcePath = syntax.setQueryableFlag(sourcePath, property.getName());
+
+                boolean isOid = property.isId();
 
         /*Optional<Integer> sortPriority = generalMapping.map(TargetMapping::getSortPriority);
         boolean isOid = generalMapping.flatMap(targetMapping -> Optional.ofNullable(targetMapping.getType()))
@@ -43,27 +82,27 @@ public class SqlFeatureTypeParser {
                                                                  .equals("ID"))
                                       .orElse(false);
         Optional<String> queryableName = generalMapping.flatMap(targetMapping -> Optional.ofNullable(targetMapping.getName()));*/
-        boolean isSpatial = property.getType() == FeatureProperty.Type.GEOMETRY;
+                boolean isSpatial = property.isSpatial();
 
-        if (isOid) {
-            path = syntax.setOidFlag(path);
-        }
+                if (isOid) {
+                    sourcePath = syntax.setOidFlag(sourcePath);
+                }
         /*if (sortPriority.isPresent()) {
             path = syntax.setPriorityFlag(path, sortPriority.get());
         }
         if (queryableName.isPresent()) {
             path = syntax.setQueryableFlag(path, queryableName.get());
         }*/
-        if (isSpatial) {
-            path = syntax.setSpatialFlag(path);
-        }
+                if (isSpatial) {
+                    sourcePath = syntax.setSpatialFlag(sourcePath);
+                }
 
-        boolean isTemporal = property.getType() == FeatureProperty.Type.DATETIME;
+                boolean isTemporal = property.isTemporal();
 
-        if (isTemporal) {
-            path = syntax.setTemporalFlag(path);
-        }
+                if (isTemporal) {
+                    sourcePath = syntax.setTemporalFlag(sourcePath);
+                }
 
-        return path;
+                return sourcePath;
     }
 }

@@ -42,14 +42,12 @@ import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
-import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
@@ -57,7 +55,6 @@ import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.FeatureTokenSource;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
-import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.SchemaMappingBase;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
@@ -69,7 +66,6 @@ import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
-import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -98,9 +94,7 @@ public class FeatureProviderSql extends
   private final Cql cql;
   private final EntityRegistry entityRegistry;
 
-  private FeatureStoreQueryGeneratorSql queryGeneratorSql;
   private FeatureQueryTransformerSql queryTransformer;
-  private FeatureNormalizerSql featureNormalizer;
   private ExtentReader extentReader;
   private FeatureMutationsSql featureMutationsSql;
   private FeatureSchemaSwapperSql schemaSwapperSql;
@@ -168,19 +162,12 @@ public class FeatureProviderSql extends
 
     //TODO: from config
     SqlDialect sqlDialect = getData().getConnectionInfo().getDialect() == Dialect.PGIS ? new SqlDialectPostGis() : new SqlDialectGpkg();
-    this.queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect, getData().getNativeCrs()
-        .orElse(OgcCrs.CRS84), crsTransformerFactory);
+    FeatureStoreQueryGeneratorSql queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect,
+        getData().getNativeCrs()
+            .orElse(OgcCrs.CRS84), crsTransformerFactory);
     this.queryTransformer = new FeatureQueryTransformerSql(getTypeInfos(), queryGeneratorSql,
         getData().getQueryGeneration().getComputeNumberMatched());
 
-    Map<String, FeatureType> types = getData().getTypes()
-        .entrySet()
-        .stream()
-        .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue()
-            .accept(new FeatureSchemaToTypeVisitor(entry.getKey()))))
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-
-    this.featureNormalizer = new FeatureNormalizerSql(getTypeInfos(), types);
     this.extentReader = new ExtentReaderSql(this::getSqlClient, queryGeneratorSql, sqlDialect,
         getData().getNativeCrs()
             .orElse(OgcCrs.CRS84));
@@ -358,11 +345,6 @@ public class FeatureProviderSql extends
 
   private SqlClient getSqlClient() {
     return getConnector().getSqlClient();
-  }
-
-  @Override
-  protected FeatureNormalizer<SqlRow> getNormalizer() {
-    return featureNormalizer;
   }
 
   @Override

@@ -59,6 +59,11 @@ public interface SchemaBase<T extends SchemaBase<T>> {
 
     Optional<String> getSourcePath();
 
+    @Value.Default
+    default List<String> getSourcePaths() {
+        return getSourcePath().map(ImmutableList::of).orElse(ImmutableList.of());
+    }
+
     List<T> getProperties();
 
     @JsonIgnore

@@ -187,8 +187,22 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       return;
     }
 
-    handleNesting(context.schema().get(), context.parentSchemas(), context.indexes());
-    newContext.pathTracker().track(context.schema().get().getFullPath());
+    FeatureSchema schema = context.schema().get();
+
+    //TODO: when to clear valueBuffer
+    if (schema.getSourcePaths().size() > 1 && !schema.isArray()) {
+      String column = context.path().get(context.path().size() - 1);
+      if (Objects.nonNull(context.value())) {
+        newContext.putValueBuffer(context.pathAsString(), context.value());
+        newContext.putValueBuffer(column, context.value());
+      }
+      if (!Objects.equals(schema.getSourcePaths().get(schema.getSourcePaths().size() - 1), column)) {
+        return;
+      }
+    }
+
+    handleNesting(schema, context.parentSchemas(), context.indexes());
+    newContext.pathTracker().track(schema.getFullPath());
     newContext.setValue(context.value());
     newContext.setValueType(context.valueType());
 
@@ -196,7 +210,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
         newContext.pathTracker().toString(), newContext);
 
     FeatureSchema transformed = schemaTransformerChain.transform(
-        newContext.pathTracker().toString(), context.schema().get());
+        newContext.pathTracker().toString(), schema);
 
     if (Objects.isNull(transformed)) {
       clearValueContext();

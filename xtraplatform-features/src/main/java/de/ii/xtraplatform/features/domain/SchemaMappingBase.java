@@ -27,7 +27,8 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
 
   T getTargetSchema();
 
-  @Value.Derived
+  Map<List<String>, List<T>> getTargetSchemasByPath();
+  /*@Value.Derived
   @Value.Auxiliary
   default Map<List<String>, List<T>> getTargetSchemasByPath() {
     return getTargetSchema().accept(new SchemaToMappingVisitor<>())
@@ -37,7 +38,7 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
         .map(entry -> new AbstractMap.SimpleImmutableEntry<>(
             entry.getKey(), Lists.newArrayList(entry.getValue())))
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-  }
+  }*/
 
   @Value.Derived
   @Value.Auxiliary

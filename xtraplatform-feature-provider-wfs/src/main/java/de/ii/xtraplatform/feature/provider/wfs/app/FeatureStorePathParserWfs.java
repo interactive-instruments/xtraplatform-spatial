@@ -8,11 +8,10 @@
 package de.ii.xtraplatform.feature.provider.wfs.app;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
-import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreInstanceContainer;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,17 +24,17 @@ public class FeatureStorePathParserWfs implements FeatureStorePathParser {
     }
 
     @Override
-    public List<FeatureStoreInstanceContainer> parse(FeatureType featureType) {
+    public List<FeatureStoreInstanceContainer> parse(FeatureSchema schema) {
 
         LinkedHashMap<String, ImmutableFeatureStoreInstanceContainer.Builder> instanceContainerBuilders = new LinkedHashMap<>();
 
-        String instanceContainerName = featureType.getName();
+        String instanceContainerName = schema.getName();
 
-        List<String> path = featureType.getProperties()
-                                       .values()
+        List<String> path = schema.getProperties()
                                        .stream()
+                                        .filter(property -> property.getSourcePath().isPresent())
                                        .findFirst()
-                                       .map(featureProperty -> featureProperty.getPath().substring(1, featureProperty.getPath().indexOf("/", 1)))
+                                       .map(property -> property.getSourcePath().get().substring(1, property.getSourcePath().get().indexOf("/", 1)))
                                        .map(ImmutableList::of)
                                        .orElse(ImmutableList.of());
 
