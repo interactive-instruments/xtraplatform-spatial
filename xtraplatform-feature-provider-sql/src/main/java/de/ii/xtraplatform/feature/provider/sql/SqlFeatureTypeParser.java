@@ -65,10 +65,10 @@ public class SqlFeatureTypeParser {
                   return "";
                 }
       String current = property.getSourcePaths().get(index);
-                current = current.indexOf('{') > -1
+                String current2 = current.indexOf('{') > -1
                     ? current.substring(0, current.indexOf('{'))
                     : current;
-      String[] split = current.split("/");
+      String[] split = current2.split("/");
       String sourcePath = "/" + String.join("/", path.subList(0, path.size()-split.length))
                     + "/" + current;
 
