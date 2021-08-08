@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
@@ -28,6 +29,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
@@ -35,6 +38,8 @@ import java.util.stream.Collectors;
 @JsonDeserialize(builder = ImmutableFeatureSchema.Builder.class)
 @JsonPropertyOrder({"sourcePath", "type", "role", "valueType", "geometryType", "objectType", "label", "description", "transformations", "constraints", "properties"})
 public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<FeatureSchema> {
+
+    Logger LOGGER = LoggerFactory.getLogger(FeatureSchema.class);
 
     @JsonIgnore
     @Override
@@ -80,7 +85,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
 
     Optional<String> getConstantValue();
 
-    Optional<PropertyTransformation> getTransformations();
+    List<PropertyTransformation> getTransformations();
 
     Optional<SchemaConstraints> getConstraints();
 
@@ -283,18 +288,21 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
         return this;
     }
 
+
     @Value.Check
     default FeatureSchema backwardsCompatibility() {
         // migrate double column syntax to multiple sourcePaths
         if (getSourcePath().filter(path -> path.lastIndexOf(':') > path.lastIndexOf('/')).isPresent()) {
+            @Deprecated(since = "3.1.0")
             String path1 = getSourcePath().get().substring(0, getSourcePath().get().lastIndexOf(':'));
             String path2 = path1.substring(0, path1.lastIndexOf('/') + 1) + getSourcePath().get().substring(getSourcePath().get().lastIndexOf(':') + 1);
 
+            LOGGER.info("The sourcePath '{}' in property '{}' uses a deprecated style that includes a colon to merge two columns. Please use multiple sourcePaths instead, one for each column.", getSourcePath().get(), getName());
+
             return new ImmutableFeatureSchema.Builder().from(this)
-                //TODO
-                .sourcePath(path1)
-                .addSourcePaths(path1)
-                .addSourcePaths(path2)
+                .sourcePath(Optional.empty())
+                .sourcePaths(ImmutableList.of(path1, path2))
+                .addTransformations(new ImmutablePropertyTransformation.Builder().stringFormat(String.format("{{%s}} ||| {{%s}}", path1, path2)).build())
                 .build();
         }
 

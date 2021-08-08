@@ -191,6 +191,8 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     FeatureSchema schema = context.schema().get();
 
     //TODO: when to clear valueBuffer
+    //TODO: what about parent arrays
+    //TODO: special value buffer for choice
     if (schema.getSourcePaths().size() > 1 && !schema.isArray()) {
       String column = context.path().get(context.path().size() - 1);
       if (Objects.nonNull(context.value())) {

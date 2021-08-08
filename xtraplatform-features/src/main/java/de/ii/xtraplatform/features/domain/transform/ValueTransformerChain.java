@@ -15,14 +15,11 @@ import de.ii.xtraplatform.features.domain.SchemaMapping;
 import java.time.ZoneId;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BinaryOperator;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -33,13 +30,13 @@ public class ValueTransformerChain implements
 
   private final Map<String, List<FeaturePropertyValueTransformer>> transformers;
 
-  public ValueTransformerChain(Map<String, PropertyTransformation> allTransformations,
+  public ValueTransformerChain(Map<String, List<PropertyTransformation>> allTransformations,
       SchemaMapping schemaMapping, Map<String, Codelist> codelists,
       Optional<ZoneId> defaultTimeZone, Function<String, String> substitutionLookup) {
     this.transformers = allTransformations.entrySet().stream()
         .flatMap(entry -> {
           String propertyPath = entry.getKey();
-          PropertyTransformation transformation = entry.getValue();
+          List<PropertyTransformation> transformation = entry.getValue();
 
           if (hasWildcard(propertyPath, VALUE_TYPE_WILDCARD)) {
             return createContextTransformersForValueType(propertyPath, schemaMapping, transformation, codelists, defaultTimeZone, substitutionLookup).entrySet().stream();
@@ -91,58 +88,60 @@ public class ValueTransformerChain implements
   }
 
   private List<FeaturePropertyValueTransformer> createValueTransformers(String path,
-      PropertyTransformation propertyTransformation, Map<String, Codelist> codelists,
+      List<PropertyTransformation> propertyTransformations, Map<String, Codelist> codelists,
       Optional<ZoneId> defaultTimeZone,
       Function<String, String> substitutionLookup) {
     List<FeaturePropertyValueTransformer> transformers = new ArrayList<>();
 
-    propertyTransformation.getNullify()
-        .forEach(nullValue -> transformers
-            .add(ImmutableFeaturePropertyTransformerNullValue
-                .builder()
-                .propertyPath(path)
-                .parameter(nullValue)
-                .build()));
+    propertyTransformations.forEach(propertyTransformation -> {
+      propertyTransformation.getNullify()
+          .forEach(nullValue -> transformers
+              .add(ImmutableFeaturePropertyTransformerNullValue
+                  .builder()
+                  .propertyPath(path)
+                  .parameter(nullValue)
+                  .build()));
 
-    propertyTransformation.getStringFormat()
-        .ifPresent(stringFormat -> transformers
-            .add(ImmutableFeaturePropertyTransformerStringFormat
-                .builder()
-                .propertyPath(path)
-                .parameter(stringFormat)
-                .substitutionLookup(substitutionLookup)
-                .build()));
+      propertyTransformation.getStringFormat()
+          .ifPresent(stringFormat -> transformers
+              .add(ImmutableFeaturePropertyTransformerStringFormat
+                  .builder()
+                  .propertyPath(path)
+                  .parameter(stringFormat)
+                  .substitutionLookup(substitutionLookup)
+                  .build()));
 
-    propertyTransformation.getReduceStringFormat()
-        .ifPresent(stringFormat -> transformers
-            .add(ImmutableFeaturePropertyTransformerStringFormat
-                .builder()
-                .propertyPath(path)
-                .parameter(stringFormat)
-                .substitutionLookup(substitutionLookup)
-                .build()));
+      propertyTransformation.getReduceStringFormat()
+          .ifPresent(stringFormat -> transformers
+              .add(ImmutableFeaturePropertyTransformerStringFormat
+                  .builder()
+                  .propertyPath(path)
+                  .parameter(stringFormat)
+                  .substitutionLookup(substitutionLookup)
+                  .build()));
 
-    propertyTransformation.getDateFormat()
-        .ifPresent(dateFormat -> transformers
-            .add(ImmutableFeaturePropertyTransformerDateFormat.builder()
-                .propertyPath(path)
-                .parameter(dateFormat)
-                .defaultTimeZone(defaultTimeZone)
-                .build()));
+      propertyTransformation.getDateFormat()
+          .ifPresent(dateFormat -> transformers
+              .add(ImmutableFeaturePropertyTransformerDateFormat.builder()
+                  .propertyPath(path)
+                  .parameter(dateFormat)
+                  .defaultTimeZone(defaultTimeZone)
+                  .build()));
 
-    propertyTransformation.getCodelist()
-        .ifPresent(codelist -> transformers
-            .add(ImmutableFeaturePropertyTransformerCodelist
-                .builder()
-                .propertyPath(path)
-                .parameter(codelist)
-                .codelists(codelists)
-                .build()));
+      propertyTransformation.getCodelist()
+          .ifPresent(codelist -> transformers
+              .add(ImmutableFeaturePropertyTransformerCodelist
+                  .builder()
+                  .propertyPath(path)
+                  .parameter(codelist)
+                  .codelists(codelists)
+                  .build()));
+    });
 
     return transformers;
   }
 
-  private Map<String, List<FeaturePropertyValueTransformer>> createContextTransformersForValueType(String transformationKey, SchemaMapping schemaMapping, PropertyTransformation propertyTransformation, Map<String, Codelist> codelists,
+  private Map<String, List<FeaturePropertyValueTransformer>> createContextTransformersForValueType(String transformationKey, SchemaMapping schemaMapping, List<PropertyTransformation> propertyTransformation, Map<String, Codelist> codelists,
       Optional<ZoneId> defaultTimeZone,
       Function<String, String> substitutionLookup) {
     return explodeWildcard(transformationKey, VALUE_TYPE_WILDCARD, schemaMapping, this::matchesValueType)
@@ -157,7 +156,7 @@ public class ValueTransformerChain implements
         schema.getValueType().orElse(schema.getType()), Type.valueOf(valueType));
   }
 
-  private Map<String, List<FeaturePropertyValueTransformer>> createContextTransformersForObjectType(String transformationKey, SchemaMapping schemaMapping, PropertyTransformation propertyTransformation, Map<String, Codelist> codelists,
+  private Map<String, List<FeaturePropertyValueTransformer>> createContextTransformersForObjectType(String transformationKey, SchemaMapping schemaMapping, List<PropertyTransformation> propertyTransformation, Map<String, Codelist> codelists,
       Optional<ZoneId> defaultTimeZone,
       Function<String, String> substitutionLookup) {
     return explodeWildcard(transformationKey, ContextTransformerChain.OBJECT_TYPE_WILDCARD, schemaMapping, ContextTransformerChain::matchesObjectType)

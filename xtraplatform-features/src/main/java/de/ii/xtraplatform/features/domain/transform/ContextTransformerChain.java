@@ -31,13 +31,13 @@ public class ContextTransformerChain implements
   private final Map<String, List<FeaturePropertyContextTransformer>> transformers;
 
   public ContextTransformerChain(
-      Map<String, PropertyTransformation> allTransformations,
+      Map<String, List<PropertyTransformation>> allTransformations,
       SchemaMapping schemaMapping) {
     this.currentParentProperties = new ArrayList<>();
     this.transformers = allTransformations.entrySet().stream()
         .flatMap(entry -> {
           String propertyPath = entry.getKey();
-          PropertyTransformation transformation = entry.getValue();
+          List<PropertyTransformation> transformation = entry.getValue();
 
           if (hasWildcard(propertyPath, OBJECT_TYPE_WILDCARD)) {
               return createContextTransformersForObjectType(propertyPath, schemaMapping, transformation).entrySet().stream();
@@ -121,20 +121,22 @@ public class ContextTransformerChain implements
   }
 
   private List<FeaturePropertyContextTransformer> createContextTransformers(String path,
-      PropertyTransformation propertyTransformation) {
+      List<PropertyTransformation> propertyTransformations) {
     List<FeaturePropertyContextTransformer> transformers = new ArrayList<>();
 
-    propertyTransformation.getReduceStringFormat()
-        .ifPresent(ignore -> transformers
-            .add(ImmutableFeaturePropertyTransformerObjectReduce.builder()
-                .propertyPath(path)
-                .parameter("")
-                .build()));
+    propertyTransformations.forEach(propertyTransformation -> {
+      propertyTransformation.getReduceStringFormat()
+          .ifPresent(ignore -> transformers
+              .add(ImmutableFeaturePropertyTransformerObjectReduce.builder()
+                  .propertyPath(path)
+                  .parameter("")
+                  .build()));
+    });
 
     return transformers;
   }
 
-  private Map<String, List<FeaturePropertyContextTransformer>> createContextTransformersForObjectType(String transformationKey, SchemaMapping schemaMapping, PropertyTransformation propertyTransformation) {
+  private Map<String, List<FeaturePropertyContextTransformer>> createContextTransformersForObjectType(String transformationKey, SchemaMapping schemaMapping, List<PropertyTransformation> propertyTransformation) {
     return explodeWildcard(transformationKey, OBJECT_TYPE_WILDCARD, schemaMapping, ContextTransformerChain::matchesObjectType)
         .stream()
         .map(propertyPath -> new SimpleEntry<>(propertyPath,

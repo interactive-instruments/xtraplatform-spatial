@@ -13,6 +13,7 @@ import static de.ii.xtraplatform.features.domain.transform.PropertyTransformatio
 
 import akka.NotUsed;
 import akka.stream.javadsl.Source;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
@@ -36,6 +37,8 @@ import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -333,21 +336,23 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                 FeatureTokenSource featureTokenSource = source.via(decoder);
 
                 FeatureSchema featureSchema = getData().getTypes().get(query.getType());
-                Map<String, PropertyTransformation> providerTransformationMap = featureSchema.accept(
+                Map<String, List<PropertyTransformation>> providerTransformationMap = featureSchema.accept(
                     (schema, visitedProperties) -> java.util.stream.Stream
                         .concat(
                             schema.getTransformations().isEmpty()
                                 ? schema.isTemporal()
                                 ? java.util.stream.Stream
-                                .of(new SimpleImmutableEntry<>(
+                                .of(new SimpleImmutableEntry<String, List<PropertyTransformation>>(
                                     String.join(".", schema.getFullPath()),
-                                    new ImmutablePropertyTransformation.Builder().dateFormat(
-                                        schema.getType() == Type.DATETIME ? DATETIME_FORMAT : DATE_FORMAT).build()))
+                                    ImmutableList.of(
+                                        new ImmutablePropertyTransformation.Builder().dateFormat(
+                                            schema.getType() == Type.DATETIME ? DATETIME_FORMAT
+                                                : DATE_FORMAT).build())))
                                 : java.util.stream.Stream.empty()
                                 : java.util.stream.Stream
-                                    .of(new SimpleImmutableEntry<>(
+                                    .of(new SimpleImmutableEntry<String, List<PropertyTransformation>>(
                                         schema.getFullPath().isEmpty() ? WILDCARD : String.join(".", schema.getFullPath()),
-                                        schema.getTransformations().get())),
+                                        schema.getTransformations())),
                             visitedProperties.stream().flatMap(m -> m.entrySet().stream())
                         )
                         .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue)));
@@ -356,7 +361,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                 PropertyTransformations mergedTransformations = propertyTransformations
                     .map(p -> p.mergeInto(providerTransformations)).orElse(providerTransformations);
 
-                FeatureTokenTransformerSchemaMappings mapper = new FeatureTokenTransformerSchemaMappings(mergedTransformations);
+                FeatureTokenTransformerSchemaMappings schemaMapper = new FeatureTokenTransformerSchemaMappings(mergedTransformations);
 
                 Optional<CrsTransformer> crsTransformer = query.getCrs().flatMap(
                     targetCrs -> crsTransformerFactory
@@ -367,7 +372,13 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
                 FeatureTokenTransformerRemoveEmptyOptionals cleaner = new FeatureTokenTransformerRemoveEmptyOptionals();
 
-                return featureTokenSource.via(mapper).via(valueMapper).via(cleaner);
+                FeatureTokenTransformerSorting sorter = new FeatureTokenTransformerSorting();
+
+                return featureTokenSource
+                    //.via(sorter)
+                    .via(schemaMapper)
+                    .via(valueMapper)
+                    .via(cleaner);
             }
         };
     }
