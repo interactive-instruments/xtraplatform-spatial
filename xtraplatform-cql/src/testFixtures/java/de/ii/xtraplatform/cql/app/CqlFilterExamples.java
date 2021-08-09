@@ -125,12 +125,18 @@ public class CqlFilterExamples {
                             ImmutableMap.of("filterValues", CqlFilter.of(Eq.of("filterValues.property", ScalarLiteral.of("d30"))))),
                     ScalarLiteral.of(0.1)));
 
+    public static final CqlFilter EXAMPLE_33 = CqlFilter.of(
+            Gt.of(Property.of("filterValues1.filterValues2.measure",
+                    ImmutableMap.of("filterValues1", CqlFilter.of(Eq.of("filterValues1.property1", ScalarLiteral.of("d30"))),
+                            "filterValues2", CqlFilter.of(Lte.of("filterValues2.property2", ScalarLiteral.of(100))))),
+                    ScalarLiteral.of(0.1)));
+
     public static final CqlFilter EXAMPLE_41 = CqlFilter.of(
         Eq.of(Property.of("filterValues.classification",
             ImmutableMap.of("filterValues", CqlFilter.of(Eq.of("filterValues.property", ScalarLiteral.of("Bodenklassifizierung"))))),
             ScalarLiteral.of("GU/GT")));
 
-    public static final CqlFilter EXAMPLE_33 = CqlFilter.of(
+    public static final CqlFilter EXAMPLE_42 = CqlFilter.of(
             Or.of(EXAMPLE_32, EXAMPLE_41));
 
     public static final CqlFilter EXAMPLE_34 = CqlFilter.of(Eq.of("landsat:scene_id", ScalarLiteral.of("LC82030282019133LGN00")));
