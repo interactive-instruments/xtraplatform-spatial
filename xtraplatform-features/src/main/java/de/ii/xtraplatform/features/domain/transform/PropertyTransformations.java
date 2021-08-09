@@ -149,7 +149,7 @@ public interface PropertyTransformations {
         source.getTransformations());
 
     getTransformations().forEach((key, transformation) -> {
-      if (mergedTransformations.containsKey(key)) {
+      if (mergedTransformations.containsKey(key) && !Objects.equals(mergedTransformations.get(key), transformation)) {
         List<PropertyTransformation> chained = new ArrayList<>();
         chained.addAll(mergedTransformations.get(key));
         chained.addAll(transformation);
