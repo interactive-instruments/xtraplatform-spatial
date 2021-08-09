@@ -170,7 +170,7 @@ maxElev : NumericLiteral;
 #=============================================================================#
 */
 //CHANGE: allow intervals with /
-temporalPredicate : temporalExpression TemporalOperator temporalExpression;
+temporalPredicate : temporalExpression (TemporalOperator | ComparisonOperator) temporalExpression;
 
 temporalExpression : propertyName
                    | temporalLiteral

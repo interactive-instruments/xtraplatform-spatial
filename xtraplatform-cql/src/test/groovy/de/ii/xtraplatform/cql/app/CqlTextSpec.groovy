@@ -848,4 +848,64 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
+    def 'BEFORE with a comparison operator'() {
+        given:
+        String cqlText = "built < 2015-01-01T00:00:00Z"
+        String cqlText2 = "built BEFORE 2015-01-01T00:00:00Z"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_12
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_12, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText2
+    }
+
+    def 'AFTER with a comparison operator'() {
+        given:
+        String cqlText = "built > 2012-06-05T00:00:00Z"
+        String cqlText2 = "built AFTER 2012-06-05T00:00:00Z"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_13
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText2
+    }
+
+    def 'TEQUALS with a comparison operator'() {
+        given:
+        String cqlText = "built = 2012-06-05T00:00:00Z"
+        String cqlText2 = "built TEQUALS 2012-06-05T00:00:00Z"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_13a
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13a, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText2
+    }
+
 }
