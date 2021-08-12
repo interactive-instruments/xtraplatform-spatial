@@ -324,7 +324,7 @@ Sign : PLUS | MINUS;
 
 TemporalLiteral : Instant | Interval;
 
-Instant : FullDate | FullDate 'T' UtcTime;
+Instant : FullDate | FullDate 'T' UtcTime | NOW LEFTPAREN RIGHTPAREN;
 
 Interval : (InstantInInterval)? SOLIDUS (InstantInInterval)?;
 
@@ -348,6 +348,7 @@ TimeMinute : DIGIT DIGIT;
 
 TimeSecond : DIGIT DIGIT (PERIOD (DIGIT)+)?;
 
+NOW : N O W;
 
 /*
 #=============================================================================#
