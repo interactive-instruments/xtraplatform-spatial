@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Doubles;
@@ -42,6 +43,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FilterEncoderSqlNewNewImpl.class);
 
+    final static Splitter ARRAY_SPLITTER = Splitter.on(",").trimResults().omitEmptyStrings();
+
     //TODO: move operator translation to SqlDialect
     private final static Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
             .put(ImmutableAfter.class, ">")
@@ -70,7 +73,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             .build();
 
     private final Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator;
-    private final BiFunction<FeatureStoreAttributesContainer, List<String>, Function<Optional<CqlFilter>, String>> joinsGenerator;
+    private final BiFunction<FeatureStoreAttributesContainer, List<String>, BiFunction<FeatureStoreAttributesContainer, Optional<CqlFilter>, Function<Optional<String>, String>>> joinsGenerator;
     private final EpsgCrs nativeCrs;
     private final SqlDialect sqlDialect;
     private final CrsTransformerFactory crsTransformerFactory;
@@ -78,7 +81,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
     public FilterEncoderSqlNewNewImpl(
             Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator,
-            BiFunction<FeatureStoreAttributesContainer, List<String>, Function<Optional<CqlFilter>, String>> joinsGenerator,
+            BiFunction<FeatureStoreAttributesContainer, List<String>, BiFunction<FeatureStoreAttributesContainer, Optional<CqlFilter>, Function<Optional<String>, String>>> joinsGenerator,
             EpsgCrs nativeCrs, SqlDialect sqlDialect,
             CrsTransformerFactory crsTransformerFactory) {
         this.aliasesGenerator = aliasesGenerator;
@@ -128,22 +131,9 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             // strip double quotes from the property name
             String propertyName = property.getName().replaceAll("^\"|\"$", "");
             Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(propertyName, attribute.getQueryable()) || (Objects.equals(propertyName, ID_PLACEHOLDER) && attribute.isId());
-            Optional<String> column = attributesContainer.getAttributes()
-                                                         .stream()
-                                                         .filter(propertyMatches)
-                                                         .findFirst()
-                                                         .map(FeatureStoreAttribute::getName);
-
-            if (!column.isPresent()) {
-                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName));
-            }
-
-            List<String> aliases = isUserFilter ? aliasesGenerator.apply(attributesContainer)
-                                                                  .stream()
-                                                                  .map(s -> "A" + s)
-                                                                  .collect(Collectors.toList()) : aliasesGenerator.apply(attributesContainer);
-
-            String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column.get());
+            String column = getColumn(attributesContainer, propertyMatches, propertyName);
+            List<String> aliases = isUserFilter ? getAliases(attributesContainer) : aliasesGenerator.apply(attributesContainer);
+            String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
 
             return String.format("%%1$s%1$s%%2$s", qualifiedColumn);
         }
@@ -158,59 +148,105 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             this.instanceContainer = instanceContainer;
         }
 
+        protected List<String> getAliases(FeatureStoreAttributesContainer container) {
+            return aliasesGenerator.apply(container)
+                                   .stream()
+                                   .map(s -> "A" + s)
+                                   .collect(Collectors.toList());
+        }
+
+        protected FeatureStoreAttributesContainer getTable(Predicate<FeatureStoreAttribute> propertyMatches, String propertyName) {
+            return instanceContainer.getAllAttributesContainers()
+                                    .stream()
+                                    .filter(attributesContainer -> attributesContainer.getAttributes()
+                                                                                      .stream()
+                                                                                      .anyMatch(propertyMatches))
+                                    .findFirst()
+                                    .orElseThrow(() -> new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName)));
+        }
+
+        protected String getColumn(FeatureStoreAttributesContainer table,
+                                   Predicate<FeatureStoreAttribute> propertyMatches,
+                                   String propertyName) {
+            return table.getAttributes()
+                        .stream()
+                        .filter(propertyMatches)
+                        .findFirst()
+                        .map(attribute -> {
+                            if (attribute.isTemporal()) {
+                                return sqlDialect.applyToDatetime(attribute.getName());
+                            }
+                            return attribute.getName();
+                        })
+                    .orElseThrow(() -> new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName)));
+        }
+
         @Override
         public String visit(Property property, List<String> children) {
-            //TODO: fast enough? maybe pass all typeInfos to constructor and create map?
+            // TODO: fast enough? maybe pass all typeInfos to constructor and create map?
             // strip double quotes from the property name
             String propertyName = property.getName().replaceAll("^\"|\"$", "");
             Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(propertyName, attribute.getQueryable()) || (Objects.equals(propertyName, ID_PLACEHOLDER) && attribute.isId());
-            Optional<FeatureStoreAttributesContainer> table = instanceContainer.getAllAttributesContainers()
-                                                                               .stream()
-                                                                               .filter(attributesContainer -> attributesContainer.getAttributes()
-                                                                                                                                 .stream()
-                                                                                                                                 .anyMatch(propertyMatches))
-                                                                               .findFirst();
-
-            Optional<String> column = table.flatMap(attributesContainer -> attributesContainer.getAttributes()
-                                                                                              .stream()
-                                                                                              .filter(propertyMatches)
-                                                                                              .findFirst()
-                                                                                              .map(attribute -> {
-                                                                                                  if (attribute.isTemporal()) {
-                                                                                                      return sqlDialect.applyToDatetime(attribute.getName());
-                                                                                                  }
-                                                                                                  return attribute.getName();
-                                                                                              }));
-
-            if (!table.isPresent() || !column.isPresent()) {
-                throw new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName));
-            }
+            FeatureStoreAttributesContainer table = getTable(propertyMatches, propertyName);
+            String column = getColumn(table, propertyMatches, propertyName);
 
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("PROP {} {}", table.get()
-                                                .getName(), column.get());
+                LOGGER.trace("PROP {} {}", table.getName(), column);
             }
 
             Optional<CqlFilter> userFilter;
+            FeatureStoreAttributesContainer userFilterTable = null;
+            Optional<String> instanceFilter = Optional.empty();
             if (!property.getNestedFilters()
-                         .isEmpty()) {
-                Map<String, CqlFilter> userFilters = property.getNestedFilters();
-                userFilter = userFilters.values()
-                                        .stream()
-                                        .findFirst();
+                .isEmpty()) {
+                userFilter = property.getNestedFilters()
+                    .values()
+                    .stream()
+                    .findFirst();
+                String userFilterPropertyName = getUserFilterPropertyName(userFilter.get());
+                if (userFilterPropertyName.contains("row_number")) {
+                    userFilterTable = table;
+                    instanceFilter = instanceContainer.getFilter().map(cql -> encode(cql ,instanceContainer));
+                } else {
+                    Predicate<FeatureStoreAttribute> userFilterPropertyMatches = attribute -> Objects.equals(userFilterPropertyName, attribute.getQueryable()) || (Objects.equals(userFilterPropertyName, ID_PLACEHOLDER) && attribute.isId());
+                    userFilterTable = getTable(userFilterPropertyMatches, userFilterPropertyName);
+                }
             } else {
                 userFilter = Optional.empty();
             }
 
-            List<String> aliases = aliasesGenerator.apply(table.get())
-                                                   .stream()
-                                                   .map(s -> "A" + s)
-                                                   .collect(Collectors.toList());
-            String join = joinsGenerator.apply(table.get(), aliases)
-                                        .apply(userFilter);
-            String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column.get());
+            List<String> aliases = getAliases(table);
+            String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
+
+            String join = joinsGenerator.apply(table, aliases)
+                                        .apply(userFilterTable, userFilter)
+                                        .apply(instanceFilter);
 
             return String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %%1$s%5$s%%2$s)", instanceContainer.getName(), aliases.get(0), instanceContainer.getSortKey(), join, qualifiedColumn);
+        }
+
+        private String getUserFilterPropertyName(CqlFilter userFilter) {
+            CqlNode nestedFilter = userFilter.getExpressions().get(0);
+            Operand operand = null;
+            if (nestedFilter instanceof BinaryScalarOperation) {
+                operand = ((BinaryScalarOperation) nestedFilter).getOperands().get(0);
+            } else if (nestedFilter instanceof TemporalOperation) {
+                operand = ((TemporalOperation) nestedFilter).getOperands().get(0);
+            } else if (nestedFilter instanceof SpatialOperation) {
+                operand = ((SpatialOperation) nestedFilter).getOperands().get(0);
+            } else if (nestedFilter instanceof Like) {
+                operand = ((Like) nestedFilter).getOperands().get(0);
+            } else if (nestedFilter instanceof In) {
+                operand = ((In) nestedFilter).getValue().get();
+            } else if (nestedFilter instanceof Between) {
+                operand = ((Between) nestedFilter).getValue().get();
+            }
+            if (operand instanceof Property) {
+                return ((Property) operand).getName();
+            } else if (operand instanceof de.ii.xtraplatform.cql.domain.Function) {
+                return operand.accept(this);
+            }
+            throw new IllegalArgumentException("unsupported nested filter");
         }
 
         @Override
@@ -375,6 +411,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String mainExpression = "";
             Scalar op1 = in.getValue().get();
             if (op1 instanceof Property) {
+                mainExpression = children.get(0);
+            } else if (op1 instanceof de.ii.xtraplatform.cql.domain.Function) {
                 mainExpression = children.get(0);
             } else if (op1 instanceof ScalarLiteral) {
                 // special case of a literal, we need to build the SQL expression
@@ -638,10 +676,101 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         @Override
         public String visit(ArrayOperation arrayOperation, List<String> children) {
-            String expression = children.get(0);
-            String operator = ARRAY_OPERATORS.get(arrayOperation.getClass());
-            String operation = String.format(" %s ARRAY[%s]", operator, children.get(1));
-            return String.format(expression, "", operation);
+            // The two operands may be either a property reference or a literal.
+            // If there is at least one property reference, that fragment will
+            // be used as the basis (mainExpression). If the other operand is
+            // a property reference, too, it is in the same table and the second
+            // fragment will be reduced to qualified column name (second expression).
+            String mainExpression = children.get(0);
+            String secondExpression = children.get(1);
+            boolean op1hasSelect = operandIsOfType(arrayOperation.getOperands().get(0), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
+            boolean op2hasSelect = operandIsOfType(arrayOperation.getOperands().get(1), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
+            boolean notInverse = true;
+            if (op1hasSelect) {
+                if (op2hasSelect) {
+                    // TODO
+                    throw new IllegalArgumentException("Array predicates with property references on both sides are not supported.");
+                    // secondExpression = reduceSelectToColumn(children.get(1));
+                }
+            } else {
+                // the unusual case that a literal is on the left side
+                if (op2hasSelect) {
+                    mainExpression = children.get(1);
+                    secondExpression = children.get(0);
+                    notInverse = false;
+                    op1hasSelect = true;
+                    op2hasSelect = false;
+                } else {
+                    // literal op literal, we can decide here
+                    List<String> firstOp = ARRAY_SPLITTER.splitToList(mainExpression.replaceAll("\\[|\\]", ""));
+                    List<String> secondOp = ARRAY_SPLITTER.splitToList(secondExpression.replaceAll("\\[|\\]", ""));
+                    if (arrayOperation instanceof AContains) {
+                        // each item of the second array must be in the first array
+                        return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                    } else if (arrayOperation instanceof AEquals) {
+                        // items must be identical
+                        if (firstOp.size()!=secondOp.size())
+                            return "1=0";
+                        return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                    } else if (arrayOperation instanceof AOverlaps) {
+                        // at least one common element
+                        return secondOp.stream().anyMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                    } else if (arrayOperation instanceof ContainedBy) {
+                        // each item of the first array must be in the second array
+                        return firstOp.stream().allMatch(item -> secondOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                    }
+                    throw new IllegalArgumentException("unsupported array operator");
+                }
+            }
+
+            if (op1hasSelect && op2hasSelect) {
+                // property op property
+                // TODO
+
+            }
+
+            // property op literal
+
+            int elementCount = secondExpression.split(",").length;
+
+            String propertyName = ((Property) arrayOperation.getOperands().get(notInverse ? 0 : 1)).getName();
+            Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(propertyName, attribute.getQueryable()) || (Objects.equals(propertyName, ID_PLACEHOLDER) && attribute.isId());
+            FeatureStoreAttributesContainer table = getTable(propertyMatches, propertyName);
+            String column = getColumn(table, propertyMatches, propertyName);
+            List<String> aliases = getAliases(table);
+            String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
+            List<Map<String, List<String>>> x = ImmutableList.of();
+            boolean xx = x.stream().map(theme -> theme.get("concept")).flatMap(List::stream).filter(concept -> concept.equals("DLKM")).distinct().count() == 1;
+
+            if (notInverse ? arrayOperation instanceof AContains : arrayOperation instanceof ContainedBy) {
+                String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s", secondExpression, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
+                return String.format(mainExpression, "", arrayQuery);
+            } else if (arrayOperation instanceof AEquals) {
+                String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s AND count(case when %4$s not in %1$s then %4$s else null end) = 0",
+                                                  secondExpression, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
+                return String.format(mainExpression, "", arrayQuery);
+            } else if (arrayOperation instanceof AOverlaps) {
+                String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s", secondExpression, aliases.get(0), instanceContainer.getSortKey());
+                return String.format(mainExpression, "", arrayQuery);
+            } else if (notInverse ? arrayOperation instanceof ContainedBy : arrayOperation instanceof AContains) {
+                String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(case when %4$s not in %1$s then %4$s else null end) = 0",
+                                                  secondExpression, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn);
+                return String.format(mainExpression, "", arrayQuery);
+            }
+            throw new IllegalArgumentException("unsupported array operator");
+        }
+
+        @Override
+        public String visit(ArrayLiteral arrayLiteral, List<String> children) {
+            if (arrayLiteral.getValue() instanceof String) {
+                return (String) arrayLiteral.getValue();
+            } else {
+                List<String> elements = ((List<Scalar>) arrayLiteral.getValue()).stream()
+                        .map(e -> e.accept(this))
+                        .map(e -> String.format("%s", e))
+                        .collect(Collectors.toList());
+                return String.format("(%s)", String.join(",", elements));
+            }
         }
 
         @Override

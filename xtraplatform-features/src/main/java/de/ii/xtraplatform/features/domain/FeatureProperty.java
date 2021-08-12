@@ -82,6 +82,13 @@ public interface FeatureProperty extends Buildable<FeatureProperty> {
     @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
+    default boolean isType() {
+        return getRole().filter(role -> role == Role.TYPE).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
     default boolean isSpatial() {
         return getType() == Type.GEOMETRY;
     }

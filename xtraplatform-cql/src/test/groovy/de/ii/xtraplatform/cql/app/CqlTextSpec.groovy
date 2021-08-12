@@ -599,7 +599,6 @@ class CqlTextSpec extends Specification {
     def 'Property with a nested filter'() {
         given:
         String cqlText = "filterValues[property = 'd30'].measure > 0.1"
-        String cqlTextFull = "filterValues[filterValues.property = 'd30'].measure > 0.1"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -613,13 +612,12 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_32, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlTextFull
+        actual2 == cqlText
     }
 
     def 'Property with two nested filters'() {
         given:
         String cqlText = "filterValues1[property1 = 'd30'].filterValues2[property2 <= 100].measure > 0.1"
-        String cqlTextFull = "filterValues1[filterValues1.property1 = 'd30'].filterValues2[filterValues2.property2 <= 100].measure > 0.1"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -633,7 +631,7 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_33, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlTextFull
+        actual2 == cqlText
     }
 
     def 'Find the Landsat scene with identifier "LC82030282019133LGN00"'() {
@@ -696,7 +694,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    /* Array operators are not yet supported
     def 'Evaluate if the value of an array property contains the specified subset of values'() {
 
         given:
@@ -716,7 +713,6 @@ class CqlTextSpec extends Specification {
         then:
         actual2 == cqlText
     }
-     */
 
     def 'Both operands are property references'() {
 
@@ -771,6 +767,82 @@ class CqlTextSpec extends Specification {
 
         when: 'writing text'
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_40, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Nested regular filter'() {
+        given:
+        String cqlText = "filterValues[property = 'd30'].measure > 0.1"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_32
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_32, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Nested filter with a function'() {
+        given:
+        String cqlText = "filterValues[position() IN (1, 3)].measure BETWEEN 1 AND 5"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_NESTED_FUNCTION
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_NESTED_FUNCTION, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Array predicate with nested filter'() {
+        given:
+        String cqlText = "theme[scheme = 'profile'].concept ACONTAINS ['DLKM','Basis-DLM','DLM50']"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_NESTED_WITH_ARRAYS
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_NESTED_WITH_ARRAYS, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'IN predicate with a function'() {
+        given:
+        String cqlText = "position() IN (1, 3)"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_IN_WITH_FUNCTION
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_IN_WITH_FUNCTION, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText

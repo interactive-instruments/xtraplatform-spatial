@@ -50,6 +50,12 @@ public interface In extends CqlNode, NonBinaryScalarOperation {
                                         .list(values)
                                         .build();
     }
+    static In ofFunction(Function function, List<ScalarLiteral> values) {
+        return new ImmutableIn.Builder()
+                .value(function)
+                .list(values)
+                .build();
+    }
 
     @Value.Check
     default void check() {

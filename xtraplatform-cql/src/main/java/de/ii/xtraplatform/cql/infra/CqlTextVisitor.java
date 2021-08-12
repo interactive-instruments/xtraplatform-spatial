@@ -361,25 +361,33 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         switch (arrayOperator) {
             case ACONTAINS:
+                builder = new ImmutableAContains.Builder();
+                break;
             case AEQUALS:
+                builder = new ImmutableAEquals.Builder();
+                break;
             case AOVERLAPS:
+                builder = new ImmutableAOverlaps.Builder();
+                break;
             case CONTAINEDBY:
-                throw new IllegalArgumentException(String.format("unsupported array operator (%s)", arrayOperator));
+                builder = new ImmutableContainedBy.Builder();
+                break;
             default:
                 throw new IllegalStateException("unknown array operator: " + arrayOperator);
         }
 
-        /* TODO uncomment after the operators have been implemented
-        return builder.operand1(vector1)
-                      .operand2(vector2)
+        return builder.operands(ImmutableList.of(vector1, vector2))
                       .build();
-         */
     }
 
     @Override
     public CqlNode visitArrayLiteral(CqlParser.ArrayLiteralContext ctx) {
         try {
-            return ArrayLiteral.of(ctx.getText());
+            List<Scalar> values = ctx.arrayElement()
+                    .stream()
+                    .map(e -> (ScalarLiteral) e.accept(this))
+                    .collect(Collectors.toList());
+            return ArrayLiteral.of(values);
         } catch (CqlParseException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
@@ -394,7 +402,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                   .map(v -> (ScalarLiteral) v.accept(this))
                                                   .collect(Collectors.toList());
 
-        if (Objects.isNull(ctx.propertyName())) {
+        if (Objects.nonNull(ctx.function())) {
+            in = new ImmutableIn.Builder()
+                    .value((Function) ctx.function().accept(this))
+                    .list(values)
+                    .build();
+        } else if (Objects.isNull(ctx.propertyName())) {
             in = In.of(values);
         } else {
             // TODO IN currently requires a property on the left side and literals on the right side
