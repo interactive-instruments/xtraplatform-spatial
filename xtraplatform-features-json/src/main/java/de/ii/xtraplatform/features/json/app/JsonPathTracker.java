@@ -8,7 +8,7 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.features.geojson.app;
+package de.ii.xtraplatform.features.json.app;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;

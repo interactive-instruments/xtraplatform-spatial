@@ -5,24 +5,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.geojson.app
+package de.ii.xtraplatform.features.json.app
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.javadsl.Source
-import akka.testkit.javadsl.TestKit
-import akka.util.ByteString
-import com.google.common.collect.ImmutableList
-import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping
-import de.ii.xtraplatform.feature.transformer.api.ImmutableSourcePathMapping
 
-import de.ii.xtraplatform.features.geojson.domain.MappingSwapper
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import spock.lang.Ignore
 import spock.lang.Specification
-
-import static groovy.io.FileType.FILES
 
 /**
  * @author zahnen

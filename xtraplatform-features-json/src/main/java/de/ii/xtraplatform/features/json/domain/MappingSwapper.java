@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.geojson.domain;
+package de.ii.xtraplatform.features.json.domain;
 
 import akka.japi.Pair;
 import com.google.common.base.Splitter;

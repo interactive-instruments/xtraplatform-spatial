@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.geojson.app
+package de.ii.xtraplatform.features.json.app
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -15,7 +15,6 @@ import akka.util.ByteString
 import de.ii.xtraplatform.features.domain.FeatureReaderGeneric
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import spock.lang.Ignore
 import spock.lang.Specification
 
 /**

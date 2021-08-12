@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.geojson.app
+package de.ii.xtraplatform.features.json.app
 
 import akka.actor.ActorSystem
 import akka.stream.javadsl.Source
@@ -14,7 +14,7 @@ import akka.util.ByteString
 import com.typesafe.config.Config
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder
 import de.ii.xtraplatform.features.domain.FeatureTokenFixtures
-import de.ii.xtraplatform.features.geojson.domain.FeatureTokenDecoderGeoJson
+import de.ii.xtraplatform.features.json.domain.FeatureTokenDecoderGeoJson
 import de.ii.xtraplatform.streams.app.ReactiveAkka
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider
 import de.ii.xtraplatform.streams.domain.Reactive
