@@ -774,18 +774,18 @@ class CqlTextSpec extends Specification {
 
     def 'Nested regular filter'() {
         given:
-        String cqlText = "filterValues[property = 'd30'].measure BETWEEN 0.5 AND 2"
+        String cqlText = "filterValues[property = 'd30'].measure > 0.1"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_NESTED
+        actual == CqlFilterExamples.EXAMPLE_32
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_NESTED, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_32, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText
@@ -793,7 +793,7 @@ class CqlTextSpec extends Specification {
 
     def 'Nested filter with a function'() {
         given:
-        String cqlText = "filterValues[position() = 2].measure BETWEEN 0.5 AND 2"
+        String cqlText = "filterValues[position() IN (1, 3)].measure BETWEEN 1 AND 5"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -824,6 +824,25 @@ class CqlTextSpec extends Specification {
 
         when: 'writing text'
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_NESTED_WITH_ARRAYS, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'IN predicate with a function'() {
+        given:
+        String cqlText = "position() IN (1, 3)"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_IN_WITH_FUNCTION
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_IN_WITH_FUNCTION, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText

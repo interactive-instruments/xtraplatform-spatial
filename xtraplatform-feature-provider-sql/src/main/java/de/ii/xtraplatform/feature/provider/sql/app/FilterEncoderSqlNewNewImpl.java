@@ -36,7 +36,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 
@@ -74,7 +73,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             .build();
 
     private final Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator;
-    private final BiFunction<FeatureStoreAttributesContainer, List<String>, Function<Optional<CqlFilter>, String>> joinsGenerator;
+    private final BiFunction<FeatureStoreAttributesContainer, List<String>, BiFunction<FeatureStoreAttributesContainer, Optional<CqlFilter>, Function<Optional<String>, String>>> joinsGenerator;
     private final EpsgCrs nativeCrs;
     private final SqlDialect sqlDialect;
     private final CrsTransformerFactory crsTransformerFactory;
@@ -82,7 +81,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
     public FilterEncoderSqlNewNewImpl(
             Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator,
-            BiFunction<FeatureStoreAttributesContainer, List<String>, Function<Optional<CqlFilter>, String>> joinsGenerator,
+            BiFunction<FeatureStoreAttributesContainer, List<String>, BiFunction<FeatureStoreAttributesContainer, Optional<CqlFilter>, Function<Optional<String>, String>>> joinsGenerator,
             EpsgCrs nativeCrs, SqlDialect sqlDialect,
             CrsTransformerFactory crsTransformerFactory) {
         this.aliasesGenerator = aliasesGenerator;
@@ -196,12 +195,22 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             }
 
             Optional<CqlFilter> userFilter;
+            FeatureStoreAttributesContainer userFilterTable = null;
+            Optional<String> instanceFilter = Optional.empty();
             if (!property.getNestedFilters()
-                         .isEmpty()) {
-                Map<String, CqlFilter> userFilters = property.getNestedFilters();
-                userFilter = userFilters.values()
-                                        .stream()
-                                        .findFirst();
+                .isEmpty()) {
+                userFilter = property.getNestedFilters()
+                    .values()
+                    .stream()
+                    .findFirst();
+                String userFilterPropertyName = getUserFilterPropertyName(userFilter.get());
+                if (userFilterPropertyName.contains("row_number")) {
+                    userFilterTable = table;
+                    instanceFilter = instanceContainer.getFilter().map(cql -> encode(cql ,instanceContainer));
+                } else {
+                    Predicate<FeatureStoreAttribute> userFilterPropertyMatches = attribute -> Objects.equals(userFilterPropertyName, attribute.getQueryable()) || (Objects.equals(userFilterPropertyName, ID_PLACEHOLDER) && attribute.isId());
+                    userFilterTable = getTable(userFilterPropertyMatches, userFilterPropertyName);
+                }
             } else {
                 userFilter = Optional.empty();
             }
@@ -210,9 +219,34 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
 
             String join = joinsGenerator.apply(table, aliases)
-                                        .apply(userFilter);
+                                        .apply(userFilterTable, userFilter)
+                                        .apply(instanceFilter);
 
             return String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %%1$s%5$s%%2$s)", instanceContainer.getName(), aliases.get(0), instanceContainer.getSortKey(), join, qualifiedColumn);
+        }
+
+        private String getUserFilterPropertyName(CqlFilter userFilter) {
+            CqlNode nestedFilter = userFilter.getExpressions().get(0);
+            Operand operand = null;
+            if (nestedFilter instanceof BinaryScalarOperation) {
+                operand = ((BinaryScalarOperation) nestedFilter).getOperands().get(0);
+            } else if (nestedFilter instanceof TemporalOperation) {
+                operand = ((TemporalOperation) nestedFilter).getOperands().get(0);
+            } else if (nestedFilter instanceof SpatialOperation) {
+                operand = ((SpatialOperation) nestedFilter).getOperands().get(0);
+            } else if (nestedFilter instanceof Like) {
+                operand = ((Like) nestedFilter).getOperands().get(0);
+            } else if (nestedFilter instanceof In) {
+                operand = ((In) nestedFilter).getValue().get();
+            } else if (nestedFilter instanceof Between) {
+                operand = ((Between) nestedFilter).getValue().get();
+            }
+            if (operand instanceof Property) {
+                return ((Property) operand).getName();
+            } else if (operand instanceof de.ii.xtraplatform.cql.domain.Function) {
+                return operand.accept(this);
+            }
+            throw new IllegalArgumentException("unsupported nested filter");
         }
 
         @Override
@@ -377,6 +411,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String mainExpression = "";
             Scalar op1 = in.getValue().get();
             if (op1 instanceof Property) {
+                mainExpression = children.get(0);
+            } else if (op1 instanceof de.ii.xtraplatform.cql.domain.Function) {
                 mainExpression = children.get(0);
             } else if (op1 instanceof ScalarLiteral) {
                 // special case of a literal, we need to build the SQL expression

@@ -216,7 +216,7 @@ arrayElement: characterLiteral | numericLiteral | booleanLiteral | temporalLiter
 */
 //CHANGE: optional PropertyName for id filters
 //CHANGE: added missing comma
-inPredicate : (propertyName)? (NOT)? IN LEFTPAREN ( characterLiteral |
+inPredicate : (propertyName | function)? (NOT)? IN LEFTPAREN ( characterLiteral |
                                             numericLiteral |
                                             geomLiteral |
                                             temporalLiteral /*|
