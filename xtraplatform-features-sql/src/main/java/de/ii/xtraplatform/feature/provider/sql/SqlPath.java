@@ -55,25 +55,21 @@ public interface SqlPath {
         return false;
     }
 
-    //String getSortKey();
-
     Optional<String> getConstantValue();
 
     Map<String, String> getTableFlags();
 
     @Value.Derived
-    default String getTablePathWithFilter() {
-        String tablePathWithFilter = getTablePath();
+    default String getTablePathWithFlags() {
+        String tablePathWithFlags = getTablePath();
 
         for (Entry<String, String> entry : getTableFlags().entrySet()) {
             String table = entry.getKey();
-            String flag = entry.getValue();
+            String flags = entry.getValue();
 
-            if (flag.startsWith("{filter=")) {
-                tablePathWithFilter = tablePathWithFilter.replaceFirst("(\\/|])(" + table + ")(\\/|$)", "$1$2" + flag + "$3");
-            }
+            tablePathWithFlags = tablePathWithFlags.replaceFirst("(\\/|])(" + table + ")(\\/|$)", "$1$2" + flags + "$3");
         }
 
-        return tablePathWithFilter;
+        return tablePathWithFlags;
     }
 }

@@ -167,7 +167,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
     private List<FeatureStoreInstanceContainer> toInstanceContainers(List<SqlPath> sqlPaths) {
         LinkedHashMap<String, List<SqlPath>> groupedPaths = sqlPaths.stream()
-                                                                    .collect(Collectors.groupingBy(SqlPath::getTablePathWithFilter, LinkedHashMap::new, Collectors.toList()));
+                                                                    .collect(Collectors.groupingBy(SqlPath::getTablePathWithFlags, LinkedHashMap::new, Collectors.toList()));
 
         LinkedHashMap<String, ImmutableFeatureStoreInstanceContainer.Builder> instanceContainerBuilders = new LinkedHashMap<>();
 

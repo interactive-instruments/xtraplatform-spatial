@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -65,19 +66,8 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
         .asMap()
         .entrySet()
         .stream()
-        .map(entry -> {
-          List<String> key;
-          if (entry.getKey().get(entry.getKey().size() - 1).contains("{")) {
-            key = new ArrayList<>(
-                entry.getKey().subList(0, entry.getKey().size() - 1));
-            key.add(entry.getKey().get(entry.getKey().size() - 1)
-                .substring(0, entry.getKey().get(entry.getKey().size() - 1).indexOf("{")));
-          } else {
-            key = entry.getKey();
-          }
-          return new SimpleImmutableEntry<>(
-              key, Lists.newArrayList(entry.getValue()));
-        })
+        .map(entry -> new SimpleImmutableEntry<>(
+            cleanPath(entry.getKey()), Lists.newArrayList(entry.getValue())))
         .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue, (first, second) -> {
           ArrayList<FeatureSchema> featureSchemas = new ArrayList<>(first);
           featureSchemas.addAll(second);
@@ -89,5 +79,24 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
     }
 
     return newer;
+  }
+
+  default List<String> cleanPath(List<String> path) {
+    if (path.get(path.size() - 1).contains("{")) {
+      List<String> key = new ArrayList<>(path.subList(0, path.size() - 1));
+      key.add(path.get(path.size() - 1).substring(0, path.get(path.size() - 1).indexOf("{")));
+      return key;
+    }
+    return path;
+
+    /*return path.stream()
+        .map(element -> {
+          if (element.contains("{")) {
+            return element.substring(0, element.indexOf("{"));
+          }
+
+          return element;
+        })
+        .collect(Collectors.toList());*/
   }
 }
