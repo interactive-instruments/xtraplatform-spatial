@@ -8,8 +8,8 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.provider.sql.app.ImmutableTuple;
-import de.ii.xtraplatform.feature.provider.sql.app.Tuple;
+import de.ii.xtraplatform.features.domain.ImmutableTuple;
+import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

@@ -8,8 +8,8 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.provider.sql.app.ImmutableTuple;
-import de.ii.xtraplatform.feature.provider.sql.app.Tuple;
+import de.ii.xtraplatform.features.domain.ImmutableTuple;
+import de.ii.xtraplatform.features.domain.Tuple;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;

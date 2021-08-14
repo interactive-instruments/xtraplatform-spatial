@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
-import de.ii.xtraplatform.feature.provider.sql.app.Tuple;
+import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.feature.provider.sql.domain.ValueTypeMapping;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.util.Collection;

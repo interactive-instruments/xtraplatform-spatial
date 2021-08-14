@@ -11,6 +11,7 @@ import de.ii.xtraplatform.cql.domain.CqlFilter
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlPath
+import de.ii.xtraplatform.features.domain.ImmutableTuple
 
 class SqlPathFixtures {
 

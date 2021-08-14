@@ -87,8 +87,57 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
+    default Optional<T> getPrimaryGeometry() {
+        return getProperties().stream()
+            .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_GEOMETRY).isPresent())
+            .findFirst()
+            .or(() -> getProperties().stream()
+                .filter(SchemaBase::isGeometry)
+                .findFirst());
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default Optional<T> getPrimaryInstant() {
+        return getProperties().stream()
+            .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_INSTANT).isPresent())
+            .findFirst()
+            .or(() -> getProperties().stream()
+                .filter(SchemaBase::isTemporal)
+                .findFirst());
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default Optional<Tuple<T,T>> getPrimaryInterval() {
+        Optional<T> start = getProperties().stream()
+            .filter(
+                t -> t.getRole().filter(role -> role == Role.PRIMARY_INTERVAL_START).isPresent())
+            .findFirst();
+        Optional<T> end = getProperties().stream()
+            .filter(
+                t -> t.getRole().filter(role -> role == Role.PRIMARY_INTERVAL_END).isPresent())
+            .findFirst();
+
+        return start.isPresent() && end.isPresent()
+            ? Optional.of(Tuple.of(start.get(), end.get()))
+            : Optional.empty();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
     default List<String> getFullPath() {
     return new ImmutableList.Builder<String>().addAll(getParentPath()).addAll(getPath()).build();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default String getFullPathAsString() {
+        return String.join(".", getFullPath());
     }
 
     @JsonIgnore
@@ -134,6 +183,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @Value.Auxiliary
     default boolean isGeometry() {
         return getType() == Type.GEOMETRY;
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isTemporal() {
+        return getType() == Type.DATETIME || getType() == Type.DATE;
     }
 
     @JsonIgnore

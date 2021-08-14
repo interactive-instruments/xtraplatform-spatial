@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.feature.provider.sql.app;
+package de.ii.xtraplatform.features.domain;
 
 
 import org.immutables.value.Value;
@@ -13,6 +13,10 @@ import org.immutables.value.Value;
 //TODO: move to xtraplatform-base
 @Value.Immutable
 public interface Tuple<T,U> {
+
+    static <T, U> Tuple<T,U> of(T t, U u) {
+        return ImmutableTuple.of(t, u);
+    }
 
     @Value.Parameter
     T first();
