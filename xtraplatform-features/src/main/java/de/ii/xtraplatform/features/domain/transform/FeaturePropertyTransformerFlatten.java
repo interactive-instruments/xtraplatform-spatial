@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.util.function.BiFunction;
 import org.immutables.value.Value;
 
@@ -37,6 +38,7 @@ public interface FeaturePropertyTransformerFlatten extends FeaturePropertySchema
         return new ImmutableFeatureSchema.Builder()
             .from(input)
             .name(flattenedPath)
+            .type(input.getType() == Type.VALUE_ARRAY ? input.getValueType().orElse(Type.STRING) : input.getType())
             .build();
     }
 }

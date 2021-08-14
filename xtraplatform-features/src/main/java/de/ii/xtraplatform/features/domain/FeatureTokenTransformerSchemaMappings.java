@@ -287,6 +287,10 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     } else if (schema.isValue() && (!schema.isArray() || nestingTracker.isFirst(indexes))) {
       openParents(parentSchemas, indexes);
     }
+
+    if (schema.isValue() && schema.isArray()) {
+      newContext.setIndexes(indexes);
+    }
   }
 
   private void openObject(FeatureSchema schema) {

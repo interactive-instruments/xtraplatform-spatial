@@ -222,7 +222,11 @@ public class NestingTracker {
   }
 
   public String getFlattenedPropertyPath(String separator, String name) {
-    flattened.add(name);
+    if (inArray() && !context.indexes().isEmpty()) {
+      flattened.add(String.valueOf(context.index()));
+    } else {
+      flattened.add(name);
+    }
     String path = Joiner.on(separator).join(flattened);
     flattened.remove(flattened.size()-1);
     return path;
