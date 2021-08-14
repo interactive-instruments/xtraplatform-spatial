@@ -22,12 +22,19 @@ import java.util.Objects;
  */
 public class FeaturePathTracker {
 
-    private static final Joiner JOINER = Joiner.on('.').skipNulls();
+    private static final Joiner DEFAULT_JOINER = Joiner.on('.').skipNulls();
 
+    private final Joiner joiner;
     private final List<String> localPath;
 
     public FeaturePathTracker() {
         this.localPath = new ArrayList<>(64);
+        this.joiner = DEFAULT_JOINER;
+    }
+
+    public FeaturePathTracker(String separator) {
+        this.localPath = new ArrayList<>(64);
+        this.joiner = Joiner.on(separator).skipNulls();
     }
 
     public void track(int depth) {
@@ -64,7 +71,7 @@ public class FeaturePathTracker {
     @Override
     public String toString() {
         if (localPath.isEmpty()) return "";
-        return JOINER.join(localPath);
+        return joiner.join(localPath);
     }
 
     public List<String> asList() {

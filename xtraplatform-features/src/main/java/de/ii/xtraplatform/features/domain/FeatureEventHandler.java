@@ -10,9 +10,12 @@ package de.ii.xtraplatform.features.domain;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import javax.annotation.Nullable;
@@ -62,7 +65,7 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
 
     @Value.Lazy
     default long index() {
-      return indexes().isEmpty() ? 0 : indexes().get(0);
+      return indexes().isEmpty() ? 0 : indexes().get(indexes().size()-1);
     }
 
     FeatureQuery query();
@@ -147,7 +150,19 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     //TODO: default values are not cached by Modifiable
     @Value.Default
     default FeaturePathTracker pathTracker() {
-      FeaturePathTracker pathTracker = new FeaturePathTracker();
+      //when tracking target paths, if present, use path separator from flatten transformation in mapping().getTargetSchema()
+      Optional<String> pathSeparator = Optional.ofNullable(mapping())
+          .filter(SchemaMapping::useTargetPaths)
+          .map(SchemaMappingBase::getTargetSchema)
+          .map(FeatureSchema::getTransformations)
+          .flatMap(transformations -> transformations.stream()
+              .filter(transformation -> transformation.getFlatten().isPresent())
+              .findFirst())
+          .flatMap(PropertyTransformation::getFlatten);
+
+      FeaturePathTracker pathTracker = pathSeparator.isPresent()
+          ? new FeaturePathTracker(pathSeparator.get())
+          : new FeaturePathTracker();
 
       setPathTracker(pathTracker);
 
