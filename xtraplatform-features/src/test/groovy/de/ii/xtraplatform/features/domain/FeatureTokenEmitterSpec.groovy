@@ -22,7 +22,10 @@ class FeatureTokenEmitterSpec extends Specification {
     def setup() {
         tokens = []
         eventHandler = (FeatureTokenEmitter2<FeatureEventHandler.ModifiableContext>) (token -> tokens.add(token))
-        tokenReader = new FeatureTokenReader(eventHandler, ModifiableGenericContext.create())
+        FeatureEventHandler.ModifiableContext context = ModifiableGenericContext.create();
+        SchemaMapping mapping = Mock()
+        context.setMapping(mapping)
+        tokenReader = new FeatureTokenReader(eventHandler, context)
     }
 
     def 'single feature'() {

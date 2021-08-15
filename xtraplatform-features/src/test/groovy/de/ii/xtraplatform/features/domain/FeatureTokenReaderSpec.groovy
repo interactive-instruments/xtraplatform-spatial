@@ -21,7 +21,10 @@ class FeatureTokenReaderSpec extends Specification {
     def setup() {
         eventHandler = Mock()
 
-        tokenReader = new FeatureTokenReader(eventHandler, ModifiableGenericContext.create())
+        FeatureEventHandler.ModifiableContext context = ModifiableGenericContext.create();
+        SchemaMapping mapping = Mock()
+        context.setMapping(mapping)
+        tokenReader = new FeatureTokenReader(eventHandler, context)
     }
 
     def 'single feature'() {
