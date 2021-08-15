@@ -71,7 +71,7 @@ public class ViewInfo {
   private static Optional<Tuple<String, String>> getOriginalTableAndColumn(
       PlainSelect select, String columnName) {
     ImmutableTuple.Builder<String, String> builder =
-        new ImmutableTuple.Builder<String, String>().second(columnName);
+        ImmutableTuple.<String, String>builder().second(columnName);
 
     for (SelectItem selectItem : select.getSelectItems()) {
       selectItem.accept(
@@ -103,7 +103,7 @@ public class ViewInfo {
   private static Tuple<String, String> resolveTableAlias(
       PlainSelect select, Tuple<String, String> tableAndColumn) {
     ImmutableTuple.Builder<String, String> builder =
-        new ImmutableTuple.Builder<String, String>().from(tableAndColumn);
+        ImmutableTuple.<String, String>builder().from(tableAndColumn);
 
     select
         .getFromItem()
