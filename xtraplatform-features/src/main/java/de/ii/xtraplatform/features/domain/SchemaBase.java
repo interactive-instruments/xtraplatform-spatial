@@ -202,6 +202,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
+    default boolean isPrimaryGeometry() {
+        return getRole().filter(role -> role == Role.PRIMARY_GEOMETRY).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
     default boolean isType() {
         return getRole().filter(role -> role == Role.TYPE).isPresent();
     }

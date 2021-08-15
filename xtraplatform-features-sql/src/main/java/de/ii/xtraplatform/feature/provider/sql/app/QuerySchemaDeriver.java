@@ -18,7 +18,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableTuple;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
-import de.ii.xtraplatform.features.domain.SchemaDeriver;
+import de.ii.xtraplatform.features.domain.MappedSchemaDeriver;
 import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +26,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class QuerySchemaDeriver implements SchemaDeriver<SchemaSql, SqlPath> {
+public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPath> {
   private final SqlPathParser pathParser;
 
   public QuerySchemaDeriver(SqlPathParser pathParser) {
