@@ -23,6 +23,8 @@ import java.util.stream.Stream;
 
 public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSchema, T> {
 
+  protected static final String SECONDARY_GEOMETRY = "SECONDARY_GEOMETRY";
+
   private final List<Codelist> codelists;
 
   public SchemaDeriver(List<Codelist> codelists) {
@@ -125,9 +127,11 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     }
 
     if (propertyType == Type.GEOMETRY) {
-      valueSchema = withName(valueSchema,  schema.isPrimaryGeometry() ? getNameWithRole(Role.PRIMARY_GEOMETRY, propertyName) : propertyName);
+      valueSchema = withName(valueSchema,  schema.isPrimaryGeometry()
+          ? getNameWithRole(Role.PRIMARY_GEOMETRY.name(), propertyName)
+          : getNameWithRole(SECONDARY_GEOMETRY, propertyName));
     } else {
-      valueSchema = withName(valueSchema,  schema.isId() ? getNameWithRole(Role.ID, propertyName) : propertyName);
+      valueSchema = withName(valueSchema,  schema.isId() ? getNameWithRole(Role.ID.name(), propertyName) : propertyName);
     }
 
     if (schema.isArray()) {
@@ -172,8 +176,8 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
   protected abstract T withArrayWrapper(T schema);
 
 
-  protected final String getNameWithRole(Role role, String propertyName) {
-    return String.format("_%s_ROLE_%s", role.name(), propertyName);
+  protected final String getNameWithRole(String role, String propertyName) {
+    return String.format("_%s_ROLE_%s", role, propertyName);
   }
 
   protected String getNameWithoutRole(String name) {
@@ -185,11 +189,19 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     return name;
   }
 
-  protected boolean nameHasRole(String name, Role role) {
+  protected boolean nameHasRole(String name, String role) {
     return name.startsWith(getNameWithRole(role, ""));
   }
 
+  protected boolean nameHasRole(String name) {
+    return name.contains("_ROLE_");
+  }
+
   protected Optional<T> findByRole(Map<String, T> properties, Role role) {
+    return findByRole(properties, role.name());
+  }
+
+  protected Optional<T> findByRole(Map<String, T> properties, String role) {
     return properties.values().stream()
         .flatMap(property -> {
           Collection<T> nestedProperties = getNestedProperties(property).values();
@@ -207,7 +219,15 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     return properties.entrySet()
         .stream()
         .filter(entry -> getPropertyName(entry.getValue()).filter(name -> Arrays
-            .stream(roles).noneMatch(role -> nameHasRole(name, role))).isPresent())
+            .stream(roles).noneMatch(role -> nameHasRole(name, role.name()))).isPresent())
+        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  //TODO: nested
+  protected Map<String, T> withoutRoles(Map<String, T> properties) {
+    return properties.entrySet()
+        .stream()
+        .filter(entry -> getPropertyName(entry.getValue()).filter(name -> !nameHasRole(name)).isPresent())
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
