@@ -10,9 +10,12 @@ package de.ii.xtraplatform.features.domain;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.PropertyBase.Type;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSchema>, U extends FeatureBase<T, FeatureSchema>> extends
     FeatureTokenEncoder<ModifiableContext> {
@@ -64,7 +67,7 @@ public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSche
       return;
     }
 
-    this.currentObjectOrArray = createProperty(PropertyBase.Type.OBJECT, context.path(), context.schema().get());
+    this.currentObjectOrArray = createProperty(PropertyBase.Type.OBJECT, context.path(), context.schema().get(), context.geometryType().orElse(null));
   }
 
   @Override
@@ -106,11 +109,20 @@ public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSche
   }
 
   private T createProperty(Property.Type type, List<String> path, FeatureSchema schema) {
-    return createProperty(type, path, schema, null, ImmutableMap.of());
+    return createProperty(type, path, schema, null, null, ImmutableMap.of());
+  }
+
+  private T createProperty(Property.Type type, List<String> path, FeatureSchema schema, SimpleFeatureGeometry geometryType) {
+    return createProperty(type, path, schema, null, geometryType, ImmutableMap.of());
   }
 
   private T createProperty(Type type, List<String> path, FeatureSchema schema,
-      String value, Map<String, String> transformed) {
+                           String value, Map<String, String> transformed) {
+    return createProperty(type, path, schema, value, null, transformed);
+  }
+
+  private T createProperty(Type type, List<String> path, FeatureSchema schema,
+      String value, SimpleFeatureGeometry geometryType, Map<String, String> transformed) {
 
     /*return currentFeature.getProperties()
         .stream()
@@ -120,10 +132,11 @@ public abstract class FeatureObjectEncoder<T extends PropertyBase<T, FeatureSche
         .orElseGet(() -> {*/
           T property = createProperty();
           property.type(type)
-              .schema(schema)
-              .propertyPath(path)
-              .value(value)
-              .transformed(transformed);
+                  .schema(schema)
+                  .propertyPath(path)
+                  .value(value)
+                  .geometryType(Optional.ofNullable(geometryType))
+                  .transformed(transformed);
 
           if (Objects.nonNull(currentObjectOrArray)) {
             property.parent(currentObjectOrArray);

@@ -8,6 +8,8 @@
 package de.ii.xtraplatform.features.domain;
 
 import java.util.Map;
+
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
@@ -61,6 +63,7 @@ public interface PropertyBase<T extends PropertyBase<T,U>, U extends SchemaBase<
         return getType() == Type.ARRAY;
     }
 
+    Optional<SimpleFeatureGeometry> getGeometryType();
 
 
     PropertyBase<T,U> schema(Optional<U> schema);
@@ -82,5 +85,9 @@ public interface PropertyBase<T extends PropertyBase<T,U>, U extends SchemaBase<
     PropertyBase<T,U> level(int level);
 
     PropertyBase<T,U> transformed(Map<String, ? extends String> transformed);
+
+    PropertyBase<T,U> geometryType(Optional<SimpleFeatureGeometry> geometryType);
+
+    PropertyBase<T,U> geometryType(SimpleFeatureGeometry geometryType);
 
 }
