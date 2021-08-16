@@ -211,22 +211,37 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
             Scalar scalar1 = (Scalar) ctx.scalarExpression().get(0)
                                          .accept(this);
-            Scalar scalar2 = (Scalar) ctx.scalarExpression().get(1)
-                                         .accept(this);
-            Scalar scalar3 = (Scalar) ctx.scalarExpression().get(2)
-                                         .accept(this);
 
-            Between between = new ImmutableBetween.Builder()
-                    .value(scalar1)
-                    .lower(scalar2)
-                    .upper(scalar3)
-                    .build();
+            if (!ctx.temporalExpression().isEmpty()) {
+                TemporalLiteral temporalLiteral = TemporalLiteral.of(String.format("%s/%s", ctx.temporalExpression(0).getText(), ctx.temporalExpression(1).getText()));
 
-            if (Objects.nonNull(ctx.NOT())) {
-                return Not.of(between);
+                During during = new ImmutableDuring.Builder()
+                        .operands(ImmutableList.of(scalar1, temporalLiteral))
+                        .build();
+
+                if (Objects.nonNull(ctx.NOT())) {
+                    return Not.of(during);
+                }
+                return during;
+
+            } else {
+                Scalar scalar2 = (Scalar) ctx.scalarExpression().get(1)
+                        .accept(this);
+                Scalar scalar3 = (Scalar) ctx.scalarExpression().get(2)
+                        .accept(this);
+
+                Between between = new ImmutableBetween.Builder()
+                        .value(scalar1)
+                        .lower(scalar2)
+                        .upper(scalar3)
+                        .build();
+
+                if (Objects.nonNull(ctx.NOT())) {
+                    return Not.of(between);
+                }
+                return between;
             }
 
-            return between;
         }
         return null;
     }
@@ -269,12 +284,25 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 case EQ:
                     builder = new ImmutableTEquals.Builder();
                     break;
+                case NEQ:
+                    TEquals tEquals = new ImmutableTEquals.Builder()
+                            .operands(ImmutableList.of(temporal1, temporal2))
+                            .build();
+                    return Not.of(tEquals);
                 case GT:
                     builder = new ImmutableAfter.Builder();
                     break;
+                case GTEQ:
+                    After after = new ImmutableAfter.Builder().operands(ImmutableList.of(temporal1, temporal2)).build();
+                    tEquals = new ImmutableTEquals.Builder().operands(ImmutableList.of(temporal1, temporal2)).build();
+                    return Or.of(CqlPredicate.of(after), CqlPredicate.of(tEquals));
                 case LT:
                     builder = new ImmutableBefore.Builder();
                     break;
+                case LTEQ:
+                    Before before = new ImmutableBefore.Builder().operands(ImmutableList.of(temporal1, temporal2)).build();
+                    tEquals = new ImmutableTEquals.Builder().operands(ImmutableList.of(temporal1, temporal2)).build();
+                    return Or.of(CqlPredicate.of(before), CqlPredicate.of(tEquals));
                 default:
                     throw new IllegalStateException("unsupported temporal comparison operator: " + comparisonOperator);
             }
@@ -415,10 +443,10 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitInPredicate(CqlParser.InPredicateContext ctx) {
         In in;
-        List<ScalarLiteral> values = ImmutableList.of(ctx.characterLiteral(), ctx.numericLiteral())
+        List<Scalar> values = ImmutableList.of(ctx.characterLiteral(), ctx.numericLiteral(), ctx.temporalLiteral())
                                                   .stream()
                                                   .flatMap(Collection::stream)
-                                                  .map(v -> (ScalarLiteral) v.accept(this))
+                                                  .map(v -> (Scalar) v.accept(this))
                                                   .collect(Collectors.toList());
 
         if (Objects.nonNull(ctx.function())) {

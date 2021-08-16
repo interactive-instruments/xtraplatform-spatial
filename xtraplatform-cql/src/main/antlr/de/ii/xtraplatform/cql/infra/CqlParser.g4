@@ -51,7 +51,7 @@ nocase : NOCASE booleanLiteral;
 propertyIsLikePredicate :  scalarExpression (NOT)? LIKE scalarExpression (likeModifier)*;
 
 propertyIsBetweenPredicate : scalarExpression (NOT)? BETWEEN
-                             scalarExpression AND scalarExpression;
+                             (scalarExpression | temporalExpression) AND (scalarExpression | temporalExpression);
 
 propertyIsNullPredicate : scalarExpression IS (NOT)? NULL;
 

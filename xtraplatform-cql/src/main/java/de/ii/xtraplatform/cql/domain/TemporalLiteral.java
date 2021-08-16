@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 
 @Value.Immutable
 @JsonDeserialize(builder = TemporalLiteral.Builder.class)
-public interface TemporalLiteral extends Temporal, Literal, CqlNode {
+public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
 
     Instant MIN_DATE = Instant.parse("0000-01-01T00:00:00Z");
     Instant MAX_DATE = Instant.parse("9999-12-31T23:59:59Z");
