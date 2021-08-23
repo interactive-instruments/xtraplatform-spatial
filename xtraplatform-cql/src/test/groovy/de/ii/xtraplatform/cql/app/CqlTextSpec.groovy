@@ -1007,4 +1007,37 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
+    def 'LT with temporal value -- interval'() {
+        given:
+        String cqlText = "built < 2017-06-10T07:30:00Z/2017-06-11T10:30:00Z"
+
+        when: 'reading text'
+        cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def 'BETWEEN with temporal arguments -- intervals'() {
+        given:
+        String cqlText = "updated BETWEEN 2017-06-10T07:30:00Z/2017-06-11T10:30:00Z AND 2018-06-10T07:30:00Z/2018-06-11T10:30:00Z"
+
+        when: 'reading text'
+        cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
+    def 'IN with temporal arguments -- intervals'() {
+        given:
+        String cqlText = "updated IN (2017-06-10T07:30:00Z/2017-06-11T10:30:00Z, 2018-06-10T07:30:00Z/2018-06-11T10:30:00Z)"
+
+        when: 'reading text'
+        cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        thrown(IllegalArgumentException)
+    }
+
 }
