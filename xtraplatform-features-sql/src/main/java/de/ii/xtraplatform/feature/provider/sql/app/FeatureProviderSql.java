@@ -378,6 +378,7 @@ public class FeatureProviderSql extends
         return Optional.empty();
       }
 
+      // TODO do not use the first spatial attribute; if there is a primary one, use that
       typeInfo.get().getInstanceContainers().get(0).getSpatialAttribute().map(
           FeatureStoreAttribute::getName).ifPresent(spatialProperty -> LOGGER.debug("Computing spatial extent for '{}.{}'", typeName, spatialProperty));
 
