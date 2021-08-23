@@ -133,8 +133,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
         String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.BUILT, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_12), Collections.emptyList(), true)
         String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.BUILT, Optional.of(CqlFilterExamples.EXAMPLE_12), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
-        metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.built < TIMESTAMP '2015-01-01T00:00:00Z') ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.built < TIMESTAMP '2015-01-01T00:00:00Z') ORDER BY 1) AS NM) AS NM2"
-        instanceQuery == "SELECT A.id AS SKEY, A.built FROM container A WHERE (A.id >= null AND A.id <= null) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.built < TIMESTAMP '2015-01-01T00:00:00Z')) ORDER BY 1"
+        metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.built < TIMESTAMP '2012-06-05T00:00:00Z') ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.built < TIMESTAMP '2012-06-05T00:00:00Z') ORDER BY 1) AS NM) AS NM2"
+        instanceQuery == "SELECT A.id AS SKEY, A.built FROM container A WHERE (A.id >= null AND A.id <= null) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.built < TIMESTAMP '2012-06-05T00:00:00Z')) ORDER BY 1"
     }
 
     def 'Built after June 5, 2012'() {
