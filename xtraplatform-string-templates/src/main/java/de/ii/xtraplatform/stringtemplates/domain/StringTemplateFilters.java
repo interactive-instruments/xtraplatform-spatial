@@ -110,48 +110,48 @@ public class StringTemplateFilters {
         int lastMatch = 0;
         while (matcher.find()) {
             String key = matcher.group(1);
-            String filteredValue = Objects.requireNonNullElse(valueLookup.apply(key), "");
-            Matcher matcher2 = filterPattern.matcher(template.substring(matcher.start(), matcher.end()));
-            while (matcher2.find()) {
-                String filter = matcher2.group(1);
-                String params = matcher2.group(2);
-                List<String> parameters = matcher2.groupCount() < 2
-                        ? ImmutableList.of()
-                        : Splitter.onPattern("(?<=^|'):(?='|$)")
-                                  .omitEmptyStrings()
-                                  .splitToList(params)
-                                  .stream()
-                                  .map(s -> s.substring(1, s.length() - 1 ))
-                                  .collect(Collectors.toList());
+            String filteredValue = valueLookup.apply(key);
+            if (Objects.nonNull(filteredValue)) {
+                Matcher matcher2 = filterPattern.matcher(template.substring(matcher.start(), matcher.end()));
+                while (matcher2.find()) {
+                    String filter = matcher2.group(1);
+                    String params = matcher2.group(2);
+                    List<String> parameters = matcher2.groupCount() < 2
+                            ? ImmutableList.of()
+                            : Splitter.onPattern("(?<=^|'):(?='|$)")
+                                      .omitEmptyStrings()
+                                      .splitToList(params)
+                                      .stream()
+                                      .map(s -> s.substring(1, s.length() - 1))
+                                      .collect(Collectors.toList());
 
-                if (filter.equals("markdown")) {
-                    filteredValue = applyFilterMarkdown(filteredValue);
-                    hasAppliedMarkdown = true;
-                } else if (filter.equals("replace") && parameters.size() >= 2) {
-                    filteredValue = filteredValue.replaceAll(parameters.get(0), parameters.get(1));
-                } else if (filter.equals("prepend") && parameters.size() >= 1) {
-                    filteredValue = parameters.get(0) + filteredValue;
-                } else if (filter.equals("append") && parameters.size() >= 1) {
-                    filteredValue = filteredValue + parameters.get(0);
-                } else if (filter.equals("urlEncode") || filter.equals("urlencode")) {
-                    try {
-                        filteredValue = URLEncoder.encode(filteredValue, Charsets.UTF_8.toString());
-                    } catch (UnsupportedEncodingException e) {
-                        //ignore
+                    if (filter.equals("markdown")) {
+                        filteredValue = applyFilterMarkdown(filteredValue);
+                        hasAppliedMarkdown = true;
+                    } else if (filter.equals("replace") && parameters.size() >= 2) {
+                        filteredValue = filteredValue.replaceAll(parameters.get(0), parameters.get(1));
+                    } else if (filter.equals("prepend") && parameters.size() >= 1) {
+                        filteredValue = parameters.get(0) + filteredValue;
+                    } else if (filter.equals("append") && parameters.size() >= 1) {
+                        filteredValue = filteredValue + parameters.get(0);
+                    } else if (filter.equals("urlEncode") || filter.equals("urlencode")) {
+                        try {
+                            filteredValue = URLEncoder.encode(filteredValue, Charsets.UTF_8.toString());
+                        } catch (UnsupportedEncodingException e) {
+                            //ignore
+                        }
+                    } else if (filter.equals("toLower")) {
+                        filteredValue = filteredValue.toLowerCase();
+                    } else if (filter.equals("toUpper")) {
+                        filteredValue = filteredValue.toUpperCase();
+                    } else if (filter.equals("assignTo") && parameters.size() >= 1) {
+                        assigns.put(parameters.get(0), filteredValue);
+                    } else {
+                        LOGGER.warn("Template filter '{}' not supported", filter);
                     }
-                } else if (filter.equals("toLower")) {
-                    filteredValue = filteredValue.toLowerCase();
-                } else if (filter.equals("toUpper")) {
-                    filteredValue = filteredValue.toUpperCase();
-                } else if (filter.equals("assignTo") && parameters.size() >= 1) {
-                    assigns.put(parameters.get(0), filteredValue);
-                } else {
-                    LOGGER.warn("Template filter '{}' not supported", filter);
                 }
             }
-            //formattedValue = formattedValue.substring(lastMatch, matcher.start()) + filteredValue + formattedValue.substring(matcher.end());
-            //lastMatch = matcher.start();
-            formattedValue += template.substring(lastMatch, matcher.start()) + filteredValue;
+            formattedValue += template.substring(lastMatch, matcher.start()) + Objects.requireNonNullElse(filteredValue,"");
             lastMatch = matcher.end();
         }
         formattedValue += template.substring(lastMatch);
