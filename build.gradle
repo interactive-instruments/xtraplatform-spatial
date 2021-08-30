@@ -17,6 +17,7 @@ dependencies {
     feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '3.5.1'
 
     bundle subprojects
+    implementation files("libs/proj-1.0.jar")
 }
 
 

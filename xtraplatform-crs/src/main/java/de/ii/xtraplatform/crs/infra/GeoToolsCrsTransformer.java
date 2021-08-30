@@ -16,10 +16,14 @@ import de.ii.xtraplatform.crs.domain.CoordinateTupleWithPrecision;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.geotools.referencing.CRS;
+import org.kortforsyningen.proj.Proj;
 import org.opengis.geometry.MismatchedDimensionException;
 import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.crs.CRSAuthorityFactory;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.cs.AxisDirection;
+import org.opengis.referencing.operation.CoordinateOperation;
+import org.opengis.referencing.operation.CoordinateOperationFactory;
 import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
 import org.slf4j.Logger;
@@ -39,7 +43,6 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
     private final EpsgCrs sourceCrs;
     private final EpsgCrs targetCrs;
     private final boolean isTargetMetric;
-    private final MathTransform mathTransform;
     private final double sourceUnitEquivalentInMeters;
     private final double targetUnitEquivalentInMeters;
     private final boolean needsAxisSwap;
@@ -47,13 +50,15 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
     private final int sourceDimension;
     private final int targetDimension;
     private final boolean preserveHeight;
+    private final CRSAuthorityFactory factory;
+    private final CoordinateOperationFactory regops;
+    private final CoordinateOperation operation;
 
     GeoToolsCrsTransformer(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
                            EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, int sourceDimension,
                            int targetDimension) throws FactoryException {
         this.sourceCrs = origSourceCrs;
         this.targetCrs = origTargetCrs;
-        this.mathTransform = CRS.findMathTransform(sourceCrs, targetCrs, true);
 
         Unit<?> sourceUnit = CRS.getHorizontalCRS(sourceCrs)
                                 .getCoordinateSystem()
@@ -101,6 +106,10 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
         this.preserveHeight = sourceDimension == 3 && targetDimension == 3;
 
         //LOGGER.debug("AXIS SWAP: {} {} {} {}, {} {} {}", needsAxisSwap, origSourceCrs.getCode(), sourceNeedsAxisSwap, sourceDirection, origTargetCrs.getCode(), targetNeedsAxisSwap, targetDirection);
+
+        factory = Proj.getAuthorityFactory("EPSG");
+        regops  = Proj.getOperationFactory(null);
+        operation = regops.createOperation(sourceCrs, targetCrs);
     }
 
     @Override
@@ -142,7 +151,7 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
                 }
             }
             double[] target = new double[2* numberOfPoints];
-            mathTransform.transform(source, 0, target, 0, numberOfPoints);
+            operation.getMathTransform().transform(source, 0, target, 0, numberOfPoints);
 
             return target;
         } catch (MismatchedDimensionException | TransformException ex) {
@@ -166,7 +175,7 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
                     coordinates2D[j++] = coordinates[i + 1];
                 }
             }
-            mathTransform.transform(coordinates2D, 0, coordinates2D, 0, numberOfPoints);
+            operation.getMathTransform().transform(coordinates2D, 0, coordinates2D, 0, numberOfPoints);
 
             j = 0;
             for (int i = 0; i < numberOfPoints * 3; i += 3) {
