@@ -73,7 +73,7 @@ class GeoToolsCrsTransformerSpec extends Specification {
         double[] target = gct.transform3d(source, 1, false)
 
         then:
-        target == [48.684236448177785, 7.923077973066519, 131.96] as double[]
+        target == [48.68423644912392, 7.923077973066287, 131.96] as double[]
     }
 
     def 'CRS transformer test 2D'() {

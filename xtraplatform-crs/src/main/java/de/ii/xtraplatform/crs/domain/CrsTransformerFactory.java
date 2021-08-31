@@ -11,7 +11,7 @@
 package de.ii.xtraplatform.crs.domain;
 
 import java.util.Optional;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 
 /**
  *

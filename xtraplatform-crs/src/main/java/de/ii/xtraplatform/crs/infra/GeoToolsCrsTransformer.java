@@ -15,22 +15,19 @@ import de.ii.xtraplatform.crs.domain.CoordinateTuple;
 import de.ii.xtraplatform.crs.domain.CoordinateTupleWithPrecision;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import org.geotools.referencing.CRS;
+import javax.measure.Unit;
 import org.kortforsyningen.proj.Proj;
+import org.kortforsyningen.proj.Units;
 import org.opengis.geometry.MismatchedDimensionException;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CRSAuthorityFactory;
+import org.opengis.referencing.crs.CompoundCRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.cs.AxisDirection;
+import org.opengis.referencing.crs.SingleCRS;
+import org.opengis.referencing.datum.GeodeticDatum;
 import org.opengis.referencing.operation.CoordinateOperation;
-import org.opengis.referencing.operation.CoordinateOperationFactory;
-import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
+import org.opengis.util.FactoryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
 
 /**
  *
@@ -42,6 +39,7 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
 
     private final EpsgCrs sourceCrs;
     private final EpsgCrs targetCrs;
+    private final boolean isSourceMetric;
     private final boolean isTargetMetric;
     private final double sourceUnitEquivalentInMeters;
     private final double targetUnitEquivalentInMeters;
@@ -50,8 +48,6 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
     private final int sourceDimension;
     private final int targetDimension;
     private final boolean preserveHeight;
-    private final CRSAuthorityFactory factory;
-    private final CoordinateOperationFactory regops;
     private final CoordinateOperation operation;
 
     GeoToolsCrsTransformer(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
@@ -60,45 +56,25 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
         this.sourceCrs = origSourceCrs;
         this.targetCrs = origTargetCrs;
 
-        Unit<?> sourceUnit = CRS.getHorizontalCRS(sourceCrs)
+        Unit<?> sourceUnit = sourceCrs
                                 .getCoordinateSystem()
                                 .getAxis(0)
                                 .getUnit();
-        Unit<?> targetUnit = CRS.getHorizontalCRS(targetCrs)
+        Unit<?> targetUnit = targetCrs
                                 .getCoordinateSystem()
                                 .getAxis(0)
                                 .getUnit();
         //TODO: test if METRE is really returned
-        boolean isSourceMetric = sourceUnit == SI.METER;
-        this.isTargetMetric = targetUnit == SI.METER;//targetCrs instanceof ProjectedCRS;
-        this.sourceUnitEquivalentInMeters = isSourceMetric ? 1 : (Math.PI / 180.00) * CRS.getEllipsoid(sourceCrs)
-                                                                                         .getSemiMajorAxis();
-        this.targetUnitEquivalentInMeters = isTargetMetric ? 1 : (Math.PI / 180.00) * CRS.getEllipsoid(targetCrs)
-                                                                                         .getSemiMajorAxis();
-/*
-        AxisDirection sourceDirection = sourceCrs.getCoordinateSystem()
-                                           .getAxis(0)
-                                           .getDirection();
-        AxisDirection sourceOrigDirection = CRS.decode(this.sourceCrs.toSimpleString())
-                                               .getCoordinateSystem()
-                                                 .getAxis(0)
-                                                 .getDirection();
-        AxisDirection targetDirection = targetCrs.getCoordinateSystem()
-                                                 .getAxis(0)
-                                                 .getDirection();
+        this.isSourceMetric = sourceUnit == Units.METRE;
+        this.isTargetMetric = targetUnit == Units.METRE;//targetCrs instanceof ProjectedCRS;
 
-        AxisDirection targetOrigDirection = CRS.decode(EpsgCrs.fromString(targetCrs.getIdentifiers()
-                                                                                   .iterator()
-                                                                                   .next()
-                                                                                   .toString())
-                                                              .toSimpleString())
-                                               .getCoordinateSystem()
-                                               .getAxis(0)
-                                               .getDirection();
-        boolean sourceNeedsAxisSwap = origSourceCrs.getForceLonLat() && sourceDirection == sourceOrigDirection;
-        boolean targetNeedsAxisSwap = origTargetCrs.getForceLonLat() && targetDirection == targetOrigDirection;
+        SingleCRS horizontalSourceCrs = getHorizontalCrs(sourceCrs);
+        SingleCRS horizontalTargetCrs = getHorizontalCrs(targetCrs);
 
- */
+        this.sourceUnitEquivalentInMeters = getUnitEquivalentInMeters(horizontalSourceCrs);
+
+        this.targetUnitEquivalentInMeters = getUnitEquivalentInMeters(horizontalTargetCrs);
+
         //TODO
         this.needsAxisSwap = false; //sourceNeedsAxisSwap != targetNeedsAxisSwap;
         this.sourceDimension = sourceDimension;
@@ -107,9 +83,7 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
 
         //LOGGER.debug("AXIS SWAP: {} {} {} {}, {} {} {}", needsAxisSwap, origSourceCrs.getCode(), sourceNeedsAxisSwap, sourceDirection, origTargetCrs.getCode(), targetNeedsAxisSwap, targetDirection);
 
-        factory = Proj.getAuthorityFactory("EPSG");
-        regops  = Proj.getOperationFactory(null);
-        operation = regops.createOperation(sourceCrs, targetCrs);
+        operation  = Proj.createCoordinateOperation(sourceCrs, targetCrs, null);
     }
 
     @Override
@@ -214,5 +188,18 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
     @Override
     public int getTargetDimension() {
         return targetDimension;
+    }
+
+    private double getUnitEquivalentInMeters(SingleCRS horizontalCrs) {
+        return isSourceMetric || !(horizontalCrs.getDatum() instanceof GeodeticDatum)
+            ? 1
+            : (Math.PI / 180.00) * ((GeodeticDatum) horizontalCrs.getDatum()).getEllipsoid()
+                .getSemiMajorAxis();
+    }
+
+    private SingleCRS getHorizontalCrs(CoordinateReferenceSystem crs) {
+        return crs instanceof CompoundCRS
+            ? (SingleCRS) ((CompoundCRS) crs).getComponents().get(0)
+            : (SingleCRS) crs;
     }
 }
