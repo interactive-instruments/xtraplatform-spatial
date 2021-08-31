@@ -42,15 +42,15 @@ import org.slf4j.LoggerFactory;
 @Component
 @Provides
 @Instantiate
-public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
+public class CrsTransformerFactoryProj implements CrsTransformerFactory {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GeoToolsCrsTransformerFactory.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CrsTransformerFactoryProj.class);
 
     private final CRSAuthorityFactory crsFactory;
     private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
     private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
 
-    public GeoToolsCrsTransformerFactory() {
+    public CrsTransformerFactoryProj() {
         this.crsFactory = EPSG.provider();
         this.crsCache = new ConcurrentHashMap<>();
         this.transformerCache = new ConcurrentHashMap<>();
@@ -61,7 +61,7 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
         }
 
         try {
-            new GeoToolsCrsTransformer(crsFactory.createCoordinateReferenceSystem("4326"), crsFactory.createCoordinateReferenceSystem("4258"), EpsgCrs.of(4326), EpsgCrs.of(4258), 2, 2);
+            new CrsTransformerProj(crsFactory.createCoordinateReferenceSystem("4326"), crsFactory.createCoordinateReferenceSystem("4258"), EpsgCrs.of(4326), EpsgCrs.of(4258), 2, 2);
         } catch (Throwable ex) {
             //ignore
             boolean br = true;
@@ -137,7 +137,7 @@ public class GeoToolsCrsTransformerFactory implements CrsTransformerFactory {
         CoordinateReferenceSystem horizontalTargetCrs = is3dTo3d || is2dTo3d ? getHorizontalCrs(crsCache.get(targetCrs)) : crsCache.get(targetCrs);
 
         try {
-            return new GeoToolsCrsTransformer(horizontalSourceCrs, horizontalTargetCrs, sourceCrs, targetCrs, sourceDimension, targetDimension);
+            return new CrsTransformerProj(horizontalSourceCrs, horizontalTargetCrs, sourceCrs, targetCrs, sourceDimension, targetDimension);
         } catch (FactoryException ex) {
             LOGGER.debug("GeoTools error", ex);
             throw new IllegalArgumentException(ex.getMessage(), ex);

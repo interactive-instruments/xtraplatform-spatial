@@ -10,17 +10,16 @@ package de.ii.xtraplatform.crs.infra
 import de.ii.xtraplatform.crs.domain.CoordinateTuple
 import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
-class GeoToolsCrsTransformerSpec extends Specification {
+class CrsTransformerProjSpec extends Specification {
 
     @Shared
-    GeoToolsCrsTransformerFactory transformerFactory
+    CrsTransformerFactoryProj transformerFactory
 
     def setupSpec() {
-        transformerFactory = new GeoToolsCrsTransformerFactory()
+        transformerFactory = new CrsTransformerFactoryProj()
     }
 
     def 'find transformer - #dim (#src, #trgt)'() {
@@ -69,7 +68,7 @@ class GeoToolsCrsTransformerSpec extends Specification {
         double[] source = [420735.071, 5392914.343, 131.96]
 
         when:
-        GeoToolsCrsTransformer gct = (GeoToolsCrsTransformer) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
         double[] target = gct.transform3d(source, 1, false)
 
         then:
@@ -91,7 +90,7 @@ class GeoToolsCrsTransformerSpec extends Specification {
         }
 
         when:
-        GeoToolsCrsTransformer gct = (GeoToolsCrsTransformer) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
         CoordinateTuple coordinateTuple1 = gct.transform(x, y)
         CoordinateTuple coordinateTuple2 = gct.transform(new CoordinateTuple(x, y), false)
         double[] re = gct.transform(ra, 5, false)

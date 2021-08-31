@@ -33,9 +33,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author zahnen
  */
-public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements CrsTransformer  {
+public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTransformer  {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GeoToolsCrsTransformer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CrsTransformerProj.class);
 
     private final EpsgCrs sourceCrs;
     private final EpsgCrs targetCrs;
@@ -50,7 +50,7 @@ public class GeoToolsCrsTransformer extends BoundingBoxTransformer implements Cr
     private final boolean preserveHeight;
     private final CoordinateOperation operation;
 
-    GeoToolsCrsTransformer(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
+    CrsTransformerProj(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
                            EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, int sourceDimension,
                            int targetDimension) throws FactoryException {
         this.sourceCrs = origSourceCrs;
