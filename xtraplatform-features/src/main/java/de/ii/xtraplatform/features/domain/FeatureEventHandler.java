@@ -178,14 +178,14 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     @Value.Lazy
     @Override
     default String pathAsString() {
-      return pathTracker().toString();
+      return pathTracker().toStringWithDefaultSeparator();
     }
 
     @Value.Lazy
     default boolean shouldSkip() {
       return isBuffering()
           || currentSchema().isEmpty()
-          || !shouldInclude(currentSchema().get(), parentSchemas(), pathAsString());
+          || !shouldInclude(currentSchema().get(), parentSchemas(), pathTracker().toString());
     }
 
     private boolean shouldInclude(FeatureSchema schema,

@@ -114,7 +114,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
         throw new IllegalArgumentException(e);
       }
     } else {
-      String path = context.pathTracker().toString();
+      String path = context.pathAsString();
       String value = context.value();
 
       if (!context.valueBuffer().isEmpty()) {

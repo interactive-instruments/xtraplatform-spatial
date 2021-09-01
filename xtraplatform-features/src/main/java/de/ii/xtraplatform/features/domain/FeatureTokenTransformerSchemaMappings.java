@@ -101,7 +101,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
         //nestingTracker.closeObject();
         closeObject();
       } else if (nestingTracker.inArray()) {
-        nestingTracker.closeArray();
+        closeArray();
       }
     }
 
@@ -210,10 +210,10 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     newContext.setValueType(context.valueType());
 
     contextTransformerChain.transform(
-        newContext.pathTracker().toString(), newContext);
+        newContext.pathAsString(), newContext);
 
     FeatureSchema transformed = schemaTransformerChain.transform(
-        newContext.pathTracker().toString(), schema);
+        newContext.pathAsString(), schema);
 
     if (Objects.isNull(transformed)) {
       clearValueContext();
@@ -245,44 +245,36 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
     while (nestingTracker.isNested() &&
         (nestingTracker.doesNotStartWithPreviousPath(schema.getFullPath()) ||
-            (/*nestingTracker.inObject() && nestingTracker.isSamePath(schema.getFullPath()) ||*/
-                (nestingTracker.inArray() && nestingTracker.isSamePath(schema.getFullPath())
-                    && nestingTracker.hasParentIndexChanged(indexes))))) {
+            (nestingTracker.inArray() && nestingTracker.isSamePath(schema.getFullPath())
+                    && nestingTracker.hasParentIndexChanged(indexes)))) {
 
-      //nestingTracker.close();
       if (nestingTracker.inObject()) {
-        //nestingTracker.closeObject();
         closeObject();
       } else if (nestingTracker.inArray()) {
-        nestingTracker.closeArray();
+        closeArray();
       }
     }
 
     if (nestingTracker.inObject() && newContext.inArray() && nestingTracker
         .isSamePath(schema.getFullPath()) && nestingTracker
         .hasIndexChanged(indexes)) {
-      //nestingTracker.closeObject();
       closeObject();
       newContext.setIndexes(indexes);
-      //nestingTracker.openObject();
       openObject(schema);
     }
 
-    if (schema.isArray() && /*nestingTracker.isFirst(indexes) &&*/ !nestingTracker
-        .isSamePath(schema.getFullPath())) {
+    if (schema.isArray() && !nestingTracker.isSamePath(schema.getFullPath())) {
       openParents(parentSchemas, indexes);
       newContext.pathTracker().track(schema.getFullPath());
-      nestingTracker.openArray();
+      openArray(schema);
     } else if (schema.isObject() && schema.isArray() && nestingTracker.isFirst(indexes)) {
       newContext.pathTracker().track(schema.getFullPath());
       newContext.setIndexes(indexes);
-      //nestingTracker.openObject();
       openObject(schema);
     } else if (schema.isObject() && !schema.isArray() && !nestingTracker
         .isSamePath(schema.getFullPath())) {
       openParents(parentSchemas, indexes);
       newContext.pathTracker().track(schema.getFullPath());
-      //nestingTracker.openObject();
       openObject(schema);
     } else if (schema.isValue() && (!schema.isArray() || nestingTracker.isFirst(indexes))) {
       openParents(parentSchemas, indexes);
@@ -295,10 +287,10 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
   private void openObject(FeatureSchema schema) {
     contextTransformerChain.transform(
-        newContext.pathTracker().toString(), newContext);
+        newContext.pathAsString(), newContext);
 
     FeatureSchema transform1 = schemaTransformerChain.transform(
-        newContext.pathTracker().toString(), schema);
+        newContext.pathAsString(), schema);
 
     if (Objects.isNull(transform1)) {
       newContext.setCustomSchema(null);
@@ -312,9 +304,28 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     newContext.setCustomSchema(null);
   }
 
+  private void openArray(FeatureSchema schema) {
+    contextTransformerChain.transform(
+        newContext.pathAsString(), newContext);
+
+    FeatureSchema transform1 = schemaTransformerChain.transform(
+        newContext.pathAsString(), schema);
+
+    if (Objects.isNull(transform1)) {
+      newContext.setCustomSchema(null);
+      return;
+    }
+
+    newContext.setCustomSchema(transform1);
+
+    nestingTracker.openArray();
+
+    newContext.setCustomSchema(null);
+  }
+
   private void closeObject() {
     newContext.pathTracker().track(nestingTracker.getCurrentNestingPath());
-    String path = newContext.pathTracker().toString();
+    String path = newContext.pathAsString();
 
     if (newContext.transformed().containsKey(path) && newContext.transformed().get(path).equals(
         FeaturePropertyTransformerObjectReduce.TYPE)) {
@@ -344,6 +355,12 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     } else {
       nestingTracker.closeObject();
     }
+  }
+
+  private void closeArray() {
+    newContext.pathTracker().track(nestingTracker.getCurrentNestingPath());
+
+    nestingTracker.closeArray();
   }
 
   private void openParents(List<FeatureSchema> parentSchemas, List<Integer> indexes) {

@@ -74,6 +74,11 @@ public class FeaturePathTracker {
         return joiner.join(localPath);
     }
 
+    public String toStringWithDefaultSeparator() {
+        if (localPath.isEmpty()) return "";
+        return DEFAULT_JOINER.join(localPath);
+    }
+
     public List<String> asList() {
         if (localPath.isEmpty()) return ImmutableList.of();
         return ImmutableList.copyOf(localPath);
