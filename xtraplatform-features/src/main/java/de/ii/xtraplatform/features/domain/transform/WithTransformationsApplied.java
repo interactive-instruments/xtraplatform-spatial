@@ -12,7 +12,9 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
+import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,25 +60,42 @@ public class WithTransformationsApplied implements
   public FeatureSchema visit(FeatureSchema schema, List<FeatureSchema> parents,
       List<FeatureSchema> visitedProperties) {
 
+    TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> schemaTransformations = getPropertyTransformations(schema)
+        .getSchemaTransformations(null, true, (x, y) -> "");
+
+    FeatureSchema transformed = schemaTransformations.transform(schema.getFullPathAsString(), schema);
+
+    if (Objects.isNull(transformed)) {
+      return null;
+    }
+
     if (parents.isEmpty()) {
-      Optional<String> flatten = getFlatteningSeparator(schema);
+      Optional<String> flatten = getFlatteningSeparator(transformed);
 
       if (flatten.isPresent()) {
         String separator = flatten.get();
 
-        Map<String, FeatureSchema> flatProperties = flattenProperties(schema.getProperties(), null, separator, null, " > ")
+        Map<String, FeatureSchema> flatProperties = flattenProperties(visitedProperties, null, separator, null, " > ")
             .stream()
             .map(property -> new SimpleEntry<>(property.getName(), property))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
         return new ImmutableFeatureSchema.Builder()
-            .from(schema)
+            .from(transformed)
             .propertyMap(flatProperties)
             .build();
       }
     }
 
-    return schema;
+    Map<String, FeatureSchema> visitedPropertiesMap = visitedProperties.stream()
+        .filter(Objects::nonNull)
+        .map(featureSchema -> new SimpleImmutableEntry<>(featureSchema.getFullPathAsString(), featureSchema))
+        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    return new ImmutableFeatureSchema.Builder()
+        .from(transformed)
+        .propertyMap(visitedPropertiesMap)
+        .build();
   }
 
   private List<FeatureSchema> flattenProperties(List<FeatureSchema> properties, String parentName, String nameSeparator, String parentLabel, String labelSeparator) {
@@ -124,5 +143,16 @@ public class WithTransformationsApplied implements
         .get(PropertyTransformations.WILDCARD);
 
     return Optional.ofNullable(featureTransformations).filter(list -> !list.isEmpty()).map(list -> list.get(list.size()-1));
+  }
+
+  private PropertyTransformations getPropertyTransformations(FeatureSchema schema) {
+    PropertyTransformations schemaTransformations = () -> ImmutableMap.of(
+        schema.getFullPathAsString(), schema.getTransformations());
+
+    PropertyTransformations mergedTransformations = preferSchemaTransformations
+        ? schemaTransformations.mergeInto(additionalTransformations)
+        : additionalTransformations.mergeInto(schemaTransformations);
+
+    return mergedTransformations;
   }
 }
