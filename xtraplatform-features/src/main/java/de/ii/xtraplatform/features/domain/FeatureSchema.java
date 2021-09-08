@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
@@ -21,6 +22,8 @@ import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+import java.util.HashMap;
+import java.util.Objects;
 import org.immutables.value.Value;
 
 import java.util.AbstractMap;
@@ -291,8 +294,9 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
 
     @Value.Check
     default FeatureSchema backwardsCompatibility() {
-        // migrate double column syntax to multiple sourcePaths
-        if (getSourcePath().filter(path -> path.lastIndexOf(':') > path.lastIndexOf('/')).isPresent()) {
+        // migrate double column syntax to multiple sourcePaths, ignore wfs mappings
+        if (!getParentPath().isEmpty() && !getParentPath().get(0).contains(":")
+            && getSourcePath().filter(path -> path.lastIndexOf(':') > path.lastIndexOf('/')).isPresent()) {
             @Deprecated(since = "3.1.0")
             String path1 = getSourcePath().get().substring(0, getSourcePath().get().lastIndexOf(':'));
             String path2 = path1.substring(0, path1.lastIndexOf('/') + 1) + getSourcePath().get().substring(getSourcePath().get().lastIndexOf(':') + 1);
@@ -304,6 +308,71 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
                 .sourcePaths(ImmutableList.of(path1, path2))
                 .addTransformations(new ImmutablePropertyTransformation.Builder().stringFormat(String.format("{{%s}} ||| {{%s}}", path1, path2)).build())
                 .build();
+        }
+
+        return this;
+    }
+
+    @Value.Check
+    default FeatureSchema primaryGeometry() {
+        if (getParentPath().isEmpty() && getPrimaryGeometry().isPresent()
+            && getPrimaryGeometry().filter(FeatureSchema::isPrimaryGeometry).isEmpty()) {
+            FeatureSchema primaryGeometry = getPrimaryGeometry().get();
+            ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(this).propertyMap(new HashMap<>());
+
+            getPropertyMap().forEach((name, property) -> {
+                if (property.isSpatial() && Objects.equals(property.getName(), primaryGeometry.getName())) {
+                    builder.putPropertyMap(name, new ImmutableFeatureSchema.Builder().from(property).role(Role.PRIMARY_GEOMETRY).build());
+                } else {
+                    builder.putPropertyMap(name, property);
+                }
+            });
+
+            return builder.build();
+        }
+
+        return this;
+    }
+
+    @Value.Check
+    default FeatureSchema primaryInstant() {
+        if (getParentPath().isEmpty() && getPrimaryInstant().isPresent()
+            && getPrimaryInstant().filter(FeatureSchema::isPrimaryInstant).isEmpty()) {
+            FeatureSchema primaryInstant = getPrimaryInstant().get();
+            ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(this).propertyMap(new HashMap<>());
+
+            getPropertyMap().forEach((name, property) -> {
+                if (property.isTemporal() && Objects.equals(property.getName(), primaryInstant.getName())) {
+                    builder.putPropertyMap(name, new ImmutableFeatureSchema.Builder().from(property).role(Role.PRIMARY_INSTANT).build());
+                } else {
+                    builder.putPropertyMap(name, property);
+                }
+            });
+
+            return builder.build();
+        }
+
+        return this;
+    }
+
+    @Value.Check
+    default FeatureSchema primaryInterval() {
+        if (getParentPath().isEmpty() && getPrimaryInterval().isPresent()
+            && getPrimaryInterval().filter(interval -> interval.first().isPrimaryIntervalStart() && interval.second().isPrimaryIntervalEnd()).isEmpty()) {
+            Tuple<FeatureSchema, FeatureSchema> primaryInterval = getPrimaryInterval().get();
+            ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(this).propertyMap(new HashMap<>());
+
+            getPropertyMap().forEach((name, property) -> {
+                if (property.isTemporal() && Objects.equals(property.getName(), primaryInterval.first().getName())) {
+                    builder.putPropertyMap(name, new ImmutableFeatureSchema.Builder().from(property).role(Role.PRIMARY_INTERVAL_START).build());
+                } else if (property.isTemporal() && Objects.equals(property.getName(), primaryInterval.second().getName())) {
+                    builder.putPropertyMap(name, new ImmutableFeatureSchema.Builder().from(property).role(Role.PRIMARY_INTERVAL_END).build());
+                } else {
+                    builder.putPropertyMap(name, property);
+                }
+            });
+
+            return builder.build();
         }
 
         return this;

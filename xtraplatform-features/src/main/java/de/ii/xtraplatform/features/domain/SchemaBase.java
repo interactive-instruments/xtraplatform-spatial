@@ -209,6 +209,27 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
+    default boolean isPrimaryInstant() {
+        return getRole().filter(role -> role == Role.PRIMARY_INSTANT).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isPrimaryIntervalStart() {
+        return getRole().filter(role -> role == Role.PRIMARY_INTERVAL_START).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isPrimaryIntervalEnd() {
+        return getRole().filter(role -> role == Role.PRIMARY_INTERVAL_END).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
     default boolean isType() {
         return getRole().filter(role -> role == Role.TYPE).isPresent();
     }

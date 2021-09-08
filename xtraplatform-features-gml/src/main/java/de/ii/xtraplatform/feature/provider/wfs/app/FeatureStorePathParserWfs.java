@@ -30,13 +30,13 @@ public class FeatureStorePathParserWfs implements FeatureStorePathParser {
 
         String instanceContainerName = schema.getName();
 
-        List<String> path = schema.getProperties()
+        /*List<String> path = schema.getProperties()
                                        .stream()
                                         .filter(property -> property.getSourcePath().isPresent())
                                        .findFirst()
                                        .map(property -> property.getSourcePath().get().substring(1, property.getSourcePath().get().indexOf("/", 1)))
                                        .map(ImmutableList::of)
-                                       .orElse(ImmutableList.of());
+                                       .orElse(ImmutableList.of());*/
 
         instanceContainerBuilders.put(instanceContainerName, ImmutableFeatureStoreInstanceContainer.builder());
 

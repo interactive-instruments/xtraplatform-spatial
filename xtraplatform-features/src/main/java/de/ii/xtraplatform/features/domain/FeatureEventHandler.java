@@ -84,6 +84,8 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
       return false;
     }
 
+    Map<String, String> additionalInfo();
+
     @Value.Lazy
     default Optional<FeatureSchema> schema() {
       return Optional.ofNullable(customSchema()).or(this::currentSchema);
@@ -249,6 +251,8 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     ModifiableContext putTransformed(String key, String value);
 
     ModifiableContext setIsBuffering(boolean inArray);
+
+    ModifiableContext putAdditionalInfo(String key, String value);
   }
 
   //T createContext();

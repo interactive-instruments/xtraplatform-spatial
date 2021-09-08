@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * @author zahnen
  */
-public interface WfsConnector extends FeatureProviderConnector<ByteString, String, FeatureProviderConnector.QueryOptions> {
+public interface WfsConnector extends FeatureProviderConnector<byte[], String, FeatureProviderConnector.QueryOptions> {
 
     InputStream runWfsOperation(final WfsOperation operation);
 

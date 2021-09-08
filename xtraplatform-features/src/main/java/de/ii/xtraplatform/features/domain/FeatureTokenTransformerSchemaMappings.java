@@ -178,13 +178,13 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
   @Override
   public void onValue(ModifiableContext context) {
-    if (context.schema().isEmpty()) {
-      return;
-    }
     if (context.inGeometry()) {
       newContext.setValue(context.value());
       newContext.setValueType(context.valueType());
       pushValue();
+      return;
+    }
+    if (context.schema().isEmpty()) {
       return;
     }
 

@@ -16,23 +16,26 @@ import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.feature.provider.wfs.domain.FeatureProviderWfsData;
-import de.ii.xtraplatform.streams.domain.Http;
-import de.ii.xtraplatform.streams.domain.HttpClient;
 import de.ii.xtraplatform.dropwizard.domain.Dropwizard;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderDataWfsFromMetadata;
 import de.ii.xtraplatform.feature.provider.wfs.WFSCapabilitiesParser;
 import de.ii.xtraplatform.feature.provider.wfs.app.FeatureProviderWfs;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
+import de.ii.xtraplatform.feature.provider.wfs.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.wfs.GetCapabilities;
 import de.ii.xtraplatform.ogc.api.wfs.WfsOperation;
 import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder;
-import java.util.Objects;
+import de.ii.xtraplatform.streams.domain.Http;
+import de.ii.xtraplatform.streams.domain.HttpClient;
+import java.io.InputStream;
+import java.net.URI;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Invalidate;
 import org.apache.felix.ipojo.annotations.Property;
@@ -42,12 +45,6 @@ import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.codehaus.staxmate.SMInputFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.InputStream;
-import java.net.URI;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 
 /**
  * @author zahnen
@@ -147,19 +144,19 @@ public class WfsConnectorHttp implements WfsConnector {
 
 
     @Override
-    public CompletionStage<Done> runQuery(FeatureQuery query, Sink<ByteString, CompletionStage<Done>> consumer,
+    public CompletionStage<Done> runQuery(FeatureQuery query, Sink<byte[], CompletionStage<Done>> consumer,
                                           Map<String, String> additionalQueryParameters) {
         return null;
     }
 
     @Override
-    public Source<ByteString, NotUsed> getSourceStream(String query) {
-        return httpClient.get(query);
+    public Source<byte[], NotUsed> getSourceStream(String query) {
+        return httpClient.get(query).map(ByteString::toArray);
     }
 
     @Override
-    public Source<ByteString, NotUsed> getSourceStream(String query, QueryOptions options) {
-        return httpClient.get(query);
+    public Source<byte[], NotUsed> getSourceStream(String query, QueryOptions options) {
+        return httpClient.get(query).map(ByteString::toArray);
     }
 
     @Override

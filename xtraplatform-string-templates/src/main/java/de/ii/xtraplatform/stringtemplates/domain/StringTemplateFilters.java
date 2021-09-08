@@ -146,6 +146,8 @@ public class StringTemplateFilters {
                         filteredValue = filteredValue.toUpperCase();
                     } else if (filter.equals("assignTo") && parameters.size() >= 1) {
                         assigns.put(parameters.get(0), filteredValue);
+                    } else if (filter.equals("unHtml") ) {
+                        filteredValue = filteredValue.replaceAll("<.*?>", "");
                     } else {
                         LOGGER.warn("Template filter '{}' not supported", filter);
                     }

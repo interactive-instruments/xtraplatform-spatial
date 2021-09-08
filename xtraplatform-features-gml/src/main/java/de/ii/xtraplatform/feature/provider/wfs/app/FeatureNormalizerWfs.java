@@ -12,7 +12,6 @@ import akka.NotUsed;
 import akka.japi.function.Function;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.util.ByteString;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.transformer.api.GmlStreamParser;
 import de.ii.xtraplatform.features.domain.FeatureBase;
@@ -20,11 +19,9 @@ import de.ii.xtraplatform.features.domain.FeatureConsumer;
 import de.ii.xtraplatform.features.domain.FeatureNormalizer;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureStream2.ResultOld;
 import de.ii.xtraplatform.features.domain.FeatureTransformer2;
-import de.ii.xtraplatform.features.domain.FeatureType;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureType;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableResultOld;
 import de.ii.xtraplatform.features.domain.PropertyBase;
 import de.ii.xtraplatform.features.domain.SchemaBase;
@@ -35,57 +32,35 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import javax.xml.namespace.QName;
 
-public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
+public class FeatureNormalizerWfs implements FeatureNormalizer<byte[]> {
 
-    private final Map<String, FeatureStoreTypeInfo> typeInfos;
-    private final Map<String, FeatureType> types;
     private final Map<String, FeatureSchema> schemas;
     private final Map<String, String> namespaces;
     private final XMLNamespaceNormalizer namespaceNormalizer;
 
-    public FeatureNormalizerWfs(Map<String, FeatureStoreTypeInfo> typeInfos, Map<String, FeatureType> types,
-                                Map<String, FeatureSchema> schemas, Map<String, String> namespaces) {
-        this.typeInfos = typeInfos;
-        this.types = types;
+    public FeatureNormalizerWfs(Map<String, FeatureSchema> schemas, Map<String, String> namespaces) {
         this.schemas = schemas;
         this.namespaces = namespaces;
         this.namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
     }
 
-    private String resolveNamespaces(String path) {
-
-        String resolvedPath = path;
-
-        for (Map.Entry<String, String> entry : namespaces.entrySet()) {
-            String prefix = entry.getKey();
-            String uri = entry.getValue();
-            resolvedPath = resolvedPath.replaceAll(prefix, uri);
-        }
-
-        return resolvedPath;
-    }
-
     @Override
-    public Sink<ByteString, CompletionStage<ResultOld>> normalizeAndTransform(
+    public Sink<byte[], CompletionStage<ResultOld>> normalizeAndTransform(
             FeatureTransformer2 featureTransformer, FeatureQuery featureQuery) {
 
-        FeatureType featureType = types.get(featureQuery.getType());
-        FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());
         FeatureSchema featureSchema = schemas.get(featureQuery.getType());
-
         String name = featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
-
         QName qualifiedName = new QName(namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)), namespaceNormalizer.getLocalName(name));
         String featureTypePath = qualifiedName.getNamespaceURI() + ":" + qualifiedName.getLocalPart();
 
         //TODO
-        ImmutableFeatureType featureType1 = new ImmutableFeatureType.Builder().from(featureType)
+        ImmutableFeatureSchema featureSchema1 = new ImmutableFeatureSchema.Builder().from(featureSchema)
                                                                               .additionalInfo(namespaces)
                                                                               .putAdditionalInfo("featureTypePath", featureTypePath)
                                                                               .build();
 
 
-        Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.transform(qualifiedName, featureType1, featureTransformer, featureQuery.getFields(), featureQuery.skipGeometry(), ImmutableMap.of());
+        Sink<byte[], CompletionStage<Done>> transformer = GmlStreamParser.transform(qualifiedName, featureSchema1, featureTransformer, featureQuery.getFields(), featureQuery.skipGeometry(), ImmutableMap.of());
 
         return transformer.mapMaterializedValue((Function<CompletionStage<Done>, CompletionStage<ResultOld>>) (completionStage) -> completionStage.handle((done, throwable) -> {
             return ImmutableResultOld.builder()
@@ -96,7 +71,7 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
         }));
     }
 
-    public Sink<ByteString, CompletionStage<ResultOld>> normalizeAndConsume(
+    public Sink<byte[], CompletionStage<ResultOld>> normalizeAndConsume(
         FeatureConsumer featureConsumer, FeatureQuery featureQuery) {
         FeatureSchema featureSchema = schemas.get(featureQuery.getType());
 
@@ -104,7 +79,7 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
 
         QName qualifiedName = new QName(namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)), namespaceNormalizer.getLocalName(name));
 
-        Sink<ByteString, CompletionStage<Done>> transformer = GmlStreamParser.consume(qualifiedName, featureConsumer);
+        Sink<byte[], CompletionStage<Done>> transformer = GmlStreamParser.consume(qualifiedName, featureConsumer);
 
         return transformer.mapMaterializedValue((Function<CompletionStage<Done>, CompletionStage<ResultOld>>) (completionStage) -> completionStage.handle((done, throwable) -> {
             return ImmutableResultOld.builder()
@@ -116,7 +91,7 @@ public class FeatureNormalizerWfs implements FeatureNormalizer<ByteString> {
     }
 
     @Override
-    public <V extends PropertyBase<V, X>, W extends FeatureBase<V, X>, X extends SchemaBase<X>> Source<W, CompletionStage<ResultOld>> normalize(Source<ByteString, NotUsed> sourceStream, FeatureQuery featureQuery, Supplier<W> featureCreator, Supplier<V> propertyCreator) {
+    public <V extends PropertyBase<V, X>, W extends FeatureBase<V, X>, X extends SchemaBase<X>> Source<W, CompletionStage<ResultOld>> normalize(Source<byte[], NotUsed> sourceStream, FeatureQuery featureQuery, Supplier<W> featureCreator, Supplier<V> propertyCreator) {
         return null;
     }
 }

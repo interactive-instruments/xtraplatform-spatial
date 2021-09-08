@@ -11,6 +11,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
 import de.ii.xtraplatform.features.domain.FeatureConsumer;
@@ -72,9 +73,9 @@ class FeatureTransformerFromGml2 implements FeatureConsumer {
     private List<Integer> currentMultiplicities;
     private List<String> currentType;
 
-    FeatureTransformerFromGml2(FeatureType featureType, final FeatureTransformer2 featureTransformer,
+    FeatureTransformerFromGml2(FeatureSchema featureType, final FeatureTransformer2 featureTransformer,
                                List<String> fields, boolean skipGeometry, Map<QName, List<String>> resolvableTypes) {
-        this.featureType = featureType;
+        this.featureType = null;
         this.featureTransformer = featureTransformer;
         this.resolvableTypes = resolvableTypes.entrySet()
                                               .stream()

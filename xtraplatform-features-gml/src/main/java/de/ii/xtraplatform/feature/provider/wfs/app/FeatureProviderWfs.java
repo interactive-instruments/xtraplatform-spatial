@@ -11,6 +11,7 @@ import akka.NotUsed;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -18,6 +19,7 @@ import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.feature.provider.wfs.FeatureTokenDecoderGml;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
@@ -35,6 +37,7 @@ import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQueriesPassThrough;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.FeatureSourceStream;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
@@ -48,6 +51,7 @@ import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
+import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map;
@@ -56,6 +60,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.ws.rs.core.MediaType;
+import javax.xml.namespace.QName;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,8 +68,8 @@ import org.threeten.extra.Interval;
 
 @EntityComponent
 @Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderWfs.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderWfsData.class)
-public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, String, FeatureProviderConnector.QueryOptions> implements FeatureProvider2, FeatureQueries, FeatureCrs, FeatureExtents, FeatureMetadata,
-    FeatureQueriesPassThrough<ByteString> {
+public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, FeatureProviderConnector.QueryOptions> implements FeatureProvider2, FeatureQueries, FeatureCrs, FeatureExtents, FeatureMetadata,
+    FeatureQueriesPassThrough<byte[]> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
 
@@ -102,16 +107,16 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
         }
 
         //TODO: remove FeatureSchemaToTypeVisitor
-        Map<String, FeatureType> types = getData().getTypes()
+        /*Map<String, FeatureType> types = getData().getTypes()
             .entrySet()
             .stream()
             .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue()
                 .accept(new FeatureSchemaToTypeVisitor(entry.getKey()))))
-            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));*/
 
-        this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), types, getData().getTypes(),
+        this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), getData().getTypes(),
             getData().getConnectionInfo(), getData().getNativeCrs().orElse(OgcCrs.CRS84));
-        this.featureNormalizer = new FeatureNormalizerWfs(getTypeInfos(), types, getData().getTypes(), getData().getConnectionInfo()
+        this.featureNormalizer = new FeatureNormalizerWfs(getData().getTypes(), getData().getConnectionInfo()
             .getNamespaces());
         this.extentReader = new ExtentReaderWfs(this, crsTransformerFactory, getData().getNativeCrs().orElse(OgcCrs.CRS84));
 
@@ -143,8 +148,14 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     }
 
     @Override
-    protected FeatureTokenDecoder<ByteString> getDecoder(FeatureQuery query) {
-        return null;
+    protected FeatureTokenDecoder<byte[]> getDecoder(FeatureQuery query) {
+        Map<String, String> namespaces = getData().getConnectionInfo()
+            .getNamespaces();
+        XMLNamespaceNormalizer namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
+        FeatureSchema featureSchema = getData().getTypes().get(query.getType());
+        String name = featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
+        QName qualifiedName = new QName(namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)), namespaceNormalizer.getLocalName(name));
+        return new FeatureTokenDecoderGml(namespaces, ImmutableList.of(qualifiedName), featureSchema, query);
     }
 
     @Override
@@ -228,7 +239,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
     }
 
     @Override
-    public FeatureSourceStream<ByteString> getFeatureSourceStream(FeatureQuery query) {
+    public FeatureSourceStream<byte[]> getFeatureSourceStream(FeatureQuery query) {
         return new FeatureSourceStream<>() {
             @Override
             public CompletionStage<ResultOld> runWith(FeatureConsumer consumer) {
@@ -249,33 +260,19 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<ByteString, Stri
                 FeatureProviderConnector.QueryOptions options = getQueryTransformer()
                     .getOptions(query);
 
-                Source<ByteString, NotUsed> sourceStream = getConnector()
+                Source<byte[], NotUsed> sourceStream = getConnector()
                     .getSourceStream(transformedQuery, options);
 
-                Sink<ByteString, CompletionStage<ResultOld>> sink = featureNormalizer
+                Sink<byte[], CompletionStage<ResultOld>> sink = featureNormalizer
                     .normalizeAndConsume(consumer, query);
 
-                //TODO: test
-                /*ImmutableReactiveStream<ByteString, ByteString, FeaturePipeline.Result.Builder, FeaturePipeline.Result> stream = ImmutableReactiveStream
-                    .<ByteString, ByteString, FeaturePipeline.Result.Builder, FeaturePipeline.Result>builder()
-                    .source(ReactiveStream.Source.of(sourceStream))
-                    .sink(ReactiveStream.Sink.of(sink))
-                    .resultInitializer(() -> ImmutableResult.builder()
-                        .isEmpty(false)//TODO!readContext.getReadState().isAtLeastOneFeatureWritten()
-                        .build())
-                    .exceptionHandler(throwable -> ImmutableResult.builder()
-                        .isEmpty(false)
-                        .error(throwable)
-                        .build())
-                    .build();
-                return getStreamRunner().run(stream);*/
-
+                //TODO: use Reactive
                 return getStreamRunner().run(sourceStream, sink);
             }
 
             @Override
             public CompletionStage<ResultOld> runWith2(
-                Sink<ByteString, CompletionStage<ResultOld>> consumer) {
+                Sink<byte[], CompletionStage<ResultOld>> consumer) {
                 return null;
             }
         };
