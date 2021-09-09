@@ -23,6 +23,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WithTransformationsApplied implements
     SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
@@ -39,7 +41,7 @@ public class WithTransformationsApplied implements
     this(() -> additionalTransformations.entrySet()
     .stream()
     .map(entry -> new SimpleEntry<>(entry.getKey(), ImmutableList.of(entry.getValue())))
-    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)), true);
+    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> ImmutableList.<PropertyTransformation>builder().addAll(first).addAll(second).build())), true);
   }
 
   public WithTransformationsApplied(PropertyTransformations additionalTransformations) {
@@ -61,7 +63,7 @@ public class WithTransformationsApplied implements
       List<FeatureSchema> visitedProperties) {
 
     TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> schemaTransformations = getPropertyTransformations(schema)
-        .getSchemaTransformations(null, true, (x, y) -> "");
+        .getSchemaTransformations(null, true, (separator, name) -> name);
 
     FeatureSchema transformed = schemaTransformations.transform(schema.getFullPathAsString(), schema);
 
@@ -78,7 +80,7 @@ public class WithTransformationsApplied implements
         Map<String, FeatureSchema> flatProperties = flattenProperties(visitedProperties, null, separator, null, " > ")
             .stream()
             .map(property -> new SimpleEntry<>(property.getName(), property))
-            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue, (first, second) -> second));
 
         return new ImmutableFeatureSchema.Builder()
             .from(transformed)
@@ -90,7 +92,7 @@ public class WithTransformationsApplied implements
     Map<String, FeatureSchema> visitedPropertiesMap = visitedProperties.stream()
         .filter(Objects::nonNull)
         .map(featureSchema -> new SimpleImmutableEntry<>(featureSchema.getFullPathAsString(), featureSchema))
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> second));
 
     return new ImmutableFeatureSchema.Builder()
         .from(transformed)
@@ -153,6 +155,18 @@ public class WithTransformationsApplied implements
         ? schemaTransformations.mergeInto(additionalTransformations)
         : additionalTransformations.mergeInto(schemaTransformations);
 
-    return mergedTransformations;
+    //TODO: currently flattening is done manually in this class,
+    // the actual flattening transformer would interfere with that, therefore we remove it here
+    // Of course it would be better to use the actual transformer, for that we would have to provide
+    // a flatteningPathProvider that is aware of parents/prefixes to getSchemaTransformations
+    ImmutableMap<String, List<PropertyTransformation>> mergedWithoutFlatten = mergedTransformations
+        .getTransformations().entrySet().stream()
+        .map(entry -> new SimpleImmutableEntry<>(entry.getKey(), entry.getValue().stream()
+            .filter(propertyTransformation -> propertyTransformation.getFlatten().isEmpty())
+            .collect(Collectors.toList())))
+        .collect(
+            ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue, (first, second) -> second));
+
+    return () -> mergedWithoutFlatten;
   }
 }
