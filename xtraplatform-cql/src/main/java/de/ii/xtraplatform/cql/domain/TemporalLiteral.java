@@ -19,6 +19,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -30,9 +31,13 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
     Instant MIN_DATE = Instant.parse("0000-01-01T00:00:00Z");
     Instant MAX_DATE = Instant.parse("9999-12-31T23:59:59Z");
 
+    String NOW_AS_INSTANT_REGEX = "([nN][oO][wW](\\(\\))?)";
+    String NOW_IN_INTERVAL_REGEX = "([nN][oO][wW])";
     String DATE_REGEX = "([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])";
     String TIMESTAMP_REGEX = "([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\\.[0-9]+)?(([Zz])|([\\+|\\-]([01][0-9]|2[0-3]):[0-5][0-9]))";
     String OPEN_REGEX = "(\\.\\.)?";
+    Predicate<String> NOW_PATTERN = Pattern.compile(String.format("^%s$", NOW_AS_INSTANT_REGEX))
+                                           .asPredicate();
     Predicate<String> INSTANT_PATTERN = Pattern.compile(String.format("^%s$", TIMESTAMP_REGEX))
                                                .asPredicate();
     Predicate<String> INTERVAL_PATTERN = Pattern.compile(String.format("^%s/%s$", TIMESTAMP_REGEX, TIMESTAMP_REGEX))
@@ -43,6 +48,14 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
                                                          .asPredicate();
     Predicate<String> INTERVAL_OPEN_PATTERN = Pattern.compile(String.format("^%s/%s$", OPEN_REGEX, OPEN_REGEX))
                                                      .asPredicate();
+    Predicate<String> INTERVAL_NOW_START_PATTERN = Pattern.compile(String.format("^%s/%s$", NOW_IN_INTERVAL_REGEX, TIMESTAMP_REGEX))
+                                                .asPredicate();
+    Predicate<String> INTERVAL_NOW_END_PATTERN = Pattern.compile(String.format("^%s/%s$", TIMESTAMP_REGEX, NOW_IN_INTERVAL_REGEX))
+                                                          .asPredicate();
+    Predicate<String> INTERVAL_OPEN_START_NOW_END_PATTERN = Pattern.compile(String.format("^%s/%s$", OPEN_REGEX, NOW_IN_INTERVAL_REGEX))
+                                                           .asPredicate();
+    Predicate<String> INTERVAL_NOW_START_OPEN_END_PATTERN = Pattern.compile(String.format("^%s/%s$", NOW_IN_INTERVAL_REGEX, OPEN_REGEX))
+                                                         .asPredicate();
     Predicate<String> DATE_PATTERN = Pattern.compile(String.format("^%s$", DATE_REGEX))
                                             .asPredicate();
     Predicate<String> DATE_INTERVAL_PATTERN = Pattern.compile(String.format("^%s/%s$", DATE_REGEX, DATE_REGEX))
@@ -51,6 +64,10 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
                                                                 .asPredicate();
     Predicate<String> DATE_INTERVAL_OPEN_END_PATTERN = Pattern.compile(String.format("^%s/%s$", DATE_REGEX, OPEN_REGEX))
                                                               .asPredicate();
+    Predicate<String> DATE_INTERVAL_NOW_START_PATTERN = Pattern.compile(String.format("^%s/%s$", NOW_IN_INTERVAL_REGEX, DATE_REGEX))
+                                                     .asPredicate();
+    Predicate<String> DATE_INTERVAL_NOW_END_PATTERN = Pattern.compile(String.format("^%s/%s$", DATE_REGEX, NOW_IN_INTERVAL_REGEX))
+                                                     .asPredicate();
     Joiner INTERVAL_JOINER = Joiner.on('/')
                                    .skipNulls();
 
@@ -68,6 +85,10 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
 
     static TemporalLiteral of(String literal) throws CqlParseException {
         return new TemporalLiteral.Builder(literal).build();
+    }
+
+    static Instant now() {
+        return Instant.now().truncatedTo(ChronoUnit.SECONDS);
     }
 
     class Builder extends ImmutableTemporalLiteral.Builder {
@@ -134,6 +155,9 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
                                            .atTime(23,59,59)
                                            .toInstant(ZoneOffset.UTC);
                     return Interval.of(start, end);
+                } else if (NOW_PATTERN.test(literal)) {
+                    // now instant
+                    return now();
                 } else if (INTERVAL_OPEN_PATTERN.test(literal)) {
                     // open start and end
                     return Interval.of(MIN_DATE, MAX_DATE);
@@ -145,6 +169,20 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
                     // start open, end datetime instant
                     Instant end = Instant.parse(literal.substring(literal.indexOf("/") + 1));
                     return Interval.of(MIN_DATE, end);
+                } else if (INTERVAL_NOW_END_PATTERN.test(literal)) {
+                    // start datetime instant, end now
+                    Instant start = Instant.parse(literal.substring(0, literal.indexOf("/")));
+                    return Interval.of(start, now());
+                } else if (INTERVAL_NOW_START_PATTERN.test(literal)) {
+                    // start now, end datetime instant
+                    Instant end = Instant.parse(literal.substring(literal.indexOf("/") + 1));
+                    return Interval.of(now(), end);
+                } else if (INTERVAL_NOW_START_OPEN_END_PATTERN.test(literal)) {
+                    // start now, end open
+                    return Interval.of(now(), MAX_DATE);
+                } else if (INTERVAL_OPEN_START_NOW_END_PATTERN.test(literal)) {
+                    // start open, end now
+                    return Interval.of(MIN_DATE, now());
                 } else if (DATE_INTERVAL_PATTERN.test(literal)) {
                     // start date instant, end date instant
                     Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(0, literal.indexOf("/"))))
@@ -166,6 +204,18 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
                                            .atTime(23,59,59)
                                            .toInstant(ZoneOffset.UTC);
                     return Interval.of(MIN_DATE, end);
+                } else if (DATE_INTERVAL_NOW_END_PATTERN.test(literal)) {
+                    // start date instant, end now
+                    Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(0, literal.indexOf("/"))))
+                                             .atStartOfDay()
+                                             .toInstant(ZoneOffset.UTC);
+                    return Interval.of(start, now());
+                } else if (DATE_INTERVAL_NOW_START_PATTERN.test(literal)) {
+                    // start now, end date instant
+                    Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(literal.indexOf("/") + 1)))
+                                           .atTime(23,59,59)
+                                           .toInstant(ZoneOffset.UTC);
+                    return Interval.of(now(), end);
                 }
             } catch (DateTimeParseException e) {
                 //ignore

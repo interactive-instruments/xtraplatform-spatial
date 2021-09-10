@@ -54,7 +54,7 @@ class ExtentReaderSql implements ExtentReader {
             throw new IllegalArgumentException("feature type has no geometry:" + typeInfo.getName());
         }
 
-        String query = queryGenerator.getExtentQuery(spatialAttributesContainer.get());
+        String query = queryGenerator.getExtentQuery(instanceContainer, spatialAttributesContainer.get());
 
         Source<SqlRow, NotUsed> sourceStream = sqlClient.get().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class));
 
@@ -71,7 +71,7 @@ class ExtentReaderSql implements ExtentReader {
             throw new IllegalArgumentException("temporal property not found:" + property);
         }
 
-        String query = queryGenerator.getTemporalExtentQuery(temporalAttributesContainer.get(), property);
+        String query = queryGenerator.getTemporalExtentQuery(instanceContainer, temporalAttributesContainer.get(), property);
 
         Source<SqlRow, NotUsed> sourceStream = sqlClient.get().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class, String.class));
 
@@ -90,7 +90,7 @@ class ExtentReaderSql implements ExtentReader {
             throw new IllegalArgumentException("temporal property not found:" + endProperty);
         }
 
-        String query = queryGenerator.getTemporalExtentQuery(startAttributesContainer.get(), endAttributesContainer.get(), startProperty, endProperty);
+        String query = queryGenerator.getTemporalExtentQuery(instanceContainer, startAttributesContainer.get(), endAttributesContainer.get(), startProperty, endProperty);
 
         Source<SqlRow, NotUsed> sourceStream = sqlClient.get().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class, String.class));
 

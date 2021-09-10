@@ -234,22 +234,22 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 return during;
 
             } else {
-                Scalar scalar2 = (Scalar) ctx.scalarExpression().get(1)
-                        .accept(this);
-                Scalar scalar3 = (Scalar) ctx.scalarExpression().get(2)
-                        .accept(this);
+            Scalar scalar2 = (Scalar) ctx.scalarExpression().get(1)
+                                         .accept(this);
+            Scalar scalar3 = (Scalar) ctx.scalarExpression().get(2)
+                                         .accept(this);
 
-                Between between = new ImmutableBetween.Builder()
-                        .value(scalar1)
-                        .lower(scalar2)
-                        .upper(scalar3)
-                        .build();
+            Between between = new ImmutableBetween.Builder()
+                    .value(scalar1)
+                    .lower(scalar2)
+                    .upper(scalar3)
+                    .build();
 
-                if (Objects.nonNull(ctx.NOT())) {
-                    return Not.of(between);
-                }
-                return between;
+            if (Objects.nonNull(ctx.NOT())) {
+                return Not.of(between);
             }
+            return between;
+        }
 
         }
         return null;
@@ -319,39 +319,39 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                     throw new IllegalStateException("unsupported temporal comparison operator: " + comparisonOperator);
             }
         } else if (Objects.nonNull(ctx.TemporalOperator())) {
-            TemporalOperator temporalOperator = TemporalOperator.valueOf(ctx.TemporalOperator()
-                    .getText()
-                    .toUpperCase());
+        TemporalOperator temporalOperator = TemporalOperator.valueOf(ctx.TemporalOperator()
+                                                                        .getText()
+                                                                        .toUpperCase());
 
-            switch (temporalOperator) {
-                case AFTER:
-                    builder = new ImmutableAfter.Builder();
-                    break;
-                case BEFORE:
-                    builder = new ImmutableBefore.Builder();
-                    break;
-                case DURING:
-                    builder = new ImmutableDuring.Builder();
-                    break;
-                case TEQUALS:
-                    builder = new ImmutableTEquals.Builder();
-                    break;
-                case ANYINTERACTS:
-                    builder = new ImmutableAnyInteracts.Builder();
-                    break;
-                case BEGINS:
-                case BEGUNBY:
-                case TCONTAINS:
-                case ENDEDBY:
-                case ENDS:
-                case MEETS:
-                case METBY:
-                case TOVERLAPS:
-                case OVERLAPPEDBY:
-                    throw new IllegalArgumentException(String.format("unsupported temporal operator (%s)", temporalOperator));
-                default:
-                    throw new IllegalStateException("unknown temporal operator: " + temporalOperator);
-            }
+        switch (temporalOperator) {
+            case AFTER:
+                builder = new ImmutableAfter.Builder();
+                break;
+            case BEFORE:
+                builder = new ImmutableBefore.Builder();
+                break;
+            case DURING:
+                builder = new ImmutableDuring.Builder();
+                break;
+            case TEQUALS:
+                builder = new ImmutableTEquals.Builder();
+                break;
+            case ANYINTERACTS:
+                builder = new ImmutableAnyInteracts.Builder();
+                break;
+            case BEGINS:
+            case BEGUNBY:
+            case TCONTAINS:
+            case ENDEDBY:
+            case ENDS:
+            case MEETS:
+            case METBY:
+            case TOVERLAPS:
+            case OVERLAPPEDBY:
+                throw new IllegalArgumentException(String.format("unsupported temporal operator (%s)", temporalOperator));
+            default:
+                throw new IllegalStateException("unknown temporal operator: " + temporalOperator);
+        }
         }
 
         return builder.operands(ImmutableList.of(temporal1,temporal2))
