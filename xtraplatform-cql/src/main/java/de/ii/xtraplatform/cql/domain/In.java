@@ -39,13 +39,19 @@ public interface In extends CqlNode, NonBinaryScalarOperation {
                                         .build();
     }
 
+    static In of(String property, TemporalLiteral... values) {
+        return new ImmutableIn.Builder().value(Property.of(property))
+                .list(Arrays.asList(values))
+                .build();
+    }
+
     static In of(ScalarLiteral... values) {
         return new ImmutableIn.Builder().value(Property.of(ID_PLACEHOLDER))
                                         .addList(values)
                                         .build();
     }
 
-    static In of(List<ScalarLiteral> values) {
+    static In of(List<Scalar> values) {
         return new ImmutableIn.Builder().value(Property.of(ID_PLACEHOLDER))
                                         .list(values)
                                         .build();

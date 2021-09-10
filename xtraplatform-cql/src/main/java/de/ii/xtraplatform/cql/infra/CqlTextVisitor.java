@@ -13,6 +13,7 @@ import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -211,6 +212,28 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
             Scalar scalar1 = (Scalar) ctx.scalarExpression().get(0)
                                          .accept(this);
+
+            if (!ctx.temporalExpression().isEmpty()) {
+                Temporal temporal1 = (Temporal) ctx.temporalExpression(0)
+                        .accept(this);
+                Temporal temporal2 = (Temporal) ctx.temporalExpression(1)
+                        .accept(this);
+                if (!isInstant(temporal1) || !isInstant(temporal2)) {
+                    throw new IllegalArgumentException("intervals are not supported for the BETWEEN predicate");
+                }
+
+                TemporalLiteral temporalLiteral = TemporalLiteral.of(String.format("%s/%s", ctx.temporalExpression(0).getText(), ctx.temporalExpression(1).getText()));
+
+                During during = new ImmutableDuring.Builder()
+                        .operands(ImmutableList.of(scalar1, temporalLiteral))
+                        .build();
+
+                if (Objects.nonNull(ctx.NOT())) {
+                    return Not.of(during);
+                }
+                return during;
+
+            } else {
             Scalar scalar2 = (Scalar) ctx.scalarExpression().get(1)
                                          .accept(this);
             Scalar scalar3 = (Scalar) ctx.scalarExpression().get(2)
@@ -225,8 +248,9 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             if (Objects.nonNull(ctx.NOT())) {
                 return Not.of(between);
             }
-
             return between;
+        }
+
         }
         return null;
     }
@@ -259,11 +283,45 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                            .accept(this);
         Temporal temporal2 = (Temporal) ctx.temporalExpression(1)
                                            .accept(this);
+
+        TemporalOperation.Builder<? extends TemporalOperation> builder = null;
+
+        if (Objects.nonNull(ctx.ComparisonOperator())) {
+            if (!isInstant(temporal2)) {
+                throw new IllegalArgumentException("intervals are not supported for temporal comparisons");
+            }
+            ComparisonOperator comparisonOperator = ComparisonOperator.valueOfCqlText(ctx.ComparisonOperator()
+                    .getText());
+            switch (comparisonOperator) {
+                case EQ:
+                    builder = new ImmutableTEquals.Builder();
+                    break;
+                case NEQ:
+                    TEquals tEquals = new ImmutableTEquals.Builder()
+                            .operands(ImmutableList.of(temporal1, temporal2))
+                            .build();
+                    return Not.of(tEquals);
+                case GT:
+                    builder = new ImmutableAfter.Builder();
+                    break;
+                case GTEQ:
+                    After after = new ImmutableAfter.Builder().operands(ImmutableList.of(temporal1, temporal2)).build();
+                    tEquals = new ImmutableTEquals.Builder().operands(ImmutableList.of(temporal1, temporal2)).build();
+                    return Or.of(CqlPredicate.of(after), CqlPredicate.of(tEquals));
+                case LT:
+                    builder = new ImmutableBefore.Builder();
+                    break;
+                case LTEQ:
+                    Before before = new ImmutableBefore.Builder().operands(ImmutableList.of(temporal1, temporal2)).build();
+                    tEquals = new ImmutableTEquals.Builder().operands(ImmutableList.of(temporal1, temporal2)).build();
+                    return Or.of(CqlPredicate.of(before), CqlPredicate.of(tEquals));
+                default:
+                    throw new IllegalStateException("unsupported temporal comparison operator: " + comparisonOperator);
+            }
+        } else if (Objects.nonNull(ctx.TemporalOperator())) {
         TemporalOperator temporalOperator = TemporalOperator.valueOf(ctx.TemporalOperator()
                                                                         .getText()
                                                                         .toUpperCase());
-
-        TemporalOperation.Builder<? extends TemporalOperation> builder;
 
         switch (temporalOperator) {
             case AFTER:
@@ -293,6 +351,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 throw new IllegalArgumentException(String.format("unsupported temporal operator (%s)", temporalOperator));
             default:
                 throw new IllegalStateException("unknown temporal operator: " + temporalOperator);
+        }
         }
 
         return builder.operands(ImmutableList.of(temporal1,temporal2))
@@ -396,11 +455,19 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitInPredicate(CqlParser.InPredicateContext ctx) {
         In in;
-        List<ScalarLiteral> values = ImmutableList.of(ctx.characterLiteral(), ctx.numericLiteral())
+        List<Scalar> values = ImmutableList.of(ctx.characterLiteral(), ctx.numericLiteral(), ctx.temporalLiteral())
                                                   .stream()
                                                   .flatMap(Collection::stream)
-                                                  .map(v -> (ScalarLiteral) v.accept(this))
+                                                  .map(v -> (Scalar) v.accept(this))
                                                   .collect(Collectors.toList());
+
+        if (!ctx.temporalLiteral().isEmpty()) {
+            values.stream()
+                    .map(t -> ((TemporalLiteral) t).getType())
+                    .filter(t -> t.equals(Instant.class))
+                    .findAny()
+                    .orElseThrow(() -> new IllegalArgumentException("intervals are not supported for the IN predicate"));
+        }
 
         if (Objects.nonNull(ctx.function())) {
             in = new ImmutableIn.Builder()
@@ -630,6 +697,10 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitNocase(CqlParser.NocaseContext ctx) {
         return ctx.booleanLiteral().accept(this);
+    }
+
+    private boolean isInstant(Temporal temporal) {
+        return temporal instanceof TemporalLiteral && ((TemporalLiteral) temporal).getType().equals(Instant.class);
     }
 
 }

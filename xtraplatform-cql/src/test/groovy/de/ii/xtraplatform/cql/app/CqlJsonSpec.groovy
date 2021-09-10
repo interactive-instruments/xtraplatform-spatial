@@ -392,14 +392,14 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    def 'Built before 2015'() {
+    def 'Built before June 5, 2012'() {
 
         given:
         String cqlJson = """
         {
             "before": [
                 {"property": "built"},
-                "2015-01-01T00:00:00Z"
+                "2012-06-05T00:00:00Z"
             ]
         }
         """
