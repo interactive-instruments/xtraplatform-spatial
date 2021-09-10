@@ -181,7 +181,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     @Value.Auxiliary
     @Override
     default boolean isFeature() {
-        return SchemaBase.super.isFeature();
+        return isObject() && (!getSourcePaths().isEmpty() && getSourcePaths().get(0).startsWith("/"));
     }
 
     @JsonIgnore

@@ -175,7 +175,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @Value.Derived
     @Value.Auxiliary
     default boolean isFeature() {
-        return isObject() && (!getSourcePaths().isEmpty() && getSourcePaths().get(0).startsWith("/"));
+        return isObject() && getParentPath().isEmpty();
     }
 
     @JsonIgnore
