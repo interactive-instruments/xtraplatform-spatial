@@ -64,9 +64,17 @@ public class CqlFilterExamples {
             CqlPredicate.of(Lt.of("floors", ScalarLiteral.of(4)))
     ));
 
-    public static final CqlFilter EXAMPLE_12 = CqlFilter.of(Before.of("built", TemporalLiteral.of("2015-01-01T00:00:00Z")));
+    public static final CqlFilter EXAMPLE_12 = CqlFilter.of(Before.of("built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
 
     public static final CqlFilter EXAMPLE_13 = CqlFilter.of(After.of("built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
+
+    public static final CqlFilter EXAMPLE_13a = CqlFilter.of(TEquals.of("built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
+
+    public static final CqlFilter EXAMPLE_12a = CqlFilter.of(Or.of(EXAMPLE_12, EXAMPLE_13a));
+
+    public static final CqlFilter EXAMPLE_13b = CqlFilter.of(Or.of(EXAMPLE_13, EXAMPLE_13a));
+
+    public static final CqlFilter EXAMPLE_13d = CqlFilter.of(Not.of(TEquals.of("built", TemporalLiteral.of("2012-06-05T00:00:00Z"))));
 
     public static final CqlFilter EXAMPLE_14 = CqlFilter.of(During.of("updated", TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z"))));
 
@@ -188,6 +196,10 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_NESTED_WITH_ARRAYS = CqlFilter.of(AContains.of(Property.of("theme.concept",
             ImmutableMap.of("theme", CqlFilter.of(Eq.of("theme.scheme", ScalarLiteral.of("profile"))))), ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("DLKM"), ScalarLiteral.of("Basis-DLM"), ScalarLiteral.of("DLM50")))));
+
+    public static final CqlFilter EXAMPLE_IN_WITH_TEMPORAL = CqlFilter.of(In.of("updated",
+            getTemporalLiteral("2017-06-10T07:30:00Z"), getTemporalLiteral("2018-06-10T07:30:00Z"),
+            getTemporalLiteral("2019-06-10T07:30:00Z"), getTemporalLiteral("2020-06-10T07:30:00Z")));
 
     private static TemporalLiteral getTemporalLiteral(String temporalData) {
         try {
