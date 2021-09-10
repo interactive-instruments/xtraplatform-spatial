@@ -315,7 +315,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
 
     @Value.Check
     default FeatureSchema primaryGeometry() {
-        if (getParentPath().isEmpty() && getPrimaryGeometry().isPresent()
+        if (isFeature() && getPrimaryGeometry().isPresent()
             && getPrimaryGeometry().filter(FeatureSchema::isPrimaryGeometry).isEmpty()) {
             FeatureSchema primaryGeometry = getPrimaryGeometry().get();
             ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(this).propertyMap(new HashMap<>());
@@ -336,7 +336,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
 
     @Value.Check
     default FeatureSchema primaryInstant() {
-        if (getParentPath().isEmpty() && getPrimaryInstant().isPresent()
+        if (isFeature() && getPrimaryInstant().isPresent()
             && getPrimaryInstant().filter(FeatureSchema::isPrimaryInstant).isEmpty()) {
             FeatureSchema primaryInstant = getPrimaryInstant().get();
             ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(this).propertyMap(new HashMap<>());
@@ -357,7 +357,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
 
     @Value.Check
     default FeatureSchema primaryInterval() {
-        if (getParentPath().isEmpty() && getPrimaryInterval().isPresent()
+        if (isFeature() && getPrimaryInterval().isPresent()
             && getPrimaryInterval().filter(interval -> interval.first().isPrimaryIntervalStart() && interval.second().isPrimaryIntervalEnd()).isEmpty()) {
             Tuple<FeatureSchema, FeatureSchema> primaryInterval = getPrimaryInterval().get();
             ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(this).propertyMap(new HashMap<>());
