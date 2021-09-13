@@ -7,7 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import de.ii.xtraplatform.features.domain.FeatureProperty;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
+import java.util.Objects;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,39 +16,47 @@ import org.slf4j.LoggerFactory;
 @Value.Immutable
 public interface FeaturePropertyTransformerRemove extends FeaturePropertySchemaTransformer {
 
-    Logger LOGGER = LoggerFactory.getLogger(FeaturePropertyTransformerRemove.class);
+  Logger LOGGER = LoggerFactory.getLogger(FeaturePropertyTransformerRemove.class);
 
-    enum Condition {ALWAYS, OVERVIEW, NEVER;
+  enum Condition {ALWAYS, IN_COLLECTION, NEVER}
 
-        @Override
-        public String toString() {
-            return super.toString();
-        }
+  String IN_COLLECTION_DEPRECATED = "OVERVIEW";
+
+  String TYPE = "REMOVE";
+
+  @Override
+  default String getType() {
+    return TYPE;
+  }
+
+  boolean inCollection();
+
+  @Override
+  default FeatureSchema transform(String currentPropertyPath, FeatureSchema schema) {
+    Condition condition = Condition.NEVER;
+    String parameter = getParameter().toUpperCase();
+
+    if (Objects.equals(parameter, IN_COLLECTION_DEPRECATED)) {
+      LOGGER.warn(
+          "Condition '{}' in {} transformation for property '{}' is deprecated, use '{}' instead.",
+          IN_COLLECTION_DEPRECATED, getType(), getPropertyPath(), Condition.IN_COLLECTION);
+      condition = Condition.IN_COLLECTION;
+    } else {
+      try {
+        condition = Condition.valueOf(parameter);
+      } catch (Throwable e) {
+        LOGGER.warn(
+            "Skipping {} transformation for property '{}', condition '{}' is not supported. Supported types: {}",
+            getType(), getPropertyPath(), getParameter(), Condition.values());
+        return schema;
+      }
     }
 
-    String TYPE = "REMOVE";
-
-    @Override
-    default String getType() {
-        return TYPE;
+    if (condition == Condition.ALWAYS || (condition == Condition.IN_COLLECTION && inCollection())
+      && currentPropertyPath.startsWith(getPropertyPath())) {
+      return null;
     }
 
-    boolean isOverview();
-
-    @Override
-    default FeatureProperty transform(FeatureProperty input) {
-        Condition condition = Condition.NEVER;
-        try {
-            condition = Condition.valueOf(getParameter().toUpperCase());
-        } catch (Throwable e) {
-            LOGGER.warn("Skipping {} transformation for property '{}', condition '{}' is not supported. Supported types: {}", getType(), input.getName(), getParameter(), Condition.values());
-        }
-
-
-        if (condition == Condition.ALWAYS || (condition == Condition.OVERVIEW && isOverview())) {
-            return null;
-        }
-
-        return input;
-    }
+    return schema;
+  }
 }

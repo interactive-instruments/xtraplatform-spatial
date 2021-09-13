@@ -21,4 +21,9 @@ public interface CollectionMetadata {
 
     @Value.Parameter
     OptionalLong getNumberMatched();
+
+    @Value.Default
+    default boolean isSingleFeature() {
+        return false;
+    }
 }

@@ -23,9 +23,23 @@ public class SchemaToMappingVisitor<T extends SchemaBase<T>> implements SchemaVi
     static final Splitter SPLITTER = Splitter.on('/')
                                              .omitEmptyStrings();
 
+    private final boolean useTargetPath;
+
+    public SchemaToMappingVisitor() {
+        this(false);
+    }
+
+    public SchemaToMappingVisitor(boolean useTargetPath) {
+        this.useTargetPath = useTargetPath;
+    }
+
+
     @Override
     public Multimap<List<String>, T> visit(T schema, List<Multimap<List<String>, T>> visitedProperties) {
-        List<String> path = SPLITTER.splitToList(schema.getSourcePath().orElse(""));
+        List<String> path = useTargetPath
+            ? schema.getPath()
+            //TODO: static cleanup method in PathParser
+            : SPLITTER.splitToList(schema.getSourcePath().map(sourcePath -> sourcePath.replaceAll("\\{constant=.*?\\}", "")).orElse(""));
 
         return Stream.concat(
                 path.isEmpty()
@@ -35,11 +49,7 @@ public class SchemaToMappingVisitor<T extends SchemaBase<T>> implements SchemaVi
                                  .flatMap(map -> map.asMap()
                                                     .entrySet()
                                                     .stream()
-                                                    .flatMap(entry -> path.isEmpty() && entry.getKey()
-                                                                                             .size() < 2
-                                                            ? Stream.concat(
-                                                            Stream.of(new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), schema)), prependToKey(entry, path))
-                                                            : prependToKey(entry, path)))
+                                                    .flatMap(entry -> prependToKey(entry, path)))
         )
                      .collect(ImmutableListMultimap.toImmutableListMultimap(Map.Entry::getKey, Map.Entry::getValue));
     }

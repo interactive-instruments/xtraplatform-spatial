@@ -7,38 +7,25 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import akka.Done;
-import akka.stream.javadsl.RunnableGraph;
-import de.ii.xtraplatform.crs.domain.CrsTransformer;
-import org.immutables.value.Value;
-
+import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
+import org.immutables.value.Value;
 
 public interface FeatureTransactions {
 
-    @Value.Immutable
-    interface MutationResult {
+  @Value.Immutable
+  interface MutationResult extends FeatureStream.ResultBase {
 
-        @Value.Derived
-        default boolean isSuccess() {
-            return !getError().isPresent();
-        }
-
-        List<String> getIds();
-
-        Optional<Throwable> getError();
+    abstract class Builder extends ResultBase.Builder<MutationResult, MutationResult.Builder> {
+      public abstract Builder addIds(String... ids);
     }
 
-    List<String> addFeaturesFromStream(String featureType, CrsTransformer crsTransformer, Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream);
+    List<String> getIds();
+  }
 
-    MutationResult createFeatures(String featureType, FeatureDecoder.WithSource featureSource);
+  MutationResult createFeatures(String featureType, FeatureTokenSource featureTokenSource);
 
-    MutationResult updateFeature(String featureType, FeatureDecoder.WithSource featureSource, String id);
+  MutationResult updateFeature(String type, String id, FeatureTokenSource featureTokenSource);
 
-    void updateFeatureFromStream(String featureType, String id, CrsTransformer crsTransformer, Function<FeatureTransformer, RunnableGraph<CompletionStage<Done>>> stream);
-
-    MutationResult deleteFeature(String featureType, String id);
+  MutationResult deleteFeature(String featureType, String id);
 }

@@ -17,7 +17,7 @@ import java.util.concurrent.CompletionStage;
 public interface FeatureStream2 {
 
     @Value.Immutable
-    interface Result {
+    interface ResultOld {
 
         @Value.Derived
         default boolean isSuccess() {
@@ -29,12 +29,6 @@ public interface FeatureStream2 {
         Optional<Throwable> getError();
     }
 
-    CompletionStage<Result> runWith(FeatureTransformer2 transformer);
+    CompletionStage<ResultOld> runWith(FeatureTransformer2 transformer);
 
-    CompletionStage<Result> runWith(Sink<Feature, CompletionStage<Done>> transformer);
-
-    default <V extends PropertyBase<V,X>, W extends FeatureBase<V,X>, X extends SchemaBase<X>> CompletionStage<Result> runWith(
-            FeatureProcessor<V,W,X> transformer) {
-        return null;
-    }
 }

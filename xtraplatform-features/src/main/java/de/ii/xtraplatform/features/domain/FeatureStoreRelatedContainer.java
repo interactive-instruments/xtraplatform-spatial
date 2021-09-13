@@ -23,7 +23,7 @@ public interface FeatureStoreRelatedContainer extends FeatureStoreAttributesCont
     @Override
     default List<String> getPath() {
         return Stream.concat(
-                Stream.of(getInstanceContainerName()),
+                Stream.of(getInstanceContainerName() + (getInstanceConnection().get(0).getSourceFilter().orElse(""))),
                 getInstanceConnection().stream()
                                        .flatMap(relation -> {
                                            if (relation.getJunction()
@@ -34,7 +34,7 @@ public interface FeatureStoreRelatedContainer extends FeatureStoreAttributesCont
                                                        String.format("[%s=%s]%s", relation.getJunctionTarget()
                                                                                           .get(), relation.getTargetField(), relation.getTargetContainer()));
                                            }
-                                           return Stream.of(String.format("[%s=%s]%s", relation.getSourceField(), relation.getTargetField(), relation.getTargetContainer()));
+                                           return Stream.of(String.format("[%s=%s]%s%s", relation.getSourceField(), relation.getTargetField(), relation.getTargetContainer(), relation.getTargetFilter().orElse("")));
                                        }))
                      .collect(Collectors.toList());
     }

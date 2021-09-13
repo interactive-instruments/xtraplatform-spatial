@@ -19,6 +19,7 @@ import akka.util.ByteString;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureConsumer;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTransformer2;
 import de.ii.xtraplatform.features.domain.FeatureType;
 import org.slf4j.Logger;
@@ -40,26 +41,26 @@ import java.util.regex.Pattern;
  */
 public class GmlStreamParser {
 
-    public static Sink<ByteString, CompletionStage<Done>> consume(final QName featureType,
+    public static Sink<byte[], CompletionStage<Done>> consume(final QName featureType,
                                                                   final FeatureConsumer gmlConsumer) {
         return consume(ImmutableList.of(featureType), gmlConsumer);
     }
 
-    public static Sink<ByteString, CompletionStage<Done>> consume(final List<QName> featureTypes,
+    public static Sink<byte[], CompletionStage<Done>> consume(final List<QName> featureTypes,
                                                                   final FeatureConsumer gmlConsumer) {
         return Sink.fromGraph(new FeatureSinkFromGml(featureTypes, gmlConsumer));
     }
 
-    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureTypeName,
+    public static Sink<byte[], CompletionStage<Done>> transform(final QName featureTypeName,
                                                                     final FeatureType featureType,
                                                                     final FeatureTransformer2 featureTransformer,
                                                                     List<String> fields,
                                                                     boolean skipGeometry) {
-        return transform(featureTypeName, featureType, featureTransformer, fields, skipGeometry, ImmutableMap.of());
+        return transform(featureTypeName, null, featureTransformer, fields, skipGeometry, ImmutableMap.of());
     }
 
-    public static Sink<ByteString, CompletionStage<Done>> transform(final QName featureTypeName,
-                                                                    final FeatureType featureType,
+    public static Sink<byte[], CompletionStage<Done>> transform(final QName featureTypeName,
+                                                                    final FeatureSchema featureSchema,
                                                                     final FeatureTransformer2 featureTransformer,
                                                                     List<String> fields,
                                                                     boolean skipGeometry,
@@ -67,15 +68,15 @@ public class GmlStreamParser {
         List<QName> featureTypes = resolvableTypes.isEmpty() ? ImmutableList.of(featureTypeName) : ImmutableList.<QName>builder().add(featureTypeName)
                                                                                                                              .addAll(resolvableTypes.keySet())
                                                                                                                              .build();
-        return GmlStreamParser.consume(featureTypes, new FeatureTransformerFromGml2(featureType, featureTransformer, fields, skipGeometry, resolvableTypes));
+        return GmlStreamParser.consume(featureTypes, new FeatureTransformerFromGml2(featureSchema, featureTransformer, fields, skipGeometry, resolvableTypes));
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GmlStreamParser.class);
 
-    static class FeatureSinkFromGml extends GraphStageWithMaterializedValue<SinkShape<ByteString>, CompletionStage<Done>> {
+    static class FeatureSinkFromGml extends GraphStageWithMaterializedValue<SinkShape<byte[]>, CompletionStage<Done>> {
 
-        public final Inlet<ByteString> in = Inlet.create("FeatureSinkFromGml.in");
-        private final SinkShape<ByteString> shape = SinkShape.of(in);
+        public final Inlet<byte[]> in = Inlet.create("FeatureSinkFromGml.in");
+        private final SinkShape<byte[]> shape = SinkShape.of(in);
 
         private final List<QName> featureTypes;
         private final FeatureConsumer gmlConsumer;
@@ -89,7 +90,7 @@ public class GmlStreamParser {
         }
 
         @Override
-        public SinkShape<ByteString> shape() {
+        public SinkShape<byte[]> shape() {
             return shape;
         }
 
@@ -112,7 +113,7 @@ public class GmlStreamParser {
                         @Override
                         public void onPush() throws Exception {
                             try {
-                                byte[] bytes = grab(in).toArray();
+                                byte[] bytes = grab(in);
 
                                 //TODO more than one chunk
                                 if (featureTypes.size() > 1) {

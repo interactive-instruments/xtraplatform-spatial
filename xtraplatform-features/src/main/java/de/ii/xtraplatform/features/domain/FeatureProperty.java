@@ -25,7 +25,11 @@ public interface FeatureProperty extends Buildable<FeatureProperty> {
     //TODO: more specific types, in addition or instead of Type
     enum Role {
         ID,
-        TYPE
+        TYPE,
+        PRIMARY_GEOMETRY,
+        PRIMARY_INSTANT,
+        PRIMARY_INTERVAL_START,
+        PRIMARY_INTERVAL_END
     }
 
     enum Type {
@@ -34,7 +38,11 @@ public interface FeatureProperty extends Buildable<FeatureProperty> {
         STRING,
         BOOLEAN,
         DATETIME,
+        DATE,
         GEOMETRY,
+        OBJECT,
+        VALUE_ARRAY,
+        OBJECT_ARRAY,
         UNKNOWN
     }
 

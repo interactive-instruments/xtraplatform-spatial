@@ -21,12 +21,12 @@ import org.immutables.value.Value;
 public interface SchemaBase<T extends SchemaBase<T>> {
 
     enum Role {
-        ID,
-        GEOMETRY,
-        POINT_IN_TIME,
-        PERIOD_START,
-        PERIOD_END,
-        TYPE
+    ID,
+    TYPE,
+    PRIMARY_GEOMETRY,
+    PRIMARY_INSTANT,
+    PRIMARY_INTERVAL_START,
+    PRIMARY_INTERVAL_END
     }
 
     enum Type {
@@ -35,6 +35,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         STRING,
         BOOLEAN,
         DATETIME,
+        DATE,
         GEOMETRY,
         OBJECT,
         VALUE_ARRAY,
@@ -57,6 +58,11 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     List<String> getParentPath();
 
     Optional<String> getSourcePath();
+
+    @Value.Default
+    default List<String> getSourcePaths() {
+        return getSourcePath().map(ImmutableList::of).orElse(ImmutableList.of());
+    }
 
     List<T> getProperties();
 
@@ -81,8 +87,57 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
+    default Optional<T> getPrimaryGeometry() {
+        return getProperties().stream()
+            .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_GEOMETRY).isPresent())
+            .findFirst()
+            .or(() -> getProperties().stream()
+                .filter(SchemaBase::isGeometry)
+                .findFirst());
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default Optional<T> getPrimaryInstant() {
+        return getProperties().stream()
+            .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_INSTANT).isPresent())
+            .findFirst()
+            .or(() -> getProperties().stream()
+                .filter(SchemaBase::isTemporal)
+                .findFirst());
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default Optional<Tuple<T,T>> getPrimaryInterval() {
+        Optional<T> start = getProperties().stream()
+            .filter(
+                t -> t.getRole().filter(role -> role == Role.PRIMARY_INTERVAL_START).isPresent())
+            .findFirst();
+        Optional<T> end = getProperties().stream()
+            .filter(
+                t -> t.getRole().filter(role -> role == Role.PRIMARY_INTERVAL_END).isPresent())
+            .findFirst();
+
+        return start.isPresent() && end.isPresent()
+            ? Optional.of(Tuple.of(start.get(), end.get()))
+            : Optional.empty();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
     default List<String> getFullPath() {
     return new ImmutableList.Builder<String>().addAll(getParentPath()).addAll(getPath()).build();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default String getFullPathAsString() {
+        return String.join(".", getFullPath());
     }
 
     @JsonIgnore
@@ -128,6 +183,55 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @Value.Auxiliary
     default boolean isGeometry() {
         return getType() == Type.GEOMETRY;
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isTemporal() {
+        return getType() == Type.DATETIME || getType() == Type.DATE;
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isId() {
+        return getRole().filter(role -> role == Role.ID).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isPrimaryGeometry() {
+        return getRole().filter(role -> role == Role.PRIMARY_GEOMETRY).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isPrimaryInstant() {
+        return getRole().filter(role -> role == Role.PRIMARY_INSTANT).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isPrimaryIntervalStart() {
+        return getRole().filter(role -> role == Role.PRIMARY_INTERVAL_START).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isPrimaryIntervalEnd() {
+        return getRole().filter(role -> role == Role.PRIMARY_INTERVAL_END).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isType() {
+        return getRole().filter(role -> role == Role.TYPE).isPresent();
     }
 
     default <U> U accept(SchemaVisitor<T, U> visitor) {
