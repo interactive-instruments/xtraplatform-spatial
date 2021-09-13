@@ -25,6 +25,7 @@ import javax.measure.Unit;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
+import org.kortforsyningen.proj.ProjExtensions;
 import org.kortforsyningen.proj.spi.EPSG;
 import org.opengis.metadata.Identifier;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
@@ -126,25 +127,20 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory {
         return Optional.ofNullable(transformerCacheForSourceCrs.get(targetCrs));
     }
 
-    //TODO: passing the horizontal crs to the transformer should be no longer necessary when using proj, just pass crsCache.get((source|target)Crs)
     private CrsTransformer createCrsTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
         boolean is3dTo3d = isCrs3d(sourceCrs) && isCrs3d(targetCrs);
-        boolean is3dTo2d = isCrs3d(sourceCrs) && !isCrs3d(targetCrs);
-        boolean is2dTo3d = !isCrs3d(sourceCrs) && isCrs3d(targetCrs);
         int sourceDimension = isCrs3d(sourceCrs) ? 3 : 2;
         int targetDimension = is3dTo3d ? 3 : 2;
-        CoordinateReferenceSystem horizontalSourceCrs = is3dTo3d || is3dTo2d ? getHorizontalCrs(crsCache.get(sourceCrs)) : crsCache.get(sourceCrs);
-        CoordinateReferenceSystem horizontalTargetCrs = is3dTo3d || is2dTo3d ? getHorizontalCrs(crsCache.get(targetCrs)) : crsCache.get(targetCrs);
 
         try {
-            return new CrsTransformerProj(horizontalSourceCrs, horizontalTargetCrs, sourceCrs, targetCrs, sourceDimension, targetDimension);
+            return new CrsTransformerProj(crsCache.get(sourceCrs), crsCache.get(targetCrs), sourceCrs, targetCrs, sourceDimension, targetDimension);
         } catch (FactoryException ex) {
             LOGGER.debug("GeoTools error", ex);
             throw new IllegalArgumentException(ex.getMessage(), ex);
         }
     }
 
-    //TODO: check if this is still necessary when using proj
+
     private EpsgCrs applyWorkarounds(EpsgCrs crs) {
         // ArcGIS still uses code 102100, but GeoTools does not support it anymore
         if (crs.getCode() == 102100) {
@@ -158,14 +154,6 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory {
     }
 
     private SingleCRS getHorizontalCrs(CoordinateReferenceSystem crs) {
-        Optional<String> code = crs.getIdentifiers().stream().findFirst().map(Identifier::getCode);
-
-        //TODO: workaround for non-compound, shouldn't be needed any more when other TODOs are resolved
-        if (code.isPresent() && "4979".equals(code.get())) {
-            EpsgCrs horizontalCrs = EpsgCrs.of(4326);
-            isCrsSupported(horizontalCrs);
-            return (SingleCRS) crsCache.get(horizontalCrs);
-        }
 
         return crs instanceof CompoundCRS
             ? (SingleCRS) ((CompoundCRS) crs).getComponents().get(0)
@@ -173,10 +161,9 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory {
     }
 
     private CoordinateReferenceSystem applyAxisOrder(CoordinateReferenceSystem crs, EpsgCrs.Force axisOrder) {
-        //TODO: see ProjExtensions.java
-        /*if (axisOrder ==  EpsgCrs.Force.LON_LAT) {
+        if (axisOrder ==  EpsgCrs.Force.LON_LAT) {
           return ProjExtensions.normalizeForVisualization(crs);
-        }*/
+        }
 
         return crs;
     }

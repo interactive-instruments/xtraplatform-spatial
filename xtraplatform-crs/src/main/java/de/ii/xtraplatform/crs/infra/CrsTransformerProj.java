@@ -64,7 +64,7 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
                                 .getCoordinateSystem()
                                 .getAxis(0)
                                 .getUnit();
-        //TODO: test if METRE is really returned
+
         this.isSourceMetric = sourceUnit == Units.METRE;
         this.isTargetMetric = targetUnit == Units.METRE;//targetCrs instanceof ProjectedCRS;
 
