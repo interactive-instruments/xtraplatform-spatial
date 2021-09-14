@@ -138,26 +138,18 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
     @Override
     public double[] transform3d(double[] coordinates, int numberOfPoints, boolean swap) {
         try {
-            double[] coordinates2D = new double[numberOfPoints * 2];
-            int j = 0;
-            for (int i = 0; i < numberOfPoints * 3; i += 3) {
-                if (swap && this.needsAxisSwap) {
-                    coordinates2D[j++] = coordinates[i + 1];
-                    coordinates2D[j++] = coordinates[i];
-                } else {
-                    coordinates2D[j++] = coordinates[i];
-                    coordinates2D[j++] = coordinates[i + 1];
+            double[] source = coordinates;
+            if (swap && this.needsAxisSwap) {
+                source = new double[numberOfPoints * 3];
+                for (int i = 0; i < numberOfPoints * 3; i += 3) {
+                    source[i] = coordinates[i + 1];
+                    source[i + 1] = coordinates[i];
                 }
             }
-            operation.getMathTransform().transform(coordinates2D, 0, coordinates2D, 0, numberOfPoints);
+            double[] target = new double[3* numberOfPoints];
+            operation.getMathTransform().transform(source, 0, target, 0, numberOfPoints);
 
-            j = 0;
-            for (int i = 0; i < numberOfPoints * 3; i += 3) {
-                coordinates[i] = coordinates2D[j++];
-                coordinates[i + 1] = coordinates2D[j++];
-            }
-
-            return coordinates;
+            return target;
         } catch (MismatchedDimensionException | TransformException ex) {
             LOGGER.error("GeoTools error", ex);
         }

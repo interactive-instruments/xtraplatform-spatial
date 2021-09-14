@@ -82,7 +82,7 @@ class CrsTransformerProjSpec extends Specification {
         double x = 50.7164
         double y = 7.086
         double rx = 788809.9117611365
-        double ry = 6571280.658009371
+        double ry = 6571280.658009369
         double[] ra = new double[10]
         for (int i = 0; i < 10; i += 2) {
             ra[i] = x
