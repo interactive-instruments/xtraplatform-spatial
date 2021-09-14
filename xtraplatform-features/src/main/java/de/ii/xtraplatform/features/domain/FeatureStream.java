@@ -7,15 +7,61 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import akka.Done;
-import com.codahale.metrics.Timer;
-
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.streams.domain.Reactive.Sink;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkReducedTransformed;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+import org.immutables.value.Value;
 
-/**
- * @author zahnen
- */
-public interface FeatureStream<T> extends BiFunction<T, Timer.Context, CompletionStage<Done>> {
+public interface FeatureStream {
+
+  @Value.Immutable
+  interface Result extends ResultBase {
+
+    abstract class Builder extends ResultBase.Builder<Result, Builder> {
+
+    }
+  }
+
+  @Value.Immutable
+  interface ResultReduced<T> extends ResultBase {
+
+    abstract class Builder<T> extends ResultBase.Builder<ResultReduced<T>, Builder<T>> {
+
+    }
+
+    T reduced();
+  }
+
+  interface ResultBase {
+
+    abstract class Builder<T extends ResultBase, U extends Builder<T, U>> {
+
+      public abstract U isEmpty(boolean isEmpty);
+
+      public abstract U error(Throwable error);
+
+      public abstract T build();
+    }
+
+    @Value.Derived
+    default boolean isSuccess() {
+      return getError().isEmpty();
+    }
+
+    boolean isEmpty();
+
+    Optional<Throwable> getError();
+  }
+
+  <X> CompletionStage<ResultReduced<X>> runWith(SinkReduced<Object, X> sink, Optional<PropertyTransformations> propertyTransformations);
+
+  CompletionStage<Result> runWith(Sink<Object> sink, Optional<PropertyTransformations> propertyTransformations);
+
+  CompletionStage<Result> runWith(SinkTransformed<Object, byte[]> sink, Optional<PropertyTransformations> propertyTransformations);
+
+  CompletionStage<ResultReduced<byte[]>> runWith(SinkReducedTransformed<Object, byte[], byte[]> sink, Optional<PropertyTransformations> propertyTransformations);
 }

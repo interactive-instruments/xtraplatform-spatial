@@ -11,8 +11,10 @@ public interface FeaturePropertyTransformer<T> {
 
     String getType();
 
+    String getPropertyPath();
+
     String getParameter();
 
-    T transform(T input);
+    T transform(String currentPropertyPath, T input);
 
 }

@@ -13,5 +13,5 @@ public interface FeatureStorePathParser {
 
     interface PathSyntax {}
 
-    List<FeatureStoreInstanceContainer> parse(FeatureType featureType);
+    List<FeatureStoreInstanceContainer> parse(FeatureSchema schema);
 }

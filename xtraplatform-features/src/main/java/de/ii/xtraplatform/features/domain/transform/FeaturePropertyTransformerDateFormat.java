@@ -9,6 +9,9 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.FeatureProperty;
+import de.ii.xtraplatform.features.domain.SchemaBase;
+import java.time.ZoneId;
+import java.util.Optional;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +29,9 @@ public interface FeaturePropertyTransformerDateFormat extends FeaturePropertyVal
     Logger LOGGER = LoggerFactory.getLogger(FeaturePropertyTransformerDateFormat.class);
 
     String TYPE = "DATE_FORMAT";
+    ZoneId UTC = ZoneId.of("UTC");
+    String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZZZZZ";
+    String DATE_FORMAT = "yyyy-MM-dd";
 
     @Override
     default String getType() {
@@ -33,20 +39,30 @@ public interface FeaturePropertyTransformerDateFormat extends FeaturePropertyVal
     }
 
     @Override
-    default List<FeatureProperty.Type> getSupportedPropertyTypes() {
-        return ImmutableList.of(FeatureProperty.Type.DATETIME);
+    default List<SchemaBase.Type> getSupportedPropertyTypes() {
+        return ImmutableList.of(SchemaBase.Type.DATETIME);
     }
 
+    Optional<ZoneId> getDefaultTimeZone();
+
     @Override
-    default String transform(String input) {
+    default String transform(String currentPropertyPath, String input) {
+        //TODO: variable fractions
         try {
             DateTimeFormatter parser = DateTimeFormatter.ofPattern("yyyy-MM-dd[['T'][' ']HH:mm:ss][.SSS][X]");
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(getParameter());
             TemporalAccessor ta = parser.parseBest(input, OffsetDateTime::from, LocalDateTime::from, LocalDate::from);
+            if (ta instanceof OffsetDateTime) {
+                ta = ((OffsetDateTime)ta).atZoneSameInstant(UTC);
+            } else if (ta instanceof LocalDateTime) {
+                ta = ((LocalDateTime)ta).atZone(getDefaultTimeZone().orElse(UTC)).withZoneSameInstant(UTC);
+            } else if (ta instanceof LocalDate) {
+                ta = ((LocalDate)ta).atStartOfDay(getDefaultTimeZone().orElse(UTC)).withZoneSameInstant(UTC);
+            }
 
             return formatter.format(ta);
         } catch (Exception e) {
-            LOGGER.warn("{} transformation for property '{}' with value '{}' failed: {}", getType(), getPropertyName().orElse(""), input, e.getMessage());
+            LOGGER.warn("{} transformation for property '{}' with value '{}' failed: {}", getType(), getPropertyPath(), input, e.getMessage());
         }
 
         return input;

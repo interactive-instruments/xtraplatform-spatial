@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.Objects;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -35,5 +36,11 @@ public interface SchemaConstraints {
     Optional<Integer> getMinOccurrence();
 
     Optional<Integer> getMaxOccurrence();
+
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isRequired() {
+        return getRequired().filter(required -> Objects.equals(required, true)).isPresent();
+    }
 
 }

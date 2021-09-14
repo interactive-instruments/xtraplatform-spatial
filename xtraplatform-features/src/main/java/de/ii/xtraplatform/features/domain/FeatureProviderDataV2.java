@@ -12,16 +12,13 @@ import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.services.domain.ImmutableServiceDataCommon;
 import de.ii.xtraplatform.store.domain.entities.AutoEntity;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
-import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
+import java.time.ZoneId;
 import java.util.List;
-import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 import java.util.Map;
@@ -50,6 +47,9 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
     }
 
     Optional<EpsgCrs> getNativeCrs();
+
+    @JsonDeserialize(converter = ZoneIdFromString.class)
+    Optional<ZoneId> getNativeTimeZone();
 
     Optional<String> getDefaultLanguage();
 

@@ -7,6 +7,9 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import java.util.Map;
+
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;
@@ -36,6 +39,31 @@ public interface PropertyBase<T extends PropertyBase<T,U>, U extends SchemaBase<
 
     List<T> getNestedProperties();
 
+    List<String> getPropertyPath();
+
+    @Value.Default
+    default int getLevel() {
+        return getPropertyPath().size();
+    }
+
+    Map<String, String> getTransformed();
+
+    @Value.Derived
+    default boolean isValue() {
+        return getType() == Type.VALUE;
+    }
+
+    @Value.Derived
+    default boolean isObject() {
+        return getType() == Type.OBJECT;
+    }
+
+    @Value.Derived
+    default boolean isArray() {
+        return getType() == Type.ARRAY;
+    }
+
+    Optional<SimpleFeatureGeometry> getGeometryType();
 
 
     PropertyBase<T,U> schema(Optional<U> schema);
@@ -51,5 +79,15 @@ public interface PropertyBase<T extends PropertyBase<T,U>, U extends SchemaBase<
     PropertyBase<T,U> parent(T parent);
 
     PropertyBase<T,U> addNestedProperties(T element);
+
+    PropertyBase<T,U> propertyPath(Iterable<String> path);
+
+    PropertyBase<T,U> level(int level);
+
+    PropertyBase<T,U> transformed(Map<String, ? extends String> transformed);
+
+    PropertyBase<T,U> geometryType(Optional<SimpleFeatureGeometry> geometryType);
+
+    PropertyBase<T,U> geometryType(SimpleFeatureGeometry geometryType);
 
 }

@@ -7,8 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import de.ii.xtraplatform.features.domain.FeatureProperty;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 
-public interface FeaturePropertySchemaTransformer extends FeaturePropertyTransformer<FeatureProperty> {
+public interface FeaturePropertySchemaTransformer extends FeaturePropertyTransformer<FeatureSchema> {
 
 }

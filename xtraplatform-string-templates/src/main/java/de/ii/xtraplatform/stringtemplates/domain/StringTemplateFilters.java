@@ -10,6 +10,20 @@ package de.ii.xtraplatform.stringtemplates.domain;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.commonmark.Extension;
 import org.commonmark.ext.gfm.tables.TablesExtension;
 import org.commonmark.node.Link;
@@ -20,19 +34,6 @@ import org.commonmark.renderer.html.CoreHtmlNodeRenderer;
 import org.commonmark.renderer.html.HtmlRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * @author zahnen
@@ -69,7 +70,7 @@ public class StringTemplateFilters {
     }
 
     public static String applyTemplate(String template, String value) {
-        return applyTemplate(template, value, isHtml -> {}, "value");
+        return applyTemplate(template, value, isHtml -> {});
     }
 
     public static String applyTemplate(String template, String value, Consumer<Boolean> isHtml) {
@@ -77,16 +78,29 @@ public class StringTemplateFilters {
     }
 
     public static String applyTemplate(String template, String value, Consumer<Boolean> isHtml, String valueSubst) {
-
         if (Objects.isNull(value) || value.isEmpty()) {
             return "";
         }
+
         if (Objects.isNull(template) || template.isEmpty()) {
             return value;
         }
 
-        Pattern valuePattern = Pattern.compile("\\{\\{" + valueSubst + "( ?\\| ?[\\w]+(:'[^']*')*)*\\}\\}");
-        Pattern filterPattern = Pattern.compile(" ?\\| ?([\\w]+)((?::'[^']*')*)");
+        return applyTemplate(template, isHtml, key -> Objects.equals(key, valueSubst) ? value : null);
+    }
+
+    public static String applyTemplate(String template, Function<String, String> valueLookup) {
+        return applyTemplate(template, isHtml -> {}, valueLookup);
+    }
+
+    static Pattern valuePattern = Pattern.compile("\\{\\{([\\w.]+)( ?\\| ?[\\w]+(:'[^']*')*)*\\}\\}");
+    static Pattern filterPattern = Pattern.compile(" ?\\| ?([\\w]+)((?::'[^']*')*)");
+
+    public static String applyTemplate(String template, Consumer<Boolean> isHtml, Function<String, String> valueLookup) {
+
+        if (Objects.isNull(template) || template.isEmpty()) {
+            return "";
+        }
 
         String formattedValue = "";
         Matcher matcher = valuePattern.matcher(template);
@@ -95,48 +109,51 @@ public class StringTemplateFilters {
 
         int lastMatch = 0;
         while (matcher.find()) {
-            String filteredValue = value;
-            Matcher matcher2 = filterPattern.matcher(template.substring(matcher.start(), matcher.end()));
-            while (matcher2.find()) {
-                String filter = matcher2.group(1);
-                String params = matcher2.group(2);
-                List<String> parameters = matcher2.groupCount() < 2
-                        ? ImmutableList.of()
-                        : Splitter.onPattern("(?<=^|'):(?='|$)")
-                                  .omitEmptyStrings()
-                                  .splitToList(params)
-                                  .stream()
-                                  .map(s -> s.substring(1, s.length() - 1 ))
-                                  .collect(Collectors.toList());
+            String key = matcher.group(1);
+            String filteredValue = valueLookup.apply(key);
+            if (Objects.nonNull(filteredValue)) {
+                Matcher matcher2 = filterPattern.matcher(template.substring(matcher.start(), matcher.end()));
+                while (matcher2.find()) {
+                    String filter = matcher2.group(1);
+                    String params = matcher2.group(2);
+                    List<String> parameters = matcher2.groupCount() < 2
+                            ? ImmutableList.of()
+                            : Splitter.onPattern("(?<=^|'):(?='|$)")
+                                      .omitEmptyStrings()
+                                      .splitToList(params)
+                                      .stream()
+                                      .map(s -> s.substring(1, s.length() - 1))
+                                      .collect(Collectors.toList());
 
-                if (filter.equals("markdown")) {
-                    filteredValue = applyFilterMarkdown(filteredValue);
-                    hasAppliedMarkdown = true;
-                } else if (filter.equals("replace") && parameters.size() >= 2) {
-                    filteredValue = filteredValue.replaceAll(parameters.get(0), parameters.get(1));
-                } else if (filter.equals("prepend") && parameters.size() >= 1) {
-                    filteredValue = parameters.get(0) + filteredValue;
-                } else if (filter.equals("append") && parameters.size() >= 1) {
-                    filteredValue = filteredValue + parameters.get(0);
-                } else if (filter.equals("urlEncode") || filter.equals("urlencode")) {
-                    try {
-                        filteredValue = URLEncoder.encode(filteredValue, Charsets.UTF_8.toString());
-                    } catch (UnsupportedEncodingException e) {
-                        //ignore
+                    if (filter.equals("markdown")) {
+                        filteredValue = applyFilterMarkdown(filteredValue);
+                        hasAppliedMarkdown = true;
+                    } else if (filter.equals("replace") && parameters.size() >= 2) {
+                        filteredValue = filteredValue.replaceAll(parameters.get(0), parameters.get(1));
+                    } else if (filter.equals("prepend") && parameters.size() >= 1) {
+                        filteredValue = parameters.get(0) + filteredValue;
+                    } else if (filter.equals("append") && parameters.size() >= 1) {
+                        filteredValue = filteredValue + parameters.get(0);
+                    } else if (filter.equals("urlEncode") || filter.equals("urlencode")) {
+                        try {
+                            filteredValue = URLEncoder.encode(filteredValue, Charsets.UTF_8.toString());
+                        } catch (UnsupportedEncodingException e) {
+                            //ignore
+                        }
+                    } else if (filter.equals("toLower")) {
+                        filteredValue = filteredValue.toLowerCase();
+                    } else if (filter.equals("toUpper")) {
+                        filteredValue = filteredValue.toUpperCase();
+                    } else if (filter.equals("assignTo") && parameters.size() >= 1) {
+                        assigns.put(parameters.get(0), filteredValue);
+                    } else if (filter.equals("unHtml") ) {
+                        filteredValue = filteredValue.replaceAll("<.*?>", "");
+                    } else {
+                        LOGGER.warn("Template filter '{}' not supported", filter);
                     }
-                } else if (filter.equals("toLower")) {
-                    filteredValue = filteredValue.toLowerCase();
-                } else if (filter.equals("toUpper")) {
-                    filteredValue = filteredValue.toUpperCase();
-                } else if (filter.equals("assignTo") && parameters.size() >= 1) {
-                    assigns.put(parameters.get(0), filteredValue);
-                } else {
-                    LOGGER.warn("Template filter '{}' not supported", filter);
                 }
             }
-            //formattedValue = formattedValue.substring(lastMatch, matcher.start()) + filteredValue + formattedValue.substring(matcher.end());
-            //lastMatch = matcher.start();
-            formattedValue += template.substring(lastMatch, matcher.start()) + filteredValue;
+            formattedValue += template.substring(lastMatch, matcher.start()) + Objects.requireNonNullElse(filteredValue,"");
             lastMatch = matcher.end();
         }
         formattedValue += template.substring(lastMatch);

@@ -7,14 +7,12 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import akka.stream.javadsl.RunnableGraph;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
-import de.ii.xtraplatform.streams.domain.RunnableGraphWithMdc;
-
+import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 
 public interface ExtentReader {
-    RunnableGraphWithMdc<CompletionStage<Optional<BoundingBox>>> getExtent(FeatureStoreTypeInfo typeInfo);
+
+    Stream<Optional<BoundingBox>> getExtent(FeatureStoreTypeInfo typeInfo);
 }

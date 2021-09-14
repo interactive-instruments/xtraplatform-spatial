@@ -7,47 +7,63 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import akka.Done;
+import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerDateFormat.DATETIME_FORMAT;
+import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerDateFormat.DATE_FORMAT;
+import static de.ii.xtraplatform.features.domain.transform.PropertyTransformations.WILDCARD;
+
 import akka.NotUsed;
-import akka.stream.javadsl.Keep;
-import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.codelists.domain.Codelist;
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
+import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
+import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.features.domain.FeatureStream.Result.Builder;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.runtime.domain.LogContext;
+import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
-import de.ii.xtraplatform.streams.domain.ActorSystemProvider;
-import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
-import de.ii.xtraplatform.streams.domain.StreamRunner;
+import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.BasicStream;
+import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkReducedTransformed;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
 import java.io.IOException;
-import java.util.Objects;
-import org.osgi.framework.BundleContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConnector.QueryOptions> extends AbstractPersistentEntity<FeatureProviderDataV2> implements FeatureProvider2, FeatureQueries {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
 
-    private final BundleContext context;
-    private final ActorSystemProvider actorSystemProvider;
     private final ConnectorFactory connectorFactory;
-    private StreamRunner streamRunner;
+    private final Reactive reactive;
+    private final CrsTransformerFactory crsTransformerFactory;
+    private Reactive.Runner streamRunner;
     private Map<String, FeatureStoreTypeInfo> typeInfos;
     private FeatureProviderConnector<T, U, V> connector;
 
-    protected AbstractFeatureProvider(BundleContext context,
-        ActorSystemProvider actorSystemProvider, ConnectorFactory connectorFactory) {
-        this.context = context;
-        this.actorSystemProvider = actorSystemProvider;
+    protected AbstractFeatureProvider(ConnectorFactory connectorFactory, Reactive reactive,
+        CrsTransformerFactory crsTransformerFactory) {
         this.connectorFactory = connectorFactory;
+        this.reactive = reactive;
+        this.crsTransformerFactory = crsTransformerFactory;
     }
 
     @Override
@@ -64,7 +80,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             }
         }
         this.typeInfos = createTypeInfos(getPathParser(), getData().getTypes());
-        this.streamRunner = new StreamRunner(context, actorSystemProvider, getData().getId(), getRunnerCapacity(((WithConnectionInfo<?>)getData()).getConnectionInfo()), getRunnerQueueSize(((WithConnectionInfo<?>)getData()).getConnectionInfo()));
+        this.streamRunner = reactive.runner(getData().getId(), getRunnerCapacity(((WithConnectionInfo<?>)getData()).getConnectionInfo()), getRunnerQueueSize(((WithConnectionInfo<?>)getData()).getConnectionInfo()));
         this.connector = (FeatureProviderConnector<T, U, V>) connectorFactory.createConnector(getData());
 
         if (!getConnector().isConnected()) {
@@ -154,11 +170,11 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
     }
 
     protected int getRunnerCapacity(ConnectionInfo connectionInfo) {
-        return StreamRunner.DYNAMIC_CAPACITY;
+        return Reactive.Runner.DYNAMIC_CAPACITY;
     }
 
     protected int getRunnerQueueSize(ConnectionInfo connectionInfo) {
-        return StreamRunner.DYNAMIC_CAPACITY;
+        return Reactive.Runner.DYNAMIC_CAPACITY;
     }
 
     protected Optional<String> getRunnerError(ConnectionInfo connectionInfo) {
@@ -173,13 +189,11 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return Objects.requireNonNull(connector);
     }
 
-    protected abstract FeatureNormalizer<T> getNormalizer();
-
     protected Map<String, FeatureStoreTypeInfo> getTypeInfos() {
         return typeInfos;
     }
 
-    protected StreamRunner getStreamRunner() {
+    protected Reactive.Runner getStreamRunner() {
         return streamRunner;
     }
 
@@ -191,14 +205,16 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return Optional.empty();
     }
 
+    protected abstract FeatureTokenDecoder<T> getDecoder(FeatureQuery query);
+
+    protected abstract Map<String, Codelist> getCodelists();
+
     public static Map<String, FeatureStoreTypeInfo> createTypeInfos(
             FeatureStorePathParser pathParser, Map<String, FeatureSchema> featureTypes) {
         return featureTypes.entrySet()
                            .stream()
                            .map(entry -> {
-                               FeatureType featureType = entry.getValue()
-                                                         .accept(new FeatureSchemaToTypeVisitor(entry.getKey()));
-                               List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(featureType);
+                               List<FeatureStoreInstanceContainer> instanceContainers = pathParser.parse(entry.getValue());
                                FeatureStoreTypeInfo typeInfo = ImmutableFeatureStoreTypeInfo.builder()
                                                                                             .name(entry.getKey())
                                                                                             .instanceContainers(instanceContainers)
@@ -210,84 +226,159 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
     }
 
     @Override
-    public FeatureStream2 getFeatureStream2(FeatureQuery query) {
-        return new FeatureStream2() {
+    public FeatureStream getFeatureStream(FeatureQuery query) {
+        return new FeatureStream() {
 
             @Override
-            public CompletionStage<Result> runWith(FeatureTransformer2 transformer) {
+            public <X> CompletionStage<ResultReduced<X>> runWith(SinkReduced<Object, X> sink,
+                Optional<PropertyTransformations> propertyTransformations) {
+
+                FeatureTokenSource byteSource = getFeatureTokenSource(propertyTransformations);
+
+                BasicStream<Object, X> to = byteSource.to(sink);
+
+                RunnableStream<ResultReduced<X>> runnableStream = to.withResult(
+                        ImmutableResultReduced.<X>builder().isEmpty(true))
+                    .handleError((result, throwable) -> {
+                        /*TODO Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
+                            ? new IllegalArgumentException(throwable.getMessage())
+                            : throwable;*/
+                        return result.error(throwable);
+                    })
+                    .handleItem((builder, x) -> builder.reduced((X) x).isEmpty(false))
+                    .handleEnd(ResultReduced.Builder::build)
+                    .on(streamRunner);
+
+                return runnableStream.run();
+            }
+
+            @Override
+            public CompletionStage<Result> runWith(Reactive.Sink<Object> sink,
+                Optional<PropertyTransformations> propertyTransformations) {
+
+                FeatureTokenSource byteSource = getFeatureTokenSource(propertyTransformations);
+
+                RunnableStream<Result> runnableStream = byteSource.to(sink)
+                    .withResult((Builder)ImmutableResult.builder().isEmpty(true))
+                    .handleError((result, throwable) -> {
+                        /*TODO Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
+                            ? new IllegalArgumentException(throwable.getMessage())
+                            : throwable;*/
+                        return result.error(throwable);
+                    })
+                    .handleItem((builder, x) -> builder.isEmpty(false))
+                    .handleEnd(Builder::build)
+                    .on(streamRunner);
+
+                return runnableStream.run();
+            }
+
+            @Override
+            public CompletionStage<Result> runWith(SinkTransformed<Object, byte[]> sink,
+                Optional<PropertyTransformations> propertyTransformations) {
+                FeatureTokenSource tokenSource = getFeatureTokenSource(propertyTransformations);
+
+                RunnableStream<Result> runnableStream = tokenSource.to(sink)
+                    .withResult((Builder)ImmutableResult.builder().isEmpty(true))
+                    .handleError((result, throwable) -> {
+                        /*TODO Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
+                            ? new IllegalArgumentException(throwable.getMessage())
+                            : throwable;*/
+                        return result.error(throwable);
+                    })
+                    .handleItem((builder, x) -> builder.isEmpty(false))
+                    .handleEnd(Builder::build)
+                    .on(streamRunner);
+
+                return runnableStream.run();
+            }
+
+            @Override
+            public CompletionStage<ResultReduced<byte[]>> runWith(
+                SinkReducedTransformed<Object, byte[], byte[]> sink,
+                Optional<PropertyTransformations> propertyTransformations) {
+                    FeatureTokenSource tokenSource = getFeatureTokenSource(propertyTransformations);
+
+                    RunnableStream<ResultReduced<byte[]>> runnableStream = tokenSource.to(sink)
+                        .withResult(ImmutableResultReduced.<byte[]>builder()
+                            .reduced(new byte[0])
+                            .isEmpty(true))
+                        .handleError((result, throwable) -> {
+                        /*TODO Throwable error = throwable instanceof PSQLException || throwable instanceof JsonParseException
+                            ? new IllegalArgumentException(throwable.getMessage())
+                            : throwable;*/
+                            return result.error(throwable);
+                        })
+                        .handleItem((builder, bytes) -> builder.reduced(bytes).isEmpty(bytes.length > 0))
+                        .handleEnd(ResultReduced.Builder::build)
+                        .on(streamRunner);
+
+                    return runnableStream.run();
+            }
+
+            private FeatureTokenSource getFeatureTokenSource(
+                Optional<PropertyTransformations> propertyTransformations) {
+
                 Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(query.getType()));
 
                 if (!typeInfo.isPresent()) {
-                    //TODO: put error message into Result, complete successfully
-                    CompletableFuture<Result> promise = new CompletableFuture<>();
-                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
-                    return promise;
+                    throw new IllegalStateException("No features available for type");
                 }
 
+                //TODO: encapsulate in FeatureQueryRunnerSql
                 U transformedQuery = getQueryTransformer().transformQuery(query, ImmutableMap.of());
-
                 V options = getQueryTransformer().getOptions(query);
-
                 Source<T, NotUsed> sourceStream = getConnector().getSourceStream(transformedQuery, options);
+                Reactive.Source<T> source = Reactive.Source.akka(sourceStream);
 
-                Sink<T, CompletionStage<Result>> sink = getNormalizer().normalizeAndTransform(transformer, query);
+                FeatureTokenDecoder<T> decoder = getDecoder(query);
 
-                return getStreamRunner().run(sourceStream, sink);
-            }
+                FeatureTokenSource featureTokenSource = source.via(decoder);
 
-            @Override
-            public CompletionStage<Result> runWith(Sink<Feature, CompletionStage<Done>> transformer) {
-                /*Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(typeInfos.get(query.getType()));
+                FeatureSchema featureSchema = getData().getTypes().get(query.getType());
+                Map<String, List<PropertyTransformation>> providerTransformationMap = featureSchema.accept(
+                    (schema, visitedProperties) -> java.util.stream.Stream
+                        .concat(
+                            schema.getTransformations().isEmpty()
+                                ? schema.isTemporal()
+                                ? java.util.stream.Stream
+                                .of(new SimpleImmutableEntry<String, List<PropertyTransformation>>(
+                                    String.join(".", schema.getFullPath()),
+                                    ImmutableList.of(
+                                        new ImmutablePropertyTransformation.Builder().dateFormat(
+                                            schema.getType() == Type.DATETIME ? DATETIME_FORMAT
+                                                : DATE_FORMAT).build())))
+                                : java.util.stream.Stream.empty()
+                                : java.util.stream.Stream
+                                    .of(new SimpleImmutableEntry<String, List<PropertyTransformation>>(
+                                        schema.getFullPath().isEmpty() ? WILDCARD : String.join(".", schema.getFullPath()),
+                                        schema.getTransformations())),
+                            visitedProperties.stream().flatMap(m -> m.entrySet().stream())
+                        )
+                        .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue)));
+                PropertyTransformations providerTransformations = () -> providerTransformationMap;
 
-                if (!typeInfo.isPresent()) {
-                    //TODO: put error message into Result, complete successfully
-                    CompletableFuture<Result> promise = new CompletableFuture<>();
-                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
-                    return promise;
-                }
+                PropertyTransformations mergedTransformations = propertyTransformations
+                    .map(p -> p.mergeInto(providerTransformations)).orElse(providerTransformations);
 
-                SqlQueries sqlQueries = queryTransformer.transformQuery(query);
+                FeatureTokenTransformerSchemaMappings schemaMapper = new FeatureTokenTransformerSchemaMappings(mergedTransformations);
 
-                Source<SqlRow, NotUsed> rowStream = connector.getSourceStream(sqlQueries);
+                Optional<CrsTransformer> crsTransformer = query.getCrs().flatMap(
+                    targetCrs -> crsTransformerFactory
+                        .getTransformer(getData().getNativeCrs().orElse(OgcCrs.CRS84), targetCrs));
+                FeatureTokenTransformerValueMappings valueMapper = new FeatureTokenTransformerValueMappings(
+                    mergedTransformations, getCodelists(), getData().getNativeTimeZone(),
+                    crsTransformer);
 
-                Source<Feature<?>, CompletionStage<Result>> featureStream = featureNormalizer.normalize(rowStream, query);
+                FeatureTokenTransformerRemoveEmptyOptionals cleaner = new FeatureTokenTransformerRemoveEmptyOptionals();
 
-                return featureStream.toMat(transformer, Keep.left())
-                                    .run(materializer);*/
+                FeatureTokenTransformerSorting sorter = new FeatureTokenTransformerSorting();
 
-                return null;
-            }
-
-            @Override
-            public <Y extends PropertyBase<Y,Z>, W extends FeatureBase<Y,Z>, Z extends SchemaBase<Z>> CompletionStage<Result> runWith(
-                    FeatureProcessor<Y,W,Z> transformer) {
-                Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(query.getType()));
-
-                if (!typeInfo.isPresent()) {
-                    //TODO: put error message into Result, complete successfully
-                    CompletableFuture<Result> promise = new CompletableFuture<>();
-                    promise.completeExceptionally(new IllegalStateException("No features available for type"));
-                    return promise;
-                }
-
-                U sqlQueries = getQueryTransformer().transformQuery(query, ImmutableMap.of());
-
-                V options = getQueryTransformer().getOptions(query);
-
-                Source<T, NotUsed> rowStream = getConnector().getSourceStream(sqlQueries, options);
-
-                Source<W, CompletionStage<Result>> featureStream = getNormalizer().normalize(rowStream, query, transformer::createFeature, transformer::createProperty);
-
-                Sink<W, CompletionStage<Done>> sink = Sink.foreach(feature -> {
-
-            /*if (!numberReturned.isDone() && feature.getProperties().containsKey(ImmutableList.of("numberReturned"))) {
-                numberReturned.complete(Long.getLong(feature.getProperties().get(ImmutableList.of("numberReturned"))));
-            }*/
-
-                    transformer.process(feature);
-                });
-
-                return getStreamRunner().run(featureStream, sink, Keep.left());
+                return featureTokenSource
+                    //.via(sorter)
+                    .via(schemaMapper)
+                    .via(valueMapper)
+                    .via(cleaner);
             }
         };
     }
