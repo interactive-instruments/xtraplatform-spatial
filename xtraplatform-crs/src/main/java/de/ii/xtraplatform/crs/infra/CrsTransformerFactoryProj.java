@@ -25,9 +25,8 @@ import javax.measure.Unit;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
-import org.kortforsyningen.proj.ProjExtensions;
+import org.kortforsyningen.proj.Proj;
 import org.kortforsyningen.proj.spi.EPSG;
-import org.opengis.metadata.Identifier;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
 import org.opengis.referencing.crs.CompoundCRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -162,7 +161,7 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory {
 
     private CoordinateReferenceSystem applyAxisOrder(CoordinateReferenceSystem crs, EpsgCrs.Force axisOrder) {
         if (axisOrder ==  EpsgCrs.Force.LON_LAT) {
-          return ProjExtensions.normalizeForVisualization(crs);
+            return Proj.normalizeForVisualization(crs);
         }
 
         return crs;
