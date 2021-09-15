@@ -10,6 +10,8 @@ package de.ii.xtraplatform.crs.infra
 import de.ii.xtraplatform.crs.domain.CoordinateTuple
 import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
+import org.kortforsyningen.proj.Units
+import org.opengis.referencing.cs.AxisDirection
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -104,6 +106,27 @@ class CrsTransformerProjSpec extends Specification {
             re[i] == rx
             re[i + 1] == ry
         }
+    }
+
+    def 'CRS info test'() {
+
+        expect:
+        transformerFactory.getAxisAbbreviations(crs) == axisAbbreviations
+        transformerFactory.getAxisUnits(crs) == axisUnits
+        transformerFactory.getAxisDirections(crs) == axisDirections
+
+        where:
+        crs                 | axisAbbreviations     | axisUnits                                 | axisDirections
+        EpsgCrs.of(5555)    | ["E", "N", "H"]       | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP]
+        EpsgCrs.of(5556)    | ["E", "N", "H"]       | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP]
+        EpsgCrs.of(4979)    | ["Lat", "Lon", "h"]   | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.NORTH, AxisDirection.EAST, AxisDirection.UP]
+        EpsgCrs.of(25832)   | ["E", "N"]            | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]
+        EpsgCrs.of(4326)    | ["Lat", "Lon"]        | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]
+        EpsgCrs.of(3857)    | ["X", "Y"]            | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]
+        EpsgCrs.of(4269)    | ["Lat", "Lon"]        | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]
+        OgcCrs.CRS84        | ["Lat", "Lon"]        | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]
+        OgcCrs.CRS84h       | ["Lat", "Lon", "h"]   | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.NORTH, AxisDirection.EAST, AxisDirection.UP]
+
     }
 
 }

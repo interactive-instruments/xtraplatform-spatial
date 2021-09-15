@@ -12,16 +12,21 @@ package de.ii.xtraplatform.crs.infra;
 
 import static de.ii.xtraplatform.dropwizard.domain.LambdaWithException.mayThrow;
 
+import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
-import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
+
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.measure.Unit;
+
+import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
@@ -31,6 +36,8 @@ import org.opengis.referencing.crs.CRSAuthorityFactory;
 import org.opengis.referencing.crs.CompoundCRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.crs.SingleCRS;
+import org.opengis.referencing.cs.AxisDirection;
+import org.opengis.referencing.cs.RangeMeaning;
 import org.opengis.util.FactoryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +49,7 @@ import org.slf4j.LoggerFactory;
 @Component
 @Provides
 @Instantiate
-public class CrsTransformerFactoryProj implements CrsTransformerFactory {
+public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CrsTransformerFactoryProj.class);
 
@@ -167,4 +174,72 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory {
         return crs;
     }
 
+    @Override
+    public boolean is3d(EpsgCrs crs) {
+        return isCrs3d(crs);
+    }
+
+    @Override
+    public Unit<?> getUnit(EpsgCrs crs) {
+        return getCrsUnit(crs);
+    }
+
+    @Override
+    public List<String> getAxisAbbreviations(EpsgCrs crs) {
+        CoordinateReferenceSystem coordinateReferenceSystem = getCoordinateReferenceSystem(crs);
+        ImmutableList.Builder<String> abbreviations = new ImmutableList.Builder<>();
+        abbreviations.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(0).getAbbreviation());
+        abbreviations.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(1).getAbbreviation());
+        if (is3d(crs)) {
+            abbreviations.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(2).getAbbreviation());
+        }
+
+        return abbreviations.build();
+    }
+
+    @Override
+    public List<Unit<?>> getAxisUnits(EpsgCrs crs) {
+        CoordinateReferenceSystem coordinateReferenceSystem = getCoordinateReferenceSystem(crs);
+        ImmutableList.Builder<Unit<?>> axisUnits = new ImmutableList.Builder<>();
+        axisUnits.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(0).getUnit());
+        axisUnits.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(1).getUnit());
+        if (is3d(crs)) {
+            axisUnits.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(2).getUnit());
+        }
+
+        return axisUnits.build();
+    }
+
+    @Override
+    public List<RangeMeaning> getAxisRangeMeanings(EpsgCrs crs) {
+        CoordinateReferenceSystem coordinateReferenceSystem = getCoordinateReferenceSystem(crs);
+        ImmutableList.Builder<RangeMeaning> rangeMeanings = new ImmutableList.Builder<>();
+        rangeMeanings.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(0).getRangeMeaning());
+        rangeMeanings.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(1).getRangeMeaning());
+        if (is3d(crs)) {
+            rangeMeanings.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(2).getRangeMeaning());
+        }
+
+        return rangeMeanings.build();
+    }
+
+    @Override
+    public List<AxisDirection> getAxisDirections(EpsgCrs crs) {
+        CoordinateReferenceSystem coordinateReferenceSystem = getCoordinateReferenceSystem(crs);
+        ImmutableList.Builder<AxisDirection> axisDirections = new ImmutableList.Builder<>();
+        axisDirections.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(0).getDirection());
+        axisDirections.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(1).getDirection());
+        if (is3d(crs)) {
+            axisDirections.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(2).getDirection());
+        }
+
+        return axisDirections.build();
+    }
+
+    private CoordinateReferenceSystem getCoordinateReferenceSystem(EpsgCrs crs) {
+        if (!isCrsSupported(crs)) {
+            throw new IllegalArgumentException(String.format("CRS %s is not supported.", Objects.nonNull(crs) ? crs.toSimpleString() : "null"));
+        }
+        return crsCache.get(crs);
+    }
 }

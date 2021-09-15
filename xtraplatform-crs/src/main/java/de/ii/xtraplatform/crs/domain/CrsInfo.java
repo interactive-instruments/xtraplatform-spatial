@@ -14,19 +14,17 @@ import org.opengis.referencing.cs.RangeMeaning;
 
 public interface CrsInfo {
 
-  //already implemented as isCrs3d
   boolean is3d(EpsgCrs crs);
 
-  //already implemented as getCrsUnit
   Unit<?> getUnit(EpsgCrs crs);
 
-  List<String> getAxisAbbreviations();
+  List<String> getAxisAbbreviations(EpsgCrs crs);
 
-  List<Unit<?>> getAxisUnits();
+  List<Unit<?>> getAxisUnits(EpsgCrs crs);
 
-  List<RangeMeaning> getAxisRangeMeanings();
+  List<RangeMeaning> getAxisRangeMeanings(EpsgCrs crs);
 
-  List<AxisDirection> getAxisDirections();
+  List<AxisDirection> getAxisDirections(EpsgCrs crs);
 
 
 }
