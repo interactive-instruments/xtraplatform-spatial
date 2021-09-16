@@ -72,4 +72,19 @@ class SqlQueryTemplatesFixtures {
             "SELECT A.id AS SKEY, A.id, A.legalavailability_fk, A.legalavailability_fk FROM explorationsite A ORDER BY 1"
     ]
 
+    static List<String> OBJECT_ARRAY_PAGING = [
+            "SELECT A.id AS SKEY, A.id FROM explorationsite A WHERE (A.id >= 10 AND A.id <= 19) ORDER BY 1",
+            "SELECT A.id AS SKEY, B.id AS SKEY_1, C.id AS SKEY_2, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id >= 10 AND A.id <= 19) ORDER BY 1,2,3"
+    ]
+
+    static List<String> OBJECT_ARRAY_SORTBY = [
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A ORDER BY 1,2",
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, B.id AS SKEY_1, C.id AS SKEY_2, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) ORDER BY 1,2,3,4"
+    ]
+
+    static List<String> OBJECT_ARRAY_SORTBY_PAGING = [
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A ORDER BY 1,2",
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, B.id AS SKEY_1, C.id AS SKEY_2, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) ORDER BY 1,2,3,4"
+    ]
+
 }

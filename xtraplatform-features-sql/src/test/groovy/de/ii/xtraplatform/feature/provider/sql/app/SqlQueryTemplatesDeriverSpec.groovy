@@ -12,6 +12,7 @@ import de.ii.xtraplatform.cql.domain.CqlFilter
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis
 import de.ii.xtraplatform.features.domain.SortKey
+import de.ii.xtraplatform.features.domain.Tuple
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -53,7 +54,7 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
         when:
 
         SqlQueryTemplates templates = source.get(0).accept(deriver)
-        List<String> actual = values(templates)
+        List<String> actual = values(templates, limit, offset, sortBy)
 
         then:
 
@@ -61,21 +62,24 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
 
         where:
 
-        casename                    | deriver | source                                         || expected
-        "value array"               | td      | QuerySchemaFixtures.VALUE_ARRAY                || SqlQueryTemplatesFixtures.VALUE_ARRAY
-        "object array"              | td      | QuerySchemaFixtures.OBJECT_ARRAY               || SqlQueryTemplatesFixtures.OBJECT_ARRAY
-        "merge"                     | td      | QuerySchemaFixtures.MERGE                      || SqlQueryTemplatesFixtures.MERGE
-        "self joins"                | td      | QuerySchemaFixtures.SELF_JOINS                 || SqlQueryTemplatesFixtures.SELF_JOINS
-        "self joins with filters"   | td      | QuerySchemaFixtures.SELF_JOINS_FILTER          || SqlQueryTemplatesFixtures.SELF_JOINS_FILTER
-        "object without sourcePath" | td      | QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH || SqlQueryTemplatesFixtures.OBJECT_WITHOUT_SOURCE_PATH
+        casename                    | deriver | limit | offset | sortBy                  | source                                         || expected
+        "value array"               | td      | 0     | 0      | []                      | QuerySchemaFixtures.VALUE_ARRAY                || SqlQueryTemplatesFixtures.VALUE_ARRAY
+        "object array"              | td      | 0     | 0      | []                      | QuerySchemaFixtures.OBJECT_ARRAY               || SqlQueryTemplatesFixtures.OBJECT_ARRAY
+        "merge"                     | td      | 0     | 0      | []                      | QuerySchemaFixtures.MERGE                      || SqlQueryTemplatesFixtures.MERGE
+        "self joins"                | td      | 0     | 0      | []                      | QuerySchemaFixtures.SELF_JOINS                 || SqlQueryTemplatesFixtures.SELF_JOINS
+        "self joins with filters"   | td      | 0     | 0      | []                      | QuerySchemaFixtures.SELF_JOINS_FILTER          || SqlQueryTemplatesFixtures.SELF_JOINS_FILTER
+        "object without sourcePath" | td      | 0     | 0      | []                      | QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH || SqlQueryTemplatesFixtures.OBJECT_WITHOUT_SOURCE_PATH
+        "paging"                    | td      | 10    | 10     | []                      | QuerySchemaFixtures.OBJECT_ARRAY               || SqlQueryTemplatesFixtures.OBJECT_ARRAY_PAGING
+        "sortBy"                    | td      | 0     | 0      | [SortKey.of("created")] | QuerySchemaFixtures.OBJECT_ARRAY               || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY
+        //"sortBy + paging"           | td      | 10    | 10     | [SortKey.of("created")] | QuerySchemaFixtures.OBJECT_ARRAY               || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING
     }
 
     static String meta(SqlQueryTemplates templates, List<SortKey> sortBy, Optional<CqlFilter> userFilter) {
         return templates.getMetaQueryTemplate().generateMetaQuery(10, 10, sortBy, userFilter)
     }
 
-    static List<String> values(SqlQueryTemplates templates) {
-        return templates.getValueQueryTemplates().collect { it.generateValueQuery(10, 10, [], Optional.empty(), Optional.empty()) }
+    static List<String> values(SqlQueryTemplates templates, int limit, int offset, List<SortKey> sortBy) {
+        return templates.getValueQueryTemplates().collect { it.generateValueQuery(limit, offset, sortBy, Optional.empty(), limit == 0 ? Optional.<Tuple<Object, Object>> empty() : Optional.of(Tuple.of(offset, offset + limit - 1))) }
     }
 
 }

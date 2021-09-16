@@ -22,7 +22,7 @@ class SqlPathParserSpec extends Specification {
         def defaults = new ImmutableSqlPathDefaults.Builder().build()
         def cql = new CqlImpl()
 
-        pathParser = new SqlPathParser(defaults, cql, filterEncoder)
+        pathParser = new SqlPathParser(defaults, cql)
     }
 
     def 'root table'() {

@@ -72,6 +72,7 @@ class SqlPathFixtures {
             .name("externalprovider_externalprovidername")
             .join(ImmutableTuple.of("id", "externalprovider_fk"))
             .filter(CqlFilter.of(Eq.of("category", ScalarLiteral.of(1))))
+            .filterString("category=1")
             .build()
 
     static MULTIPLE_FLAGS = baseTable()
@@ -80,5 +81,6 @@ class SqlPathFixtures {
             .sortKey("oid")
             .primaryKey("oid")
             .filter(CqlFilter.of(Eq.of("category", ScalarLiteral.of(1))))
+            .filterString("category=1")
             .build()
 }

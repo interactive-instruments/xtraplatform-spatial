@@ -12,6 +12,7 @@ import de.ii.xtraplatform.cql.app.CqlFilterExamples
 import de.ii.xtraplatform.cql.app.CqlImpl
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -31,7 +32,7 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_15
 
         when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA  WHERE ST_Within(AA.location, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326)))"
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_Within(AA.location, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326)))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -65,7 +66,7 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_12
 
         when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA  WHERE AA.built::timestamp(0) < TIMESTAMP '2012-06-05T00:00:00Z')"
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.built::timestamp(0) < TIMESTAMP '2012-06-05T00:00:00Z')"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -82,7 +83,7 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_14
 
         when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA  WHERE AA.updated::timestamp(0) BETWEEN TIMESTAMP '2017-06-10T07:30:00Z' AND TIMESTAMP '2017-06-11T10:30:00Z')"
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) BETWEEN TIMESTAMP '2017-06-10T07:30:00Z' AND TIMESTAMP '2017-06-11T10:30:00Z')"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
