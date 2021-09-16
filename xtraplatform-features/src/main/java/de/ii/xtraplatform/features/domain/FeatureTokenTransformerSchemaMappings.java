@@ -146,12 +146,12 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     if (context.schema()
         .filter(FeatureSchema::isGeometry)
         .isPresent()) {
-      newContext.setInGeometry(false);
-      newContext.setGeometryType(Optional.empty());
-      newContext.setGeometryDimension(OptionalInt.empty());
       if (!newContext.shouldSkip()) {
         getDownstream().onObjectEnd(newContext);
       }
+      newContext.setInGeometry(false);
+      newContext.setGeometryType(Optional.empty());
+      newContext.setGeometryDimension(OptionalInt.empty());
     }
   }
 

@@ -26,6 +26,7 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
   @Override
   public void onObjectStart(ModifiableContext context) {
     if (context.inGeometry() ) {
+      openIfNecessary(context);
       super.onObjectStart(context);
       return;
     }
@@ -60,6 +61,7 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
   @Override
   public void onArrayStart(ModifiableContext context) {
     if (context.inGeometry()) {
+      openIfNecessary(context);
       super.onArrayStart(context);
       return;
     }
@@ -93,10 +95,6 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
 
   @Override
   public void onValue(ModifiableContext context) {
-    if (context.inGeometry()) {
-      super.onValue(context);
-      return;
-    }
 
     openIfNecessary(context);
 
