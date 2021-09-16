@@ -32,6 +32,8 @@ public interface SqlPath {
 
   Optional<CqlFilter> getFilter();
 
+  Optional<String> getFilterString();
+
   // TODO: not needed any more? should be based on primary key detection
   boolean getJunction();
 
@@ -60,8 +62,8 @@ public interface SqlPath {
   default String asPath() {
     return isBranch()
             ? String.format(
-                "[%s=%s]%s", getJoin().get().first(), getJoin().get().second(), getName())
-            : getName();
+                "[%s=%s]%s%s", getJoin().get().first(), getJoin().get().second(), getName(), getFilterString().map(filterString -> "{filter=" + filterString + "}").orElse(""))
+            : getName() + getFilterString().map(filterString -> "{filter=" + filterString + "}").orElse("");
   }
 
   @Value.Derived

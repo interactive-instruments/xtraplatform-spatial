@@ -393,10 +393,10 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         .orElse("");
     String targetTable = targetContainer;
 
-    if (additionalFilter.contains("row_number")) {
+    if (additionalFilter.contains(FilterEncoderSql.ROW_NUMBER)) {
       String sourceFilterPart = sourceFilter.isPresent() ? String.format(" WHERE %s ORDER BY 1", sourceFilter.get()) : "";
-      targetTable = String.format("(SELECT A.%1$s AS A%1$s, B.*, row_number() OVER (PARTITION BY B.%2$s ORDER BY B.%2$s) AS row_number FROM %3$s A JOIN %4$s B ON (A.%1$s=B.%2$s)%5$s)",
-              sourceField, targetField, sourceContainer, targetContainer, sourceFilterPart);
+      targetTable = String.format("(SELECT A.%1$s AS A%1$s, B.*, %6$s() OVER (PARTITION BY B.%2$s ORDER BY B.%2$s) AS %6$s FROM %3$s A JOIN %4$s B ON (A.%1$s=B.%2$s)%5$s)",
+              sourceField, targetField, sourceContainer, targetContainer, sourceFilterPart, FilterEncoderSql.ROW_NUMBER);
     }
 
     return String.format("JOIN %1$s %2$s ON (%4$s.%5$s=%2$s.%3$s%6$s)", targetTable, targetAlias,

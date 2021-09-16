@@ -78,6 +78,16 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
+    default List<T> getAllObjects() {
+        return Stream.concat(
+            Stream.of((T) this),
+            getAllNestedProperties().stream().filter(SchemaBase::isObject)
+        ).collect(Collectors.toList());
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
     default Optional<T> getIdProperty() {
         return getProperties().stream()
             .filter(t -> t.getRole().filter(role -> role == Role.ID).isPresent())
@@ -246,6 +256,10 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   default <U> U accept(SchemaVisitorTopDown<T, U> visitor) {
     return accept(visitor, ImmutableList.of());
   }
+
+    default <U, V> V accept(SchemaVisitorWithFinalizer<T, U, V> visitor) {
+        return visitor.finalize((T) this, accept(visitor, ImmutableList.of()));
+    }
 
   default <U> U accept(SchemaVisitorTopDown<T, U> visitor, List<T> parents) {
     return visitor.visit(

@@ -20,7 +20,10 @@ import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.MappedSchemaDeriver;
 import de.ii.xtraplatform.features.domain.Tuple;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -51,18 +54,6 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
       List<SchemaSql> visitedProperties,
       List<SqlPath> parentPaths) {
 
-    Tuple<Stream<SchemaSql>, Stream<SchemaSql>> splitProperties =
-        splitStream(visitedProperties, SchemaBase::isValue);
-    List<SchemaSql> valueProperties = splitProperties.first()
-        .collect(Collectors.groupingBy(SchemaSql::getRelation))
-        .entrySet()
-        .stream()
-        .flatMap(entry -> entry.getValue().stream())
-        .collect(Collectors.toList());
-    List<SchemaSql> objectProperties = splitProperties.second().collect(Collectors.toList());
-
-    //List<SchemaSql> finalProperties = Stream.concat()
-
     List<String> fullParentPath =
         parentPaths.stream()
             .flatMap(sqlPath -> sqlPath.getFullPath().stream())
@@ -73,45 +64,51 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             ? ImmutableList.of()
             : pathParser.extractRelations(parentPaths.get(parentPaths.size() - 1), path);
 
-    Builder builder;
+    Map<List<SqlRelation>, List<SchemaSql>> propertiesGroupedByRelation = visitedProperties.stream()
+        .collect(Collectors.groupingBy(SchemaSql::getRelation,
+            LinkedHashMap::new, Collectors.toList()));
 
-    // TODO: walk over visitedProperties, on columns with matching relations create common parent
+    List<SchemaSql> newVisitedProperties = propertiesGroupedByRelation.entrySet().stream()
+        .flatMap(entry -> {
+          if (entry.getKey().isEmpty() || entry.getValue().stream().noneMatch(SchemaBase::isValue)) {
+            return entry.getValue().stream();
+          }
 
-    if (targetSchema.getType() == Type.VALUE_ARRAY
-        && targetSchema.getValueType().isPresent()
-        && !relations.isEmpty()) {
-      String propertyParentPath =
-          relations
-              .get(relations.size() - 1)
-              .asPath()
-              .get(relations.get(relations.size() - 1).asPath().size() - 1);
+          List<String> newParentPath = entry.getKey()
+              .stream()
+              .flatMap(rel -> rel.asPath().stream())
+              .collect(Collectors.toList());
 
-      List<SchemaSql> properties =
-          ImmutableList.of(
-              new Builder()
-                  .name(path.getName())
-                  .parentPath(fullParentPath)
-                  .addParentPath(propertyParentPath)
-                  .type(targetSchema.getValueType().get())
-                  .geometryType(targetSchema.getGeometryType())
-                  .role(targetSchema.getRole())
-                  .sourcePath(targetSchema.getName())
-                  .build());
+          List<ImmutableSchemaSql> newProperties = entry.getValue()
+              .stream()
+              .map(prop -> new Builder().from(prop)
+                  .type(prop.getValueType().orElse(prop.getType()))
+                  .valueType(Optional.empty())
+                  .addAllParentPath(newParentPath)
+                  .relation(ImmutableList.of())
+                  .build())
+              .collect(Collectors.toList());
 
-      SqlPath tablePath = path.getParentTables().get(path.getParentTables().size() - 1);
+          boolean isArray = entry.getValue()
+              .stream()
+              .anyMatch(SchemaBase::isArray);
 
-      builder =
-          new Builder()
-              .name(tablePath.getName())
-              .parentPath(fullParentPath)
-              .type(targetSchema.getType())
-              .relation(relations)
-              .properties(properties)
+          SqlPath tablePath = pathParser.parseTablePath(newParentPath.get(newParentPath.size() - 1));
+
+          return Stream.of(new Builder()
+              .name(entry.getKey().get(entry.getKey().size()-1).getTargetContainer())
+              .type(isArray ? Type.OBJECT_ARRAY : Type.OBJECT)
+              .parentPath(entry.getValue().get(0).getParentPath())
+              .addAllRelation(relations)
+              .addAllRelation(entry.getKey())
+              .properties(newProperties)
               .sortKey(tablePath.getSortKey())
               .primaryKey(tablePath.getPrimaryKey())
-              .filter(tablePath.getFilter());
-    } else {
-      builder =
+              .build());
+        })
+        .collect(Collectors.toList());
+
+    Builder builder =
           new Builder()
               .name(path.getName())
               .parentPath(fullParentPath)
@@ -121,23 +118,33 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
               .role(targetSchema.getRole())
               .sourcePath(targetSchema.getName())
               .relation(relations)
-              .properties(visitedProperties);
+              .properties(newVisitedProperties)
+              .constantValue(targetSchema.getConstantValue());
 
-      if (targetSchema.isObject() || targetSchema.isArray()) {
+      if (targetSchema.isObject()) {
         builder
             .sortKey(path.getSortKey())
             .primaryKey(path.getPrimaryKey())
-            .filter(path.getFilter());
+            .filter(path.getFilter())
+            .filterString(path.getFilterString());
       }
-    }
 
     return builder.build();
   }
 
   @Override
-  public SchemaSql merge(
+  public List<SchemaSql> merge(
       FeatureSchema targetSchema, SqlPath parentPath, List<SchemaSql> visitedProperties) {
-    return null;
+    return visitedProperties.stream()
+        .map(property -> new Builder()
+            .from(property)
+            .sourcePath(property.getSourcePath().map(sourcePath -> targetSchema.getName() + "." + sourcePath))
+            .sourcePaths(property.getSourcePaths()
+                .stream()
+                .map(sourcePath -> targetSchema.getName() + "." + sourcePath)
+                .collect(Collectors.toList()))
+            .build())
+        .collect(Collectors.toList());
   }
 
   private SchemaSql mergeChild(SchemaSql parent, FeatureSchema child) {
@@ -153,10 +160,5 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
     }
 
     return null;
-  }
-
-  private <T> Tuple<Stream<T>, Stream<T>> splitStream(List<T> list, Predicate<T> predicate) {
-    return ImmutableTuple.of(
-        list.stream().filter(predicate), list.stream().filter(Predicate.not(predicate)));
   }
 }

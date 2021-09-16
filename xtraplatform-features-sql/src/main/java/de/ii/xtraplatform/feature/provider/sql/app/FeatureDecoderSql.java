@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
+import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowMeta;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
@@ -48,21 +49,27 @@ public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow> {
   private NestingTracker nestingTracker;
 
   public FeatureDecoderSql(List<FeatureStoreTypeInfo> typeInfos,
+      List<SchemaSql> tableSchemas,
       FeatureSchema featureSchema, FeatureQuery query) {
     this.featureSchema = featureSchema;
     this.featureQuery = query;
 
     //TODO: support multiple typeInfos
     FeatureStoreTypeInfo typeInfo = typeInfos.get(0);
+    SchemaSql tableSchema = tableSchemas.get(0);
     //TODO: support multiple main tables
     FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers().get(0);
 
-    this.mainTablePath = instanceContainer.getPath();
+    this.mainTablePath = tableSchema.getFullPath();
     List<String> multiTables = instanceContainer.getRelatedContainers().stream()
         .map(featureStoreRelatedContainer -> featureStoreRelatedContainer.getPath()
             .get(featureStoreRelatedContainer.getPath().size() - 1))
         .collect(Collectors.toList());//instanceContainer.getMultiContainerNames();
-    this.multiplicityTracker = new SqlMultiplicityTracker(multiTables);
+    List<String> multiTables2 = tableSchema.getAllObjects().stream()
+        .filter(schema -> !schema.getRelation().isEmpty())
+        .map(schema -> schema.getPath().get(schema.getPath().size()-1))
+        .collect(Collectors.toList());
+    this.multiplicityTracker = new SqlMultiplicityTracker(multiTables2);
     this.isSingleFeature = query.returnsSingleFeature();
   }
 

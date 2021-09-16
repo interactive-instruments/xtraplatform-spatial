@@ -12,6 +12,7 @@ import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlQueryOptions;
+import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowMeta;
@@ -22,6 +23,7 @@ import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.ImmutableSortKey;
 import de.ii.xtraplatform.features.domain.SortKey;
+import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,12 +38,17 @@ class FeatureQueryTransformerSql implements FeatureQueryTransformer<SqlQueries, 
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryTransformerSql.class);
 
+  private final Map<String, List<SqlQueryTemplates>> allQueryTemplates;
   private final Map<String, FeatureStoreTypeInfo> typeInfos;
   private final FeatureStoreQueryGeneratorSql queryGenerator;
   private final boolean computeNumberMatched;
 
-  FeatureQueryTransformerSql(Map<String, FeatureStoreTypeInfo> typeInfos,
-      FeatureStoreQueryGeneratorSql queryGenerator, boolean computeNumberMatched) {
+  FeatureQueryTransformerSql(
+      Map<String, List<SqlQueryTemplates>> allQueryTemplates,
+      Map<String, FeatureStoreTypeInfo> typeInfos,
+      FeatureStoreQueryGeneratorSql queryGenerator,
+      boolean computeNumberMatched) {
+    this.allQueryTemplates = allQueryTemplates;
     this.typeInfos = typeInfos;
     this.queryGenerator = queryGenerator;
     this.computeNumberMatched = computeNumberMatched;
@@ -54,28 +61,33 @@ class FeatureQueryTransformerSql implements FeatureQueryTransformer<SqlQueries, 
       Map<String, String> additionalQueryParameters) {
     //TODO: either pass as parameter, or check for null here
     FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());
+    List<SqlQueryTemplates> queryTemplates = allQueryTemplates.get(featureQuery.getType());
 
     //TODO: implement for multiple main tables
     FeatureStoreInstanceContainer mainTable = typeInfo.getInstanceContainers()
         .get(0);
+    SqlQueryTemplates queries = queryTemplates.get(0);
 
     List<SortKey> sortKeys = transformSortKeys(featureQuery.getSortKeys(), mainTable);
 
     Optional<String> metaQuery = featureQuery.returnsSingleFeature()
         ? Optional.empty()
-        : Optional.of(queryGenerator
-            .getMetaQuery(mainTable, featureQuery.getLimit(), featureQuery.getOffset(),
-                featureQuery.getFilter(), sortKeys, computeNumberMatched));
+        : Optional.of(queries
+            .getMetaQueryTemplate()
+            .generateMetaQuery(featureQuery.getLimit(), featureQuery.getOffset(),
+                sortKeys, featureQuery.getFilter()));
 
-    Function<SqlRowMeta, Stream<String>> valueQueries = metaResult -> queryGenerator
-        .getInstanceQueries(mainTable, featureQuery.getFilter(), sortKeys,
-            metaResult.getMinKey(), metaResult.getMaxKey(), metaResult.getCustomMinKeys(),
-            metaResult.getCustomMaxKeys());
+    Function<SqlRowMeta, Stream<String>> valueQueries = metaResult -> queries
+        .getValueQueryTemplates()
+        .stream()
+    .map(valueQueryTemplate -> valueQueryTemplate.generateValueQuery(featureQuery.getLimit(), featureQuery.getOffset(), sortKeys,
+        featureQuery.getFilter(), Optional.of(Tuple.of(metaResult.getMinKey(), metaResult.getMaxKey()))));
 
     return new ImmutableSqlQueries.Builder()
         .metaQuery(metaQuery)
         .valueQueries(valueQueries)
         .instanceContainers(typeInfo.getInstanceContainers())
+        .tableSchemas(queries.getQuerySchemas())
         .build();
   }
 

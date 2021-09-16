@@ -12,12 +12,10 @@ import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlPathDefaults
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathParser
-import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor
-import spock.lang.Ignore
-import spock.lang.PendingFeature
+import de.ii.xtraplatform.features.domain.*
 import spock.lang.Shared
 import spock.lang.Specification
-@Ignore
+
 class QuerySchemaDeriverSpec extends Specification {
 
     @Shared
@@ -41,74 +39,78 @@ class QuerySchemaDeriverSpec extends Specification {
 
         when:
 
-        SchemaSql actual = source.accept(schemaDeriver)
+        List<SchemaSql> actual = source.accept(schemaDeriver)
         def ft = source.accept(new FeatureSchemaToTypeVisitor("test"))
-        def old = pathParserOld.parse(ft)
+        def old = pathParserOld.parse(source)
 
         then:
 
-        [actual] == expected
+        //[toInstanceContainer(actual)] == old
+
+        actual == expected
 
         where:
 
-        casename       | source                             || expected
-        //"value array"  | FeatureSchemaFixtures.VALUE_ARRAY  || QuerySchemaFixtures.VALUE_ARRAY
-        //"object array" | FeatureSchemaFixtures.OBJECT_ARRAY || QuerySchemaFixtures.OBJECT_ARRAY
-        "merge"        | FeatureSchemaFixtures.MERGE        || QuerySchemaFixtures.MERGE
+        casename                    | source                                           || expected
+        "value array"               | FeatureSchemaFixtures.VALUE_ARRAY                || QuerySchemaFixtures.VALUE_ARRAY
+        "object array"              | FeatureSchemaFixtures.OBJECT_ARRAY               || QuerySchemaFixtures.OBJECT_ARRAY
+        "merge"                     | FeatureSchemaFixtures.MERGE                      || QuerySchemaFixtures.MERGE
+        "self joins"                | FeatureSchemaFixtures.SELF_JOINS                 || QuerySchemaFixtures.SELF_JOINS
+        "self joins with filters"   | FeatureSchemaFixtures.SELF_JOINS_FILTER          || QuerySchemaFixtures.SELF_JOINS_FILTER
+        "object without sourcePath" | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH || QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH
     }
 
-/*
+    static FeatureStoreInstanceContainer toInstanceContainer(SchemaSql schema) {
+        def builder = ImmutableFeatureStoreInstanceContainer.builder()
+                .name(schema.getName())
 
-  eignungsflaeche:
-    sourcePath: /eignungsflaeche
-    type: OBJECT
-    properties:
-      id:
-        sourcePath: '[id=id]osirisobjekt/id'
-        type: STRING
-        role: ID
-      kennung:
-        sourcePath: '[id=id]osirisobjekt/kennung'
-        type: STRING
-      bezeichnung:
-        sourcePath: '[id=id]osirisobjekt/bezeichnung'
-        type: STRING
-      veroeffentlichtAm:
-        sourcePath: '[id=id]osirisobjekt/veroeffentlichtam'
-        type: DATETIME
-      verantwortlicheStelle:
-        sourcePath: '[id=id]osirisobjekt/verantwortlichestelle'
-        type: STRING
-      raumreferenz:
-        sourcePath: '[id=id]osirisobjekt/[id=osirisobjekt_id]osirisobjekt_2_raumreferenz/[raumreferenz_id=id]raumreferenz'
-        type: OBJECT_ARRAY
-        properties:
-          ortsangabe:
-            sourcePath: '[id=raumreferenz_id]raumreferenz_2_ortsangabe/[ortsangabe_id=id]ortsangaben'
-            type: OBJECT_ARRAY
-            properties:
-              kreisSchluessel:
-                sourcePath: kreisschluessel
-                type: STRING
-              verbandsgemeindeSchluessel:
-                sourcePath: verbandsgemeindeschluessel
-                type: STRING
-              gemeindeSchluessel:
-                sourcePath: gemeindeschluessel
-                type: STRING
-              flurstuecksKennzeichen:
-                sourcePath: '[id=ortsangaben_id]ortsangaben_flurstueckskennzeichen/flurstueckskennzeichen'
-                type: VALUE_ARRAY
-                valueType: STRING
-          datumAbgleich:
-            sourcePath: datumabgleich
-            type: DATETIME
-          fachreferenz:
-            sourcePath: '[id=raumreferenz_id]raumreferenz_2_fachreferenz/objektart:fachreferenz_id'
-            type: VALUE_ARRAY
-            valueType: STRING
+        schema.getSortKey().ifPresent(builder::sortKey)
 
+        schema.getProperties().forEach(property -> {
+            if (property.isValue()) {
+                builder.addAttributes(toAttribute(property, ""))
+            } else {
+                def related = ImmutableFeatureStoreRelatedContainer.builder()
+                        .name(property.getName())
 
- */
+                related.sortKey(property.getSortKey().orElse(property.getRelation().get(property.getRelation().size() - 1).getTargetField()))
+
+                property.getProperties().forEach(childProperty -> {
+                    related.addAttributes(toAttribute(childProperty, property.getSourcePath().orElse("")))
+                })
+                //TODO: filter
+                property.getRelation().forEach(sqlRelation -> {
+                    def rel = ImmutableFeatureStoreRelation.builder()
+                            .sourceContainer(sqlRelation.getSourceContainer())
+                            .sourceField(sqlRelation.getSourceField())
+                            .sourceSortKey(sqlRelation.getSourceSortKey())
+                            .targetContainer(sqlRelation.getTargetContainer())
+                            .targetField(sqlRelation.getTargetField())
+                            .junctionSource(sqlRelation.getJunctionSource())
+                            .junction(sqlRelation.getJunction())
+                            .junctionTarget(sqlRelation.getJunctionTarget())
+                            .cardinality(FeatureStoreRelation.CARDINALITY.valueOf(sqlRelation.getCardinality().toString()))
+                            .build()
+                    related.addInstanceConnection(rel)
+                })
+
+                builder.addRelatedContainers(related.build())
+            }
+        })
+
+        return builder.build()
+    }
+
+    static FeatureStoreAttribute toAttribute(SchemaSql property, String parentPath) {
+        return ImmutableFeatureStoreAttribute.builder()
+                .name(property.getName())
+                .queryable(parentPath.isEmpty() ? property.getSourcePath().orElse("") : parentPath + "." + property.getSourcePath().orElse(""))
+                .path(property.getFullPath())
+                .isId(property.isId())
+                .isSpatial(property.isGeometry())
+                .isTemporal(property.isTemporal())
+                .constantValue(property.getConstantValue())
+                .build()
+    }
 
 }

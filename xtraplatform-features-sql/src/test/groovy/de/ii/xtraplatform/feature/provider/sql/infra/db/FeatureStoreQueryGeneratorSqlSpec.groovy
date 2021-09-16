@@ -7,18 +7,8 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.infra.db
 
-import de.ii.xtraplatform.feature.provider.sql.SqlMappingParser
-import de.ii.xtraplatform.feature.provider.sql.app.FeatureStorePathParserSql
-import de.ii.xtraplatform.feature.provider.sql.app.FeatureStoreQueryGeneratorSql
-import de.ii.xtraplatform.feature.provider.sql.domain.FilterEncoderSqlNew
-import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreInstanceContainer
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis
-import de.ii.xtraplatform.feature.transformer.api.MappingTestUtil
-import spock.lang.Shared
-import spock.lang.Specification
 
-import java.nio.file.Paths
-import java.util.stream.Collectors
+import spock.lang.Specification
 
 class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 /*

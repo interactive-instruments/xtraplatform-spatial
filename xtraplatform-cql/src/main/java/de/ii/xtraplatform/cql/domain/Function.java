@@ -8,25 +8,16 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.google.common.collect.ImmutableList;
-import org.immutables.value.Value;
-
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableFunction.Builder.class)
@@ -54,6 +45,18 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
                 .collect(Collectors.toList());
 
         return visitor.visit(this, arguments);
+    }
+
+    @JsonIgnore
+    @Value.Lazy
+    default boolean isPosition() {
+        return "position".equalsIgnoreCase(getName());
+    }
+
+    @JsonIgnore
+    @Value.Lazy
+    default boolean isInterval() {
+        return "interval".equalsIgnoreCase(getName());
     }
 
     class FunctionSerializer extends StdSerializer<Function> {

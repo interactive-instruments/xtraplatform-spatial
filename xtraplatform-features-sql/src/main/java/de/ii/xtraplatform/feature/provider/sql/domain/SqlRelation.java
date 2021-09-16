@@ -12,6 +12,8 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -40,9 +42,13 @@ public interface SqlRelation {
         return getSourceField();
     }
 
+    Optional<String> getSourceFilter();
+
     String getTargetContainer();
 
     String getTargetField();
+
+    Optional<String> getTargetFilter();
 
     Optional<String> getJunction();
 
@@ -50,7 +56,7 @@ public interface SqlRelation {
 
     Optional<String> getJunctionTarget();
 
-    Optional<CqlFilter> getFilter();
+    Optional<String> getJunctionFilter();
 
     @Value.Check
     default void check() {
@@ -77,11 +83,11 @@ public interface SqlRelation {
     default List<String> asPath() {
         if (isM2N()) {
             return ImmutableList.of(
-                    String.format("[%s=%s]%s", getSourceField(), getJunctionSource().get(), getJunction().get()),
-                    String.format("[%s=%s]%s", getJunctionTarget().get(), getTargetField(), getTargetContainer())
+                    String.format("[%s=%s]%s%s", getSourceField(), getJunctionSource().get(), getJunction().get(), getJunctionFilter().map(filter -> "{filter=" + filter + "}").orElse("")),
+                    String.format("[%s=%s]%s%s", getJunctionTarget().get(), getTargetField(), getTargetContainer(), getTargetFilter().map(filter -> "{filter=" + filter + "}").orElse(""))
             );
         }
 
-        return ImmutableList.of(String.format("[%s=%s]%s", getSourceField(), getTargetField(), getTargetContainer()));
+        return ImmutableList.of(String.format("[%s=%s]%s%s", getSourceField(), getTargetField(), getTargetContainer(), getTargetFilter().map(filter -> "{filter=" + filter + "}").orElse("")));
     }
 }

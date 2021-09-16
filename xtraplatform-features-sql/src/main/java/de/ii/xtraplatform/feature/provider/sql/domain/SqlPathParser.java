@@ -12,6 +12,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
+import de.ii.xtraplatform.feature.provider.sql.app.FilterEncoderSql;
 import de.ii.xtraplatform.features.domain.ImmutableTuple;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlPath.Builder;
 import java.util.ArrayList;
@@ -209,7 +210,8 @@ public class SqlPathParser {
         .sortKey(getSortKey(flags))
         .primaryKey(getPrimaryKey(flags))
         .junction(isJunctionTable(table, flags))
-        .filter(getFilterFlag(flags).map(filterText -> cql.read(filterText, Format.TEXT)));
+        .filter(getFilterFlag(flags).map(filterText -> cql.read(filterText, Format.TEXT)))
+        .filterString(getFilterFlag(flags));
 
     return builder.build();
   }
@@ -283,6 +285,7 @@ public class SqlPathParser {
                 .sortKey(parent.getSortKey().orElse(defaults.getSortKey()))
                 .primaryKey(parent.getPrimaryKey().orElse(defaults.getPrimaryKey()))
                 .filter(parent.getFilter())
+                .filterString(parent.getFilter().map(filterCql -> cql.write(filterCql, Format.TEXT)))
                 .junction(false)
                 .build(),
             path);
@@ -358,9 +361,10 @@ public class SqlPathParser {
         .sourceField(sourceField)
         .sourcePrimaryKey(source.getPrimaryKey())
         .sourceSortKey(source.getSortKey())
+        .sourceFilter(source.getFilter().map(filter -> cql.write(filter, Format.TEXT)))
         .targetContainer(target.getName())
         .targetField(targetField)
-        .filter(target.getFilter())
+        .targetFilter(target.getFilter().map(filter -> cql.write(filter, Format.TEXT)))
         .build();
   }
 
@@ -380,11 +384,14 @@ public class SqlPathParser {
         .sourceField(sourceField)
         .sourcePrimaryKey(source.getPrimaryKey())
         .sourceSortKey(source.getSortKey())
+        .sourceFilter(source.getFilter().map(filter -> cql.write(filter, Format.TEXT)))
         .junctionSource(junctionSourceField)
         .junction(link.getName())
         .junctionTarget(junctionTargetField)
+        .junctionFilter(link.getFilter().map(filter -> cql.write(filter, Format.TEXT)))
         .targetContainer(target.getName())
         .targetField(targetField)
+        .targetFilter(target.getFilter().map(filter -> cql.write(filter, Format.TEXT)))
         .build();
   }
 }
