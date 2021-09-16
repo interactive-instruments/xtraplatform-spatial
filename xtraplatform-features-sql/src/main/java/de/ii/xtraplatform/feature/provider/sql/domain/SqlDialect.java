@@ -31,7 +31,7 @@ import org.threeten.extra.Interval;
 
 public interface SqlDialect {
 
-  String applyToWkt(String column);
+  String applyToWkt(String column, boolean forcePolygonCCW);
 
   String applyToExtent(String column);
 

@@ -119,7 +119,8 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
               .sourcePath(targetSchema.getName())
               .relation(relations)
               .properties(newVisitedProperties)
-              .constantValue(targetSchema.getConstantValue());
+              .constantValue(targetSchema.getConstantValue())
+              .forcePolygonCCW(targetSchema.getForcePolygonCCW());
 
       if (targetSchema.isObject()) {
         builder

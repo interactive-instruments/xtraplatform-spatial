@@ -92,6 +92,12 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
 
     Optional<SchemaConstraints> getConstraints();
 
+    @Override
+    @Value.Default
+    default boolean getForcePolygonCCW() {
+        return true;
+    }
+
     //behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
     @JsonProperty(value = "properties")
@@ -221,31 +227,6 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
         return (isValue() && getConstantValue().isPresent()) || (isObject() && getProperties().stream().allMatch(FeatureSchema::isConstant));
     }
 
-    //TODO
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default boolean isReference() {
-        return false;
-    }
-
-    //TODO
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default boolean isReferenceEmbed() {
-        return false;
-    }
-
-    //TODO
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default boolean isForceReversePolygon() {
-        return false;
-    }
-
-    //TODO
     @JsonIgnore
     @Value.Derived
     @Value.Auxiliary

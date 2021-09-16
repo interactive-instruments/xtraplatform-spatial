@@ -262,7 +262,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
               column.isConstant() ? column.getConstantValue().get() + " AS " + column.getName()
                   : getQualifiedColumn(attributeContainerAlias, column.getName());
           if (column.isSpatial()) {
-            return sqlDialect.applyToWkt(name);
+            return sqlDialect.applyToWkt(name, true);
           }
           if (column.isTemporal()) {
             return sqlDialect.applyToDatetime(name);

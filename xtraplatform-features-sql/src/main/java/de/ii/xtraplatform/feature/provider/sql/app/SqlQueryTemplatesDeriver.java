@@ -132,7 +132,7 @@ public class SqlQueryTemplatesDeriver implements
               column.isConstant() ? column.getConstantValue().get() + " AS " + column.getName()
                   : getQualifiedColumn(attributeContainerAlias, column.getName());
           if (column.isGeometry()) {
-            return sqlDialect.applyToWkt(name);
+            return sqlDialect.applyToWkt(name, column.getForcePolygonCCW());
           }
           if (column.isTemporal()) {
             return sqlDialect.applyToDatetime(name);

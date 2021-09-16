@@ -20,7 +20,7 @@ import org.immutables.value.Value;
 
 public interface SchemaBase<T extends SchemaBase<T>> {
 
-    enum Role {
+  enum Role {
     ID,
     TYPE,
     PRIMARY_GEOMETRY,
@@ -62,6 +62,11 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @Value.Default
     default List<String> getSourcePaths() {
         return getSourcePath().map(ImmutableList::of).orElse(ImmutableList.of());
+    }
+
+    @Value.Default
+    default boolean getForcePolygonCCW() {
+      return true;
     }
 
     List<T> getProperties();
