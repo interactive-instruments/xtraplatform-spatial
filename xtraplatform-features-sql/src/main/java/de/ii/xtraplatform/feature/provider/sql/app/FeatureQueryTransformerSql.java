@@ -81,7 +81,7 @@ class FeatureQueryTransformerSql implements FeatureQueryTransformer<SqlQueries, 
         .getValueQueryTemplates()
         .stream()
     .map(valueQueryTemplate -> valueQueryTemplate.generateValueQuery(featureQuery.getLimit(), featureQuery.getOffset(), sortKeys,
-        featureQuery.getFilter(), Optional.of(Tuple.of(metaResult.getMinKey(), metaResult.getMaxKey()))));
+        featureQuery.getFilter(), (Objects.nonNull(metaResult.getMinKey()) && Objects.nonNull(metaResult.getMaxKey())) ? Optional.of(Tuple.of(metaResult.getMinKey(), metaResult.getMaxKey())) : Optional.empty()));
 
     return new ImmutableSqlQueries.Builder()
         .metaQuery(metaQuery)
