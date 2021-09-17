@@ -291,10 +291,9 @@ public class SqlQueryTemplatesDeriver implements
       return Optional
           .of(filterEncoder.encode(schema.getFilter().get(), schema));
     }
-    if ((schema.getFilter().isEmpty() || schema.getRelation().isEmpty()) && userFilter.isPresent()) {
+    if (schema.getFilter().isEmpty() && schema.getRelation().isEmpty() && userFilter.isPresent()) {
       return Optional.of(filterEncoder.encode(userFilter.get(), schema));
     }
-
     if (schema.getFilter().isPresent() && schema.getRelation().isEmpty() && userFilter.isPresent()) {
       CqlFilter mergedFilter = CqlFilter.of(
           And.of(
@@ -305,6 +304,7 @@ public class SqlQueryTemplatesDeriver implements
 
       return Optional.of(filterEncoder.encode(mergedFilter, schema));
     }
+    // TODO what to do, if schema.getRelation().isPresent() ?
 
     return Optional.empty();
   }
