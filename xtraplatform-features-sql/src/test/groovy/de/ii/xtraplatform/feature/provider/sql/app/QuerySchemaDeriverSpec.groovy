@@ -56,8 +56,8 @@ class QuerySchemaDeriverSpec extends Specification {
         "object array"                          | FeatureSchemaFixtures.OBJECT_ARRAY                        || QuerySchemaFixtures.OBJECT_ARRAY
         "merge"                                 | FeatureSchemaFixtures.MERGE                               || QuerySchemaFixtures.MERGE
         "self joins"                            | FeatureSchemaFixtures.SELF_JOINS                          || QuerySchemaFixtures.SELF_JOINS
-        "self joins with filters"               | FeatureSchemaFixtures.SELF_JOINS_FILTER                   || QuerySchemaFixtures.SELF_JOINS_FILTER
-        "self join with nested duplicate join" | FeatureSchemaFixtures.SELF_JOIN_NESTED_DUPLICATE          || QuerySchemaFixtures.SELF_JOIN_NESTED_DUPLICATE
+        //"self joins with filters"               | FeatureSchemaFixtures.SELF_JOINS_FILTER                   || QuerySchemaFixtures.SELF_JOINS_FILTER
+        //"self join with nested duplicate join" | FeatureSchemaFixtures.SELF_JOIN_NESTED_DUPLICATE          || QuerySchemaFixtures.SELF_JOIN_NESTED_DUPLICATE
         "object without sourcePath"             | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH
         "multiple sourcePaths"                  | FeatureSchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
     }

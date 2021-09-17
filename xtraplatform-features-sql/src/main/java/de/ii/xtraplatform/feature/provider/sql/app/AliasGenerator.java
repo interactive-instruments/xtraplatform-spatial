@@ -12,6 +12,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 class AliasGenerator {
 
@@ -36,11 +37,15 @@ class AliasGenerator {
     return aliases.build();
   }
 
-  public List<String> getAliases(SchemaSql schema, boolean isNested) {
-    if (isNested) {
+  public List<String> getAliases(SchemaSql schema, int level) {
+    if (level > 0) {
+      String prefix = IntStream.range(0, level)
+          .mapToObj(i -> "A")
+          .collect(Collectors.joining());
+
       return getAliases(schema)
           .stream()
-          .map(s -> "A" + s)
+          .map(s -> prefix + s)
           .collect(Collectors.toList());
     }
 

@@ -84,7 +84,13 @@ public class SqlQueryTemplatesDeriver implements
       String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
 
       String table = String.format("%s A", schema.getName());
-      String columns = String.format("A.%s AS " + SKEY, schema.getSortKey().get());
+      String columns = "";
+      for (int i = 0; i < additionalSortKeys.size(); i++) {
+        SortKey sortKey = additionalSortKeys.get(i);
+
+        columns += "A." + sortKey.getField() + " AS CSKEY_" + i + ", ";
+      }
+      columns += String.format("A.%s AS " + SKEY, schema.getSortKey().get());
       String orderBy = getOrderBy(additionalSortKeys);
       String minMaxColumns = getMinMaxColumns(additionalSortKeys);
 
@@ -103,7 +109,6 @@ public class SqlQueryTemplatesDeriver implements
     };
   }
 
-  //TODO: whereClause always from rootSchema
   ValueQueryTemplate createValueQueryTemplate(SchemaSql schema, List<SchemaSql> parents) {
     return (limit, offset, additionalSortKeys, filter, minMaxKeys) -> {
       boolean isIdFilter = filter.flatMap(CqlFilter::getInOperator).isPresent();
@@ -114,7 +119,7 @@ public class SqlQueryTemplatesDeriver implements
       Optional<String> whereClause = isIdFilter
           ? sqlFilter
           : toWhereClause(aliases.get(0), rootSchema.getSortKey().get(), additionalSortKeys, minMaxKeys, sqlFilter);
-      Optional<String> pagingClause = additionalSortKeys.isEmpty()
+      Optional<String> pagingClause = additionalSortKeys.isEmpty() || (limit == 0 && offset == 0)
           ? Optional.empty()
           : Optional.of((limit > 0 ? String.format(" LIMIT %d", limit) : "") + (offset > 0 ? String.format(" OFFSET %d", offset) : ""));
 
@@ -132,6 +137,9 @@ public class SqlQueryTemplatesDeriver implements
     String mainTableName = schema.getRelation().isEmpty()
         ? schema.getName()
         : schema.getRelation().get(0).getSourceContainer();
+    String mainTableSortKey = schema.getRelation().isEmpty()
+        ? schema.getSortKey().get()
+        : schema.getRelation().get(0).getSourceSortKey();
     String mainTable = String
         .format("%s %s", mainTableName, aliases.get(0));
     List<String> sortFields = getSortFields(schema, aliases, additionalSortKeys);
@@ -164,14 +172,18 @@ public class SqlQueryTemplatesDeriver implements
 
     String join = joinGenerator.getJoins(schema, aliases, relationFilters, Optional.empty(), Optional.empty(), instanceFilter);
 
-    //TODO: if join is not empty, add subquery with pagingClause to whereClause, set pagingClause to empty
-    //String limit2 = limit > 0 ? " LIMIT " + limit : "";
-    //String offset2 = offset > 0 ? " OFFSET " + offset : "";
-    String where = whereClause.map(w -> " WHERE " + w)
-        .orElse("");
-    String paging = pagingClause.map(p -> join.isEmpty()
-        ? p
-        : String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %%1$s%5$s%%2$s)")).orElse("");
+    String where = whereClause.map(w -> " WHERE " + w).orElse("");
+    String paging = pagingClause.filter(p -> join.isEmpty()).orElse("");
+
+    if (!join.isEmpty() && pagingClause.isPresent()) {
+      String where2 = " WHERE ";
+      List<String> aliasesNested = aliasGenerator.getAliases(schema, where.isEmpty() ? 1 : 2);
+      where2 += String.format("(A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s%4$s ORDER BY 1%5$s))",
+          mainTableName, aliasesNested.get(0), mainTableSortKey, where.replace("(A.", "(" + aliasesNested.get(0) + "."), pagingClause.get());
+
+      where = where2;
+    }
+
     String orderBy = IntStream.rangeClosed(1, sortFields.size())
         .boxed()
         .map(index -> {
@@ -200,7 +212,7 @@ public class SqlQueryTemplatesDeriver implements
     }
 
     if (additionalFilter.isPresent()) {
-      if (minMaxKeys.isPresent()) {
+      if (minMaxKeys.isPresent() && additionalSortKeys.isEmpty()) {
         filter.append(" AND ");
       }
       filter.append("(")

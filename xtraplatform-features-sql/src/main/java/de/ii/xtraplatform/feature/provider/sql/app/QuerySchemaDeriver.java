@@ -72,16 +72,32 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
     List<SchemaSql> newVisitedProperties = propertiesGroupedByRelation.entrySet().stream()
         .flatMap(entry -> {
           if (entry.getKey().isEmpty()) {
-            return entry.getValue().stream();
+            return entry.getValue().stream()
+                .map(prop -> targetSchema.isFeature() ? prop : new Builder().from(prop)
+                    .sourcePath(prop.getSourcePath().map(sourcePath -> targetSchema.getName() + "." + sourcePath))
+                    .sourcePaths(prop.getSourcePaths()
+                        .stream()
+                        .map(sourcePath -> targetSchema.getName() + "." + sourcePath)
+                        .collect(Collectors.toList()))
+                  .build());
           }
 
           if (entry.getValue().stream().noneMatch(SchemaBase::isValue)) {
+            List<SqlPath> pp = parentPaths;
+            SqlPath p = path;
+
+            //TODO: recurse into properties, change sourcePaths
             return entry.getValue()
                 .stream()
                 .map(prop -> new Builder().from(prop)
                     .relation(ImmutableList.of())
                     .addAllRelation(relations)
                     .addAllRelation(entry.getKey())
+                    .sourcePath(targetSchema.isFeature() ? prop.getSourcePath() : prop.getSourcePath().map(sourcePath -> targetSchema.getName() + "." + sourcePath))
+                    .sourcePaths(targetSchema.isFeature() ? prop.getSourcePaths() : prop.getSourcePaths()
+                        .stream()
+                        .map(sourcePath -> targetSchema.getName() + "." + sourcePath)
+                        .collect(Collectors.toList()))
                     .build());
           }
 

@@ -221,7 +221,7 @@ public class FilterEncoderSql {
                 userFilter = Optional.empty();
             }
 
-            List<String> aliases = aliasGenerator.getAliases(table, true);
+            List<String> aliases = aliasGenerator.getAliases(table, 1);
             String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
 
             List<Optional<String>> relationFilters = table.getRelation().stream()
@@ -747,7 +747,7 @@ public class FilterEncoderSql {
             String propertyName = ((Property) arrayOperation.getOperands().get(notInverse ? 0 : 1)).getName();
             SchemaSql table = getTable(propertyName);
             String column = getColumn(table, propertyName);
-            List<String> aliases = aliasGenerator.getAliases(table, true);
+            List<String> aliases = aliasGenerator.getAliases(table, 1);
             String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
             List<Map<String, List<String>>> x = ImmutableList.of();
             boolean xx = x.stream().map(theme -> theme.get("concept")).flatMap(List::stream).filter(concept -> concept.equals("DLKM")).distinct().count() == 1;
@@ -827,7 +827,7 @@ public class FilterEncoderSql {
             // strip double quotes from the property name
             String propertyName = property.getName().replaceAll("^\"|\"$", "");
             String column = getColumn(schema, propertyName);
-            List<String> aliases = aliasGenerator.getAliases(schema, isUserFilter);
+            List<String> aliases = aliasGenerator.getAliases(schema, isUserFilter ? 1 : 0);
             String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
 
             return String.format("%%1$s%1$s%%2$s", qualifiedColumn);

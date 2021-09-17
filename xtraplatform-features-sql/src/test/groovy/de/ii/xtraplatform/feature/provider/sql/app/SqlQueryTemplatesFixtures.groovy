@@ -22,17 +22,17 @@ class SqlQueryTemplatesFixtures {
                     "  SELECT *, -1 AS numberMatched FROM NR"
 
     static String META_SORT_BY = "WITH\n" +
-            "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
+            "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
             "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS) \n" +
             "  SELECT * FROM NR, NM"
 
     static String META_SORT_BY_DESC = "WITH\n" +
-            "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0 DESC, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
+            "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0 DESC, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
             "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS) \n" +
             "  SELECT * FROM NR, NM"
 
     static String META_SORT_BY_MIXED = "WITH\n" +
-            "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0 DESC, CSKEY_1, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
+            "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.lastModified AS CSKEY_1, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0 DESC, CSKEY_1, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
             "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS) \n" +
             "  SELECT * FROM NR, NM"
 
@@ -88,9 +88,19 @@ class SqlQueryTemplatesFixtures {
             "SELECT A.created AS CSKEY_0, A.id AS SKEY, B.id AS SKEY_1, C.id AS SKEY_2, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) ORDER BY 1,2,3,4"
     ]
 
+    static List<String> OBJECT_ARRAY_SORTBY_FILTER = [
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A WHERE (A.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo')) ORDER BY 1,2",
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, B.id AS SKEY_1, C.id AS SKEY_2, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo')) ORDER BY 1,2,3,4"
+    ]
+
     static List<String> OBJECT_ARRAY_SORTBY_PAGING = [
-            "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A ORDER BY 1,2",
-            "SELECT A.created AS CSKEY_0, A.id AS SKEY, B.id AS SKEY_1, C.id AS SKEY_2, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) ORDER BY 1,2,3,4"
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A ORDER BY 1,2 LIMIT 10 OFFSET 10",
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, B.id AS SKEY_1, C.id AS SKEY_2, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AA.id FROM explorationsite AA ORDER BY 1 LIMIT 10 OFFSET 10)) ORDER BY 1,2,3,4"
+    ]
+
+    static List<String> OBJECT_ARRAY_SORTBY_PAGING_FILTER = [
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A WHERE (A.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo')) ORDER BY 1,2 LIMIT 10 OFFSET 10",
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, B.id AS SKEY_1, C.id AS SKEY_2, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AAA.id FROM explorationsite AAA WHERE (AAA.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo')) ORDER BY 1 LIMIT 10 OFFSET 10)) ORDER BY 1,2,3,4"
     ]
 
     static List<String> PROPERTY_WITH_MULTIPLE_SOURCE_PATHS = [
