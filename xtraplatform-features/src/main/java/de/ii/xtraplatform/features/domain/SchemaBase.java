@@ -86,7 +86,9 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     default List<T> getAllObjects() {
         return Stream.concat(
             Stream.of((T) this),
-            getAllNestedProperties().stream().filter(SchemaBase::isObject)
+            getAllNestedProperties().stream()
+                .filter(SchemaBase::isObject)
+                .filter(obj -> obj.getProperties().stream().anyMatch(SchemaBase::isValue))
         ).collect(Collectors.toList());
     }
 

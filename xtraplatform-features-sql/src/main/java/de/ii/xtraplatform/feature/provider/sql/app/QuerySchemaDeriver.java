@@ -15,17 +15,13 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlPath;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathParser;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableTuple;
+import de.ii.xtraplatform.features.domain.MappedSchemaDeriver;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
-import de.ii.xtraplatform.features.domain.MappedSchemaDeriver;
-import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,14 +33,15 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
   }
 
   @Override
-  public Optional<SqlPath> parseSourcePath(FeatureSchema sourceSchema) {
-    return sourceSchema
-        .getSourcePath()
+  public List<SqlPath> parseSourcePaths(FeatureSchema sourceSchema) {
+    return sourceSchema.getSourcePaths()
+        .stream()
         .map(
             sourcePath ->
                 sourceSchema.isValue()
                     ? pathParser.parseColumnPath(sourcePath)
-                    : pathParser.parseTablePath(sourcePath));
+                    : pathParser.parseTablePath(sourcePath))
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -55,9 +52,13 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
       List<SqlPath> parentPaths) {
 
     List<String> fullParentPath =
-        parentPaths.stream()
-            .flatMap(sqlPath -> sqlPath.getFullPath().stream())
-            .collect(Collectors.toList());
+        targetSchema.isObject()
+            ? parentPaths.isEmpty()
+              ? ImmutableList.of()
+              : parentPaths.get(0).getFullPath()
+            : parentPaths.stream()
+              .flatMap(sqlPath -> sqlPath.getFullPath().stream())
+              .collect(Collectors.toList());
 
     List<SqlRelation> relations =
         parentPaths.isEmpty()
@@ -70,8 +71,18 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
 
     List<SchemaSql> newVisitedProperties = propertiesGroupedByRelation.entrySet().stream()
         .flatMap(entry -> {
-          if (entry.getKey().isEmpty() || entry.getValue().stream().noneMatch(SchemaBase::isValue)) {
+          if (entry.getKey().isEmpty()) {
             return entry.getValue().stream();
+          }
+
+          if (entry.getValue().stream().noneMatch(SchemaBase::isValue)) {
+            return entry.getValue()
+                .stream()
+                .map(prop -> new Builder().from(prop)
+                    .relation(ImmutableList.of())
+                    .addAllRelation(relations)
+                    .addAllRelation(entry.getKey())
+                    .build());
           }
 
           List<String> newParentPath = entry.getKey()
@@ -146,20 +157,5 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                 .collect(Collectors.toList()))
             .build())
         .collect(Collectors.toList());
-  }
-
-  private SchemaSql mergeChild(SchemaSql parent, FeatureSchema child) {
-    return new ImmutableSchemaSql.Builder()
-        .from(parent)
-        .sourcePath(parent.getSourcePath() + ". " + child.getName())
-        .build();
-  }
-
-  private SchemaSql createParent(List<SqlRelation> relations, List<SchemaSql> children) {
-    if (children.isEmpty()) {
-      throw new IllegalArgumentException();
-    }
-
-    return null;
   }
 }

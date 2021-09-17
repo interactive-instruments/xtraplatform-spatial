@@ -7,10 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.google.common.collect.ImmutableList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public interface MappedSchemaDeriver<T extends SchemaBase<T>, U>
@@ -18,21 +16,22 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U>
 
   @Override
   default List<T> visit(FeatureSchema schema, List<FeatureSchema> parents, List<List<T>> visitedProperties) {
-    Optional<U> currentPath = parseSourcePath(schema);
+    List<U> currentPaths = parseSourcePaths(schema);
 
     List<U> parentPaths =
         parents.stream()
-            .map(this::parseSourcePath)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
+            .flatMap(parent -> parseSourcePaths(parent).stream())
             .collect(Collectors.toList());
 
     List<T> properties = visitedProperties.stream()
         .flatMap(Collection::stream)
         .collect(Collectors.toList());
 
-    if (currentPath.isPresent()) {
-      return ImmutableList.of(create(schema, currentPath.get(), properties, parentPaths));
+    if (!currentPaths.isEmpty()) {
+      return currentPaths.stream()
+          .map(currentPath -> create(schema, currentPath, properties, parentPaths))
+          .collect(Collectors.toList());
+      //return ImmutableList.of(create(schema, currentPath.get(), properties, parentPaths));
     }
 
     if (!parentPaths.isEmpty()) {
@@ -42,7 +41,7 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U>
     throw new IllegalArgumentException();
   }
 
-  Optional<U> parseSourcePath(FeatureSchema sourceSchema);
+  List<U> parseSourcePaths(FeatureSchema sourceSchema);
 
   T create(FeatureSchema targetSchema, U path, List<T> visitedProperties, List<U> parentPaths);
 

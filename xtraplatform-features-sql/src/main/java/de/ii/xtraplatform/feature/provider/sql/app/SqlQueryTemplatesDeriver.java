@@ -56,6 +56,7 @@ public class SqlQueryTemplatesDeriver implements
       List<List<ValueQueryTemplate>> visitedProperties) {
 
     Stream<ValueQueryTemplate> current = schema.isObject()
+          && schema.getProperties().stream().anyMatch(SchemaBase::isValue)
         ? Stream.of(createValueQueryTemplate(schema, parents))
         : Stream.empty();
 
@@ -113,14 +114,18 @@ public class SqlQueryTemplatesDeriver implements
       Optional<String> whereClause = isIdFilter
           ? sqlFilter
           : toWhereClause(aliases.get(0), rootSchema.getSortKey().get(), additionalSortKeys, minMaxKeys, sqlFilter);
+      Optional<String> pagingClause = additionalSortKeys.isEmpty()
+          ? Optional.empty()
+          : Optional.of((limit > 0 ? String.format(" LIMIT %d", limit) : "") + (offset > 0 ? String.format(" OFFSET %d", offset) : ""));
 
-      return getTableQuery(schema, whereClause, additionalSortKeys, parents);
+      return getTableQuery(schema, whereClause, pagingClause, additionalSortKeys, parents);
     };
   }
 
   private String getTableQuery(SchemaSql schema,
       Optional<String> whereClause,
-      List<SortKey> additionalSortKeys, List<SchemaSql> parents) {
+      Optional<String> pagingClause, List<SortKey> additionalSortKeys,
+      List<SchemaSql> parents) {
     List<String> aliases = aliasGenerator.getAliases(schema);
     String attributeContainerAlias = aliases.get(aliases.size() - 1);
 
@@ -136,7 +141,7 @@ public class SqlQueryTemplatesDeriver implements
         .filter(SchemaBase::isValue)
         .map(column -> {
           String name =
-              column.isConstant() ? column.getConstantValue().get() + " AS " + column.getName()
+              column.isConstant() ? "'" +  column.getConstantValue().get() + "'" + " AS " + column.getName()
                   : getQualifiedColumn(attributeContainerAlias, column.getName());
           if (column.isGeometry()) {
             return sqlDialect.applyToWkt(name, column.getForcePolygonCCW());
@@ -159,10 +164,14 @@ public class SqlQueryTemplatesDeriver implements
 
     String join = joinGenerator.getJoins(schema, aliases, relationFilters, Optional.empty(), Optional.empty(), instanceFilter);
 
+    //TODO: if join is not empty, add subquery with pagingClause to whereClause, set pagingClause to empty
     //String limit2 = limit > 0 ? " LIMIT " + limit : "";
     //String offset2 = offset > 0 ? " OFFSET " + offset : "";
     String where = whereClause.map(w -> " WHERE " + w)
         .orElse("");
+    String paging = pagingClause.map(p -> join.isEmpty()
+        ? p
+        : String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %%1$s%5$s%%2$s)")).orElse("");
     String orderBy = IntStream.rangeClosed(1, sortFields.size())
         .boxed()
         .map(index -> {
@@ -174,17 +183,17 @@ public class SqlQueryTemplatesDeriver implements
         })
         .collect(Collectors.joining(","));
 
-    return String.format("SELECT %s FROM %s%s%s%s ORDER BY %s", columns, mainTable,
-        join.isEmpty() ? "" : " ", join, where, orderBy);
+    return String.format("SELECT %s FROM %s%s%s%s ORDER BY %s%s", columns, mainTable,
+        join.isEmpty() ? "" : " ", join, where, orderBy, paging);
   }
 
 
   private Optional<String> toWhereClause(String alias, String keyField,
-      List<SortKey> sortKeys, Optional<Tuple<Object, Object>> minMaxKeys,
+      List<SortKey> additionalSortKeys, Optional<Tuple<Object, Object>> minMaxKeys,
       Optional<String> additionalFilter) {
     StringBuilder filter = new StringBuilder();
 
-    if (minMaxKeys.isPresent()) {
+    if (minMaxKeys.isPresent() && additionalSortKeys.isEmpty()) {
       filter.append("(");
       addMinMaxFilter(filter, alias, keyField, minMaxKeys.get().first(), minMaxKeys.get().second());
       filter.append(")");

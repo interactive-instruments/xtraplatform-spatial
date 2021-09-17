@@ -68,6 +68,12 @@ class SqlQueryTemplatesFixtures {
             "SELECT A.id AS SKEY, B.id AS SKEY_1, B.id FROM building A JOIN building B ON (A.fk_buildingpart_parent=B.id AND (B.id > 1000)) WHERE (A.id IN (SELECT AA.id FROM building AA WHERE AA.oid > 1)) ORDER BY 1,2"
     ]
 
+    static List<String> SELF_JOIN_NESTED_DUPLICATE = [
+            "SELECT A.id AS SKEY, A.id FROM building A ORDER BY 1",
+            "SELECT A.id AS SKEY, B.id AS SKEY_1, B.name FROM building A JOIN att_string_building B ON (A.id=B.fk_feature) ORDER BY 1,2",
+            "SELECT A.id AS SKEY, B.id AS SKEY_1, C.id AS SKEY_2, C.name FROM building A JOIN building B ON (A.id=B.fk_buildingpart_parent) JOIN att_string_building C ON (B.id=C.fk_feature) ORDER BY 1,2,3"
+    ]
+
     static List<String> OBJECT_WITHOUT_SOURCE_PATH = [
             "SELECT A.id AS SKEY, A.id, A.legalavailability_fk, A.legalavailability_fk FROM explorationsite A ORDER BY 1"
     ]
@@ -85,6 +91,10 @@ class SqlQueryTemplatesFixtures {
     static List<String> OBJECT_ARRAY_SORTBY_PAGING = [
             "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A ORDER BY 1,2",
             "SELECT A.created AS CSKEY_0, A.id AS SKEY, B.id AS SKEY_1, C.id AS SKEY_2, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) ORDER BY 1,2,3,4"
+    ]
+
+    static List<String> PROPERTY_WITH_MULTIPLE_SOURCE_PATHS = [
+            "SELECT A.id AS SKEY, A.objid, A.lan, A.rbz, A.krs, A.gmd FROM o12006 A ORDER BY 1"
     ]
 
 }

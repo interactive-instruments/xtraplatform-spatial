@@ -116,6 +116,47 @@ class FeatureSchemaFixtures {
                             .type(Type.STRING)))
             .build()
 
+    static FeatureSchema SELF_JOIN_NESTED_DUPLICATE = new ImmutableFeatureSchema.Builder()
+            .name("building")
+            .sourcePath("/building")
+            .type(Type.OBJECT)
+            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("id")
+                    .type(Type.STRING)
+                    .role(SchemaBase.Role.ID))
+            .putProperties2("genericAttributesString", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("[id=fk_feature]att_string_building")
+                    .type(Type.OBJECT_ARRAY)
+                    .putProperties2("name", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("name")
+                            .type(Type.STRING)))
+            .putProperties2("consistsOfBuildingPart", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("[id=fk_buildingpart_parent]building")
+                    .type(Type.OBJECT_ARRAY)
+                    .putProperties2("genericAttributesString", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("[id=fk_feature]att_string_building")
+                            .type(Type.OBJECT_ARRAY)
+                            .putProperties2("name", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("name")
+                                    .type(Type.STRING))))
+            .build()
+
+    static FeatureSchema PROPERTY_WITH_MULTIPLE_SOURCE_PATHS = new ImmutableFeatureSchema.Builder()
+            .name("address")
+            .sourcePath("/o12006")
+            .type(Type.OBJECT)
+            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("objid")
+                    .type(Type.STRING)
+                    .role(SchemaBase.Role.ID))
+            .putProperties2("component", new ImmutableFeatureSchema.Builder()
+                    .addSourcePaths("lan")
+                    .addSourcePaths("rbz")
+                    .addSourcePaths("krs")
+                    .addSourcePaths("gmd")
+                    .type(Type.STRING))
+            .build()
+
     //TODO: nested
 
     //TODO: objects without sourcePath
@@ -139,7 +180,6 @@ class FeatureSchemaFixtures {
             .build()
 
     //TODO: flags
-
 
 
 }

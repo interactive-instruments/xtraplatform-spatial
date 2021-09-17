@@ -62,16 +62,18 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
 
         where:
 
-        casename                    | deriver | limit | offset | sortBy                  | source                                         || expected
-        "value array"               | td      | 0     | 0      | []                      | QuerySchemaFixtures.VALUE_ARRAY                || SqlQueryTemplatesFixtures.VALUE_ARRAY
-        "object array"              | td      | 0     | 0      | []                      | QuerySchemaFixtures.OBJECT_ARRAY               || SqlQueryTemplatesFixtures.OBJECT_ARRAY
-        "merge"                     | td      | 0     | 0      | []                      | QuerySchemaFixtures.MERGE                      || SqlQueryTemplatesFixtures.MERGE
-        "self joins"                | td      | 0     | 0      | []                      | QuerySchemaFixtures.SELF_JOINS                 || SqlQueryTemplatesFixtures.SELF_JOINS
-        "self joins with filters"   | td      | 0     | 0      | []                      | QuerySchemaFixtures.SELF_JOINS_FILTER          || SqlQueryTemplatesFixtures.SELF_JOINS_FILTER
-        "object without sourcePath" | td      | 0     | 0      | []                      | QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH || SqlQueryTemplatesFixtures.OBJECT_WITHOUT_SOURCE_PATH
-        "paging"                    | td      | 10    | 10     | []                      | QuerySchemaFixtures.OBJECT_ARRAY               || SqlQueryTemplatesFixtures.OBJECT_ARRAY_PAGING
-        "sortBy"                    | td      | 0     | 0      | [SortKey.of("created")] | QuerySchemaFixtures.OBJECT_ARRAY               || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY
-        //"sortBy + paging"           | td      | 10    | 10     | [SortKey.of("created")] | QuerySchemaFixtures.OBJECT_ARRAY               || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING
+        casename                             | deriver | limit | offset | sortBy                  | source                                                  || expected
+        "value array"                        | td      | 0     | 0      | []                      | QuerySchemaFixtures.VALUE_ARRAY                         || SqlQueryTemplatesFixtures.VALUE_ARRAY
+        "object array"                       | td      | 0     | 0      | []                      | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY
+        "merge"                              | td      | 0     | 0      | []                      | QuerySchemaFixtures.MERGE                               || SqlQueryTemplatesFixtures.MERGE
+        "self joins"                         | td      | 0     | 0      | []                      | QuerySchemaFixtures.SELF_JOINS                          || SqlQueryTemplatesFixtures.SELF_JOINS
+        "self joins with filters"            | td      | 0     | 0      | []                      | QuerySchemaFixtures.SELF_JOINS_FILTER                   || SqlQueryTemplatesFixtures.SELF_JOINS_FILTER
+        "self join with nested duplicate"    | td      | 0     | 0      | []                      | QuerySchemaFixtures.SELF_JOIN_NESTED_DUPLICATE          || SqlQueryTemplatesFixtures.SELF_JOIN_NESTED_DUPLICATE
+        "object without sourcePath"          | td      | 0     | 0      | []                      | QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || SqlQueryTemplatesFixtures.OBJECT_WITHOUT_SOURCE_PATH
+        "paging"                             | td      | 10    | 10     | []                      | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_PAGING
+        //"sortBy"                             | td      | 0     | 0      | [SortKey.of("created")] | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY
+        //"sortBy + paging"                    | td      | 10    | 10     | [SortKey.of("created")] | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING
+        "property with multiple sourcePaths" | td      | 0     | 0      | []                      | QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || SqlQueryTemplatesFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
     }
 
     static String meta(SqlQueryTemplates templates, List<SortKey> sortBy, Optional<CqlFilter> userFilter) {

@@ -374,11 +374,14 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
                 FeatureTokenTransformerSorting sorter = new FeatureTokenTransformerSorting();
 
+                FeatureTokenTransformerLogger logger = new FeatureTokenTransformerLogger();
+
                 return featureTokenSource
                     //.via(sorter)
                     .via(schemaMapper)
                     .via(valueMapper)
                     .via(cleaner);
+                    //.via(logger);
             }
         };
     }

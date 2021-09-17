@@ -40,8 +40,8 @@ class QuerySchemaDeriverSpec extends Specification {
         when:
 
         List<SchemaSql> actual = source.accept(schemaDeriver)
-        def ft = source.accept(new FeatureSchemaToTypeVisitor("test"))
-        def old = pathParserOld.parse(source)
+        //def ft = source.accept(new FeatureSchemaToTypeVisitor("test"))
+        //def old = pathParserOld.parse(source)
 
         then:
 
@@ -51,13 +51,15 @@ class QuerySchemaDeriverSpec extends Specification {
 
         where:
 
-        casename                    | source                                           || expected
-        "value array"               | FeatureSchemaFixtures.VALUE_ARRAY                || QuerySchemaFixtures.VALUE_ARRAY
-        "object array"              | FeatureSchemaFixtures.OBJECT_ARRAY               || QuerySchemaFixtures.OBJECT_ARRAY
-        "merge"                     | FeatureSchemaFixtures.MERGE                      || QuerySchemaFixtures.MERGE
-        "self joins"                | FeatureSchemaFixtures.SELF_JOINS                 || QuerySchemaFixtures.SELF_JOINS
-        "self joins with filters"   | FeatureSchemaFixtures.SELF_JOINS_FILTER          || QuerySchemaFixtures.SELF_JOINS_FILTER
-        "object without sourcePath" | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH || QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH
+        casename                                | source                                                    || expected
+        "value array"                           | FeatureSchemaFixtures.VALUE_ARRAY                         || QuerySchemaFixtures.VALUE_ARRAY
+        "object array"                          | FeatureSchemaFixtures.OBJECT_ARRAY                        || QuerySchemaFixtures.OBJECT_ARRAY
+        "merge"                                 | FeatureSchemaFixtures.MERGE                               || QuerySchemaFixtures.MERGE
+        "self joins"                            | FeatureSchemaFixtures.SELF_JOINS                          || QuerySchemaFixtures.SELF_JOINS
+        "self joins with filters"               | FeatureSchemaFixtures.SELF_JOINS_FILTER                   || QuerySchemaFixtures.SELF_JOINS_FILTER
+        "self join with nested duplicate join" | FeatureSchemaFixtures.SELF_JOIN_NESTED_DUPLICATE          || QuerySchemaFixtures.SELF_JOIN_NESTED_DUPLICATE
+        "object without sourcePath"             | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH
+        "multiple sourcePaths"                  | FeatureSchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
     }
 
     static FeatureStoreInstanceContainer toInstanceContainer(SchemaSql schema) {
