@@ -14,7 +14,7 @@ ext {
 version = '5.0.0' + versionSuffix
 
 dependencies {
-    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '4.0.0'
+    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '4.0.2'
 
     bundle subprojects
 }
