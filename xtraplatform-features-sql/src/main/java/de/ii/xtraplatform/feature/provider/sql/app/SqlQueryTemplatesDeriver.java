@@ -105,7 +105,7 @@ public class SqlQueryTemplatesDeriver implements
         return String.format("WITH\n%3$s%3$sNR AS (%s),\n%3$s%3$sNM AS (%s) \n%3$sSELECT * FROM NR, NM", numberReturned, numberMatched, TAB);
       }
 
-      return String.format("WITH\n%2$s%2$sNR AS (%s)\n%2$sSELECT *, -1 AS numberMatched FROM NR", numberReturned, TAB);
+      return String.format("WITH\n%2$s%2$sNR AS (%s)\n%2$sSELECT *, -1::bigint AS numberMatched FROM NR", numberReturned, TAB);
     };
   }
 
