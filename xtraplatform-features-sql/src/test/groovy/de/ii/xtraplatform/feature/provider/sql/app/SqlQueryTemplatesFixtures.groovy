@@ -19,7 +19,7 @@ class SqlQueryTemplatesFixtures {
 
     static String META_WITHOUT_NUMBER_MATCHED = "WITH\n" +
                     "    NR AS (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY SKEY LIMIT 10 OFFSET 10) AS IDS)\n" +
-                    "  SELECT *, -1 AS numberMatched FROM NR"
+                    "  SELECT *, -1::bigint AS numberMatched FROM NR"
 
     static String META_SORT_BY = "WITH\n" +
             "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
