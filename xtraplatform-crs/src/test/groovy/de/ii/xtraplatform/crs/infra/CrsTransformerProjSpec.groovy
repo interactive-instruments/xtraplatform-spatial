@@ -12,6 +12,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import org.kortforsyningen.proj.Units
 import org.opengis.referencing.cs.AxisDirection
+import org.opengis.referencing.cs.RangeMeaning
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -108,6 +109,34 @@ class CrsTransformerProjSpec extends Specification {
         }
     }
 
+    def 'CRS transformer test 3D to 2D'() {
+        when:
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
+        double[] result = gct.transform3d(source as double[], 1, false)
+
+        then:
+        result == target as double[]
+
+        where:
+        sourceCrs           | targetCrs         | source                            | target
+        EpsgCrs.of(5555)    | EpsgCrs.of(25832) | [420735.071, 5392914.343, 131.96] | [420735.071, 5392914.343, 0.0]
+        EpsgCrs.of(5555)    | EpsgCrs.of(4326)  | [420735.071, 5392914.343, 131.96] | [48.68423644912392, 7.923077973066287, 0.0]
+        EpsgCrs.of(5555)    | EpsgCrs.of(3857)  | [420735.071, 5392914.343, 131.96] | [881993.0054771411, 6221451.78116173, 0.0]
+        EpsgCrs.of(5555)    | OgcCrs.CRS84      | [420735.071, 5392914.343, 131.96] | [7.923077973066287, 48.68423644912392, 0.0]
+
+        EpsgCrs.of(4979)    | EpsgCrs.of(25832) | [48.684, 7.923, 131.96]           | [420728.9609056481, 5392888.1411416, 0.0]
+        EpsgCrs.of(4979)    | EpsgCrs.of(4326)  | [48.684, 7.923, 131.96]           | [48.684, 7.923, 0.0]
+        EpsgCrs.of(4979)    | EpsgCrs.of(3857)  | [48.684, 7.923, 131.96]           | [881984.3255551065, 6221411.912936983, 0.0]
+        EpsgCrs.of(4979)    | OgcCrs.CRS84      | [48.684, 7.923, 131.96]           | [7.923, 48.684, 0.0]
+
+        OgcCrs.CRS84h       | EpsgCrs.of(25832) | [7.923, 48.684, 131.96]           | [420728.9609056481, 5392888.1411416, 0.0]
+        OgcCrs.CRS84h       | EpsgCrs.of(4326)  | [7.923, 48.684, 131.96]           | [48.684, 7.923, 0.0]
+        OgcCrs.CRS84h       | EpsgCrs.of(3857)  | [7.923, 48.684, 131.96]           | [881984.3255551065, 6221411.912936983, 0.0]
+        OgcCrs.CRS84h       | OgcCrs.CRS84      | [7.923, 48.684, 131.96]           | [7.923, 48.684, 0.0]
+
+
+    }
+
     def 'CRS info test'() {
 
         expect:
@@ -124,9 +153,17 @@ class CrsTransformerProjSpec extends Specification {
         EpsgCrs.of(4326)    | ["Lat", "Lon"]        | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]
         EpsgCrs.of(3857)    | ["X", "Y"]            | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]
         EpsgCrs.of(4269)    | ["Lat", "Lon"]        | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]
-        OgcCrs.CRS84        | ["Lat", "Lon"]        | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]
-        OgcCrs.CRS84h       | ["Lat", "Lon", "h"]   | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.NORTH, AxisDirection.EAST, AxisDirection.UP]
+        OgcCrs.CRS84        | ["Lon", "Lat"]        | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.EAST, AxisDirection.NORTH]
+        OgcCrs.CRS84h       | ["Lon", "Lat", "h"]   | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP]
 
+    }
+
+    def 'Axis range meanings'() {
+        when:
+        List<RangeMeaning> rangeMeanings = transformerFactory.getAxisRangeMeanings(OgcCrs.CRS84)
+
+        then:
+        !rangeMeanings.isEmpty()
     }
 
 }
