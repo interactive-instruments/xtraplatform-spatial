@@ -109,6 +109,7 @@ public class WithTransformationsApplied implements
         : "";
 
     return properties.stream()
+        .filter(Objects::nonNull)
         .flatMap(property -> property.isObject()
             ? flattenProperties(property.getProperties(), flatName(property, prefix), nameSeparator, flatLabel(property, labelPrefix), labelSeparator).stream()
             : Stream.of(flattenProperty(property, prefix, labelPrefix)))
