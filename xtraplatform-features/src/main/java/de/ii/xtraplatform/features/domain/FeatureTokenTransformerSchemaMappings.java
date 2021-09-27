@@ -111,7 +111,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   @Override
   public void onObjectStart(ModifiableContext context) {
     if (context.schema()
-        .filter(FeatureSchema::isGeometry)
+        .filter(FeatureSchema::isSpatial)
         .isPresent()) {
       handleNesting(context.schema().get(), context.parentSchemas(), context.indexes());
 
@@ -144,7 +144,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   @Override
   public void onObjectEnd(ModifiableContext context) {
     if (context.schema()
-        .filter(FeatureSchema::isGeometry)
+        .filter(FeatureSchema::isSpatial)
         .isPresent()) {
       newContext.setInGeometry(false);
       newContext.setGeometryType(Optional.empty());

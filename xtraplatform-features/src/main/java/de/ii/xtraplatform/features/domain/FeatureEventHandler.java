@@ -10,12 +10,10 @@ package de.ii.xtraplatform.features.domain;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
-import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import javax.annotation.Nullable;
@@ -194,10 +192,10 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
         List<FeatureSchema> parentSchemas,
         String path) {
       return schema.isId()
-          || (schema.isGeometry() && !query().skipGeometry())
+          || (schema.isSpatial() && !query().skipGeometry())
           //TODO: enable if projected output needs to be schema valid
           // || isRequired(schema, parentSchemas)
-          || (!schema.isId() && !schema.isGeometry() && propertyIsInFields(path));
+          || (!schema.isId() && !schema.isSpatial() && propertyIsInFields(path));
     }
 
     default boolean propertyIsInFields(String property) {
