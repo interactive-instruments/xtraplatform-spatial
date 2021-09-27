@@ -14,24 +14,21 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
-import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
-import java.util.HashMap;
-import java.util.Objects;
-import org.immutables.value.Value;
-
 import java.util.AbstractMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
+import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,70 +151,8 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     @Value.Derived
     @Value.Auxiliary
     @Override
-    default List<String> getFullPath() {
-        return SchemaBase.super.getFullPath();
-    }
-
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    @Override
-    default Set<String> getValueNames() {
-        return SchemaBase.super.getValueNames();
-    }
-
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    @Override
-    default boolean isObject() {
-        return SchemaBase.super.isObject();
-    }
-
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    @Override
-    default boolean isValue() {
-        return SchemaBase.super.isValue();
-    }
-
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    @Override
     default boolean isFeature() {
         return isObject() && (!getSourcePaths().isEmpty() && getSourcePaths().get(0).startsWith("/"));
-    }
-
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default boolean isId() {
-        return getRole().filter(role -> role == Role.ID)
-                        .isPresent();
-    }
-
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default boolean isType() {
-        return getRole().filter(role -> role == Role.TYPE)
-            .isPresent();
-    }
-
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default boolean isSpatial() {
-        return getType() == Type.GEOMETRY;
-    }
-
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default boolean isTemporal() {
-        return getType() == Type.DATETIME;
     }
 
     @JsonIgnore
