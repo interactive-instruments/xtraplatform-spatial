@@ -341,14 +341,14 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                         .concat(
                             schema.getTransformations().isEmpty()
                                 ? schema.isTemporal()
-                                ? java.util.stream.Stream
-                                .of(new SimpleImmutableEntry<String, List<PropertyTransformation>>(
-                                    String.join(".", schema.getFullPath()),
-                                    ImmutableList.of(
-                                        new ImmutablePropertyTransformation.Builder().dateFormat(
-                                            schema.getType() == Type.DATETIME ? DATETIME_FORMAT
-                                                : DATE_FORMAT).build())))
-                                : java.util.stream.Stream.empty()
+                                    ? java.util.stream.Stream
+                                    .of(new SimpleImmutableEntry<String, List<PropertyTransformation>>(
+                                        String.join(".", schema.getFullPath()),
+                                        ImmutableList.of(
+                                            new ImmutablePropertyTransformation.Builder().dateFormat(
+                                                schema.getType() == Type.DATETIME ? DATETIME_FORMAT
+                                                    : DATE_FORMAT).build())))
+                                    : java.util.stream.Stream.empty()
                                 : java.util.stream.Stream
                                     .of(new SimpleImmutableEntry<String, List<PropertyTransformation>>(
                                         schema.getFullPath().isEmpty() ? WILDCARD : String.join(".", schema.getFullPath()),

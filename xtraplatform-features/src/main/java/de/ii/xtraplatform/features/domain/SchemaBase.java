@@ -92,7 +92,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
             .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_GEOMETRY).isPresent())
             .findFirst()
             .or(() -> getProperties().stream()
-                .filter(SchemaBase::isGeometry)
+                .filter(SchemaBase::isSpatial)
                 .findFirst());
     }
 
@@ -181,7 +181,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
-    default boolean isGeometry() {
+    default boolean isSpatial() {
         return getType() == Type.GEOMETRY;
     }
 
