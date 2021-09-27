@@ -103,7 +103,7 @@ class SqlRowSlick implements SqlRow {
         if (Objects.nonNull(tableSchema)) {
             return tableSchema.getProperties().stream()
                 .filter(SchemaBase::isValue)
-                .map(SchemaBase::isGeometry)
+                .map(SchemaBase::isSpatial)
                 .collect(Collectors.toList());
         }
         return ImmutableList.of();
