@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.crs.domain;
 
 import java.util.List;
+import java.util.Optional;
 import javax.measure.Unit;
 import org.opengis.referencing.cs.AxisDirection;
 import org.opengis.referencing.cs.RangeMeaning;
@@ -22,7 +23,7 @@ public interface CrsInfo {
 
   List<Unit<?>> getAxisUnits(EpsgCrs crs);
 
-  List<RangeMeaning> getAxisRangeMeanings(EpsgCrs crs);
+  Optional<List<RangeMeaning>> getAxisRangeMeanings(EpsgCrs crs);
 
   List<AxisDirection> getAxisDirections(EpsgCrs crs);
 

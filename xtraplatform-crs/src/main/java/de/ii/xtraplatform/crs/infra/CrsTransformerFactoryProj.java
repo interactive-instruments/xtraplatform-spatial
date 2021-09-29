@@ -211,16 +211,9 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     }
 
     @Override
-    public List<RangeMeaning> getAxisRangeMeanings(EpsgCrs crs) {
-        CoordinateReferenceSystem coordinateReferenceSystem = getCoordinateReferenceSystem(crs);
-        ImmutableList.Builder<RangeMeaning> rangeMeanings = new ImmutableList.Builder<>();
-        rangeMeanings.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(0).getRangeMeaning());
-        rangeMeanings.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(1).getRangeMeaning());
-        if (is3d(crs)) {
-            rangeMeanings.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(2).getRangeMeaning());
-        }
-
-        return rangeMeanings.build();
+    public Optional<List<RangeMeaning>> getAxisRangeMeanings(EpsgCrs crs) {
+        // PROJ-JNI always returns null for axis range meaning requests
+        return Optional.empty();
     }
 
     @Override

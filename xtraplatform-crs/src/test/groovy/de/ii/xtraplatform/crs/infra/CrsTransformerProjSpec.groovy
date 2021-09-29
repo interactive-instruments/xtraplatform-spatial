@@ -158,12 +158,4 @@ class CrsTransformerProjSpec extends Specification {
 
     }
 
-    def 'Axis range meanings'() {
-        when:
-        List<RangeMeaning> rangeMeanings = transformerFactory.getAxisRangeMeanings(OgcCrs.CRS84)
-
-        then:
-        !rangeMeanings.isEmpty()
-    }
-
 }
