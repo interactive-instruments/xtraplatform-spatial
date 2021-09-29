@@ -34,6 +34,21 @@ public interface EpsgCrs {
                                              .build();
     }
 
+    static EpsgCrs of(int code, int verticalCode) {
+        return new ImmutableEpsgCrs.Builder()
+                .code(code)
+                .verticalCode(verticalCode)
+                .build();
+    }
+
+    static EpsgCrs of(int code, int verticalCode, Force force) {
+        return new ImmutableEpsgCrs.Builder()
+                .code(code)
+                .verticalCode(verticalCode)
+                .forceAxisOrder(force)
+                .build();
+    }
+
     static EpsgCrs fromString(String prefixedCode) {
         Optional<EpsgCrs> ogcCrs = OgcCrs.fromString(prefixedCode);
         if (ogcCrs.isPresent()) {
@@ -57,8 +72,22 @@ public interface EpsgCrs {
         return ImmutableEpsgCrs.of(code);
     }
 
+    static EpsgCrs fromString(String prefixedCode, String prefixedCodeVertical) {
+        EpsgCrs crs = fromString(prefixedCode);
+        EpsgCrs verticalCrs = fromString(prefixedCodeVertical);
+        return new ImmutableEpsgCrs.Builder()
+                .code(crs.getCode())
+                .verticalCode(verticalCrs.getCode())
+                .build();
+    }
+
     @Value.Parameter
     int getCode();
+
+    @Value.Default
+    default int getVerticalCode() {
+        return 0;
+    };
 
     //TODO: migrate
     @Deprecated
