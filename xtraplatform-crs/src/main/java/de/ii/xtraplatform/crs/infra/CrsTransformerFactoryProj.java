@@ -30,6 +30,7 @@ import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
+import org.geotools.referencing.crs.DefaultCompoundCRS;
 import org.kortforsyningen.proj.Proj;
 import org.kortforsyningen.proj.spi.EPSG;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
@@ -85,8 +86,16 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
             crsCache.computeIfAbsent(crs, mayThrow(ignore -> {
                 String code = String.valueOf(applyWorkarounds(crs).getCode());
                 CoordinateReferenceSystem coordinateReferenceSystem = crsFactory
-                    .createCoordinateReferenceSystem(code);
-                return applyAxisOrder(coordinateReferenceSystem, crs.getForceAxisOrder());
+                        .createCoordinateReferenceSystem(code);
+                coordinateReferenceSystem = applyAxisOrder(coordinateReferenceSystem, crs.getForceAxisOrder());
+                if (crs.getVerticalCode().isPresent()) {
+                    String verticalCode = String.valueOf(crs.getVerticalCode().getAsInt());
+                    CoordinateReferenceSystem verticalCrs = crsFactory.createVerticalCRS(verticalCode);
+                    return new DefaultCompoundCRS("", coordinateReferenceSystem, verticalCrs);
+                } else {
+                    return coordinateReferenceSystem;
+                }
+
             }));
         } catch (Throwable e) {
             return false;

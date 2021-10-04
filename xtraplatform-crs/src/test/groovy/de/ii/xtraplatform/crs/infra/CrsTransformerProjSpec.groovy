@@ -158,4 +158,18 @@ class CrsTransformerProjSpec extends Specification {
 
     }
 
+    def 'Compound CRS test'() {
+        given:
+        EpsgCrs sourceCrs = EpsgCrs.of(5555)
+        double[] source = [420735.071, 5392914.343, 131.96]
+        EpsgCrs compoundCrs = EpsgCrs.of(25832, 7837)
+
+        when:
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, compoundCrs).get()
+        double[] target = gct.transform(source, 1, false)
+
+        then:
+        target.size() > 0
+    }
+
 }

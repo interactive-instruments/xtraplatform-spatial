@@ -14,6 +14,7 @@ import org.immutables.value.Value;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 @Value.Immutable
 @Value.Style(builder = "new")
@@ -84,10 +85,7 @@ public interface EpsgCrs {
     @Value.Parameter
     int getCode();
 
-    @Value.Default
-    default int getVerticalCode() {
-        return 0;
-    };
+    OptionalInt getVerticalCode();
 
     //TODO: migrate
     @Deprecated

@@ -2,5 +2,6 @@
 dependencies {
     embedded "org.opengis:geoapi:3.0.1"
     embedded files("../libs/proj-1.0.jar")
+    provided project(':xtraplatform-geotools')
 }
 
