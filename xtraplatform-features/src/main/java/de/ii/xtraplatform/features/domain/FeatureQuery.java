@@ -55,8 +55,8 @@ public abstract class FeatureQuery {
     }
 
     @Value.Default
-    public int getGeometryPrecision() {
-        return 0;
+    public List<Integer> getGeometryPrecision() {
+        return ImmutableList.of(0, 0, 0);
     }
 
     @Value.Default

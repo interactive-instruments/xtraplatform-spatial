@@ -88,8 +88,8 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
       coordinatesTransformerBuilder.isSwapXY(true);
     }*/
 
-      if (context.query().getGeometryPrecision() > 0) {
-        coordinatesTransformerBuilder.precision(context.query().getGeometryPrecision());
+      if (context.query().getGeometryPrecision().get(0) > 0) {
+        coordinatesTransformerBuilder.precision(context.query().getGeometryPrecision().get(0));
       }
 
       //TODO: currently never true, see FeatureProperty.isForceReversePolygon, find cfg example
