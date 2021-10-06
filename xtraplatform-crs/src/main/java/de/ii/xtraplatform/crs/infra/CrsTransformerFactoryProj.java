@@ -13,6 +13,7 @@ package de.ii.xtraplatform.crs.infra;
 import static de.ii.xtraplatform.dropwizard.domain.LambdaWithException.mayThrow;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -30,10 +31,10 @@ import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
-import org.geotools.referencing.crs.DefaultCompoundCRS;
 import org.kortforsyningen.proj.Proj;
 import org.kortforsyningen.proj.spi.EPSG;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
+import org.opengis.referencing.crs.CRSFactory;
 import org.opengis.referencing.crs.CompoundCRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.crs.SingleCRS;
@@ -54,12 +55,14 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CrsTransformerFactoryProj.class);
 
-    private final CRSAuthorityFactory crsFactory;
+    private final CRSAuthorityFactory crsAuthorityFactory;
+    private final CRSFactory crsFactory;
     private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
     private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
 
     public CrsTransformerFactoryProj() {
-        this.crsFactory = EPSG.provider();
+        this.crsAuthorityFactory = EPSG.provider();
+        this.crsFactory = Proj.getFactory(CRSFactory.class);
         this.crsCache = new ConcurrentHashMap<>();
         this.transformerCache = new ConcurrentHashMap<>();
 
@@ -69,7 +72,8 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
         }
 
         try {
-            new CrsTransformerProj(crsFactory.createCoordinateReferenceSystem("4326"), crsFactory.createCoordinateReferenceSystem("4258"), EpsgCrs.of(4326), EpsgCrs.of(4258), 2, 2);
+            new CrsTransformerProj(crsAuthorityFactory.createCoordinateReferenceSystem("4326"), crsAuthorityFactory
+                .createCoordinateReferenceSystem("4258"), EpsgCrs.of(4326), EpsgCrs.of(4258), 2, 2);
         } catch (Throwable ex) {
             //ignore
             boolean br = true;
@@ -85,13 +89,13 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
         try {
             crsCache.computeIfAbsent(crs, mayThrow(ignore -> {
                 String code = String.valueOf(applyWorkarounds(crs).getCode());
-                CoordinateReferenceSystem coordinateReferenceSystem = crsFactory
+                CoordinateReferenceSystem coordinateReferenceSystem = crsAuthorityFactory
                         .createCoordinateReferenceSystem(code);
                 coordinateReferenceSystem = applyAxisOrder(coordinateReferenceSystem, crs.getForceAxisOrder());
                 if (crs.getVerticalCode().isPresent()) {
                     String verticalCode = String.valueOf(crs.getVerticalCode().getAsInt());
-                    CoordinateReferenceSystem verticalCrs = crsFactory.createVerticalCRS(verticalCode);
-                    return new DefaultCompoundCRS("", coordinateReferenceSystem, verticalCrs);
+                    CoordinateReferenceSystem verticalCrs = crsAuthorityFactory.createVerticalCRS(verticalCode);
+                    return crsFactory.createCompoundCRS(ImmutableMap.of("name", String.format("%s + %s", coordinateReferenceSystem.getName(), verticalCrs.getName())), coordinateReferenceSystem, verticalCrs);
                 } else {
                     return coordinateReferenceSystem;
                 }
