@@ -12,7 +12,6 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import org.kortforsyningen.proj.Units
 import org.opengis.referencing.cs.AxisDirection
-import org.opengis.referencing.cs.RangeMeaning
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -159,17 +158,25 @@ class CrsTransformerProjSpec extends Specification {
     }
 
     def 'Compound CRS test'() {
-        given:
-        EpsgCrs sourceCrs = EpsgCrs.of(5555)
-        double[] source = [420735.071, 5392914.343, 131.96]
-        EpsgCrs compoundCrs = EpsgCrs.of(25832, 7837)
 
         when:
-        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, compoundCrs).get()
-        double[] target = gct.transform(source, 1, false)
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
+        double[] result = gct.transform3d(source as double[], 1, false)
 
         then:
-        target.size() > 0
+        result == target as double[]
+
+        where:
+        sourceCrs                | targetCrs                 | source                                | target
+
+        EpsgCrs.of(5555)         | EpsgCrs.of(25832, 7837)   | [420735.071, 5392914.343, 131.96]     | [420735.071, 5392914.343, 131.96]
+        EpsgCrs.of(4979)         | EpsgCrs.of(25832, 7837)   | [48.684, 7.923, 131.96]               | [420728.9609056481, 5392888.1411416, 131.96]
+        OgcCrs.CRS84h            | EpsgCrs.of(25832, 7837)   | [7.923, 48.684, 131.96]               | [420728.9609056481, 5392888.1411416, 131.96]
+
+        EpsgCrs.of(25832, 7837)  | EpsgCrs.of(5555)          | [420735.071, 5392914.343, 131.96]     | [420735.071, 5392914.343, 131.96]
+        EpsgCrs.of(25832, 7837)  | EpsgCrs.of(4979)          | [420735.071, 5392914.343, 131.96]     | [48.68423644912392, 7.923077973066287, 131.96]
+        EpsgCrs.of(25832, 7837)  | OgcCrs.CRS84h             | [420735.071, 5392914.343, 131.96]     | [7.923077973066287, 48.68423644912392, 131.96]
+
     }
 
 }
