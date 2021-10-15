@@ -103,9 +103,11 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         return getProperties().stream()
             .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_INSTANT).isPresent())
             .findFirst()
-            .or(() -> getProperties().stream()
-                .filter(SchemaBase::isTemporal)
-                .findFirst());
+            .or(() -> getPrimaryInterval().isEmpty()
+                    ? getProperties().stream()
+                                     .filter(SchemaBase::isTemporal)
+                                     .findFirst()
+                    : Optional.empty());
     }
 
     @JsonIgnore
