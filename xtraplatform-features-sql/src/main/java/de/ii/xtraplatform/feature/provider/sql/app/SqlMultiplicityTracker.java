@@ -36,11 +36,15 @@ public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
         this.children = new LinkedHashMap<>();
         ;
 
+        //TODO: test with geoval
         multiTables.forEach(table -> {
-            for (int i = 0; i < table.size(); i++) {
+            /*for (int i = 0; i < table.size(); i++) {
                 List<String> subPath = table.subList(0, i + 1);
                 currentIds.put(subPath, null);
-            }
+            }*/
+            List<String> subPath = table.subList(0, 1);
+            currentIds.put(subPath, null);
+            currentIds.put(table, null);
         });
     }
 
