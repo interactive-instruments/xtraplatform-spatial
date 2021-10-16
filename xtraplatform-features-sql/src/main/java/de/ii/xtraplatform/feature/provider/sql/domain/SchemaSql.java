@@ -71,8 +71,8 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
     for (int i = 0; i < getRelation().size(); i++) {
       SqlRelation relation = getRelation().get(i);
       // add keys only for main table and target tables of M:N or 1:N relations
-      if (i == 0 || previousRelation.isM2N() || previousRelation.isOne2N()) {
-        keys.add(String.format("%s.%s", relation.getSourceContainer(), relation.getSourceSortKey()));
+      if (relation.getSourceSortKey().isPresent() && (i == 0 || previousRelation.isM2N() || previousRelation.isOne2N())) {
+        keys.add(String.format("%s.%s", relation.getSourceContainer(), relation.getSourceSortKey().get()));
       }
       previousRelation = relation;
     }
@@ -100,9 +100,9 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
       }
 
       // add keys only for main table and target tables of M:N or 1:N relations
-      if (i == 0 || previousRelation.isM2N() || previousRelation.isOne2N()) {
+      if (relation.getSourceSortKey().isPresent() && (i == 0 || previousRelation.isM2N() || previousRelation.isOne2N())) {
         String suffix = keyIndex > 0 ? "_" + keyIndex : "";
-        keys.add(String.format("%s.%s AS SKEY%s", alias, relation.getSourceSortKey(), suffix));
+        keys.add(String.format("%s.%s AS SKEY%s", alias, relation.getSourceSortKey().get(), suffix));
         keyIndex++;
       }
 

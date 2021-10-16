@@ -139,7 +139,7 @@ public class SqlQueryTemplatesDeriver implements
         : schema.getRelation().get(0).getSourceContainer();
     String mainTableSortKey = schema.getRelation().isEmpty()
         ? schema.getSortKey().get()
-        : schema.getRelation().get(0).getSourceSortKey();
+        : schema.getRelation().get(0).getSourceSortKey().get();
     String mainTable = String
         .format("%s %s", mainTableName, aliases.get(0));
     List<String> sortFields = getSortFields(schema, aliases, additionalSortKeys);
@@ -178,8 +178,21 @@ public class SqlQueryTemplatesDeriver implements
     if (!join.isEmpty() && pagingClause.isPresent()) {
       String where2 = " WHERE ";
       List<String> aliasesNested = aliasGenerator.getAliases(schema, where.isEmpty() ? 1 : 2);
-      where2 += String.format("(A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s%4$s ORDER BY 1%5$s))",
-          mainTableName, aliasesNested.get(0), mainTableSortKey, where.replace("(A.", "(" + aliasesNested.get(0) + "."), pagingClause.get());
+      String orderBy = IntStream.range(0, sortFields.size())
+          .boxed()
+          .map(index -> {
+            if (index < additionalSortKeys.size()
+                && additionalSortKeys.get(index).getDirection() == Direction.DESCENDING) {
+              return sortFields.get(index) + " DESC";
+            }
+            return sortFields.get(index);
+          })
+          .filter(sortField -> sortField.startsWith("A."))
+          .map(sortField -> sortField.replace("A.", aliasesNested.get(0) + "."))
+          .map(sortField -> sortField.replaceAll(" AS \\w+", ""))
+          .collect(Collectors.joining(","));
+      where2 += String.format("(A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s%4$s ORDER BY %5$s%6$s))",
+          mainTableName, aliasesNested.get(0), mainTableSortKey, where.replace("(A.", "(" + aliasesNested.get(0) + "."), orderBy, pagingClause.get());
 
       where = where2;
     }

@@ -31,16 +31,9 @@ public interface SqlRelation {
 
     String getSourceField();
 
-    //TODO: use instead of getSourceSortKey in mutation code
-    @Value.Default
-    default String getSourcePrimaryKey() {
-        return getSourceField();
-    }
+    Optional<String> getSourcePrimaryKey();
 
-    @Value.Default
-    default String getSourceSortKey() {
-        return getSourceField();
-    }
+    Optional<String> getSourceSortKey();
 
     Optional<String> getSourceFilter();
 

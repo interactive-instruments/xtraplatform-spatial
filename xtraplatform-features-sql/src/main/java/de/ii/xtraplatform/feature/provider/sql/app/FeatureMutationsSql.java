@@ -161,7 +161,7 @@ public class FeatureMutationsSql {
                                 .isOne2One()
                     && Objects.equals(schemaSql.getRelation()
                                                .get(0)
-                                               .getSourceSortKey(), schemaSql.getRelation()
+                                               .getSourceSortKey().get(), schemaSql.getRelation()
                                                                              .get(0)
                                                                              .getSourceField());
         }
@@ -264,7 +264,7 @@ public class FeatureMutationsSql {
             }
 
             boolean isOne2OneWithForeignKey = relation.isOne2One()
-                    && !Objects.equals(relation.getSourceSortKey(), relation.getSourceField());
+                    && !Objects.equals(relation.getSourceSortKey().orElse("id"), relation.getSourceField());
 
             if (isOne2OneWithForeignKey) {
                 queries.add(generator.createForeignKeyUpdate(schema, parentRows));

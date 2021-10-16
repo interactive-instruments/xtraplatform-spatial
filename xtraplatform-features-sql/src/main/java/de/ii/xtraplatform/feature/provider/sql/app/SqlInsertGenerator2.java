@@ -99,12 +99,12 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
             //TODO: is this merged?
             if (parentRelation.get()
                               .isOne2One() && Objects.equals(parentRelation.get()
-                                                                           .getSourceSortKey(), parentRelation.get()
+                                                                           .getSourceSortKey().orElse("id"), parentRelation.get()
                                                                                                               .getSourceField())) {
                 //TODO fullPath, sortKey
                 sortKeys.add(0, String.format("%s.%s", parentRelation.get()
                                                                    .getSourceContainer(), parentRelation.get()
-                                                                                                        .getSourceSortKey()));
+                                                                                                        .getSourceSortKey().orElse("id")));
                 if (!columns2.contains(primaryKey)) {
                     columns2.add(0, primaryKey);
                 }
@@ -113,7 +113,7 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
                                      .isOne2N()) {
                 sortKeys.add(0, String.format("%s.%s", parentRelation.get()
                                                                    .getSourceContainer(), parentRelation.get()
-                                                                                                        .getSourceSortKey()));
+                                                                                                        .getSourceSortKey().get()));
                 columns2.add(0, parentRelation.get()
                                               .getTargetField());
             }
@@ -219,7 +219,7 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
                                               .get(0);
 
         String table = relation.getSourceContainer();
-        String refKey = String.format("%s.%s", table, relation.getSourceSortKey());
+        String refKey = String.format("%s.%s", table, relation.getSourceSortKey().get());
         String column = relation.getSourceField();
         String columnKey = String.format("%s.%s", relation.getTargetContainer(), relation.getTargetField());
 

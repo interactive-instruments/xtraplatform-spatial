@@ -158,6 +158,28 @@ class FeatureSchemaFixtures {
             .build()
 
     //TODO: nested
+    static FeatureSchema NESTED_JOINS = new ImmutableFeatureSchema.Builder()
+            .name("observationsubject")
+            .sourcePath("/observationsubject")
+            .type(Type.OBJECT)
+            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("id")
+                    .type(Type.STRING)
+                    .role(SchemaBase.Role.ID))
+            .putProperties2("filterValues", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("[id=observationsubjectid]observationsubject_filtervalues")
+                    .type(Type.OBJECT_ARRAY)
+                    .objectType("FilterValue")
+                    .putProperties2("type", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("_type")
+                            .type(Type.STRING))
+                    .putProperties2("filterValueProperty", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("[filtervalueproperty_fk=code]observedproperty")
+                            .type(Type.OBJECT)
+                            .putProperties2("title", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("symbol")
+                                    .type(Type.STRING))))
+            .build()
 
     //TODO: objects without sourcePath
     static FeatureSchema OBJECT_WITHOUT_SOURCE_PATH = new ImmutableFeatureSchema.Builder()

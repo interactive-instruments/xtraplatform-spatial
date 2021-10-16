@@ -51,15 +51,16 @@ class QuerySchemaDeriverSpec extends Specification {
 
         where:
 
-        casename                                | source                                                    || expected
-        "value array"                           | FeatureSchemaFixtures.VALUE_ARRAY                         || QuerySchemaFixtures.VALUE_ARRAY
-        "object array"                          | FeatureSchemaFixtures.OBJECT_ARRAY                        || QuerySchemaFixtures.OBJECT_ARRAY
-        "merge"                                 | FeatureSchemaFixtures.MERGE                               || QuerySchemaFixtures.MERGE
-        "self joins"                            | FeatureSchemaFixtures.SELF_JOINS                          || QuerySchemaFixtures.SELF_JOINS
-        //"self joins with filters"               | FeatureSchemaFixtures.SELF_JOINS_FILTER                   || QuerySchemaFixtures.SELF_JOINS_FILTER
-        //"self join with nested duplicate join" | FeatureSchemaFixtures.SELF_JOIN_NESTED_DUPLICATE          || QuerySchemaFixtures.SELF_JOIN_NESTED_DUPLICATE
-        "object without sourcePath"             | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH
-        "multiple sourcePaths"                  | FeatureSchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
+        casename                               | source                                                    || expected
+        "value array"                          | FeatureSchemaFixtures.VALUE_ARRAY                         || QuerySchemaFixtures.VALUE_ARRAY
+        "object array"                         | FeatureSchemaFixtures.OBJECT_ARRAY                        || QuerySchemaFixtures.OBJECT_ARRAY
+        "merge"                                | FeatureSchemaFixtures.MERGE                               || QuerySchemaFixtures.MERGE
+        "self joins"                           | FeatureSchemaFixtures.SELF_JOINS                          || QuerySchemaFixtures.SELF_JOINS
+        //"self joins with filters"              | FeatureSchemaFixtures.SELF_JOINS_FILTER                   || QuerySchemaFixtures.SELF_JOINS_FILTER
+        "self join with nested duplicate join" | FeatureSchemaFixtures.SELF_JOIN_NESTED_DUPLICATE          || QuerySchemaFixtures.SELF_JOIN_NESTED_DUPLICATE
+        "object without sourcePath"            | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH
+        "multiple sourcePaths"                 | FeatureSchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
+        "nested joins"                         | FeatureSchemaFixtures.NESTED_JOINS                        || QuerySchemaFixtures.NESTED_JOINS
     }
 
     static FeatureStoreInstanceContainer toInstanceContainer(SchemaSql schema) {
@@ -85,7 +86,7 @@ class QuerySchemaDeriverSpec extends Specification {
                     def rel = ImmutableFeatureStoreRelation.builder()
                             .sourceContainer(sqlRelation.getSourceContainer())
                             .sourceField(sqlRelation.getSourceField())
-                            .sourceSortKey(sqlRelation.getSourceSortKey())
+                            .sourceSortKey(sqlRelation.getSourceSortKey().get())
                             .targetContainer(sqlRelation.getTargetContainer())
                             .targetField(sqlRelation.getTargetField())
                             .junctionSource(sqlRelation.getJunctionSource())
@@ -109,7 +110,7 @@ class QuerySchemaDeriverSpec extends Specification {
                 .queryable(parentPath.isEmpty() ? property.getSourcePath().orElse("") : parentPath + "." + property.getSourcePath().orElse(""))
                 .path(property.getFullPath())
                 .isId(property.isId())
-                .isSpatial(property.isGeometry())
+                .isSpatial(property.isSpatial())
                 .isTemporal(property.isTemporal())
                 .constantValue(property.getConstantValue())
                 .build()
