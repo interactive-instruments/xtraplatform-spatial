@@ -7,9 +7,15 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app
 
-
+import com.google.common.collect.ImmutableList
 import de.ii.xtraplatform.features.domain.FeatureSchema
+import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer
+import de.ii.xtraplatform.features.domain.FeatureStoreRelation
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema
+import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreAttribute
+import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreInstanceContainer
+import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelatedContainer
+import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation
 import de.ii.xtraplatform.features.domain.SchemaBase
 import de.ii.xtraplatform.features.domain.SchemaBase.Type
 
@@ -19,7 +25,6 @@ class FeatureSchemaFixtures {
             .name("externalprovider")
             .sourcePath("/externalprovider")
             .type(Type.OBJECT)
-    //TODO: only needed for old parser
             .putProperties2("id", new ImmutableFeatureSchema.Builder()
                     .sourcePath("id")
                     .type(Type.STRING)
@@ -34,7 +39,6 @@ class FeatureSchemaFixtures {
             .name("explorationsite")
             .sourcePath("/explorationsite")
             .type(Type.OBJECT)
-    //TODO: only needed for old parser
             .putProperties2("id", new ImmutableFeatureSchema.Builder()
                     .sourcePath("id")
                     .type(Type.STRING)
@@ -56,11 +60,9 @@ class FeatureSchemaFixtures {
             .name("eignungsflaeche")
             .sourcePath("/eignungsflaeche")
             .type(Type.OBJECT)
-    //TODO: only needed for old parser
-            .putProperties2("bla", new ImmutableFeatureSchema.Builder()
-                    .sourcePath("bla")
-                    .type(Type.VALUE_ARRAY)
-                    .valueType(Type.STRING))
+            .putProperties2("programm", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("programm")
+                    .type(Type.STRING))
             .putProperties2("id", new ImmutableFeatureSchema.Builder()
                     .sourcePath("[id=id]osirisobjekt/id")
                     .type(Type.STRING)
@@ -69,4 +71,137 @@ class FeatureSchemaFixtures {
                     .sourcePath("[id=id]osirisobjekt/kennung")
                     .type(Type.STRING))
             .build()
+
+    static FeatureSchema SELF_JOINS = new ImmutableFeatureSchema.Builder()
+            .name("building")
+            .sourcePath("/building")
+            .type(Type.OBJECT)
+            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("id")
+                    .type(Type.STRING)
+                    .role(SchemaBase.Role.ID))
+            .putProperties2("consistsOfBuildingPart", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("[id=fk_buildingpart_parent]building")
+                    .type(Type.OBJECT_ARRAY)
+                    .putProperties2("href", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("id")
+                            .type(Type.STRING)))
+            .putProperties2("parent", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("[fk_buildingpart_parent=id]building")
+                    .type(Type.OBJECT)
+                    .putProperties2("href", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("id")
+                            .type(Type.STRING)))
+            .build()
+
+    static FeatureSchema SELF_JOINS_FILTER = new ImmutableFeatureSchema.Builder()
+            .name("building")
+            .sourcePath("/building{filter=id>1}")
+            .type(Type.OBJECT)
+            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("oid")
+                    .type(Type.STRING)
+                    .role(SchemaBase.Role.ID))
+            .putProperties2("consistsOfBuildingPart", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("[id=fk_buildingpart_parent]building{filter=href>100}")
+                    .type(Type.OBJECT_ARRAY)
+                    .putProperties2("href", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("id")
+                            .type(Type.STRING)))
+            .putProperties2("parent", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("[fk_buildingpart_parent=id]building{filter=href>1000}")
+                    .type(Type.OBJECT)
+                    .putProperties2("href", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("id")
+                            .type(Type.STRING)))
+            .build()
+
+    static FeatureSchema SELF_JOIN_NESTED_DUPLICATE = new ImmutableFeatureSchema.Builder()
+            .name("building")
+            .sourcePath("/building")
+            .type(Type.OBJECT)
+            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("id")
+                    .type(Type.STRING)
+                    .role(SchemaBase.Role.ID))
+            .putProperties2("genericAttributesString", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("[id=fk_feature]att_string_building")
+                    .type(Type.OBJECT_ARRAY)
+                    .putProperties2("name", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("name")
+                            .type(Type.STRING)))
+            .putProperties2("consistsOfBuildingPart", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("[id=fk_buildingpart_parent]building")
+                    .type(Type.OBJECT_ARRAY)
+                    .putProperties2("genericAttributesString", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("[id=fk_feature]att_string_building")
+                            .type(Type.OBJECT_ARRAY)
+                            .putProperties2("name", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("name")
+                                    .type(Type.STRING))))
+            .build()
+
+    static FeatureSchema PROPERTY_WITH_MULTIPLE_SOURCE_PATHS = new ImmutableFeatureSchema.Builder()
+            .name("address")
+            .sourcePath("/o12006")
+            .type(Type.OBJECT)
+            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("objid")
+                    .type(Type.STRING)
+                    .role(SchemaBase.Role.ID))
+            .putProperties2("component", new ImmutableFeatureSchema.Builder()
+                    .addSourcePaths("lan")
+                    .addSourcePaths("rbz")
+                    .addSourcePaths("krs")
+                    .addSourcePaths("gmd")
+                    .type(Type.STRING))
+            .build()
+
+    //TODO: nested
+    static FeatureSchema NESTED_JOINS = new ImmutableFeatureSchema.Builder()
+            .name("observationsubject")
+            .sourcePath("/observationsubject")
+            .type(Type.OBJECT)
+            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("id")
+                    .type(Type.STRING)
+                    .role(SchemaBase.Role.ID))
+            .putProperties2("filterValues", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("[id=observationsubjectid]observationsubject_filtervalues")
+                    .type(Type.OBJECT_ARRAY)
+                    .objectType("FilterValue")
+                    .putProperties2("type", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("_type")
+                            .type(Type.STRING))
+                    .putProperties2("filterValueProperty", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("[filtervalueproperty_fk=code]observedproperty")
+                            .type(Type.OBJECT)
+                            .putProperties2("title", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("symbol")
+                                    .type(Type.STRING))))
+            .build()
+
+    //TODO: objects without sourcePath
+    static FeatureSchema OBJECT_WITHOUT_SOURCE_PATH = new ImmutableFeatureSchema.Builder()
+            .name("explorationsite")
+            .sourcePath("/explorationsite")
+            .type(Type.OBJECT)
+            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("id")
+                    .type(Type.STRING)
+                    .role(SchemaBase.Role.ID))
+            .putProperties2("legalAvailability", new ImmutableFeatureSchema.Builder()
+                    .type(Type.OBJECT)
+                    .objectType("Link")
+                    .putProperties2("title", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("legalavailability_fk")
+                            .type(Type.STRING))
+                    .putProperties2("href", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("legalavailability_fk")
+                            .type(Type.STRING)))
+            .build()
+
+    //TODO: flags
+
+
 }

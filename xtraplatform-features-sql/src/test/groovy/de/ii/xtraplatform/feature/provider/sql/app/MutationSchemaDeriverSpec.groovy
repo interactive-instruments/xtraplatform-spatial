@@ -26,7 +26,7 @@ class MutationSchemaDeriverSpec extends Specification {
         def cql = new CqlImpl()
 
         pathParser = new PathParserSql(syntax, cql)
-        pathParser2 = new SqlPathParser(defaults, cql)
+        pathParser2 = new SqlPathParser(defaults, cql, filterEncoder)
         schemaBuilderSql = new MutationSchemaDeriver(pathParser, pathParser2)
     }
 

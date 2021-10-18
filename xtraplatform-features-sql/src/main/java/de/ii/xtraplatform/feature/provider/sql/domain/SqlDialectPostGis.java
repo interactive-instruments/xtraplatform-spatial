@@ -27,7 +27,10 @@ public class SqlDialectPostGis implements SqlDialect {
       .trimResults();
 
   @Override
-  public String applyToWkt(String column) {
+  public String applyToWkt(String column, boolean forcePolygonCCW) {
+    if (!forcePolygonCCW) {
+      return String.format("ST_AsText(%s)", column);
+    }
     return String.format("ST_AsText(ST_ForcePolygonCCW(%s))", column);
   }
 

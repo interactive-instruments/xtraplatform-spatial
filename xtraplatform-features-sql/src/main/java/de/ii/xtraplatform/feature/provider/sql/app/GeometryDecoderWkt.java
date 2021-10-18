@@ -88,8 +88,8 @@ public class GeometryDecoderWkt {
         break;
     }
 
-    context.setInGeometry(false);
     handler.onObjectEnd(context);
+    context.setInGeometry(false);
   }
 
   private static final Splitter COMMA_SPLITTER = Splitter.on(',')

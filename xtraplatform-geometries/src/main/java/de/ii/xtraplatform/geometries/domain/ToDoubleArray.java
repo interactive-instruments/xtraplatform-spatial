@@ -7,16 +7,29 @@
  */
 package de.ii.xtraplatform.geometries.domain;
 
-import org.immutables.value.Value;
-
 import java.io.IOException;
+import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class ToDoubleArray implements CoordinatesWriter<DoubleArrayProcessor> {
 
-    protected static final int MAX_BUFFER_SIZE = 1000;
-    protected int bufferCursor = 0;
-    protected final double[] buffer = new double[MAX_BUFFER_SIZE];
+    protected static final int MAX_BUFFER_SIZE = 512;
+
+    protected int bufferCursor;
+
+    protected ToDoubleArray() {
+        this.bufferCursor = 0;
+    }
+
+    @Value.Derived
+    protected int getBufferSize() {
+        return MAX_BUFFER_SIZE * getDimension();
+    }
+
+    @Value.Derived
+    protected double[] getBuffer() {
+        return new double[getBufferSize()];
+    }
 
     @Override
     public void onStart() throws IOException {
@@ -46,7 +59,7 @@ public abstract class ToDoubleArray implements CoordinatesWriter<DoubleArrayProc
     @Override
     public void onFlush() throws IOException {
         if (bufferCursor > 0) {
-            getDelegate().onCoordinates(buffer, bufferCursor, getDimension());
+            getDelegate().onCoordinates(getBuffer(), bufferCursor, getDimension());
             bufferCursor = 0;
         }
 
@@ -61,10 +74,10 @@ public abstract class ToDoubleArray implements CoordinatesWriter<DoubleArrayProc
     }
 
     private void addToBuffer(char[] chars, int offset, int length) throws IOException {
-        this.buffer[bufferCursor] = Double.parseDouble(String.valueOf(chars, offset,length));
+        this.getBuffer()[bufferCursor] = Double.parseDouble(String.valueOf(chars, offset,length));
         bufferCursor++;
 
-        if (bufferCursor == MAX_BUFFER_SIZE) {
+        if (bufferCursor == getBufferSize()) {
             onFlush();
         }
     }

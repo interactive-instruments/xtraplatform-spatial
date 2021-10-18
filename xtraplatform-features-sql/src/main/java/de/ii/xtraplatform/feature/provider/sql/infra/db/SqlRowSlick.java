@@ -8,10 +8,11 @@
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
-import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
+import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SortKey.Direction;
 import java.util.stream.Collectors;
@@ -40,7 +41,7 @@ class SqlRowSlick implements SqlRow {
     private List<SortKey.Direction> sortKeyDirections;
     private final List<Object> values;
     private int priority;
-    private FeatureStoreAttributesContainer attributesContainer;
+    private SchemaSql tableSchema;
 
     SqlRowSlick() {
         this.ids = new ArrayList<>(32);
@@ -55,16 +56,16 @@ class SqlRowSlick implements SqlRow {
 
     @Override
     public String getName() {
-        if (Objects.nonNull(attributesContainer)) {
-            return attributesContainer.getPath().get(attributesContainer.getPath().size()-1);
+        if (Objects.nonNull(tableSchema)) {
+            return tableSchema.getPath().get(tableSchema.getPath().size()-1);
         }
         return null;
     }
 
     @Override
     public List<String> getPath() {
-        if (Objects.nonNull(attributesContainer)) {
-            return attributesContainer.getPath();
+        if (Objects.nonNull(tableSchema)) {
+            return tableSchema.getFullPath();
         }
         return ImmutableList.of();
     }
@@ -91,28 +92,30 @@ class SqlRowSlick implements SqlRow {
 
     @Override
     public List<List<String>> getColumnPaths() {
-        if (Objects.nonNull(attributesContainer)) {
-            return attributesContainer.getAttributePaths();
+        if (Objects.nonNull(tableSchema)) {
+            return tableSchema.getColumnPaths();
         }
         return ImmutableList.of();
     }
 
     @Override
     public List<Boolean> getSpatialAttributes() {
-        if (Objects.nonNull(attributesContainer)) {
-            return attributesContainer.getAttributes().stream().map(
-                FeatureStoreAttribute::isSpatial).collect(
-                Collectors.toList());
+        if (Objects.nonNull(tableSchema)) {
+            return tableSchema.getProperties().stream()
+                .filter(SchemaBase::isValue)
+                .map(SchemaBase::isSpatial)
+                .collect(Collectors.toList());
         }
         return ImmutableList.of();
     }
 
     @Override
     public List<Boolean> getTemporalAttributes() {
-        if (Objects.nonNull(attributesContainer)) {
-            return attributesContainer.getAttributes().stream().map(
-                FeatureStoreAttribute::isTemporal).collect(
-                Collectors.toList());
+        if (Objects.nonNull(tableSchema)) {
+            return tableSchema.getProperties().stream()
+                .filter(SchemaBase::isValue)
+                .map(SchemaBase::isTemporal)
+                .collect(Collectors.toList());
         }
         return ImmutableList.of();
     }
@@ -122,9 +125,9 @@ class SqlRowSlick implements SqlRow {
         this.priority = queryOptions.getContainerPriority();
         List<Class<?>> columnTypes;
 
-        if (queryOptions.getAttributesContainer()
+        if (queryOptions.getTableSchema()
                         .isPresent()) {
-            this.attributesContainer = queryOptions.getAttributesContainer()
+            this.tableSchema = queryOptions.getTableSchema()
                                                    .get();
             this.sortKeyNames = queryOptions.getSortKeys();
             this.sortKeyDirections = queryOptions.getSortDirections();
@@ -138,7 +141,7 @@ class SqlRowSlick implements SqlRow {
                         if (i >= queryOptions.getCustomSortKeys().size()) {
                             throw new IllegalStateException(
                                 String.format("Primary sort key %s of table %s may not be null.",
-                                    sortKeyNames.get(i), attributesContainer.getName()));
+                                    sortKeyNames.get(i), tableSchema.getName()));
                         }
                     } else if (id instanceof Comparable<?>) {
                         sortKeys.add((Comparable<?>)id);
@@ -193,13 +196,13 @@ class SqlRowSlick implements SqlRow {
         this.ids.clear();
         this.sortKeyNames = null;
         this.priority = 0;
-        this.attributesContainer = null;
+        this.tableSchema = null;
     }
 
     //TODO: move comparison to SqlRow
     @Override
     public int compareTo(SqlRow otherSqlRow) {
-        if (Objects.isNull(attributesContainer)) {
+        if (Objects.isNull(tableSchema)) {
             return -1;
         }
 
@@ -245,6 +248,12 @@ class SqlRowSlick implements SqlRow {
                 result = ((Long)id1).compareTo((Long) id2);
             } else if (id1 instanceof Short) {
                 result = ((Short)id1).compareTo((Short) id2);
+            } else if (id1 instanceof Double) {
+                result = ((Double)id1).compareTo((Double) id2);
+            } else if (id1 instanceof BigDecimal) {
+                result = ((BigDecimal)id1).compareTo((BigDecimal) id2);
+            } else if (id1 instanceof Float) {
+                result = ((Float)id1).compareTo((Float) id2);
             } else if (id1 instanceof Date) {
                 result = ((Date)id1).compareTo((Date) id2);
             } else if (id1 instanceof Timestamp) {

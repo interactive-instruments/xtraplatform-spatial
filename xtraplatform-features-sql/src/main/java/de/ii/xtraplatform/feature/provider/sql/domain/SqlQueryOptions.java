@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
+import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SortKey.Direction;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
     return new ImmutableSqlQueryOptions.Builder().customColumnTypes(columnTypes).build();
   }
 
-  Optional<FeatureStoreAttributesContainer> getAttributesContainer();
+  Optional<SchemaSql> getTableSchema();
 
   List<SortKey> getCustomSortKeys();
 
@@ -41,10 +41,15 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
     return 0;
   }
 
+  @Value.Default
+  default int getChunkSize() {
+    return 1000;
+  }
+
   @Value.Derived
   default List<String> getSortKeys() {
     return Stream
-        .concat(getCustomSortKeys().stream().map(SortKey::getField), getAttributesContainer()
+        .concat(getCustomSortKeys().stream().map(SortKey::getField), getTableSchema()
             .map(attributesContainer -> attributesContainer.getSortKeys().stream())
             .orElse(Stream.empty())).collect(
             Collectors.toList());
@@ -53,7 +58,7 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
   @Value.Derived
   default List<SortKey.Direction> getSortDirections() {
     return Stream
-        .concat(getCustomSortKeys().stream().map(SortKey::getDirection), getAttributesContainer()
+        .concat(getCustomSortKeys().stream().map(SortKey::getDirection), getTableSchema()
             .map(attributesContainer -> attributesContainer.getSortKeys().stream()
                 .map(s -> Direction.ASCENDING))
             .orElse(Stream.empty())).collect(
@@ -64,7 +69,8 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
   default List<Class<?>> getColumnTypes() {
     List<Class<?>> columnTypes = new ArrayList<>();
 
-    getAttributesContainer().ifPresent(attributesContainer -> attributesContainer.getAttributes()
+    getTableSchema().ifPresent(attributesContainer -> attributesContainer.getProperties()
+        .stream().filter(SchemaBase::isValue)
         .forEach(attribute -> columnTypes.add(String.class)));
 
     columnTypes.addAll(getCustomColumnTypes());
@@ -74,6 +80,6 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
 
   @Value.Derived
   default boolean isPlain() {
-    return !getAttributesContainer().isPresent();
+    return !getTableSchema().isPresent();
   }
 }

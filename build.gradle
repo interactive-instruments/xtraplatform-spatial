@@ -14,7 +14,7 @@ ext {
 version = '5.0.0' + versionSuffix
 
 dependencies {
-    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '4.0.0'
+    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '4.0.2'
 
     bundle subprojects
 }
@@ -22,6 +22,7 @@ dependencies {
 
 subprojects {
     repositories {
+        mavenCentral()
         maven {
             url "https://repo.osgeo.org/repository/release"
         }
@@ -30,11 +31,19 @@ subprojects {
         }
     }
 
+    //TODO: workaround for bug in version 2.1
+    dependencies {
+        testImplementation('com.athaydes:spock-reports') {
+            version {
+                strictly '2.0-groovy-3.0'
+            }
+        }
+    }
 }
 
 apply from: 'immutables.gradle'
 
-apply from: 'unit-tests.gradle'
+//apply from: 'unit-tests.gradle'
 
 //apply from: 'integration-tests.gradle'
 
