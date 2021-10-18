@@ -119,7 +119,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                     .relation(ImmutableList.of())
                     .addAllRelation(relations)
                     .addAllRelation(childRelations)
-                    .addAllParentPath(newParentPath)
+                    //.addAllParentPath(newParentPath)
                     .sourcePath(targetSchema.isFeature() ? prop.getSourcePath()
                         : prop.getSourcePath()
                             .map(sourcePath -> targetSchema.getName() + "." + sourcePath))

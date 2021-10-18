@@ -13,9 +13,10 @@ import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlPathDefaults
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathParser
 import de.ii.xtraplatform.features.domain.*
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
-
+@Ignore
 class QuerySchemaDeriverSpec extends Specification {
 
     @Shared
