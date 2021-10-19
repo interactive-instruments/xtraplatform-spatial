@@ -23,4 +23,6 @@ public interface SqlQueries {
     Function<SqlRowMeta, Stream<String>> getValueQueries();
 
     List<FeatureStoreInstanceContainer> getInstanceContainers();
+
+    List<SchemaSql> getTableSchemas();
 }

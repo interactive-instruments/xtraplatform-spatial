@@ -64,6 +64,15 @@ public interface SqlConnector extends
   @Override
   default Source<SqlRow, NotUsed> getSourceStream(SqlQueries query, SqlQueryOptions options) {
 
+    //TODO for chunking:
+    // - List<SqlQueries>
+    // - counter with limit, decreased in metaResult1.flatMapConcat(metaResult... by numberReturned
+    // - create List<Source<SqlRow, NotUsed>[]>, concat with  Source.combine(source1, source2, Collections.singletonList(source3), Concat::create)
+    // - return emptySource in metaResult1.flatMapConcat(metaResult... if counter < 0
+    // - adjust limit for metaQuery, Math.min(chunkSize, counter)
+
+    //TODO for multiple main tables: should work exactly like chunking
+
     Optional<String> metaQuery = query.getMetaQuery();
 
     Source<SqlRowMeta, NotUsed> metaResult1 = getMetaResult(metaQuery, options);
@@ -73,6 +82,7 @@ public interface SqlConnector extends
         .get(0);
     List<FeatureStoreAttributesContainer> attributesContainers = mainTable
         .getAllAttributesContainers();
+    List<SchemaSql> tableSchemas = query.getTableSchemas();
 
     Source<SqlRow, NotUsed> sqlRowSource = metaResult1.flatMapConcat(metaResult -> {
 
@@ -82,7 +92,7 @@ public interface SqlConnector extends
           .map(valueQuery -> getSqlClient()
               .getSourceStream(valueQuery, new ImmutableSqlQueryOptions.Builder()
                   .from(options)
-                  .attributesContainer(attributesContainers.get(i[0]))
+                  .tableSchema(tableSchemas.get(i[0]))
                   .containerPriority(i[0]++)
                   .build()))
           .toArray((IntFunction<Source<SqlRow, NotUsed>[]>) Source[]::new);

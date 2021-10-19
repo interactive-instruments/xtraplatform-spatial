@@ -18,9 +18,7 @@ import de.ii.xtraplatform.geometries.domain.ImmutableCoordinatesTransformer;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.io.IOException;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -59,7 +57,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
   @Override
   public void onObjectStart(ModifiableContext context) {
     if (context.schema()
-    .filter(SchemaBase::isGeometry)
+    .filter(SchemaBase::isSpatial)
     .isPresent()
         || context.geometryType().isPresent()) {
       this.coordinatesTransformerBuilder = ImmutableCoordinatesTransformer.builder();

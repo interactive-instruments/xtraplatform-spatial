@@ -167,7 +167,7 @@ public class MutationSchemaBuilderSql implements SchemaVisitor<SchemaSql, Schema
                             .isOne2One()
                 && Objects.equals(schemaSql.getRelation()
                                            .get(0)
-                                           .getSourceSortKey(), schemaSql.getRelation()
+                                           .getSourceSortKey().get(), schemaSql.getRelation()
                                                                          .get(0)
                                                                          .getSourceField());
     }

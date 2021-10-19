@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 //TODO: move to xtraplatform-base
@@ -18,9 +19,11 @@ public interface Tuple<T,U> {
         return ImmutableTuple.of(t, u);
     }
 
+    @Nullable
     @Value.Parameter
     T first();
 
+    @Nullable
     @Value.Parameter
     U second();
 }

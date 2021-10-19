@@ -70,7 +70,7 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
     T objectSchema = targetSchemas.get(targetSchemas.size() - 1);
 
     //TODO
-    if (objectSchema.isGeometry() && context.containsKey("geometryType")) {
+    if (objectSchema.isSpatial() && context.containsKey("geometryType")) {
       SimpleFeatureGeometry geometryType = SimpleFeatureGeometry
           .valueOf(context.get("geometryType").toUpperCase());
 
@@ -103,7 +103,7 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
     T objectSchema = targetSchemas.get(targetSchemas.size() - 1);
 
     //TODO: why
-    if (objectSchema.isGeometry()) {
+    if (objectSchema.isSpatial()) {
       closeDiffering(ImmutableList.of(), ImmutableList.of());
       return;
     }
@@ -126,7 +126,7 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
     T objectSchema = targetSchemas.get(targetSchemas.size() - 1);
 
     //TODO
-    if (objectSchema.isGeometry() && context.containsKey("geometryType")) {
+    if (objectSchema.isSpatial() && context.containsKey("geometryType")) {
       SimpleFeatureGeometry geometryType = SimpleFeatureGeometry
           .valueOf(context.get("geometryType").toUpperCase());
 
@@ -142,7 +142,7 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
 
     ensureNestingIsOpen(path, targetSchemas);
 
-    if (objectSchema.isGeometry()) {
+    if (objectSchema.isSpatial()) {
       delegate.onArrayStart(path, targetSchemas.get(targetSchemas.size() - 1));
     }
   }
@@ -155,7 +155,7 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
     T arraySchema = targetSchemas.get(targetSchemas.size() - 1);
 
     //TODO
-    if (arraySchema.isGeometry()) {
+    if (arraySchema.isSpatial()) {
       delegate.onArrayEnd(path, ImmutableMap.of());
       return;
     }

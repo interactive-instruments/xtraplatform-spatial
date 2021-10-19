@@ -20,7 +20,7 @@ import org.immutables.value.Value;
 
 public interface SchemaBase<T extends SchemaBase<T>> {
 
-    enum Role {
+  enum Role {
     ID,
     TYPE,
     PRIMARY_GEOMETRY,
@@ -64,6 +64,11 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         return getSourcePath().map(ImmutableList::of).orElse(ImmutableList.of());
     }
 
+    @Value.Default
+    default boolean getForcePolygonCCW() {
+      return true;
+    }
+
     List<T> getProperties();
 
     @JsonIgnore
@@ -73,6 +78,18 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         return getProperties().stream()
         .flatMap(t -> Stream.concat(Stream.of(t), t.getAllNestedProperties().stream()))
                               .collect(Collectors.toList());
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default List<T> getAllObjects() {
+        return Stream.concat(
+            Stream.of((T) this),
+            getAllNestedProperties().stream()
+                .filter(SchemaBase::isObject)
+                .filter(obj -> obj.getProperties().stream().anyMatch(SchemaBase::isValue))
+        ).collect(Collectors.toList());
     }
 
     @JsonIgnore
@@ -92,7 +109,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
             .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_GEOMETRY).isPresent())
             .findFirst()
             .or(() -> getProperties().stream()
-                .filter(SchemaBase::isGeometry)
+                .filter(SchemaBase::isSpatial)
                 .findFirst());
     }
 
@@ -103,9 +120,11 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         return getProperties().stream()
             .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_INSTANT).isPresent())
             .findFirst()
-            .or(() -> getProperties().stream()
-                .filter(SchemaBase::isTemporal)
-                .findFirst());
+            .or(() -> getPrimaryInterval().isEmpty()
+                    ? getProperties().stream()
+                                     .filter(SchemaBase::isTemporal)
+                                     .findFirst()
+                    : Optional.empty());
     }
 
     @JsonIgnore
@@ -181,7 +200,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
-    default boolean isGeometry() {
+    default boolean isSpatial() {
         return getType() == Type.GEOMETRY;
     }
 
@@ -246,6 +265,10 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   default <U> U accept(SchemaVisitorTopDown<T, U> visitor) {
     return accept(visitor, ImmutableList.of());
   }
+
+    default <U, V> V accept(SchemaVisitorWithFinalizer<T, U, V> visitor) {
+        return visitor.finalize((T) this, accept(visitor, ImmutableList.of()));
+    }
 
   default <U> U accept(SchemaVisitorTopDown<T, U> visitor, List<T> parents) {
     return visitor.visit(

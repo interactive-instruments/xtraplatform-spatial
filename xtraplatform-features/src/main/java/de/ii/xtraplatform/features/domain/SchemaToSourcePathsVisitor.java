@@ -48,7 +48,9 @@ public class SchemaToSourcePathsVisitor<T extends SchemaBase<T>> implements Sche
 
                     if (i > 0) {
                         List<String> p = new ArrayList<>(SPLITTER.splitToList(sourcePath.substring(0, i)));
-                        p.set(p.size()-1, p.get(p.size()-1) + sourcePath.substring(i) + (schema.isValue() ? "{priority=" + (counter++) + "}" : ""));
+                        p.set(p.size()-1, p.get(p.size()-1)
+                            + sourcePath.substring(i).replaceAll("\\{sortKey=.*?\\}", "").replaceAll("\\{primaryKey=.*?\\}", "")
+                            + (schema.isValue() ? "{priority=" + (counter++) + "}" : ""));
                         return p;
                     }
 

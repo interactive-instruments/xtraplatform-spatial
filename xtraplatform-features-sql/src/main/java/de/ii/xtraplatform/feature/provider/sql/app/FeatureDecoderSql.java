@@ -7,17 +7,18 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
+import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowMeta;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreMultiplicityTracker;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
 import de.ii.xtraplatform.features.domain.NestingTracker;
+import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.io.IOException;
 import java.util.HashMap;
@@ -48,20 +49,19 @@ public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow> {
   private NestingTracker nestingTracker;
 
   public FeatureDecoderSql(List<FeatureStoreTypeInfo> typeInfos,
+      List<SchemaSql> tableSchemas,
       FeatureSchema featureSchema, FeatureQuery query) {
     this.featureSchema = featureSchema;
     this.featureQuery = query;
 
-    //TODO: support multiple typeInfos
-    FeatureStoreTypeInfo typeInfo = typeInfos.get(0);
     //TODO: support multiple main tables
-    FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers().get(0);
+    SchemaSql tableSchema = tableSchemas.get(0);
 
-    this.mainTablePath = instanceContainer.getPath();
-    List<String> multiTables = instanceContainer.getRelatedContainers().stream()
-        .map(featureStoreRelatedContainer -> featureStoreRelatedContainer.getPath()
-            .get(featureStoreRelatedContainer.getPath().size() - 1))
-        .collect(Collectors.toList());//instanceContainer.getMultiContainerNames();
+    this.mainTablePath = tableSchema.getFullPath();
+    List<List<String>> multiTables = tableSchema.getAllObjects().stream()
+        .filter(schema -> !schema.getRelation().isEmpty())
+        .map(SchemaBase::getFullPath)
+        .collect(Collectors.toList());
     this.multiplicityTracker = new SqlMultiplicityTracker(multiTables);
     this.isSingleFeature = query.returnsSingleFeature();
   }

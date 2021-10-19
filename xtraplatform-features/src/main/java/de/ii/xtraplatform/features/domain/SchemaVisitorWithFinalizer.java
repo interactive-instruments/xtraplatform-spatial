@@ -5,9 +5,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.feature.provider.sql.domain;
+package de.ii.xtraplatform.features.domain;
 
-import de.ii.xtraplatform.features.domain.FilterEncoder;
+public interface SchemaVisitorWithFinalizer<T extends SchemaBase<T>, U, V> extends SchemaVisitorTopDown<T, U> {
 
-public interface FilterEncoderSql extends FilterEncoder<String> {
+  V finalize(T t, U u);
+
 }

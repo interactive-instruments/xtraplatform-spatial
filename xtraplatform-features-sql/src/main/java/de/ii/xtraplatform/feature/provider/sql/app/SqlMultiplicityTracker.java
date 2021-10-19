@@ -8,9 +8,6 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
 import de.ii.xtraplatform.features.domain.FeatureStoreMultiplicityTracker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,7 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author zahnen
@@ -28,17 +26,24 @@ public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlMultiplicityTracker.class);
 
-    private final Map<String, Object> currentIds;
-    private final Map<String, Integer> currentMultiplicities;
-    private final Map<String, Set<String>> children;
+    private final Map<List<String>, Object> currentIds;
+    private final Map<List<String>, Integer> currentMultiplicities;
+    private final Map<List<String>, Set<List<String>>> children;
 
-    public SqlMultiplicityTracker(List<String> multiTables) {
+    public SqlMultiplicityTracker(List<List<String>> multiTables) {
         this.currentIds = new HashMap<>();
         this.currentMultiplicities = new HashMap<>();
         this.children = new LinkedHashMap<>();
         ;
 
+        //TODO: test with geoval
         multiTables.forEach(table -> {
+            /*for (int i = 0; i < table.size(); i++) {
+                List<String> subPath = table.subList(0, i + 1);
+                currentIds.put(subPath, null);
+            }*/
+            List<String> subPath = table.subList(0, 1);
+            currentIds.put(subPath, null);
             currentIds.put(table, null);
         });
     }
@@ -58,16 +63,18 @@ public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
     public void track(List<String> path, List<Comparable<?>> ids) {
         int multiplicityIndex = 0;
         boolean increased = false;
-        String increasedMultiplicityKey = null;
-        List<String> parentTables = new ArrayList<>();
+        List<String> increasedMultiplicityKey = null;
+        List<List<String>> parentTables = new ArrayList<>();
 
-        for (String table : path) {
+        for (int i = 0; i < path.size(); i++) {
+            List<String> table = path.subList(0, i + 1);
+
             if (currentIds.containsKey(table)) {
                 if (LOGGER.isTraceEnabled()) {
                     LOGGER.trace("TRACKER {} {} {}", table, multiplicityIndex, ids);
                 }
 
-                Object id = ids.get(multiplicityIndex + 1);
+                Object id = ids.get(multiplicityIndex);
                 if (increased) {
                     currentIds.put(table, id);
                     currentMultiplicities.put(table, 1);
@@ -76,7 +83,7 @@ public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
                     currentMultiplicities.put(table, currentMultiplicities.getOrDefault(table, 0) + 1);
                     increased = true;
                     increasedMultiplicityKey = table;
-                } else {// if (currentMultiplicities.get(table) == 0) {
+                } else {
                     currentMultiplicities.putIfAbsent(table, 1);
                 }
 
@@ -103,9 +110,13 @@ public class SqlMultiplicityTracker implements FeatureStoreMultiplicityTracker {
 
     @Override
     public List<Integer> getMultiplicitiesForPath(List<String> path) {
-        return path.stream()
-                   .filter(currentIds::containsKey)
-                   .map(table -> currentMultiplicities.getOrDefault(table, 1))
-                   .collect(Collectors.toList());
+        List<Integer> indexes = new ArrayList<>();
+        for (int i = 0; i < path.size(); i++) {
+            List<String> subPath = path.subList(0, i + 1);
+            if (currentIds.containsKey(subPath)) {
+                indexes.add(currentMultiplicities.getOrDefault(subPath, 1));
+            }
+        }
+        return indexes;
     }
 }

@@ -102,7 +102,7 @@ public class FeatureReaderToProcessor<T extends PropertyBase<T, V>, U extends Fe
 
         return currentFeature.getProperties()
                              .stream()
-                             .filter(t -> t.getType() == type && t.getSchema().isPresent() && Objects.equals(t.getSchema().get(), schema) && !t.getSchema().get().isGeometry())
+                             .filter(t -> t.getType() == type && t.getSchema().isPresent() && Objects.equals(t.getSchema().get(), schema) && !t.getSchema().get().isSpatial())
                              .findFirst()
                              .orElseGet(() -> {
                                        T property = featureProcessor.createProperty();

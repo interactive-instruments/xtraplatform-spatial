@@ -71,8 +71,10 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
@@ -104,6 +106,7 @@ public class FeatureProviderSql extends
   private TypeInfoValidator typeInfoValidator;
   private Map<String, Optional<BoundingBox>> spatialExtentCache;
   private Map<String, Optional<Interval>> temporalExtentCache;
+  private Map<String, List<SchemaSql>> tableSchemas;
 
   public FeatureProviderSql(@Requires CrsTransformerFactory crsTransformerFactory,
       @Requires Cql cql,
@@ -162,10 +165,28 @@ public class FeatureProviderSql extends
 
     //TODO: from config
     SqlDialect sqlDialect = getData().getConnectionInfo().getDialect() == Dialect.PGIS ? new SqlDialectPostGis() : new SqlDialectGpkg();
+    FilterEncoderSql filterEncoder = new FilterEncoderSql(getData().getNativeCrs()
+        .orElse(OgcCrs.CRS84), sqlDialect, crsTransformerFactory, cql);
     FeatureStoreQueryGeneratorSql queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect,
         getData().getNativeCrs()
             .orElse(OgcCrs.CRS84), crsTransformerFactory);
-    this.queryTransformer = new FeatureQueryTransformerSql(getTypeInfos(), queryGeneratorSql,
+
+    this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql);
+    QuerySchemaDeriver querySchemaDeriver = new QuerySchemaDeriver(pathParser3);
+    SqlQueryTemplatesDeriver queryTemplatesDeriver = new SqlQueryTemplatesDeriver(filterEncoder, sqlDialect,
+        getData().getQueryGeneration().getComputeNumberMatched());
+
+    this.tableSchemas = getData().getTypes().entrySet().stream()
+        .map(entry -> new SimpleImmutableEntry<>(entry.getKey(),
+            entry.getValue().accept(querySchemaDeriver)))
+        .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+    Map<String, List<SqlQueryTemplates>> schemas = getData().getTypes().entrySet().stream()
+        .map(entry -> new SimpleImmutableEntry<>(entry.getKey(),
+            ImmutableList.of(entry.getValue().accept(querySchemaDeriver).get(0).accept(queryTemplatesDeriver))))
+        .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+    this.queryTransformer = new FeatureQueryTransformerSql(schemas, getTypeInfos(), queryGeneratorSql,
         getData().getQueryGeneration().getComputeNumberMatched());
 
     this.extentReader = new ExtentReaderSql(this::getSqlClient, queryGeneratorSql, sqlDialect,
@@ -177,7 +198,6 @@ public class FeatureProviderSql extends
             getData().getSourcePathDefaults()));
     this.schemaSwapperSql = createSchemaSwapper(getData().getSourcePathDefaults(), cql);
     this.pathParser2 = createPathParser2(getData().getSourcePathDefaults(), cql);
-    this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql);
     this.spatialExtentCache = new HashMap<>();
     this.temporalExtentCache = new HashMap<>();
 
@@ -316,7 +336,7 @@ public class FeatureProviderSql extends
 
   @Override
   protected FeatureTokenDecoder<SqlRow> getDecoder(FeatureQuery query) {
-    return new FeatureDecoderSql(ImmutableList.of(getTypeInfos().get(query.getType())), getData().getTypes().get(query.getType()), query);
+    return new FeatureDecoderSql(ImmutableList.of(getTypeInfos().get(query.getType())), tableSchemas.get(query.getType()), getData().getTypes().get(query.getType()), query);
   }
 
   @Override
