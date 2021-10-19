@@ -24,7 +24,7 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
 
     def setupSpec() {
-        queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new SqlDialectPostGis(), OgcCrs.CRS84, new CrsTransformerFactoryProj())
+        queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new SqlDialectPostGis(), OgcCrs.CRS84, null)
     }
 
 

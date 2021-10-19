@@ -10,10 +10,13 @@ package de.ii.xtraplatform.crs.infra
 import de.ii.xtraplatform.crs.domain.CoordinateTuple
 import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
+import de.ii.xtraplatform.nativ.proj.api.ProjLoaderImpl
 import org.kortforsyningen.proj.Units
 import org.opengis.referencing.cs.AxisDirection
 import spock.lang.Shared
 import spock.lang.Specification
+
+import java.nio.file.Path
 
 class CrsTransformerProjSpec extends Specification {
 
@@ -21,7 +24,7 @@ class CrsTransformerProjSpec extends Specification {
     CrsTransformerFactoryProj transformerFactory
 
     def setupSpec() {
-        transformerFactory = new CrsTransformerFactoryProj()
+        transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
     }
 
     def 'find transformer - #dim (#src, #trgt)'() {

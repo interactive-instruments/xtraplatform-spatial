@@ -19,18 +19,18 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
-
+import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
+import de.ii.xtraplatform.nativ.proj.api.ProjLoader;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.measure.Unit;
-
-import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
+import org.apache.felix.ipojo.annotations.Requires;
 import org.kortforsyningen.proj.Proj;
 import org.kortforsyningen.proj.spi.EPSG;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
@@ -60,7 +60,10 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
     private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
 
-    public CrsTransformerFactoryProj() {
+    public CrsTransformerFactoryProj(@Requires ProjLoader projLoader) {
+        projLoader.load();
+        Proj.setSearchPath(projLoader.getDataDirectory().toString());
+
         this.crsAuthorityFactory = EPSG.provider();
         this.crsFactory = Proj.getFactory(CRSFactory.class);
         this.crsCache = new ConcurrentHashMap<>();
