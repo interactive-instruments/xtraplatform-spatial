@@ -67,6 +67,7 @@ public class WfsConnectorHttp implements WfsConnector {
     private final boolean useHttpPost;
     private final Optional<Metadata> metadata;
     private Optional<Throwable> connectionError;
+    private final String providerId;
 
     WfsConnectorHttp(@Property(name = ".data") FeatureProviderWfsData data, @Requires Dropwizard dropwizard,
                      @Requires Http http) {
@@ -93,7 +94,7 @@ public class WfsConnectorHttp implements WfsConnector {
         this.httpClient = http.getHostClient(host, 16, 30);
 
         this.metadata = crawlMetadata();
-
+        this.providerId = data.getId();
     }
 
     WfsConnectorHttp() {
@@ -102,6 +103,7 @@ public class WfsConnectorHttp implements WfsConnector {
         wfsRequestEncoder = null;
         useHttpPost = false;
         metadata = Optional.empty();
+        providerId = null;
     }
 
     @Invalidate
@@ -130,6 +132,11 @@ public class WfsConnectorHttp implements WfsConnector {
     @Override
     public Optional<Metadata> getMetadata() {
         return metadata;
+    }
+
+    @Override
+    public String getProviderId() {
+        return providerId;
     }
 
     @Override

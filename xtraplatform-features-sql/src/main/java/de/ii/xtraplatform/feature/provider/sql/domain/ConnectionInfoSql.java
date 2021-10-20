@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableConnectionInfoSql.Builder;
@@ -65,6 +66,13 @@ public interface ConnectionInfoSql extends ConnectionInfo {
     Map<String,Object> getDriverOptions();
 
     Optional<FeatureActionTrigger> getTriggers();
+
+    @Override
+    @JsonIgnore
+    @Value.Lazy
+    default boolean isShared() {
+        return Objects.nonNull(getPool()) && getPool().getShared();
+    }
 
     @Deprecated(forRemoval = true, since = "ldproxy 3.0.0")
     @JsonAlias("maxThreads")
@@ -145,7 +153,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
         }
 
         @Value.Default
-        default boolean getReuse() {
+        default boolean getShared() {
             return false;
         }
     }
