@@ -178,6 +178,9 @@ class FeatureSchemaFixtures {
                             .type(Type.OBJECT)
                             .putProperties2("title", new ImmutableFeatureSchema.Builder()
                                     .sourcePath("symbol")
+                                    .type(Type.STRING))
+                            .putProperties2("href", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("code")
                                     .type(Type.STRING))))
             .build()
 

@@ -66,6 +66,7 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
@@ -221,14 +222,19 @@ public class FilterEncoderSql {
                 userFilter = Optional.empty();
             }
 
-            List<String> aliases = aliasGenerator.getAliases(table, 1);
+            //TODO: pass all parents
+            List<SchemaSql> parents = ImmutableList.of(rootSchema);
+
+            List<String> aliases = aliasGenerator.getAliases(parents, table, 1);
             String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
 
-            List<Optional<String>> relationFilters = table.getRelation().stream()
+            List<Optional<String>> relationFilters = Stream.concat(
+                parents.stream().flatMap(parent -> parent.getRelation().stream()),
+                table.getRelation().stream())
                 .map(sqlRelation -> Optional.<String>empty())
                 .collect(Collectors.toList());
 
-            String join = joinGenerator.getJoins(table, aliases, relationFilters, userFilterTable, encodeRelationFilter(
+            String join = joinGenerator.getJoins(table, parents, aliases, relationFilters, userFilterTable, encodeRelationFilter(
                 userFilterTable, userFilter), instanceFilter);
             if (!join.isEmpty()) join = join + " ";
 

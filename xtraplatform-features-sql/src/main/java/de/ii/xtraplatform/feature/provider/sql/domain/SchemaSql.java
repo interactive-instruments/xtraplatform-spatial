@@ -1,21 +1,18 @@
 /**
  * Copyright 2021 interactive instruments GmbH
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
+ * the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -27,6 +24,8 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
   Optional<String> getPrimaryKey();
 
   Optional<String> getSortKey();
+
+  List<String> getParentSortKeys();
 
   Optional<CqlFilter> getFilter();
 
@@ -44,13 +43,32 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
   @Value.Derived
   default List<String> getPath() {
     return getRelation().isEmpty()
-        ? ImmutableList.of(getName() + getFilterString().map(filter -> "{filter=" + filter + "}").orElse(""))
+        ? ImmutableList
+        .of(getName() + getFilterString().map(filter -> "{filter=" + filter + "}").orElse(""))
         : //Stream.concat(
             //Stream.of(getName() + getFilterString().map(filter -> "{filter=" + filter + "}").orElse("")),
             getRelation().stream()
                 .flatMap(relation -> relation.asPath().stream())//)
-            .collect(Collectors.toList());
+                .collect(Collectors.toList());
   }
+
+  /*@Override
+  @Value.Derived
+  @Value.Auxiliary
+  default List<String> getFullPath() {
+    return getRelation().isEmpty()
+        ? Stream.concat(
+        getParentPath().stream(),
+        Stream
+            .of(getName() + getFilterString().map(filter -> "{filter=" + filter + "}").orElse("")))
+        .collect(Collectors.toList())
+        : Stream.concat(
+            Stream.of(getRelation().get(0).getSourceContainer() + getRelation().get(0)
+                .getSourceFilter().map(filter -> "{filter=" + filter + "}").orElse("")),
+            getRelation().stream()
+                .flatMap(relation -> relation.asPath().stream()))
+            .collect(Collectors.toList());
+  }*/
 
   @Value.Derived
   @Value.Auxiliary
@@ -65,14 +83,17 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
   @Value.Auxiliary
   default List<String> getSortKeys() {
     ImmutableList.Builder<String> keys = ImmutableList.builder();
+    keys.addAll(getParentSortKeys());
 
     SqlRelation previousRelation = null;
 
     for (int i = 0; i < getRelation().size(); i++) {
       SqlRelation relation = getRelation().get(i);
       // add keys only for main table and target tables of M:N or 1:N relations
-      if (relation.getSourceSortKey().isPresent() && (i == 0 || previousRelation.isM2N() || previousRelation.isOne2N())) {
-        keys.add(String.format("%s.%s", relation.getSourceContainer(), relation.getSourceSortKey().get()));
+      if (relation.getSourceSortKey().isPresent() && (i > 0 && (previousRelation.isM2N()
+          || previousRelation.isOne2N()))) {
+        keys.add(String
+            .format("%s.%s", relation.getSourceContainer(), relation.getSourceSortKey().get()));
       }
       previousRelation = relation;
     }
@@ -85,10 +106,11 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
   }
 
   //TODO: should we do this here? can we derive it from the above?
-  default List<String> getSortKeys(ListIterator<String> aliasesIterator) {
+  default List<String> getSortKeys(ListIterator<String> aliasesIterator, boolean onlyRelations,
+      int keyIndexStart) {
     ImmutableList.Builder<String> keys = ImmutableList.builder();
 
-    int keyIndex = 0;
+    int keyIndex = keyIndexStart;
     SqlRelation previousRelation = null;
 
     for (int i = 0; i < getRelation().size(); i++) {
@@ -100,18 +122,22 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
       }
 
       // add keys only for main table and target tables of M:N or 1:N relations
-      if (relation.getSourceSortKey().isPresent() && (i == 0 || previousRelation.isM2N() || previousRelation.isOne2N())) {
+      if (relation.getSourceSortKey().isPresent() && (i == 0 || previousRelation.isM2N()
+          || previousRelation.isOne2N())) {
         String suffix = keyIndex > 0 ? "_" + keyIndex : "";
-        keys.add(String.format("%s.%s AS SKEY%s", alias, relation.getSourceSortKey().get(), suffix));
+        keys.add(
+            String.format("%s.%s AS SKEY%s", alias, relation.getSourceSortKey().get(), suffix));
         keyIndex++;
       }
 
       previousRelation = relation;
     }
 
-    // add key for value table
-    keys.add(
-        String.format("%s.%s AS SKEY_%d", aliasesIterator.next(), getSortKey().get(), keyIndex));
+    if (!onlyRelations) {
+      // add key for value table
+      keys.add(
+          String.format("%s.%s AS SKEY_%d", aliasesIterator.next(), getSortKey().get(), keyIndex));
+    }
 
     return keys.build();
   }

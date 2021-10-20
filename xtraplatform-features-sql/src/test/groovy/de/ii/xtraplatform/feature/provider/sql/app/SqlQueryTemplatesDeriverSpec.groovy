@@ -79,6 +79,7 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
         "sortBy + paging"                    | td      | 10    | 10     | [SortKey.of("created")] | null                                                       | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING
         "sortBy + paging + filter"           | td      | 10    | 10     | [SortKey.of("created")] | CqlFilter.of(Eq.of("task.title", ScalarLiteral.of("foo"))) | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING_FILTER
         "property with multiple sourcePaths" | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || SqlQueryTemplatesFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
+        "nested joins"                       | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.NESTED_JOINS                        || SqlQueryTemplatesFixtures.NESTED_JOINS
     }
 
     static String meta(SqlQueryTemplates templates, List<SortKey> sortBy, Optional<CqlFilter> userFilter) {
