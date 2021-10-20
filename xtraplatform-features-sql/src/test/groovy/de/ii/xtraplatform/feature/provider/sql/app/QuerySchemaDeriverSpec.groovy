@@ -8,45 +8,31 @@
 package de.ii.xtraplatform.feature.provider.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlImpl
-import de.ii.xtraplatform.feature.provider.sql.ImmutableSqlPathSyntax
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlPathDefaults
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathParser
-import de.ii.xtraplatform.features.domain.*
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
-@Ignore
+
 class QuerySchemaDeriverSpec extends Specification {
 
-    @Shared
-    FeatureStorePathParserSql pathParserOld
     @Shared
     QuerySchemaDeriver schemaDeriver
 
     def setupSpec() {
-        def syntax = ImmutableSqlPathSyntax.builder().build()
         def defaults = new ImmutableSqlPathDefaults.Builder().build()
         def cql = new CqlImpl()
-
         def pathParser = new SqlPathParser(defaults, cql)
-        pathParserOld = new FeatureStorePathParserSql(syntax, cql)
         schemaDeriver = new QuerySchemaDeriver(pathParser)
     }
 
-    //TODO: ignorable objects
-    //TODO: nested objects with properties on all levels
     def 'query schema: #casename'() {
 
         when:
 
         List<SchemaSql> actual = source.accept(schemaDeriver)
-        //def ft = source.accept(new FeatureSchemaToTypeVisitor("test"))
-        //def old = pathParserOld.parse(source)
 
         then:
-
-        //[toInstanceContainer(actual)] == old
 
         actual == expected
 
@@ -64,57 +50,5 @@ class QuerySchemaDeriverSpec extends Specification {
         "nested joins"                         | FeatureSchemaFixtures.NESTED_JOINS                        || QuerySchemaFixtures.NESTED_JOINS
     }
 
-    static FeatureStoreInstanceContainer toInstanceContainer(SchemaSql schema) {
-        def builder = ImmutableFeatureStoreInstanceContainer.builder()
-                .name(schema.getName())
-
-        schema.getSortKey().ifPresent(builder::sortKey)
-
-        schema.getProperties().forEach(property -> {
-            if (property.isValue()) {
-                builder.addAttributes(toAttribute(property, ""))
-            } else {
-                def related = ImmutableFeatureStoreRelatedContainer.builder()
-                        .name(property.getName())
-
-                related.sortKey(property.getSortKey().orElse(property.getRelation().get(property.getRelation().size() - 1).getTargetField()))
-
-                property.getProperties().forEach(childProperty -> {
-                    related.addAttributes(toAttribute(childProperty, property.getSourcePath().orElse("")))
-                })
-                //TODO: filter
-                property.getRelation().forEach(sqlRelation -> {
-                    def rel = ImmutableFeatureStoreRelation.builder()
-                            .sourceContainer(sqlRelation.getSourceContainer())
-                            .sourceField(sqlRelation.getSourceField())
-                            .sourceSortKey(sqlRelation.getSourceSortKey().get())
-                            .targetContainer(sqlRelation.getTargetContainer())
-                            .targetField(sqlRelation.getTargetField())
-                            .junctionSource(sqlRelation.getJunctionSource())
-                            .junction(sqlRelation.getJunction())
-                            .junctionTarget(sqlRelation.getJunctionTarget())
-                            .cardinality(FeatureStoreRelation.CARDINALITY.valueOf(sqlRelation.getCardinality().toString()))
-                            .build()
-                    related.addInstanceConnection(rel)
-                })
-
-                builder.addRelatedContainers(related.build())
-            }
-        })
-
-        return builder.build()
-    }
-
-    static FeatureStoreAttribute toAttribute(SchemaSql property, String parentPath) {
-        return ImmutableFeatureStoreAttribute.builder()
-                .name(property.getName())
-                .queryable(parentPath.isEmpty() ? property.getSourcePath().orElse("") : parentPath + "." + property.getSourcePath().orElse(""))
-                .path(property.getFullPath())
-                .isId(property.isId())
-                .isSpatial(property.isSpatial())
-                .isTemporal(property.isTemporal())
-                .constantValue(property.getConstantValue())
-                .build()
-    }
 
 }

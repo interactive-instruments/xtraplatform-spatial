@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider;
 
+import java.util.List;
 import org.apache.felix.ipojo.Factory;
 
 import java.util.Map;
@@ -22,4 +23,6 @@ public interface FactoryRegistry<T> extends Registry.State<Factory> {
     T getInstance(String instanceId);
 
     void disposeInstance(T instance);
+
+    List<T> getInstances();
 }

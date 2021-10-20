@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -17,4 +18,9 @@ public interface ConnectionInfo {
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
     String getConnectorType();
+
+    @JsonIgnore
+    default boolean isShared() {
+        return false;
+    }
 }

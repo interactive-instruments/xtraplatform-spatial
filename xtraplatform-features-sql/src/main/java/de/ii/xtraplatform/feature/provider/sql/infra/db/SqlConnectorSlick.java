@@ -16,6 +16,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import de.ii.xtraplatform.dropwizard.domain.Dropwizard;
@@ -26,15 +27,19 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
+import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
+import de.ii.xtraplatform.features.domain.Tuple;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -84,6 +89,7 @@ public class SqlConnectorSlick implements SqlConnector {
   private final int queueSize;
   private final Path dataDir;
   private final String applicationName;
+  private final String providerId;
 
   private SlickSession session;
   private SqlClient sqlClient;
@@ -123,6 +129,7 @@ public class SqlConnectorSlick implements SqlConnector {
     //LOGGER.debug("QUEUE {} {} {} {} {}", connectionInfo.getDatabase(), maxQueries, maxConnections, capacity, maxConnections * capacity * 2);
 
     this.applicationName = String.format("%s %s - %s", dropwizard.getApplicationName(), dropwizard.getApplicationVersion(), data.getId());
+    this.providerId = data.getId();
   }
 
   //TODO: better way to get maxQueries
@@ -203,6 +210,11 @@ public class SqlConnectorSlick implements SqlConnector {
   }
 
   @Override
+  public String getProviderId() {
+    return providerId;
+  }
+
+  @Override
   public boolean isConnected() {
     return Objects.nonNull(sqlClient);
   }
@@ -210,6 +222,41 @@ public class SqlConnectorSlick implements SqlConnector {
   @Override
   public Optional<Throwable> getConnectionError() {
     return Optional.ofNullable(connectionError);
+  }
+
+  @Override
+  public Tuple<Boolean, String> canBeSharedWith(ConnectionInfo connectionInfo, boolean checkAllParameters) {
+    if (!(connectionInfo instanceof ConnectionInfoSql)) {
+      return Tuple.of(false, "provider types do not match");
+    }
+
+    ConnectionInfoSql connectionInfoSql = (ConnectionInfoSql) connectionInfo;
+
+    Builder<String, Boolean> matches = new Builder<String, Boolean>()
+        .put("host", Objects.equals(this.connectionInfo.getHost(), connectionInfoSql.getHost()))
+        .put("database", Objects.equals(this.connectionInfo.getDatabase(), connectionInfoSql.getDatabase()))
+        .put("user", Objects.equals(this.connectionInfo.getUser(), connectionInfoSql.getUser()));
+
+    if (checkAllParameters) {
+      matches
+          .put("password", Objects.equals(this.connectionInfo.getPassword(), connectionInfoSql.getPassword()))
+          .put("minConnections", Objects.equals(this.connectionInfo.getPool().getMinConnections(), connectionInfoSql.getPool().getMinConnections()))
+          .put("maxConnections", Objects.equals(this.connectionInfo.getPool().getMaxConnections(), connectionInfoSql.getPool().getMaxConnections()))
+          .put("dialect", Objects.equals(this.connectionInfo.getDialect(), connectionInfoSql.getDialect()))
+          .put("schema", Objects.equals(this.connectionInfo.getSchemas(), connectionInfoSql.getSchemas()));
+    }
+
+    List<String> nonMatching = matches.build().entrySet().stream()
+        .filter(entry -> !entry.getValue())
+        .map(Entry::getKey)
+        .collect(Collectors.toList());
+
+    if (!nonMatching.isEmpty()) {
+      return Tuple.of(false,
+          String.format("parameters do not match [%s]", String.join(",", nonMatching)));
+    }
+
+    return Tuple.of(true, null);
   }
 
   @Override
