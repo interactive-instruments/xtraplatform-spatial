@@ -1,11 +1,4 @@
-
 dependencies {
-
-    provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-crs')
-    provided project(':xtraplatform-geotools')
-
-    embeddedExport group: 'com.sun.xsom', name: 'xsom', version: '20140925'
-    embeddedExport group: 'com.fasterxml', name: 'aalto-xml', version: '1.0.0'
-    embeddedExport group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1'
+    provided project(':xtraplatform-geometries')
 }

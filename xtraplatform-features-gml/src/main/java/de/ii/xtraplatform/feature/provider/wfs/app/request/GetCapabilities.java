@@ -10,7 +10,7 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.ogc.api.wfs;
+package de.ii.xtraplatform.feature.provider.wfs.app.request;
 
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.ogc.api.Versions;

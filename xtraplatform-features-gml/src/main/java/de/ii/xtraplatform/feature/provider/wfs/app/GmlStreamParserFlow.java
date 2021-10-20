@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.feature.transformer.api;
+package de.ii.xtraplatform.feature.provider.wfs.app;
 
 import akka.Done;
 import akka.stream.Attributes;
@@ -20,6 +20,7 @@ import akka.stream.stage.GraphStageWithMaterializedValue;
 import akka.util.ByteString;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.features.domain.FeatureConsumer;
 import de.ii.xtraplatform.features.domain.FeatureTransformer;
 import scala.Tuple2;

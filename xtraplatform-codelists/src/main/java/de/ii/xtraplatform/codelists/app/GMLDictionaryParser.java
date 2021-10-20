@@ -5,17 +5,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.ogc.api;
+package de.ii.xtraplatform.codelists.app;
 
-import de.ii.xtraplatform.ogc.api.GMLDictionaryAnalyzer;
 import de.ii.xtraplatform.ogc.api.WFS;
+import java.io.InputStream;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 import org.codehaus.staxmate.SMInputFactory;
 import org.codehaus.staxmate.in.SMInputCursor;
 import org.xml.sax.InputSource;
-
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-import java.io.InputStream;
 
 /**
  * @author zahnen

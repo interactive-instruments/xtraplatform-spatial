@@ -1,12 +1,68 @@
 
+ext {
+    geotoolsVersion = '19.2'
+    excludes = {
+        exclude group: 'javax.media', module: 'jai_core'
+        exclude group: 'org.geotools', module: 'gt-coverage'
+
+        exclude module: 'xercesImpl'
+        //exclude module: 'guava'
+        exclude module: 'animal-sniffer-annotations'
+        exclude module: 'error_prone_annotations'
+        exclude module: 'checker-qual'
+        exclude module: 'j2objc-annotations'
+        exclude module: 'jsr305'
+    }
+}
+
 dependencies {
     provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-feature-transformer-api')
     provided project(':xtraplatform-ogc-wfs-api')
-    provided project(':xtraplatform-geotools')
 
     testCompile project(':xtraplatform-ogc-wfs-api')
     testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.6.15'
+
+
+    embedded (group: 'org.geotools', name: 'gt-cql', version: geotoolsVersion) {
+        delegate.with excludes
+    }
+    embedded (group: 'org.geotools', name: 'gt-xml', version: geotoolsVersion) {
+        delegate.with excludes
+    }
+    embedded (group: 'org.geotools', name: 'gt-referencing', version: geotoolsVersion) {
+        delegate.with excludes
+    }
+    embedded (group: 'org.geotools', name: 'gt-epsg-hsql', version: geotoolsVersion) {
+        delegate.with excludes
+    }
+    embedded (group: 'org.geotools', name: 'gt-epsg-extension', version: geotoolsVersion) {
+        delegate.with excludes
+    }
+
+    embedded (group: 'com.sun.xsom', name: 'xsom', version: '20140925') {
+        delegate.with excludes
+    }
+    embedded (group: 'com.fasterxml', name: 'aalto-xml', version: '1.0.0') {
+        delegate.with excludes
+    }
+    embedded (group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1') {
+        delegate.with excludes
+    }
+}
+
+jar {
+    manifest {
+        instructionFirst 'Import-Package', '!com.sun.medialib.codec.*'
+        instructionFirst 'Import-Package', '!com.sun.image.codec.*'
+        instructionFirst 'Import-Package', '!org.eclipse.core.*'
+        instructionFirst 'Import-Package', '!org.jaxen.*'
+        instructionFirst 'Import-Package', '!junit.framework'
+        instructionFirst 'Import-Package', '!org.jdom.*'
+        instructionFirst 'Import-Package', '!org.apache.commons.beanutils'
+        instructionFirst 'Import-Package', '!javax.media.*'
+        instructionFirst 'Import-Package', '!javax.servlet.*'
+    }
 }

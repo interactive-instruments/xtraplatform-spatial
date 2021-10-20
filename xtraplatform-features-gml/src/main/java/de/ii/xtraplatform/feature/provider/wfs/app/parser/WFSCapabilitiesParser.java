@@ -8,7 +8,7 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.ogc.api.parser;
+package de.ii.xtraplatform.feature.provider.wfs.app.parser;
 
 import de.ii.xtraplatform.ogc.api.OWS;
 import de.ii.xtraplatform.ogc.api.XLINK;
