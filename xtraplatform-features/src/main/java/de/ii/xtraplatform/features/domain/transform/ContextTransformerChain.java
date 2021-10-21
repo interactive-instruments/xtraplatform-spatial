@@ -45,7 +45,7 @@ public class ContextTransformerChain implements
 
           return Stream.of(new SimpleEntry<>(propertyPath, createContextTransformers(propertyPath, transformation)));
         })
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> second));
+        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> new ImmutableList.Builder<FeaturePropertyContextTransformer>().addAll(first).addAll(second).build()));
   }
 
   @Nullable

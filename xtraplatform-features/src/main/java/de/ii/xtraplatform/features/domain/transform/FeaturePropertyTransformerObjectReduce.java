@@ -30,6 +30,9 @@ public interface FeaturePropertyTransformerObjectReduce extends FeaturePropertyC
     default ModifiableContext transform(String currentPropertyPath, ModifiableContext context) {
         if (Objects.equals(currentPropertyPath, getPropertyPath()) && context.currentSchema().filter(
             SchemaBase::isObject).isPresent()) {
+            if (context.currentSchema().get().isArray() && !context.inArray()) {
+                return context;
+            }
             if (!context.transformed().containsKey(getPropertyPath())) {
                 //String allPaths = String.join("|",
                 //    context.currentSchema().get().getAllNestedPropertyPathStrings());

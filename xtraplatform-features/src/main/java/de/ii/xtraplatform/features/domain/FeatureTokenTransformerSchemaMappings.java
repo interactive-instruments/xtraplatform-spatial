@@ -339,7 +339,6 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
     if (newContext.transformed().containsKey(path) && newContext.transformed().get(path).equals(
         FeaturePropertyTransformerObjectReduce.TYPE)) {
-      //newContext.setIndexes(context.indexes());
 
       contextTransformerChain.transform(path, newContext);
 
