@@ -49,7 +49,7 @@ public class NestingTracker {
 
   public void openArray() {
     if (flattenArrays) {
-      flattened.add(context.schema().get().getName());
+      flattened.add(context.currentSchema().get().getName());
     } else {
       if (!skippable || !context.shouldSkip()) {
           downstream.onArrayStart(context);
@@ -64,7 +64,7 @@ public class NestingTracker {
     if (flattenArrays && inArray()) {
       flattened.add(String.valueOf(context.index()));
     } else if (flattenObjects && (flattenArrays || !inArray())) {
-      flattened.add(context.schema().get().getName());
+      flattened.add(context.currentSchema().get().getName());
     } else {
       if (!skippable || !context.shouldSkip()) {
           downstream.onObjectStart(context);
