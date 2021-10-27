@@ -8,7 +8,11 @@
 package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +27,10 @@ public interface FeaturePropertyTransformerRemove extends FeaturePropertySchemaT
   String IN_COLLECTION_DEPRECATED = "OVERVIEW";
 
   String TYPE = "REMOVE";
+
+  Set<String> CONDITION_VALUES = Stream.concat(
+      Stream.of(IN_COLLECTION_DEPRECATED),
+      Arrays.stream(Condition.values()).map(Enum::name)).collect(Collectors.toSet());
 
   @Override
   default String getType() {

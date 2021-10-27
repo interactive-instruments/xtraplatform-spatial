@@ -14,8 +14,6 @@ import de.ii.xtraplatform.store.domain.entities.ImmutableValidationResult;
 import de.ii.xtraplatform.store.domain.entities.Mergeable;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
-import org.immutables.value.Value;
-
 import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -26,6 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(builder = "new")
@@ -40,8 +39,6 @@ public interface PropertyTransformation extends Buildable<PropertyTransformation
     default Builder getBuilder() {
         return new ImmutablePropertyTransformation.Builder().from(this);
     }
-
-    List<String> REMOVE_VALUES = ImmutableList.of("ALWAYS", "OVERVIEW", "NEVER");
 
     Optional<String> getRename();
 
@@ -85,8 +82,8 @@ public interface PropertyTransformation extends Buildable<PropertyTransformation
     default ImmutableValidationResult.Builder validate(ImmutableValidationResult.Builder builder, String collectionId, String property, Collection<String> codelists) {
         final Optional<String> remove = getRemove();
         if (remove.isPresent()) {
-            if (!REMOVE_VALUES.contains(remove.get())) {
-                builder.addStrictErrors(MessageFormat.format("The remove transformation in collection ''{0}'' for property ''{1}'' is invalid. The value ''{2}'' is not one of the known values: {3}.", collectionId, property, remove.get(), REMOVE_VALUES));
+            if (!FeaturePropertyTransformerRemove.CONDITION_VALUES.contains(remove.get())) {
+                builder.addStrictErrors(MessageFormat.format("The remove transformation in collection ''{0}'' for property ''{1}'' is invalid. The value ''{2}'' is not one of the known values: {3}.", collectionId, property, remove.get(), FeaturePropertyTransformerRemove.CONDITION_VALUES));
             }
         }
         final Optional<String> stringFormat = getStringFormat();
