@@ -73,7 +73,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             .map(relation -> String
                 .format("%s.%s", relation.getSourceContainer(), relation.getSourceSortKey().get())),
         targetSchema.isObject() && targetSchema.getProperties().stream()
-            .anyMatch(SchemaBase::isValue)
+            .anyMatch(prop -> prop.isValue() || prop.getSourcePaths().isEmpty())
             ? Stream.of(String.format("%s.%s", path.getName(), path.getSortKey()))
             : Stream.empty()
         )
@@ -198,7 +198,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             .forcePolygonCCW(targetSchema.getForcePolygonCCW());
 
     if (targetSchema.isObject()) {
-      if (targetSchema.getProperties().stream().anyMatch(SchemaBase::isValue)) {
+      if (targetSchema.getProperties().stream().anyMatch(prop -> prop.isValue() || prop.getSourcePaths().isEmpty())) {
         builder
             .sortKey(path.getSortKey())
             .primaryKey(path.getPrimaryKey());
