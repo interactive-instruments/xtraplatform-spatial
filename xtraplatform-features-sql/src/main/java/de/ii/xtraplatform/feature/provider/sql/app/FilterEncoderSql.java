@@ -177,6 +177,15 @@ public class FilterEncoderSql {
 
         protected String getColumn(SchemaSql table,
                                    String propertyName) {
+            //TODO: support nested mapping filters
+            if (Objects.equals(table.getParentPath(), ImmutableList.of("_route_"))
+                && propertyName.equals("node")) {
+                return "_route_" + propertyName;
+            }
+            if (Objects.equals(table.getParentPath(), ImmutableList.of("_route_"))
+                && propertyName.equals("source")) {
+                return propertyName;
+            }
             return table.getProperties()
                         .stream()
                         .filter(getPropertyNameMatcher(propertyName))
@@ -282,6 +291,10 @@ public class FilterEncoderSql {
         }
 
         private String reduceSelectToColumn(String expression) {
+            //TODO: support nested mapping filters
+            if (!expression.contains(" WHERE ")) {
+                return String.format(expression, "", "");
+            }
             return String.format(expression.substring(expression.indexOf(" WHERE ") + 7, expression.length() - 1), "", "");
         }
 
@@ -835,6 +848,11 @@ public class FilterEncoderSql {
             String column = getColumn(schema, propertyName);
             List<String> aliases = aliasGenerator.getAliases(schema, isUserFilter ? 1 : 0);
             String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
+
+            //TODO: support nested mapping filters
+            if (column.startsWith("_route_")) {
+                qualifiedColumn = "A." + column.replace("_route_", "");
+            }
 
             return String.format("%%1$s%1$s%%2$s", qualifiedColumn);
         }
