@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.features.domain.SchemaBase;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -141,5 +143,24 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
     }
 
     return keys.build();
+  }
+
+  //TODO: to SchemaBase
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default List<SchemaSql> getAllNestedProperties() {
+    return getProperties().stream()
+        .flatMap(t -> {
+          SchemaSql current = isObject() && t.isObject()
+              ? new ImmutableSchemaSql.Builder()
+                .from(t)
+                .relation(getRelation())
+                .addAllRelation(t.getRelation())
+                .build()
+              : t;
+          return Stream.concat(Stream.of(current), current.getAllNestedProperties().stream());
+        })
+        .collect(Collectors.toList());
   }
 }

@@ -19,6 +19,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.MappedSchemaDeriver;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -121,9 +122,14 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                         .collect(Collectors.toList())
                         : entry.getKey();
 
-            List<String> newParentPath = relations
-                .stream()
-                .flatMap(rel -> rel.asPath().stream())
+            List<String> childSortKeys = Stream.concat(
+                sortKeys.stream(),
+                childRelations.stream()
+                    .filter(relation -> relation.getSourceSortKey().isPresent())
+                    .map(relation -> String
+                        .format("%s.%s", relation.getSourceContainer(), relation.getSourceSortKey().get()))
+            )
+                .distinct()
                 .collect(Collectors.toList());
 
             return entry.getValue()
@@ -132,7 +138,6 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                     .relation(ImmutableList.of())
                     //.addAllRelation(relations)
                     .addAllRelation(childRelations)
-                    .addAllParentPath(newParentPath)
                     .parentSortKeys(sortKeys)
                     .sourcePath(targetSchema.isFeature() ? prop.getSourcePath()
                         : prop.getSourcePath()
@@ -142,8 +147,8 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                             .stream()
                             .map(sourcePath -> targetSchema.getName() + "." + sourcePath)
                             .collect(Collectors.toList()))
-                    .properties(targetSchema.isFeature() ? prop.getProperties()
-                        : prefixSourcePath(prop.getProperties(), targetSchema.getName() + "."))
+                    .properties(adjustParentSortKeys(targetSchema.isFeature() ? prop.getProperties()
+                        : prefixSourcePath(prop.getProperties(), targetSchema.getName() + "."), childSortKeys))
                     .build());
           }
 
@@ -159,6 +164,12 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                   .valueType(Optional.empty())
                   .addAllParentPath(newParentPath)
                   .relation(ImmutableList.of())
+                  .sourcePath(prop.getSourcePath()
+                      .map(sourcePath -> !targetSchema.isFeature() ? targetSchema.getName() + "." + sourcePath : sourcePath))
+                  .sourcePaths(prop.getSourcePaths()
+                      .stream()
+                      .map(sourcePath -> !targetSchema.isFeature() ? targetSchema.getName() + "." + sourcePath : sourcePath)
+                      .collect(Collectors.toList()))
                   .build())
               .collect(Collectors.toList());
 
@@ -179,6 +190,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
               .properties(newProperties)
               .sortKey(tablePath.getSortKey())
               .primaryKey(tablePath.getPrimaryKey())
+              .sourcePath(!targetSchema.isFeature() ? Optional.of(targetSchema.getName())  : Optional.empty())
               .build());
         })
         .collect(Collectors.toList());
@@ -236,6 +248,18 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                 .map(sourcePath -> prefix + sourcePath)
                 .collect(Collectors.toList()))
             .build())
+        .collect(Collectors.toList());
+  }
+
+  private List<SchemaSql> adjustParentSortKeys(List<SchemaSql> schemas, List<String> parentSortKeys) {
+    ArrayList<String> keys = new ArrayList<>(parentSortKeys);
+
+    return schemas.stream()
+        .map(schema -> schema.isObject()
+            ? new Builder().from(schema)
+            .parentSortKeys(keys)
+            .build()
+            : schema)
         .collect(Collectors.toList());
   }
 }
