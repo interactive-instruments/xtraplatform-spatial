@@ -154,7 +154,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                             .map(sourcePath -> targetSchema.getName() + "." + sourcePath)
                             .collect(Collectors.toList()))
                     .properties(adjustParentSortKeys(targetSchema.isFeature() ? prop.getProperties()
-                        : prefixSourcePath(prop.getProperties(), targetSchema.getName() + "."), childSortKeys, prop.getSortKey().map(sk -> prop.getName() + "." + sk)))
+                        : prefixSourcePath(prop.getProperties(), targetSchema.getName() + "."), childSortKeys))
                     .build());
           }
 
@@ -257,11 +257,9 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
         .collect(Collectors.toList());
   }
 
-  private List<SchemaSql> adjustParentSortKeys(List<SchemaSql> schemas, List<String> parentSortKeys, Optional<String> sortKey) {
+  private List<SchemaSql> adjustParentSortKeys(List<SchemaSql> schemas, List<String> parentSortKeys) {
     ArrayList<String> keys = new ArrayList<>(parentSortKeys);
-    if (sortKey.isPresent()) {
-      keys.add(sortKey.get());
-    }
+
     return schemas.stream()
         .map(schema -> schema.isObject()
             ? new Builder().from(schema)
