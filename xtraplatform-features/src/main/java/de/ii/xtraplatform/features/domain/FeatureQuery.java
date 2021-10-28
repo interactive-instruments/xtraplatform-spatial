@@ -71,4 +71,6 @@ public abstract class FeatureQuery {
 
     @Value.Default
     public boolean returnsSingleFeature() { return false; }
+
+    public abstract List<FeatureQueryExtension> getExtensions();
 }

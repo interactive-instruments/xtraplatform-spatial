@@ -8,8 +8,10 @@
 package de.ii.xtraplatform.feature.provider.wfs.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.WithConnectionInfo;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
@@ -17,6 +19,7 @@ import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import java.net.URI;
+import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
@@ -50,6 +53,20 @@ public interface FeatureProviderWfsData extends FeatureProviderDataV2,
       builder.connectionInfoBuilder().uri(URI.create(PLACEHOLDER_URI));
 
       return builder.build();
+    }
+
+    return this;
+  }
+
+  @Value.Check
+  default FeatureProviderWfsData mergeExtensions() {
+    List<ExtensionConfiguration> distinctExtensions = getMergedExtensions();
+
+    // remove duplicates
+    if (getExtensions().size() > distinctExtensions.size()) {
+      return new ImmutableFeatureProviderWfsData.Builder().from(this)
+          .extensions(distinctExtensions)
+          .build();
     }
 
     return this;

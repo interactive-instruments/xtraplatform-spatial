@@ -10,7 +10,6 @@ package de.ii.xtraplatform.feature.provider.wfs.app;
 import akka.NotUsed;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.util.ByteString;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
@@ -38,21 +37,19 @@ import de.ii.xtraplatform.features.domain.FeatureQueriesPassThrough;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.FeatureSourceStream;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureStream2.ResultOld;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
-import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.Metadata;
+import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
-import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map;
 import java.util.Objects;
@@ -88,8 +85,9 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, 
     public FeatureProviderWfs(@Requires CrsTransformerFactory crsTransformerFactory,
                               @Requires ConnectorFactory connectorFactory,
                               @Requires Reactive reactive,
-                              @Requires EntityRegistry entityRegistry) {
-        super(connectorFactory, reactive, crsTransformerFactory);
+                              @Requires EntityRegistry entityRegistry,
+                              @Requires ProviderExtensionRegistry extensionRegistry) {
+        super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry);
 
         this.crsTransformerFactory = crsTransformerFactory;
         this.entityRegistry = entityRegistry;

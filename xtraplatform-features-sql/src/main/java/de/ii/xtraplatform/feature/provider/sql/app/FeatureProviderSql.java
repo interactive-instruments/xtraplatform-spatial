@@ -46,6 +46,7 @@ import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
+import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
@@ -56,6 +57,7 @@ import de.ii.xtraplatform.features.domain.FeatureTokenSource;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
+import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaMappingBase;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
@@ -74,7 +76,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
@@ -112,9 +113,10 @@ public class FeatureProviderSql extends
       @Requires Cql cql,
       @Requires ConnectorFactory connectorFactory,
       @Requires Reactive reactive,
-      @Requires EntityRegistry entityRegistry) {
+      @Requires EntityRegistry entityRegistry,
+      @Requires ProviderExtensionRegistry extensionRegistry) {
     //TODO: starts akka for every instance, move to singleton
-    super(connectorFactory, reactive, crsTransformerFactory);
+    super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry);
 
     this.crsTransformerFactory = crsTransformerFactory;
     this.cql = cql;
