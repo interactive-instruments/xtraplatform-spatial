@@ -52,6 +52,12 @@ public interface Geometry<T> extends CqlNode {
                                                .build();
         }
 
+        static Point of(double x, double y, EpsgCrs crs) {
+            return new ImmutablePoint.Builder().addCoordinates(Coordinate.of(x, y))
+                .crs(crs)
+                .build();
+        }
+
         static Point of(Coordinate coordinate) {
             return new ImmutablePoint.Builder().addCoordinates(coordinate)
                                                .build();
