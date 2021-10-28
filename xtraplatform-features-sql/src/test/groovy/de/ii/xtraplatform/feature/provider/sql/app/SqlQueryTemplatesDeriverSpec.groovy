@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.feature.provider.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlImpl
-import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.CqlFilter
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
@@ -83,11 +82,11 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
     }
 
     static String meta(SqlQueryTemplates templates, List<SortKey> sortBy, Optional<CqlFilter> userFilter) {
-        return templates.getMetaQueryTemplate().generateMetaQuery(10, 10, sortBy, userFilter)
+        return templates.getMetaQueryTemplate().generateMetaQuery(10, 10, sortBy, userFilter, com.google.common.collect.ImmutableMap.of())
     }
 
     static List<String> values(SqlQueryTemplates templates, int limit, int offset, List<SortKey> sortBy, CqlFilter filter) {
-        return templates.getValueQueryTemplates().collect { it.generateValueQuery(limit, offset, sortBy, Optional.ofNullable(filter), limit == 0 ? Optional.<Tuple<Object, Object>> empty() : Optional.of(Tuple.of(offset, offset + limit - 1))) }
+        return templates.getValueQueryTemplates().collect { it.generateValueQuery(limit, offset, sortBy, Optional.ofNullable(filter), limit == 0 ? Optional.<Tuple<Object, Object>> empty() : Optional.of(Tuple.of(offset, offset + limit - 1)), com.google.common.collect.ImmutableMap.of()) }
     }
 
 }

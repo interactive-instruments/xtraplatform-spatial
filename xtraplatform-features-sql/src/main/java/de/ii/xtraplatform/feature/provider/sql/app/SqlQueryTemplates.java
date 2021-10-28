@@ -12,6 +12,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
 
@@ -26,11 +27,14 @@ public interface SqlQueryTemplates {
 
   @FunctionalInterface
   interface MetaQueryTemplate {
-    String generateMetaQuery(long limit, long offset, List<SortKey> additionalSortKeys, Optional<CqlFilter> filter);
+    String generateMetaQuery(long limit, long offset, List<SortKey> additionalSortKeys,
+        Optional<CqlFilter> filter, Map<String, String> virtualTables);
   }
 
   @FunctionalInterface
   interface ValueQueryTemplate {
-    String generateValueQuery(long limit, long offset, List<SortKey> additionalSortKeys, Optional<CqlFilter> filter, Optional<Tuple<Object, Object>> minMaxKeys);
+    String generateValueQuery(long limit, long offset, List<SortKey> additionalSortKeys,
+        Optional<CqlFilter> filter, Optional<Tuple<Object, Object>> minMaxKeys,
+        Map<String, String> virtualTables);
   }
 }
