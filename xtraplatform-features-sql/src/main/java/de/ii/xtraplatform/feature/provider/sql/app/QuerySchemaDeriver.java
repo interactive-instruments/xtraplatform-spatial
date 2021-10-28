@@ -132,18 +132,12 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                 .distinct()
                 .collect(Collectors.toList());
 
-            List<String> newParentPath = relations
-                .stream()
-                .flatMap(rel -> rel.asPath().stream())
-                .collect(Collectors.toList());
-
             return entry.getValue()
                 .stream()
                 .map(prop -> new Builder().from(prop)
                     .relation(ImmutableList.of())
                     //.addAllRelation(relations)
                     .addAllRelation(childRelations)
-                    .addAllParentPath(newParentPath)
                     .parentSortKeys(sortKeys)
                     .sourcePath(targetSchema.isFeature() ? prop.getSourcePath()
                         : prop.getSourcePath()
