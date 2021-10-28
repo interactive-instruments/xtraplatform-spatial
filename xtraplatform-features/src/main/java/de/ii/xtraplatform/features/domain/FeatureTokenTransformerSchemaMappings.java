@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyContextTransformer;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertySchemaTransformer;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten;
@@ -33,10 +34,14 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   private NestingTracker nestingTracker;
   private TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> schemaTransformerChain;
   private TransformerChain<ModifiableContext, FeaturePropertyContextTransformer> contextTransformerChain;
+  private final List<List<String>> indexedArrays;
+  private final List<List<String>> openedArrays;
 
   public FeatureTokenTransformerSchemaMappings(
       PropertyTransformations propertyTransformations) {
     this.propertyTransformations = propertyTransformations;
+    this.indexedArrays = new ArrayList<>();
+    this.openedArrays = new ArrayList<>();
   }
 
   @Override
@@ -383,11 +388,37 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       return;
     }
 
-    if (parent.isArray()) {
-      handleNesting(parent, parentSchemas.subList(1, parentSchemas.size()), indexes);
+    List<Integer> newIndexes = new ArrayList<>(newContext.indexes());
+    List<List<String>> arrays = new ArrayList<>();
+
+    for (int i = parentSchemas.size() - 1; i >= 0; i--) {
+      FeatureSchema schema = parentSchemas.get(i);
+
+      if (schema.getType() == Type.OBJECT_ARRAY
+          && schema.getSourcePath().isEmpty()) {
+        arrays.add(schema.getFullPath());
+        if (!indexedArrays.contains(schema.getFullPath())) {
+          indexedArrays.add(schema.getFullPath());
+          newIndexes.add(1);
+          newContext.setIndexes(newIndexes);
+        }
+      }
     }
-    if (parent.isObject()) {
-      handleNesting(parent, parentSchemas.subList(1, parentSchemas.size()), indexes);
+
+    indexedArrays.removeIf(strings -> !arrays.contains(strings));
+    openedArrays.removeIf(strings -> !arrays.contains(strings));
+
+    if (parent.isArray()) {
+      if (!openedArrays.contains(parent.getFullPath())) {
+        handleNesting(parent, parentSchemas.subList(1, parentSchemas.size()), newIndexes);
+        if (parent.isObject()) {
+          handleNesting(parent, parentSchemas.subList(1, parentSchemas.size()), newIndexes);
+        }
+        openedArrays.add(parent.getFullPath());
+      }
+    }
+    else if (parent.isObject()) {
+      handleNesting(parent, parentSchemas.subList(1, parentSchemas.size()), newIndexes);
     }
   }
 
