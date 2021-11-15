@@ -64,11 +64,10 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
 
       switch (hook) {
         case STARTED:
-          //TODO:
           if (routesConfiguration.get().shouldWarmup()) {
-            LOGGER.debug("warming up routes queries");
-            sqlClient.run(routesConfiguration.get().getEdgesQuery(), new Builder().build()).whenComplete((r,t) -> {
-              LOGGER.debug("routes queries warmup done");
+            LOGGER.debug("Warming up routes queries for {}", data.getId());
+            sqlClient.run(getWarmupSelect(routesConfiguration.get()), new Builder().build()).whenComplete((r,t) -> {
+              LOGGER.debug("Routes queries for {} are warmed up", data.getId());
             });
           }
           break;
@@ -120,7 +119,7 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
 
   private void createTempTable(SqlClient sqlClient, String name) {
     String query = String.format(
-        "DROP TABLE IF EXISTS %1$s; CREATE TABLE %1$s (seq int, path_seq int, node bigint, edge bigint, cost float, agg_cost float)",
+        "DROP TABLE IF EXISTS %1$s; CREATE TABLE %1$s (id serial, seq int, path_seq int, node bigint, edge bigint, cost float, agg_cost float)",
         name);
 
     sqlClient.run(query, new Builder().build())
@@ -222,6 +221,15 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
       }
     }
     return point;
+  }
+
+  private String getWarmupSelect(RoutesConfiguration cfg) {
+    return cfg.getRouteQuery()
+        .replace("${edgesQuery}", "'" +  cfg.getEdgesQuery().replaceAll("'", "''") + "'")
+        .replace("${from_vid}", "0")
+        .replace("${to_vid}", "0")
+        .replace("${flag_mask}", "0")
+        .replace("${best ? 1 : -1}", "-1");
   }
 
   private Optional<RouteQuery> getRouteQuery(FeatureQuery query) {

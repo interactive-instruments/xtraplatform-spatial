@@ -31,9 +31,12 @@ public interface RoutesConfiguration extends ExtensionConfiguration {
 
   EpsgCrs getNativeCrs();
 
+  @Nullable
+  Boolean getWarmup();
+
   @Value.Lazy
   default boolean shouldWarmup() {
-    return false;
+    return Objects.equals(getWarmup(), true);
   }
 
   abstract class Builder extends ExtensionConfiguration.Builder {
