@@ -80,6 +80,11 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
         )
         .collect(Collectors.toList());
 
+    List<String> parentSortKeys = path.getParentTables()
+        .stream()
+        .map(SqlPath::getSortKey)
+        .collect(Collectors.toList());
+
     Map<List<SqlRelation>, List<SchemaSql>> propertiesGroupedByRelation = visitedProperties.stream()
         .collect(Collectors.groupingBy(SchemaSql::getRelation,
             LinkedHashMap::new, Collectors.toList()));
@@ -177,8 +182,9 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
               .stream()
               .anyMatch(SchemaBase::isArray);
 
-          SqlPath tablePath = pathParser
-              .parseTablePath(newParentPath.get(newParentPath.size() - 1));
+          SqlPath tablePath = entry.getValue().get(0).getSortKey().isPresent()
+              ? pathParser.parseTablePath(newParentPath.get(newParentPath.size() - 1) + "{sortKey=" + entry.getValue().get(0).getSortKey().get() +  "}")
+              : pathParser.parseTablePath(newParentPath.get(newParentPath.size() - 1));
 
           return Stream.of(new Builder()
               .name(entry.getKey().get(entry.getKey().size() - 1).getTargetContainer())
@@ -199,6 +205,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
         new Builder()
             .name(path.getName())
             .parentPath(fullParentPath)
+            .sortKey(parentSortKeys.isEmpty() || !targetSchema.isValue() ? Optional.empty() : Optional.of(parentSortKeys.get(parentSortKeys.size()-1)))
             .type(targetSchema.getType())
             .valueType(targetSchema.getValueType())
             .geometryType(targetSchema.getGeometryType())
