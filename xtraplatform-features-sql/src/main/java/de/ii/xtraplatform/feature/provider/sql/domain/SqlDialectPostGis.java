@@ -9,15 +9,21 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.domain.Geometry;
+import de.ii.xtraplatform.cql.domain.ImmutableMultiPolygon;
+import de.ii.xtraplatform.cql.domain.ImmutablePolygon;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+
+import de.ii.xtraplatform.crs.domain.OgcCrs;
 import org.threeten.extra.Interval;
 
 public class SqlDialectPostGis implements SqlDialect {
@@ -27,11 +33,39 @@ public class SqlDialectPostGis implements SqlDialect {
       .trimResults();
 
   @Override
-  public String applyToWkt(String column, boolean forcePolygonCCW) {
-    if (!forcePolygonCCW) {
-      return String.format("ST_AsText(%s)", column);
+  public String applyToWkt(String column, boolean forcePolygonCCW, Optional<Geometry.Envelope> clipbox) {
+    if (clipbox.isEmpty()) {
+      if (!forcePolygonCCW) {
+        return String.format("ST_AsText(%s)", column);
+      }
+      return String.format("ST_AsText(ST_ForcePolygonCCW(%s))", column);
     }
-    return String.format("ST_AsText(ST_ForcePolygonCCW(%s))", column);
+
+    List<Double> coords = clipbox.get().getCoordinates();
+    int srid = clipbox.get().getCrs().map(EpsgCrs::getCode).orElse(4326);
+    // TODO we should get this information from the CRS
+    boolean hasDiscontinuityAt180DegreeLongitude = ImmutableList.of(4326, 4979, 4258, 4269).contains(srid);
+    String clip;
+    if (coords.get(0)>coords.get(2) && hasDiscontinuityAt180DegreeLongitude) {
+      // special case, the clip-box crosses the antimeridian, we create convert this to a MultiPolygon
+      clip = String.format(Locale.US,"ST_Collect(ST_MakeEnvelope(%f,%f,%f,%f,%d),ST_MakeEnvelope(%f,%f,%f,%f,%d))",
+                           coords.get(0), coords.get(1),
+                           180.0, coords.get(3),
+                           srid,
+                           -180.0, coords.get(1),
+                           coords.get(2), coords.get(3),
+                           srid);
+    } else {
+      clip = String.format(Locale.US,"ST_MakeEnvelope(%f,%f,%f,%f,%d)",
+                           coords.get(0), coords.get(1),
+                           coords.get(2), coords.get(3),
+                           srid);
+    }
+
+    if (!forcePolygonCCW) {
+      return String.format("ST_AsText(ST_Intersection(%s,%s))", column, clip);
+    }
+    return String.format("ST_AsText(ST_Intersection(ST_ForcePolygonCCW(%s),%s))", column, clip);
   }
 
   @Override

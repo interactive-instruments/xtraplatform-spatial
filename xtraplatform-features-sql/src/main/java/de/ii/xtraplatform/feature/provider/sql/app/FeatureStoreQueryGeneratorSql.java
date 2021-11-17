@@ -262,7 +262,9 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
               column.isConstant() ? column.getConstantValue().get() + " AS " + column.getName()
                   : getQualifiedColumn(attributeContainerAlias, column.getName());
           if (column.isSpatial()) {
-            return sqlDialect.applyToWkt(name, true);
+            // TODO find out, if we need to add support here
+            LOGGER.warn("clipbox not yet implemented");
+            return sqlDialect.applyToWkt(name, true, Optional.empty());
           }
           if (column.isTemporal()) {
             return sqlDialect.applyToDatetime(name);

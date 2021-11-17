@@ -647,7 +647,7 @@ public class FilterEncoderSql {
             // TODO we should get this information from the CRS
             EpsgCrs crs = envelope.getCrs().orElse(OgcCrs.CRS84);
             int epsgCode = crs.getCode();
-            boolean hasDiscontinuityAt180DegreeLongitude = ImmutableList.of(4326, 4979, 4259, 4269).contains(epsgCode);
+            boolean hasDiscontinuityAt180DegreeLongitude = ImmutableList.of(4326, 4979, 4258, 4269).contains(epsgCode);
 
             if (c.get(0)>c.get(2) && hasDiscontinuityAt180DegreeLongitude) {
                 // special case, the bbox crosses the antimeridian, we create convert this to a MultiPolygon

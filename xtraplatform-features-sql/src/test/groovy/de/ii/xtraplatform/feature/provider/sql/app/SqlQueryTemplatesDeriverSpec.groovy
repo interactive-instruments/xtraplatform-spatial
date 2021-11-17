@@ -87,7 +87,7 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
     }
 
     static List<String> values(SqlQueryTemplates templates, int limit, int offset, List<SortKey> sortBy, CqlFilter filter) {
-        return templates.getValueQueryTemplates().collect { it.generateValueQuery(limit, offset, sortBy, Optional.ofNullable(filter), limit == 0 ? Optional.<Tuple<Object, Object>> empty() : Optional.of(Tuple.of(offset, offset + limit - 1))) }
+        return templates.getValueQueryTemplates().collect { it.generateValueQuery(limit, offset, sortBy, Optional.ofNullable(filter), limit == 0 ? Optional.<Tuple<Object, Object>> empty() : Optional.of(Tuple.of(offset, offset + limit - 1)), Optional.empty()) }
     }
 
 }

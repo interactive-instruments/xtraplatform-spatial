@@ -9,6 +9,7 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import java.time.Instant;
@@ -27,7 +28,8 @@ public class SqlDialectGpkg implements SqlDialect {
       .trimResults();
 
   @Override
-  public String applyToWkt(String column, boolean forcePolygonCCW) {
+  public String applyToWkt(String column, boolean forcePolygonCCW, Optional<Geometry.Envelope> clipbox) {
+    // TODO clipbox not yet implemented
     if (!forcePolygonCCW) {
       return String.format("ST_AsText(%s)", column);
     }

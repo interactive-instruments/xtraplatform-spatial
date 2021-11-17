@@ -9,6 +9,7 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 
 import de.ii.xtraplatform.cql.domain.And;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.ImmutableCqlPredicate;
 import de.ii.xtraplatform.feature.provider.sql.app.SqlQueryTemplates.MetaQueryTemplate;
 import de.ii.xtraplatform.feature.provider.sql.app.SqlQueryTemplates.ValueQueryTemplate;
@@ -114,7 +115,7 @@ public class SqlQueryTemplatesDeriver implements
   }
 
   ValueQueryTemplate createValueQueryTemplate(SchemaSql schema, List<SchemaSql> parents) {
-    return (limit, offset, additionalSortKeys, filter, minMaxKeys) -> {
+    return (limit, offset, additionalSortKeys, filter, minMaxKeys, clipbox) -> {
       boolean isIdFilter = filter.flatMap(CqlFilter::getInOperator).isPresent();
       List<String> aliases = aliasGenerator.getAliases(schema);
 
@@ -129,14 +130,14 @@ public class SqlQueryTemplatesDeriver implements
           : Optional.of((limit > 0 ? String.format(" LIMIT %d", limit) : "") + (offset > 0 ? String
               .format(" OFFSET %d", offset) : ""));
 
-      return getTableQuery(schema, whereClause, pagingClause, additionalSortKeys, parents);
+      return getTableQuery(schema, whereClause, pagingClause, additionalSortKeys, parents, clipbox);
     };
   }
 
   private String getTableQuery(SchemaSql schema,
       Optional<String> whereClause,
       Optional<String> pagingClause, List<SortKey> additionalSortKeys,
-      List<SchemaSql> parents) {
+      List<SchemaSql> parents, Optional<Geometry.Envelope> clipbox) {
     List<String> aliases = aliasGenerator.getAliases(parents, schema);
     String attributeContainerAlias = aliases.get(aliases.size() - 1);
 
@@ -159,7 +160,7 @@ public class SqlQueryTemplatesDeriver implements
                   .getName()
                   : getQualifiedColumn(attributeContainerAlias, column.getName());
           if (column.isSpatial()) {
-            return sqlDialect.applyToWkt(name, column.getForcePolygonCCW());
+            return sqlDialect.applyToWkt(name, column.getForcePolygonCCW(), clipbox);
           }
           if (column.isTemporal()) {
             return sqlDialect.applyToDatetime(name);

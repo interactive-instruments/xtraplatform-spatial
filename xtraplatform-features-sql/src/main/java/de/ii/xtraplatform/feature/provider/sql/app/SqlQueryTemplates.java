@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
 import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.Tuple;
@@ -31,6 +32,6 @@ public interface SqlQueryTemplates {
 
   @FunctionalInterface
   interface ValueQueryTemplate {
-    String generateValueQuery(long limit, long offset, List<SortKey> additionalSortKeys, Optional<CqlFilter> filter, Optional<Tuple<Object, Object>> minMaxKeys);
+    String generateValueQuery(long limit, long offset, List<SortKey> additionalSortKeys, Optional<CqlFilter> filter, Optional<Tuple<Object, Object>> minMaxKeys, Optional<Geometry.Envelope> clipbox);
   }
 }

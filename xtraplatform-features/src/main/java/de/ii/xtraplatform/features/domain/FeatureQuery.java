@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.ScalarExpression;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import java.util.List;
@@ -71,4 +72,7 @@ public abstract class FeatureQuery {
 
     @Value.Default
     public boolean returnsSingleFeature() { return false; }
+
+    @Value.Default
+    public Optional<Geometry.Envelope> getClipbox() { return Optional.empty(); }
 }

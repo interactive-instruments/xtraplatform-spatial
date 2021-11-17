@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.ImmutableAfter;
 import de.ii.xtraplatform.cql.domain.ImmutableAnyInteracts;
 import de.ii.xtraplatform.cql.domain.ImmutableBefore;
@@ -32,7 +33,7 @@ import org.threeten.extra.Interval;
 
 public interface SqlDialect {
 
-  String applyToWkt(String column, boolean forcePolygonCCW);
+  String applyToWkt(String column, boolean forcePolygonCCW, Optional<Geometry.Envelope> clipbox);
 
   String applyToExtent(String column);
 
