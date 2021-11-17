@@ -361,10 +361,10 @@ public class SqlPathParser {
         .sourceField(sourceField)
         .sourcePrimaryKey(source.getPrimaryKey())
         .sourceSortKey(source.getSortKey())
-        .sourceFilter(source.getFilter().map(filter -> cql.write(filter, Format.TEXT)))
+        .sourceFilter(source.getFilterString())
         .targetContainer(target.getName())
         .targetField(targetField)
-        .targetFilter(target.getFilter().map(filter -> cql.write(filter, Format.TEXT)))
+        .targetFilter(target.getFilterString())
         .build();
   }
 
@@ -384,14 +384,14 @@ public class SqlPathParser {
         .sourceField(sourceField)
         .sourcePrimaryKey(source.getPrimaryKey())
         .sourceSortKey(source.getSortKey())
-        .sourceFilter(source.getFilter().map(filter -> cql.write(filter, Format.TEXT)))
+        .sourceFilter(source.getFilterString())
         .junctionSource(junctionSourceField)
         .junction(link.getName())
         .junctionTarget(junctionTargetField)
-        .junctionFilter(link.getFilter().map(filter -> cql.write(filter, Format.TEXT)))
+        .junctionFilter(link.getFilterString())
         .targetContainer(target.getName())
         .targetField(targetField)
-        .targetFilter(target.getFilter().map(filter -> cql.write(filter, Format.TEXT)))
+        .targetFilter(target.getFilterString())
         .build();
   }
 }
