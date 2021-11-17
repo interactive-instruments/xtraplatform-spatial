@@ -833,7 +833,7 @@ public class FilterEncoderSql {
         public String visit(Property property, List<String> children) {
             // strip double quotes from the property name
             String propertyName = property.getName().replaceAll("^\"|\"$", "");
-            String column = getColumn(schema, propertyName, !isUserFilter);
+            String column = getColumn(schema, propertyName, !isUserFilter && !property.getName().contains("."));
             List<String> aliases = aliasGenerator.getAliases(schema, isUserFilter ? 1 : 0);
             String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
 
