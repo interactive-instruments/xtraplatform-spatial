@@ -632,7 +632,10 @@ public class FeatureProviderSql extends
   }
 
   @Override
-  public boolean supportsHighLoad() {
-    return true;
+  public boolean supportsHighLoad() { return true; }
+
+  @Override
+  public boolean supportsClipping() {
+    return getData().getConnectionInfo().getDialect() == Dialect.PGIS;
   }
 }

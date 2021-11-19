@@ -108,4 +108,8 @@ public interface FeatureProvider2 extends PersistentEntity {
     default boolean supportsHighLoad() {
         return false;
     }
+
+    default boolean supportsClipping() {
+        return false;
+    }
 }
