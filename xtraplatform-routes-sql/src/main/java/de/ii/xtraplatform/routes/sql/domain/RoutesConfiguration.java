@@ -27,6 +27,18 @@ public interface RoutesConfiguration extends ExtensionConfiguration {
 
   String getRouteQuery();
 
+  @Value.Default
+  default String getModePredicate() { return ""; }
+
+  @Value.Default
+  default String getLoadRestrictionPredicate() { return ""; }
+
+  @Value.Default
+  default String getHeightRestrictionPredicate() { return ""; }
+
+  @Value.Default
+  default String getObstaclesPredicate() { return ""; }
+
   Map<String, Integer> getFlags();
 
   EpsgCrs getNativeCrs();

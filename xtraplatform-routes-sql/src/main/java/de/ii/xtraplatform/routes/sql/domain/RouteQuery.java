@@ -8,9 +8,11 @@
 package de.ii.xtraplatform.routes.sql.domain;
 
 import de.ii.xtraplatform.cql.domain.Geometry.Point;
+import de.ii.xtraplatform.cql.domain.Geometry.MultiPolygon;
 import de.ii.xtraplatform.features.domain.FeatureQueryExtension;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
+
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -21,6 +23,16 @@ public interface RouteQuery extends FeatureQueryExtension {
   Point getEnd();
 
   List<Point> getWayPoints();
+
+  String getCostColumn();
+
+  String getReverseCostColumn();
+
+  Optional<Double> getWeight();
+
+  Optional<Double> getHeight();
+
+  Optional<MultiPolygon> getObstacles(); // TODO use proper class, after consolidation of geometry types?
 
   List<String> getFlags();
 }

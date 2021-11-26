@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.routes.sql.app;
 
+import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.Geometry.Point;
 import de.ii.xtraplatform.crs.domain.CoordinateTuple;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
@@ -25,6 +26,7 @@ import de.ii.xtraplatform.routes.sql.domain.RouteQuery;
 import de.ii.xtraplatform.routes.sql.domain.RoutesConfiguration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -161,12 +163,17 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
       RouteQuery query) {
 
     return getSegments(query, cfg.getNativeCrs()).stream()
-        .map(segment -> getRouteSelect(cfg, segment.first(), segment.second(), query.getFlags()))
+        .map(segment -> getRouteSelect(cfg, segment.first(), segment.second(),
+                                       query.getCostColumn(), query.getReverseCostColumn(), query.getFlags(),
+                                       query.getWeight(), query.getHeight(), query.getObstacles()))
         .collect(Collectors.toList());
   }
 
   private String getRouteSelect(RoutesConfiguration cfg,
-      Point start, Point end, List<String> flags) {
+                                Point start, Point end,
+                                String costColumn, String reverseCostColumn, List<String> flags,
+                                Optional<Double> weight, Optional<Double> height,
+                                Optional<Geometry.MultiPolygon> obstacles) {
 
     int mask = 0;
     for (String flag: flags) {
@@ -180,8 +187,40 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
         .replace("${from_vid}", "(SELECT oid FROM start_pnt LIMIT 1)")
         .replace("${to_vid}", "(SELECT oid FROM end_pnt LIMIT 1)")
         .replace("${flag_mask}", String.valueOf(mask))
+        .replace("${cost_column}", costColumn)
+        .replace("${reverse_cost_column}", reverseCostColumn)
+        // TODO best is rwl-specific, move to an option or adjust the route query
         .replace("${best ? 1 : -1}", flags.contains("best") ? "1" : "-1");
 
+    // TODO support mode
+    Optional<String> mode = Optional.empty();
+    if (mode.isPresent()) {
+      select = select.replace("${modePredicate}", cfg.getModePredicate())
+          .replace("${mode}", mode.get());
+    } else {
+      select = select.replace("${modePredicate}", "");
+    }
+
+    if (weight.isPresent()) {
+      select = select.replace("${loadRestrictionPredicate}", cfg.getLoadRestrictionPredicate())
+          .replace("${weight}", String.format(Locale.US,"%f",weight.get()));
+    } else {
+        select = select.replace("${loadRestrictionPredicate}", "");
+    }
+
+    if (height.isPresent()) {
+      select = select.replace("${heightRestrictionPredicate}", cfg.getHeightRestrictionPredicate())
+          .replace("${height}", String.format(Locale.US,"%f",height.get()));
+    } else {
+      select = select.replace("${heightRestrictionPredicate}", "");
+    }
+
+    if (obstacles.isPresent()) {
+      select = select.replace("${obstaclesPredicate}", cfg.getObstaclesPredicate())
+          .replace("${obstacles}", obstacles.get().toString()); // TODO proper conversion from GeoJSON to WKT
+    } else {
+      select = select.replace("${obstaclesPredicate}", "");
+    }
     //TODO: if cfg.getNativeCrs() is not set use provider crs
 
     return "WITH\n"
