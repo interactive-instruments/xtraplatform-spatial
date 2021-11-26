@@ -268,6 +268,12 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
         .replace("${from_vid}", "0")
         .replace("${to_vid}", "0")
         .replace("${flag_mask}", "0")
+        .replace("${cost_column}", "0")
+        .replace("${reverse_cost_column}", "0")
+        .replace("${modePredicate}", "")
+        .replace("${loadRestrictionPredicate}", "")
+        .replace("${heightRestrictionPredicate}", "")
+        .replace("${obstaclesPredicate}", "")
         .replace("${best ? 1 : -1}", "-1");
   }
 
