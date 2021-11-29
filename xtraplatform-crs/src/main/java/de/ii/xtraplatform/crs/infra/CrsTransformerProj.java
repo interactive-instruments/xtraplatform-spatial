@@ -129,7 +129,7 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
 
             return target;
         } catch (MismatchedDimensionException | TransformException ex) {
-            LOGGER.error("GeoTools error", ex);
+            LOGGER.error("Proj error", ex);
         }
 
         return null;
@@ -151,7 +151,7 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
 
             return target;
         } catch (MismatchedDimensionException | TransformException ex) {
-            LOGGER.error("GeoTools error", ex);
+            LOGGER.error("Proj error", ex);
         }
 
         return null;
