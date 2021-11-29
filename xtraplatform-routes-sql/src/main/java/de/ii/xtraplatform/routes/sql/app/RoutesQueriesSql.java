@@ -189,6 +189,13 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
         .replace("${flag_mask}", String.valueOf(mask))
         .replace("${cost_column}", costColumn)
         .replace("${reverse_cost_column}", reverseCostColumn)
+        .replace("${startX}", start.getCoordinates().get(0).get(0).toString())
+        .replace("${startY}", start.getCoordinates().get(0).get(1).toString())
+        .replace("${endX}", end.getCoordinates().get(0).get(0).toString())
+        .replace("${endY}", end.getCoordinates().get(0).get(1).toString())
+        .replace("${nativeCrs}", "4326") // TODO
+        .replace("${bufferWaypoint}", "0.5") // TODO
+        .replace("${bufferPath}", "1.5") // TODO
         // TODO best is rwl-specific, move to an option or adjust the route query
         .replace("${best ? 1 : -1}", flags.contains("best") ? "1" : "-1");
 
@@ -274,6 +281,13 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
         .replace("${loadRestrictionPredicate}", "")
         .replace("${heightRestrictionPredicate}", "")
         .replace("${obstaclesPredicate}", "")
+        .replace("${startX}", "0")
+        .replace("${startY}", "0")
+        .replace("${endX}", "0")
+        .replace("${endY}", "0")
+        .replace("${nativeCrs}", "4326")
+        .replace("${bufferWaypoint}", "0")
+        .replace("${bufferPath}", "0")
         .replace("${best ? 1 : -1}", "-1");
   }
 
