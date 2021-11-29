@@ -46,7 +46,7 @@ public class SchemaTransformerChain implements
               createSchemaTransformers(propertyPath, transformation, inCollection,
                   flattenedPathProvider)));
         })
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> second));
+        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> new ImmutableList.Builder<FeaturePropertySchemaTransformer>().addAll(first).addAll(second).build()));
   }
 
   @Nullable

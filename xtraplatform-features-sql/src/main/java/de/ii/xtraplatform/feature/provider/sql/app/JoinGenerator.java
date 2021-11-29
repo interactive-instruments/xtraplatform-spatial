@@ -18,10 +18,10 @@ import java.util.stream.Stream;
 
 public class JoinGenerator {
 
-  public String getJoins(SchemaSql table, List<String> aliases, List<Optional<String>> relationFilters, Optional<SchemaSql> userFilterTable,
+  public String getJoins(SchemaSql table, List<SchemaSql> parents, List<String> aliases, List<Optional<String>> relationFilters, Optional<SchemaSql> userFilterTable,
       Optional<String> userFilter, Optional<String> instanceFilter) {
 
-    if (table.getRelation().isEmpty()) {
+    if (table.getRelation().isEmpty() && parents.isEmpty()) {
       return "";
     }
     ListIterator<String> aliasesIterator = aliases.listIterator();
@@ -34,8 +34,9 @@ public class JoinGenerator {
     String userFilterTargetField = userFilterRelation.map(SqlRelation::getTargetField).orElse("");
 
     final int[] i = {0};
-    String join = table.getRelation()
-        .stream()
+    String join = Stream.concat(
+        parents.stream().flatMap(parent -> parent.getRelation().stream()),
+        table.getRelation().stream())
         .filter(t -> !t.getTargetField().equals(userFilterTargetField))
         .flatMap(relation -> toJoins(relation, aliasesIterator,
             relationFilters.get(i[0]++), instanceFilter))

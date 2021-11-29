@@ -141,5 +141,9 @@ class WfsSchemaCrawlerPlayground extends Specification {
             return Optional.empty();
         }
 
+        @Override
+        String getProviderId() {
+            return null
+        }
     }
 }

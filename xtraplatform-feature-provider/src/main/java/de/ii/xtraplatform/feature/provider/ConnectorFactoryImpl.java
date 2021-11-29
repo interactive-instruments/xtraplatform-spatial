@@ -8,10 +8,13 @@
 package de.ii.xtraplatform.feature.provider;
 
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.domain.WithConnectionInfo;
+import java.util.Optional;
 import org.apache.felix.ipojo.Factory;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
@@ -68,11 +71,30 @@ public class ConnectorFactoryImpl implements ConnectorFactory, Registry<Factory>
     public FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV2 featureProviderData) {
         final String instanceId = "connectors/" + featureProviderData.getId();
         final String providerType = featureProviderData.getFeatureProviderType();
-        final String connectorType = ((WithConnectionInfo<?>)featureProviderData).getConnectionInfo()
-                                                        .getConnectorType();
+        ConnectionInfo connectionInfo = ((WithConnectionInfo<?>) featureProviderData)
+            .getConnectionInfo();
+        final String connectorType = connectionInfo.getConnectorType();
 
         if (connectorFactories.hasInstance(instanceId)) {
             return connectorFactories.getInstance(instanceId);
+        }
+
+        if (connectionInfo.isShared()) {
+            Optional<FeatureProviderConnector<?, ?, ?>> match = connectorFactories.getInstances()
+                .stream()
+                .filter(connector -> connector.canBeSharedWith(connectionInfo, false).first())
+                .findFirst();
+
+            if (match.isPresent()) {
+                Tuple<Boolean, String> fullMatch = match.get()
+                    .canBeSharedWith(connectionInfo, true);
+
+                if (fullMatch.first()) {
+                    return match.get();
+                } else {
+                    throw new IllegalStateException(String.format("Connection pool cannot be shared with provider %s: %s", match.get().getProviderId(), fullMatch.second()));
+                }
+            }
         }
 
         if (!connectorFactories.get(providerType, connectorType).isPresent()) {

@@ -107,4 +107,10 @@ class SqlQueryTemplatesFixtures {
             "SELECT A.id AS SKEY, A.objid, A.lan, A.rbz, A.krs, A.gmd FROM o12006 A ORDER BY 1"
     ]
 
+    static List<String> NESTED_JOINS = [
+            "SELECT A.id AS SKEY, A.id FROM observationsubject A ORDER BY 1",
+            "SELECT A.id AS SKEY, B.id AS SKEY_1, B._type FROM observationsubject A JOIN observationsubject_filtervalues B ON (A.id=B.observationsubjectid) ORDER BY 1,2",
+            "SELECT A.id AS SKEY, B.id AS SKEY_1, C.id AS SKEY_2, C.symbol, C.code FROM observationsubject A JOIN observationsubject_filtervalues B ON (A.id=B.observationsubjectid) JOIN observedproperty C ON (B.filtervalueproperty_fk=C.code) ORDER BY 1,2,3"
+    ]
+
 }

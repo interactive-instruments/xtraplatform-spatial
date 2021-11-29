@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.feature.provider;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.felix.ipojo.ComponentInstance;
 import org.apache.felix.ipojo.Factory;
 import org.osgi.framework.BundleContext;
@@ -113,5 +115,10 @@ public final class FactoryRegistryState<T> implements Registry.State<Factory>, F
             instancesByName.remove(componentInstance.getInstanceName());
             componentInstance.dispose();
         }
+    }
+
+    @Override
+    public List<T> getInstances() {
+        return new ArrayList<>(instancesByName.values());
     }
 }

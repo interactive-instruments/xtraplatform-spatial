@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -48,7 +49,7 @@ public class ValueTransformerChain implements
 
           return Stream.of(new SimpleEntry<>(propertyPath, createValueTransformers(propertyPath, transformation, codelists, defaultTimeZone, substitutionLookup)));
         })
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> second));
+        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> new ImmutableList.Builder<FeaturePropertyValueTransformer>().addAll(first).addAll(second).build()));
     }
 
   @Nullable

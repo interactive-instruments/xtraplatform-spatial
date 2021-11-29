@@ -322,11 +322,16 @@ public class FeatureProviderSql extends
 
     //TODO: get other infos from connector
 
-    return Optional.of(ImmutableMap.of(
-        "min connections", String.valueOf(getConnector().getMinConnections()),
-        "max connections", String.valueOf(getConnector().getMaxConnections()),
-        "stream capacity", parallelism)
-    );
+    ImmutableMap.Builder<String, String> info = new ImmutableMap.Builder<String, String>()
+        .put("min connections", String.valueOf(getConnector().getMinConnections()))
+        .put("max connections", String.valueOf(getConnector().getMaxConnections()))
+        .put("stream capacity", parallelism);
+
+    if (getData().getConnectionInfo().isShared()) {
+      info.put("shared", "true");
+    }
+
+    return Optional.of(info.build());
   }
 
   @Override

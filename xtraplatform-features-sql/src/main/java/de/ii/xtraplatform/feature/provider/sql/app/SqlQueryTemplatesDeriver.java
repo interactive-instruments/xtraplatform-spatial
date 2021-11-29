@@ -56,7 +56,7 @@ public class SqlQueryTemplatesDeriver implements
       List<List<ValueQueryTemplate>> visitedProperties) {
 
     Stream<ValueQueryTemplate> current = schema.isObject()
-          && schema.getProperties().stream().anyMatch(SchemaBase::isValue)
+        && schema.getProperties().stream().anyMatch(SchemaBase::isValue)
         ? Stream.of(createValueQueryTemplate(schema, parents))
         : Stream.empty();
 
@@ -102,10 +102,14 @@ public class SqlQueryTemplatesDeriver implements
         String numberMatched = String.format(
             "SELECT count(*) AS numberMatched FROM (SELECT A.%2$s AS %4$s FROM %1$s A%3$s ORDER BY 1) AS IDS",
             schema.getName(), schema.getSortKey().get(), where, SKEY);
-        return String.format("WITH\n%3$s%3$sNR AS (%s),\n%3$s%3$sNM AS (%s) \n%3$sSELECT * FROM NR, NM", numberReturned, numberMatched, TAB);
+        return String
+            .format("WITH\n%3$s%3$sNR AS (%s),\n%3$s%3$sNM AS (%s) \n%3$sSELECT * FROM NR, NM",
+                numberReturned, numberMatched, TAB);
       }
 
-      return String.format("WITH\n%2$s%2$sNR AS (%s)\n%2$sSELECT *, -1::bigint AS numberMatched FROM NR", numberReturned, TAB);
+      return String
+          .format("WITH\n%2$s%2$sNR AS (%s)\n%2$sSELECT *, -1::bigint AS numberMatched FROM NR",
+              numberReturned, TAB);
     };
   }
 
@@ -118,10 +122,12 @@ public class SqlQueryTemplatesDeriver implements
       Optional<String> sqlFilter = getFilter(rootSchema, filter);
       Optional<String> whereClause = isIdFilter
           ? sqlFilter
-          : toWhereClause(aliases.get(0), rootSchema.getSortKey().get(), additionalSortKeys, minMaxKeys, sqlFilter);
+          : toWhereClause(aliases.get(0), rootSchema.getSortKey().get(), additionalSortKeys,
+              minMaxKeys, sqlFilter);
       Optional<String> pagingClause = additionalSortKeys.isEmpty() || (limit == 0 && offset == 0)
           ? Optional.empty()
-          : Optional.of((limit > 0 ? String.format(" LIMIT %d", limit) : "") + (offset > 0 ? String.format(" OFFSET %d", offset) : ""));
+          : Optional.of((limit > 0 ? String.format(" LIMIT %d", limit) : "") + (offset > 0 ? String
+              .format(" OFFSET %d", offset) : ""));
 
       return getTableQuery(schema, whereClause, pagingClause, additionalSortKeys, parents);
     };
@@ -131,25 +137,26 @@ public class SqlQueryTemplatesDeriver implements
       Optional<String> whereClause,
       Optional<String> pagingClause, List<SortKey> additionalSortKeys,
       List<SchemaSql> parents) {
-    List<String> aliases = aliasGenerator.getAliases(schema);
+    List<String> aliases = aliasGenerator.getAliases(parents, schema);
     String attributeContainerAlias = aliases.get(aliases.size() - 1);
 
-    String mainTableName = schema.getRelation().isEmpty()
+    String mainTableName = parents.isEmpty()
         ? schema.getName()
-        : schema.getRelation().get(0).getSourceContainer();
-    String mainTableSortKey = schema.getRelation().isEmpty()
+        : parents.get(0).getName();
+    String mainTableSortKey = parents.isEmpty()
         ? schema.getSortKey().get()
-        : schema.getRelation().get(0).getSourceSortKey().get();
+        : parents.get(0).getSortKey().get();
     String mainTable = String
         .format("%s %s", mainTableName, aliases.get(0));
-    List<String> sortFields = getSortFields(schema, aliases, additionalSortKeys);
+    List<String> sortFields = getSortFields(schema, parents, aliases, additionalSortKeys);
 
     String columns = Stream.concat(sortFields.stream(), schema.getProperties()
         .stream()
         .filter(SchemaBase::isValue)
         .map(column -> {
           String name =
-              column.isConstant() ? "'" +  column.getConstantValue().get() + "'" + " AS " + column.getName()
+              column.isConstant() ? "'" + column.getConstantValue().get() + "'" + " AS " + column
+                  .getName()
                   : getQualifiedColumn(attributeContainerAlias, column.getName());
           if (column.isSpatial()) {
             return sqlDialect.applyToWkt(name, column.getForcePolygonCCW());
@@ -166,11 +173,16 @@ public class SqlQueryTemplatesDeriver implements
         ? Optional.empty()
         : parents.get(0).getFilter().map(filter -> filterEncoder.encode(filter, parents.get(0)));
 
-    List<Optional<String>> relationFilters = schema.getRelation().stream()
-        .map(sqlRelation -> sqlRelation.getTargetFilter().flatMap(filter -> filterEncoder.encodeRelationFilter(Optional.of(schema), Optional.empty())))
+    List<Optional<String>> relationFilters = Stream.concat(
+        parents.stream().flatMap(parent -> parent.getRelation().stream()),
+        schema.getRelation().stream())
+        .map(sqlRelation -> sqlRelation.getTargetFilter().flatMap(
+            filter -> filterEncoder.encodeRelationFilter(Optional.of(schema), Optional.empty())))
         .collect(Collectors.toList());
 
-    String join = joinGenerator.getJoins(schema, aliases, relationFilters, Optional.empty(), Optional.empty(), instanceFilter);
+    String join = joinGenerator
+        .getJoins(schema, parents, aliases, relationFilters, Optional.empty(), Optional.empty(),
+            instanceFilter);
 
     String where = whereClause.map(w -> " WHERE " + w).orElse("");
     String paging = pagingClause.filter(p -> join.isEmpty()).orElse("");
@@ -192,7 +204,8 @@ public class SqlQueryTemplatesDeriver implements
           .map(sortField -> sortField.replaceAll(" AS \\w+", ""))
           .collect(Collectors.joining(","));
       where2 += String.format("(A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s%4$s ORDER BY %5$s%6$s))",
-          mainTableName, aliasesNested.get(0), mainTableSortKey, where.replace("(A.", "(" + aliasesNested.get(0) + "."), orderBy, pagingClause.get());
+          mainTableName, aliasesNested.get(0), mainTableSortKey,
+          where.replace("(A.", "(" + aliasesNested.get(0) + "."), orderBy, pagingClause.get());
 
       where = where2;
     }
@@ -272,19 +285,27 @@ public class SqlQueryTemplatesDeriver implements
     return String.format("'%s'", sqlDialect.escapeString(literalString));
   }
 
-  private List<String> getSortFields(SchemaSql schema,
+  private List<String> getSortFields(SchemaSql schema, List<SchemaSql> parents,
       List<String> aliases, List<SortKey> additionalSortKeys) {
 
     final int[] i = {0};
     Stream<String> customSortKeys = additionalSortKeys.stream().map(
         sortKey -> String.format("%s.%s AS CSKEY_%s", aliases.get(0), sortKey.getField(), i[0]++));
 
-    if (!schema.getRelation().isEmpty()) {
+    if (!schema.getRelation().isEmpty() || !parents.isEmpty()) {
       ListIterator<String> aliasesIterator = aliases.listIterator();
 
-      return Stream.concat(customSortKeys, schema.getSortKeys(aliasesIterator).stream()).collect(Collectors.toList());
+      List<String> parentSortKeys = parents.stream()
+          .flatMap(parent -> parent.getSortKeys(aliasesIterator, true, 0).stream())
+          .collect(Collectors.toList());
+
+      return Stream.of(customSortKeys, parentSortKeys.stream(),
+          schema.getSortKeys(aliasesIterator, false, parentSortKeys.size()).stream())
+          .flatMap(s -> s)
+          .collect(Collectors.toList());
     } else {
-      return Stream.concat(customSortKeys, Stream.of(String.format("%s.%s AS SKEY", aliases.get(0), schema.getSortKey().get())))
+      return Stream.concat(customSortKeys,
+          Stream.of(String.format("%s.%s AS SKEY", aliases.get(0), schema.getSortKey().get())))
           .collect(Collectors.toList());
     }
   }
@@ -307,7 +328,8 @@ public class SqlQueryTemplatesDeriver implements
     if (schema.getFilter().isEmpty() && schema.getRelation().isEmpty() && userFilter.isPresent()) {
       return Optional.of(filterEncoder.encode(userFilter.get(), schema));
     }
-    if (schema.getFilter().isPresent() && schema.getRelation().isEmpty() && userFilter.isPresent()) {
+    if (schema.getFilter().isPresent() && schema.getRelation().isEmpty() && userFilter
+        .isPresent()) {
       CqlFilter mergedFilter = CqlFilter.of(
           And.of(
               ImmutableCqlPredicate.copyOf(schema.getFilter().get()),

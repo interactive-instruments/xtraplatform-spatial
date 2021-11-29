@@ -35,6 +35,8 @@ public interface FeatureProviderConnector<T,U,V extends FeatureProviderConnector
 
     interface QueryOptions {}
 
+    String getProviderId();
+
     boolean isConnected();
 
     Optional<Throwable> getConnectionError();
@@ -46,4 +48,8 @@ public interface FeatureProviderConnector<T,U,V extends FeatureProviderConnector
     Source<T, NotUsed> getSourceStream(U query);
 
     Source<T, NotUsed> getSourceStream(U query, V options);
+
+    default Tuple<Boolean, String> canBeSharedWith(ConnectionInfo connectionInfo, boolean checkAllParameters) {
+        return Tuple.of(false, null);
+    }
 }
