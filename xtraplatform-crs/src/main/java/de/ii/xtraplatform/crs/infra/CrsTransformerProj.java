@@ -15,6 +15,7 @@ import de.ii.xtraplatform.crs.domain.CoordinateTuple;
 import de.ii.xtraplatform.crs.domain.CoordinateTupleWithPrecision;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.runtime.domain.LogContext;
 import javax.measure.Unit;
 import org.kortforsyningen.proj.Proj;
 import org.kortforsyningen.proj.Units;
@@ -129,7 +130,7 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
 
             return target;
         } catch (MismatchedDimensionException | TransformException ex) {
-            LOGGER.error("Proj error", ex);
+            LogContext.errorAsDebug(LOGGER, ex, "Proj error");
         }
 
         return null;
@@ -151,7 +152,7 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
 
             return target;
         } catch (MismatchedDimensionException | TransformException ex) {
-            LOGGER.error("Proj error", ex);
+            LogContext.errorAsDebug(LOGGER, ex, "Proj error");
         }
 
         return null;
