@@ -189,6 +189,7 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
         .replace("${flag_mask}", String.valueOf(mask))
         .replace("${cost_column}", costColumn)
         .replace("${reverse_cost_column}", reverseCostColumn)
+        /* TODO
         .replace("${startX}", start.getCoordinates().get(0).get(0).toString())
         .replace("${startY}", start.getCoordinates().get(0).get(1).toString())
         .replace("${endX}", end.getCoordinates().get(0).get(0).toString())
@@ -196,6 +197,7 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
         .replace("${nativeCrs}", "4326") // TODO
         .replace("${bufferWaypoint}", "0.5") // TODO
         .replace("${bufferPath}", "1.5") // TODO
+         */
         // TODO best is rwl-specific, move to an option or adjust the route query
         .replace("${best ? 1 : -1}", flags.contains("best") ? "1" : "-1");
 
@@ -270,13 +272,17 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
   }
 
   private String getWarmupSelect(RoutesConfiguration cfg) {
+    // TODO we should process all values from the preferences options
+    String costColumn = "cost_s";
+    String reverseCostColumn = "reverse_cost_s";
     return cfg.getRouteQuery()
         .replace("${edgesQuery}", "'" +  cfg.getEdgesQuery().replaceAll("'", "''") + "'")
         .replace("${from_vid}", "0")
         .replace("${to_vid}", "0")
         .replace("${flag_mask}", "0")
-        .replace("${cost_column}", "0")
-        .replace("${reverse_cost_column}", "0")
+        .replace("${cost_column}", costColumn)
+        .replace("${reverse_cost_column}", reverseCostColumn)
+        /* TODO
         .replace("${modePredicate}", "")
         .replace("${loadRestrictionPredicate}", "")
         .replace("${heightRestrictionPredicate}", "")
@@ -288,6 +294,7 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
         .replace("${nativeCrs}", "4326")
         .replace("${bufferWaypoint}", "0")
         .replace("${bufferPath}", "0")
+         */
         .replace("${best ? 1 : -1}", "-1");
   }
 
