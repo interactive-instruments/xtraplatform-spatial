@@ -68,23 +68,6 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
         this.crsFactory = Proj.getFactory(CRSFactory.class);
         this.crsCache = new ConcurrentHashMap<>();
         this.transformerCache = new ConcurrentHashMap<>();
-
-        //TODO: check if warm-up has any effect for proj
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("warming up GeoTools ...");
-        }
-
-        try {
-            new CrsTransformerProj(crsAuthorityFactory.createCoordinateReferenceSystem("4326"), crsAuthorityFactory
-                .createCoordinateReferenceSystem("4258"), EpsgCrs.of(4326), EpsgCrs.of(4258), 2, 2);
-        } catch (Throwable ex) {
-            //ignore
-            boolean br = true;
-        }
-
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("done");
-        }
     }
 
     @Override
@@ -142,11 +125,13 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
             throw new IllegalArgumentException(String.format("CRS %s is not supported.", Objects.nonNull(targetCrs) ? targetCrs.toSimpleString() : "null"));
         }
 
-        transformerCache.computeIfAbsent(sourceCrs, ignore -> new ConcurrentHashMap<>());
-        Map<EpsgCrs, CrsTransformer> transformerCacheForSourceCrs = transformerCache.get(sourceCrs);
-        transformerCacheForSourceCrs.computeIfAbsent(targetCrs, ignore -> createCrsTransformer(sourceCrs, targetCrs));
+        //transformerCache.computeIfAbsent(sourceCrs, ignore -> new ConcurrentHashMap<>());
+        //Map<EpsgCrs, CrsTransformer> transformerCacheForSourceCrs = transformerCache.get(sourceCrs);
+        //transformerCacheForSourceCrs.computeIfAbsent(targetCrs, ignore -> createCrsTransformer(sourceCrs, targetCrs));
 
-        return Optional.ofNullable(transformerCacheForSourceCrs.get(targetCrs));
+
+        return Optional.of(createCrsTransformer(sourceCrs, targetCrs));
+        //return Optional.ofNullable(transformerCacheForSourceCrs.get(targetCrs));
     }
 
     private CrsTransformer createCrsTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
@@ -157,18 +142,18 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
         try {
             return new CrsTransformerProj(crsCache.get(sourceCrs), crsCache.get(targetCrs), sourceCrs, targetCrs, sourceDimension, targetDimension);
         } catch (FactoryException ex) {
-            LOGGER.debug("GeoTools error", ex);
+            LOGGER.debug("Proj error", ex);
             throw new IllegalArgumentException(ex.getMessage(), ex);
         }
     }
 
 
     private EpsgCrs applyWorkarounds(EpsgCrs crs) {
-        // ArcGIS still uses code 102100, but GeoTools does not support it anymore
+        // ArcGIS still uses code 102100 instead of 3857, but proj does not support it anymore
         if (crs.getCode() == 102100) {
             return new ImmutableEpsgCrs.Builder().from(crs).code(3857).build();
         }
-        // FME uses code 900914 instead of 4979, but GeoTools does not support this
+        // FME uses code 900914 instead of 4979, but proj does not support this
         if (crs.getCode() == 900914) {
             return new ImmutableEpsgCrs.Builder().from(crs).code(4979).forceAxisOrder(Force.LON_LAT).build();
         }
