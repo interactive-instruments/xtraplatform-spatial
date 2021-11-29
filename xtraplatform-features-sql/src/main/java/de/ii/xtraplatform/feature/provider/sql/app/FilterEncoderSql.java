@@ -116,6 +116,10 @@ public class FilterEncoderSql {
             if (transformer.isPresent()) {
                 double[] transformed = transformer.get()
                                                   .transform(Doubles.toArray(coordinates), coordinates.size() / 2, false);
+                if (Objects.isNull(transformed)) {
+                    throw new IllegalArgumentException(String.format("Filter is invalid. Coordinates cannot be transformed: %s", coordinates));
+                }
+
                 return Doubles.asList(transformed);
             }
         }
