@@ -96,7 +96,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                 .map(prop -> targetSchema.isFeature() ? prop : new Builder().from(prop)
                     .sourcePath(prop.getSourcePath()
                         .map(sourcePath -> targetSchema.getName() + "." + sourcePath))
-                    .sourcePaths(prop.getEffectiveSourcePaths()
+                    .sourcePaths(prop.getSourcePaths()
                         .stream()
                         .map(sourcePath -> targetSchema.getName() + "." + sourcePath)
                         .collect(Collectors.toList()))
@@ -148,7 +148,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                         : prop.getSourcePath()
                             .map(sourcePath -> targetSchema.getName() + "." + sourcePath))
                     .sourcePaths(
-                        targetSchema.isFeature() ? prop.getEffectiveSourcePaths() : prop.getEffectiveSourcePaths()
+                        targetSchema.isFeature() ? prop.getSourcePaths() : prop.getSourcePaths()
                             .stream()
                             .map(sourcePath -> targetSchema.getName() + "." + sourcePath)
                             .collect(Collectors.toList()))
@@ -171,7 +171,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                   .relation(ImmutableList.of())
                   .sourcePath(prop.getSourcePath()
                       .map(sourcePath -> !targetSchema.isFeature() ? targetSchema.getName() + "." + sourcePath : sourcePath))
-                  .sourcePaths(prop.getEffectiveSourcePaths()
+                  .sourcePaths(prop.getSourcePaths()
                       .stream()
                       .map(sourcePath -> !targetSchema.isFeature() ? targetSchema.getName() + "." + sourcePath : sourcePath)
                       .collect(Collectors.toList()))
@@ -214,7 +214,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             .relation(relations)
             .properties(newVisitedProperties)
             .constantValue(targetSchema.getConstantValue())
-            .forcePolygonCCW(targetSchema.isForcePolygonCCW());
+            .forcePolygonCCW(targetSchema.isForcePolygonCCW() ? Optional.empty() : Optional.of(false));
 
     if (targetSchema.isObject()) {
       if (targetSchema.getProperties().stream().anyMatch(prop -> prop.isValue() || prop.getEffectiveSourcePaths().isEmpty())) {
@@ -238,7 +238,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             .from(property)
             .sourcePath(property.getSourcePath()
                 .map(sourcePath -> targetSchema.getName() + "." + sourcePath))
-            .sourcePaths(property.getEffectiveSourcePaths()
+            .sourcePaths(property.getSourcePaths()
                 .stream()
                 .map(sourcePath -> targetSchema.getName() + "." + sourcePath)
                 .collect(Collectors.toList()))
@@ -250,7 +250,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
     return schemas.stream()
         .map(schema -> new Builder().from(schema)
             .sourcePath(schema.getSourcePath().map(sourcePath -> prefix + sourcePath))
-            .sourcePaths(schema.getEffectiveSourcePaths()
+            .sourcePaths(schema.getSourcePaths()
                 .stream()
                 .map(sourcePath -> prefix + sourcePath)
                 .collect(Collectors.toList()))
