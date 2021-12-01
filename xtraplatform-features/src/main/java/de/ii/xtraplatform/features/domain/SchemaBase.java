@@ -59,9 +59,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
 
     Optional<String> getSourcePath();
 
-    @Value.Default
-    default List<String> getSourcePaths() {
-        return getSourcePath().map(ImmutableList::of).orElse(ImmutableList.of());
+    List<String> getSourcePaths();
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default List<String> getEffectiveSourcePaths() {
+        return getSourcePath().map(element -> (List<String>)ImmutableList.of(element)).orElse(getSourcePaths());
     }
 
     Optional<Boolean> getForcePolygonCCW();

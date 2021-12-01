@@ -199,10 +199,10 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     //TODO: when to clear valueBuffer
     //TODO: what about parent arrays
     //TODO: special value buffer for choice
-    if (schema.getSourcePaths().size() > 1) {
+    if (schema.getEffectiveSourcePaths().size() > 1) {
       String column = context.path().get(context.path().size() - 1);
       if (schema.isArray()) {
-        int index = schema.getSourcePaths().indexOf(column);
+        int index = schema.getEffectiveSourcePaths().indexOf(column);
         if (index >= 0) {
           List<Integer> indexes = new ArrayList<>(index == 0 ? context.indexes() : context.indexes().subList(0, context.indexes().size()-1));
           indexes.add(index + 1);
@@ -213,7 +213,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
           newContext.putValueBuffer(context.pathAsString(), context.value());
           newContext.putValueBuffer(column, context.value());
         }
-        if (!Objects.equals(schema.getSourcePaths().get(schema.getSourcePaths().size() - 1), column)) {
+        if (!Objects.equals(schema.getEffectiveSourcePaths().get(schema.getEffectiveSourcePaths().size() - 1), column)) {
           return;
         }
       }

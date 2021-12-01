@@ -57,11 +57,8 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     @Override
     Optional<String> getSourcePath();
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    @Value.Default
-    default List<String> getSourcePaths() {
-        return getSourcePath().map(ImmutableList::of).orElse(ImmutableList.of());
-    }
+    @Override
+    List<String> getSourcePaths();
 
     @Value.Default
     @Override
@@ -150,7 +147,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     @Value.Auxiliary
     @Override
     default boolean isFeature() {
-        return isObject() && (!getSourcePaths().isEmpty() && getSourcePaths().get(0).startsWith("/"));
+        return isObject() && (!getEffectiveSourcePaths().isEmpty() && getEffectiveSourcePaths().get(0).startsWith("/"));
     }
 
     @JsonIgnore
