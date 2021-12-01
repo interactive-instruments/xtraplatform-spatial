@@ -57,10 +57,8 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     @Override
     Optional<String> getSourcePath();
 
-    @Value.Default
-    default List<String> getSourcePaths() {
-        return getSourcePath().map(ImmutableList::of).orElse(ImmutableList.of());
-    }
+    @Override
+    List<String> getSourcePaths();
 
     @Value.Default
     @Override
@@ -90,10 +88,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     Optional<SchemaConstraints> getConstraints();
 
     @Override
-    @Value.Default
-    default boolean getForcePolygonCCW() {
-        return true;
-    }
+    Optional<Boolean> getForcePolygonCCW();
 
     //behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
@@ -152,7 +147,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     @Value.Auxiliary
     @Override
     default boolean isFeature() {
-        return isObject() && (!getSourcePaths().isEmpty() && getSourcePaths().get(0).startsWith("/"));
+        return isObject() && (!getEffectiveSourcePaths().isEmpty() && getEffectiveSourcePaths().get(0).startsWith("/"));
     }
 
     @JsonIgnore

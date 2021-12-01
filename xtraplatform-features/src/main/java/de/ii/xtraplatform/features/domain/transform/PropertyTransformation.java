@@ -86,14 +86,6 @@ public interface PropertyTransformation extends Buildable<PropertyTransformation
                 builder.addStrictErrors(MessageFormat.format("The remove transformation in collection ''{0}'' for property ''{1}'' is invalid. The value ''{2}'' is not one of the known values: {3}.", collectionId, property, remove.get(), FeaturePropertyTransformerRemove.CONDITION_VALUES));
             }
         }
-        final Optional<String> stringFormat = getStringFormat();
-        if (stringFormat.isPresent()) {
-            Pattern valuePattern = Pattern.compile("\\{\\{(?:value)( ?\\| ?[\\w]+(:'[^']*')*)*\\}\\}");
-            Matcher matcher = valuePattern.matcher(stringFormat.get());
-            if (!matcher.find()) {
-                builder.addWarnings(MessageFormat.format("The stringFormat transformation in collection ''{0}'' for property ''{1}'' with  value ''{2}'' does not include a string template for ''value''.", collectionId, property, stringFormat.get()));
-            }
-        }
         final Optional<String> dateFormat = getDateFormat();
         if (dateFormat.isPresent()) {
             try {
