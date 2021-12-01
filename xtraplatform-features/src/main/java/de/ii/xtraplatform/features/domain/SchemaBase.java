@@ -64,9 +64,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         return getSourcePath().map(ImmutableList::of).orElse(ImmutableList.of());
     }
 
-    @Value.Default
-    default boolean getForcePolygonCCW() {
-      return true;
+    Optional<Boolean> getForcePolygonCCW();
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isForcePolygonCCW() {
+      return getForcePolygonCCW().filter(force -> force == false).isEmpty();
     }
 
     List<T> getProperties();
