@@ -32,7 +32,7 @@ public interface RouteQuery extends FeatureQueryExtension {
 
   Optional<Double> getHeight();
 
-  Optional<MultiPolygon> getObstacles(); // TODO use proper class, after consolidation of geometry types?
+  Optional<String> getObstacles(); // TODO use MultiPolygon geometry class and do the WKT conversion here (after consolidation of geometry types); for now we expect WKT
 
   List<String> getFlags();
 }

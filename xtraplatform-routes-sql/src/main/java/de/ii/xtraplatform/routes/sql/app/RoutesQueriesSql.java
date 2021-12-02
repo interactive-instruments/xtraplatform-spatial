@@ -173,7 +173,7 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
                                 Point start, Point end,
                                 String costColumn, String reverseCostColumn, List<String> flags,
                                 Optional<Double> weight, Optional<Double> height,
-                                Optional<Geometry.MultiPolygon> obstacles) {
+                                Optional<String> obstacles) {
 
     int mask = 0;
     for (String flag: flags) {
@@ -189,6 +189,9 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
         .replace("${flag_mask}", String.valueOf(mask))
         .replace("${cost_column}", costColumn)
         .replace("${reverse_cost_column}", reverseCostColumn)
+        .replace("${height}", String.valueOf(height.orElse(-1.0)))
+        .replace("${weight}", String.valueOf(weight.orElse(-1.0)))
+        .replace("${obstacles}", obstacles.map(o -> "'SELECT gid FROM socal_20211125.v_ways WHERE ST_Intersects(the_geom, ST_GeomFromEWKT(''"+o+"''))'").orElse("''"))
         /* TODO
         .replace("${startX}", start.getCoordinates().get(0).get(0).toString())
         .replace("${startY}", start.getCoordinates().get(0).get(1).toString())
@@ -282,6 +285,9 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
         .replace("${flag_mask}", "0")
         .replace("${cost_column}", costColumn)
         .replace("${reverse_cost_column}", reverseCostColumn)
+        .replace("${height}", String.valueOf(-1.0))
+        .replace("${weight}", String.valueOf(-1.0))
+        .replace("${obstacles}", "''")
         /* TODO
         .replace("${modePredicate}", "")
         .replace("${loadRestrictionPredicate}", "")
