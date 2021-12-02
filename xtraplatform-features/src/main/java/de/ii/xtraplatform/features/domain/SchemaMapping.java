@@ -84,19 +84,21 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
   default List<String> cleanPath(List<String> path) {
     if (path.get(path.size() - 1).contains("{")) {
       List<String> key = new ArrayList<>(path.subList(0, path.size() - 1));
-      key.add(path.get(path.size() - 1).substring(0, path.get(path.size() - 1).indexOf("{")));
+      key.add(cleanPath(path.get(path.size() - 1)));
       return key;
     }
     return path;
+  }
 
-    /*return path.stream()
-        .map(element -> {
-          if (element.contains("{")) {
-            return element.substring(0, element.indexOf("{"));
-          }
-
-          return element;
-        })
-        .collect(Collectors.toList());*/
+  //TODO: static cleanup method in PathParser
+  default String cleanPath(String path) {
+    if (path.contains("{")) {
+      int i = path.indexOf("{");
+      if (path.startsWith("filter", i+1)) {
+        return path.substring(0, i + 2) + cleanPath(path.substring(i+2));
+      }
+      return path.substring(0, path.indexOf("{"));
+    }
+    return path;
   }
 }

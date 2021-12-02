@@ -46,17 +46,14 @@ class AliasGenerator {
   public List<String> getAliases(SchemaSql schema) {
     char alias = 'A';
 
-    if (schema.getRelation().isEmpty()) {
+    if (schema.getParentPath().isEmpty()) {
       return ImmutableList.of(String.valueOf(alias));
     }
 
     ImmutableList.Builder<String> aliases = new ImmutableList.Builder<>();
 
-    for (SqlRelation relation : schema.getRelation()) {
+    for (String relation : schema.getParentPath()) {
       aliases.add(String.valueOf(alias++));
-      if (relation.isM2N()) {
-        aliases.add(String.valueOf(alias++));
-      }
     }
 
     aliases.add(String.valueOf(alias++));
