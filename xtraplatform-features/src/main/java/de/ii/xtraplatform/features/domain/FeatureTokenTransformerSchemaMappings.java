@@ -140,6 +140,9 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     if (context.schema()
         .filter(FeatureSchema::isObject)
         .isEmpty()) {
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("OBJECT NOT FOUND {} {}", context.pathAsString(), Objects.nonNull(context.mapping()) ? context.mapping().getTargetSchemasByPath().keySet() : "{}");
+      }
       return;
     }
 
@@ -169,6 +172,9 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     if (context.schema()
         .filter(FeatureSchema::isArray)
         .isEmpty()) {
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("ARRAY NOT FOUND {} {}", context.pathAsString(), Objects.nonNull(context.mapping()) ? context.mapping().getTargetSchemasByPath().keySet() : "{}");
+      }
       return;
     }
 
@@ -191,6 +197,9 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       return;
     }
     if (context.schema().isEmpty()) {
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("VALUE NOT FOUND {} {}", context.pathAsString(), Objects.nonNull(context.mapping()) ? context.mapping().getTargetSchemasByPath().keySet() : "{}");
+      }
       return;
     }
 
