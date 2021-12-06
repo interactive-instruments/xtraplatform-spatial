@@ -230,6 +230,10 @@ public class SqlConnectorSlick implements SqlConnector {
       return Tuple.of(false, "provider types do not match");
     }
 
+    if (!connectionInfo.isShared()) {
+      return Tuple.of(false, "");
+    }
+
     ConnectionInfoSql connectionInfoSql = (ConnectionInfoSql) connectionInfo;
 
     Builder<String, Boolean> matches = new Builder<String, Boolean>()

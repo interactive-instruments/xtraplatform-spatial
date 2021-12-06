@@ -73,8 +73,6 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         }
     }
 
-    //TODO: add dispose listener to connector when shared, call onStartup (or better setData?) when disposed
-    // how to exclude primary instance?
     @Override
     protected boolean onStartup() throws InterruptedException {
         // TODO: delay disposing old connector and streamRunner until all queries are finished
