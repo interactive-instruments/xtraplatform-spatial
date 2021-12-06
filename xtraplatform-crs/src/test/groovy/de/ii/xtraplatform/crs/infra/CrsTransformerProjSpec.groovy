@@ -13,6 +13,7 @@ import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.nativ.proj.api.ProjLoaderImpl
 import org.kortforsyningen.proj.Units
 import org.opengis.referencing.cs.AxisDirection
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -120,21 +121,21 @@ class CrsTransformerProjSpec extends Specification {
         result == target as double[]
 
         where:
-        sourceCrs           | targetCrs         | source                            | target
-        EpsgCrs.of(5555)    | EpsgCrs.of(25832) | [420735.071, 5392914.343, 131.96] | [420735.071, 5392914.343, 0.0]
-        EpsgCrs.of(5555)    | EpsgCrs.of(4326)  | [420735.071, 5392914.343, 131.96] | [48.68423644912392, 7.923077973066287, 0.0]
-        EpsgCrs.of(5555)    | EpsgCrs.of(3857)  | [420735.071, 5392914.343, 131.96] | [881993.0054771411, 6221451.78116173, 0.0]
-        EpsgCrs.of(5555)    | OgcCrs.CRS84      | [420735.071, 5392914.343, 131.96] | [7.923077973066287, 48.68423644912392, 0.0]
+        sourceCrs        | targetCrs         | source                            | target
+        EpsgCrs.of(5555) | EpsgCrs.of(25832) | [420735.071, 5392914.343, 131.96] | [420735.071, 5392914.343, 0.0]
+        EpsgCrs.of(5555) | EpsgCrs.of(4326)  | [420735.071, 5392914.343, 131.96] | [48.68423644912392, 7.923077973066287, 0.0]
+        EpsgCrs.of(5555) | EpsgCrs.of(3857)  | [420735.071, 5392914.343, 131.96] | [881993.0054771411, 6221451.78116173, 0.0]
+        EpsgCrs.of(5555) | OgcCrs.CRS84      | [420735.071, 5392914.343, 131.96] | [7.923077973066287, 48.68423644912392, 0.0]
 
-        EpsgCrs.of(4979)    | EpsgCrs.of(25832) | [48.684, 7.923, 131.96]           | [420728.9609056481, 5392888.1411416, 0.0]
-        EpsgCrs.of(4979)    | EpsgCrs.of(4326)  | [48.684, 7.923, 131.96]           | [48.684, 7.923, 0.0]
-        EpsgCrs.of(4979)    | EpsgCrs.of(3857)  | [48.684, 7.923, 131.96]           | [881984.3255551065, 6221411.912936983, 0.0]
-        EpsgCrs.of(4979)    | OgcCrs.CRS84      | [48.684, 7.923, 131.96]           | [7.923, 48.684, 0.0]
+        EpsgCrs.of(4979) | EpsgCrs.of(25832) | [48.684, 7.923, 131.96]           | [420728.9609056481, 5392888.1411416, 0.0]
+        EpsgCrs.of(4979) | EpsgCrs.of(4326)  | [48.684, 7.923, 131.96]           | [48.684, 7.923, 0.0]
+        EpsgCrs.of(4979) | EpsgCrs.of(3857)  | [48.684, 7.923, 131.96]           | [881984.3255551065, 6221411.912936983, 0.0]
+        EpsgCrs.of(4979) | OgcCrs.CRS84      | [48.684, 7.923, 131.96]           | [7.923, 48.684, 0.0]
 
-        OgcCrs.CRS84h       | EpsgCrs.of(25832) | [7.923, 48.684, 131.96]           | [420728.9609056481, 5392888.1411416, 0.0]
-        OgcCrs.CRS84h       | EpsgCrs.of(4326)  | [7.923, 48.684, 131.96]           | [48.684, 7.923, 0.0]
-        OgcCrs.CRS84h       | EpsgCrs.of(3857)  | [7.923, 48.684, 131.96]           | [881984.3255551065, 6221411.912936983, 0.0]
-        OgcCrs.CRS84h       | OgcCrs.CRS84      | [7.923, 48.684, 131.96]           | [7.923, 48.684, 0.0]
+        OgcCrs.CRS84h    | EpsgCrs.of(25832) | [7.923, 48.684, 131.96]           | [420728.9609056481, 5392888.1411416, 0.0]
+        OgcCrs.CRS84h    | EpsgCrs.of(4326)  | [7.923, 48.684, 131.96]           | [48.684, 7.923, 0.0]
+        OgcCrs.CRS84h    | EpsgCrs.of(3857)  | [7.923, 48.684, 131.96]           | [881984.3255551065, 6221411.912936983, 0.0]
+        OgcCrs.CRS84h    | OgcCrs.CRS84      | [7.923, 48.684, 131.96]           | [7.923, 48.684, 0.0]
 
 
     }
@@ -145,18 +146,19 @@ class CrsTransformerProjSpec extends Specification {
         transformerFactory.getAxisAbbreviations(crs) == axisAbbreviations
         transformerFactory.getAxisUnits(crs) == axisUnits
         transformerFactory.getAxisDirections(crs) == axisDirections
+        transformerFactory.getAxisRangeMeanings(crs) == axisRangeMeanings
 
         where:
-        crs                 | axisAbbreviations     | axisUnits                                 | axisDirections
-        EpsgCrs.of(5555)    | ["E", "N", "H"]       | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP]
-        EpsgCrs.of(5556)    | ["E", "N", "H"]       | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP]
-        EpsgCrs.of(4979)    | ["Lat", "Lon", "h"]   | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.NORTH, AxisDirection.EAST, AxisDirection.UP]
-        EpsgCrs.of(25832)   | ["E", "N"]            | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]
-        EpsgCrs.of(4326)    | ["Lat", "Lon"]        | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]
-        EpsgCrs.of(3857)    | ["X", "Y"]            | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]
-        EpsgCrs.of(4269)    | ["Lat", "Lon"]        | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]
-        OgcCrs.CRS84        | ["Lon", "Lat"]        | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.EAST, AxisDirection.NORTH]
-        OgcCrs.CRS84h       | ["Lon", "Lat", "h"]   | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP]
+        crs               | axisAbbreviations   | axisUnits                                 | axisDirections                                              | axisRangeMeanings
+        EpsgCrs.of(5555)  | ["E", "N", "H"]     | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | [Optional.empty(), Optional.empty(), Optional.empty()]
+        EpsgCrs.of(5556)  | ["E", "N", "H"]     | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | [Optional.empty(), Optional.empty(), Optional.empty()]
+        EpsgCrs.of(4979)  | ["Lat", "Lon", "h"] | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.NORTH, AxisDirection.EAST, AxisDirection.UP] | [Optional.empty(), Optional.empty(), Optional.empty()]
+        EpsgCrs.of(25832) | ["E", "N"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | [Optional.empty(), Optional.empty()]
+        EpsgCrs.of(4326)  | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | [Optional.empty(), Optional.empty()]
+        EpsgCrs.of(3857)  | ["X", "Y"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | [Optional.empty(), Optional.empty()]
+        EpsgCrs.of(4269)  | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | [Optional.empty(), Optional.empty()]
+        OgcCrs.CRS84      | ["Lon", "Lat"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.EAST, AxisDirection.NORTH]                   | [Optional.empty(), Optional.empty()]
+        OgcCrs.CRS84h     | ["Lon", "Lat", "h"] | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | [Optional.empty(), Optional.empty(), Optional.empty()]
 
     }
 
@@ -170,15 +172,15 @@ class CrsTransformerProjSpec extends Specification {
         result == target as double[]
 
         where:
-        sourceCrs                | targetCrs                 | source                                | target
+        sourceCrs               | targetCrs               | source                            | target
 
-        EpsgCrs.of(5555)         | EpsgCrs.of(25832, 7837)   | [420735.071, 5392914.343, 131.96]     | [420735.071, 5392914.343, 131.96]
-        EpsgCrs.of(4979)         | EpsgCrs.of(25832, 7837)   | [48.684, 7.923, 131.96]               | [420728.9609056481, 5392888.1411416, 131.96]
-        OgcCrs.CRS84h            | EpsgCrs.of(25832, 7837)   | [7.923, 48.684, 131.96]               | [420728.9609056481, 5392888.1411416, 131.96]
+        EpsgCrs.of(5555)        | EpsgCrs.of(25832, 7837) | [420735.071, 5392914.343, 131.96] | [420735.071, 5392914.343, 131.96]
+        EpsgCrs.of(4979)        | EpsgCrs.of(25832, 7837) | [48.684, 7.923, 131.96]           | [420728.9609056481, 5392888.1411416, 131.96]
+        OgcCrs.CRS84h           | EpsgCrs.of(25832, 7837) | [7.923, 48.684, 131.96]           | [420728.9609056481, 5392888.1411416, 131.96]
 
-        EpsgCrs.of(25832, 7837)  | EpsgCrs.of(5555)          | [420735.071, 5392914.343, 131.96]     | [420735.071, 5392914.343, 131.96]
-        EpsgCrs.of(25832, 7837)  | EpsgCrs.of(4979)          | [420735.071, 5392914.343, 131.96]     | [48.68423644912392, 7.923077973066287, 131.96]
-        EpsgCrs.of(25832, 7837)  | OgcCrs.CRS84h             | [420735.071, 5392914.343, 131.96]     | [7.923077973066287, 48.68423644912392, 131.96]
+        EpsgCrs.of(25832, 7837) | EpsgCrs.of(5555)        | [420735.071, 5392914.343, 131.96] | [420735.071, 5392914.343, 131.96]
+        EpsgCrs.of(25832, 7837) | EpsgCrs.of(4979)        | [420735.071, 5392914.343, 131.96] | [48.68423644912392, 7.923077973066287, 131.96]
+        EpsgCrs.of(25832, 7837) | OgcCrs.CRS84h           | [420735.071, 5392914.343, 131.96] | [7.923077973066287, 48.68423644912392, 131.96]
 
     }
 

@@ -19,12 +19,8 @@ import javax.measure.Unit;
  */
 public interface CrsTransformerFactory {
 
+    boolean isSupported(EpsgCrs crs);
+
     Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs);
-
-    boolean isCrsSupported(EpsgCrs crs);
-
-    boolean isCrs3d(EpsgCrs crs);
-
-    Unit<?> getCrsUnit(EpsgCrs crs);
 
 }

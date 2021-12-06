@@ -15,6 +15,8 @@ import org.opengis.referencing.cs.RangeMeaning;
 
 public interface CrsInfo {
 
+  boolean isSupported(EpsgCrs crs);
+
   boolean is3d(EpsgCrs crs);
 
   Unit<?> getUnit(EpsgCrs crs);
@@ -23,9 +25,8 @@ public interface CrsInfo {
 
   List<Unit<?>> getAxisUnits(EpsgCrs crs);
 
-  Optional<List<RangeMeaning>> getAxisRangeMeanings(EpsgCrs crs);
+  List<Optional<RangeMeaning>> getAxisRangeMeanings(EpsgCrs crs);
 
   List<AxisDirection> getAxisDirections(EpsgCrs crs);
-
 
 }

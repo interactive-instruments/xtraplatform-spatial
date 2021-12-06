@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
+import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
@@ -74,7 +75,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
@@ -386,12 +386,12 @@ public class FeatureProviderSql extends
 
   @Override
   public boolean isCrsSupported(EpsgCrs crs) {
-    return Objects.equals(getNativeCrs(), crs) || crsTransformerFactory.isCrsSupported(crs);
+    return Objects.equals(getNativeCrs(), crs) || crsTransformerFactory.isSupported(crs);
   }
 
   @Override
   public boolean is3dSupported() {
-    return crsTransformerFactory.isCrs3d(getNativeCrs());
+    return ((CrsInfo) crsTransformerFactory).is3d(getNativeCrs());
   }
 
   @Override
