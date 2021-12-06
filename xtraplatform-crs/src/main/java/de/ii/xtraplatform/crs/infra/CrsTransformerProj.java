@@ -17,7 +17,6 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.runtime.domain.LogContext;
 import javax.measure.Unit;
-import org.kortforsyningen.proj.Proj;
 import org.kortforsyningen.proj.Units;
 import org.opengis.geometry.MismatchedDimensionException;
 import org.opengis.referencing.crs.CompoundCRS;
@@ -44,11 +43,8 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
     private final boolean isTargetMetric;
     private final double sourceUnitEquivalentInMeters;
     private final double targetUnitEquivalentInMeters;
-    private final boolean needsAxisSwap;
-    //TODO
     private final int sourceDimension;
     private final int targetDimension;
-    private final boolean preserveHeight;
     private final CoordinateOperation operation;
 
     CrsTransformerProj(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
@@ -67,30 +63,18 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
             .getUnit();
 
         this.isSourceMetric = sourceUnit == Units.METRE;
-        this.isTargetMetric = targetUnit == Units.METRE;//targetCrs instanceof ProjectedCRS;
+        this.isTargetMetric = targetUnit == Units.METRE;
 
         SingleCRS horizontalSourceCrs = getHorizontalCrs(sourceCrs);
         SingleCRS horizontalTargetCrs = getHorizontalCrs(targetCrs);
 
         this.sourceUnitEquivalentInMeters = getUnitEquivalentInMeters(horizontalSourceCrs);
-
         this.targetUnitEquivalentInMeters = getUnitEquivalentInMeters(horizontalTargetCrs);
 
-        //TODO
-        this.needsAxisSwap = false; //sourceNeedsAxisSwap != targetNeedsAxisSwap;
         this.sourceDimension = sourceDimension;
         this.targetDimension = targetDimension;
-        this.preserveHeight = sourceDimension == 3 && targetDimension == 3;
-
-        //LOGGER.debug("AXIS SWAP: {} {} {} {}, {} {} {}", needsAxisSwap, origSourceCrs.getCode(), sourceNeedsAxisSwap, sourceDirection, origTargetCrs.getCode(), targetNeedsAxisSwap, targetDirection);
 
         operation  = coordinateOperation;
-    }
-
-    CrsTransformerProj(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
-                           EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, int sourceDimension,
-                           int targetDimension) throws FactoryException {
-        this(sourceCrs, targetCrs, origSourceCrs, origTargetCrs, sourceDimension, targetDimension, Proj.createCoordinateOperation(sourceCrs, targetCrs, null));
     }
 
     @Override
@@ -110,51 +94,20 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
 
     @Override
     public CoordinateTuple transform(double x, double y) {
-        CoordinateTuple transformed = transform(new CoordinateTuple(x, y), false);
-        //return transformed;
-        return needsAxisSwap ? new CoordinateTuple(transformed.getY(), transformed.getX()) : transformed;
+        return transform(new CoordinateTuple(x, y));
     }
 
     @Override
-    public CoordinateTuple transform(CoordinateTuple coordinateTuple, boolean swap) {
-        return new CoordinateTupleWithPrecision(transform(coordinateTuple.asArray(), 1, swap && needsAxisSwap), isTargetMetric);
+    public CoordinateTuple transform(CoordinateTuple coordinateTuple) {
+        return new CoordinateTupleWithPrecision(transform(coordinateTuple.asArray(), 1, 2), isTargetMetric);
     }
 
     @Override
-    public double[] transform(double[] coordinates, int numberOfPoints, boolean swap) {
+    public double[] transform(double[] coordinates, int numberOfPoints, int dimension) {
         try {
-            double[] source = coordinates;
-            if (swap && this.needsAxisSwap) {
-                source = new double[numberOfPoints * 2];
-                for (int i = 0; i < numberOfPoints * 2; i += 2) {
-                    source[i] = coordinates[i + 1];
-                    source[i + 1] = coordinates[i];
-                }
-            }
-            double[] target = new double[2* numberOfPoints];
-            operation.getMathTransform().transform(source, 0, target, 0, numberOfPoints);
+            double[] target = new double[dimension * numberOfPoints];
 
-            return target;
-        } catch (MismatchedDimensionException | TransformException ex) {
-            LogContext.errorAsDebug(LOGGER, ex, "PROJ");
-        }
-
-        return null;
-    }
-
-    @Override
-    public double[] transform3d(double[] coordinates, int numberOfPoints, boolean swap) {
-        try {
-            double[] source = coordinates;
-            if (swap && this.needsAxisSwap) {
-                source = new double[numberOfPoints * 3];
-                for (int i = 0; i < numberOfPoints * 3; i += 3) {
-                    source[i] = coordinates[i + 1];
-                    source[i + 1] = coordinates[i];
-                }
-            }
-            double[] target = new double[3* numberOfPoints];
-            operation.getMathTransform().transform(source, 0, target, 0, numberOfPoints);
+            operation.getMathTransform().transform(coordinates, 0, target, 0, numberOfPoints);
 
             return target;
         } catch (MismatchedDimensionException | TransformException ex) {
@@ -172,11 +125,6 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
     @Override
     public double getTargetUnitEquivalentInMeters() {
         return targetUnitEquivalentInMeters;
-    }
-
-    @Override
-    public boolean needsCoordinateSwap() {
-        return needsAxisSwap;
     }
 
     @Override

@@ -24,21 +24,17 @@ public interface CrsTransformer {
 
     CoordinateTuple transform(double x, double y);
 
-    CoordinateTuple transform(CoordinateTuple coordinateTuple, boolean swap);
+    CoordinateTuple transform(CoordinateTuple coordinateTuple);
 
-    double[] transform(double[] coordinates, int numberOfPoints, boolean swap);
+    double[] transform(double[] coordinates, int numberOfPoints, int dimension);
 
-    double[] transform3d(double[] coordinates, int numberOfPoints, boolean swap);
-    
     BoundingBox transformBoundingBox(BoundingBox boundingBox) throws CrsTransformationException;
 
     double getSourceUnitEquivalentInMeters();
 
     double getTargetUnitEquivalentInMeters();
 
-    boolean needsCoordinateSwap();
-
-    int getSourceDimension();
+  int getSourceDimension();
 
     int getTargetDimension();
 }

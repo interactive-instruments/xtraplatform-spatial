@@ -74,7 +74,7 @@ class CrsTransformerProjSpec extends Specification {
 
         when:
         CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
-        double[] target = gct.transform3d(source, 1, false)
+        double[] target = gct.transform(source, 1, 3)
 
         then:
         target == [48.68423644912392, 7.923077973066287, 131.96] as double[]
@@ -97,8 +97,8 @@ class CrsTransformerProjSpec extends Specification {
         when:
         CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
         CoordinateTuple coordinateTuple1 = gct.transform(x, y)
-        CoordinateTuple coordinateTuple2 = gct.transform(new CoordinateTuple(x, y), false)
-        double[] re = gct.transform(ra, 5, false)
+        CoordinateTuple coordinateTuple2 = gct.transform(new CoordinateTuple(x, y))
+        double[] re = gct.transform(ra, 5, 2)
 
         then:
         coordinateTuple1.getX() == rx
@@ -114,7 +114,7 @@ class CrsTransformerProjSpec extends Specification {
     def 'CRS transformer test 3D to 2D'() {
         when:
         CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
-        double[] result = gct.transform3d(source as double[], 1, false)
+        double[] result = gct.transform(source as double[], 1, 3)
 
         then:
         result == target as double[]
@@ -164,7 +164,7 @@ class CrsTransformerProjSpec extends Specification {
 
         when:
         CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
-        double[] result = gct.transform3d(source as double[], 1, false)
+        double[] result = gct.transform(source as double[], 1, 3)
 
         then:
         result == target as double[]
