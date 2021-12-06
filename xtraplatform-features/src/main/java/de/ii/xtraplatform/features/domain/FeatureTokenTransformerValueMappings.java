@@ -87,7 +87,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
     }*/
 
       if (context.query().getGeometryPrecision().get(0) > 0) {
-        coordinatesTransformerBuilder.precision(context.query().getGeometryPrecision().get(0));
+        coordinatesTransformerBuilder.precision(context.query().getGeometryPrecision());
       }
 
       //TODO: currently never true, see FeatureProperty.isForceReversePolygon, find cfg example
