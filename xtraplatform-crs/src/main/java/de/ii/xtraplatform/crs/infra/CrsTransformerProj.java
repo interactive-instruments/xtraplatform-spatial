@@ -52,19 +52,19 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
     private final CoordinateOperation operation;
 
     CrsTransformerProj(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
-                           EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, int sourceDimension,
-                           int targetDimension) throws FactoryException {
+        EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, int sourceDimension,
+        int targetDimension, CoordinateOperation coordinateOperation) throws FactoryException {
         this.sourceCrs = origSourceCrs;
         this.targetCrs = origTargetCrs;
 
         Unit<?> sourceUnit = sourceCrs
-                                .getCoordinateSystem()
-                                .getAxis(0)
-                                .getUnit();
+            .getCoordinateSystem()
+            .getAxis(0)
+            .getUnit();
         Unit<?> targetUnit = targetCrs
-                                .getCoordinateSystem()
-                                .getAxis(0)
-                                .getUnit();
+            .getCoordinateSystem()
+            .getAxis(0)
+            .getUnit();
 
         this.isSourceMetric = sourceUnit == Units.METRE;
         this.isTargetMetric = targetUnit == Units.METRE;//targetCrs instanceof ProjectedCRS;
@@ -84,7 +84,13 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
 
         //LOGGER.debug("AXIS SWAP: {} {} {} {}, {} {} {}", needsAxisSwap, origSourceCrs.getCode(), sourceNeedsAxisSwap, sourceDirection, origTargetCrs.getCode(), targetNeedsAxisSwap, targetDirection);
 
-        operation  = Proj.createCoordinateOperation(sourceCrs, targetCrs, null);
+        operation  = coordinateOperation;
+    }
+
+    CrsTransformerProj(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
+                           EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, int sourceDimension,
+                           int targetDimension) throws FactoryException {
+        this(sourceCrs, targetCrs, origSourceCrs, origTargetCrs, sourceDimension, targetDimension, Proj.createCoordinateOperation(sourceCrs, targetCrs, null));
     }
 
     @Override
@@ -130,7 +136,7 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
 
             return target;
         } catch (MismatchedDimensionException | TransformException ex) {
-            LogContext.errorAsDebug(LOGGER, ex, "Proj error");
+            LogContext.errorAsDebug(LOGGER, ex, "PROJ");
         }
 
         return null;
@@ -152,7 +158,7 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
 
             return target;
         } catch (MismatchedDimensionException | TransformException ex) {
-            LogContext.errorAsDebug(LOGGER, ex, "Proj error");
+            LogContext.errorAsDebug(LOGGER, ex, "PROJ");
         }
 
         return null;

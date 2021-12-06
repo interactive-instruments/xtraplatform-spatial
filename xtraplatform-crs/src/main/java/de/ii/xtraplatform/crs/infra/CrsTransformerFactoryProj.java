@@ -10,8 +10,6 @@
  */
 package de.ii.xtraplatform.crs.infra;
 
-import static de.ii.xtraplatform.dropwizard.domain.LambdaWithException.mayThrow;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -21,16 +19,16 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import de.ii.xtraplatform.nativ.proj.api.ProjLoader;
+import de.ii.xtraplatform.runtime.domain.LogContext;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.measure.Unit;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
+import org.kortforsyningen.proj.CoordinateOperationContext;
 import org.kortforsyningen.proj.Proj;
 import org.kortforsyningen.proj.spi.EPSG;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
@@ -40,6 +38,7 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.crs.SingleCRS;
 import org.opengis.referencing.cs.AxisDirection;
 import org.opengis.referencing.cs.RangeMeaning;
+import org.opengis.referencing.operation.CoordinateOperation;
 import org.opengis.util.FactoryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,24 +54,30 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CrsTransformerFactoryProj.class);
 
-    private final CRSAuthorityFactory crsAuthorityFactory;
-    private final CRSFactory crsFactory;
-    private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
-    private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
+    //private final CRSAuthorityFactory crsAuthorityFactory;
+    //private final CRSFactory crsFactory;
+    //private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
+    //private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
 
     public CrsTransformerFactoryProj(@Requires ProjLoader projLoader) {
-        projLoader.load();
-        Proj.setSearchPath(projLoader.getDataDirectory().toString());
+        try {
+            projLoader.load();
+            Proj.setSearchPath(projLoader.getDataDirectory().toString());
+            Proj.version().ifPresent(version -> LOGGER.debug("PROJ version: {}", version));
+        } catch (Throwable e) {
+            LogContext.error(LOGGER, e, "PROJ");
+        }
 
-        this.crsAuthorityFactory = EPSG.provider();
-        this.crsFactory = Proj.getFactory(CRSFactory.class);
-        this.crsCache = new ConcurrentHashMap<>();
-        this.transformerCache = new ConcurrentHashMap<>();
+        //this.crsAuthorityFactory = EPSG.provider();
+        //this.crsFactory = Proj.getFactory(CRSFactory.class);
+        //this.crsCache = new ConcurrentHashMap<>();
+        //this.transformerCache = new ConcurrentHashMap<>();
     }
 
     @Override
     public boolean isCrsSupported(EpsgCrs crs) {
-        try {
+        return getProjCrs(crs).isPresent();
+        /*try {
             crsCache.computeIfAbsent(crs, mayThrow(ignore -> {
                 String code = String.valueOf(applyWorkarounds(crs).getCode());
                 CoordinateReferenceSystem coordinateReferenceSystem = crsAuthorityFactory
@@ -91,12 +96,59 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
             return false;
         }
 
-        return true;
+        return true;*/
+    }
+
+    private synchronized Optional<CoordinateReferenceSystem> getProjCrs(EpsgCrs crs) {
+        try {
+                String code = String.valueOf(applyWorkarounds(crs).getCode());
+                CoordinateReferenceSystem coordinateReferenceSystem = EPSG.provider()
+                    .createCoordinateReferenceSystem(code);
+                coordinateReferenceSystem = applyAxisOrder(coordinateReferenceSystem, crs.getForceAxisOrder());
+
+                if (crs.getVerticalCode().isPresent()) {
+                    String verticalCode = String.valueOf(crs.getVerticalCode().getAsInt());
+                    CoordinateReferenceSystem verticalCrs = EPSG.provider().createVerticalCRS(verticalCode);
+                    CoordinateReferenceSystem compoundCrs = Proj.getFactory(CRSFactory.class).createCompoundCRS(ImmutableMap.of("name", String.format("%s + %s", coordinateReferenceSystem.getName(), verticalCrs.getName())), coordinateReferenceSystem, verticalCrs);
+
+                    return Optional.of(compoundCrs);
+                }
+                    return Optional.of(coordinateReferenceSystem);
+        } catch (Throwable e) {
+            LogContext.error(LOGGER, e, "PROJ");
+            return Optional.empty();
+        }
+    }
+
+    private synchronized Optional<CoordinateReferenceSystem> getProjCrs(EpsgCrs crs, CRSAuthorityFactory authorityFactory, CRSFactory crsFactory) {
+        try {
+            String code = String.valueOf(applyWorkarounds(crs).getCode());
+            CoordinateReferenceSystem coordinateReferenceSystem = authorityFactory.createCoordinateReferenceSystem(code);
+            coordinateReferenceSystem = applyAxisOrder(coordinateReferenceSystem, crs.getForceAxisOrder());
+
+            if (crs.getVerticalCode().isPresent()) {
+                String verticalCode = String.valueOf(crs.getVerticalCode().getAsInt());
+                CoordinateReferenceSystem verticalCrs = authorityFactory.createVerticalCRS(verticalCode);
+                CoordinateReferenceSystem compoundCrs = crsFactory.createCompoundCRS(ImmutableMap.of("name", String.format("%s + %s", coordinateReferenceSystem.getName(), verticalCrs.getName())), coordinateReferenceSystem, verticalCrs);
+
+                return Optional.of(compoundCrs);
+            }
+            return Optional.of(coordinateReferenceSystem);
+        } catch (Throwable e) {
+            LogContext.error(LOGGER, e, "PROJ");
+            return Optional.empty();
+        }
     }
 
     @Override
     public boolean isCrs3d(EpsgCrs crs) {
-        return isCrsSupported(crs) && crsCache.get(crs).getCoordinateSystem().getDimension() == 3;
+        return getProjCrs(crs).filter(c -> c.getCoordinateSystem().getDimension() == 3).isPresent();
+        //return isCrsSupported(crs) && crsCache.get(crs).getCoordinateSystem().getDimension() == 3;
+    }
+
+    private boolean isCrs3d(CoordinateReferenceSystem crs) {
+        return crs.getCoordinateSystem().getDimension() == 3;
+        //return isCrsSupported(crs) && crsCache.get(crs).getCoordinateSystem().getDimension() == 3;
     }
 
     @Override
@@ -105,7 +157,8 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
             throw new IllegalArgumentException(String.format("CRS %s is not supported.", Objects.nonNull(crs) ? crs.toSimpleString() : "null"));
         }
 
-        SingleCRS horizontalCrs = getHorizontalCrs(crsCache.get(crs));
+        SingleCRS horizontalCrs = getHorizontalCrs(getProjCrs(crs).get());
+        //SingleCRS horizontalCrs = getHorizontalCrs(crsCache.get(crs));
 
         return horizontalCrs
             .getCoordinateSystem()
@@ -114,14 +167,18 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     }
 
     @Override
-    public Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
+    public synchronized Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
         if (Objects.equals(sourceCrs, targetCrs)) {
             return Optional.empty();
         }
-        if (!isCrsSupported(sourceCrs)) {
+        CRSAuthorityFactory authorityFactory = EPSG.provider();
+        CRSFactory crsFactory = Proj.getFactory(CRSFactory.class);
+        Optional<CoordinateReferenceSystem> sourceProjCrs = getProjCrs(sourceCrs, authorityFactory,crsFactory);
+        Optional<CoordinateReferenceSystem> targetProjCrs = getProjCrs(targetCrs, authorityFactory, crsFactory);
+        if (/*!isCrsSupported(sourceCrs)*/sourceProjCrs.isEmpty()) {
             throw new IllegalArgumentException(String.format("CRS %s is not supported.", Objects.nonNull(sourceCrs) ? sourceCrs.toSimpleString() : "null"));
         }
-        if (!isCrsSupported(targetCrs)) {
+        if (/*!isCrsSupported(targetCrs)*/targetProjCrs.isEmpty()) {
             throw new IllegalArgumentException(String.format("CRS %s is not supported.", Objects.nonNull(targetCrs) ? targetCrs.toSimpleString() : "null"));
         }
 
@@ -130,19 +187,40 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
         //transformerCacheForSourceCrs.computeIfAbsent(targetCrs, ignore -> createCrsTransformer(sourceCrs, targetCrs));
 
 
-        return Optional.of(createCrsTransformer(sourceCrs, targetCrs));
+        return Optional.of(createCrsTransformer(sourceCrs, targetCrs, sourceProjCrs.get(), targetProjCrs.get()));
+        //return Optional.of(createCrsTransformer(sourceCrs, targetCrs));
         //return Optional.ofNullable(transformerCacheForSourceCrs.get(targetCrs));
     }
 
-    private CrsTransformer createCrsTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
+    private synchronized CrsTransformer createCrsTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs, CoordinateReferenceSystem sourceProjCrs, CoordinateReferenceSystem targetProjCrs) {
+        boolean is3dTo3d = isCrs3d(sourceProjCrs) && isCrs3d(targetProjCrs);
+        int sourceDimension = isCrs3d(sourceProjCrs) ? 3 : 2;
+        int targetDimension = is3dTo3d ? 3 : 2;
+
+        try {
+            CoordinateOperationContext coordinateOperationContext = new CoordinateOperationContext();
+            coordinateOperationContext.setAuthority("EPSG");
+            CoordinateOperation coordinateOperation = Proj.createCoordinateOperation(sourceProjCrs,
+                targetProjCrs, coordinateOperationContext);
+            return new CrsTransformerProj(sourceProjCrs, targetProjCrs, sourceCrs, targetCrs, sourceDimension, targetDimension, coordinateOperation);
+            //return new CrsTransformerProj(getProjCrs(sourceCrs).get(), getProjCrs(targetCrs).get(), sourceCrs, targetCrs, sourceDimension, targetDimension);
+            //return new CrsTransformerProj(crsCache.get(sourceCrs), crsCache.get(targetCrs), sourceCrs, targetCrs, sourceDimension, targetDimension);
+        } catch (FactoryException ex) {
+            LogContext.errorAsDebug(LOGGER, ex, "PROJ");
+            throw new IllegalArgumentException(ex.getMessage(), ex);
+        }
+    }
+
+    private synchronized CrsTransformer createCrsTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
         boolean is3dTo3d = isCrs3d(sourceCrs) && isCrs3d(targetCrs);
         int sourceDimension = isCrs3d(sourceCrs) ? 3 : 2;
         int targetDimension = is3dTo3d ? 3 : 2;
 
         try {
-            return new CrsTransformerProj(crsCache.get(sourceCrs), crsCache.get(targetCrs), sourceCrs, targetCrs, sourceDimension, targetDimension);
+            return new CrsTransformerProj(getProjCrs(sourceCrs).get(), getProjCrs(targetCrs).get(), sourceCrs, targetCrs, sourceDimension, targetDimension);
+            //return new CrsTransformerProj(crsCache.get(sourceCrs), crsCache.get(targetCrs), sourceCrs, targetCrs, sourceDimension, targetDimension);
         } catch (FactoryException ex) {
-            LOGGER.debug("Proj error", ex);
+            LogContext.errorAsDebug(LOGGER, ex, "PROJ");
             throw new IllegalArgumentException(ex.getMessage(), ex);
         }
     }
@@ -187,7 +265,7 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
     @Override
     public List<String> getAxisAbbreviations(EpsgCrs crs) {
-        CoordinateReferenceSystem coordinateReferenceSystem = getCoordinateReferenceSystem(crs);
+        CoordinateReferenceSystem coordinateReferenceSystem = getCrsOrThrow(crs);
         ImmutableList.Builder<String> abbreviations = new ImmutableList.Builder<>();
         abbreviations.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(0).getAbbreviation());
         abbreviations.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(1).getAbbreviation());
@@ -200,7 +278,7 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
     @Override
     public List<Unit<?>> getAxisUnits(EpsgCrs crs) {
-        CoordinateReferenceSystem coordinateReferenceSystem = getCoordinateReferenceSystem(crs);
+        CoordinateReferenceSystem coordinateReferenceSystem = getCrsOrThrow(crs);
         ImmutableList.Builder<Unit<?>> axisUnits = new ImmutableList.Builder<>();
         axisUnits.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(0).getUnit());
         axisUnits.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(1).getUnit());
@@ -219,7 +297,7 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
     @Override
     public List<AxisDirection> getAxisDirections(EpsgCrs crs) {
-        CoordinateReferenceSystem coordinateReferenceSystem = getCoordinateReferenceSystem(crs);
+        CoordinateReferenceSystem coordinateReferenceSystem = getCrsOrThrow(crs);
         ImmutableList.Builder<AxisDirection> axisDirections = new ImmutableList.Builder<>();
         axisDirections.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(0).getDirection());
         axisDirections.add(coordinateReferenceSystem.getCoordinateSystem().getAxis(1).getDirection());
@@ -230,10 +308,11 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
         return axisDirections.build();
     }
 
-    private CoordinateReferenceSystem getCoordinateReferenceSystem(EpsgCrs crs) {
+    private CoordinateReferenceSystem getCrsOrThrow(EpsgCrs crs) {
         if (!isCrsSupported(crs)) {
             throw new IllegalArgumentException(String.format("CRS %s is not supported.", Objects.nonNull(crs) ? crs.toSimpleString() : "null"));
         }
-        return crsCache.get(crs);
+        return getProjCrs(crs).get();
+        //return crsCache.get(crs);
     }
 }
