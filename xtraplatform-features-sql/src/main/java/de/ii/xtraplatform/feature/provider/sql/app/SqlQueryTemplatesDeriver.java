@@ -159,7 +159,7 @@ public class SqlQueryTemplatesDeriver implements
                   .getName()
                   : getQualifiedColumn(attributeContainerAlias, column.getName());
           if (column.isSpatial()) {
-            return sqlDialect.applyToWkt(name, column.getForcePolygonCCW());
+            return sqlDialect.applyToWkt(name, column.isForcePolygonCCW());
           }
           if (column.isTemporal()) {
             return sqlDialect.applyToDatetime(name);

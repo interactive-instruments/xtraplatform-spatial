@@ -42,7 +42,7 @@ public class SchemaToSourcePathsVisitor<T extends SchemaBase<T>> implements Sche
         List<List<String>> paths = useTargetPath
             ? ImmutableList.of(schema.getPath())
             //TODO: static cleanup method in PathParser
-            : schema.getSourcePaths().stream()
+            : schema.getEffectiveSourcePaths().stream()
                 .map(sourcePath -> {
                     int i = sourcePath.indexOf('{');
 

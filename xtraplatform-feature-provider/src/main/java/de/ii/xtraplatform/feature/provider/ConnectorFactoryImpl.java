@@ -14,7 +14,12 @@ import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.domain.WithConnectionInfo;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.felix.ipojo.Factory;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Context;
@@ -49,10 +54,12 @@ public class ConnectorFactoryImpl implements ConnectorFactory, Registry<Factory>
 
     private final BundleContext context;
     private final FactoryRegistry<FeatureProviderConnector<?,?,?>> connectorFactories;
+    private final Map<FeatureProviderConnector<?,?,?>, Set<Runnable>> disposeListeners;
 
     public ConnectorFactoryImpl(@Context BundleContext context) {
         this.context = context;
         this.connectorFactories = new FactoryRegistryState<>(FACTORY_TYPE, "connector", context, PROVIDER_TYPE_KEY, CONNECTOR_TYPE_KEY);
+        this.disposeListeners = new HashMap<>();
     }
 
     @Override
@@ -68,7 +75,7 @@ public class ConnectorFactoryImpl implements ConnectorFactory, Registry<Factory>
     }
 
     @Override
-    public FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV2 featureProviderData) {
+    public synchronized FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV2 featureProviderData) {
         final String instanceId = "connectors/" + featureProviderData.getId();
         final String providerType = featureProviderData.getFeatureProviderType();
         ConnectionInfo connectionInfo = ((WithConnectionInfo<?>) featureProviderData)
@@ -110,7 +117,19 @@ public class ConnectorFactoryImpl implements ConnectorFactory, Registry<Factory>
     }
 
     @Override
-    public void disposeConnector(FeatureProviderConnector<?, ?, ?> connector) {
+    public synchronized void disposeConnector(FeatureProviderConnector<?, ?, ?> connector) {
         connectorFactories.disposeInstance(connector);
+        if (disposeListeners.containsKey(connector)) {
+            disposeListeners.get(connector).forEach(Runnable::run);
+            disposeListeners.get(connector).clear();
+        }
+    }
+
+    @Override
+    public synchronized void onDispose(FeatureProviderConnector<?, ?, ?> connector, Runnable runnable) {
+        if (!disposeListeners.containsKey(connector)) {
+            disposeListeners.put(connector, new HashSet<>());
+        }
+        disposeListeners.get(connector).add(runnable);
     }
 }

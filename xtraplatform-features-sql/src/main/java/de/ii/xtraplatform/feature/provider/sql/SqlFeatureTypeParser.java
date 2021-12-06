@@ -62,11 +62,11 @@ public class SqlFeatureTypeParser {
     pathCounter.putIfAbsent(property.getFullPath(), 0);
     int index = pathCounter.get(property.getFullPath());
 
-    if (property.getSourcePaths().size() <= index) {
+    if (property.getEffectiveSourcePaths().size() <= index) {
       LOGGER.warn("No source path found: {} {}", property.getFullPath(), index);
       return "";
     }
-    String current = property.getSourcePaths().get(index);
+    String current = property.getEffectiveSourcePaths().get(index);
     String current2 = current.indexOf('{') > -1
         ? current.substring(0, current.indexOf('{'))
         : current;

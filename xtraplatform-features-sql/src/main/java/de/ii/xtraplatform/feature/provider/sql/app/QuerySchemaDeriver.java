@@ -37,7 +37,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
 
   @Override
   public List<SqlPath> parseSourcePaths(FeatureSchema sourceSchema) {
-    return sourceSchema.getSourcePaths()
+    return sourceSchema.getEffectiveSourcePaths()
         .stream()
         .map(
             sourcePath ->
@@ -74,7 +74,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             .map(relation -> String
                 .format("%s.%s", relation.getSourceContainer(), relation.getSourceSortKey().get())),
         targetSchema.isObject() && targetSchema.getProperties().stream()
-            .anyMatch(prop -> prop.isValue() || prop.getSourcePaths().isEmpty())
+            .anyMatch(prop -> prop.isValue() || prop.getEffectiveSourcePaths().isEmpty())
             ? Stream.of(String.format("%s.%s", path.getName(), path.getSortKey()))
             : Stream.empty()
         )
@@ -214,10 +214,10 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             .relation(relations)
             .properties(newVisitedProperties)
             .constantValue(targetSchema.getConstantValue())
-            .forcePolygonCCW(targetSchema.getForcePolygonCCW());
+            .forcePolygonCCW(targetSchema.isForcePolygonCCW() ? Optional.empty() : Optional.of(false));
 
     if (targetSchema.isObject()) {
-      if (targetSchema.getProperties().stream().anyMatch(prop -> prop.isValue() || prop.getSourcePaths().isEmpty())) {
+      if (targetSchema.getProperties().stream().anyMatch(prop -> prop.isValue() || prop.getEffectiveSourcePaths().isEmpty())) {
         builder
             .sortKey(path.getSortKey())
             .primaryKey(path.getPrimaryKey());
