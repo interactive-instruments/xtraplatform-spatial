@@ -29,7 +29,7 @@ public class ExtentReaderWfs implements ExtentReader {
 
     public ExtentReaderWfs(FeatureMetadata featureMetadata, CrsTransformerFactory crsTransformerFactory, EpsgCrs nativeCrs) {
         this.featureMetadata = featureMetadata;
-        this.crsTransformer = crsTransformerFactory.getTransformer(OgcCrs.CRS84, nativeCrs);
+        this.crsTransformer = crsTransformerFactory.getTransformer(OgcCrs.CRS84, nativeCrs, true);
     }
 
     @Override

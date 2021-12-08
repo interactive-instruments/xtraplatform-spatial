@@ -113,7 +113,7 @@ public class FilterEncoderSql {
     private List<Double> transformCoordinatesIfNecessary(List<Double> coordinates, Optional<EpsgCrs> sourceCrs) {
 
         if (sourceCrs.isPresent() && !Objects.equals(sourceCrs.get(), nativeCrs)) {
-            Optional<CrsTransformer> transformer = crsTransformerFactory.getTransformer(sourceCrs.get(), nativeCrs);
+            Optional<CrsTransformer> transformer = crsTransformerFactory.getTransformer(sourceCrs.get(), nativeCrs, true);
             if (transformer.isPresent()) {
                 double[] transformed = transformer.get()
                                                   .transform(Doubles.toArray(coordinates), coordinates.size() / 2,

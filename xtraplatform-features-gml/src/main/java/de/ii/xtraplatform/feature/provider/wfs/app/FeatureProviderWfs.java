@@ -204,7 +204,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, 
 
     @Override
     public Optional<BoundingBox> getSpatialExtent(String typeName, EpsgCrs crs) {
-        return getSpatialExtent(typeName).flatMap(boundingBox -> crsTransformerFactory.getTransformer(getNativeCrs(), crs)
+        return getSpatialExtent(typeName).flatMap(boundingBox -> crsTransformerFactory.getTransformer(getNativeCrs(), crs, true)
                                                                                       .flatMap(crsTransformer -> {
                                                                                           try {
                                                                                               return Optional.of(crsTransformer.transformBoundingBox(boundingBox));

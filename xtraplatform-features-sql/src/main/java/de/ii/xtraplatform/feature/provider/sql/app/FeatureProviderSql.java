@@ -427,7 +427,7 @@ public class FeatureProviderSql extends
   public Optional<BoundingBox> getSpatialExtent(String typeName, EpsgCrs crs) {
     return spatialExtentCache.computeIfAbsent(typeName + crs.toSimpleString(),
         ignore -> getSpatialExtent(typeName)
-            .flatMap(boundingBox -> crsTransformerFactory.getTransformer(getNativeCrs(), crs)
+            .flatMap(boundingBox -> crsTransformerFactory.getTransformer(getNativeCrs(), crs, true)
                 .flatMap(crsTransformer -> {
                   try {
                     return Optional.of(crsTransformer.transformBoundingBox(boundingBox));

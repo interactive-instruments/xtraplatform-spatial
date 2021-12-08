@@ -126,18 +126,29 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
         .mapToObj(i -> projCrs.getCoordinateSystem().getAxis(i).getDirection())
         .collect(ImmutableList.toImmutableList());
   }
-
   @Override
   public Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
+    return getTransformer(sourceCrs, targetCrs, false);
+  }
+
+  @Override
+  public Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs, boolean force2d) {
     if (Objects.equals(sourceCrs, targetCrs)) {
       return Optional.empty();
     }
     CoordinateReferenceSystem sourceProjCrs = getCrsOrThrow(sourceCrs);
     CoordinateReferenceSystem targetProjCrs = getCrsOrThrow(targetCrs);
 
+    if (force2d) {
+      sourceProjCrs = getHorizontalCrs(sourceProjCrs);
+      targetProjCrs = getHorizontalCrs(targetProjCrs);
+    }
+
+    CoordinateReferenceSystem finalSourceProjCrs = sourceProjCrs;
+    CoordinateReferenceSystem finalTargetProjCrs = targetProjCrs;
     CrsTransformer transformer = useCaches
         ? getCacheForSource(sourceCrs).computeIfAbsent(targetCrs, ignore -> createCrsTransformer(sourceCrs, targetCrs,
-        sourceProjCrs, targetProjCrs))
+                                                                                                 finalSourceProjCrs, finalTargetProjCrs))
         : createCrsTransformer(sourceCrs, targetCrs, sourceProjCrs, targetProjCrs);
 
     return Optional.of(transformer);

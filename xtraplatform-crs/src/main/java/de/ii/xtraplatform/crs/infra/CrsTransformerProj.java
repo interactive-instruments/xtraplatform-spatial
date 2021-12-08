@@ -104,6 +104,20 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
 
     @Override
     public double[] transform(double[] coordinates, int numberOfPoints, int dimension) {
+        // TODO this should not be necessary and proper transformers should always be created
+        if (sourceDimension==3 && dimension==2) {
+            dimension = 3;
+            double[] newCoordinates = new double[dimension * numberOfPoints];
+            for (int i=0; i<numberOfPoints; i++) {
+                newCoordinates[3*i] = coordinates[2*i];
+                newCoordinates[3*i+1] = coordinates[2*i+1];
+                newCoordinates[3*i+2] = 0.0;
+            }
+            coordinates = newCoordinates;
+        } else if (sourceDimension==2 && dimension==3) {
+            throw new IllegalStateException("2d coordinates expected as input to a CRS transformation, but 3d coordinates were provided.");
+        }
+
         try {
             double[] target = new double[dimension * numberOfPoints];
 

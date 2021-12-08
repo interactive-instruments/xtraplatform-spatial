@@ -22,5 +22,5 @@ public interface CrsTransformerFactory {
     boolean isSupported(EpsgCrs crs);
 
     Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs);
-
+    Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs, boolean force2d);
 }
