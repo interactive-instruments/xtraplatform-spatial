@@ -56,7 +56,7 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
   private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
   private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
-  private final boolean useCaches = true;
+  private final boolean useCaches = false;
 
   public CrsTransformerFactoryProj(@Requires ProjLoader projLoader) {
     this.crsCache = new ConcurrentHashMap<>();
