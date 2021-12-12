@@ -19,4 +19,6 @@ public interface ConnectorFactory {
     FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV2 featureProviderData);
 
     void disposeConnector(FeatureProviderConnector<?, ?, ?> connector);
+
+    void onDispose(FeatureProviderConnector<?, ?, ?> connector, Runnable runnable);
 }

@@ -57,6 +57,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -196,7 +197,7 @@ public class FilterEncoderSql {
                             }
                             return column.getName();
                         })
-                    .or(() -> allowColumnFallback ? Optional.of(propertyName) : Optional.empty())
+                    .or(() -> allowColumnFallback ? Optional.of(propertyName.substring(propertyName.lastIndexOf(".")+1)) : Optional.empty())
                     .orElseThrow(() -> new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName)));
         }
 
@@ -292,11 +293,7 @@ public class FilterEncoderSql {
         }
 
         private String reduceSelectToColumn(String expression) {
-            //TODO: support nested mapping filters
-            if (!expression.contains(" WHERE ")) {
-                return String.format(expression, "", "");
-            }
-            return String.format(expression.substring(expression.indexOf(" WHERE ") + 7, expression.length() - 1), "", "");
+            return String.format(expression.contains(" WHERE ") ? expression.substring(expression.indexOf(" WHERE ") + 7, expression.length() - 1) : expression, "", "");
         }
 
         private String replaceColumnWithLiteral(String expression, String column, String literal) {
@@ -835,20 +832,36 @@ public class FilterEncoderSql {
 
         private final SchemaSql schema;
         private final boolean isUserFilter;
+        private final List<String> allowedColumnPrefixes;
 
         private CqlToSqlNested(SchemaSql schema, boolean isUserFilter) {
             super(null);
             this.schema = schema;
             this.isUserFilter = isUserFilter;
+            List<String> parentTables = schema.getParentPath()
+                .stream()
+                .map(element -> element.replaceAll("\\{.*?\\}", "").replaceAll("\\[.*?\\]", ""))
+                .collect(Collectors.toList());
+            this.allowedColumnPrefixes = new ArrayList<>();
+            String current = "";
+            for (int i = 0; i < parentTables.size(); i++) {
+                current += parentTables.get(i) + ".";
+                allowedColumnPrefixes.add(current);
+            }
         }
 
         @Override
         public String visit(Property property, List<String> children) {
             // strip double quotes from the property name
             String propertyName = property.getName().replaceAll("^\"|\"$", "");
-            String column = getColumn(schema, propertyName, !isUserFilter && !property.getName().contains("."));
+            boolean hasPrefix = propertyName.contains(".");
+            String prefix = hasPrefix ? propertyName.substring(0, propertyName.lastIndexOf(".") + 1) : "";
+            boolean hasAllowedPrefix = hasPrefix && allowedColumnPrefixes.contains(prefix);
+            boolean allowColumnFallback = !hasPrefix || hasAllowedPrefix;
+            String column = getColumn(schema, propertyName, !isUserFilter && allowColumnFallback);
             List<String> aliases = aliasGenerator.getAliases(schema, isUserFilter ? 1 : 0);
-            String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
+            String alias = hasAllowedPrefix ? aliases.get(allowedColumnPrefixes.indexOf(prefix)) : aliases.get(aliases.size() - 1);
+            String qualifiedColumn = String.format("%s.%s", alias, column);
 
             //TODO: support nested mapping filters
             if (column.startsWith("_route_")) {

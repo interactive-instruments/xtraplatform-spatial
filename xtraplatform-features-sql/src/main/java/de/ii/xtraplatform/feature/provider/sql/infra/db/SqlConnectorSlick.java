@@ -230,6 +230,10 @@ public class SqlConnectorSlick implements SqlConnector {
       return Tuple.of(false, "provider types do not match");
     }
 
+    if (!this.connectionInfo.isShared() || !connectionInfo.isShared()) {
+      return Tuple.of(false, "");
+    }
+
     ConnectionInfoSql connectionInfoSql = (ConnectionInfoSql) connectionInfo;
 
     Builder<String, Boolean> matches = new Builder<String, Boolean>()
@@ -243,7 +247,10 @@ public class SqlConnectorSlick implements SqlConnector {
           .put("minConnections", Objects.equals(this.connectionInfo.getPool().getMinConnections(), connectionInfoSql.getPool().getMinConnections()))
           .put("maxConnections", Objects.equals(this.connectionInfo.getPool().getMaxConnections(), connectionInfoSql.getPool().getMaxConnections()))
           .put("dialect", Objects.equals(this.connectionInfo.getDialect(), connectionInfoSql.getDialect()))
-          .put("schema", Objects.equals(this.connectionInfo.getSchemas(), connectionInfoSql.getSchemas()));
+          .put("schema", Objects.equals(this.connectionInfo.getSchemas(), connectionInfoSql.getSchemas()))
+          .put("initFailFast", Objects.equals(this.connectionInfo.getPool().getInitFailFast(), connectionInfoSql.getPool().getInitFailFast()))
+          .put("idleTimeout", Objects.equals(this.connectionInfo.getPool().getIdleTimeout(), connectionInfoSql.getPool().getIdleTimeout()))
+          .put("driverOptions", Objects.equals(this.connectionInfo.getDriverOptions(), connectionInfoSql.getDriverOptions()));
     }
 
     List<String> nonMatching = matches.build().entrySet().stream()

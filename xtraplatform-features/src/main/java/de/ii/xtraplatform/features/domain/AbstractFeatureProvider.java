@@ -70,6 +70,13 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         this.extensionRegistry = extensionRegistry;
     }
 
+    private void onConnectorDispose() {
+        if (getState() != STATE.RELOADING) {
+            LOGGER.debug("CONNECTOR GONE {}", getId());
+            doReload();
+        }
+    }
+
     @Override
     protected boolean onStartup() throws InterruptedException {
         // TODO: delay disposing old connector and streamRunner until all queries are finished
@@ -86,6 +93,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         this.typeInfos = createTypeInfos(getPathParser(), getData().getTypes());
         this.streamRunner = reactive.runner(getData().getId(), getRunnerCapacity(((WithConnectionInfo<?>)getData()).getConnectionInfo()), getRunnerQueueSize(((WithConnectionInfo<?>)getData()).getConnectionInfo()));
         this.connector = (FeatureProviderConnector<T, U, V>) connectorFactory.createConnector(getData());
+        connectorFactory.onDispose(connector, this::onConnectorDispose);
 
         if (!getConnector().isConnected()) {
             connectorFactory.disposeConnector(connector);
