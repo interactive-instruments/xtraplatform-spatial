@@ -92,32 +92,18 @@ NULL: N U L L;
 
 /*
 #=============================================================================#
-# Definition of LIKE operator modifiers
-#=============================================================================#
-*/
-
-WILDCARD : W I L D C A R D;
-
-SINGLECHAR : S I N G L E C H A R;
-
-ESCAPECHAR : E S C A P E C H A R;
-
-NOCASE : N O C A S E;
-
-/*
-#=============================================================================#
 # Definition of SPATIAL operators
 #=============================================================================#
 */
 
-/*
-# NOTE: The buffer operators (DWITHIN and BEYOND) are not included because
-#       these are outside the scope of a "simple" core for CQL.  These
-#       can be added as extensions.
-#
-*/
-SpatialOperator : E Q U A L S | D I S J O I N T | T O U C H E S | W I T H I N | O V E R L A P S
-                | C R O S S E S | I N T E R S E C T S | C O N T A I N S;
+SpatialOperator : S UNDERSCORE I N T E R S E C T S
+                | S UNDERSCORE E Q U A L S
+                | S UNDERSCORE D I S J O I N T
+                | S UNDERSCORE T O U C H E S
+                | S UNDERSCORE W I T H I N
+                | S UNDERSCORE O V E R L A P S
+                | S UNDERSCORE C R O S S E S
+                | S UNDERSCORE C O N T A I N S;
 
 /*
 #=============================================================================#
@@ -125,26 +111,31 @@ SpatialOperator : E Q U A L S | D I S J O I N T | T O U C H E S | W I T H I N | 
 #=============================================================================#
 */
 
-/*
-# only support the ones from original cql for now
-*/
-TemporalOperator : A F T E R | B E F O R E | B E G I N S | B E G U N B Y | T C O N T A I N S | D U R I N G
-                 | E N D E D B Y | E N D S | T E Q U A L S | M E E T S | M E T B Y | T O V E R L A P S
-                 | O V E R L A P P E D B Y | A N Y I N T E R A C T S;
-
-/*
-TemporalOperator : 'AFTER' | 'BEFORE' | 'BEGINS' | 'BEGUNBY' | 'TCONTAINS'
-                 | 'DURING' | 'ENDEDBY' | 'ENDS' | 'TEQUALS' | 'MEETS'
-                 | 'METBY' | 'TOVERLAPS' | 'OVERLAPPEDBY' | 'ANYINTERACTS'
-                 | 'TINTERSECTS';
-*/
+TemporalOperator : T UNDERSCORE A F T E R
+                 | T UNDERSCORE B E F O R E
+                 | T UNDERSCORE C O N T A I N S
+                 | T UNDERSCORE D I S J O I N T
+                 | T UNDERSCORE D U R I N G
+                 | T UNDERSCORE E Q U A L S
+                 | T UNDERSCORE F I N I S H E D B Y
+                 | T UNDERSCORE F I N I S H E S
+                 | T UNDERSCORE I N T E R S E C T S
+                 | T UNDERSCORE M E E T S
+                 | T UNDERSCORE M E T B Y
+                 | T UNDERSCORE O V E R L A P P E D B Y
+                 | T UNDERSCORE O V E R L A P S
+                 | T UNDERSCORE S T A R T E D B Y
+                 | T UNDERSCORE S T A R T S;
 
 /*
 #=============================================================================#
 # Definition of ARRAY operators
 #=============================================================================#
 */
-ArrayOperator : A E Q U A L S | A C O N T A I N S | C O N T A I N E D B Y | A O V E R L A P S;
+ArrayOperator : A UNDERSCORE E Q U A L S
+              | A UNDERSCORE C O N T A I N S
+              | A UNDERSCORE C O N T A I N E D B Y
+              | A UNDERSCORE O V E R L A P S;
 
 /*
 #=============================================================================#
@@ -187,6 +178,10 @@ ENVELOPE: E N V E L O P E;
 
 CharacterStringLiteralStart : QUOTE -> more, mode(STR);// (Character)* QUOTE;
 
+CASEI: C A S E I;
+
+ACCENTI: A C C E N T I;
+
 /*CharacterLiteral : CharacterStringLiteral
                  | BitStringLiteral
                  | HexStringLiteral;*/
@@ -208,14 +203,6 @@ Identifier : IdentifierStart (COLON | PERIOD | IdentifierPart)* | DOUBLEQUOTE Id
 IdentifierStart : ALPHA;
 
 IdentifierPart : ALPHA | DIGIT | UNDERSCORE | DOLLAR;
-
-
-
-
-
-BitStringLiteral : B QUOTE (BIT)* QUOTE;
-
-HexStringLiteral : X QUOTE (HEXIT)* QUOTE;
 
 //Character : Str -> mode(STR) ;//ALPHA | DIGIT | SpecialCharacter | QuoteQuote | ' ';
 
@@ -324,6 +311,16 @@ Sign : PLUS | MINUS;
 
 TemporalLiteral : Instant | Interval;
 
+InstantLiteral : DateInstant | TimestampInstant;
+
+DateInstant: DATE LEFTPAREN DateInstantString RIGHTPAREN;
+
+DateInstantString : QUOTE FullDate QUOTE;
+
+TimestampInstant : TIMESTAMP LEFTPAREN TimestampInstantString RIGHTPAREN;
+
+TimestampInstantString : QUOTE FullDate 'T' UtcTime QUOTE;
+
 Instant : FullDate | FullDate 'T' UtcTime | NOW LEFTPAREN RIGHTPAREN;
 
 Interval : (InstantInInterval)? SOLIDUS (InstantInInterval)?;
@@ -349,6 +346,10 @@ TimeMinute : DIGIT DIGIT;
 TimeSecond : DIGIT DIGIT (PERIOD (DIGIT)+)?;
 
 NOW : N O W;
+
+DATE : D A T E;
+
+TIMESTAMP : T I M E S T A M P;
 
 /*
 #=============================================================================#

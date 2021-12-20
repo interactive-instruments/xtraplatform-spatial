@@ -43,12 +43,11 @@ comparisonPredicate : binaryComparisonPredicate
 
 binaryComparisonPredicate : scalarExpression ComparisonOperator scalarExpression;
 
-likeModifier: wildcard | singlechar | escapechar | nocase;
-wildcard : WILDCARD characterLiteral;
-singlechar : SINGLECHAR characterLiteral;
-escapechar : ESCAPECHAR characterLiteral;
-nocase : NOCASE booleanLiteral;
-propertyIsLikePredicate :  scalarExpression (NOT)? LIKE scalarExpression (likeModifier)*;
+propertyIsLikePredicate :  characterExpression (NOT)? LIKE scalarExpression;
+
+characterExpression : characterLiteral
+                    | propertyName
+                    | function;
 
 propertyIsBetweenPredicate : scalarExpression (NOT)? BETWEEN
                              (scalarExpression | temporalExpression) AND (scalarExpression | temporalExpression);
@@ -63,20 +62,25 @@ scalarExpression : propertyName
                     | characterLiteral
                     | numericLiteral
                     | booleanLiteral
+                    | instantLiteral
                     | function
                     /*| arithmeticExpression*/;
 
 //CHANGE: support compound property names
 //CHANGE: support nested filters
-propertyName: (Identifier (LEFTSQUAREBRACKET nestedCqlFilter RIGHTSQUAREBRACKET)? PERIOD)* Identifier;
+propertyName: (Identifier (LEFTSQUAREBRACKET nestedCqlFilter RIGHTSQUAREBRACKET)? PERIOD)* Identifier
+            | CASEI LEFTPAREN propertyName RIGHTPAREN
+            | ACCENTI LEFTPAREN propertyName RIGHTPAREN;
 
 characterLiteral: CharacterStringLiteral
-                   | BitStringLiteral
-                   | HexStringLiteral;
+                | CASEI LEFTPAREN characterLiteral RIGHTPAREN
+                | ACCENTI LEFTPAREN characterLiteral RIGHTPAREN;
 
 numericLiteral: NumericLiteral;
 
 booleanLiteral: BooleanLiteral;
+
+instantLiteral: DateInstant | TimestampInstant;
 
 /*
 # NOTE: This is just a place holder for a regular expression
@@ -170,7 +174,7 @@ maxElev : NumericLiteral;
 #=============================================================================#
 */
 //CHANGE: allow intervals with /
-temporalPredicate : temporalExpression (TemporalOperator | ComparisonOperator) temporalExpression;
+temporalPredicate : TemporalOperator LEFTPAREN temporalExpression COMMA temporalExpression RIGHTPAREN;
 
 temporalExpression : propertyName
                    | temporalLiteral
@@ -187,7 +191,7 @@ temporalLiteral: TemporalLiteral;
 #=============================================================================#
 */
 
-arrayPredicate: arrayExpression ArrayOperator arrayExpression;
+arrayPredicate: ArrayOperator LEFTPAREN arrayExpression COMMA arrayExpression RIGHTPAREN;
 
 arrayExpression: propertyName | function | arrayLiteral;
 
@@ -234,7 +238,7 @@ inPredicate : (propertyName | function)? (NOT)? IN LEFTPAREN ( characterLiteral 
 #=============================================================================#
 */
 
-function : Identifier argumentList;
+function : Identifier argumentList | CASEI LEFTPAREN function RIGHTPAREN | ACCENTI LEFTPAREN function RIGHTPAREN;
 
 argumentList : LEFTPAREN (positionalArgument)?  RIGHTPAREN;
 
