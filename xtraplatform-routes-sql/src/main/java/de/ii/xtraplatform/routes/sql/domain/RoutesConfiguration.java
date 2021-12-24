@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.routes.sql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
 import java.util.Map;
@@ -21,27 +22,28 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableRoutesConfiguration.Builder.class)
 public interface RoutesConfiguration extends ExtensionConfiguration {
 
-  String getFromToQuery();
+  Map<String, String> getFromToQuery();
 
-  String getEdgesQuery();
+  Map<String, String> getEdgesQuery();
 
   String getRouteQuery();
-
-  @Value.Default
-  default String getModePredicate() { return ""; }
-
-  @Value.Default
-  default String getLoadRestrictionPredicate() { return ""; }
-
-  @Value.Default
-  default String getHeightRestrictionPredicate() { return ""; }
-
-  @Value.Default
-  default String getObstaclesPredicate() { return ""; }
 
   Map<String, Integer> getFlags();
 
   EpsgCrs getNativeCrs();
+
+  Map<String, Preference> getPreferences();
+
+  Map<String, String> getModes();
+
+  @Value.Default
+  default String getWeightDefault() { return "0"; }
+
+  @Value.Default
+  default String getHeightDefault() { return "0"; }
+
+  @Value.Default
+  default String getObstaclesDefault() { return "ST_GeomFromText('GEOMETRYCOLLECTION EMPTY')"; }
 
   @Nullable
   Boolean getWarmup();

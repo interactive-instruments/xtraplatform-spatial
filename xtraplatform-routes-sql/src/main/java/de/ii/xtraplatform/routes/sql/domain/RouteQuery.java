@@ -28,11 +28,13 @@ public interface RouteQuery extends FeatureQueryExtension {
 
   String getReverseCostColumn();
 
+  String getMode();
+
   Optional<Double> getWeight();
 
   Optional<Double> getHeight();
 
-  Optional<String> getObstacles(); // TODO use MultiPolygon geometry class and do the WKT conversion here (after consolidation of geometry types); for now we expect WKT
+  Optional<MultiPolygon> getObstacles();
 
   List<String> getFlags();
 }

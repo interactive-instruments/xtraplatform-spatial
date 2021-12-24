@@ -26,11 +26,13 @@ import de.ii.xtraplatform.routes.sql.domain.RouteQuery;
 import de.ii.xtraplatform.routes.sql.domain.RoutesConfiguration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
@@ -68,9 +70,13 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
         case STARTED:
           if (routesConfiguration.get().shouldWarmup()) {
             LOGGER.debug("Warming up routes queries for {}", data.getId());
-            sqlClient.run(getWarmupSelect(routesConfiguration.get()), new Builder().build()).whenComplete((r,t) -> {
-              LOGGER.debug("Routes queries for {} are warmed up", data.getId());
-            });
+            List<String> queries = getWarmupSelects(routesConfiguration.get());
+            AtomicInteger completed = new AtomicInteger();
+            queries.forEach(query -> sqlClient.run(query, new Builder().build()).whenComplete((r,t) -> {
+              completed.getAndIncrement();
+              if (completed.get()==queries.size())
+                LOGGER.debug("Routes queries for {} are warmed up", data.getId());
+            }));
           }
           break;
       }
@@ -164,16 +170,18 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
 
     return getSegments(query, cfg.getNativeCrs()).stream()
         .map(segment -> getRouteSelect(cfg, segment.first(), segment.second(),
-                                       query.getCostColumn(), query.getReverseCostColumn(), query.getFlags(),
+                                       query.getCostColumn(), query.getReverseCostColumn(),
+                                       query.getMode(), query.getFlags(),
                                        query.getWeight(), query.getHeight(), query.getObstacles()))
         .collect(Collectors.toList());
   }
 
   private String getRouteSelect(RoutesConfiguration cfg,
                                 Point start, Point end,
-                                String costColumn, String reverseCostColumn, List<String> flags,
+                                String costColumn, String reverseCostColumn,
+                                String mode, List<String> flags,
                                 Optional<Double> weight, Optional<Double> height,
-                                Optional<String> obstacles) {
+                                Optional<Geometry.MultiPolygon> obstacles) {
 
     int mask = 0;
     for (String flag: flags) {
@@ -182,55 +190,50 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
       }
     }
 
+    String fromToQuery = Objects.requireNonNull(cfg.getFromToQuery().get(mode),"Invalid Route Provider configuration. Mode '"+mode+"' is supported by the API configuration, but not the 'fromToQuery' in the provider.");
+    String edgesQuery = Objects.requireNonNull(cfg.getEdgesQuery().get(mode),"Invalid Route Provider configuration. Mode '"+mode+"' is supported by the API configuration, but not the 'edgesQuery' in the provider.");
+
     String select = cfg.getRouteQuery()
-        .replace("${edgesQuery}", "'" +  cfg.getEdgesQuery().replaceAll("'", "''") + "'")
+        .replace("${edgesQuery}", "'" +  edgesQuery.replaceAll("'", "''") + "'")
         .replace("${from_vid}", "(SELECT oid FROM start_pnt LIMIT 1)")
         .replace("${to_vid}", "(SELECT oid FROM end_pnt LIMIT 1)")
         .replace("${flag_mask}", String.valueOf(mask))
         .replace("${cost_column}", costColumn)
         .replace("${reverse_cost_column}", reverseCostColumn)
-        .replace("${height}", String.valueOf(height.orElse(-1.0)))
-        .replace("${weight}", String.valueOf(weight.orElse(-1.0)))
-        .replace("${obstacles}", obstacles.map(o -> "'SELECT gid FROM v_ways WHERE ST_Intersects(the_geom, ST_GeomFromText(''"+o+"'',4326))'").orElse("''"))
         // TODO best is rwl-specific, move to an option or adjust the route query
         .replace("${best ? 1 : -1}", flags.contains("best") ? "1" : "-1");
 
-    // TODO support mode
-    Optional<String> mode = Optional.empty();
-    if (mode.isPresent()) {
-      select = select.replace("${modePredicate}", cfg.getModePredicate())
-          .replace("${mode}", mode.get());
-    } else {
-      select = select.replace("${modePredicate}", "");
-    }
-
     if (weight.isPresent()) {
-      select = select.replace("${loadRestrictionPredicate}", cfg.getLoadRestrictionPredicate())
-          .replace("${weight}", String.format(Locale.US,"%f",weight.get()));
+      select = select
+          .replace("${weight}", String.valueOf(weight.get()));
     } else {
-        select = select.replace("${loadRestrictionPredicate}", "");
+      select = select
+          .replace("${weight}", cfg.getWeightDefault().replaceAll("'", "''") );
     }
 
     if (height.isPresent()) {
-      select = select.replace("${heightRestrictionPredicate}", cfg.getHeightRestrictionPredicate())
-          .replace("${height}", String.format(Locale.US,"%f",height.get()));
+      select = select
+          .replace("${height}", String.valueOf(height.get()));
     } else {
-      select = select.replace("${heightRestrictionPredicate}", "");
+      select = select
+          .replace("${height}", cfg.getHeightDefault().replaceAll("'", "''") );
     }
 
     if (obstacles.isPresent()) {
-      select = select.replace("${obstaclesPredicate}", cfg.getObstaclesPredicate())
-          .replace("${obstacles}", obstacles.get().toString()); // TODO proper conversion from GeoJSON to WKT
+      select = select
+          .replace("${obstacles}","ST_GeomFromText(''"+getWkt(obstacles.get())+"'',"+obstacles.get().getCrs().orElse(OgcCrs.CRS84).getCode()+")");
     } else {
-      select = select.replace("${obstaclesPredicate}", "");
+      select = select
+          .replace("${obstacles}", cfg.getObstaclesDefault().replaceAll("'", "''") );
     }
+
     //TODO: if cfg.getNativeCrs() is not set use provider crs
 
     return "WITH\n"
         + " pnts AS (SELECT ST_GeomFromText('POINT(" + start.getCoordinates().get(0).get(0) + " " + start.getCoordinates().get(0).get(1) + ")', " + cfg.getNativeCrs().getCode() + ") AS pnt1,\n"
         + "                 ST_GeomFromText('POINT(" + end.getCoordinates().get(0).get(0) + " " + end.getCoordinates().get(0).get(1) + ")', " + cfg.getNativeCrs().getCode() + ") AS pnt2),\n"
-        + " start_pnt AS (" + cfg.getFromToQuery().replaceAll("\\$\\{point\\}", "(SELECT pnt1 FROM pnts)") + "),\n"
-        + " end_pnt AS (" + cfg.getFromToQuery().replaceAll("\\$\\{point\\}", "(SELECT pnt2 FROM pnts)") + ")\n"
+        + " start_pnt AS (" + fromToQuery.replaceAll("\\$\\{point\\}", "(SELECT pnt1 FROM pnts)") + "),\n"
+        + " end_pnt AS (" + fromToQuery.replaceAll("\\$\\{point\\}", "(SELECT pnt2 FROM pnts)") + ")\n"
         + select + " AS segment WHERE edge != -1";
   }
 
@@ -265,21 +268,28 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
     return point;
   }
 
-  private String getWarmupSelect(RoutesConfiguration cfg) {
-    // TODO we should process all values from the preferences options
-    String costColumn = "cost_s";
-    String reverseCostColumn = "reverse_cost_s";
-    return cfg.getRouteQuery()
-        .replace("${edgesQuery}", "'" +  cfg.getEdgesQuery().replaceAll("'", "''") + "'")
-        .replace("${from_vid}", "0")
-        .replace("${to_vid}", "0")
-        .replace("${flag_mask}", "0")
-        .replace("${cost_column}", costColumn)
-        .replace("${reverse_cost_column}", reverseCostColumn)
-        .replace("${height}", String.valueOf(-1.0))
-        .replace("${weight}", String.valueOf(-1.0))
-        .replace("${obstacles}", "''")
-        .replace("${best ? 1 : -1}", "-1");
+  private List<String> getWarmupSelects(RoutesConfiguration cfg) {
+    return cfg.getEdgesQuery()
+        .values()
+        .stream()
+        .map(edgesQuery ->
+                 cfg.getPreferences()
+                     .values()
+                     .stream()
+                     .map(preference -> cfg.getRouteQuery()
+                         .replace("${edgesQuery}", "'" +  edgesQuery.replaceAll("'", "''") + "'")
+                         .replace("${from_vid}", "0")
+                         .replace("${to_vid}", "0")
+                         .replace("${flag_mask}", "0")
+                         .replace("${cost_column}", preference.getCostColumn())
+                         .replace("${reverse_cost_column}", preference.getReverseCostColumn())
+                         .replace("${height}", cfg.getHeightDefault())
+                         .replace("${weight}", cfg.getWeightDefault())
+                         .replace("${obstacles}", cfg.getObstaclesDefault())
+                         .replace("${best ? 1 : -1}", "-1"))
+                     .collect(Collectors.toUnmodifiableList()))
+        .flatMap(List::stream)
+        .collect(Collectors.toUnmodifiableList());
   }
 
   private Optional<RouteQuery> getRouteQuery(FeatureQuery query) {
@@ -298,4 +308,35 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
         .map(extension -> (RoutesConfiguration) extension)
         .findFirst();
   }
+
+  private String getWkt(Geometry.MultiPolygon multiPolygon) {
+    return "MULTIPOLYGON("+multiPolygon.getCoordinates().stream()
+        .map(this::getPolygon)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.joining(","))+")";
+  }
+
+  private Optional<String> getPolygon(Geometry.Polygon polygon) {
+    List<Optional<String>> rings = polygon.getCoordinates().stream()
+        .map(this::getRing)
+        .collect(Collectors.toUnmodifiableList());
+    if (rings.get(0).isEmpty())
+      return Optional.empty();
+    return Optional.of("("+rings.stream()
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.joining(","))+")");
+  }
+
+  private Optional<String> getRing(List<Geometry.Coordinate> ring) {
+    if (ring.size() < 4)
+      return Optional.empty();
+    return Optional.of("("+ring.stream().map(this::getPos).collect(Collectors.joining(","))+")");
+  }
+
+  private String getPos(Geometry.Coordinate pos) {
+    return pos.stream().map(String::valueOf).collect(Collectors.joining(" "));
+  }
+
 }
