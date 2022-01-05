@@ -15,26 +15,26 @@ import org.immutables.value.Value;
 import java.util.List;
 
 @Value.Immutable
-@JsonDeserialize(as = Before.class)
-public interface Before extends TemporalOperation, CqlNode {
+@JsonDeserialize(as = SEquals.class)
+public interface SEquals extends SpatialOperation, CqlNode {
 
     @JsonCreator
-    static Before of(List<Operand> operands) {
-        return new ImmutableBefore.Builder().operands(operands)
-                                               .build();
+    static SEquals of(List<Operand> operands) {
+        return new ImmutableSEquals.Builder().operands(operands)
+                                        .build();
     }
 
-    static Before of(String property, TemporalLiteral temporalLiteral) {
-        return new ImmutableBefore.Builder().operands(ImmutableList.of(Property.of(property), temporalLiteral))
+    static SEquals of(String property, SpatialLiteral spatialLiteral) {
+        return new ImmutableSEquals.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
                                             .build();
     }
 
-    static Before of(String property, String property2) {
-        return new ImmutableBefore.Builder().operands(ImmutableList.of(Property.of(property),Property.of(property2)))
+    static SEquals of(String property, String property2) {
+        return new ImmutableSEquals.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                             .build();
     }
 
-    abstract class Builder extends TemporalOperation.Builder<Before> {
+    abstract class Builder extends SpatialOperation.Builder<SEquals> {
     }
 
 }

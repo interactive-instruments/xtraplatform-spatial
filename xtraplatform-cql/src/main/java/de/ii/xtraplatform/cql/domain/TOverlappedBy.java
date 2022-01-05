@@ -11,10 +11,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableOverlappedBy.Builder.class)
-public interface OverlappedBy extends TemporalOperation, CqlNode {
+@JsonDeserialize(builder = ImmutableTOverlappedBy.Builder.class)
+public interface TOverlappedBy extends TemporalOperation, CqlNode {
 
-    abstract class Builder extends TemporalOperation.Builder<OverlappedBy> {
+    abstract class Builder extends TemporalOperation.Builder<TOverlappedBy> {
     }
 
 }

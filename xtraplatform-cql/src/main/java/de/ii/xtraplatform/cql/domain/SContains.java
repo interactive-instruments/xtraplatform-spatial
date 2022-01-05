@@ -15,25 +15,25 @@ import org.immutables.value.Value;
 import java.util.List;
 
 @Value.Immutable
-@JsonDeserialize(as = Contains.class)
-public interface Contains extends SpatialOperation, CqlNode {
+@JsonDeserialize(as = SContains.class)
+public interface SContains extends SpatialOperation, CqlNode {
 
     @JsonCreator
-    static Contains of(List<Operand> operands) {
-        return new ImmutableContains.Builder().operands(operands)
+    static SContains of(List<Operand> operands) {
+        return new ImmutableSContains.Builder().operands(operands)
                                                   .build();
     }
 
-    static Contains of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableContains.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
+    static SContains of(String property, SpatialLiteral spatialLiteral) {
+        return new ImmutableSContains.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
                                               .build();
     }
 
-    static Contains of(String property, String property2) {
-        return new ImmutableContains.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
+    static SContains of(String property, String property2) {
+        return new ImmutableSContains.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                                  .build();
     }
 
-    abstract class Builder extends SpatialOperation.Builder<Contains> {
+    abstract class Builder extends SpatialOperation.Builder<SContains> {
     }
 }

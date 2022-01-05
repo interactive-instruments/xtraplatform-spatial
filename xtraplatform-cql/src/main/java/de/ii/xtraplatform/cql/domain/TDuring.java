@@ -19,29 +19,29 @@ import java.util.List;
 import java.util.Objects;
 
 @Value.Immutable
-@JsonDeserialize(as = During.class)
-public interface During extends TemporalOperation, CqlNode {
+@JsonDeserialize(as = TDuring.class)
+public interface TDuring extends TemporalOperation, CqlNode {
 
     @JsonCreator
-    static During of(List<Operand> operands) {
-        return new ImmutableDuring.Builder().operands(operands)
+    static TDuring of(List<Operand> operands) {
+        return new ImmutableTDuring.Builder().operands(operands)
                                               .build();
     }
 
-    static During of(String property, TemporalLiteral temporalLiteral) {
+    static TDuring of(String property, TemporalLiteral temporalLiteral) {
         if (!Objects.equals(temporalLiteral.getType(), Interval.class)) {
             throw new IllegalArgumentException(String.format("not a valid interval: %s", temporalLiteral));
         }
-        return new ImmutableDuring.Builder().operands(ImmutableList.of(Property.of(property), temporalLiteral))
+        return new ImmutableTDuring.Builder().operands(ImmutableList.of(Property.of(property), temporalLiteral))
                                             .build();
     }
 
-    static During of(String property, String property2) {
-        return new ImmutableDuring.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
+    static TDuring of(String property, String property2) {
+        return new ImmutableTDuring.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                             .build();
     }
 
-    abstract class Builder extends TemporalOperation.Builder<During> {
+    abstract class Builder extends TemporalOperation.Builder<TDuring> {
     }
 
     @Value.Check

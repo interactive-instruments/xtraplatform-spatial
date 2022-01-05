@@ -52,58 +52,58 @@ public interface CqlFilter extends CqlPredicate {
             builder.like((Like) node);
         } else if (node instanceof IsNull) {
             builder.isNull((IsNull) node);
-        } else if (node instanceof After) {
-            builder.after((After) node);
-        } else if (node instanceof Before) {
-            builder.before((Before) node);
-        } else if (node instanceof Begins) {
-            builder.begins((Begins) node);
-        } else if (node instanceof BegunBy) {
-            builder.begunBy((BegunBy) node);
+        } else if (node instanceof TAfter) {
+            builder.tAfter((TAfter) node);
+        } else if (node instanceof TBefore) {
+            builder.tBefore((TBefore) node);
+        } else if (node instanceof TStarts) {
+            builder.tStarts((TStarts) node);
+        } else if (node instanceof TStartedBy) {
+            builder.tStartedBy((TStartedBy) node);
         } else if (node instanceof TContains) {
             builder.tContains((TContains) node);
-        } else if (node instanceof During) {
-            builder.during((During) node);
-        } else if (node instanceof EndedBy) {
-            builder.endedBy((EndedBy) node);
-        } else if (node instanceof Ends) {
-            builder.ends((Ends) node);
+        } else if (node instanceof TDuring) {
+            builder.tDuring((TDuring) node);
+        } else if (node instanceof TFinishedBy) {
+            builder.tFinishedBy((TFinishedBy) node);
+        } else if (node instanceof TFinishes) {
+            builder.tFinishes((TFinishes) node);
         } else if (node instanceof TEquals) {
             builder.tEquals((TEquals) node);
-        } else if (node instanceof Meets) {
-            builder.meets((Meets) node);
-        } else if (node instanceof MetBy) {
-            builder.metBy((MetBy) node);
+        } else if (node instanceof TMeets) {
+            builder.tMeets((TMeets) node);
+        } else if (node instanceof TMetBy) {
+            builder.tMetBy((TMetBy) node);
         } else if (node instanceof TOverlaps) {
             builder.tOverlaps((TOverlaps) node);
-        } else if (node instanceof OverlappedBy) {
-            builder.overlappedBy((OverlappedBy) node);
-        } else if (node instanceof AnyInteracts) {
-            builder.anyInteracts((AnyInteracts) node);
-        } else if (node instanceof Equals) {
-            builder.equals((Equals) node);
-        } else if (node instanceof Disjoint) {
-            builder.disjoint((Disjoint) node);
-        } else if (node instanceof Touches) {
-            builder.touches((Touches) node);
-        } else if (node instanceof Within) {
-            builder.within((Within) node);
-        } else if (node instanceof Overlaps) {
-            builder.overlaps((Overlaps) node);
-        } else if (node instanceof Crosses) {
-            builder.crosses((Crosses) node);
-        } else if (node instanceof Intersects) {
-            builder.intersects((Intersects) node);
-        } else if (node instanceof Contains) {
-            builder.contains((Contains) node);
+        } else if (node instanceof TOverlappedBy) {
+            builder.tOverlappedBy((TOverlappedBy) node);
+        } else if (node instanceof TDisjoint) {
+            builder.tDisjoint((TDisjoint) node);
+        } else if (node instanceof SEquals) {
+            builder.sEquals((SEquals) node);
+        } else if (node instanceof SDisjoint) {
+            builder.sDisjoint((SDisjoint) node);
+        } else if (node instanceof STouches) {
+            builder.sTouches((STouches) node);
+        } else if (node instanceof SWithin) {
+            builder.sWithin((SWithin) node);
+        } else if (node instanceof SOverlaps) {
+            builder.sOverlaps((SOverlaps) node);
+        } else if (node instanceof SCrosses) {
+            builder.sCrosses((SCrosses) node);
+        } else if (node instanceof SIntersects) {
+            builder.sIntersects((SIntersects) node);
+        } else if (node instanceof SContains) {
+            builder.sContains((SContains) node);
         } else if (node instanceof AContains) {
             builder.aContains((AContains) node);
         } else if (node instanceof AEquals) {
             builder.aEquals((AEquals) node);
         } else if (node instanceof AOverlaps) {
             builder.aOverlaps((AOverlaps) node);
-        } else if (node instanceof ContainedBy) {
-            builder.containedBy((ContainedBy) node);
+        } else if (node instanceof AContainedBy) {
+            builder.aContainedBy((AContainedBy) node);
         }
 
         return builder.build();

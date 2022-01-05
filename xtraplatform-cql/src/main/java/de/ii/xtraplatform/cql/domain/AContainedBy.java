@@ -15,26 +15,26 @@ import org.immutables.value.Value;
 import java.util.List;
 
 @Value.Immutable
-@JsonDeserialize(as = ContainedBy.class)
-public interface ContainedBy extends ArrayOperation, CqlNode {
+@JsonDeserialize(as = AContainedBy.class)
+public interface AContainedBy extends ArrayOperation, CqlNode {
 
     @JsonCreator
-    static ContainedBy of(List<Operand> operands) {
-        return new ImmutableContainedBy.Builder().operands(operands)
+    static AContainedBy of(List<Operand> operands) {
+        return new ImmutableAContainedBy.Builder().operands(operands)
                                                .build();
     }
 
-    static ContainedBy of(String property, ArrayLiteral arrayLiteral) {
-        return new ImmutableContainedBy.Builder().operands(ImmutableList.of(Property.of(property), arrayLiteral))
+    static AContainedBy of(String property, ArrayLiteral arrayLiteral) {
+        return new ImmutableAContainedBy.Builder().operands(ImmutableList.of(Property.of(property), arrayLiteral))
                                                  .build();
     }
 
-    static ContainedBy of(String property, String property2) {
-        return new ImmutableContainedBy.Builder().operands(ImmutableList.of(Property.of(property),Property.of(property2)))
+    static AContainedBy of(String property, String property2) {
+        return new ImmutableAContainedBy.Builder().operands(ImmutableList.of(Property.of(property),Property.of(property2)))
                                                  .build();
     }
 
-    abstract class Builder extends ArrayOperation.Builder<ContainedBy> {
+    abstract class Builder extends ArrayOperation.Builder<AContainedBy> {
     }
 
 }

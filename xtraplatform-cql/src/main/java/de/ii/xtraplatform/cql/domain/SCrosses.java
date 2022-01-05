@@ -15,26 +15,26 @@ import org.immutables.value.Value;
 import java.util.List;
 
 @Value.Immutable
-@JsonDeserialize(as = Crosses.class)
-public interface Crosses extends SpatialOperation, CqlNode {
+@JsonDeserialize(as = SCrosses.class)
+public interface SCrosses extends SpatialOperation, CqlNode {
 
     @JsonCreator
-    static Crosses of(List<Operand> operands) {
-        return new ImmutableCrosses.Builder().operands(operands)
+    static SCrosses of(List<Operand> operands) {
+        return new ImmutableSCrosses.Builder().operands(operands)
                                               .build();
     }
 
-    static Crosses of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableCrosses.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
+    static SCrosses of(String property, SpatialLiteral spatialLiteral) {
+        return new ImmutableSCrosses.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
                                               .build();
     }
 
-    static Crosses of(String property, String property2) {
-        return new ImmutableCrosses.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
+    static SCrosses of(String property, String property2) {
+        return new ImmutableSCrosses.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                               .build();
     }
 
-    abstract class Builder extends SpatialOperation.Builder<Crosses> {
+    abstract class Builder extends SpatialOperation.Builder<SCrosses> {
     }
 
 }

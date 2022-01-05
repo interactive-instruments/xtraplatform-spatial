@@ -11,10 +11,10 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(as = Ends.class)
-public interface Ends extends TemporalOperation, CqlNode {
+@JsonDeserialize(as = TFinishedBy.class)
+public interface TFinishedBy extends TemporalOperation, CqlNode {
 
-    abstract class Builder extends TemporalOperation.Builder<Ends> {
+    abstract class Builder extends TemporalOperation.Builder<TFinishedBy> {
     }
 
 }

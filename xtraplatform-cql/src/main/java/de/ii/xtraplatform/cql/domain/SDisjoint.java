@@ -15,26 +15,26 @@ import org.immutables.value.Value;
 import java.util.List;
 
 @Value.Immutable
-@JsonDeserialize(as = Disjoint.class)
-public interface Disjoint extends SpatialOperation, CqlNode {
+@JsonDeserialize(as = SDisjoint.class)
+public interface SDisjoint extends SpatialOperation, CqlNode {
 
     @JsonCreator
-    static Disjoint of(List<Operand> operands) {
-        return new ImmutableDisjoint.Builder().operands(operands)
+    static SDisjoint of(List<Operand> operands) {
+        return new ImmutableSDisjoint.Builder().operands(operands)
                                              .build();
     }
 
-    static Disjoint of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableDisjoint.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
+    static SDisjoint of(String property, SpatialLiteral spatialLiteral) {
+        return new ImmutableSDisjoint.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
                                              .build();
     }
 
-    static Disjoint of(String property, String property2) {
-        return new ImmutableDisjoint.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
+    static SDisjoint of(String property, String property2) {
+        return new ImmutableSDisjoint.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                              .build();
     }
 
-    abstract class Builder extends SpatialOperation.Builder<Disjoint> {
+    abstract class Builder extends SpatialOperation.Builder<SDisjoint> {
     }
 
 }

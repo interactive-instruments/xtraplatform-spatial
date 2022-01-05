@@ -43,38 +43,38 @@ public class CqlToText implements CqlVisitor<String> {
             .build();
 
     private final static Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableAfter.class, "AFTER")
-            .put(ImmutableBefore.class, "BEFORE")
-            .put(ImmutableBegins.class, "BEGINS")
-            .put(ImmutableBegunBy.class, "BEGUNBY")
-            .put(ImmutableTContains.class, "TCONTAINS")
-            .put(ImmutableDuring.class, "DURING")
-            .put(ImmutableEndedBy.class, "ENDEDBY")
-            .put(ImmutableEnds.class, "ENDS")
-            .put(ImmutableTEquals.class, "TEQUALS")
-            .put(ImmutableMeets.class, "MEETS")
-            .put(ImmutableMetBy.class, "METBY")
-            .put(ImmutableTOverlaps.class, "TOVERLAPS")
-            .put(ImmutableOverlappedBy.class, "OVERLAPPEDBY")
-            .put(ImmutableAnyInteracts.class, "ANYINTERACTS")
+            .put(ImmutableTAfter.class, "T_AFTER")
+            .put(ImmutableTBefore.class, "T_BEFORE")
+            .put(ImmutableTStarts.class, "T_STARTS")
+            .put(ImmutableTStartedBy.class, "T_STARTEDBY")
+            .put(ImmutableTContains.class, "T_CONTAINS")
+            .put(ImmutableTDuring.class, "T_DURING")
+            .put(ImmutableTFinishedBy.class, "T_FINISHEDBY")
+            .put(ImmutableTFinishes.class, "T_FINISHES")
+            .put(ImmutableTEquals.class, "T_EQUALS")
+            .put(ImmutableTMeets.class, "T_MEETS")
+            .put(ImmutableTMetBy.class, "T_METBY")
+            .put(ImmutableTOverlaps.class, "T_OVERLAPS")
+            .put(ImmutableTOverlappedBy.class, "T_OVERLAPPEDBY")
+            .put(ImmutableTDisjoint.class, "T_DISJOINT")
             .build();
 
     private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableEquals.class, "EQUALS")
-            .put(ImmutableDisjoint.class, "DISJOINT")
-            .put(ImmutableTouches.class, "TOUCHES")
-            .put(ImmutableWithin.class, "WITHIN")
-            .put(ImmutableOverlaps.class, "OVERLAPS")
-            .put(ImmutableCrosses.class, "CROSSES")
-            .put(ImmutableIntersects.class, "INTERSECTS")
-            .put(ImmutableContains.class, "CONTAINS")
+            .put(ImmutableSEquals.class, "S_EQUALS")
+            .put(ImmutableSDisjoint.class, "S_DISJOINT")
+            .put(ImmutableSTouches.class, "S_TOUCHES")
+            .put(ImmutableSWithin.class, "S_WITHIN")
+            .put(ImmutableSOverlaps.class, "S_OVERLAPS")
+            .put(ImmutableSCrosses.class, "S_CROSSES")
+            .put(ImmutableSIntersects.class, "S_INTERSECTS")
+            .put(ImmutableSContains.class, "S_CONTAINS")
             .build();
 
     private final static Map<Class<?>, String> ARRAY_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableAContains.class, "ACONTAINS")
-            .put(ImmutableAEquals.class, "AEQUALS")
-            .put(ImmutableAOverlaps.class, "AOVERLAPS")
-            .put(ImmutableContainedBy.class, "CONTAINED BY")
+            .put(ImmutableAContains.class, "A_CONTAINS")
+            .put(ImmutableAEquals.class, "A_EQUALS")
+            .put(ImmutableAOverlaps.class, "A_OVERLAPS")
+            .put(ImmutableAContainedBy.class, "A_CONTAINEDBY")
             .build();
 
     private final Optional<java.util.function.BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>>> coordinatesTransformer;
@@ -180,11 +180,7 @@ public class CqlToText implements CqlVisitor<String> {
     @Override
     public String visit(Like like, List<String> children) {
         String operator = SCALAR_OPERATORS.get(like.getClass());
-        String wildcard = like.getWildcard().isPresent() ? String.format("WILDCARD '%s'", like.getWildcard().get()) : "";
-        String singlechar = like.getSingleChar().isPresent() ? String.format(" SINGLECHAR '%s'", like.getSingleChar().get()) : "";
-        String escapechar = like.getEscapeChar().isPresent() ? String.format(" ESCAPECHAR '%s'", like.getEscapeChar().get()) : "";
-        String nocase = like.getNocase().isPresent() ? String.format(" NOCASE %s", like.getNocase().get()) : "";
-        return String.format("%s %s %s %s%s%s%s", children.get(0), operator, children.get(1), wildcard, singlechar, escapechar, nocase)
+        return String.format("%s %s %s", children.get(0), operator, children.get(1))
                      .trim()
                      .replace("  ", " ");
     }
@@ -206,7 +202,7 @@ public class CqlToText implements CqlVisitor<String> {
     public String visit(TemporalOperation temporalOperation, List<String> children) {
         String operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
 
-        return String.format("%s %s %s", children.get(0), operator, children.get(1));
+        return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
     }
 
     @Override
@@ -219,7 +215,7 @@ public class CqlToText implements CqlVisitor<String> {
     @Override
     public String visit(ArrayOperation arrayOperation, List<String> children) {
         String operator = ARRAY_OPERATORS.get(arrayOperation.getClass());
-        return String.format("%s %s %s", children.get(0), operator, children.get(1));
+        return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
     }
 
     @Override
@@ -314,22 +310,18 @@ public class CqlToText implements CqlVisitor<String> {
     public String visit(TemporalLiteral temporalLiteral, List<String> children) {
         if (Objects.equals(temporalLiteral.getType(), Interval.class)) {
             Interval interval = (Interval) temporalLiteral.getValue();
-            if (interval.equals(Interval.of(TemporalLiteral.MIN_DATE, TemporalLiteral.MAX_DATE))) {
-                return "../..";
+            String start = interval.getStart().toString();
+            String end = interval.getEnd().toString();
+            if (interval.getStart().equals(TemporalLiteral.MIN_DATE)) {
+                start = "..";
             }
-            if (interval.getStart()
-                        .equals(TemporalLiteral.MIN_DATE)) {
-                return String.join("/", "..", interval.getEnd()
-                                                      .toString());
+            if (interval.getEnd().equals(TemporalLiteral.MAX_DATE)) {
+                end = "..";
             }
-            if (interval.getEnd()
-                        .equals(TemporalLiteral.MAX_DATE)) {
-                return String.join("/", interval.getStart()
-                                                .toString(), "..");
-            }
+            return String.format("INTERVAL('%s','%s')", start, end);
+        } else {
+            return String.format("TIMESTAMP('%s')", temporalLiteral.getValue().toString());
         }
-        return temporalLiteral.getValue()
-                              .toString();
     }
 
     @Override

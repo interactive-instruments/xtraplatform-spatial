@@ -15,26 +15,26 @@ import org.immutables.value.Value;
 import java.util.List;
 
 @Value.Immutable
-@JsonDeserialize(as = Within.class)
-public interface Within extends SpatialOperation, CqlNode {
+@JsonDeserialize(as = SWithin.class)
+public interface SWithin extends SpatialOperation, CqlNode {
 
     @JsonCreator
-    static Within of(List<Operand> operands) {
-        return new ImmutableWithin.Builder().operands(operands)
+    static SWithin of(List<Operand> operands) {
+        return new ImmutableSWithin.Builder().operands(operands)
                                              .build();
     }
 
-    static Within of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableWithin.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
+    static SWithin of(String property, SpatialLiteral spatialLiteral) {
+        return new ImmutableSWithin.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
                                              .build();
     }
 
-    static Within of(String property, String property2) {
-        return new ImmutableWithin.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
+    static SWithin of(String property, String property2) {
+        return new ImmutableSWithin.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                              .build();
     }
 
-    abstract class Builder extends SpatialOperation.Builder<Within> {
+    abstract class Builder extends SpatialOperation.Builder<SWithin> {
     }
 
 }

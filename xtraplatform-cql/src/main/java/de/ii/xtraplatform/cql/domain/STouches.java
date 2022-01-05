@@ -15,26 +15,26 @@ import org.immutables.value.Value;
 import java.util.List;
 
 @Value.Immutable
-@JsonDeserialize(as = Touches.class)
-public interface Touches extends SpatialOperation, CqlNode {
+@JsonDeserialize(as = STouches.class)
+public interface STouches extends SpatialOperation, CqlNode {
 
     @JsonCreator
-    static Touches of(List<Operand> operands) {
-        return new ImmutableTouches.Builder().operands(operands)
+    static STouches of(List<Operand> operands) {
+        return new ImmutableSTouches.Builder().operands(operands)
                                              .build();
     }
 
-    static Touches of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableTouches.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
+    static STouches of(String property, SpatialLiteral spatialLiteral) {
+        return new ImmutableSTouches.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
                                               .build();
     }
 
-    static Touches of(String property, String property2) {
-        return new ImmutableTouches.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
+    static STouches of(String property, String property2) {
+        return new ImmutableSTouches.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                               .build();
     }
 
-    abstract class Builder extends SpatialOperation.Builder<Touches> {
+    abstract class Builder extends SpatialOperation.Builder<STouches> {
     }
 
 }

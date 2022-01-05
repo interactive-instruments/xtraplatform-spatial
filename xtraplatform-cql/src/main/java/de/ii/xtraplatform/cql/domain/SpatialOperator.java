@@ -8,12 +8,12 @@
 package de.ii.xtraplatform.cql.domain;
 
 public enum SpatialOperator implements CqlNode {
-    EQUALS,
-    DISJOINT,
-    TOUCHES,
-    WITHIN,
-    OVERLAPS,
-    CROSSES,
-    INTERSECTS,
-    CONTAINS
+    S_INTERSECTS,
+    S_EQUALS,
+    S_DISJOINT,
+    S_TOUCHES,
+    S_WITHIN,
+    S_OVERLAPS,
+    S_CROSSES,
+    S_CONTAINS
 }

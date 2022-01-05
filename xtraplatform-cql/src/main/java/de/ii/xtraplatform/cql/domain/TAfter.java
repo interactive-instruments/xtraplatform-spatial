@@ -15,25 +15,25 @@ import org.immutables.value.Value;
 import java.util.List;
 
 @Value.Immutable
-@JsonDeserialize(as = After.class)
-public interface After extends TemporalOperation, CqlNode {
+@JsonDeserialize(as = TAfter.class)
+public interface TAfter extends TemporalOperation, CqlNode {
 
     @JsonCreator
-    static After of(List<Operand> operands) {
-        return new ImmutableAfter.Builder().operands(operands)
+    static TAfter of(List<Operand> operands) {
+        return new ImmutableTAfter.Builder().operands(operands)
                                                  .build();
     }
 
-    static After of(String property, TemporalLiteral temporalLiteral) {
-        return new ImmutableAfter.Builder().operands(ImmutableList.of(Property.of(property),temporalLiteral))
+    static TAfter of(String property, TemporalLiteral temporalLiteral) {
+        return new ImmutableTAfter.Builder().operands(ImmutableList.of(Property.of(property),temporalLiteral))
                                            .build();
     }
 
-    static After of(String property, String property2) {
-        return new ImmutableAfter.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
+    static TAfter of(String property, String property2) {
+        return new ImmutableTAfter.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                            .build();
     }
 
-    abstract class Builder extends TemporalOperation.Builder<After> {
+    abstract class Builder extends TemporalOperation.Builder<TAfter> {
     }
 }

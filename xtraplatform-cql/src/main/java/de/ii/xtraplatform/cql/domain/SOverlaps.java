@@ -15,26 +15,26 @@ import org.immutables.value.Value;
 import java.util.List;
 
 @Value.Immutable
-@JsonDeserialize(as = Overlaps.class)
-public interface Overlaps extends SpatialOperation, CqlNode {
+@JsonDeserialize(as = SOverlaps.class)
+public interface SOverlaps extends SpatialOperation, CqlNode {
 
     @JsonCreator
-    static Overlaps of(List<Operand> operands) {
-        return new ImmutableOverlaps.Builder().operands(operands)
+    static SOverlaps of(List<Operand> operands) {
+        return new ImmutableSOverlaps.Builder().operands(operands)
                                         .build();
     }
 
-    static Overlaps of(String property, SpatialLiteral spatialLiteral) {
-        return new ImmutableOverlaps.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
+    static SOverlaps of(String property, SpatialLiteral spatialLiteral) {
+        return new ImmutableSOverlaps.Builder().operands(ImmutableList.of(Property.of(property),spatialLiteral))
                                                 .build();
     }
 
-    static Overlaps of(String property, String property2) {
-        return new ImmutableOverlaps.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
+    static SOverlaps of(String property, String property2) {
+        return new ImmutableSOverlaps.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
                                                 .build();
     }
 
-    abstract class Builder extends SpatialOperation.Builder<Overlaps> {
+    abstract class Builder extends SpatialOperation.Builder<SOverlaps> {
     }
 
 }

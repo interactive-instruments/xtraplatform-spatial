@@ -11,32 +11,32 @@ import java.util.Optional;
 
 public interface TemporalExpression {
 
-    Optional<After> getAfter();
+    Optional<TAfter> getTAfter();
 
-    Optional<Before> getBefore();
+    Optional<TBefore> getTBefore();
 
-    Optional<Begins> getBegins();
+    Optional<TStarts> getTStarts();
 
-    Optional<BegunBy> getBegunBy();
+    Optional<TStartedBy> getTStartedBy();
 
     Optional<TContains> getTContains();
 
-    Optional<During> getDuring();
+    Optional<TDuring> getTDuring();
 
-    Optional<EndedBy> getEndedBy();
+    Optional<TFinishedBy> getTFinishedBy();
 
-    Optional<Ends> getEnds();
+    Optional<TFinishes> getTFinishes();
 
     Optional<TEquals> getTEquals();
 
-    Optional<Meets> getMeets();
+    Optional<TMeets> getTMeets();
 
-    Optional<MetBy> getMetBy();
+    Optional<TMetBy> getTMetBy();
 
     Optional<TOverlaps> getTOverlaps();
 
-    Optional<OverlappedBy> getOverlappedBy();
+    Optional<TOverlappedBy> getTOverlappedBy();
 
-    Optional<AnyInteracts> getAnyInteracts();
+    Optional<TDisjoint> getTDisjoint();
 
 }

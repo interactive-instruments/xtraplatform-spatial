@@ -11,20 +11,20 @@ import java.util.Optional;
 
 public interface SpatialExpression {
 
-    Optional<Equals> getEquals();
+    Optional<SEquals> getSEquals();
 
-    Optional<Disjoint> getDisjoint();
+    Optional<SDisjoint> getSDisjoint();
 
-    Optional<Touches> getTouches();
+    Optional<STouches> getSTouches();
 
-    Optional<Within> getWithin();
+    Optional<SWithin> getSWithin();
 
-    Optional<Overlaps> getOverlaps();
+    Optional<SOverlaps> getSOverlaps();
 
-    Optional<Crosses> getCrosses();
+    Optional<SCrosses> getSCrosses();
 
-    Optional<Intersects> getIntersects();
+    Optional<SIntersects> getSIntersects();
 
-    Optional<Contains> getContains();
+    Optional<SContains> getSContains();
 
 }

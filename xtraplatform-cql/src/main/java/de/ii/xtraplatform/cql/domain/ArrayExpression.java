@@ -17,5 +17,5 @@ public interface ArrayExpression {
 
     Optional<AOverlaps> getAOverlaps();
 
-    Optional<ContainedBy> getContainedBy();
+    Optional<AContainedBy> getAContainedBy();
 }
