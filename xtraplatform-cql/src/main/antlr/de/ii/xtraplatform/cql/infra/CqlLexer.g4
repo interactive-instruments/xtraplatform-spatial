@@ -309,8 +309,6 @@ Sign : PLUS | MINUS;
 #=============================================================================#
 */
 
-TemporalLiteral : Instant | Interval;
-
 InstantLiteral : DateInstant | TimestampInstant;
 
 DateInstant: DATE LEFTPAREN DateInstantString RIGHTPAREN;
@@ -323,9 +321,9 @@ TimestampInstantString : QUOTE FullDate 'T' UtcTime QUOTE;
 
 Instant : FullDate | FullDate 'T' UtcTime | NOW LEFTPAREN RIGHTPAREN;
 
-Interval : (InstantInInterval)? SOLIDUS (InstantInInterval)?;
+Interval : INTERVAL LEFTPAREN InstantParameter COMMA InstantParameter RIGHTPAREN;
 
-InstantInInterval : '..' | Instant;
+InstantParameter : DateInstantString | TimestampInstantString | QUOTE '..' QUOTE;
 
 FullDate : DateYear '-' DateMonth '-' DateDay;
 
@@ -335,9 +333,7 @@ DateMonth : DIGIT DIGIT;
 
 DateDay : DIGIT DIGIT;
 
-UtcTime : TimeHour ':' TimeMinute ':' TimeSecond (TimeZoneOffset)?;
-
-TimeZoneOffset : 'Z' | Sign TimeHour ':' TimeMinute;
+UtcTime : TimeHour ':' TimeMinute ':' TimeSecond Z;
 
 TimeHour : DIGIT DIGIT;
 
@@ -350,6 +346,8 @@ NOW : N O W;
 DATE : D A T E;
 
 TIMESTAMP : T I M E S T A M P;
+
+INTERVAL : I N T E R V A L;
 
 /*
 #=============================================================================#

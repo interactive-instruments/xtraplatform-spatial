@@ -49,8 +49,7 @@ characterExpression : characterLiteral
                     | propertyName
                     | function;
 
-propertyIsBetweenPredicate : scalarExpression (NOT)? BETWEEN
-                             (scalarExpression | temporalExpression) AND (scalarExpression | temporalExpression);
+propertyIsBetweenPredicate : scalarExpression (NOT)? BETWEEN scalarExpression AND scalarExpression;
 
 propertyIsNullPredicate : scalarExpression IS (NOT)? NULL;
 
@@ -79,8 +78,6 @@ characterLiteral: CharacterStringLiteral
 numericLiteral: NumericLiteral;
 
 booleanLiteral: BooleanLiteral;
-
-instantLiteral: DateInstant | TimestampInstant;
 
 /*
 # NOTE: This is just a place holder for a regular expression
@@ -180,7 +177,11 @@ temporalExpression : propertyName
                    | temporalLiteral
                    /*| function*/;
 
-temporalLiteral: TemporalLiteral;
+temporalLiteral: instantLiteral | interval;
+
+interval: Interval;
+
+instantLiteral: InstantLiteral;
 
 /*
 #=============================================================================#
@@ -220,15 +221,7 @@ arrayElement: characterLiteral | numericLiteral | booleanLiteral | temporalLiter
 */
 //CHANGE: optional PropertyName for id filters
 //CHANGE: added missing comma
-inPredicate : (propertyName | function)? (NOT)? IN LEFTPAREN ( characterLiteral |
-                                            numericLiteral |
-                                            geomLiteral |
-                                            temporalLiteral /*|
-                                            function*/ ) ( COMMA (characterLiteral |
-                                                              numericLiteral |
-                                                              geomLiteral |
-                                                              temporalLiteral) /*|
-                                                              function*/ )* RIGHTPAREN;
+inPredicate : scalarExpression (NOT)? IN LEFTPAREN scalarExpression ( COMMA scalarExpression )* RIGHTPAREN;
 
 /*
 #=============================================================================#
