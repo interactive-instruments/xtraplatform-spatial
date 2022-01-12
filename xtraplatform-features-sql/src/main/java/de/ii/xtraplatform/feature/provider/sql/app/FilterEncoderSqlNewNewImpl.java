@@ -47,29 +47,22 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
     //TODO: move operator translation to SqlDialect
     private final static Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableAfter.class, ">")
-            .put(ImmutableBefore.class, "<")
-            .put(ImmutableDuring.class, "BETWEEN")
+            .put(ImmutableTAfter.class, ">")
+            .put(ImmutableTBefore.class, "<")
+            .put(ImmutableTDuring.class, "BETWEEN")
             .put(ImmutableTEquals.class, "=")
-            .put(ImmutableAnyInteracts.class, "OVERLAPS")
+            .put(ImmutableTIntersects.class, "OVERLAPS")
             .build();
 
     private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableEquals.class, "ST_Equals")
-            .put(ImmutableDisjoint.class, "ST_Disjoint")
-            .put(ImmutableTouches.class, "ST_Touches")
-            .put(ImmutableWithin.class, "ST_Within")
-            .put(ImmutableOverlaps.class, "ST_Overlaps")
-            .put(ImmutableCrosses.class, "ST_Crosses")
-            .put(ImmutableIntersects.class, "ST_Intersects")
-            .put(ImmutableContains.class, "ST_Contains")
-            .build();
-
-    private final static Map<Class<?>, String> ARRAY_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableAContains.class, "@>")
-            .put(ImmutableAEquals.class, "=")
-            .put(ImmutableAOverlaps.class, "&&")
-            .put(ImmutableContainedBy.class, "<@")
+            .put(ImmutableSEquals.class, "ST_Equals")
+            .put(ImmutableSDisjoint.class, "ST_Disjoint")
+            .put(ImmutableSTouches.class, "ST_Touches")
+            .put(ImmutableSWithin.class, "ST_Within")
+            .put(ImmutableSOverlaps.class, "ST_Overlaps")
+            .put(ImmutableSCrosses.class, "ST_Crosses")
+            .put(ImmutableSIntersects.class, "ST_Intersects")
+            .put(ImmutableSContains.class, "ST_Contains")
             .build();
 
     private final Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator;
@@ -259,6 +252,12 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
             } else if (Objects.equals(function.getName(), "position")) {
                 return "%1$srow_number%2$s";
+            } else if (Objects.equals(function.getName().toUpperCase(), "CASEI")) {
+                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                    return children.get(0).toLowerCase();
+                } else if (function.getArguments().get(0) instanceof Property) {
+                    return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
+                }
             }
 
             return super.visit(function, children);
@@ -363,42 +362,10 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             List<String> expressions = processBinary(like.getOperands(), children);
 
             // we may need to change the second expression
-            Scalar op2 = (Scalar) like.getOperands().get(1);
             String secondExpression = expressions.get(1);
 
             String functionStart = "";
             String functionEnd = "";
-            // modifiers only work with a literal as the second value
-            if (op2 instanceof ScalarLiteral) {
-                if (like.getWildcard().isPresent() &&
-                        !Objects.equals("%", like.getWildcard().get())) {
-                    String wildCard = like.getWildcard().get();
-                    secondExpression = secondExpression.replaceAll("%", "\\%")
-                                                       .replaceAll(String.format("\\%s", wildCard), "%");
-                }
-                if (like.getSingleChar().isPresent() &&
-                        !Objects.equals("_", like.getSingleChar().get())) {
-                    String singlechar = like.getSingleChar().get();
-                    secondExpression = secondExpression.replaceAll("_", "\\_")
-                                                       .replaceAll(String.format("\\%s", singlechar), "_");
-                }
-                if (like.getEscapeChar().isPresent() &&
-                        !Objects.equals("\\", like.getEscapeChar().get())) {
-                    String escapechar = like.getEscapeChar().get();
-                    secondExpression = secondExpression.replaceAll("\\\\", "\\\\")
-                                                       .replaceAll(String.format("\\%s", escapechar), "\\");
-                }
-            }
-            if ((like.getNocase().isEmpty()) ||
-                    (like.getNocase().isPresent() && Objects.equals(Boolean.TRUE, like.getNocase().get()))) {
-                functionStart = "LOWER(";
-                functionEnd = ")";
-                if (op2 instanceof ScalarLiteral) {
-                    secondExpression = secondExpression.toLowerCase();
-                } else if (op2 instanceof Property) {
-                    secondExpression = String.format("LOWER(%s::varchar)", secondExpression.toLowerCase());
-                }
-            }
 
             String operation = String.format("::varchar%s %s %s", functionEnd, operator, secondExpression);
             return String.format(expressions.get(0), functionStart, operation);
@@ -518,7 +485,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
                 return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
 
-            } else if (temporalOperation instanceof Before) {
+            } else if (temporalOperation instanceof TBefore) {
                 if (op1 instanceof TemporalLiteral) {
                     children = ImmutableList.of(getEndAsString((TemporalLiteral) op1), children.get(1));
                 }
@@ -528,7 +495,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
                 return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
 
-            } else if (temporalOperation instanceof After) {
+            } else if (temporalOperation instanceof TAfter) {
                 if (op1 instanceof TemporalLiteral) {
                     children = ImmutableList.of(getStartAsString((TemporalLiteral) op1), children.get(1));
                 }
@@ -538,7 +505,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
                 return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
 
-            } else if (temporalOperation instanceof During) {
+            } else if (temporalOperation instanceof TDuring) {
                 // The left hand side is a property or an instant, this was checked when the operation was built.
                 // The right hand side is an interval, this was checked when the operation was built.
                 Temporal op2a = op2;
@@ -553,7 +520,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
                 return String.format(expressions.get(0), "", String.format(" %s %s AND %s", operator, expressions.get(1), expressions.get(2)));
 
-            } else if (temporalOperation instanceof AnyInteracts) {
+            } else if (temporalOperation instanceof TIntersects) {
                 // ISO 8601 intervals include both the start and end instant
                 // PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
                 if (op1 instanceof Property) {
@@ -715,7 +682,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     } else if (arrayOperation instanceof AOverlaps) {
                         // at least one common element
                         return secondOp.stream().anyMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
-                    } else if (arrayOperation instanceof ContainedBy) {
+                    } else if (arrayOperation instanceof AContainedBy) {
                         // each item of the first array must be in the second array
                         return firstOp.stream().allMatch(item -> secondOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
                     }
@@ -742,7 +709,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             List<Map<String, List<String>>> x = ImmutableList.of();
             boolean xx = x.stream().map(theme -> theme.get("concept")).flatMap(List::stream).filter(concept -> concept.equals("DLKM")).distinct().count() == 1;
 
-            if (notInverse ? arrayOperation instanceof AContains : arrayOperation instanceof ContainedBy) {
+            if (notInverse ? arrayOperation instanceof AContains : arrayOperation instanceof AContainedBy) {
                 String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s", secondExpression, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
                 return String.format(mainExpression, "", arrayQuery);
             } else if (arrayOperation instanceof AEquals) {
@@ -752,7 +719,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             } else if (arrayOperation instanceof AOverlaps) {
                 String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s", secondExpression, aliases.get(0), instanceContainer.getSortKey());
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (notInverse ? arrayOperation instanceof ContainedBy : arrayOperation instanceof AContains) {
+            } else if (notInverse ? arrayOperation instanceof AContainedBy : arrayOperation instanceof AContains) {
                 String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(case when %4$s not in %1$s then %4$s else null end) = 0",
                                                   secondExpression, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn);
                 return String.format(mainExpression, "", arrayQuery);

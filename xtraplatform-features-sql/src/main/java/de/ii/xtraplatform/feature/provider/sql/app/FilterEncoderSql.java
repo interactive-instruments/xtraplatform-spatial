@@ -12,43 +12,10 @@ import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Doubles;
-import de.ii.xtraplatform.cql.domain.AContains;
-import de.ii.xtraplatform.cql.domain.AEquals;
-import de.ii.xtraplatform.cql.domain.AOverlaps;
-import de.ii.xtraplatform.cql.domain.After;
-import de.ii.xtraplatform.cql.domain.And;
-import de.ii.xtraplatform.cql.domain.AnyInteracts;
-import de.ii.xtraplatform.cql.domain.ArrayLiteral;
-import de.ii.xtraplatform.cql.domain.ArrayOperation;
-import de.ii.xtraplatform.cql.domain.Before;
-import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
-import de.ii.xtraplatform.cql.domain.ContainedBy;
-import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.cql.domain.*;
+import de.ii.xtraplatform.cql.domain.TBefore;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlNode;
-import de.ii.xtraplatform.cql.domain.CqlToText;
-import de.ii.xtraplatform.cql.domain.During;
-import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
-import de.ii.xtraplatform.cql.domain.ImmutableCqlPredicate;
-import de.ii.xtraplatform.cql.domain.ImmutableMultiPolygon;
-import de.ii.xtraplatform.cql.domain.ImmutablePolygon;
-import de.ii.xtraplatform.cql.domain.In;
-import de.ii.xtraplatform.cql.domain.IsNull;
-import de.ii.xtraplatform.cql.domain.Like;
-import de.ii.xtraplatform.cql.domain.LogicalOperation;
-import de.ii.xtraplatform.cql.domain.Not;
-import de.ii.xtraplatform.cql.domain.Operand;
-import de.ii.xtraplatform.cql.domain.Property;
-import de.ii.xtraplatform.cql.domain.Scalar;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.TEquals;
-import de.ii.xtraplatform.cql.domain.Temporal;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -382,42 +349,10 @@ public class FilterEncoderSql {
             List<String> expressions = processBinary(like.getOperands(), children);
 
             // we may need to change the second expression
-            Scalar op2 = (Scalar) like.getOperands().get(1);
             String secondExpression = expressions.get(1);
 
             String functionStart = "";
             String functionEnd = "";
-            // modifiers only work with a literal as the second value
-            if (op2 instanceof ScalarLiteral) {
-                if (like.getWildcard().isPresent() &&
-                        !Objects.equals("%", like.getWildcard().get())) {
-                    String wildCard = like.getWildcard().get();
-                    secondExpression = secondExpression.replaceAll("%", "\\%")
-                                                       .replaceAll(String.format("\\%s", wildCard), "%");
-                }
-                if (like.getSingleChar().isPresent() &&
-                        !Objects.equals("_", like.getSingleChar().get())) {
-                    String singlechar = like.getSingleChar().get();
-                    secondExpression = secondExpression.replaceAll("_", "\\_")
-                                                       .replaceAll(String.format("\\%s", singlechar), "_");
-                }
-                if (like.getEscapeChar().isPresent() &&
-                        !Objects.equals("\\", like.getEscapeChar().get())) {
-                    String escapechar = like.getEscapeChar().get();
-                    secondExpression = secondExpression.replaceAll("\\\\", "\\\\")
-                                                       .replaceAll(String.format("\\%s", escapechar), "\\");
-                }
-            }
-            if ((like.getNocase().isEmpty()) ||
-                    (like.getNocase().isPresent() && Objects.equals(Boolean.TRUE, like.getNocase().get()))) {
-                functionStart = "LOWER(";
-                functionEnd = ")";
-                if (op2 instanceof ScalarLiteral) {
-                    secondExpression = secondExpression.toLowerCase();
-                } else if (op2 instanceof Property) {
-                    secondExpression = String.format("LOWER(%s::varchar)", secondExpression.toLowerCase());
-                }
-            }
 
             String operation = String.format("::varchar%s %s %s", functionEnd, operator, secondExpression);
             return String.format(expressions.get(0), functionStart, operation);
@@ -537,7 +472,7 @@ public class FilterEncoderSql {
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
                 return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
 
-            } else if (temporalOperation instanceof Before) {
+            } else if (temporalOperation instanceof TBefore) {
                 if (op1 instanceof TemporalLiteral) {
                     children = ImmutableList.of(getEndAsString((TemporalLiteral) op1), children.get(1));
                 }
@@ -547,7 +482,7 @@ public class FilterEncoderSql {
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
                 return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
 
-            } else if (temporalOperation instanceof After) {
+            } else if (temporalOperation instanceof TAfter) {
                 if (op1 instanceof TemporalLiteral) {
                     children = ImmutableList.of(getStartAsString((TemporalLiteral) op1), children.get(1));
                 }
@@ -557,7 +492,7 @@ public class FilterEncoderSql {
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
                 return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
 
-            } else if (temporalOperation instanceof During) {
+            } else if (temporalOperation instanceof TDuring) {
                 // The left hand side is a property or an instant, this was checked when the operation was built.
                 // The right hand side is an interval, this was checked when the operation was built.
                 Temporal op2a = op2;
@@ -572,7 +507,7 @@ public class FilterEncoderSql {
                 List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
                 return String.format(expressions.get(0), "", String.format(" %s %s AND %s", operator, expressions.get(1), expressions.get(2)));
 
-            } else if (temporalOperation instanceof AnyInteracts) {
+            } else if (temporalOperation instanceof TIntersects) {
                 // ISO 8601 intervals include both the start and end instant
                 // PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
                 if (op1 instanceof Property) {
@@ -734,7 +669,7 @@ public class FilterEncoderSql {
                     } else if (arrayOperation instanceof AOverlaps) {
                         // at least one common element
                         return secondOp.stream().anyMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
-                    } else if (arrayOperation instanceof ContainedBy) {
+                    } else if (arrayOperation instanceof AContainedBy) {
                         // each item of the first array must be in the second array
                         return firstOp.stream().allMatch(item -> secondOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
                     }
@@ -760,7 +695,7 @@ public class FilterEncoderSql {
             List<Map<String, List<String>>> x = ImmutableList.of();
             boolean xx = x.stream().map(theme -> theme.get("concept")).flatMap(List::stream).filter(concept -> concept.equals("DLKM")).distinct().count() == 1;
 
-            if (notInverse ? arrayOperation instanceof AContains : arrayOperation instanceof ContainedBy) {
+            if (notInverse ? arrayOperation instanceof AContains : arrayOperation instanceof AContainedBy) {
                 String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s", secondExpression, aliases.get(0), rootSchema
                     .getSortKey().get(), qualifiedColumn, elementCount);
                 return String.format(mainExpression, "", arrayQuery);
@@ -772,7 +707,7 @@ public class FilterEncoderSql {
                 String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s", secondExpression, aliases.get(0), rootSchema
                     .getSortKey().get());
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (notInverse ? arrayOperation instanceof ContainedBy : arrayOperation instanceof AContains) {
+            } else if (notInverse ? arrayOperation instanceof AContainedBy : arrayOperation instanceof AContains) {
                 String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(case when %4$s not in %1$s then %4$s else null end) = 0",
                                                   secondExpression, aliases.get(0), rootSchema.getSortKey().get(), qualifiedColumn);
                 return String.format(mainExpression, "", arrayQuery);

@@ -8,19 +8,19 @@
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.cql.domain.ImmutableAfter;
-import de.ii.xtraplatform.cql.domain.ImmutableAnyInteracts;
-import de.ii.xtraplatform.cql.domain.ImmutableBefore;
-import de.ii.xtraplatform.cql.domain.ImmutableContains;
-import de.ii.xtraplatform.cql.domain.ImmutableCrosses;
-import de.ii.xtraplatform.cql.domain.ImmutableDisjoint;
-import de.ii.xtraplatform.cql.domain.ImmutableDuring;
-import de.ii.xtraplatform.cql.domain.ImmutableEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
-import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
+import de.ii.xtraplatform.cql.domain.ImmutableTAfter;
+import de.ii.xtraplatform.cql.domain.ImmutableTBefore;
+import de.ii.xtraplatform.cql.domain.ImmutableSContains;
+import de.ii.xtraplatform.cql.domain.ImmutableSCrosses;
+import de.ii.xtraplatform.cql.domain.ImmutableSDisjoint;
+import de.ii.xtraplatform.cql.domain.ImmutableTDuring;
 import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableTouches;
-import de.ii.xtraplatform.cql.domain.ImmutableWithin;
+import de.ii.xtraplatform.cql.domain.ImmutableSIntersects;
+import de.ii.xtraplatform.cql.domain.ImmutableSOverlaps;
+import de.ii.xtraplatform.cql.domain.ImmutableSEquals;
+import de.ii.xtraplatform.cql.domain.ImmutableSTouches;
+import de.ii.xtraplatform.cql.domain.ImmutableSWithin;
+import de.ii.xtraplatform.cql.domain.ImmutableTIntersects;
 import de.ii.xtraplatform.cql.domain.SpatialOperation;
 import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -67,22 +67,22 @@ public interface SqlDialect {
   }
 
   Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-      .put(ImmutableAfter.class, ">")
-      .put(ImmutableBefore.class, "<")
-      .put(ImmutableDuring.class, "BETWEEN")
+      .put(ImmutableTAfter.class, ">")
+      .put(ImmutableTBefore.class, "<")
+      .put(ImmutableTDuring.class, "BETWEEN")
       .put(ImmutableTEquals.class, "=")
-      .put(ImmutableAnyInteracts.class, "OVERLAPS")
+      .put(ImmutableTIntersects.class, "OVERLAPS")
       .build();
 
   Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-      .put(ImmutableEquals.class, "ST_Equals")
-      .put(ImmutableDisjoint.class, "ST_Disjoint")
-      .put(ImmutableTouches.class, "ST_Touches")
-      .put(ImmutableWithin.class, "ST_Within")
-      .put(ImmutableOverlaps.class, "ST_Overlaps")
-      .put(ImmutableCrosses.class, "ST_Crosses")
-      .put(ImmutableIntersects.class, "ST_Intersects")
-      .put(ImmutableContains.class, "ST_Contains")
+      .put(ImmutableSEquals.class, "ST_Equals")
+      .put(ImmutableSDisjoint.class, "ST_Disjoint")
+      .put(ImmutableSTouches.class, "ST_Touches")
+      .put(ImmutableSWithin.class, "ST_Within")
+      .put(ImmutableSOverlaps.class, "ST_Overlaps")
+      .put(ImmutableSCrosses.class, "ST_Crosses")
+      .put(ImmutableSIntersects.class, "ST_Intersects")
+      .put(ImmutableSContains.class, "ST_Contains")
       .build();
 
 }

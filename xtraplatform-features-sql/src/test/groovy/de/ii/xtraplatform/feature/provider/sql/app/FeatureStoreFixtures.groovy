@@ -113,6 +113,15 @@ class FeatureStoreFixtures {
                     .build())
             .build()
 
+    static FeatureStoreInstanceContainer ROAD_CLASS = ImmutableFeatureStoreInstanceContainer.builder()
+            .name("container")
+            .sortKey("id")
+            .addAttributes(ImmutableFeatureStoreAttribute.builder()
+                    .name("road_class")
+                    .path(ImmutableList.of("container", "road_class"))
+                    .build())
+            .build()
+
     static FeatureStoreInstanceContainer EVENT_DATE = ImmutableFeatureStoreInstanceContainer.builder()
             .name("container")
             .sortKey("id")
