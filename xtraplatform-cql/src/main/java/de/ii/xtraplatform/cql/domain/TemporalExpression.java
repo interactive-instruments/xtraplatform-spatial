@@ -39,4 +39,6 @@ public interface TemporalExpression {
 
     Optional<TDisjoint> getTDisjoint();
 
+    Optional<TIntersects> getTIntersects();
+
 }

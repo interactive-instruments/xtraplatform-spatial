@@ -338,6 +338,9 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 case T_DISJOINT:
                     builder = new ImmutableTDisjoint.Builder();
                     break;
+                case T_INTERSECTS:
+                    builder = new ImmutableTIntersects.Builder();
+                    break;
                 case T_FINISHES:
                     builder = new ImmutableTFinishes.Builder();
                     break;
@@ -496,6 +499,11 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                     .collect(Collectors.joining("."));
             return Property.of(path, nestedFilters);
         } else {
+            if (Objects.nonNull(ctx.CASEI())) {
+                return Function.of("CASEI", ImmutableList.of(Property.of(ctx.propertyName().getText())));
+            } else if (Objects.nonNull(ctx.ACCENTI())) {
+                return Function.of("ACCENTI", ImmutableList.of(Property.of(ctx.propertyName().getText())));
+            }
             return Property.of(ctx.getText());
         }
     }
@@ -539,10 +547,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
     @Override
     public CqlNode visitCharacterLiteral(CqlParser.CharacterLiteralContext ctx) {
-        return ScalarLiteral.of(ctx.getText()
-                                   .substring(1, ctx.getText()
-                                                    .length() - 1)
-                                   .replaceAll("''", "'"));
+        if (Objects.nonNull(ctx.CASEI())) {
+            return Function.of("CASEI", ImmutableList.of(getScalarLiteralFromText(ctx.characterLiteral().getText())));
+        } else if (Objects.nonNull(ctx.ACCENTI())) {
+            return Function.of("ACCENTI", ImmutableList.of(getScalarLiteralFromText(ctx.characterLiteral().getText())));
+        }
+        return getScalarLiteralFromText(ctx.getText());
     }
 
     @Override
@@ -689,6 +699,11 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
     private boolean isInstant(Temporal temporal) {
         return temporal instanceof TemporalLiteral && ((TemporalLiteral) temporal).getType().equals(Instant.class);
+    }
+
+    private ScalarLiteral getScalarLiteralFromText(String cqlText) {
+        return ScalarLiteral.of(cqlText.substring(1, cqlText.length() - 1)
+                .replaceAll("''", "'"));
     }
 
 }

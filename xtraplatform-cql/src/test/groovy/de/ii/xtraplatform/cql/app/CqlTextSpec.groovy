@@ -1001,4 +1001,42 @@ class CqlTextSpec extends Specification {
         thrown(CqlParseException)
     }
 
+    def 'Case insensitive string comparison function CASEI'() {
+        given:
+        String cqlText = "CASEI(road_class) IN (CASEI('Οδος'), CASEI('Straße'))"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_CASEI
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_CASEI, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Accent insensitive string comparison function ACCENTI'() {
+        given:
+        String cqlText = "ACCENTI(road_class) IN (ACCENTI('Οδος'), ACCENTI('Straße'))"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_ACCENTI
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_ACCENTI, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
 }

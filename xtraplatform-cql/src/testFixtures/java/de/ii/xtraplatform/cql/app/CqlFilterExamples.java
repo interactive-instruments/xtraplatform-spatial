@@ -151,6 +151,8 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_35 = CqlFilter.of(Like.of("name", ScalarLiteral.of("Smith.")));
 
+    public static final CqlFilter EXAMPLE_36 = CqlFilter.of(TIntersects.of("event_date", getTemporalLiteral("1969-07-16T05:32:00Z/1969-07-24T16:50:35Z")));
+
     public static final CqlFilter EXAMPLE_37 = CqlFilter.of(Lt.of("height", "floors"));
 
     public static final CqlFilter EXAMPLE_38 = CqlFilter.of(AContains.of("layer:ids", ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("layers-ca"), ScalarLiteral.of("layers-us")))));
@@ -198,6 +200,20 @@ public class CqlFilterExamples {
     public static final CqlFilter EXAMPLE_IN_WITH_TEMPORAL = CqlFilter.of(In.of("updated",
             getTemporalLiteral("2017-06-10T07:30:00Z"), getTemporalLiteral("2018-06-10T07:30:00Z"),
             getTemporalLiteral("2019-06-10T07:30:00Z"), getTemporalLiteral("2020-06-10T07:30:00Z")));
+
+    public static final CqlFilter EXAMPLE_CASEI = CqlFilter.of(In.ofFunction(
+            Function.of("CASEI", ImmutableList.of(Property.of("road_class"))),
+            ImmutableList.of(
+                    Function.of("CASEI", ImmutableList.of(ScalarLiteral.of("Οδος"))),
+                    Function.of("CASEI", ImmutableList.of(ScalarLiteral.of("Straße"))))
+    ));
+
+    public static final CqlFilter EXAMPLE_ACCENTI = CqlFilter.of(In.ofFunction(
+            Function.of("ACCENTI", ImmutableList.of(Property.of("road_class"))),
+            ImmutableList.of(
+                    Function.of("ACCENTI", ImmutableList.of(ScalarLiteral.of("Οδος"))),
+                    Function.of("ACCENTI", ImmutableList.of(ScalarLiteral.of("Straße"))))
+    ));
 
     private static TemporalLiteral getTemporalLiteral(String temporalData) {
         try {

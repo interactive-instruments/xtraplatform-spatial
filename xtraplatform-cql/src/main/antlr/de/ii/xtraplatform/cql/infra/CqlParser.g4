@@ -231,7 +231,9 @@ inPredicate : scalarExpression (NOT)? IN LEFTPAREN scalarExpression ( COMMA scal
 #=============================================================================#
 */
 
-function : Identifier argumentList | CASEI LEFTPAREN function RIGHTPAREN | ACCENTI LEFTPAREN function RIGHTPAREN;
+function : Identifier argumentList
+                | CASEI LEFTPAREN function RIGHTPAREN
+                | ACCENTI LEFTPAREN function RIGHTPAREN;
 
 argumentList : LEFTPAREN (positionalArgument)?  RIGHTPAREN;
 
@@ -239,9 +241,12 @@ positionalArgument : argument ( COMMA argument )*;
 
 argument : characterLiteral
          | numericLiteral
+         | booleanLiteral
          | geomLiteral
          | temporalLiteral
          | propertyName
+         | function
+         | arrayExpression
          /*| arithmeticExpression*/;
 
 

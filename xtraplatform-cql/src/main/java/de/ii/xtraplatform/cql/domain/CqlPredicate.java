@@ -78,6 +78,8 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
             builder.tOverlappedBy((TOverlappedBy) node);
         } else if (node instanceof TDisjoint) {
             builder.tDisjoint((TDisjoint) node);
+        } else if (node instanceof TIntersects) {
+            builder.tIntersects((TIntersects) node);
         } else if (node instanceof SEquals) {
             builder.sEquals((SEquals) node);
         } else if (node instanceof SDisjoint) {
@@ -154,6 +156,7 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
                 getTOverlaps(),
                 getTOverlappedBy(),
                 getTDisjoint(),
+                getTIntersects(),
                 getAContains(),
                 getAEquals(),
                 getAOverlaps(),

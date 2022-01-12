@@ -156,6 +156,8 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
             builder = new ImmutableTOverlaps.Builder();
         } else if (temporalOperation instanceof TDisjoint) {
             builder = new ImmutableTDisjoint.Builder();
+        } else if (temporalOperation instanceof TIntersects) {
+            builder = new ImmutableTIntersects.Builder();
         }
 
         if (Objects.nonNull(builder)) {
