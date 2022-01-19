@@ -258,6 +258,12 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 } else if (function.getArguments().get(0) instanceof Property) {
                     return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
                 }
+            } else if (Objects.equals(function.getName().toUpperCase(), "ACCENTI")) {
+                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                    return String.format("%s %s", children.get(0), "COLLATE \"de-DE-x-icu\"");
+                } else if (function.getArguments().get(0) instanceof Property) {
+                    return children.get(0).replace("%2$s", " COLLATE \"de-DE-x-icu\"%2$s");
+                }
             }
 
             return super.visit(function, children);

@@ -478,4 +478,13 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
         instanceQuery == "SELECT A.id AS SKEY, A.road_class FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE LOWER(AA.road_class) IN ('οδος', 'straße')) ORDER BY 1"
     }
 
+    def 'Accent insensitive string comparison function ACCENTI'() {
+        when:
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.ROAD_CLASS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_ACCENTI), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.ROAD_CLASS, Optional.of(CqlFilterExamples.EXAMPLE_ACCENTI), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        then:
+        metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.road_class COLLATE \"de-DE-x-icu\" IN ('Οδος' COLLATE \"de-DE-x-icu\", 'Straße' COLLATE \"de-DE-x-icu\")) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.road_class COLLATE \"de-DE-x-icu\" IN ('Οδος' COLLATE \"de-DE-x-icu\", 'Straße' COLLATE \"de-DE-x-icu\")) ORDER BY 1) AS NM) AS NM2"
+        instanceQuery == "SELECT A.id AS SKEY, A.road_class FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.road_class COLLATE \"de-DE-x-icu\" IN ('Οδος' COLLATE \"de-DE-x-icu\", 'Straße' COLLATE \"de-DE-x-icu\")) ORDER BY 1"
+    }
+
 }
