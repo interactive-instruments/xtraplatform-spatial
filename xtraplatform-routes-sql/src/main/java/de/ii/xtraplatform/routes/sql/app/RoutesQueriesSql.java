@@ -199,9 +199,7 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
         .replace("${to_vid}", "(SELECT oid FROM end_pnt LIMIT 1)")
         .replace("${flag_mask}", String.valueOf(mask))
         .replace("${cost_column}", costColumn)
-        .replace("${reverse_cost_column}", reverseCostColumn)
-        // TODO best is rwl-specific, move to an option or adjust the route query
-        .replace("${best ? 1 : -1}", flags.contains("best") ? "1" : "-1");
+        .replace("${reverse_cost_column}", reverseCostColumn);
 
     if (weight.isPresent()) {
       select = select
@@ -226,8 +224,6 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
       select = select
           .replace("${obstacles}", cfg.getObstaclesDefault().replaceAll("'", "''") );
     }
-
-    //TODO: if cfg.getNativeCrs() is not set use provider crs
 
     return "WITH\n"
         + " pnts AS (SELECT ST_GeomFromText('POINT(" + start.getCoordinates().get(0).get(0) + " " + start.getCoordinates().get(0).get(1) + ")', " + cfg.getNativeCrs().getCode() + ") AS pnt1,\n"
