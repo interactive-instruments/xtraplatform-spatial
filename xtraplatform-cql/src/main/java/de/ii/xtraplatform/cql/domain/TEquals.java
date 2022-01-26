@@ -41,23 +41,4 @@ public interface TEquals extends TemporalOperation, CqlNode {
     abstract class Builder extends TemporalOperation.Builder<TEquals> {
     }
 
-    @Value.Check
-    @Override
-    default void check() {
-        TemporalOperation.super.check();
-        Preconditions.checkState(getOperands().get(0) instanceof Property ||
-                                         (getOperands().get(0) instanceof TemporalLiteral &&
-                                                 Objects.equals(((TemporalLiteral) getOperands().get(0)).getType(), Instant.class)),
-                                 "The left hand side of TEQUALS must be a property or time instant, found %s",
-                                 getOperands().get(0) instanceof Property
-                                         ? ((Property) getOperands().get(0)).getName()
-                                         : ((TemporalLiteral) getOperands().get(0)).getValue());
-        Preconditions.checkState(getOperands().get(1) instanceof Property ||
-                                         (getOperands().get(1) instanceof TemporalLiteral &&
-                                                 Objects.equals(((TemporalLiteral) getOperands().get(1)).getType(), Instant.class)),
-                                 "The right hand side of TEQUALS must be a property or time instant, found %s",
-                                  getOperands().get(1) instanceof Property
-                                          ? ((Property) getOperands().get(1)).getName()
-                                          : ((TemporalLiteral) getOperands().get(1)).getValue());
-    }
 }

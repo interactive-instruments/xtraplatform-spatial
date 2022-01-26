@@ -215,6 +215,8 @@ public class CqlFilterExamples {
                     Function.of("ACCENTI", ImmutableList.of(ScalarLiteral.of("Straße"))))
     ));
 
+    public static final CqlFilter EXAMPLE_TDISJOINT = CqlFilter.of(TDisjoint.of("event_date", getTemporalLiteral("1969-07-16T05:32:00Z/1969-07-24T16:50:35Z")));
+
     private static TemporalLiteral getTemporalLiteral(String temporalData) {
         try {
             return TemporalLiteral.of(temporalData);

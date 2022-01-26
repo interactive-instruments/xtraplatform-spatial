@@ -308,8 +308,8 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(TemporalLiteral temporalLiteral, List<String> children) {
-        if (Objects.equals(temporalLiteral.getType(), Interval.class)) {
-            Interval interval = (Interval) temporalLiteral.getValue();
+        if (Objects.equals(temporalLiteral.getType(), ImmutableCqlInterval.class)) {
+            Interval interval = ((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getInterval();
             String start = interval.getStart().toString();
             String end = interval.getEnd().toString();
             if (interval.getStart().equals(TemporalLiteral.MIN_DATE)) {
@@ -319,8 +319,12 @@ public class CqlToText implements CqlVisitor<String> {
                 end = "..";
             }
             return String.format("INTERVAL('%s','%s')", start, end);
+        } else if (Objects.equals(temporalLiteral.getType(), ImmutableCqlTimestamp.class)) {
+            return String.format("TIMESTAMP('%s')", ((CqlDateTime.CqlTimestamp) temporalLiteral.getValue()).getTimestamp().toString());
         } else {
-            return String.format("TIMESTAMP('%s')", temporalLiteral.getValue().toString());
+            Interval date = ((CqlDateTime.CqlDate) temporalLiteral.getValue()).getDate();
+            String start = date.getStart().toString();
+            return String.format("DATE('%s')", start.substring(0, start.indexOf('T')));
         }
     }
 

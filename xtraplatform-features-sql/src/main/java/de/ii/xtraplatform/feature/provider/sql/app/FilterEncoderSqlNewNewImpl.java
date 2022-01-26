@@ -24,7 +24,6 @@ import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.threeten.extra.Interval;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -46,12 +45,13 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
     final static Splitter ARRAY_SPLITTER = Splitter.on(",").trimResults().omitEmptyStrings();
 
     //TODO: move operator translation to SqlDialect
-    private final static Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableTAfter.class, ">")
-            .put(ImmutableTBefore.class, "<")
-            .put(ImmutableTDuring.class, "BETWEEN")
-            .put(ImmutableTEquals.class, "=")
-            .put(ImmutableTIntersects.class, "OVERLAPS")
+    private final static Map<Class<?>, List<String>> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, List<String>>()
+            .put(ImmutableTAfter.class, ImmutableList.of(">"))
+            .put(ImmutableTBefore.class, ImmutableList.of("<"))
+            .put(ImmutableTEquals.class, ImmutableList.of("="))
+            .put(ImmutableTIntersects.class, ImmutableList.of("OVERLAPS"))
+            .put(ImmutableTDisjoint.class, ImmutableList.of("OVERLAPS"))
+            .put(ImmutableTDuring.class, ImmutableList.of("BETWEEN"))
             .build();
 
     private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
@@ -433,9 +433,13 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         }
 
         private Instant getStart(TemporalLiteral literal) {
-            return (literal.getType() == Interval.class)
-                    ? ((Interval) literal.getValue()).getStart()
-                    : (Instant) literal.getValue();
+            if (literal.getValue() instanceof CqlDateTime.CqlInterval) {
+                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().getStart();
+            } else if (literal.getValue() instanceof CqlDateTime.CqlTimestamp) {
+                return ((CqlDateTime.CqlTimestamp) literal.getValue()).getTimestamp();
+            } else {
+                return ((CqlDateTime.CqlDate) literal.getValue()).getDate().getStart();
+            }
         }
 
         private String getStartAsString(TemporalLiteral literal) {
@@ -444,9 +448,13 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         }
 
         private Instant getEnd(TemporalLiteral literal) {
-            return (literal.getType() == Interval.class)
-                    ? ((Interval) literal.getValue()).getEnd()
-                    : (Instant) literal.getValue();
+            if (literal.getValue() instanceof CqlDateTime.CqlInterval) {
+                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().getEnd();
+            } else if (literal.getValue() instanceof CqlDateTime.CqlTimestamp) {
+                return ((CqlDateTime.CqlTimestamp) literal.getValue()).getTimestamp();
+            } else {
+                return ((CqlDateTime.CqlDate) literal.getValue()).getDate().getEnd();
+            }
         }
 
         private String getEndAsString(TemporalLiteral literal) {
@@ -455,9 +463,13 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         }
 
         private Instant getEndExclusive(TemporalLiteral literal) {
-            return (literal.getType() == Interval.class)
-                    ? ((Interval) literal.getValue()).getEnd().plusSeconds(1)
-                    : (Instant) literal.getValue();
+            if (literal.getValue() instanceof CqlDateTime.CqlInterval) {
+                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().getEnd().plusSeconds(1);
+            } else if (literal.getValue() instanceof CqlDateTime.CqlTimestamp) {
+                return ((CqlDateTime.CqlTimestamp) literal.getValue()).getTimestamp();
+            } else {
+                return ((CqlDateTime.CqlDate) literal.getValue()).getDate().getEnd().plusSeconds(1);
+            }
         }
 
         private String getEndExclusiveAsString(TemporalLiteral literal) {
@@ -467,7 +479,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         @Override
         public String visit(TemporalOperation temporalOperation, List<String> children) {
-            String operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
+            List<String> operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
 
             Temporal op1 = (Temporal) temporalOperation.getOperands().get(0);
             Temporal op2 = (Temporal) temporalOperation.getOperands().get(1);
@@ -489,7 +501,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     children = ImmutableList.of(children.get(0), String.format("TIMESTAMP %s", children.get(1)));
                 }
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
+                return String.format(expressions.get(0), "", String.format(" %s %s", operator.get(0), expressions.get(1)));
 
             } else if (temporalOperation instanceof TBefore) {
                 if (op1 instanceof TemporalLiteral) {
@@ -499,7 +511,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2));
                 }
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
+                return String.format(expressions.get(0), "", String.format(" %s %s", operator.get(0), expressions.get(1)));
 
             } else if (temporalOperation instanceof TAfter) {
                 if (op1 instanceof TemporalLiteral) {
@@ -509,9 +521,24 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     children = ImmutableList.of(children.get(0), getEndAsString((TemporalLiteral) op2));
                 }
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
+                return String.format(expressions.get(0), "", String.format(" %s %s", operator.get(0), expressions.get(1)));
 
             } else if (temporalOperation instanceof TDuring) {
+                // The left hand side is a property or an interval, this was checked when the operation was built.
+                // The right hand side is an interval, this was checked when the operation was built.
+                Temporal op2a = op2;
+                Temporal op2b = op2;
+                if (op2 instanceof TemporalLiteral) {
+                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
+                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
+                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
+                } else if (op2 instanceof Property) {
+                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
+                }
+                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
+                return String.format(expressions.get(0), "", String.format(" %s %s AND %s", operator.get(0), expressions.get(1), expressions.get(2)));
+
+            } else if (temporalOperation instanceof TContains) {
                 // The left hand side is a property or an instant, this was checked when the operation was built.
                 // The right hand side is an interval, this was checked when the operation was built.
                 Temporal op2a = op2;
@@ -524,11 +551,10 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
                 }
                 List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s AND %s", operator, expressions.get(1), expressions.get(2)));
+                String column = reduceSelectToColumn(children.get(0));
+                return String.format(expressions.get(0), "", String.format(" %s %s AND %s %s %s", operator.get(0), expressions.get(1), column, operator.get(1), expressions.get(2)));
 
             } else if (temporalOperation instanceof TIntersects) {
-                // ISO 8601 intervals include both the start and end instant
-                // PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
                 if (op1 instanceof Property) {
                     // need to change "column" to "(column,column)"
                     children = ImmutableList.of(replaceColumnWithInterval(children.get(0), reduceSelectToColumn(children.get(0))), children.get(1));
@@ -542,13 +568,41 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     children = ImmutableList.of(children.get(0),replaceColumnWithInterval(children.get(1), reduceSelectToColumn(children.get(1))));
                 } else if (op2 instanceof TemporalLiteral) {
                     // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
-                    children = ImmutableList.of(children.get(0), String.format("(%s, %s)", getStartAsString((TemporalLiteral) op2), getEndExclusiveAsString((TemporalLiteral) op2)));
+                    children = ImmutableList.of(children.get(0), getInterval(op2));
                 }
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
+                return String.format(expressions.get(0), "", String.format(" %s %s", operator.get(0), expressions.get(1)));
+            } else if (temporalOperation instanceof TDisjoint) {
+                if (op1 instanceof Property) {
+                    // need to change "column" to "(column,column)"
+                    children = ImmutableList.of(replaceColumnWithInterval(children.get(0), reduceSelectToColumn(children.get(0))), children.get(1));
+                } else if (op1 instanceof TemporalLiteral) {
+                    // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
+                    children = ImmutableList.of(String.format("(%s, %s)", getStartAsString((TemporalLiteral) op1), getEndExclusiveAsString((TemporalLiteral) op1)), children.get(1));
+                }
+
+                if (op2 instanceof Property) {
+                    // need to change "column" to "(column,column)"
+                    children = ImmutableList.of(children.get(0),replaceColumnWithInterval(children.get(1), reduceSelectToColumn(children.get(1))));
+                } else if (op2 instanceof TemporalLiteral) {
+                    // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
+                    children = ImmutableList.of(children.get(0), getInterval(op2));
+                }
+                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
+                return String.format(expressions.get(0), "NOT(", String.format(" %s %s)", operator.get(0), expressions.get(1)));
             }
 
             throw new IllegalArgumentException(String.format("unsupported temporal operator: %s", operator));
+        }
+
+        /**
+         * ISO 8601 intervals include both the start and end instant
+         * PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
+         * @param literal temporal literal
+         * @return PostgreSQL interval
+         */
+        private String getInterval(Temporal literal) {
+            return String.format("(%s, %s)", getStartAsString((TemporalLiteral) literal), getEndExclusiveAsString((TemporalLiteral) literal));
         }
 
         @Override
@@ -562,7 +616,14 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         @Override
         public String visit(TemporalLiteral temporalLiteral, List<String> children) {
-            return String.format("'%s'", temporalLiteral.getValue());
+            if (Objects.equals(temporalLiteral.getType(), ImmutableCqlTimestamp.class)) {
+                return String.format("'%s'", ((CqlDateTime.CqlTimestamp) temporalLiteral.getValue()).getTimestamp().toString());
+            } else if (Objects.equals(temporalLiteral.getType(), ImmutableCqlInterval.class)) {
+                return String.format("'%s'", ((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getInterval().toString());
+            } else if (Objects.equals(temporalLiteral.getType(), ImmutableCqlDate.class)) {
+                return String.format("'%s'", ((CqlDateTime.CqlDate) temporalLiteral.getValue()).getDate().toString());
+            }
+            throw new IllegalArgumentException("unsupported temporal literal");
         }
 
         @Override

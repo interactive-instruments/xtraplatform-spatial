@@ -461,7 +461,7 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_24, Cql.Format.TEXT)
 
         then:
-        actual2 == "T_BEFORE(built, INTERVAL('2015-01-01T00:00:00Z','2015-01-01T23:59:59Z'))"
+        actual2 == cqlText
     }
 
     def 'Updated between June 10, 2017 and June 11, 2017'() {

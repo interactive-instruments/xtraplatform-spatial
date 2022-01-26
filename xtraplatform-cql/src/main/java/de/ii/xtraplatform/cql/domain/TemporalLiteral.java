@@ -98,14 +98,14 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
 
         public Builder(Instant literal) {
             super();
-            value(literal);
-            type(Instant.class);
+            value(CqlDateTime.CqlTimestamp.of(literal));
+            type(CqlDateTime.CqlTimestamp.class);
         }
 
         public Builder(Interval literal) {
             super();
-            value(literal);
-            type(Interval.class);
+            value(CqlDateTime.CqlInterval.of(literal));
+            type(CqlDateTime.CqlInterval.class);
         }
 
         @JsonCreator
@@ -141,11 +141,11 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
             try {
                 if (INTERVAL_PATTERN.test(literal)) {
                     // a fully specified datetime interval
-                    return Interval.parse(literal);
+                    return CqlDateTime.CqlInterval.of(Interval.parse(literal));
                 } else if (INSTANT_PATTERN.test(literal)) {
                     // a fully specified datetime instant
                     // Instant does not support timezones, convert to UTC
-                    return ZonedDateTime.parse(literal).toInstant();
+                    return CqlDateTime.CqlTimestamp.of(ZonedDateTime.parse(literal).toInstant());
                 } else if (DATE_PATTERN.test(literal)) {
                     // a date only instant
                     Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal))
@@ -154,35 +154,35 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
                     Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal))
                                            .atTime(23,59,59)
                                            .toInstant(ZoneOffset.UTC);
-                    return Interval.of(start, end);
+                    return CqlDateTime.CqlDate.of(Interval.of(start, end));
                 } else if (NOW_PATTERN.test(literal)) {
                     // now instant
-                    return now();
+                    return CqlDateTime.CqlTimestamp.of(now());
                 } else if (INTERVAL_OPEN_PATTERN.test(literal)) {
                     // open start and end
-                    return Interval.of(MIN_DATE, MAX_DATE);
+                    return CqlDateTime.CqlInterval.of(Interval.of(MIN_DATE, MAX_DATE));
                 } else if (INTERVAL_OPEN_END_PATTERN.test(literal)) {
                     // start datetime instant, end open
                     Instant start = Instant.parse(literal.substring(0, literal.indexOf("/")));
-                    return Interval.of(start, MAX_DATE);
+                    return CqlDateTime.CqlInterval.of(Interval.of(start, MAX_DATE));
                 } else if (INTERVAL_OPEN_START_PATTERN.test(literal)) {
                     // start open, end datetime instant
                     Instant end = Instant.parse(literal.substring(literal.indexOf("/") + 1));
-                    return Interval.of(MIN_DATE, end);
+                    return CqlDateTime.CqlInterval.of(Interval.of(MIN_DATE, end));
                 } else if (INTERVAL_NOW_END_PATTERN.test(literal)) {
                     // start datetime instant, end now
                     Instant start = Instant.parse(literal.substring(0, literal.indexOf("/")));
-                    return Interval.of(start, now());
+                    return CqlDateTime.CqlInterval.of(Interval.of(start, now()));
                 } else if (INTERVAL_NOW_START_PATTERN.test(literal)) {
                     // start now, end datetime instant
                     Instant end = Instant.parse(literal.substring(literal.indexOf("/") + 1));
-                    return Interval.of(now(), end);
+                    return CqlDateTime.CqlInterval.of(Interval.of(now(), end));
                 } else if (INTERVAL_NOW_START_OPEN_END_PATTERN.test(literal)) {
                     // start now, end open
-                    return Interval.of(now(), MAX_DATE);
+                    return CqlDateTime.CqlInterval.of(Interval.of(now(), MAX_DATE));
                 } else if (INTERVAL_OPEN_START_NOW_END_PATTERN.test(literal)) {
                     // start open, end now
-                    return Interval.of(MIN_DATE, now());
+                    return CqlDateTime.CqlInterval.of(Interval.of(MIN_DATE, now()));
                 } else if (DATE_INTERVAL_PATTERN.test(literal)) {
                     // start date instant, end date instant
                     Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(0, literal.indexOf("/"))))
@@ -191,31 +191,31 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
                     Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(literal.indexOf("/") + 1)))
                                            .atTime(23,59,59)
                                            .toInstant(ZoneOffset.UTC);
-                    return Interval.of(start, end);
+                    return CqlDateTime.CqlInterval.of(Interval.of(start, end));
                 } else if (DATE_INTERVAL_OPEN_END_PATTERN.test(literal)) {
                     // start date instant, end open
                     Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(0, literal.indexOf("/"))))
                                              .atStartOfDay()
                                              .toInstant(ZoneOffset.UTC);
-                    return Interval.of(start, MAX_DATE);
+                    return CqlDateTime.CqlInterval.of(Interval.of(start, MAX_DATE));
                 } else if (DATE_INTERVAL_OPEN_START_PATTERN.test(literal)) {
                     // start open, end date instant
                     Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(literal.indexOf("/") + 1)))
                                            .atTime(23,59,59)
                                            .toInstant(ZoneOffset.UTC);
-                    return Interval.of(MIN_DATE, end);
+                    return CqlDateTime.CqlInterval.of(Interval.of(MIN_DATE, end));
                 } else if (DATE_INTERVAL_NOW_END_PATTERN.test(literal)) {
                     // start date instant, end now
                     Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(0, literal.indexOf("/"))))
                                              .atStartOfDay()
                                              .toInstant(ZoneOffset.UTC);
-                    return Interval.of(start, now());
+                    return CqlDateTime.CqlInterval.of(Interval.of(start, now()));
                 } else if (DATE_INTERVAL_NOW_START_PATTERN.test(literal)) {
                     // start now, end date instant
                     Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(literal.indexOf("/") + 1)))
                                            .atTime(23,59,59)
                                            .toInstant(ZoneOffset.UTC);
-                    return Interval.of(now(), end);
+                    return CqlDateTime.CqlInterval.of(Interval.of(now(), end));
                 }
             } catch (DateTimeParseException e) {
                 //ignore

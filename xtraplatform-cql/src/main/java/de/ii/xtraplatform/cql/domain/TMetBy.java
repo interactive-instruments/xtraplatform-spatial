@@ -8,13 +8,37 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Preconditions;
 import org.immutables.value.Value;
+import org.threeten.extra.Interval;
+
+import java.util.Objects;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTMetBy.Builder.class)
 public interface TMetBy extends TemporalOperation, CqlNode {
 
     abstract class Builder extends TemporalOperation.Builder<TMetBy> {
+    }
+
+    @Value.Check
+    @Override
+    default void check() {
+        TemporalOperation.super.check();
+        Preconditions.checkState( getOperands().get(0) instanceof Property ||
+                        (getOperands().get(0) instanceof TemporalLiteral &&
+                                Objects.equals(((TemporalLiteral) getOperands().get(0)).getType(), ImmutableCqlInterval.class)),
+                "The first argument of T_METBY must be a property or a time interval, found %s",
+                getOperands().get(0) instanceof Property
+                        ? ((Property) getOperands().get(0)).getName()
+                        : ((TemporalLiteral) getOperands().get(0)).getValue());
+        Preconditions.checkState( getOperands().get(0) instanceof Property ||
+                        (getOperands().get(1) instanceof TemporalLiteral &&
+                                Objects.equals(((TemporalLiteral) getOperands().get(1)).getType(), ImmutableCqlInterval.class)),
+                "The second argument of T_METBY must be a property or a time interval, found %s",
+                getOperands().get(1) instanceof Property
+                        ? ((Property) getOperands().get(1)).getName()
+                        : ((TemporalLiteral) getOperands().get(1)).getValue());
     }
 
 }

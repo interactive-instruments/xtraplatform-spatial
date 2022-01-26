@@ -29,7 +29,7 @@ public interface TDuring extends TemporalOperation, CqlNode {
     }
 
     static TDuring of(String property, TemporalLiteral temporalLiteral) {
-        if (!Objects.equals(temporalLiteral.getType(), Interval.class)) {
+        if (!Objects.equals(temporalLiteral.getType(), ImmutableCqlInterval.class)) {
             throw new IllegalArgumentException(String.format("not a valid interval: %s", temporalLiteral));
         }
         return new ImmutableTDuring.Builder().operands(ImmutableList.of(Property.of(property), temporalLiteral))
@@ -49,17 +49,18 @@ public interface TDuring extends TemporalOperation, CqlNode {
     default void check() {
         TemporalOperation.super.check();
         Preconditions.checkState( getOperands().get(0) instanceof Property ||
-                                          (getOperands().get(0) instanceof TemporalLiteral &&
-                                                  Objects.equals(((TemporalLiteral) getOperands().get(0)).getType(), Instant.class)),
-                                 "The left hand side of DURING must be a property or time instant, found %s",
-                                  getOperands().get(0) instanceof Property
-                                          ? ((Property) getOperands().get(0)).getName()
-                                          : ((TemporalLiteral) getOperands().get(0)).getValue());
-        Preconditions.checkState( getOperands().get(1) instanceof TemporalLiteral &&
-                                         Objects.equals(((TemporalLiteral) getOperands().get(1)).getType(), Interval.class),
-                                 "The right hand side of DURING must be a time interval, found %s",
-                                  getOperands().get(1) instanceof Property
-                                          ? ((Property) getOperands().get(1)).getName()
-                                          : ((TemporalLiteral) getOperands().get(1)).getValue());
+                        (getOperands().get(0) instanceof TemporalLiteral &&
+                                Objects.equals(((TemporalLiteral) getOperands().get(0)).getType(), ImmutableCqlInterval.class)),
+                "The first argument of T_FINISHEDBY must be a property or a time interval, found %s",
+                getOperands().get(0) instanceof Property
+                        ? ((Property) getOperands().get(0)).getName()
+                        : ((TemporalLiteral) getOperands().get(0)).getValue());
+        Preconditions.checkState( getOperands().get(0) instanceof Property ||
+                        (getOperands().get(1) instanceof TemporalLiteral &&
+                                Objects.equals(((TemporalLiteral) getOperands().get(1)).getType(), ImmutableCqlInterval.class)),
+                "The second argument of T_FINISHEDBY must be a property or a time interval, found %s",
+                getOperands().get(1) instanceof Property
+                        ? ((Property) getOperands().get(1)).getName()
+                        : ((TemporalLiteral) getOperands().get(1)).getValue());
     }
 }

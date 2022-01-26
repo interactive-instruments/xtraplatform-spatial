@@ -244,7 +244,9 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                     throw new IllegalArgumentException("intervals are not supported for the BETWEEN predicate");
                 }
 
-                TemporalLiteral temporalLiteral = TemporalLiteral.of(String.format("%s/%s", temporal1.getValue().toString(), temporal2.getValue().toString()));
+                TemporalLiteral temporalLiteral = TemporalLiteral.of(String.format("%s/%s",
+                        ((CqlDateTime.CqlTimestamp) temporal1.getValue()).getTimestamp().toString(),
+                        ((CqlDateTime.CqlTimestamp) temporal2.getValue()).getTimestamp().toString()));
 
                 TDuring during = new ImmutableTDuring.Builder()
                         .operands(ImmutableList.of(scalar1, temporalLiteral))
@@ -698,7 +700,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     }
 
     private boolean isInstant(Temporal temporal) {
-        return temporal instanceof TemporalLiteral && ((TemporalLiteral) temporal).getType().equals(Instant.class);
+        return temporal instanceof TemporalLiteral && ((TemporalLiteral) temporal).getType().equals(ImmutableCqlTimestamp.class);
     }
 
     private ScalarLiteral getScalarLiteralFromText(String cqlText) {

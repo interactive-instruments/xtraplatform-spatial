@@ -346,6 +346,15 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
         instanceQuery == "SELECT A.id AS SKEY, A.event_date FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE (AA.event_date,AA.event_date) OVERLAPS (TIMESTAMP '1969-07-16T05:32:00Z', TIMESTAMP '1969-07-24T16:50:36Z'))) ORDER BY 1"
     }
 
+    def 'T_DISJOINT temporal operator'() {
+        when:
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.EVENT_DATE, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_TDISJOINT), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.EVENT_DATE, Optional.of(CqlFilterExamples.EXAMPLE_TDISJOINT), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        then:
+        metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE NOT((AA.event_date,AA.event_date) OVERLAPS (TIMESTAMP '1969-07-16T05:32:00Z', TIMESTAMP '1969-07-24T16:50:36Z'))) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE NOT((AA.event_date,AA.event_date) OVERLAPS (TIMESTAMP '1969-07-16T05:32:00Z', TIMESTAMP '1969-07-24T16:50:36Z'))) ORDER BY 1) AS NM) AS NM2"
+        instanceQuery == "SELECT A.id AS SKEY, A.event_date FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE NOT((AA.event_date,AA.event_date) OVERLAPS (TIMESTAMP '1969-07-16T05:32:00Z', TIMESTAMP '1969-07-24T16:50:36Z')))) ORDER BY 1"
+    }
+
     def 'T_EQUALS temporal operator'() {
         when:
         String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.BUILT, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_TEQUALS), Collections.emptyList(), true)
