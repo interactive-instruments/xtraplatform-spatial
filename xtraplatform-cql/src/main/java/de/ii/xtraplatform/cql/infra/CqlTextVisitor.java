@@ -523,14 +523,32 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitTemporalLiteral(CqlParser.TemporalLiteralContext ctx) {
         try {
+            if (Objects.nonNull(ctx.interval())) {
+                return ctx.interval().accept(this);
+            }
             String literal = ctx.getText().toUpperCase();
             literal = literal.substring(literal.indexOf('(') + 2, literal.indexOf(')') - 1);
-            if (Objects.nonNull(ctx.interval())) {
+            return TemporalLiteral.of(literal);
+        } catch (CqlParseException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
+    }
+
+    @Override
+    public CqlNode visitInterval(CqlParser.IntervalContext ctx) {
+        String literal = ctx.Interval().getText();
+        try {
+            if (literal.contains("'")) {
+                literal = literal.substring(literal.indexOf('(') + 2, literal.indexOf(')') - 1);
                 literal = literal.replaceAll(" ", "")
                         .replaceAll("'", "")
                         .replaceAll(",", "/");
+                return TemporalLiteral.of(literal);
+            } else {
+                String property1 = literal.substring(literal.indexOf('(') + 1, literal.indexOf(','));
+                String property2 = literal.substring(literal.indexOf(',') + 1, literal.indexOf(')'));
+                return TemporalLiteral.of(Property.of(property1), Property.of(property2));
             }
-            return TemporalLiteral.of(literal);
         } catch (CqlParseException e) {
             throw new IllegalArgumentException(e.getMessage());
         }

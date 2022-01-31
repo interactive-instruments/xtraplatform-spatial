@@ -22,6 +22,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
+import org.opengis.filter.temporal.OverlappedBy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +53,15 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             .put(ImmutableTIntersects.class, ImmutableList.of("OVERLAPS"))
             .put(ImmutableTDisjoint.class, ImmutableList.of("OVERLAPS"))
             .put(ImmutableTDuring.class, ImmutableList.of("BETWEEN"))
+            .put(ImmutableTContains.class, ImmutableList.of("<", ">"))
+            .put(ImmutableTFinishes.class, ImmutableList.of(">", "="))
+            .put(ImmutableTFinishedBy.class, ImmutableList.of("<", "="))
+            .put(ImmutableTStarts.class, ImmutableList.of("=", "<"))
+            .put(ImmutableTStartedBy.class, ImmutableList.of("=", ">"))
+            .put(ImmutableTMeets.class, ImmutableList.of("<", "="))
+            .put(ImmutableTMetBy.class, ImmutableList.of("=", ">"))
+            .put(ImmutableTOverlaps.class, ImmutableList.of("<", ">"))
+            .put(ImmutableTOverlappedBy.class, ImmutableList.of(">", "<"))
             .build();
 
     private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
@@ -434,7 +444,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         private Instant getStart(TemporalLiteral literal) {
             if (literal.getValue() instanceof CqlDateTime.CqlInterval) {
-                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().getStart();
+                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().get().getStart();
             } else if (literal.getValue() instanceof CqlDateTime.CqlTimestamp) {
                 return ((CqlDateTime.CqlTimestamp) literal.getValue()).getTimestamp();
             } else {
@@ -449,7 +459,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         private Instant getEnd(TemporalLiteral literal) {
             if (literal.getValue() instanceof CqlDateTime.CqlInterval) {
-                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().getEnd();
+                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().get().getEnd();
             } else if (literal.getValue() instanceof CqlDateTime.CqlTimestamp) {
                 return ((CqlDateTime.CqlTimestamp) literal.getValue()).getTimestamp();
             } else {
@@ -464,7 +474,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         private Instant getEndExclusive(TemporalLiteral literal) {
             if (literal.getValue() instanceof CqlDateTime.CqlInterval) {
-                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().getEnd().plusSeconds(1);
+                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().get().getEnd().plusSeconds(1);
             } else if (literal.getValue() instanceof CqlDateTime.CqlTimestamp) {
                 return ((CqlDateTime.CqlTimestamp) literal.getValue()).getTimestamp();
             } else {
@@ -538,22 +548,6 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
                 return String.format(expressions.get(0), "", String.format(" %s %s AND %s", operator.get(0), expressions.get(1), expressions.get(2)));
 
-            } else if (temporalOperation instanceof TContains) {
-                // The left hand side is a property or an instant, this was checked when the operation was built.
-                // The right hand side is an interval, this was checked when the operation was built.
-                Temporal op2a = op2;
-                Temporal op2b = op2;
-                if (op2 instanceof TemporalLiteral) {
-                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
-                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
-                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
-                } else if (op2 instanceof Property) {
-                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
-                }
-                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
-                String column = reduceSelectToColumn(children.get(0));
-                return String.format(expressions.get(0), "", String.format(" %s %s AND %s %s %s", operator.get(0), expressions.get(1), column, operator.get(1), expressions.get(2)));
-
             } else if (temporalOperation instanceof TIntersects) {
                 if (op1 instanceof Property) {
                     // need to change "column" to "(column,column)"
@@ -590,6 +584,125 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 }
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
                 return String.format(expressions.get(0), "NOT(", String.format(" %s %s)", operator.get(0), expressions.get(1)));
+            } else if (temporalOperation instanceof TContains) {
+                // The left hand side is a property or an interval, this was checked when the operation was built.
+                // The right hand side is an interval, this was checked when the operation was built.
+                Temporal op2a = op2;
+                Temporal op2b = op2;
+                if (op2 instanceof TemporalLiteral) {
+                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
+                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
+                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
+                } else if (op2 instanceof Property) {
+                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
+                }
+                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
+                String column = reduceSelectToColumn(children.get(0));
+                return String.format(expressions.get(0), "", String.format(" %s %s AND %s %s %s", operator.get(0), expressions.get(1), column, operator.get(1), expressions.get(2)));
+            } else if (temporalOperation instanceof TFinishedBy) {
+                Temporal op2a = op2;
+                Temporal op2b = op2;
+                if (op2 instanceof TemporalLiteral) {
+                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
+                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
+                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
+                } else if (op2 instanceof Property) {
+                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
+                }
+                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
+                String column = reduceSelectToColumn(children.get(0));
+                return String.format(expressions.get(0), "", String.format(" %s %s AND %s %s %s", operator.get(0), expressions.get(1), column, operator.get(1), expressions.get(2)));
+            } else if (temporalOperation instanceof TFinishes) {
+                Temporal op2a = op2;
+                Temporal op2b = op2;
+                if (op2 instanceof TemporalLiteral) {
+                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
+                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
+                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
+                } else if (op2 instanceof Property) {
+                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
+                }
+                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
+                String column = reduceSelectToColumn(children.get(0));
+                return String.format(expressions.get(0), "", String.format(" %s %s AND %s %s %s", operator.get(0), expressions.get(1), column, operator.get(1), expressions.get(2)));
+            } else if (temporalOperation instanceof TMeets) {
+                Temporal op2a = op2;
+                Temporal op2b = op2;
+                if (op2 instanceof TemporalLiteral) {
+                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
+                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
+                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
+                } else if (op2 instanceof Property) {
+                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
+                }
+                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
+                String column = reduceSelectToColumn(children.get(0));
+                return String.format(expressions.get(0), "", String.format(" %s %s AND %s %s %s", operator.get(0), expressions.get(1), column, operator.get(1), expressions.get(2)));
+            } else if (temporalOperation instanceof TMetBy) {
+                Temporal op2a = op2;
+                Temporal op2b = op2;
+                if (op2 instanceof TemporalLiteral) {
+                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
+                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
+                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
+                } else if (op2 instanceof Property) {
+                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
+                }
+                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
+                String column = reduceSelectToColumn(children.get(0));
+                return String.format(expressions.get(0), "", String.format(" %s %s AND %s %s %s", operator.get(0), expressions.get(1), column, operator.get(1), expressions.get(2)));
+            } else if (temporalOperation instanceof OverlappedBy) {
+                Temporal op2a = op2;
+                Temporal op2b = op2;
+                if (op2 instanceof TemporalLiteral) {
+                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
+                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
+                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
+                } else if (op2 instanceof Property) {
+                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
+                }
+                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
+                String column = reduceSelectToColumn(children.get(0));
+                return String.format(expressions.get(0), "", String.format(" %s %s AND %s %s %s", operator.get(0), expressions.get(2), column, operator.get(1), expressions.get(2)));
+            } else if (temporalOperation instanceof TOverlaps) {
+                Temporal op2a = op2;
+                Temporal op2b = op2;
+                if (op2 instanceof TemporalLiteral) {
+                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
+                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
+                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
+                } else if (op2 instanceof Property) {
+                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
+                }
+                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
+                String column = reduceSelectToColumn(children.get(0));
+                return String.format(expressions.get(0), "", String.format(" %s %s AND %s %s %s", operator.get(0), expressions.get(1), column, operator.get(1), expressions.get(1)));
+            } else if (temporalOperation instanceof TStartedBy) {
+                Temporal op2a = op2;
+                Temporal op2b = op2;
+                if (op2 instanceof TemporalLiteral) {
+                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
+                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
+                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
+                } else if (op2 instanceof Property) {
+                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
+                }
+                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
+                String column = reduceSelectToColumn(children.get(0));
+                return String.format(expressions.get(0), "", String.format(" %s %s AND %s %s %s", operator.get(0), expressions.get(1), column, operator.get(1), expressions.get(2)));
+            } else if (temporalOperation instanceof TStarts) {
+                Temporal op2a = op2;
+                Temporal op2b = op2;
+                if (op2 instanceof TemporalLiteral) {
+                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
+                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
+                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
+                } else if (op2 instanceof Property) {
+                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
+                }
+                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
+                String column = reduceSelectToColumn(children.get(0));
+                return String.format(expressions.get(0), "", String.format(" %s %s AND %s %s %s", operator.get(0), expressions.get(1), column, operator.get(1), expressions.get(2)));
             }
 
             throw new IllegalArgumentException(String.format("unsupported temporal operator: %s", operator));
@@ -616,11 +729,11 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         @Override
         public String visit(TemporalLiteral temporalLiteral, List<String> children) {
-            if (Objects.equals(temporalLiteral.getType(), ImmutableCqlTimestamp.class)) {
+            if (temporalLiteral.getValue() instanceof CqlDateTime.CqlTimestamp) {
                 return String.format("'%s'", ((CqlDateTime.CqlTimestamp) temporalLiteral.getValue()).getTimestamp().toString());
-            } else if (Objects.equals(temporalLiteral.getType(), ImmutableCqlInterval.class)) {
+            } else if (temporalLiteral.getValue() instanceof CqlDateTime.CqlInterval) {
                 return String.format("'%s'", ((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getInterval().toString());
-            } else if (Objects.equals(temporalLiteral.getType(), ImmutableCqlDate.class)) {
+            } else if (temporalLiteral.getValue() instanceof CqlDateTime.CqlDate) {
                 return String.format("'%s'", ((CqlDateTime.CqlDate) temporalLiteral.getValue()).getDate().toString());
             }
             throw new IllegalArgumentException("unsupported temporal literal");

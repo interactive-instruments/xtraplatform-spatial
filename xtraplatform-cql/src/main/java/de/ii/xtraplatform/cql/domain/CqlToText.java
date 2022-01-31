@@ -308,18 +308,25 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(TemporalLiteral temporalLiteral, List<String> children) {
-        if (Objects.equals(temporalLiteral.getType(), ImmutableCqlInterval.class)) {
-            Interval interval = ((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getInterval();
-            String start = interval.getStart().toString();
-            String end = interval.getEnd().toString();
-            if (interval.getStart().equals(TemporalLiteral.MIN_DATE)) {
-                start = "..";
+        if (temporalLiteral.getValue() instanceof CqlDateTime.CqlInterval) {
+            String start;
+            String end;
+            if (((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getInterval().isPresent()) {
+                Interval interval = ((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getInterval().get();
+                start = String.format("'%s'", interval.getStart().toString());
+                end = String.format("'%s'", interval.getEnd().toString());
+                if (interval.getStart().equals(TemporalLiteral.MIN_DATE)) {
+                    start = "'..'";
+                }
+                if (interval.getEnd().equals(TemporalLiteral.MAX_DATE)) {
+                    end = "'..'";
+                }
+            } else {
+                start = ((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getStart().get().accept(this);
+                end = ((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getEnd().get().accept(this);
             }
-            if (interval.getEnd().equals(TemporalLiteral.MAX_DATE)) {
-                end = "..";
-            }
-            return String.format("INTERVAL('%s','%s')", start, end);
-        } else if (Objects.equals(temporalLiteral.getType(), ImmutableCqlTimestamp.class)) {
+            return String.format("INTERVAL(%s,%s)", start, end);
+        } else if (temporalLiteral.getValue() instanceof CqlDateTime.CqlTimestamp) {
             return String.format("TIMESTAMP('%s')", ((CqlDateTime.CqlTimestamp) temporalLiteral.getValue()).getTimestamp().toString());
         } else {
             Interval date = ((CqlDateTime.CqlDate) temporalLiteral.getValue()).getDate();

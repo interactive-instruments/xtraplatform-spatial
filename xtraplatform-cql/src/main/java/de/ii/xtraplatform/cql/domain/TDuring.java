@@ -29,7 +29,7 @@ public interface TDuring extends TemporalOperation, CqlNode {
     }
 
     static TDuring of(String property, TemporalLiteral temporalLiteral) {
-        if (!Objects.equals(temporalLiteral.getType(), ImmutableCqlInterval.class)) {
+        if (!(temporalLiteral.getValue() instanceof CqlDateTime.CqlInterval)) {
             throw new IllegalArgumentException(String.format("not a valid interval: %s", temporalLiteral));
         }
         return new ImmutableTDuring.Builder().operands(ImmutableList.of(Property.of(property), temporalLiteral))

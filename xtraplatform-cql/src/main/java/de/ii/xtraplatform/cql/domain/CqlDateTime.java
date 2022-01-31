@@ -13,6 +13,7 @@ import org.immutables.value.Value;
 import org.threeten.extra.Interval;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @JsonSubTypes({
         @JsonSubTypes.Type(value = CqlDateTime.CqlDate.class, name = "date"),
@@ -67,7 +68,15 @@ public interface CqlDateTime extends CqlNode {
             return new ImmutableCqlInterval.Builder().interval(interval).build();
         }
 
-        Interval getInterval();
+        static CqlInterval of(Temporal start, Temporal end) {
+            return new ImmutableCqlInterval.Builder().start(start).end(end).build();
+        }
+
+        Optional<Interval> getInterval();
+
+        Optional<Temporal> getStart();
+
+        Optional<Temporal> getEnd();
 
         @Override
         default CqlDateTime.Type getType() {

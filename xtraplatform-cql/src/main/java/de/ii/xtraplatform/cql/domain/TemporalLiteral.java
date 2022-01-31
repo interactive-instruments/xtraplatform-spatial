@@ -87,6 +87,10 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
         return new TemporalLiteral.Builder(literal).build();
     }
 
+    static TemporalLiteral of(Temporal start, Temporal end) {
+        return new TemporalLiteral.Builder(CqlDateTime.CqlInterval.of(start, end)).build();
+    }
+
     static Instant now() {
         return Instant.now().truncatedTo(ChronoUnit.SECONDS);
     }
@@ -105,6 +109,12 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
         public Builder(Interval literal) {
             super();
             value(CqlDateTime.CqlInterval.of(literal));
+            type(CqlDateTime.CqlInterval.class);
+        }
+
+        public Builder(CqlDateTime.CqlInterval literal) {
+            super();
+            value(literal);
             type(CqlDateTime.CqlInterval.class);
         }
 

@@ -393,8 +393,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'S_DISJOINT spatial operator'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.GEOMETRY, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_DISJOINT), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.GEOMETRY, Optional.of(CqlFilterExamples.EXAMPLE_DISJOINT), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.GEOMETRY, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_SDISJOINT), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.GEOMETRY, Optional.of(CqlFilterExamples.EXAMPLE_SDISJOINT), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Disjoint(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Disjoint(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.geometry FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE ST_Disjoint(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326)))) ORDER BY 1"
@@ -402,8 +402,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'S_EQUALS spatial operator'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.GEOMETRY, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_EQUALS), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.GEOMETRY, Optional.of(CqlFilterExamples.EXAMPLE_EQUALS), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.GEOMETRY, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_SEQUALS), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.GEOMETRY, Optional.of(CqlFilterExamples.EXAMPLE_SEQUALS), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Equals(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Equals(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.geometry FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE ST_Equals(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326)))) ORDER BY 1"
@@ -411,8 +411,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'S_TOUCHES spatial operator'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.GEOMETRY, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_TOUCHES), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.GEOMETRY, Optional.of(CqlFilterExamples.EXAMPLE_TOUCHES), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.GEOMETRY, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_STOUCHES), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.GEOMETRY, Optional.of(CqlFilterExamples.EXAMPLE_STOUCHES), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Touches(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Touches(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.geometry FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE ST_Touches(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326)))) ORDER BY 1"
@@ -420,8 +420,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'S_OVERLAPS spatial operator'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.GEOMETRY, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_OVERLAPS), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.GEOMETRY, Optional.of(CqlFilterExamples.EXAMPLE_OVERLAPS), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.GEOMETRY, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_SOVERLAPS), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.GEOMETRY, Optional.of(CqlFilterExamples.EXAMPLE_SOVERLAPS), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Overlaps(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Overlaps(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.geometry FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE ST_Overlaps(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326)))) ORDER BY 1"
@@ -429,8 +429,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'S_CROSSES spatial operator'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.GEOMETRY, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_CROSSES), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.GEOMETRY, Optional.of(CqlFilterExamples.EXAMPLE_CROSSES), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.GEOMETRY, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_SCROSSES), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.GEOMETRY, Optional.of(CqlFilterExamples.EXAMPLE_SCROSSES), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Crosses(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Crosses(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.geometry FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE ST_Crosses(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326)))) ORDER BY 1"
@@ -438,8 +438,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'S_CONTAINS spatial operator'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.GEOMETRY, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_CONTAINS), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.GEOMETRY, Optional.of(CqlFilterExamples.EXAMPLE_CONTAINS), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.GEOMETRY, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_SCONTAINS), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.GEOMETRY, Optional.of(CqlFilterExamples.EXAMPLE_SCONTAINS), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Contains(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE ST_Contains(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.geometry FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE ST_Contains(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326)))) ORDER BY 1"

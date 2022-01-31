@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import scala.sys.Prop;
 
 import java.util.Objects;
 
@@ -163,17 +164,21 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_TEQUALS = CqlFilter.of(TEquals.of("built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
 
-    public static final CqlFilter EXAMPLE_DISJOINT = CqlFilter.of(SDisjoint.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+    public static final CqlFilter EXAMPLE_TDISJOINT = CqlFilter.of(TDisjoint.of("event_date", getTemporalLiteral("1969-07-16T05:32:00Z/1969-07-24T16:50:35Z")));
 
-    public static final CqlFilter EXAMPLE_EQUALS = CqlFilter.of(SEquals.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+    public static final CqlFilter EXAMPLE_TCONTAINS = CqlFilter.of(TContains.of("event_date", TemporalLiteral.of(Property.of("startDate"), Property.of("endDate"))));
 
-    public static final CqlFilter EXAMPLE_TOUCHES = CqlFilter.of(STouches.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+    public static final CqlFilter EXAMPLE_SDISJOINT = CqlFilter.of(SDisjoint.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
-    public static final CqlFilter EXAMPLE_OVERLAPS = CqlFilter.of(SOverlaps.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+    public static final CqlFilter EXAMPLE_SEQUALS = CqlFilter.of(SEquals.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
-    public static final CqlFilter EXAMPLE_CROSSES = CqlFilter.of(SCrosses.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+    public static final CqlFilter EXAMPLE_STOUCHES = CqlFilter.of(STouches.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
-    public static final CqlFilter EXAMPLE_CONTAINS = CqlFilter.of(SContains.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+    public static final CqlFilter EXAMPLE_SOVERLAPS = CqlFilter.of(SOverlaps.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+
+    public static final CqlFilter EXAMPLE_SCROSSES = CqlFilter.of(SCrosses.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+
+    public static final CqlFilter EXAMPLE_SCONTAINS = CqlFilter.of(SContains.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
     public static final CqlFilter EXAMPLE_NESTED_TEMPORAL = CqlFilter.of(
             Gt.of(Property.of("filterValues.measure",
@@ -214,8 +219,6 @@ public class CqlFilterExamples {
                     Function.of("ACCENTI", ImmutableList.of(ScalarLiteral.of("Οδος"))),
                     Function.of("ACCENTI", ImmutableList.of(ScalarLiteral.of("Straße"))))
     ));
-
-    public static final CqlFilter EXAMPLE_TDISJOINT = CqlFilter.of(TDisjoint.of("event_date", getTemporalLiteral("1969-07-16T05:32:00Z/1969-07-24T16:50:35Z")));
 
     private static TemporalLiteral getTemporalLiteral(String temporalData) {
         try {

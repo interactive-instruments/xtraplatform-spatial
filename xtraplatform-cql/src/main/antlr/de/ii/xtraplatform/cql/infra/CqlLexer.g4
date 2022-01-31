@@ -323,7 +323,7 @@ Instant : FullDate | FullDate 'T' UtcTime | NOW LEFTPAREN RIGHTPAREN;
 
 Interval : INTERVAL LEFTPAREN InstantParameter COMMA InstantParameter RIGHTPAREN;
 
-InstantParameter : DateInstantString | TimestampInstantString | QUOTE '..' QUOTE;
+InstantParameter : Identifier | DateInstantString | TimestampInstantString | QUOTE '..' QUOTE;
 
 FullDate : DateYear '-' DateMonth '-' DateDay;
 

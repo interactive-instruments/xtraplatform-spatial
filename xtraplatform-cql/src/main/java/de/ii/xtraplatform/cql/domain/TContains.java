@@ -28,7 +28,7 @@ public interface TContains extends TemporalOperation, CqlNode {
     }
 
     static TContains of(String property, TemporalLiteral temporalLiteral) {
-        if (!Objects.equals(temporalLiteral.getType(), ImmutableCqlInterval.class)) {
+        if (!(temporalLiteral.getValue() instanceof CqlDateTime.CqlInterval)) {
             throw new IllegalArgumentException(String.format("not a valid interval: %s", temporalLiteral));
         }
         return new ImmutableTContains.Builder().operands(ImmutableList.of(Property.of(property), temporalLiteral))

@@ -540,6 +540,25 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
+    def 'Interval with properties on both ends'() {
+        given:
+        String cqlText = "T_CONTAINS(event_date, INTERVAL(startDate,endDate))"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_TCONTAINS
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_TCONTAINS, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
     def 'Function with no arguments'() {
         given:
         String cqlText = "pos() = 1"
