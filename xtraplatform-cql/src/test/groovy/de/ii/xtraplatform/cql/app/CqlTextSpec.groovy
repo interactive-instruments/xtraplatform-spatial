@@ -11,6 +11,7 @@ package de.ii.xtraplatform.cql.app
 import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.CqlParseException
 import de.ii.xtraplatform.cql.domain.CqlPredicate
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -948,6 +949,8 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText2
     }
 
+    // CQL2: between has been restricted to numeric values
+    @Ignore
     def 'BETWEEN with temporal arguments'() {
         given:
         String cqlText = "updated BETWEEN TIMESTAMP('2017-06-10T07:30:00Z') AND TIMESTAMP('2017-06-11T10:30:00Z')"
