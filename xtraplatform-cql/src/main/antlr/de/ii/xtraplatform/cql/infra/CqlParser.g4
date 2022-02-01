@@ -3,7 +3,7 @@ options { tokenVocab=CqlLexer; superClass=CqlTextParser.CqlParserCustom; }
 
 /*
 #=============================================================================#
-# A CQL filter is a logically connected expression of one or more predicates.
+# A CQL2 filter is a logically connected expression of one or more predicates.
 #=============================================================================#
 */
 cqlFilter : booleanValueExpression EOF;
@@ -16,7 +16,7 @@ booleanPrimary : predicate
 
 /*
 #=============================================================================#
-#  CQL supports scalar, spatial, temporal and existence predicates.
+#  CQL2 supports scalar, spatial, temporal and array predicates.
 #=============================================================================#
 */
 
@@ -24,7 +24,6 @@ predicate : comparisonPredicate
             | spatialPredicate
             | temporalPredicate
             | arrayPredicate
-//            | existencePredicate
             | inPredicate;
 
 /*
@@ -67,13 +66,9 @@ scalarExpression : propertyName
 
 //CHANGE: support compound property names
 //CHANGE: support nested filters
-propertyName: (Identifier (LEFTSQUAREBRACKET nestedCqlFilter RIGHTSQUAREBRACKET)? PERIOD)* Identifier
-            | CASEI LEFTPAREN propertyName RIGHTPAREN
-            | ACCENTI LEFTPAREN propertyName RIGHTPAREN;
+propertyName: (Identifier (LEFTSQUAREBRACKET nestedCqlFilter RIGHTSQUAREBRACKET)? PERIOD)* Identifier;
 
-characterLiteral: CharacterStringLiteral
-                | CASEI LEFTPAREN characterLiteral RIGHTPAREN
-                | ACCENTI LEFTPAREN characterLiteral RIGHTPAREN;
+characterLiteral: CharacterStringLiteral;
 
 numericLiteral: NumericLiteral;
 
@@ -203,19 +198,6 @@ arrayElement: characterLiteral | numericLiteral | booleanLiteral | temporalLiter
 
 /*
 #=============================================================================#
-# The existence predicate evalues whether the specified property exists
-# in the current context. This predicate was added to accomodate the fact
-# that OAPIF feature collections (and likely other specification) are
-# heterogeneous with respect to schema.
-#=============================================================================#
-*/
-
-//DEACTIVATED, in ogcapi using a non-existing property is a 404
-//existencePredicate : PropertyName EXISTS
-//                   | PropertyName DOES MINUS NOT MINUS EXIST;
-
-/*
-#=============================================================================#
 # The IN predicate
 #=============================================================================#
 */
@@ -232,8 +214,10 @@ inPredicate : scalarExpression (NOT)? IN LEFTPAREN scalarExpression ( COMMA scal
 */
 
 function : Identifier argumentList
-                | CASEI LEFTPAREN function RIGHTPAREN
-                | ACCENTI LEFTPAREN function RIGHTPAREN;
+                | CASEI LEFTPAREN characterExpression RIGHTPAREN
+                | ACCENTI LEFTPAREN characterExpression RIGHTPAREN
+                | LOWER LEFTPAREN characterExpression RIGHTPAREN
+                | UPPER LEFTPAREN characterExpression RIGHTPAREN;
 
 argumentList : LEFTPAREN (positionalArgument)?  RIGHTPAREN;
 
@@ -248,7 +232,6 @@ argument : characterLiteral
          | function
          | arrayExpression
          /*| arithmeticExpression*/;
-
 
 /*
 #=============================================================================#

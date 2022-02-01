@@ -108,4 +108,15 @@ public interface FeatureProvider2 extends PersistentEntity {
     default boolean supportsHighLoad() {
         return false;
     }
+
+    default boolean supportsCaseAccentInsensitiveComparisons() {
+        return this instanceof CaseAccentInsensitiveComparisons;
+    }
+
+    default CaseAccentInsensitiveComparisons caseAccentInsensitiveComparisons() {
+        if (!supportsCaseAccentInsensitiveComparisons()) {
+            throw new UnsupportedOperationException("Case- and accent-insensitive comparisons are not supported");
+        }
+        return (CaseAccentInsensitiveComparisons) this;
+    }
 }

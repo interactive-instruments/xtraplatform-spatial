@@ -128,23 +128,10 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
             super();
             Object castedLiteral = castToType(literal);
             value(castedLiteral);
-            type(castedLiteral.getClass());
+            type(castedLiteral.getClass().getInterfaces()[0]);
         }
 
         private Object castToType(String literal) throws CqlParseException {
-            /*try {
-                return Interval.parse(literal);
-            } catch (DateTimeParseException e) {
-                try {
-                    return Instant.parse(literal);
-                } catch (DateTimeParseException e2) {
-                    try {
-                        return LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal));
-                    } catch (DateTimeParseException e3) {
-                        //ignore
-                    }
-                }
-            }*/
 
             // If the datetime parameter uses dates, not timestamps, the result is always an interval that
             // starts on the first second of the start date and ends at the last second of the end date.

@@ -36,28 +36,8 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlTypeInfoValidator;
-import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
-import de.ii.xtraplatform.features.domain.ConnectionInfo;
-import de.ii.xtraplatform.features.domain.ConnectorFactory;
-import de.ii.xtraplatform.features.domain.ExtentReader;
-import de.ii.xtraplatform.features.domain.FeatureCrs;
-import de.ii.xtraplatform.features.domain.FeatureExtents;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
-import de.ii.xtraplatform.features.domain.FeatureQueries;
-import de.ii.xtraplatform.features.domain.FeatureQuery;
-import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
-import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
-import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
-import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
-import de.ii.xtraplatform.features.domain.FeatureTokenSource;
-import de.ii.xtraplatform.features.domain.FeatureTransactions;
+import de.ii.xtraplatform.features.domain.*;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
-import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
-import de.ii.xtraplatform.features.domain.SchemaMappingBase;
-import de.ii.xtraplatform.features.domain.TypeInfoValidator;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
@@ -85,7 +65,7 @@ import org.threeten.extra.Interval;
 @Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderSqlData.class)
 public class FeatureProviderSql extends
     AbstractFeatureProvider<SqlRow, SqlQueries, SqlQueryOptions> implements FeatureProvider2,
-    FeatureQueries, FeatureExtents, FeatureCrs, FeatureTransactions {
+    FeatureQueries, FeatureExtents, FeatureCrs, FeatureTransactions, CaseAccentInsensitiveComparisons {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
 
@@ -166,7 +146,7 @@ public class FeatureProviderSql extends
     //TODO: from config
     SqlDialect sqlDialect = getData().getConnectionInfo().getDialect() == Dialect.PGIS ? new SqlDialectPostGis() : new SqlDialectGpkg();
     FilterEncoderSql filterEncoder = new FilterEncoderSql(getData().getNativeCrs()
-        .orElse(OgcCrs.CRS84), sqlDialect, crsTransformerFactory, cql);
+        .orElse(OgcCrs.CRS84), sqlDialect, crsTransformerFactory, cql, getData().getAccentiCollation().orElse(null));
     FeatureStoreQueryGeneratorSql queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect,
         getData().getNativeCrs()
             .orElse(OgcCrs.CRS84), crsTransformerFactory);
@@ -634,5 +614,10 @@ public class FeatureProviderSql extends
   @Override
   public boolean supportsHighLoad() {
     return true;
+  }
+
+  @Override
+  public Optional<String> getAccentiCollation() {
+    return Optional.empty();
   }
 }

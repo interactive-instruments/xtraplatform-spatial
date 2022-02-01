@@ -22,7 +22,7 @@ class FilterEncoderSqlSpec extends Specification {
     FilterEncoderSql filterEncoder
 
     def setupSpec() {
-        filterEncoder = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), null, new CqlImpl())
+        filterEncoder = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), null, new CqlImpl(), null)
     }
 
     def 'spatial operation, envelope, no join'() {

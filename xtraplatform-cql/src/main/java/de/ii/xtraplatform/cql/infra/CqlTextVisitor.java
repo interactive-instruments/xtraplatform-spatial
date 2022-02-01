@@ -500,14 +500,8 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                     .map(ParseTree::getText)
                     .collect(Collectors.joining("."));
             return Property.of(path, nestedFilters);
-        } else {
-            if (Objects.nonNull(ctx.CASEI())) {
-                return Function.of("CASEI", ImmutableList.of(Property.of(ctx.propertyName().getText())));
-            } else if (Objects.nonNull(ctx.ACCENTI())) {
-                return Function.of("ACCENTI", ImmutableList.of(Property.of(ctx.propertyName().getText())));
-            }
-            return Property.of(ctx.getText());
         }
+        return Property.of(ctx.getText());
     }
 
     @Override
@@ -567,11 +561,6 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
     @Override
     public CqlNode visitCharacterLiteral(CqlParser.CharacterLiteralContext ctx) {
-        if (Objects.nonNull(ctx.CASEI())) {
-            return Function.of("CASEI", ImmutableList.of(getScalarLiteralFromText(ctx.characterLiteral().getText())));
-        } else if (Objects.nonNull(ctx.ACCENTI())) {
-            return Function.of("ACCENTI", ImmutableList.of(getScalarLiteralFromText(ctx.characterLiteral().getText())));
-        }
         return getScalarLiteralFromText(ctx.getText());
     }
 
@@ -704,10 +693,33 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
     @Override
     public CqlNode visitFunction(CqlParser.FunctionContext ctx) {
+        if (Objects.nonNull(ctx.CASEI())) {
+            Scalar scalar = (Scalar) ctx.characterExpression()
+                .accept(this);
+
+            return Function.of("CASEI", ImmutableList.of(scalar));
+        } else if (Objects.nonNull(ctx.ACCENTI())) {
+            Scalar scalar = (Scalar) ctx.characterExpression()
+                .accept(this);
+
+            return Function.of("ACCENTI", ImmutableList.of(scalar));
+        } else if (Objects.nonNull(ctx.LOWER())) {
+            Scalar scalar = (Scalar) ctx.characterExpression()
+                .accept(this);
+
+            return Function.of("LOWER", ImmutableList.of(scalar));
+        } else if (Objects.nonNull(ctx.UPPER())) {
+            Scalar scalar = (Scalar) ctx.characterExpression()
+                .accept(this);
+
+            return Function.of("UPPER", ImmutableList.of(scalar));
+        }
+
         String functionName = ctx.Identifier().getText();
         if (Objects.isNull(ctx.argumentList().positionalArgument())) {
             return Function.of(functionName, ImmutableList.of());
         }
+
         List<Operand> args = ctx.argumentList().positionalArgument()
                 .argument()
                 .stream()

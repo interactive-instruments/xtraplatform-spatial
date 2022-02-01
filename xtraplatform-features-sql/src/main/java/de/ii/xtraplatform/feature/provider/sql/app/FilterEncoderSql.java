@@ -51,17 +51,20 @@ public class FilterEncoderSql {
     private final SqlDialect sqlDialect;
     private final CrsTransformerFactory crsTransformerFactory;
     private final Cql cql;
+    private final String accentiCollation;
     BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>> coordinatesTransformer;
 
     public FilterEncoderSql(
             EpsgCrs nativeCrs, SqlDialect sqlDialect,
-            CrsTransformerFactory crsTransformerFactory, Cql cql) {
+            CrsTransformerFactory crsTransformerFactory, Cql cql,
+            String accentiCollation) {
         this.aliasGenerator = new AliasGenerator();
         this.joinGenerator = new JoinGenerator();
         this.nativeCrs = nativeCrs;
         this.sqlDialect = sqlDialect;
         this.crsTransformerFactory = crsTransformerFactory;
         this.cql = cql;
+        this.accentiCollation = accentiCollation;
         this.coordinatesTransformer = this::transformCoordinatesIfNecessary;
     }
 
@@ -245,13 +248,44 @@ public class FilterEncoderSql {
                 return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
             } else if (function.isPosition()) {
                 return "%1$s" + ROW_NUMBER + "%2$s";
+            } else if (function.isUpper()) {
+                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                    return children.get(0).toLowerCase();
+                } else if (function.getArguments().get(0) instanceof Property || function.getArguments().get(0) instanceof Function) {
+                    return String.format(children.get(0), "%1$sUPPER(", ")%2$s");
+                } else if (function.getArguments().get(0) instanceof Function) {
+                    if (children.get(0).contains("%1$s") && children.get(0).contains("%2$s"))
+                        return String.format(children.get(0), "%1$sUPPER(", ")%2$s");
+                    return String.format("UPPER(%s)", children.get(0));
+                }
+            } else if (function.isCasei() || function.isLower()) {
+                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                    return children.get(0).toLowerCase();
+                } else if (function.getArguments().get(0) instanceof Property) {
+                    return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
+                } else if (function.getArguments().get(0) instanceof Function) {
+                    if (children.get(0).contains("%1$s") && children.get(0).contains("%2$s"))
+                        return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
+                    return String.format("LOWER(%s)", children.get(0));
+                }
+            } else if (function.isAccenti()) {
+                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                    if (Objects.nonNull(accentiCollation))
+                        return String.format("%s COLLATE \"%s\"", children.get(0), accentiCollation);
+                } else if (function.getArguments().get(0) instanceof Property) {
+                    if (Objects.nonNull(accentiCollation))
+                        return children.get(0).replace("%2$s", " COLLATE \""+accentiCollation+"\"%2$s");
+                }
+                return children.get(0);
             }
 
             return super.visit(function, children);
         }
 
         private String reduceSelectToColumn(String expression) {
-            return String.format(expression.contains(" WHERE ") ? expression.substring(expression.indexOf(" WHERE ") + 7, expression.length() - 1) : expression, "", "");
+            if (expression.contains("%1$s") && expression.contains("%2$s"))
+                return String.format(expression.contains(" WHERE ") ? expression.substring(expression.indexOf(" WHERE ") + 7, expression.length() - 1) : expression, "", "");
+            return expression;
         }
 
         private String replaceColumnWithLiteral(String expression, String column, String literal) {
@@ -414,9 +448,15 @@ public class FilterEncoderSql {
         }
 
         private Instant getStart(TemporalLiteral literal) {
-            return (literal.getType() == Interval.class)
-                    ? ((Interval) literal.getValue()).getStart()
-                    : (Instant) literal.getValue();
+            if (literal.getType() == CqlDateTime.CqlInterval.class) {
+                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().get().getStart();
+            } else if (literal.getType() == CqlDateTime.CqlTimestamp.class) {
+                return ((CqlDateTime.CqlTimestamp) literal.getValue()).getTimestamp();
+            } else if (literal.getType() == CqlDateTime.CqlDate.class) {
+                return ((CqlDateTime.CqlDate) literal.getValue()).getDate().getStart();
+            }
+
+            throw new IllegalStateException("Unknown literal type: " + literal.getType());
         }
 
         private String getStartAsString(TemporalLiteral literal) {
@@ -425,9 +465,15 @@ public class FilterEncoderSql {
         }
 
         private Instant getEnd(TemporalLiteral literal) {
-            return (literal.getType() == Interval.class)
-                    ? ((Interval) literal.getValue()).getEnd()
-                    : (Instant) literal.getValue();
+            if (literal.getType() == CqlDateTime.CqlInterval.class) {
+                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().get().getEnd();
+            } else if (literal.getType() == CqlDateTime.CqlTimestamp.class) {
+                return ((CqlDateTime.CqlTimestamp) literal.getValue()).getTimestamp();
+            } else if (literal.getType() == CqlDateTime.CqlDate.class) {
+                return ((CqlDateTime.CqlDate) literal.getValue()).getDate().getEnd();
+            }
+
+            throw new IllegalStateException("Unknown literal type: " + literal.getType());
         }
 
         private String getEndAsString(TemporalLiteral literal) {
@@ -436,9 +482,15 @@ public class FilterEncoderSql {
         }
 
         private Instant getEndExclusive(TemporalLiteral literal) {
-            return (literal.getType() == Interval.class)
-                    ? ((Interval) literal.getValue()).getEnd().plusSeconds(1)
-                    : (Instant) literal.getValue();
+            if (literal.getType() == CqlDateTime.CqlInterval.class) {
+                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().get().getEnd().plusSeconds(1);
+            } else if (literal.getType() == CqlDateTime.CqlTimestamp.class) {
+                return ((CqlDateTime.CqlTimestamp) literal.getValue()).getTimestamp();
+            } else if (literal.getType() == CqlDateTime.CqlDate.class) {
+                return ((CqlDateTime.CqlDate) literal.getValue()).getDate().getEnd().plusSeconds(1);
+            }
+
+            throw new IllegalStateException("Unknown literal type: " + literal.getType());
         }
 
         private String getEndExclusiveAsString(TemporalLiteral literal) {
@@ -543,7 +595,14 @@ public class FilterEncoderSql {
 
         @Override
         public String visit(TemporalLiteral temporalLiteral, List<String> children) {
-            return String.format("'%s'", temporalLiteral.getValue());
+            if (temporalLiteral.getType() == CqlDateTime.CqlTimestamp.class) {
+                return String.format("'%s'", ((CqlDateTime.CqlTimestamp) temporalLiteral.getValue()).getTimestamp().toString());
+            } else if (temporalLiteral.getType() == CqlDateTime.CqlInterval.class) {
+                return String.format("'%s'", ((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getInterval().toString());
+            } else if (temporalLiteral.getType() == CqlDateTime.CqlDate.class) {
+                return String.format("'%s'", ((CqlDateTime.CqlDate) temporalLiteral.getValue()).getDate().toString());
+            }
+            throw new IllegalArgumentException("unsupported temporal literal");
         }
 
         @Override

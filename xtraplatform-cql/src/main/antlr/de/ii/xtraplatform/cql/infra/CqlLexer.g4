@@ -139,15 +139,9 @@ ArrayOperator : A UNDERSCORE E Q U A L S
 
 /*
 #=============================================================================#
-# Definition of EXISTENCE/IN operators
+# Definition of IN operator
 #=============================================================================#
 */
-
-EXISTS : E X I S T S;
-
-EXIST : E X I S T;
-
-DOES : D O E S;
 
 IN: I N;
 
@@ -182,9 +176,9 @@ CASEI: C A S E I;
 
 ACCENTI: A C C E N T I;
 
-/*CharacterLiteral : CharacterStringLiteral
-                 | BitStringLiteral
-                 | HexStringLiteral;*/
+LOWER: L O W E R;
+
+UPPER: U P P E R;
 
 NumericLiteral : UnsignedNumericLiteral | SignedNumericLiteral;
 

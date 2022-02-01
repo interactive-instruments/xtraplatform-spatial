@@ -49,6 +49,30 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
 
     @JsonIgnore
     @Value.Lazy
+    default boolean isCasei() {
+        return "casei".equalsIgnoreCase(getName());
+    }
+
+    @JsonIgnore
+    @Value.Lazy
+    default boolean isAccenti() {
+        return "accenti".equalsIgnoreCase(getName());
+    }
+
+    @JsonIgnore
+    @Value.Lazy
+    default boolean isLower() {
+        return "lower".equalsIgnoreCase(getName());
+    }
+
+    @JsonIgnore
+    @Value.Lazy
+    default boolean isUpper() {
+        return "upper".equalsIgnoreCase(getName());
+    }
+
+    @JsonIgnore
+    @Value.Lazy
     default boolean isPosition() {
         return "position".equalsIgnoreCase(getName());
     }
