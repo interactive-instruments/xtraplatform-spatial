@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 interactive instruments GmbH
+ * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -124,7 +124,7 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
             operation.getMathTransform().transform(coordinates, 0, target, 0, numberOfPoints);
 
             return target;
-        } catch (MismatchedDimensionException | TransformException ex) {
+        } catch (Throwable ex) {
             LogContext.errorAsDebug(LOGGER, ex, "PROJ");
         }
 

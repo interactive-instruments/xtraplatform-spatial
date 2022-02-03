@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 interactive instruments GmbH
+ * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,7 @@ import de.ii.xtraplatform.nativ.proj.api.ProjLoaderImpl
 import org.kortforsyningen.proj.Units
 import org.opengis.referencing.cs.AxisDirection
 import spock.lang.Ignore
+import spock.lang.IgnoreRest
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -181,6 +182,33 @@ class CrsTransformerProjSpec extends Specification {
         EpsgCrs.of(25832, 7837) | EpsgCrs.of(5555)        | [420735.071, 5392914.343, 131.96] | [420735.071, 5392914.343, 131.96]
         EpsgCrs.of(25832, 7837) | EpsgCrs.of(4979)        | [420735.071, 5392914.343, 131.96] | [48.68423644912392, 7.923077973066287, 131.96]
         EpsgCrs.of(25832, 7837) | OgcCrs.CRS84h           | [420735.071, 5392914.343, 131.96] | [7.923077973066287, 48.68423644912392, 131.96]
+
+    }
+
+    @Ignore//Rest
+    def 'PROJ issues'() {
+
+        when:
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
+        double[] result = gct.transform(source as double[], 1, 2)
+
+        then:
+        result == target as double[]
+
+        where:
+        sourceCrs        | targetCrs         | source                                             | target
+
+        /*OgcCrs.CRS84     | EpsgCrs.of(3857)  | [7.0, 50.0]                                        | [779236.435552915, 6446275.841017161]
+        EpsgCrs.of(4326) | EpsgCrs.of(3857)  | [50.0, 7.0]                                        | [779236.435552915, 6446275.841017161]
+
+        OgcCrs.CRS84     | EpsgCrs.of(25832) | [-8.14, 38.28]                                     | [-1004127.1670567237, 4378640.595800423]
+
+        EpsgCrs.of(3857) | EpsgCrs.of(25832) | [939258.2035683095, 6261721.357121581]             | [458793.6230194888, 5418992.928973733]
+        EpsgCrs.of(3857) | EpsgCrs.of(25832) | [0.00000006332993507385254, 5009377.085697252]     | [-257575.7829958154, 4575718.9491762845]
+        OgcCrs.CRS84     | EpsgCrs.of(3857)  | [5.765111804547595, 50.31026146398869]             | [641769.3104485287, 6500182.053064772]
+
+         */
+        EpsgCrs.of(3857) | EpsgCrs.of(25832) | [10018754.171394695, -0.00000006332993507385254] | [-505646.16680603754, -0.00000006367001688712992]
 
     }
 

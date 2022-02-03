@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 interactive instruments GmbH
+ * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 import javax.measure.Unit;
 import org.apache.felix.ipojo.annotations.Component;
@@ -39,7 +41,6 @@ import org.opengis.referencing.crs.SingleCRS;
 import org.opengis.referencing.cs.AxisDirection;
 import org.opengis.referencing.cs.RangeMeaning;
 import org.opengis.referencing.operation.CoordinateOperation;
-import org.opengis.util.FactoryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +57,7 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
   private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
   private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
-  private final boolean useCaches = false;
+  private final boolean useCaches = true;
 
   public CrsTransformerFactoryProj(@Requires ProjLoader projLoader) {
     this.crsCache = new ConcurrentHashMap<>();
@@ -64,10 +65,16 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
     try {
       projLoader.load();
+      //TODO: to projLoader?
+      if (!projLoader.getDataDirectory().toFile().exists() || !projLoader.getDataDirectory().resolve("proj.db").toFile().exists()) {
+        throw new IllegalArgumentException("Not a valid PROJ location: " + projLoader.getDataDirectory());
+      }
       Proj.setSearchPath(projLoader.getDataDirectory().toString());
-      Proj.version().ifPresent(version -> LOGGER.debug("PROJ version: {}", version));
+      Proj.version().ifPresent(version -> LOGGER.debug("PROJ version: {}, location: {}", version, projLoader.getDataDirectory()));
+      System.setProperty("org.kortforsyningen.proj.maxThreadsPerInstance", "16");
     } catch (Throwable e) {
       LogContext.error(LOGGER, e, "PROJ");
+      throw e;
     }
   }
 
@@ -251,11 +258,32 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
       CoordinateOperation coordinateOperation = Proj.createCoordinateOperation(sourceProjCrs,
           targetProjCrs, coordinateOperationContext);
 
+      checkForMissingGridFiles(coordinateOperation);
+
       return new CrsTransformerProj(sourceProjCrs, targetProjCrs, sourceCrs, targetCrs,
           sourceDimension, targetDimension, coordinateOperation);
-    } catch (FactoryException ex) {
+    } catch (IllegalStateException ex) {
+      //LogContext.error(LOGGER, ex, "PROJ");
+      throw ex;
+    } catch (Throwable ex) {
       LogContext.errorAsDebug(LOGGER, ex, "PROJ");
       throw new IllegalArgumentException(ex.getMessage(), ex);
+    }
+  }
+
+  private void checkForMissingGridFiles(CoordinateOperation coordinateOperation) {
+    try {
+      double[] coordinates = new double[]{0,0};
+      coordinateOperation.getMathTransform().transform(coordinates, 0, coordinates, 0, 1);
+    } catch (OutOfMemoryError e) {
+      Pattern pattern = Pattern.compile("PARAMETERFILE\\[\"(.*?)\",\"(.*?)\"\\]");
+      Matcher matcher = pattern.matcher(coordinateOperation.toWKT());
+      if (matcher.find()) {
+        throw new IllegalStateException(String.format("Missing PROJ parameter file: %s (%s)", matcher.group(2), matcher.group(1)));
+      }
+      throw new IllegalStateException(e.getMessage());
+    } catch (Throwable e) {
+      //ignore
     }
   }
 }
