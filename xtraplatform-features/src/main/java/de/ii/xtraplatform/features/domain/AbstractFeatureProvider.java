@@ -1,5 +1,5 @@
 /**
- * Copyright 2021 interactive instruments GmbH
+ * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -73,8 +73,6 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         }
     }
 
-    //TODO: add dispose listener to connector when shared, call onStartup (or better setData?) when disposed
-    // how to exclude primary instance?
     @Override
     protected boolean onStartup() throws InterruptedException {
         // TODO: delay disposing old connector and streamRunner until all queries are finished
