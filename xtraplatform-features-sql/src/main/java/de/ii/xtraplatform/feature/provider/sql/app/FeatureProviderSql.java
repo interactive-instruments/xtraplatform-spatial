@@ -89,7 +89,7 @@ public class FeatureProviderSql extends
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
 
-  static final String ENTITY_SUB_TYPE = "feature/sql";
+  public static final String ENTITY_SUB_TYPE = "feature/sql";
   public static final String PROVIDER_TYPE = "SQL";
 
   private final CrsTransformerFactory crsTransformerFactory;
