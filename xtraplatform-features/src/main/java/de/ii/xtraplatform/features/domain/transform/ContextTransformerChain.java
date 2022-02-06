@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 public class ContextTransformerChain implements
-    TransformerChain<ModifiableContext, FeaturePropertyContextTransformer> {
+    TransformerChain<ModifiableContext<FeatureSchema, SchemaMapping>, FeaturePropertyContextTransformer> {
 
   public static final String OBJECT_TYPE_WILDCARD = "*{objectType=";
 
@@ -50,7 +50,7 @@ public class ContextTransformerChain implements
 
   @Nullable
   @Override
-  public ModifiableContext transform(String path, ModifiableContext context) {
+  public ModifiableContext<FeatureSchema, SchemaMapping> transform(String path, ModifiableContext<FeatureSchema, SchemaMapping> context) {
     boolean ran = false;
     for (int i = currentParentProperties.size() - 1; i >= 0; i--) {
       String parentPath = currentParentProperties.get(i);
@@ -87,14 +87,14 @@ public class ContextTransformerChain implements
 
   private boolean run(
       Map<String, List<FeaturePropertyContextTransformer>> contextTransformers, String keyPath,
-      String propertyPath, ModifiableContext context) {
+      String propertyPath, ModifiableContext<FeatureSchema, SchemaMapping> context) {
     boolean ran = false;
 
     if (contextTransformers.containsKey(keyPath) && !contextTransformers.get(keyPath)
         .isEmpty()) {
       for (FeaturePropertyContextTransformer contextTransformer : contextTransformers.get(
           keyPath)) {
-        ModifiableContext transformed = contextTransformer.transform(propertyPath, context);
+        ModifiableContext<FeatureSchema, SchemaMapping> transformed = contextTransformer.transform(propertyPath, context);
         ran = true;
 
         if (Objects.isNull(transformed)) {
@@ -108,7 +108,7 @@ public class ContextTransformerChain implements
       for (FeaturePropertyContextTransformer contextTransformer : contextTransformers.getOrDefault(
           PropertyTransformations.WILDCARD,
           ImmutableList.of())) {
-        ModifiableContext transformed = contextTransformer.transform(propertyPath, context);
+        ModifiableContext<FeatureSchema, SchemaMapping> transformed = contextTransformer.transform(propertyPath, context);
         ran = true;
 
         if (Objects.isNull(transformed)) {

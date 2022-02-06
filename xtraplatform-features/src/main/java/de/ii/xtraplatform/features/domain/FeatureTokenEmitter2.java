@@ -10,12 +10,12 @@ package de.ii.xtraplatform.features.domain;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import java.util.Objects;
 
-public interface FeatureTokenEmitter2<T extends ModifiableContext> extends FeatureEventHandler<T> {
+public interface FeatureTokenEmitter2<T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>> extends FeatureEventHandler<T, U, V> {
 
   void push(Object token);
 
   @Override
-  default void onStart(T context) {
+  default void onStart(V context) {
     push(FeatureTokenType.INPUT);
 
     if (context.metadata().isSingleFeature()) {
@@ -31,12 +31,12 @@ public interface FeatureTokenEmitter2<T extends ModifiableContext> extends Featu
   }
 
   @Override
-  default void onEnd(T context) {
+  default void onEnd(V context) {
     push(FeatureTokenType.INPUT_END);
   }
 
   @Override
-  default void onFeatureStart(T context) {
+  default void onFeatureStart(V context) {
     push(FeatureTokenType.FEATURE);
     if (!context.path().isEmpty()) {
       push(context.path());
@@ -44,12 +44,12 @@ public interface FeatureTokenEmitter2<T extends ModifiableContext> extends Featu
   }
 
   @Override
-  default void onFeatureEnd(T context) {
+  default void onFeatureEnd(V context) {
     push(FeatureTokenType.FEATURE_END);
   }
 
   @Override
-  default void onObjectStart(T context) {
+  default void onObjectStart(V context) {
     push(FeatureTokenType.OBJECT);
     push(context.path());
     if (context.geometryType().isPresent()) {
@@ -58,23 +58,23 @@ public interface FeatureTokenEmitter2<T extends ModifiableContext> extends Featu
   }
 
   @Override
-  default void onObjectEnd(T context) {
+  default void onObjectEnd(V context) {
     push(FeatureTokenType.OBJECT_END);
   }
 
   @Override
-  default void onArrayStart(T context) {
+  default void onArrayStart(V context) {
     push(FeatureTokenType.ARRAY);
     push(context.path());
   }
 
   @Override
-  default void onArrayEnd(T context) {
+  default void onArrayEnd(V context) {
     push(FeatureTokenType.ARRAY_END);
   }
 
   @Override
-  default void onValue(T context) {
+  default void onValue(V context) {
     push(FeatureTokenType.VALUE);
     push(context.path());
     if (Objects.nonNull(context.value())) {

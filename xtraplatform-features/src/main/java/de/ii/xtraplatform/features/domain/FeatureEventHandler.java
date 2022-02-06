@@ -19,9 +19,9 @@ import java.util.OptionalInt;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
-public interface FeatureEventHandler<T extends ModifiableContext> {
+public interface FeatureEventHandler<T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>> {
 
-  interface Context {
+  interface Context<T extends SchemaBase<T>, U extends SchemaMappingBase<T>> {
 
     ModifiableCollectionMetadata metadata();
 
@@ -42,7 +42,7 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     Map<String, String> valueBuffer();
 
     @Nullable
-    FeatureSchema customSchema();
+    T customSchema();
 
     @Value.Default
     default boolean inGeometry() {
@@ -68,7 +68,7 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
 
     FeatureQuery query();
 
-    SchemaMapping mapping();
+    U mapping();
 
     @Value.Default
     default int schemaIndex() {
@@ -85,40 +85,45 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     Map<String, String> additionalInfo();
 
     @Value.Lazy
-    default Optional<FeatureSchema> schema() {
+    default Optional<T> schema() {
       return Optional.ofNullable(customSchema()).or(this::currentSchema);
     }
 
     @Value.Lazy
-    default Optional<FeatureSchema> currentSchema() {
+    default Optional<T> currentSchema() {
       List<String> path = path();
 
       if (path.isEmpty()) {
         return Optional.ofNullable(mapping().getTargetSchema());
       }
 
-      List<FeatureSchema> targetSchemas = mapping().getTargetSchemas(path);
+      List<T> targetSchemas = mapping().getTargetSchemas(path);
 
       if (targetSchemas.isEmpty()) {
         //LOGGER.warn("No mapping found for path {}.", path);
+
+        if (inGeometry()) {
+          return mapping().getTargetSchema().getPrimaryGeometry();
+        }
+
         return Optional.empty();
       }
 
       int schemaIndex = schemaIndex() > -1 ? schemaIndex() : targetSchemas.size() - 1;
-      FeatureSchema targetSchema = targetSchemas.get(schemaIndex);
+      T targetSchema = targetSchemas.get(schemaIndex);
 
       return Optional.ofNullable(targetSchema);
     }
 
     @Value.Lazy
-    default List<FeatureSchema> parentSchemas() {
+    default List<T> parentSchemas() {
       List<String> path = path();
 
       if (path.isEmpty()) {
         return ImmutableList.of();
       }
 
-      List<List<FeatureSchema>> parentSchemas = mapping().getParentSchemas(path);
+      List<List<T>> parentSchemas = mapping().getParentSchemas(path);
 
       if (parentSchemas.isEmpty()) {
         return ImmutableList.of();
@@ -130,11 +135,11 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
 
     @Value.Lazy
     default boolean isRequired() {
-      return schema().filter(FeatureSchema::isRequired).isPresent();
+      return schema().filter(T::isRequired).isPresent();
     }
   }
 
-  interface ModifiableContext extends Context {
+  interface ModifiableContext<T extends SchemaBase<T>, U extends SchemaMappingBase<T>> extends Context<T, U> {
 
     //TODO: default values are not cached by Modifiable
     @Value.Default
@@ -152,13 +157,7 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
     default FeaturePathTracker pathTracker() {
       //when tracking target paths, if present, use path separator from flatten transformation in mapping().getTargetSchema()
       Optional<String> pathSeparator = Optional.ofNullable(mapping())
-          .filter(SchemaMapping::useTargetPaths)
-          .map(SchemaMappingBase::getTargetSchema)
-          .map(FeatureSchema::getTransformations)
-          .flatMap(transformations -> transformations.stream()
-              .filter(transformation -> transformation.getFlatten().isPresent())
-              .findFirst())
-          .flatMap(PropertyTransformation::getFlatten);
+          .flatMap(u -> u.getPathSeparator());
 
       FeaturePathTracker pathTracker = pathSeparator.isPresent()
           ? new FeaturePathTracker(pathSeparator.get())
@@ -188,8 +187,8 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
           || !shouldInclude(currentSchema().get(), parentSchemas(), pathTracker().toString());
     }
 
-    private boolean shouldInclude(FeatureSchema schema,
-        List<FeatureSchema> parentSchemas,
+    private boolean shouldInclude(T schema,
+        List<T> parentSchemas,
         String path) {
       return schema.isId()
           || (schema.isSpatial() && !query().skipGeometry())
@@ -205,71 +204,71 @@ public interface FeatureEventHandler<T extends ModifiableContext> {
           .anyMatch(field -> field.startsWith(property));
     }
 
-    default boolean isRequired(FeatureSchema schema, List<FeatureSchema> parentSchemas) {
+    default boolean isRequired(T schema, List<T> parentSchemas) {
       return schema.isRequired()
           && (parentSchemas.size() <= 1 || parentSchemas.stream()
           .limit(parentSchemas.size() - 1)
-          .allMatch(FeatureSchema::isRequired));
+          .allMatch(T::isRequired));
     }
 
-    ModifiableContext setMetadata(ModifiableCollectionMetadata collectionMetadata);
+    ModifiableContext<T,U> setMetadata(ModifiableCollectionMetadata collectionMetadata);
 
-    ModifiableContext setPathTracker(FeaturePathTracker pathTracker);
+    ModifiableContext<T,U> setPathTracker(FeaturePathTracker pathTracker);
 
-    ModifiableContext setGeometryType(SimpleFeatureGeometry geometryType);
+    ModifiableContext<T,U> setGeometryType(SimpleFeatureGeometry geometryType);
 
-    ModifiableContext setGeometryType(Optional<SimpleFeatureGeometry> geometryType);
+    ModifiableContext<T,U> setGeometryType(Optional<SimpleFeatureGeometry> geometryType);
 
-    ModifiableContext setGeometryDimension(int geometryDimension);
+    ModifiableContext<T,U> setGeometryDimension(int geometryDimension);
 
-    ModifiableContext setGeometryDimension(OptionalInt geometryDimension);
+    ModifiableContext<T,U> setGeometryDimension(OptionalInt geometryDimension);
 
-    ModifiableContext setValue(String value);
+    ModifiableContext<T,U> setValue(String value);
 
-    ModifiableContext setValueType(SchemaBase.Type valueType);
+    ModifiableContext<T,U> setValueType(SchemaBase.Type valueType);
 
-    ModifiableContext putValueBuffer(String key, String value);
+    ModifiableContext<T,U> putValueBuffer(String key, String value);
 
-    ModifiableContext setCustomSchema(FeatureSchema schema);
+    ModifiableContext<T,U> setCustomSchema(T schema);
 
-    ModifiableContext setInGeometry(boolean inGeometry);
+    ModifiableContext<T,U> setInGeometry(boolean inGeometry);
 
-    ModifiableContext setInObject(boolean inObject);
+    ModifiableContext<T,U> setInObject(boolean inObject);
 
-    ModifiableContext setInArray(boolean inArray);
+    ModifiableContext<T,U> setInArray(boolean inArray);
 
-    ModifiableContext setIndexes(Iterable<Integer> indexes);
+    ModifiableContext<T,U> setIndexes(Iterable<Integer> indexes);
 
-    ModifiableContext setQuery(FeatureQuery query);
+    ModifiableContext<T,U> setQuery(FeatureQuery query);
 
-    ModifiableContext setMapping(SchemaMapping mapping);
+    ModifiableContext<T,U> setMapping(U mapping);
 
-    ModifiableContext setSchemaIndex(int schemaIndex);
+    ModifiableContext<T,U> setSchemaIndex(int schemaIndex);
 
-    ModifiableContext putTransformed(String key, String value);
+    ModifiableContext<T,U> putTransformed(String key, String value);
 
-    ModifiableContext setIsBuffering(boolean inArray);
+    ModifiableContext<T,U> setIsBuffering(boolean inArray);
 
-    ModifiableContext putAdditionalInfo(String key, String value);
+    ModifiableContext<T,U> putAdditionalInfo(String key, String value);
   }
 
   //T createContext();
 
-  void onStart(T context);
+  void onStart(V context);
 
-  void onEnd(T context);
+  void onEnd(V context);
 
-  void onFeatureStart(T context);
+  void onFeatureStart(V context);
 
-  void onFeatureEnd(T context);
+  void onFeatureEnd(V context);
 
-  void onObjectStart(T context);
+  void onObjectStart(V context);
 
-  void onObjectEnd(T context);
+  void onObjectEnd(V context);
 
-  void onArrayStart(T context);
+  void onArrayStart(V context);
 
-  void onArrayEnd(T context);
+  void onArrayEnd(V context);
 
-  void onValue(T context);
+  void onValue(V context);
 }

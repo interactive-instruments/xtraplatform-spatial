@@ -9,12 +9,16 @@ package de.ii.xtraplatform.feature.provider.sql.app
 
 import akka.actor.ActorSystem
 import akka.testkit.javadsl.TestKit
+import com.google.common.collect.ImmutableList
 import com.typesafe.config.Config
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowFixtures
+import de.ii.xtraplatform.features.domain.FeatureEventHandler
+import de.ii.xtraplatform.features.domain.FeatureSchema
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder
 import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema
+import de.ii.xtraplatform.features.domain.SchemaMapping
 import de.ii.xtraplatform.streams.app.ReactiveAkka
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider
 import de.ii.xtraplatform.streams.domain.Reactive
@@ -40,8 +44,8 @@ class FeatureDecoderSqlSpec extends Specification {
     @Shared
     Reactive.Runner runner
 
-    FeatureTokenDecoder<SqlRow> collectionDecoder
-    FeatureTokenDecoder<SqlRow> singleDecoder
+    FeatureTokenDecoder<SqlRow, FeatureSchema, SchemaMapping, FeatureEventHandler.ModifiableContext<FeatureSchema, SchemaMapping>> collectionDecoder
+    FeatureTokenDecoder<SqlRow, FeatureSchema, SchemaMapping, FeatureEventHandler.ModifiableContext<FeatureSchema, SchemaMapping>> singleDecoder
 
     def setupSpec() {
         reactive = new ReactiveAkka(null, new ActorSystemProvider() {
@@ -72,12 +76,14 @@ class FeatureDecoderSqlSpec extends Specification {
 
     def setup() {
         collectionDecoder = new FeatureDecoderSql(
-                SqlRowFixtures.TYPE_INFOS, new ImmutableFeatureSchema.Builder().name("test").build(),
+                SqlRowFixtures.TYPE_INFOS, ImmutableList.of(),
+                new ImmutableFeatureSchema.Builder().name("test").build(),
                 ImmutableFeatureQuery.builder()
                         .type("biotop")
                         .build())
         singleDecoder = new FeatureDecoderSql(
-                SqlRowFixtures.TYPE_INFOS, new ImmutableFeatureSchema.Builder().name("test").build(),
+                SqlRowFixtures.TYPE_INFOS, ImmutableList.of(),
+                new ImmutableFeatureSchema.Builder().name("test").build(),
                 ImmutableFeatureQuery.builder()
                         .type("biotop")
                         .returnsSingleFeature(true)

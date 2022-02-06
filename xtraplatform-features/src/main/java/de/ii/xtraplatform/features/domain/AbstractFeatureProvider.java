@@ -11,14 +11,13 @@ import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransf
 import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerDateFormat.DATE_FORMAT;
 import static de.ii.xtraplatform.features.domain.transform.PropertyTransformations.WILDCARD;
 
-import akka.NotUsed;
-import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureStream.Result.Builder;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
@@ -37,8 +36,6 @@ import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -213,7 +210,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         return Optional.empty();
     }
 
-    protected abstract FeatureTokenDecoder<T> getDecoder(FeatureQuery query);
+    protected abstract FeatureTokenDecoder<T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> getDecoder(FeatureQuery query);
 
     protected abstract Map<String, Codelist> getCodelists();
 
@@ -336,10 +333,9 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                 //TODO: encapsulate in FeatureQueryRunnerSql
                 U transformedQuery = getQueryTransformer().transformQuery(query, ImmutableMap.of());
                 V options = getQueryTransformer().getOptions(query);
-                Source<T, NotUsed> sourceStream = getConnector().getSourceStream(transformedQuery, options);
-                Reactive.Source<T> source = Reactive.Source.akka(sourceStream);
+                Reactive.Source<T> source = getConnector().getSourceStream(transformedQuery, options);
 
-                FeatureTokenDecoder<T> decoder = getDecoder(query);
+                FeatureTokenDecoder<T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> decoder = getDecoder(query);
 
                 FeatureTokenSource featureTokenSource = source.via(decoder);
 

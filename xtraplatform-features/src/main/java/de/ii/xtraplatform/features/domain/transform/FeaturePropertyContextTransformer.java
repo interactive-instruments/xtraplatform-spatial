@@ -8,7 +8,9 @@
 package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.SchemaMapping;
 
-public interface FeaturePropertyContextTransformer extends FeaturePropertyTransformer<ModifiableContext> {
+public interface FeaturePropertyContextTransformer extends FeaturePropertyTransformer<ModifiableContext<FeatureSchema, SchemaMapping>> {
 
 }

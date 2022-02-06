@@ -9,16 +9,18 @@ package de.ii.xtraplatform.features.app;
 
 import de.ii.xtraplatform.features.domain.FeatureEventHandler;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.geometries.domain.CoordinatesWriter;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.io.IOException;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public abstract class CoordinatesWriterFeatureTokens implements CoordinatesWriter<FeatureEventHandler<ModifiableContext>> {
+public abstract class CoordinatesWriterFeatureTokens implements CoordinatesWriter<FeatureEventHandler<FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>> {
 
   @Value.Parameter
-  public abstract ModifiableContext getContext();
+  public abstract ModifiableContext<FeatureSchema, SchemaMapping> getContext();
 
   @Value.Derived
   public boolean isPoint() {

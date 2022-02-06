@@ -21,6 +21,12 @@ public interface FeatureTransactions {
     }
 
     List<String> getIds();
+
+    @Value.Default
+    @Override
+    default boolean isEmpty() {
+      return getIds().isEmpty();
+    }
   }
 
   MutationResult createFeatures(String featureType, FeatureTokenSource featureTokenSource);
