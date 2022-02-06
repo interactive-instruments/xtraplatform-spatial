@@ -19,6 +19,7 @@ import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.PropertyBase;
+import de.ii.xtraplatform.features.domain.PropertyBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.geometries.domain.ImmutableCoordinatesTransformer;
 import de.ii.xtraplatform.geometries.domain.ImmutableCoordinatesWriterWkt;
@@ -184,11 +185,11 @@ public interface ObjectSql {
     default Map<String, String> getValues(EpsgCrs nativeCrs, CrsTransformerFactory crsTransformerFactory) {
         return getChildren().stream()
                             .filter(propertySql -> (propertySql.getType() == PropertyBase.Type.VALUE && Objects.nonNull(propertySql.getValue()))
-                                    || (propertySql.getType() == PropertyBase.Type.ARRAY && propertySql.getSchema()
+                                    || (propertySql.getType() == Type.OBJECT && propertySql.getSchema()
                                                                                                        .map(schemaSql -> schemaSql.getType() == SchemaBase.Type.GEOMETRY)
                                                                                                        .orElse(false)))
                             .map(propertySql -> {
-                                boolean isGeometry = propertySql.getType() == PropertyBase.Type.ARRAY && propertySql.getSchema()
+                                boolean isGeometry = propertySql.getType() == Type.OBJECT && propertySql.getSchema()
                                                                                                                     .map(schemaSql -> schemaSql.getType() == SchemaBase.Type.GEOMETRY)
                                                                                                                     .orElse(false);
 
@@ -244,8 +245,11 @@ public interface ObjectSql {
         return new AbstractMap.SimpleImmutableEntry<>(propertySql.getName(), String.format("ST_ForcePolygonCW(ST_GeomFromText('%s',%s))", geometryWriter, nativeCrs.getCode()));
     }
 
+    //TODO: test all geo types
     default void toWktArray(PropertySql propertySql, Writer structureWriter, Writer coordinatesWriter) throws IOException {
-        structureWriter.append("(");
+        if (propertySql.getType() == PropertyBase.Type.ARRAY) {
+            structureWriter.append("(");
+        }
         for (int i = 0; i < propertySql.getNestedProperties().size(); i++) {
             PropertySql propertySql1 = propertySql.getNestedProperties()
                                                   .get(i);
@@ -263,7 +267,9 @@ public interface ObjectSql {
         }
         coordinatesWriter.flush();
 
-        structureWriter.append(")");
+        if (propertySql.getType() == PropertyBase.Type.ARRAY) {
+            structureWriter.append(")");
+        }
     }
 
     default Optional<PropertySql> findChild(List<String> path) {
