@@ -16,16 +16,15 @@ import de.ii.xtraplatform.crs.domain.CoordinateTupleWithPrecision;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.runtime.domain.LogContext;
+import java.util.Optional;
 import javax.measure.Unit;
 import org.kortforsyningen.proj.Units;
-import org.opengis.geometry.MismatchedDimensionException;
 import org.opengis.referencing.crs.CompoundCRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.crs.SingleCRS;
 import org.opengis.referencing.datum.GeodeticDatum;
 import org.opengis.referencing.operation.CoordinateOperation;
-import org.opengis.referencing.operation.TransformException;
-import org.opengis.util.FactoryException;
+import org.opengis.referencing.operation.MathTransform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,10 +45,18 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
     private final int sourceDimension;
     private final int targetDimension;
     private final CoordinateOperation operation;
+    private final Optional<CoordinateOperation> horizontalOperation;
+
+    CrsTransformerProj(CoordinateReferenceSystem sourceProjCrs,
+        CoordinateReferenceSystem targetProjCrs, EpsgCrs sourceCrs, EpsgCrs targetCrs,
+        int sourceDimension, int targetDimension, CoordinateOperation coordinateOperation) {
+        this(sourceProjCrs, targetProjCrs, sourceCrs, targetCrs, sourceDimension, targetDimension, coordinateOperation, Optional.empty());
+    }
 
     CrsTransformerProj(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
         EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, int sourceDimension,
-        int targetDimension, CoordinateOperation coordinateOperation) throws FactoryException {
+        int targetDimension, CoordinateOperation coordinateOperation,
+        Optional<CoordinateOperation> horizontalCoordinateOperation) {
         this.sourceCrs = origSourceCrs;
         this.targetCrs = origTargetCrs;
 
@@ -74,7 +81,8 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
         this.sourceDimension = sourceDimension;
         this.targetDimension = targetDimension;
 
-        operation  = coordinateOperation;
+        this.operation  = coordinateOperation;
+        this.horizontalOperation = horizontalCoordinateOperation;
     }
 
     @Override
@@ -104,24 +112,16 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
 
     @Override
     public double[] transform(double[] coordinates, int numberOfPoints, int dimension) {
-        // TODO this should not be necessary and proper transformers should always be created
-        if (sourceDimension==3 && dimension==2) {
-            dimension = 3;
-            double[] newCoordinates = new double[dimension * numberOfPoints];
-            for (int i=0; i<numberOfPoints; i++) {
-                newCoordinates[3*i] = coordinates[2*i];
-                newCoordinates[3*i+1] = coordinates[2*i+1];
-                newCoordinates[3*i+2] = 0.0;
-            }
-            coordinates = newCoordinates;
-        } else if (sourceDimension==2 && dimension==3) {
-            throw new IllegalStateException("2d coordinates expected as input to a CRS transformation, but 3d coordinates were provided.");
+        if (dimension > sourceDimension) {
+            throw new IllegalStateException(String.format(
+                "Mismatched coordinate dimension for a CRS transformation, expected '%d' but got '%d'.",
+                sourceDimension, dimension));
         }
 
         try {
             double[] target = new double[dimension * numberOfPoints];
 
-            operation.getMathTransform().transform(coordinates, 0, target, 0, numberOfPoints);
+            getMathTransform(dimension).transform(coordinates, 0, target, 0, numberOfPoints);
 
             return target;
         } catch (Throwable ex) {
@@ -149,6 +149,14 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
     @Override
     public int getTargetDimension() {
         return targetDimension;
+    }
+
+    private MathTransform getMathTransform(int dimension) {
+        CoordinateOperation coordinateOperation = dimension == 2
+            ? horizontalOperation.orElse(operation)
+            : operation;
+
+        return coordinateOperation.getMathTransform();
     }
 
     private double getUnitEquivalentInMeters(SingleCRS horizontalCrs) {

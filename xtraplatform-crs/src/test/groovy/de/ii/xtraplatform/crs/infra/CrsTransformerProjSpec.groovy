@@ -185,6 +185,40 @@ class CrsTransformerProjSpec extends Specification {
 
     }
 
+    def 'CRS transformer test 2D with 3D transformer'() {
+        when:
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
+        double[] result = gct.transform(source as double[], 1, 2)
+
+        then:
+        result == target as double[]
+
+        where:
+        sourceCrs        | targetCrs         | source                            | target
+        EpsgCrs.of(5555) | EpsgCrs.of(25832) | [420735.071, 5392914.343] | [420735.071, 5392914.343]
+        EpsgCrs.of(5555) | EpsgCrs.of(4326)  | [420735.071, 5392914.343] | [48.68423644912392, 7.923077973066287]
+        EpsgCrs.of(5555) | EpsgCrs.of(3857)  | [420735.071, 5392914.343] | [881993.0054771411, 6221451.78116173]
+        EpsgCrs.of(5555) | OgcCrs.CRS84      | [420735.071, 5392914.343] | [7.923077973066287, 48.68423644912392]
+
+        EpsgCrs.of(4979) | EpsgCrs.of(25832) | [48.684, 7.923]           | [420728.9609056481, 5392888.1411416]
+        EpsgCrs.of(4979) | EpsgCrs.of(4326)  | [48.684, 7.923]           | [48.684, 7.923]
+        EpsgCrs.of(4979) | EpsgCrs.of(3857)  | [48.684, 7.923]           | [881984.3255551065, 6221411.912936983]
+        EpsgCrs.of(4979) | OgcCrs.CRS84      | [48.684, 7.923]           | [7.923, 48.684]
+
+        OgcCrs.CRS84h    | EpsgCrs.of(25832) | [7.923, 48.684]           | [420728.9609056481, 5392888.1411416]
+        OgcCrs.CRS84h    | EpsgCrs.of(4326)  | [7.923, 48.684]           | [48.684, 7.923]
+        OgcCrs.CRS84h    | EpsgCrs.of(3857)  | [7.923, 48.684]           | [881984.3255551065, 6221411.912936983]
+        OgcCrs.CRS84h    | OgcCrs.CRS84      | [7.923, 48.684]           | [7.923, 48.684]
+
+        EpsgCrs.of(5555)        | EpsgCrs.of(25832, 7837) | [420735.071, 5392914.343] | [420735.071, 5392914.343]
+        EpsgCrs.of(4979)        | EpsgCrs.of(25832, 7837) | [48.684, 7.923]           | [420728.9609056481, 5392888.1411416]
+        OgcCrs.CRS84h           | EpsgCrs.of(25832, 7837) | [7.923, 48.684]           | [420728.9609056481, 5392888.1411416]
+
+        EpsgCrs.of(25832, 7837) | EpsgCrs.of(5555)        | [420735.071, 5392914.343] | [420735.071, 5392914.343]
+        EpsgCrs.of(25832, 7837) | EpsgCrs.of(4979)        | [420735.071, 5392914.343] | [48.68423644912392, 7.923077973066287]
+        EpsgCrs.of(25832, 7837) | OgcCrs.CRS84h           | [420735.071, 5392914.343] | [7.923077973066287, 48.68423644912392]
+    }
+
     @Ignore//Rest
     def 'PROJ issues'() {
 
@@ -197,17 +231,6 @@ class CrsTransformerProjSpec extends Specification {
 
         where:
         sourceCrs        | targetCrs         | source                                             | target
-
-        /*OgcCrs.CRS84     | EpsgCrs.of(3857)  | [7.0, 50.0]                                        | [779236.435552915, 6446275.841017161]
-        EpsgCrs.of(4326) | EpsgCrs.of(3857)  | [50.0, 7.0]                                        | [779236.435552915, 6446275.841017161]
-
-        OgcCrs.CRS84     | EpsgCrs.of(25832) | [-8.14, 38.28]                                     | [-1004127.1670567237, 4378640.595800423]
-
-        EpsgCrs.of(3857) | EpsgCrs.of(25832) | [939258.2035683095, 6261721.357121581]             | [458793.6230194888, 5418992.928973733]
-        EpsgCrs.of(3857) | EpsgCrs.of(25832) | [0.00000006332993507385254, 5009377.085697252]     | [-257575.7829958154, 4575718.9491762845]
-        OgcCrs.CRS84     | EpsgCrs.of(3857)  | [5.765111804547595, 50.31026146398869]             | [641769.3104485287, 6500182.053064772]
-
-         */
         EpsgCrs.of(3857) | EpsgCrs.of(25832) | [10018754.171394695, -0.00000006332993507385254] | [-505646.16680603754, -0.00000006367001688712992]
 
     }

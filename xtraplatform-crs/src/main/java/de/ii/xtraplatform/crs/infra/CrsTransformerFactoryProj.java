@@ -15,12 +15,16 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
+import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.nativ.proj.api.ProjLoader;
 import de.ii.xtraplatform.runtime.domain.LogContext;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,14 +37,17 @@ import org.apache.felix.ipojo.annotations.Requires;
 import org.kortforsyningen.proj.CoordinateOperationContext;
 import org.kortforsyningen.proj.Proj;
 import org.kortforsyningen.proj.spi.EPSG;
+import org.opengis.referencing.ReferenceIdentifier;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
 import org.opengis.referencing.crs.CRSFactory;
 import org.opengis.referencing.crs.CompoundCRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.crs.GeographicCRS;
 import org.opengis.referencing.crs.SingleCRS;
 import org.opengis.referencing.cs.AxisDirection;
 import org.opengis.referencing.cs.RangeMeaning;
 import org.opengis.referencing.operation.CoordinateOperation;
+import org.opengis.util.GenericName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -226,6 +233,44 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
   }
 
   private SingleCRS getHorizontalCrs(CoordinateReferenceSystem crs) {
+
+    /* TODO: generic solution for GeographicCRS, this is from GeoTools
+    final GeodeticDatum datum = ((GeographicCRS) crs).getDatum();
+    Map<String, ?> properties = CRSUtilities.changeDimensionInName(cs, "3D", "2D");
+    EllipsoidalCS horizontalCS;
+    try {
+        horizontalCS =
+                ReferencingFactoryFinder.getCSFactory(null)
+                        .createEllipsoidalCS(properties, axis0, axis1);
+    } catch (FactoryException e) {
+        Logging.recoverableException(CRS.class, "getHorizontalCRS", e);
+        horizontalCS = new DefaultEllipsoidalCS(properties, axis0, axis1);
+    }
+    properties = CRSUtilities.changeDimensionInName(crs, "3D", "2D");
+    GeographicCRS horizontalCRS;
+    try {
+        horizontalCRS =
+                ReferencingFactoryFinder.getCRSFactory(null)
+                        .createGeographicCRS(properties, datum, horizontalCS);
+    } catch (FactoryException e) {
+        Logging.recoverableException(CRS.class, "getHorizontalCRS", e);
+        horizontalCRS = new DefaultGeographicCRS(properties, datum, horizontalCS);
+    }
+    return horizontalCRS;
+     */
+
+    // workaround for CRS84h and EPSG:4979
+    if (crs instanceof GeographicCRS && crs.getCoordinateSystem().getDimension() == 3) {
+      String name = crs.getName().getCode();
+      if (name.startsWith("WGS 84")) {
+        if (name.contains("normalized for visualization")) {
+          return (SingleCRS) getCrsOrThrow(OgcCrs.CRS84);
+        } else {
+          return (SingleCRS) getCrsOrThrow(EpsgCrs.of(4326));
+        }
+      }
+    }
+
     return crs instanceof CompoundCRS
         ? (SingleCRS) ((CompoundCRS) crs).getComponents().get(0)
         : (SingleCRS) crs;
@@ -260,8 +305,14 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
       checkForMissingGridFiles(coordinateOperation);
 
+      CoordinateOperation horizontalCoordinateOperation = null;
+      if (sourceDimension == 3) {
+        horizontalCoordinateOperation = Proj.createCoordinateOperation(getHorizontalCrs(sourceProjCrs),
+            getHorizontalCrs(targetProjCrs), coordinateOperationContext);
+      }
+
       return new CrsTransformerProj(sourceProjCrs, targetProjCrs, sourceCrs, targetCrs,
-          sourceDimension, targetDimension, coordinateOperation);
+          sourceDimension, targetDimension, coordinateOperation, Optional.ofNullable(horizontalCoordinateOperation));
     } catch (IllegalStateException ex) {
       //LogContext.error(LOGGER, ex, "PROJ");
       throw ex;
