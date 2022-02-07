@@ -15,15 +15,5 @@ import java.util.stream.Stream;
 
 public interface FeatureStoreQueryGenerator<T> {
 
-    T getMetaQuery(FeatureStoreInstanceContainer instanceContainer, int limit, int offset,
-        Optional<CqlFilter> cqlFilter,
-        List<SortKey> sortKeys,
-        boolean computeNumberMatched);
-
-    Stream<T> getInstanceQueries(FeatureStoreInstanceContainer instanceContainer,
-        Optional<CqlFilter> cqlFilter,
-        List<SortKey> sortKeys, Object minKey,
-        Object maxKey, List<Object> customMinKeys, List<Object> customMaxKeys);
-
     T getExtentQuery(FeatureStoreInstanceContainer instanceContainer, FeatureStoreAttributesContainer attributesContainer);
 }

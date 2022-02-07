@@ -148,8 +148,8 @@ public class FeatureProviderSql extends
     FilterEncoderSql filterEncoder = new FilterEncoderSql(getData().getNativeCrs()
         .orElse(OgcCrs.CRS84), sqlDialect, crsTransformerFactory, cql, getData().getAccentiCollation().orElse(null));
     FeatureStoreQueryGeneratorSql queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect,
-        getData().getNativeCrs()
-            .orElse(OgcCrs.CRS84), crsTransformerFactory);
+                                                                                        getData().getNativeCrs()
+                                                                                            .orElse(OgcCrs.CRS84), crsTransformerFactory);
 
     this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql);
     QuerySchemaDeriver querySchemaDeriver = new QuerySchemaDeriver(pathParser3);
@@ -166,8 +166,7 @@ public class FeatureProviderSql extends
             ImmutableList.of(entry.getValue().accept(querySchemaDeriver).get(0).accept(queryTemplatesDeriver))))
         .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
-    this.queryTransformer = new FeatureQueryTransformerSql(schemas, getTypeInfos(), queryGeneratorSql,
-        getData().getQueryGeneration().getComputeNumberMatched());
+    this.queryTransformer = new FeatureQueryTransformerSql(schemas, getTypeInfos());
 
     this.extentReader = new ExtentReaderSql(this::getSqlClient, queryGeneratorSql, sqlDialect,
         getData().getNativeCrs()
