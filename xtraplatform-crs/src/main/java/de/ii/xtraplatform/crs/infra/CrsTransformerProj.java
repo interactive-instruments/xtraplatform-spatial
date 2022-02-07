@@ -96,11 +96,6 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
     }
 
     @Override
-    public boolean isTargetMetric() {
-        return isTargetMetric;
-    }
-
-    @Override
     public CoordinateTuple transform(double x, double y) {
         return transform(new CoordinateTuple(x, y));
     }
@@ -118,9 +113,9 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
                 sourceDimension, dimension));
         }
 
-        try {
-            double[] target = new double[dimension * numberOfPoints];
+        double[] target = new double[dimension * numberOfPoints];
 
+        try {
             getMathTransform(dimension).transform(coordinates, 0, target, 0, numberOfPoints);
 
             return target;

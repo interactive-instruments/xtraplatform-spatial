@@ -20,9 +20,7 @@ public interface CrsTransformer {
 
     EpsgCrs getTargetCrs();
 
-    boolean isTargetMetric();
-
-    CoordinateTuple transform(double x, double y);
+  CoordinateTuple transform(double x, double y);
 
     CoordinateTuple transform(CoordinateTuple coordinateTuple);
 

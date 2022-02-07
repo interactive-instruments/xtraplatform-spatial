@@ -18,13 +18,10 @@ import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.nativ.proj.api.ProjLoader;
 import de.ii.xtraplatform.runtime.domain.LogContext;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,9 +32,10 @@ import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
 import org.apache.felix.ipojo.annotations.Requires;
 import org.kortforsyningen.proj.CoordinateOperationContext;
+import org.kortforsyningen.proj.GridAvailabilityUse;
 import org.kortforsyningen.proj.Proj;
+import org.kortforsyningen.proj.SpatialCriterion;
 import org.kortforsyningen.proj.spi.EPSG;
-import org.opengis.referencing.ReferenceIdentifier;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
 import org.opengis.referencing.crs.CRSFactory;
 import org.opengis.referencing.crs.CompoundCRS;
@@ -47,7 +45,6 @@ import org.opengis.referencing.crs.SingleCRS;
 import org.opengis.referencing.cs.AxisDirection;
 import org.opengis.referencing.cs.RangeMeaning;
 import org.opengis.referencing.operation.CoordinateOperation;
-import org.opengis.util.GenericName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -300,6 +297,8 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     try {
       CoordinateOperationContext coordinateOperationContext = new CoordinateOperationContext();
       coordinateOperationContext.setAuthority("EPSG");
+      coordinateOperationContext.setSpatialCriterion(SpatialCriterion.PARTIAL_INTERSECTION);
+      coordinateOperationContext.setGridAvailabilityUse(GridAvailabilityUse.DISCARD_OPERATION_IF_MISSING_GRID);
       CoordinateOperation coordinateOperation = Proj.createCoordinateOperation(sourceProjCrs,
           targetProjCrs, coordinateOperationContext);
 
@@ -311,8 +310,10 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
             getHorizontalCrs(targetProjCrs), coordinateOperationContext);
       }
 
-      return new CrsTransformerProj(sourceProjCrs, targetProjCrs, sourceCrs, targetCrs,
-          sourceDimension, targetDimension, coordinateOperation, Optional.ofNullable(horizontalCoordinateOperation));
+      return new CrsTransformerProj(sourceProjCrs, targetProjCrs,
+          sourceCrs, targetCrs,
+          sourceDimension, targetDimension, coordinateOperation,
+          Optional.ofNullable(horizontalCoordinateOperation));
     } catch (IllegalStateException ex) {
       //LogContext.error(LOGGER, ex, "PROJ");
       throw ex;

@@ -93,12 +93,7 @@ public class BoundingBoxTransformerTest {
             return null;
         }
 
-        @Override
-        public boolean isTargetMetric() {
-            return false;
-        }
-
-        // fake transformation
+      // fake transformation
         @Override
         public CoordinateTuple transform(double x, double y) {
             if (this.useRnd) {
