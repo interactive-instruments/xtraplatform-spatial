@@ -8,12 +8,12 @@
 package de.ii.xtraplatform.feature.provider.sql.app;
 
 import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+import static de.ii.xtraplatform.features.domain.SchemaBase.Type.DATE;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Doubles;
 import de.ii.xtraplatform.cql.domain.*;
-import de.ii.xtraplatform.cql.domain.TBefore;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
@@ -24,6 +24,8 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +36,7 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
@@ -154,6 +157,8 @@ public class FilterEncoderSql {
                         .findFirst()
                         .map(column -> {
                             if (column.isTemporal()) {
+                                if (column.getType()==DATE)
+                                    return sqlDialect.applyToDate(column.getName());
                                 return sqlDialect.applyToDatetime(column.getName());
                             }
                             return column.getName();
@@ -448,126 +453,78 @@ public class FilterEncoderSql {
         }
 
         private Instant getStart(TemporalLiteral literal) {
-            if (literal.getType() == CqlDateTime.CqlInterval.class) {
-                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().get().getStart();
-            } else if (literal.getType() == CqlDateTime.CqlTimestamp.class) {
-                return ((CqlDateTime.CqlTimestamp) literal.getValue()).getTimestamp();
-            } else if (literal.getType() == CqlDateTime.CqlDate.class) {
-                return ((CqlDateTime.CqlDate) literal.getValue()).getDate().getStart();
+            if (literal.getType() == Interval.class) {
+                return ((Interval) literal.getValue()).getStart();
+            } else if (literal.getType() == Instant.class) {
+                return ((Instant) literal.getValue());
+            } else {
+                return ((LocalDate) literal.getValue()).atStartOfDay(ZoneOffset.UTC).toInstant();
             }
-
-            throw new IllegalStateException("Unknown literal type: " + literal.getType());
         }
 
         private String getStartAsString(TemporalLiteral literal) {
-            return String.format("TIMESTAMP '%s'", getStart(literal))
-                         .replace("'0000-01-01T00:00:00Z'", "'-infinity'");
+            Instant instant = getStart(literal);
+            if (instant==Instant.MIN)
+                return "TIMESTAMP '-infinity'";
+            return String.format("TIMESTAMP '%s'", instant);
         }
 
         private Instant getEnd(TemporalLiteral literal) {
-            if (literal.getType() == CqlDateTime.CqlInterval.class) {
-                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().get().getEnd();
-            } else if (literal.getType() == CqlDateTime.CqlTimestamp.class) {
-                return ((CqlDateTime.CqlTimestamp) literal.getValue()).getTimestamp();
-            } else if (literal.getType() == CqlDateTime.CqlDate.class) {
-                return ((CqlDateTime.CqlDate) literal.getValue()).getDate().getEnd();
+            if (literal.getType() == Interval.class) {
+                Instant end = ((Interval) literal.getValue()).getEnd();
+                if (end==Instant.MAX)
+                    return end;
+                return end.minusSeconds(1);
+            } else if (literal.getType() == Instant.class) {
+                return ((Instant) literal.getValue());
+            } else {
+                return ((LocalDate) literal.getValue()).atTime(23,59,59).atZone(ZoneOffset.UTC).toInstant();
             }
-
-            throw new IllegalStateException("Unknown literal type: " + literal.getType());
         }
 
+        // TODO: currently specific to postgres, add support for gpkg, use sqlDialect
         private String getEndAsString(TemporalLiteral literal) {
-            return String.format("TIMESTAMP '%s'", getEnd(literal))
-                         .replace("'9999-12-31T23:59:59Z'", "'infinity'");
+            Instant instant = getEnd(literal);
+            if (instant==Instant.MAX)
+                return "TIMESTAMP 'infinity'";
+            return String.format("TIMESTAMP '%s'", instant);
         }
 
         private Instant getEndExclusive(TemporalLiteral literal) {
-            if (literal.getType() == CqlDateTime.CqlInterval.class) {
-                return ((CqlDateTime.CqlInterval) literal.getValue()).getInterval().get().getEnd().plusSeconds(1);
-            } else if (literal.getType() == CqlDateTime.CqlTimestamp.class) {
-                return ((CqlDateTime.CqlTimestamp) literal.getValue()).getTimestamp();
-            } else if (literal.getType() == CqlDateTime.CqlDate.class) {
-                return ((CqlDateTime.CqlDate) literal.getValue()).getDate().getEnd().plusSeconds(1);
+            if (literal.getType() == Interval.class) {
+                return ((Interval) literal.getValue()).getEnd();
+            } else if (literal.getType() == Instant.class) {
+                return ((Instant) literal.getValue());
+            } else {
+                return ((LocalDate) literal.getValue()).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
             }
-
-            throw new IllegalStateException("Unknown literal type: " + literal.getType());
         }
 
         private String getEndExclusiveAsString(TemporalLiteral literal) {
-            return String.format("TIMESTAMP '%s'", getEndExclusive(literal))
-                         .replace("'+10000-01-01T00:00:00Z'", "'infinity'");
+            Instant instant = getEndExclusive(literal);
+            if (instant==Instant.MAX)
+                return "TIMESTAMP 'infinity'";
+            return String.format("TIMESTAMP '%s'", instant);
         }
 
         @Override
         public String visit(TemporalOperation temporalOperation, List<String> children) {
             String operator = sqlDialect.getTemporalOperator(temporalOperation.getClass());
+            if (Objects.isNull(operator))
+                throw new IllegalStateException(String.format("unexpected temporal operator: %s", temporalOperation.getClass()));
 
             Temporal op1 = (Temporal) temporalOperation.getOperands().get(0);
             Temporal op2 = (Temporal) temporalOperation.getOperands().get(1);
 
-            // TODO The behaviour of the temporal predicates should be improved by 
-            //      distinguishing datetime properties of different granularity in
-            //      the provider schema; at least second and day, but a more flexible 
-            //      solution would be better.
-            //      The public review of CQL resulted in a number of comments on the
-            //      temporal predicates, partly also relates to this - wait for their 
-            //      resolution.
-
-            if (temporalOperation instanceof TEquals) {
-                // Both side are a property or an instant, this was checked when the operation was built.
-                if (op1 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(String.format("TIMESTAMP %s", children.get(0)), children.get(1));
-                }
-                if (op2 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(children.get(0), String.format("TIMESTAMP %s", children.get(1)));
-                }
-                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
-
-            } else if (temporalOperation instanceof TBefore) {
-                if (op1 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(getEndAsString((TemporalLiteral) op1), children.get(1));
-                }
-                if (op2 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2));
-                }
-                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
-
-            } else if (temporalOperation instanceof TAfter) {
-                if (op1 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(getStartAsString((TemporalLiteral) op1), children.get(1));
-                }
-                if (op2 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(children.get(0), getEndAsString((TemporalLiteral) op2));
-                }
-                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
-
-            } else if (temporalOperation instanceof TDuring) {
-                // The left hand side is a property or an instant, this was checked when the operation was built.
-                // The right hand side is an interval, this was checked when the operation was built.
-                Temporal op2a = op2;
-                Temporal op2b = op2;
-                if (op2 instanceof TemporalLiteral) {
-                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
-                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
-                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
-                } else if (op2 instanceof Property) {
-                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
-                }
-                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s AND %s", operator, expressions.get(1), expressions.get(2)));
-
-            } else if (temporalOperation instanceof TIntersects) {
-                // ISO 8601 intervals include both the start and end instant
-                // PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
+            if (temporalOperation instanceof TIntersects) {
                 if (op1 instanceof Property) {
                     // need to change "column" to "(column,column)"
                     children = ImmutableList.of(replaceColumnWithInterval(children.get(0), reduceSelectToColumn(children.get(0))), children.get(1));
                 } else if (op1 instanceof TemporalLiteral) {
                     // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
                     children = ImmutableList.of(String.format("(%s, %s)", getStartAsString((TemporalLiteral) op1), getEndExclusiveAsString((TemporalLiteral) op1)), children.get(1));
+                } else if (op1 instanceof Function) {
+                    // nothing to do
                 }
 
                 if (op2 instanceof Property) {
@@ -575,13 +532,26 @@ public class FilterEncoderSql {
                     children = ImmutableList.of(children.get(0),replaceColumnWithInterval(children.get(1), reduceSelectToColumn(children.get(1))));
                 } else if (op2 instanceof TemporalLiteral) {
                     // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
-                    children = ImmutableList.of(children.get(0), String.format("(%s, %s)", getStartAsString((TemporalLiteral) op2), getEndExclusiveAsString((TemporalLiteral) op2)));
+                    children = ImmutableList.of(children.get(0), getInterval((TemporalLiteral) op2));
+                } else if (op2 instanceof Function) {
+                    // nothing to do
                 }
+
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
                 return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
             }
 
-            throw new IllegalArgumentException(String.format("unsupported temporal operator: %s", operator));
+            throw new IllegalStateException(String.format("unexpected temporal operator: %s", operator));
+        }
+
+        /**
+         * ISO 8601 intervals include both the start and end instant
+         * PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
+         * @param literal temporal literal
+         * @return PostgreSQL interval
+         */
+        private String getInterval(TemporalLiteral literal) {
+            return String.format("(%s, %s)", getStartAsString(literal), getEndExclusiveAsString(literal));
         }
 
         @Override
@@ -595,14 +565,19 @@ public class FilterEncoderSql {
 
         @Override
         public String visit(TemporalLiteral temporalLiteral, List<String> children) {
-            if (temporalLiteral.getType() == CqlDateTime.CqlTimestamp.class) {
-                return String.format("'%s'", ((CqlDateTime.CqlTimestamp) temporalLiteral.getValue()).getTimestamp().toString());
-            } else if (temporalLiteral.getType() == CqlDateTime.CqlInterval.class) {
-                return String.format("'%s'", ((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getInterval().toString());
-            } else if (temporalLiteral.getType() == CqlDateTime.CqlDate.class) {
-                return String.format("'%s'", ((CqlDateTime.CqlDate) temporalLiteral.getValue()).getDate().toString());
+            if (temporalLiteral.getType() == Instant.class) {
+                Instant instant = ((Instant) temporalLiteral.getValue());
+                if (instant==Instant.MIN)
+                    return "TIMESTAMP '-infinity'";
+                else if (instant==Instant.MAX)
+                    return "TIMESTAMP 'infinity'";
+                return String.format("TIMESTAMP '%s'", ((Instant) temporalLiteral.getValue()).toString());
+            } else if (temporalLiteral.getType() == Interval.class) {
+                return getInterval(temporalLiteral);
+            } else if (temporalLiteral.getType() == LocalDate.class) {
+                return String.format("'%s'", ((LocalDate) temporalLiteral.getValue()).toString());
             }
-            throw new IllegalArgumentException("unsupported temporal literal");
+            throw new IllegalStateException("unsupported temporal SQL literal: " + temporalLiteral);
         }
 
         @Override
@@ -771,7 +746,7 @@ public class FilterEncoderSql {
                                                   secondExpression, aliases.get(0), rootSchema.getSortKey().get(), qualifiedColumn);
                 return String.format(mainExpression, "", arrayQuery);
             }
-            throw new IllegalArgumentException("unsupported array operator");
+            throw new IllegalStateException("unexpected array operator: " + arrayOperation);
         }
 
         @Override

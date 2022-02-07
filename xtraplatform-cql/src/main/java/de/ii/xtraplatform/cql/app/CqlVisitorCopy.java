@@ -128,35 +128,7 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
     public CqlNode visit(TemporalOperation temporalOperation, List<CqlNode> children) {
         TemporalOperation.Builder<?> builder = null;
 
-        if (temporalOperation instanceof TAfter) {
-            builder = new ImmutableTAfter.Builder();
-        } else if (temporalOperation instanceof TBefore) {
-            builder = new ImmutableTBefore.Builder();
-        } else if (temporalOperation instanceof TStarts) {
-            builder = new ImmutableTStarts.Builder();
-        } else if (temporalOperation instanceof TStartedBy) {
-            builder = new ImmutableTStartedBy.Builder();
-        } else if (temporalOperation instanceof TDuring) {
-            builder = new ImmutableTDuring.Builder();
-        } else if (temporalOperation instanceof TFinishedBy) {
-            builder = new ImmutableTFinishedBy.Builder();
-        } else if (temporalOperation instanceof TFinishes) {
-            builder = new ImmutableTFinishes.Builder();
-        } else if (temporalOperation instanceof TMeets) {
-            builder = new ImmutableTMeets.Builder();
-        } else if (temporalOperation instanceof TMetBy) {
-            builder = new ImmutableTMetBy.Builder();
-        } else if (temporalOperation instanceof TOverlappedBy) {
-            builder = new ImmutableTOverlappedBy.Builder();
-        } else if (temporalOperation instanceof TContains) {
-            builder = new ImmutableTContains.Builder();
-        } else if (temporalOperation instanceof TEquals) {
-            builder = new ImmutableTEquals.Builder();
-        } else if (temporalOperation instanceof TOverlaps) {
-            builder = new ImmutableTOverlaps.Builder();
-        } else if (temporalOperation instanceof TDisjoint) {
-            builder = new ImmutableTDisjoint.Builder();
-        } else if (temporalOperation instanceof TIntersects) {
+        if (temporalOperation instanceof TIntersects) {
             builder = new ImmutableTIntersects.Builder();
         }
 

@@ -68,6 +68,11 @@ public class SqlDialectPostGis implements SqlDialect {
   }
 
   @Override
+  public String applyToDate(String column) {
+    return String.format("%s::timestamp(0)", column);
+  }
+
+  @Override
   public String applyToDatetime(String column) {
     return String.format("%s::timestamp(0)", column);
   }

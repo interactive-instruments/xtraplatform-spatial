@@ -182,26 +182,6 @@ UPPER: U P P E R;
 
 NumericLiteral : UnsignedNumericLiteral | SignedNumericLiteral;
 
-
-/*
-#=============================================================================#
-# Definition of CHARACTER literals
-#=============================================================================#
-*/
-
-
-
-Identifier : IdentifierStart (COLON | PERIOD | IdentifierPart)* | DOUBLEQUOTE Identifier DOUBLEQUOTE;
-
-//CHANGE: moved UNDERSCORE | OCTOTHORP | DOLLAR from identifierStart to identifierPart
-IdentifierStart : ALPHA;
-
-IdentifierPart : ALPHA | DIGIT | UNDERSCORE | DOLLAR;
-
-//Character : Str -> mode(STR) ;//ALPHA | DIGIT | SpecialCharacter | QuoteQuote | ' ';
-
-QuoteQuote : QUOTE QUOTE;
-
 /*
 # NOTE: This production is supposed to be any alphabetic character from
 #       the character set.
@@ -273,8 +253,6 @@ HEXIT : DIGIT | A | B | C | D | E | F;
 #=============================================================================#
 */
 
-
-
 UnsignedNumericLiteral : ExactNumericLiteral | ApproximateNumericLiteral;
 
 SignedNumericLiteral : (Sign)? ExactNumericLiteral | ApproximateNumericLiteral;
@@ -297,43 +275,8 @@ Sign : PLUS | MINUS;
 /*
 #=============================================================================#
 # Definition of TEMPORAL literals
-#
-# NOTE: Is the fact the time zones are supported too complicated for a
-#       simple CQL?  Perhaps the "core" of CQL should just support UTC.
 #=============================================================================#
 */
-
-InstantLiteral : DateInstant | TimestampInstant;
-
-DateInstant: DATE LEFTPAREN DateInstantString RIGHTPAREN;
-
-DateInstantString : QUOTE FullDate QUOTE;
-
-TimestampInstant : TIMESTAMP LEFTPAREN TimestampInstantString RIGHTPAREN;
-
-TimestampInstantString : QUOTE FullDate 'T' UtcTime QUOTE;
-
-Instant : FullDate | FullDate 'T' UtcTime | NOW LEFTPAREN RIGHTPAREN;
-
-Interval : INTERVAL LEFTPAREN InstantParameter COMMA InstantParameter RIGHTPAREN;
-
-InstantParameter : Identifier | DateInstantString | TimestampInstantString | QUOTE '..' QUOTE;
-
-FullDate : DateYear '-' DateMonth '-' DateDay;
-
-DateYear : DIGIT DIGIT DIGIT DIGIT;
-
-DateMonth : DIGIT DIGIT;
-
-DateDay : DIGIT DIGIT;
-
-UtcTime : TimeHour ':' TimeMinute ':' TimeSecond Z;
-
-TimeHour : DIGIT DIGIT;
-
-TimeMinute : DIGIT DIGIT;
-
-TimeSecond : DIGIT DIGIT (PERIOD (DIGIT)+)?;
 
 NOW : N O W;
 
@@ -342,6 +285,48 @@ DATE : D A T E;
 TIMESTAMP : T I M E S T A M P;
 
 INTERVAL : I N T E R V A L;
+
+DateString : QUOTE FullDate QUOTE;
+
+TimestampString : QUOTE FullDate 'T' UtcTime QUOTE;
+
+DotDotString : QUOTE '..' QUOTE;
+
+Instant : FullDate | FullDate 'T' UtcTime;
+
+FullDate : DateYear '-' DateMonth '-' DateDay;
+
+DateYear : DIGIT DIGIT DIGIT DIGIT;
+
+DateMonth : '0' [1-9] | '1' [0-2];
+
+DateDay : '0' [1-9] | [1-2] DIGIT | '3' [0-1];
+
+UtcTime : TimeHour ':' TimeMinute ':' TimeSecond Z;
+
+TimeHour : [0-1] DIGIT | '2' [0-3];
+
+TimeMinute : [0-5] DIGIT;
+
+TimeSecond : [0-5] DIGIT (PERIOD (DIGIT)+)?;
+
+/*
+#=============================================================================#
+# Definition of identifiers (property or function names)
+#=============================================================================#
+*/
+
+Identifier : IdentifierStart (COLON | PERIOD | IdentifierPart)* | DOUBLEQUOTE Identifier DOUBLEQUOTE;
+
+//CHANGE: moved UNDERSCORE | OCTOTHORP | DOLLAR from identifierStart to identifierPart
+IdentifierStart : ALPHA;
+
+IdentifierPart : ALPHA | DIGIT | UNDERSCORE | DOLLAR;
+
+//Character : Str -> mode(STR) ;//ALPHA | DIGIT | SpecialCharacter | QuoteQuote | ' ';
+
+//QuoteQuote : QUOTE QUOTE;
+
 
 /*
 #=============================================================================#

@@ -7,22 +7,9 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.cql.domain.ImmutableTAfter;
-import de.ii.xtraplatform.cql.domain.ImmutableTBefore;
-import de.ii.xtraplatform.cql.domain.ImmutableSContains;
-import de.ii.xtraplatform.cql.domain.ImmutableSCrosses;
-import de.ii.xtraplatform.cql.domain.ImmutableSDisjoint;
-import de.ii.xtraplatform.cql.domain.ImmutableTDuring;
-import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableSIntersects;
-import de.ii.xtraplatform.cql.domain.ImmutableSOverlaps;
-import de.ii.xtraplatform.cql.domain.ImmutableSEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableSTouches;
-import de.ii.xtraplatform.cql.domain.ImmutableSWithin;
-import de.ii.xtraplatform.cql.domain.ImmutableTIntersects;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
+import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import java.util.List;
@@ -35,6 +22,8 @@ public interface SqlDialect {
   String applyToWkt(String column, boolean forcePolygonCCW);
 
   String applyToExtent(String column);
+
+  String applyToDate(String column);
 
   String applyToDatetime(String column);
 
@@ -67,11 +56,7 @@ public interface SqlDialect {
   }
 
   Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-      .put(ImmutableTAfter.class, ">")
-      .put(ImmutableTBefore.class, "<")
-      .put(ImmutableTDuring.class, "BETWEEN")
-      .put(ImmutableTEquals.class, "=")
-      .put(ImmutableTIntersects.class, "OVERLAPS")
+      .put(ImmutableTIntersects.class, "OVERLAPS") // "({start1},{end1}) OVERLAPS ({start2},{end2})"
       .build();
 
   Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()

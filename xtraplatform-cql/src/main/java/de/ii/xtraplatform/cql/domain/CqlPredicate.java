@@ -50,34 +50,6 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
             builder.like((Like) node);
         } else if (node instanceof IsNull) {
             builder.isNull((IsNull) node);
-        } else if (node instanceof TAfter) {
-            builder.tAfter((TAfter) node);
-        } else if (node instanceof TBefore) {
-            builder.tBefore((TBefore) node);
-        } else if (node instanceof TStarts) {
-            builder.tStarts((TStarts) node);
-        } else if (node instanceof TStartedBy) {
-            builder.tStartedBy((TStartedBy) node);
-        } else if (node instanceof TContains) {
-            builder.tContains((TContains) node);
-        } else if (node instanceof TDuring) {
-            builder.tDuring((TDuring) node);
-        } else if (node instanceof TFinishedBy) {
-            builder.tFinishedBy((TFinishedBy) node);
-        } else if (node instanceof TFinishes) {
-            builder.tFinishes((TFinishes) node);
-        } else if (node instanceof TEquals) {
-            builder.tEquals((TEquals) node);
-        } else if (node instanceof TMeets) {
-            builder.tMeets((TMeets) node);
-        } else if (node instanceof TMetBy) {
-            builder.tMetBy((TMetBy) node);
-        } else if (node instanceof TOverlaps) {
-            builder.tOverlaps((TOverlaps) node);
-        } else if (node instanceof TOverlappedBy) {
-            builder.tOverlappedBy((TOverlappedBy) node);
-        } else if (node instanceof TDisjoint) {
-            builder.tDisjoint((TDisjoint) node);
         } else if (node instanceof TIntersects) {
             builder.tIntersects((TIntersects) node);
         } else if (node instanceof SEquals) {
@@ -142,20 +114,6 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
                 getSCrosses(),
                 getSIntersects(),
                 getSContains(),
-                getTAfter(),
-                getTBefore(),
-                getTStarts(),
-                getTStartedBy(),
-                getTContains(),
-                getTDuring(),
-                getTFinishedBy(),
-                getTFinishes(),
-                getTEquals(),
-                getTMeets(),
-                getTMetBy(),
-                getTOverlaps(),
-                getTOverlappedBy(),
-                getTDisjoint(),
                 getTIntersects(),
                 getAContains(),
                 getAEquals(),

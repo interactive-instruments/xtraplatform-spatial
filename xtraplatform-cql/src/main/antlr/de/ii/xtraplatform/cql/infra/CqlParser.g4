@@ -44,11 +44,22 @@ binaryComparisonPredicate : scalarExpression ComparisonOperator scalarExpression
 
 propertyIsLikePredicate :  characterExpression (NOT)? LIKE scalarExpression;
 
-characterExpression : characterLiteral
+characterExpression : characterClause
                     | propertyName
                     | function;
 
-propertyIsBetweenPredicate : scalarExpression (NOT)? BETWEEN scalarExpression AND scalarExpression;
+characterClause : characterLiteral
+                | CASEI LEFTPAREN characterExpression RIGHTPAREN
+                | ACCENTI LEFTPAREN characterExpression RIGHTPAREN
+                | LOWER LEFTPAREN characterExpression RIGHTPAREN
+                | UPPER LEFTPAREN characterExpression RIGHTPAREN;
+
+propertyIsBetweenPredicate : scalarExpression (NOT)? BETWEEN numericExpression AND numericExpression;
+
+numericExpression : numericLiteral
+                  | propertyName
+                  | function
+                  /*| arithmeticExpression*/;
 
 propertyIsNullPredicate : scalarExpression IS (NOT)? NULL;
 
@@ -56,23 +67,24 @@ propertyIsNullPredicate : scalarExpression IS (NOT)? NULL;
 # A scalar expression is the property name, a chracter literal, a numeric
 # literal or a function/method invocation that returns a scalar value.
 */
-scalarExpression : propertyName
-                    | characterLiteral
-                    | numericLiteral
-                    | booleanLiteral
-                    | instantLiteral
-                    | function
-                    /*| arithmeticExpression*/;
+scalarExpression : characterClause
+                 | numericLiteral
+                 | booleanLiteral
+                 | instantLiteral
+                 | propertyName
+                 | function
+                 /*
+                 | arithmeticExpression*/;
 
 //CHANGE: support compound property names
 //CHANGE: support nested filters
-propertyName: (Identifier (LEFTSQUAREBRACKET nestedCqlFilter RIGHTSQUAREBRACKET)? PERIOD)* Identifier;
+propertyName : (Identifier (LEFTSQUAREBRACKET nestedCqlFilter RIGHTSQUAREBRACKET)? PERIOD)* Identifier;
 
-characterLiteral: CharacterStringLiteral;
+characterLiteral : CharacterStringLiteral;
 
-numericLiteral: NumericLiteral;
+numericLiteral : NumericLiteral;
 
-booleanLiteral: BooleanLiteral;
+booleanLiteral : BooleanLiteral;
 
 /*
 # NOTE: This is just a place holder for a regular expression
@@ -98,7 +110,7 @@ spatialPredicate :  SpatialOperator LEFTPAREN geomExpression COMMA geomExpressio
 */
 geomExpression : propertyName
                | geomLiteral
-               /*| function*/;
+               | function;
 
 /*
 #=============================================================================#
@@ -165,18 +177,26 @@ maxElev : NumericLiteral;
 # specified temporal operator.
 #=============================================================================#
 */
-//CHANGE: allow intervals with /
 temporalPredicate : TemporalOperator LEFTPAREN temporalExpression COMMA temporalExpression RIGHTPAREN;
 
 temporalExpression : propertyName
-                   | temporalLiteral
-                   /*| function*/;
+                   | temporalClause
+                   | function;
 
-temporalLiteral: instantLiteral | interval;
+temporalClause: instantLiteral | interval;
 
-interval: Interval;
+instantLiteral: DATE LEFTPAREN DateString RIGHTPAREN
+              | TIMESTAMP LEFTPAREN TimestampString RIGHTPAREN
+              | NOW LEFTPAREN RIGHTPAREN;
 
-instantLiteral: InstantLiteral;
+interval: INTERVAL LEFTPAREN intervalParameter COMMA intervalParameter RIGHTPAREN;
+
+intervalParameter: propertyName
+                 | DateString
+                 | TimestampString
+                 | DotDotString
+                 | NOW LEFTPAREN RIGHTPAREN
+                 | function;
 
 /*
 #=============================================================================#
@@ -189,11 +209,11 @@ instantLiteral: InstantLiteral;
 
 arrayPredicate: ArrayOperator LEFTPAREN arrayExpression COMMA arrayExpression RIGHTPAREN;
 
-arrayExpression: propertyName | function | arrayLiteral;
+arrayExpression: propertyName | arrayClause | function;
 
-arrayLiteral: LEFTSQUAREBRACKET arrayElement ( COMMA arrayElement )* RIGHTSQUAREBRACKET;
+arrayClause: LEFTSQUAREBRACKET arrayElement ( COMMA arrayElement )* RIGHTSQUAREBRACKET;
 
-arrayElement: characterLiteral | numericLiteral | booleanLiteral | temporalLiteral | propertyName | function | arrayLiteral;
+arrayElement: characterClause | numericLiteral | booleanLiteral | temporalClause | propertyName | arrayClause |function;
 
 
 /*
@@ -208,26 +228,20 @@ inPredicate : scalarExpression (NOT)? IN LEFTPAREN scalarExpression ( COMMA scal
 /*
 #=============================================================================#
 # Definition of a FUNCTION
-# NOTE: How do we advertise which functions an implementation offer?
-#       In the OpenAPI document I suppose!
 #=============================================================================#
 */
 
-function : Identifier argumentList
-                | CASEI LEFTPAREN characterExpression RIGHTPAREN
-                | ACCENTI LEFTPAREN characterExpression RIGHTPAREN
-                | LOWER LEFTPAREN characterExpression RIGHTPAREN
-                | UPPER LEFTPAREN characterExpression RIGHTPAREN;
+function : Identifier argumentList;
 
 argumentList : LEFTPAREN (positionalArgument)?  RIGHTPAREN;
 
 positionalArgument : argument ( COMMA argument )*;
 
-argument : characterLiteral
+argument : characterClause
          | numericLiteral
          | booleanLiteral
          | geomLiteral
-         | temporalLiteral
+         | temporalClause
          | propertyName
          | function
          | arrayExpression
@@ -249,12 +263,3 @@ arithemticOperator : propertyName
                    | numericLiteral
                    | function;
 */
-
-
-
-
-
-
-
-
-

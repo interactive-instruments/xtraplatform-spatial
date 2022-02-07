@@ -9,6 +9,7 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import java.time.Instant;
@@ -68,6 +69,11 @@ public class SqlDialectGpkg implements SqlDialect {
   }
 
   @Override
+  public String applyToDate(String column) {
+    return String.format("datetime(%s)", column);
+  }
+
+  @Override
   public String applyToDatetime(String column) {
     return String.format("datetime(%s)", column);
   }
@@ -88,6 +94,12 @@ public class SqlDialectGpkg implements SqlDialect {
     return String.format(
         "SELECT f_table_name AS \"%s\", f_geometry_column AS \"%s\", coord_dimension AS \"%s\", srid AS \"%s\", geometry_type AS \"%s\" FROM geometry_columns;",
         GeoInfo.TABLE, GeoInfo.COLUMN, GeoInfo.DIMENSION, GeoInfo.SRID, GeoInfo.TYPE);
+  }
+
+  @Override
+  public String getTemporalOperator(Class<? extends TemporalOperation> clazz) {
+    // TODO: SQLite has no support for temporal data types
+    return null;
   }
 
   @Override

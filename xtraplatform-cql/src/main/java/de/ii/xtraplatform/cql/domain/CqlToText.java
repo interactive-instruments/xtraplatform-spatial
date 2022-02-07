@@ -11,6 +11,9 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.threeten.extra.Interval;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,20 +46,7 @@ public class CqlToText implements CqlVisitor<String> {
             .build();
 
     private final static Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableTAfter.class, "T_AFTER")
-            .put(ImmutableTBefore.class, "T_BEFORE")
-            .put(ImmutableTStarts.class, "T_STARTS")
-            .put(ImmutableTStartedBy.class, "T_STARTEDBY")
-            .put(ImmutableTContains.class, "T_CONTAINS")
-            .put(ImmutableTDuring.class, "T_DURING")
-            .put(ImmutableTFinishedBy.class, "T_FINISHEDBY")
-            .put(ImmutableTFinishes.class, "T_FINISHES")
-            .put(ImmutableTEquals.class, "T_EQUALS")
-            .put(ImmutableTMeets.class, "T_MEETS")
-            .put(ImmutableTMetBy.class, "T_METBY")
-            .put(ImmutableTOverlaps.class, "T_OVERLAPS")
-            .put(ImmutableTOverlappedBy.class, "T_OVERLAPPEDBY")
-            .put(ImmutableTDisjoint.class, "T_DISJOINT")
+            .put(ImmutableTIntersects.class, "T_INTERSECTS")
             .build();
 
     private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
@@ -308,31 +298,24 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(TemporalLiteral temporalLiteral, List<String> children) {
-        if (temporalLiteral.getValue() instanceof CqlDateTime.CqlInterval) {
+        if (temporalLiteral.getType() == Interval.class) {
             String start;
             String end;
-            if (((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getInterval().isPresent()) {
-                Interval interval = ((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getInterval().get();
-                start = String.format("'%s'", interval.getStart().toString());
-                end = String.format("'%s'", interval.getEnd().toString());
-                if (interval.getStart().equals(TemporalLiteral.MIN_DATE)) {
-                    start = "'..'";
-                }
-                if (interval.getEnd().equals(TemporalLiteral.MAX_DATE)) {
-                    end = "'..'";
-                }
-            } else {
-                start = ((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getStart().get().accept(this);
-                end = ((CqlDateTime.CqlInterval) temporalLiteral.getValue()).getEnd().get().accept(this);
-            }
+            Interval interval = (Interval) temporalLiteral.getValue();
+            start = interval.getStart().equals(Instant.MIN)
+                ? "'..'"
+                : DateTimeFormatter.ISO_INSTANT.format(interval.getStart());
+            end = interval.getEnd().equals(Instant.MAX)
+                ? "'..'"
+                : DateTimeFormatter.ISO_INSTANT.format(interval.getEnd().minusSeconds(1));
             return String.format("INTERVAL(%s,%s)", start, end);
-        } else if (temporalLiteral.getValue() instanceof CqlDateTime.CqlTimestamp) {
-            return String.format("TIMESTAMP('%s')", ((CqlDateTime.CqlTimestamp) temporalLiteral.getValue()).getTimestamp().toString());
-        } else {
-            Interval date = ((CqlDateTime.CqlDate) temporalLiteral.getValue()).getDate();
-            String start = date.getStart().toString();
-            return String.format("DATE('%s')", start.substring(0, start.indexOf('T')));
+        } else if (temporalLiteral.getType() == Instant.class) {
+            return DateTimeFormatter.ISO_INSTANT.format((Instant) temporalLiteral.getValue());
+        } else if (temporalLiteral.getType() == LocalDate.class) {
+            return String.format("DATE('%s')", DateTimeFormatter.ISO_DATE.format((LocalDate) temporalLiteral.getValue()));
         }
+
+        throw new IllegalStateException("unsupported temporal literal type: " + temporalLiteral.getType().getSimpleName());
     }
 
     @Override

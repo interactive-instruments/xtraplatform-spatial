@@ -77,13 +77,6 @@ public interface In extends CqlNode, NonBinaryScalarOperation {
         public abstract In.Builder value(Scalar property);
     }
 
-    /* TODO not yet supported
-    @Value.Default
-    default Boolean getNocase() {
-        return Boolean.TRUE;
-    }
-     */
-
     Optional<Scalar> getValue();
 
     List<Scalar> getList();
