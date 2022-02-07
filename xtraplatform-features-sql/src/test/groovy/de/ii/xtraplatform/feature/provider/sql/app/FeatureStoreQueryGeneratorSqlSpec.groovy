@@ -11,11 +11,14 @@ import de.ii.xtraplatform.cql.app.CqlFilterExamples
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.crs.infra.GeoToolsCrsTransformerFactory
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
 import java.util.stream.Collectors
 
+// TODO no longer used, update
+@Ignore
 class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
 
