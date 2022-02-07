@@ -310,7 +310,12 @@ public class CqlToText implements CqlVisitor<String> {
                 : DateTimeFormatter.ISO_INSTANT.format(interval.getEnd().minusSeconds(1));
             return String.format("INTERVAL(%s,%s)", start, end);
         } else if (temporalLiteral.getType() == Instant.class) {
-            return DateTimeFormatter.ISO_INSTANT.format((Instant) temporalLiteral.getValue());
+            Instant instant = (Instant) temporalLiteral.getValue();
+            if (instant == Instant.MIN)
+                return "TIMESTAMP('-infinity')"; // TODO what to write in this case?
+            else if (instant == Instant.MAX)
+                return "TIMESTAMP('infinity')"; // TODO what to write in this case?
+            return String.format("TIMESTAMP('%s')", DateTimeFormatter.ISO_INSTANT.format(instant));
         } else if (temporalLiteral.getType() == LocalDate.class) {
             return String.format("DATE('%s')", DateTimeFormatter.ISO_DATE.format((LocalDate) temporalLiteral.getValue()));
         }

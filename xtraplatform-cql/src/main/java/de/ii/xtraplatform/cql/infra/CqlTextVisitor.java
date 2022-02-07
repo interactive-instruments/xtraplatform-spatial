@@ -562,11 +562,11 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         // if at least one parameter is a property, we create a function, otherwise a fixed interval
         if (arg1 instanceof Property && arg2 instanceof Property) {
-            return Function.of("interval", ImmutableList.of((Property) arg1, (Property) arg2));
+            return Function.of("INTERVAL", ImmutableList.of((Property) arg1, (Property) arg2));
         } else if (arg1 instanceof Property &&  arg2 instanceof TemporalLiteral) {
-            return Function.of("interval", ImmutableList.of((Property) arg1, (TemporalLiteral) arg2));
+            return Function.of("INTERVAL", ImmutableList.of((Property) arg1, (TemporalLiteral) arg2));
         } else if (arg1 instanceof TemporalLiteral &&  arg2 instanceof Property) {
-            return Function.of("interval", ImmutableList.of((TemporalLiteral) arg1, (Property) arg2));
+            return Function.of("INTERVAL", ImmutableList.of((TemporalLiteral) arg1, (Property) arg2));
         } else if (arg1 instanceof TemporalLiteral &&  arg2 instanceof TemporalLiteral) {
             return TemporalLiteral.of((TemporalLiteral) arg1, (TemporalLiteral) arg2);
         }
