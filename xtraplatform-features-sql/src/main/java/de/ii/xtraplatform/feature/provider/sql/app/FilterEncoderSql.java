@@ -149,21 +149,24 @@ public class FilterEncoderSql {
                                     .orElseThrow(() -> new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName)));
         }
 
-        protected String getColumn(SchemaSql table,
-            String propertyName, boolean allowColumnFallback) {
+        protected String getQualifiedColumn(SchemaSql table,
+                                            String propertyName,
+                                            String alias,
+                                            boolean allowColumnFallback) {
             return table.getProperties()
                         .stream()
                         .filter(getPropertyNameMatcher(propertyName))
                         .findFirst()
                         .map(column -> {
+                            String qualifiedColumn = String.format("%s.%s", alias, column.getName());
                             if (column.isTemporal()) {
                                 if (column.getType()==DATE)
-                                    return sqlDialect.applyToDate(column.getName());
-                                return sqlDialect.applyToDatetime(column.getName());
+                                    return sqlDialect.applyToDate(qualifiedColumn);
+                                return sqlDialect.applyToDatetime(qualifiedColumn);
                             }
-                            return column.getName();
+                            return qualifiedColumn;
                         })
-                    .or(() -> allowColumnFallback ? Optional.of(propertyName.substring(propertyName.lastIndexOf(".")+1)) : Optional.empty())
+                    .or(() -> allowColumnFallback ? Optional.of(String.format("%s.%s", alias, propertyName.substring(propertyName.lastIndexOf(".")+1))) : Optional.empty())
                     .orElseThrow(() -> new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName)));
         }
 
@@ -172,11 +175,14 @@ public class FilterEncoderSql {
             // strip double quotes from the property name
             String propertyName = property.getName().replaceAll("^\"|\"$", "");
             SchemaSql table = getTable(propertyName);
-            String column = getColumn(table, propertyName, false);
 
-            List<SchemaSql> allObjects = rootSchema.getAllObjects();
+            //TODO: pass all parents
+            List<SchemaSql> parents = ImmutableList.of(rootSchema);
+            List<String> aliases = aliasGenerator.getAliases(parents, table, 1);
+            String qualifiedColumn = getQualifiedColumn(table, propertyName, aliases.get(aliases.size() - 1), false);
+
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("PROP {} {}", table.getName(), column);
+                LOGGER.trace("PROP {} {}", table.getName(), qualifiedColumn);
             }
 
             Optional<CqlFilter> userFilter;
@@ -198,12 +204,6 @@ public class FilterEncoderSql {
             } else {
                 userFilter = Optional.empty();
             }
-
-            //TODO: pass all parents
-            List<SchemaSql> parents = ImmutableList.of(rootSchema);
-
-            List<String> aliases = aliasGenerator.getAliases(parents, table, 1);
-            String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
 
             List<Optional<String>> relationFilters = Stream.concat(
                 parents.stream().flatMap(parent -> parent.getRelation().stream()),
@@ -723,9 +723,8 @@ public class FilterEncoderSql {
 
             String propertyName = ((Property) arrayOperation.getOperands().get(notInverse ? 0 : 1)).getName();
             SchemaSql table = getTable(propertyName);
-            String column = getColumn(table, propertyName, false);
             List<String> aliases = aliasGenerator.getAliases(table, 1);
-            String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
+            String qualifiedColumn = getQualifiedColumn(table, propertyName, aliases.get(aliases.size() - 1), false);
             List<Map<String, List<String>>> x = ImmutableList.of();
             boolean xx = x.stream().map(theme -> theme.get("concept")).flatMap(List::stream).filter(concept -> concept.equals("DLKM")).distinct().count() == 1;
 
@@ -818,10 +817,9 @@ public class FilterEncoderSql {
             String prefix = hasPrefix ? propertyName.substring(0, propertyName.lastIndexOf(".") + 1) : "";
             boolean hasAllowedPrefix = hasPrefix && allowedColumnPrefixes.contains(prefix);
             boolean allowColumnFallback = !hasPrefix || hasAllowedPrefix;
-            String column = getColumn(schema, propertyName, !isUserFilter && allowColumnFallback);
             List<String> aliases = aliasGenerator.getAliases(schema, isUserFilter ? 1 : 0);
             String alias = hasAllowedPrefix ? aliases.get(allowedColumnPrefixes.indexOf(prefix)) : aliases.get(aliases.size() - 1);
-            String qualifiedColumn = String.format("%s.%s", alias, column);
+            String qualifiedColumn = getQualifiedColumn(schema, propertyName, alias, !isUserFilter && allowColumnFallback);
 
             return String.format("%%1$s%1$s%%2$s", qualifiedColumn);
         }
