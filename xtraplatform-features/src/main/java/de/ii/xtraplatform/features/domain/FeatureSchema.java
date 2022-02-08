@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
@@ -138,10 +139,20 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     default List<FeatureSchema> getProperties() {
         return getPropertyMap().values()
                                .stream()
-                               .map(featureSchema -> new ImmutableFeatureSchema.Builder().from(featureSchema)
-                                                                                         .addPath(featureSchema.getName())
-                                                                                         .parentPath(getFullPath())
-                                                                                         .build())
+                               .map(featureSchema -> {
+                                   ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder()
+                                       .from(featureSchema);
+
+                                   if (getFullPath().size() > featureSchema.getParentPath().size()) {
+                                       builder.parentPath(getFullPath());
+                                   }
+
+                                   if (featureSchema.getPath().isEmpty()) {
+                                       builder.addPath(featureSchema.getName());
+                                   }
+
+                                   return builder.build();
+                               })
                                .collect(Collectors.toList());
     }
 

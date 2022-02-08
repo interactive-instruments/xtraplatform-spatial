@@ -18,6 +18,8 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
+import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.LIFECYCLE_HOOK;
+import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.QUERY_HOOK;
 import de.ii.xtraplatform.features.domain.FeatureStream.Result.Builder;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
@@ -36,6 +38,7 @@ import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -52,15 +55,18 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
     private final ConnectorFactory connectorFactory;
     private final Reactive reactive;
     private final CrsTransformerFactory crsTransformerFactory;
+    private final ProviderExtensionRegistry extensionRegistry;
     private Reactive.Runner streamRunner;
     private Map<String, FeatureStoreTypeInfo> typeInfos;
     private FeatureProviderConnector<T, U, V> connector;
 
     protected AbstractFeatureProvider(ConnectorFactory connectorFactory, Reactive reactive,
-        CrsTransformerFactory crsTransformerFactory) {
+        CrsTransformerFactory crsTransformerFactory,
+        ProviderExtensionRegistry extensionRegistry) {
         this.connectorFactory = connectorFactory;
         this.reactive = reactive;
         this.crsTransformerFactory = crsTransformerFactory;
+        this.extensionRegistry = extensionRegistry;
     }
 
     private void onConnectorDispose() {
@@ -151,6 +157,12 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
         LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(),
             startupInfo);
+
+        extensionRegistry.getRegistryState().get().forEach(extension -> {
+            if (extension.isSupported(getConnector())) {
+                extension.on(LIFECYCLE_HOOK.STARTED, getData(), getConnector());
+            }
+        });
     }
 
     @Override
@@ -238,7 +250,8 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             public <X> CompletionStage<ResultReduced<X>> runWith(SinkReduced<Object, X> sink,
                 Optional<PropertyTransformations> propertyTransformations) {
 
-                FeatureTokenSource byteSource = getFeatureTokenSource(propertyTransformations);
+                FeatureTokenSource byteSource = getFeatureTokenSource(propertyTransformations,
+                    ImmutableMap.of());
 
                 BasicStream<Object, X> to = byteSource.to(sink);
 
@@ -261,7 +274,8 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             public CompletionStage<Result> runWith(Reactive.Sink<Object> sink,
                 Optional<PropertyTransformations> propertyTransformations) {
 
-                FeatureTokenSource byteSource = getFeatureTokenSource(propertyTransformations);
+                FeatureTokenSource byteSource = getFeatureTokenSource(propertyTransformations,
+                    ImmutableMap.of());
 
                 RunnableStream<Result> runnableStream = byteSource.to(sink)
                     .withResult((Builder)ImmutableResult.builder().isEmpty(true))
@@ -281,7 +295,17 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             @Override
             public CompletionStage<Result> runWith(SinkTransformed<Object, byte[]> sink,
                 Optional<PropertyTransformations> propertyTransformations) {
-                FeatureTokenSource tokenSource = getFeatureTokenSource(propertyTransformations);
+
+                //TODO: pass aliases to getFeatureTokenSource, use for query generation
+                Map<String, String> virtualTables = new HashMap<>();
+
+                extensionRegistry.getRegistryState().get().forEach(extension -> {
+                    if (extension.isSupported(getConnector())) {
+                        extension.on(QUERY_HOOK.BEFORE, getData(), getConnector(), query, virtualTables::put);
+                    }
+                });
+
+                FeatureTokenSource tokenSource = getFeatureTokenSource(propertyTransformations, virtualTables);
 
                 RunnableStream<Result> runnableStream = tokenSource.to(sink)
                     .withResult((Builder)ImmutableResult.builder().isEmpty(true))
@@ -295,14 +319,21 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                     .handleEnd(Builder::build)
                     .on(streamRunner);
 
-                return runnableStream.run();
+                return runnableStream.run().whenComplete((result, throwable) -> {
+                    extensionRegistry.getRegistryState().get().forEach(extension -> {
+                        if (extension.isSupported(getConnector())) {
+                            extension.on(QUERY_HOOK.AFTER, getData(), getConnector(), query, (a,t) -> {});
+                        }
+                    });
+                });
             }
 
             @Override
             public CompletionStage<ResultReduced<byte[]>> runWith(
                 SinkReducedTransformed<Object, byte[], byte[]> sink,
                 Optional<PropertyTransformations> propertyTransformations) {
-                    FeatureTokenSource tokenSource = getFeatureTokenSource(propertyTransformations);
+                    FeatureTokenSource tokenSource = getFeatureTokenSource(propertyTransformations,
+                        ImmutableMap.of());
 
                     RunnableStream<ResultReduced<byte[]>> runnableStream = tokenSource.to(sink)
                         .withResult(ImmutableResultReduced.<byte[]>builder()
@@ -322,7 +353,8 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             }
 
             private FeatureTokenSource getFeatureTokenSource(
-                Optional<PropertyTransformations> propertyTransformations) {
+                Optional<PropertyTransformations> propertyTransformations,
+                Map<String, String> virtualTables) {
 
                 Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(query.getType()));
 
@@ -331,7 +363,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                 }
 
                 //TODO: encapsulate in FeatureQueryRunnerSql
-                U transformedQuery = getQueryTransformer().transformQuery(query, ImmutableMap.of());
+                U transformedQuery = getQueryTransformer().transformQuery(query, virtualTables);
                 V options = getQueryTransformer().getOptions(query);
                 Reactive.Source<T> source = getConnector().getSourceStream(transformedQuery, options);
 

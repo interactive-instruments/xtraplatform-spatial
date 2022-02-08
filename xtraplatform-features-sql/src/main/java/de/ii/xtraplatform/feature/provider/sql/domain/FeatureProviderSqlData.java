@@ -9,6 +9,7 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
@@ -16,6 +17,7 @@ import de.ii.xtraplatform.features.domain.WithConnectionInfo;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -114,6 +116,20 @@ public interface FeatureProviderSqlData extends FeatureProviderDataV2,
       }
 
       return builder.build();
+    }
+
+    return this;
+  }
+
+  @Value.Check
+  default FeatureProviderSqlData mergeExtensions() {
+    List<ExtensionConfiguration> distinctExtensions = getMergedExtensions();
+
+    // remove duplicates
+    if (getExtensions().size() > distinctExtensions.size()) {
+      return new ImmutableFeatureProviderSqlData.Builder().from(this)
+          .extensions(distinctExtensions)
+          .build();
     }
 
     return this;

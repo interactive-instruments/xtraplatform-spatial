@@ -42,6 +42,7 @@ import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureStream2.ResultOld;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.Metadata;
+import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
@@ -84,8 +85,9 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, 
     public FeatureProviderWfs(@Requires CrsTransformerFactory crsTransformerFactory,
                               @Requires ConnectorFactory connectorFactory,
                               @Requires Reactive reactive,
-                              @Requires EntityRegistry entityRegistry) {
-        super(connectorFactory, reactive, crsTransformerFactory);
+                              @Requires EntityRegistry entityRegistry,
+                              @Requires ProviderExtensionRegistry extensionRegistry) {
+        super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry);
 
         this.crsTransformerFactory = crsTransformerFactory;
         this.entityRegistry = entityRegistry;

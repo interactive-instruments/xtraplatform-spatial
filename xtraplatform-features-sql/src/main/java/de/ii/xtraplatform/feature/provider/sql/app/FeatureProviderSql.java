@@ -56,6 +56,7 @@ import de.ii.xtraplatform.features.domain.FeatureTokenSource;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
+import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
@@ -112,9 +113,10 @@ public class FeatureProviderSql extends
       @Requires Cql cql,
       @Requires ConnectorFactory connectorFactory,
       @Requires Reactive reactive,
-      @Requires EntityRegistry entityRegistry) {
+      @Requires EntityRegistry entityRegistry,
+      @Requires ProviderExtensionRegistry extensionRegistry) {
     //TODO: starts akka for every instance, move to singleton
-    super(connectorFactory, reactive, crsTransformerFactory);
+    super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry);
 
     this.crsTransformerFactory = crsTransformerFactory;
     this.cql = cql;
