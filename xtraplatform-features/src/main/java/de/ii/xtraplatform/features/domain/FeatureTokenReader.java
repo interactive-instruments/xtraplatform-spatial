@@ -15,13 +15,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class FeatureTokenReader<T extends ModifiableContext> {
+public class FeatureTokenReader<T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>> {
 
-  private final FeatureEventHandler<T> eventHandler;
+  private final FeatureEventHandler<T, U, V> eventHandler;
 
   private FeatureTokenType currentType;
   private int contextIndex;
-  private T context;
+  private V context;
   private List<String> nestingStack;
 
   //TODO
@@ -29,7 +29,7 @@ public class FeatureTokenReader<T extends ModifiableContext> {
     this.eventHandler = null;
   }
 
-  public FeatureTokenReader(FeatureEventHandler<T> eventHandler, T context) {
+  public FeatureTokenReader(FeatureEventHandler<T, U, V> eventHandler, V context) {
     this.eventHandler = eventHandler;
     this.context = context;
     this.nestingStack = new ArrayList<>();

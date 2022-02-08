@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.domain;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
@@ -58,6 +59,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     @Override
     Optional<String> getSourcePath();
 
+    @JsonProperty(access = Access.WRITE_ONLY)
     @Override
     List<String> getSourcePaths();
 
@@ -86,6 +88,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
 
     List<PropertyTransformation> getTransformations();
 
+    @Override
     Optional<SchemaConstraints> getConstraints();
 
     @Override
@@ -168,20 +171,13 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
         return (isValue() && getConstantValue().isPresent()) || (isObject() && getProperties().stream().allMatch(FeatureSchema::isConstant));
     }
 
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default boolean isRequired() {
-        return getConstraints().filter(SchemaConstraints::isRequired).isPresent();
-    }
-
     @Value.Check
     default FeatureSchema normalizeConstants() {
         if (!getPropertyMap().isEmpty() && getPropertyMap().values()
                                                            .stream()
                                                            .anyMatch(property -> property.getConstantValue()
-                                                                                         .isPresent() && !property.getSourcePath()
-                                                                                                                  .isPresent())) {
+                                                                                         .isPresent() && property.getSourcePaths()
+                                                                                                                  .isEmpty())) {
             final int[] constantCounter = {0};
 
             Map<String, FeatureSchema> properties = getPropertyMap().entrySet()
@@ -197,8 +193,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
                                                                                                  constantCounter[0]++,
                                                                                                  constantValue);
                                                                                              return new AbstractMap.SimpleEntry<>(entry.getKey(), new ImmutableFeatureSchema.Builder().from(entry.getValue())
-                                                                                                                                                                                      .sourcePath(constantSourcePath)
-                                                                                                                                                                                        .addSourcePaths(constantSourcePath)
+                                                                                                                                                                                      .addSourcePaths(constantSourcePath)
                                                                                                                                                                                       .build());
                                                                                          }
                                                                                          return entry;

@@ -12,8 +12,11 @@ import akka.stream.javadsl.Source
 import akka.testkit.javadsl.TestKit
 import akka.util.ByteString
 import com.typesafe.config.Config
+import de.ii.xtraplatform.features.domain.FeatureEventHandler
+import de.ii.xtraplatform.features.domain.FeatureSchema
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder
 import de.ii.xtraplatform.features.domain.FeatureTokenFixtures
+import de.ii.xtraplatform.features.domain.SchemaMapping
 import de.ii.xtraplatform.features.json.domain.FeatureTokenDecoderGeoJson
 import de.ii.xtraplatform.streams.app.ReactiveAkka
 import de.ii.xtraplatform.streams.domain.ActorSystemProvider
@@ -28,7 +31,6 @@ import spock.lang.Specification
 /**
  * @author zahnen
  */
-@Ignore
 class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
 
     static final Logger LOGGER = LoggerFactory.getLogger(FeatureTokenDecoderGeoJsonSpec2.class)
@@ -40,7 +42,7 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
     @Shared
     Reactive.Runner runner
 
-    FeatureTokenDecoder<byte[]> decoder
+    FeatureTokenDecoder<byte[], FeatureSchema, SchemaMapping, FeatureEventHandler.ModifiableContext<FeatureSchema, SchemaMapping>> decoder
 
     def setupSpec() {
         reactive = new ReactiveAkka(null, new ActorSystemProvider() {

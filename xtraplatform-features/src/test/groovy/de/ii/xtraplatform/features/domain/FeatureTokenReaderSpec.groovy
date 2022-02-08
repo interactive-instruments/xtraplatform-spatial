@@ -23,6 +23,7 @@ class FeatureTokenReaderSpec extends Specification {
 
         FeatureEventHandler.ModifiableContext context = ModifiableGenericContext.create();
         SchemaMapping mapping = Mock()
+        mapping.getPathSeparator() >> Optional.empty()
         context.setMapping(mapping)
         tokenReader = new FeatureTokenReader(eventHandler, context)
     }

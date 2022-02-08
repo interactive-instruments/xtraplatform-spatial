@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.domain;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
@@ -100,5 +102,18 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
       return path.substring(0, path.indexOf("{"));
     }
     return path;
+  }
+
+  @Override
+  default Optional<String> getPathSeparator() {
+    if (useTargetPaths()) {
+      return getTargetSchema().getTransformations()
+          .stream()
+          .filter(transformation -> transformation.getFlatten().isPresent())
+          .findFirst()
+          .flatMap(PropertyTransformation::getFlatten);
+    }
+
+    return Optional.empty();
   }
 }

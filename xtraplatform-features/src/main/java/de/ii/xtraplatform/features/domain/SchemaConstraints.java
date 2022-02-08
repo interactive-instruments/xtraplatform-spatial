@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.Objects;
@@ -37,6 +38,7 @@ public interface SchemaConstraints {
 
     Optional<Integer> getMaxOccurrence();
 
+    @JsonIgnore
     @Value.Derived
     @Value.Auxiliary
     default boolean isRequired() {

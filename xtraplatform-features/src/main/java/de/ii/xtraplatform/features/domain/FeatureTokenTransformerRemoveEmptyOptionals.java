@@ -24,7 +24,7 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
   }
 
   @Override
-  public void onObjectStart(ModifiableContext context) {
+  public void onObjectStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (context.inGeometry() ) {
       openIfNecessary(context);
       super.onObjectStart(context);
@@ -43,7 +43,7 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
   }
 
   @Override
-  public void onObjectEnd(ModifiableContext context) {
+  public void onObjectEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (context.inGeometry()) {
       super.onObjectEnd(context);
       return;
@@ -59,7 +59,7 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
   }
 
   @Override
-  public void onArrayStart(ModifiableContext context) {
+  public void onArrayStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (context.inGeometry()) {
       openIfNecessary(context);
       super.onArrayStart(context);
@@ -78,7 +78,7 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
   }
 
   @Override
-  public void onArrayEnd(ModifiableContext context) {
+  public void onArrayEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (context.inGeometry()) {
       super.onArrayEnd(context);
       return;
@@ -94,14 +94,14 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
   }
 
   @Override
-  public void onValue(ModifiableContext context) {
+  public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
 
     openIfNecessary(context);
 
     super.onValue(context);
   }
 
-  private void openIfNecessary(ModifiableContext context) {
+  private void openIfNecessary(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (!schemaStack.isEmpty()) {
       List<String> previousPath = context.path();
       FeatureSchema previousCustomSchema = context.customSchema();

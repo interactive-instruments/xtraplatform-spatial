@@ -19,6 +19,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
 import de.ii.xtraplatform.xml.domain.XMLPathTracker;
@@ -36,7 +37,7 @@ import javax.xml.stream.XMLStreamException;
 /**
  * @author zahnen
  */
-public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[]> {
+public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> {
 
     static final List<String> GEOMETRY_PARTS = new ImmutableList.Builder<String>()
         .add("exterior")
@@ -65,7 +66,7 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[]> {
     private int depth = 0;
     private int featureDepth = 0;
     private boolean inFeature = false;
-    private ModifiableContext context;
+    private ModifiableContext<FeatureSchema, SchemaMapping> context;
     private FeatureSchema currentGeometrySchema;
     private SimpleFeatureGeometry currentGeometryType;
     private boolean inCoordinates;

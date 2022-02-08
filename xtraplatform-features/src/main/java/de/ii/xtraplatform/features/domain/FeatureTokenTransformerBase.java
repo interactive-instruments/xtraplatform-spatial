@@ -9,20 +9,22 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
+import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
 import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomFuseable;
 import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomFuseableIn;
 import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomSource;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public abstract class FeatureTokenTransformerBase<T extends ModifiableContext> implements
+public abstract class FeatureTokenTransformerBase<T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>> implements
     TransformerCustomFuseable<Object, FeatureEventHandler>,
     TransformerCustomSource<Object, Object, FeatureTokenSource>,
-    FeatureEventHandler<T>,
-    FeatureTokenContext<T> {
+    FeatureEventHandler<T, U, V>,
+    FeatureTokenContext<V> {
 
-  private FeatureEventHandler<T> downstream;
-  private FeatureTokenReader<T> tokenReader;
+  private FeatureEventHandler<T, U, V> downstream;
+  private FeatureTokenReader<T, U, V> tokenReader;
   private Runnable afterInit;
 
   @Override
@@ -63,7 +65,7 @@ public abstract class FeatureTokenTransformerBase<T extends ModifiableContext> i
   @Override
   public final void init(Consumer<Object> push) {
     if (Objects.isNull(downstream)) {
-      this.downstream = (FeatureTokenEmitter2<T>) push::accept;
+      this.downstream = (FeatureTokenEmitter2<T, U, V>) push::accept;
       //TODO this.tokenReader = new FeatureTokenReader<>(this, createContext());
       init();
     }
@@ -80,7 +82,7 @@ public abstract class FeatureTokenTransformerBase<T extends ModifiableContext> i
   }
 
   @Override
-  public final FeatureEventHandler<T> fuseableSink() {
+  public final FeatureEventHandler<T, U, V> fuseableSink() {
     return this;
   }
 
@@ -89,7 +91,7 @@ public abstract class FeatureTokenTransformerBase<T extends ModifiableContext> i
     return new FeatureTokenSource(source);
   }
 
-  protected final FeatureEventHandler<T> getDownstream() {
+  protected final FeatureEventHandler<T, U, V> getDownstream() {
     return downstream;
   }
 
@@ -108,47 +110,47 @@ public abstract class FeatureTokenTransformerBase<T extends ModifiableContext> i
   }
 
   @Override
-  public void onStart(T context) {
+  public void onStart(V context) {
     getDownstream().onStart(context);
   }
 
   @Override
-  public void onEnd(T context) {
+  public void onEnd(V context) {
     getDownstream().onEnd(context);
   }
 
   @Override
-  public void onFeatureStart(T context) {
+  public void onFeatureStart(V context) {
     getDownstream().onFeatureStart(context);
   }
 
   @Override
-  public void onFeatureEnd(T context) {
+  public void onFeatureEnd(V context) {
     getDownstream().onFeatureEnd(context);
   }
 
   @Override
-  public void onObjectStart(T context) {
+  public void onObjectStart(V context) {
     getDownstream().onObjectStart(context);
   }
 
   @Override
-  public void onObjectEnd(T context) {
+  public void onObjectEnd(V context) {
     getDownstream().onObjectEnd(context);
   }
 
   @Override
-  public void onArrayStart(T context) {
+  public void onArrayStart(V context) {
     getDownstream().onArrayStart(context);
   }
 
   @Override
-  public void onArrayEnd(T context) {
+  public void onArrayEnd(V context) {
     getDownstream().onArrayEnd(context);
   }
 
   @Override
-  public void onValue(T context) {
+  public void onValue(V context) {
     getDownstream().onValue(context);
   }
 }

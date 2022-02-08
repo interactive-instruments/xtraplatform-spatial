@@ -11,10 +11,10 @@ ext {
     versionSuffix = (project.hasProperty('branch') && project.getProperty('branch') != 'master' ? ('-' + project.getProperty('branch')) : '') + (project.findProperty('snapshot') == 'true' ? '-SNAPSHOT' : '')
 }
 
-version = '5.0.1' + versionSuffix
+version = '5.1.0' + versionSuffix
 
 dependencies {
-    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '4.2.0'
+    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '4.2.0-SNAPSHOT'
 
     bundle subprojects
 }

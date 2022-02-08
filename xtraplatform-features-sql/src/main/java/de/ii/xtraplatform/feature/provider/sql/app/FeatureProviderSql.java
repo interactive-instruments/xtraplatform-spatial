@@ -7,8 +7,6 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import akka.NotUsed;
-import akka.stream.javadsl.Source;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -24,6 +22,7 @@ import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.FeatureProviderSqlData;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSchemaMappingSql;
+import de.ii.xtraplatform.feature.provider.sql.domain.SchemaMappingSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
@@ -41,12 +40,12 @@ import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
+import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
-import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
@@ -58,16 +57,17 @@ import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
-import de.ii.xtraplatform.features.domain.SchemaMappingBase;
+import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
+import de.ii.xtraplatform.streams.app.RunnerAkka;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
-import de.ii.xtraplatform.streams.domain.RunnableGraphWrapper;
+import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -90,7 +90,7 @@ public class FeatureProviderSql extends
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
 
-  static final String ENTITY_SUB_TYPE = "feature/sql";
+  public static final String ENTITY_SUB_TYPE = "feature/sql";
   public static final String PROVIDER_TYPE = "SQL";
 
   private final CrsTransformerFactory crsTransformerFactory;
@@ -342,7 +342,7 @@ public class FeatureProviderSql extends
   }
 
   @Override
-  protected FeatureTokenDecoder<SqlRow> getDecoder(FeatureQuery query) {
+  protected FeatureTokenDecoder<SqlRow, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> getDecoder(FeatureQuery query) {
     return new FeatureDecoderSql(ImmutableList.of(getTypeInfos().get(query.getType())), tableSchemas.get(query.getType()), getData().getTypes().get(query.getType()), query);
   }
 
@@ -451,7 +451,7 @@ public class FeatureProviderSql extends
       LOGGER.debug("Computing temporal extent for '{}.{}'", typeName, property);
 
       try {
-        RunnableGraphWrapper<Optional<Interval>> extentGraph = ((ExtentReaderSql) extentReader)
+        Stream<Optional<Interval>> extentGraph = extentReader
             .getTemporalExtent(typeInfo.get(), property);
 
         return computeTemporalExtent(extentGraph);
@@ -476,7 +476,7 @@ public class FeatureProviderSql extends
       LOGGER.debug("Computing temporal extent for '{}.{}' and '{}.{}'", typeName, startProperty, typeName, endProperty);
 
       try {
-        RunnableGraphWrapper<Optional<Interval>> extentGraph = ((ExtentReaderSql) extentReader)
+        Stream<Optional<Interval>> extentGraph = extentReader
             .getTemporalExtent(typeInfo.get(), startProperty, endProperty);
 
         return computeTemporalExtent(extentGraph);
@@ -489,7 +489,7 @@ public class FeatureProviderSql extends
   }
 
   private Optional<Interval> computeTemporalExtent(
-      RunnableGraphWrapper<Optional<Interval>> extentComputation) {
+      Stream<Optional<Interval>> extentComputation) {
     return getStreamRunner().run(extentComputation)
         .exceptionally(throwable -> {
           LOGGER.warn("Cannot compute temporal extent: {}",
@@ -541,7 +541,7 @@ public class FeatureProviderSql extends
 
     SchemaSql mutationSchemaSql = sqlSchema.get(0).accept(new MutationSchemaBuilderSql());
 
-    Source<SqlRow, NotUsed> deletionSource = featureMutationsSql
+    Reactive.Source<SqlRow> deletionSource = featureMutationsSql
         .getDeletionSource(mutationSchemaSql, id)
         /*.watchTermination(
             (Function2<NotUsed, CompletionStage<Done>, CompletionStage<MutationResult>>) (notUsed, completionStage) -> completionStage
@@ -559,7 +559,7 @@ public class FeatureProviderSql extends
         .build();*/
 
     //TODO: test
-    RunnableStream<MutationResult> deletionStream = Reactive.Source.akka(deletionSource)
+    RunnableStream<MutationResult> deletionStream = deletionSource
         .to(Sink.ignore())
         .withResult(ImmutableMutationResult.builder())
         .handleError(ImmutableMutationResult.Builder::error)
@@ -603,14 +603,19 @@ public class FeatureProviderSql extends
 
     SchemaSql mutationSchemaSql = sqlSchema.get(0).accept(new MutationSchemaBuilderSql());
 
-    SchemaMappingBase<SchemaSql> mapping4 = new ImmutableSchemaMappingSql.Builder()
+    SchemaMappingSql mapping4 = new ImmutableSchemaMappingSql.Builder()
         .targetSchema(mutationSchemaSql)
         .build();
 
-    //TODO: test
+    Transformer<FeatureSql, String> featureWriter = featureId.isPresent()
+        ? featureMutationsSql.getUpdaterFlow(mutationSchemaSql, getStreamRunner().getDispatcher(), featureId.get())
+        : featureMutationsSql.getCreatorFlow(mutationSchemaSql, getStreamRunner().getDispatcher());
+
     RunnableStream<MutationResult> mutationStream = featureTokenSource
-        //TODO .via(newFeatureObjectBuilder())
-        //TODO .via(new FeatureEncoderSql())
+        .via(new FeatureEncoderSql2(mapping4))
+        //TODO: support generic encoders, not only to byte[]
+        .via(Transformer.map(feature -> (FeatureSql) feature))
+        .via(featureWriter)
         .to(Sink.ignore())
         .withResult((Builder)ImmutableMutationResult.builder())
         .handleError((result, throwable) -> {
@@ -619,7 +624,7 @@ public class FeatureProviderSql extends
               : throwable;
           return result.error(error);
         })
-        //TODO .handleItem(MutationResult.Builder::addIds)
+        .handleItem((Builder::addIds))
         .handleEnd(Builder::build)
         .on(getStreamRunner());
 

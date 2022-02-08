@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 
-public interface FeatureTokenEncoder<T extends ModifiableContext<FeatureSchema, SchemaMapping>> extends
-    FeatureTokenEncoderGeneric<FeatureSchema, SchemaMapping, T> {
+public abstract class FeatureTokenEncoderDefault<T extends ModifiableContext<FeatureSchema, SchemaMapping>> extends
+    FeatureTokenEncoderBase<FeatureSchema, SchemaMapping, T> implements FeatureTokenEncoder<T> {
 
 }
