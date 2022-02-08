@@ -14,7 +14,7 @@ ext {
 version = '5.1.0' + versionSuffix
 
 dependencies {
-    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '4.2.0-streams2-SNAPSHOT'
+    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '4.2.0-SNAPSHOT'
 
     bundle subprojects
 }
