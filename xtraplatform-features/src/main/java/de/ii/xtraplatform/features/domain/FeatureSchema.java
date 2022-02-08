@@ -85,6 +85,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
 
     List<PropertyTransformation> getTransformations();
 
+    @Override
     Optional<SchemaConstraints> getConstraints();
 
     @Override
@@ -155,13 +156,6 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     @Value.Auxiliary
     default boolean isConstant() {
         return (isValue() && getConstantValue().isPresent()) || (isObject() && getProperties().stream().allMatch(FeatureSchema::isConstant));
-    }
-
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default boolean isRequired() {
-        return getConstraints().filter(SchemaConstraints::isRequired).isPresent();
     }
 
     @Value.Check

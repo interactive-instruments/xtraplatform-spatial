@@ -103,4 +103,8 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
   }
 
   T schemaWithGeometryType(T schema, SimpleFeatureGeometry geometryType);
+
+  default Optional<String> getPathSeparator() {
+    return Optional.empty();
+  }
 }

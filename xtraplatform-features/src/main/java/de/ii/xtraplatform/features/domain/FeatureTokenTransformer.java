@@ -8,26 +8,27 @@
 package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
+import de.ii.xtraplatform.features.domain.FeatureEventHandlerGeneric.GenericContext;
 import java.util.Objects;
 
 public abstract class FeatureTokenTransformer extends
-    FeatureTokenTransformerBase<ModifiableContext> {
+    FeatureTokenTransformerBase<FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> {
 
-  private ModifiableContext context;
+  private ModifiableContext<FeatureSchema, SchemaMapping> context;
 
   @Override
-  public Class<? extends ModifiableContext> getContextInterface() {
+  public Class<? extends ModifiableContext<FeatureSchema, SchemaMapping>> getContextInterface() {
     if (getDownstream() instanceof FeatureTokenContext<?>) {
-      return ((FeatureTokenContext<?>) getDownstream()).getContextInterface();
+      return ((FeatureTokenContext<ModifiableContext<FeatureSchema, SchemaMapping>>) getDownstream()).getContextInterface();
     }
 
-    return ModifiableContext.class;
+    return GenericContext.class;
   }
 
   @Override
-  public final ModifiableContext createContext() {
-    ModifiableContext context = getDownstream() instanceof FeatureTokenContext<?>
-        ? ((FeatureTokenContext<?>) getDownstream()).createContext()
+  public final ModifiableContext<FeatureSchema, SchemaMapping> createContext() {
+    ModifiableContext<FeatureSchema, SchemaMapping> context = getDownstream() instanceof FeatureTokenContext<?>
+        ? ((FeatureTokenContext<ModifiableContext<FeatureSchema, SchemaMapping>>) getDownstream()).createContext()
         : ModifiableGenericContext.create();
 
     if (Objects.isNull(this.context)) {
@@ -37,7 +38,7 @@ public abstract class FeatureTokenTransformer extends
     return context;
   }
 
-  protected final ModifiableContext getContext() {
+  protected final ModifiableContext<FeatureSchema, SchemaMapping> getContext() {
     if (Objects.isNull(context)) {
       return createContext();
     }

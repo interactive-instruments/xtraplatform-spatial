@@ -7,24 +7,18 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
-import akka.Done;
-import akka.NotUsed;
-import akka.japi.JavaPartialFunction;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlRowMeta.Builder;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
+import de.ii.xtraplatform.streams.domain.Reactive;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
-import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -47,22 +41,14 @@ public interface SqlConnector extends
 
   SqlClient getSqlClient();
 
-  @Deprecated
   @Override
-  default CompletionStage<Done> runQuery(final FeatureQuery query,
-      final Sink<SqlRow, CompletionStage<Done>> consumer,
-      final Map<String, String> additionalQueryParameters) {
-    return null;
-  }
-
-  @Override
-  default Source<SqlRow, NotUsed> getSourceStream(SqlQueries query) {
-    return getSourceStream(query, NO_OPTIONS).mapError(PSQL_CONTEXT);
+  default Reactive.Source<SqlRow> getSourceStream(SqlQueries query) {
+    return getSourceStream(query, NO_OPTIONS);
   }
 
   //TODO: reuse instances of SqlRow, SqlColumn? (object pool, e.g. https://github.com/chrisvest/stormpot, implement test with 100000 rows, measure)
   @Override
-  default Source<SqlRow, NotUsed> getSourceStream(SqlQueries query, SqlQueryOptions options) {
+  default Reactive.Source<SqlRow> getSourceStream(SqlQueries query, SqlQueryOptions options) {
 
     //TODO for chunking:
     // - List<SqlQueries>
@@ -75,7 +61,7 @@ public interface SqlConnector extends
 
     Optional<String> metaQuery = query.getMetaQuery();
 
-    Source<SqlRowMeta, NotUsed> metaResult1 = getMetaResult(metaQuery, options);
+    Reactive.Source<SqlRowMeta> metaResult1 = getMetaResult(metaQuery, options);
 
     //TODO: multiple main tables
     FeatureStoreInstanceContainer mainTable = query.getInstanceContainers()
@@ -84,10 +70,11 @@ public interface SqlConnector extends
         .getAllAttributesContainers();
     List<SchemaSql> tableSchemas = query.getTableSchemas();
 
-    Source<SqlRow, NotUsed> sqlRowSource = metaResult1.flatMapConcat(metaResult -> {
+    Reactive.Source<SqlRow> sqlRowSource = metaResult1
+        .via(Reactive.Transformer.flatMap(metaResult -> {
 
       int[] i = {0};
-      Source<SqlRow, NotUsed>[] sqlRows = query.getValueQueries()
+          Reactive.Source<SqlRow>[] sqlRows = query.getValueQueries()
           .apply(metaResult)
           .map(valueQuery -> getSqlClient()
               .getSourceStream(valueQuery, new ImmutableSqlQueryOptions.Builder()
@@ -95,19 +82,19 @@ public interface SqlConnector extends
                   .tableSchema(tableSchemas.get(i[0]))
                   .containerPriority(i[0]++)
                   .build()))
-          .toArray((IntFunction<Source<SqlRow, NotUsed>[]>) Source[]::new);
+          .toArray((IntFunction<Reactive.Source<SqlRow>[]>) Reactive.Source[]::new);
       return mergeAndSort(sqlRows)
-          .prepend(Source.single(metaResult));
-    });
+          .prepend(Reactive.Source.single(metaResult));
+    }));
 
     return sqlRowSource.mapError(PSQL_CONTEXT);
   }
 
   //TODO: simplify
-  default Source<SqlRowMeta, NotUsed> getMetaResult(Optional<String> metaQuery,
+  default Reactive.Source<SqlRowMeta> getMetaResult(Optional<String> metaQuery,
       SqlQueryOptions options) {
     if (!metaQuery.isPresent()) {
-      return Source.single(getMetaQueryResult(0L, 0L, 0L, 0L).build());
+      return Reactive.Source.single(getMetaQueryResult(0L, 0L, 0L, 0L).build());
     }
 
     List<Class<?>> columnTypes = Stream
@@ -117,7 +104,7 @@ public interface SqlConnector extends
 
     return getSqlClient().getSourceStream(metaQuery.get(),
         SqlQueryOptions.withColumnTypes(columnTypes))
-        .map(sqlRow -> getMetaQueryResult(sqlRow.getValues()));
+        .via(Reactive.Transformer.map(sqlRow -> getMetaQueryResult(sqlRow.getValues())));
   }
 
   default Builder getMetaQueryResult(Object minKey, Object maxKey, Long numberReturned,
@@ -143,7 +130,7 @@ public interface SqlConnector extends
     return builder.build();
   }
 
-  static <T extends Comparable<T>> Source<T, NotUsed> mergeAndSort(Source<T, NotUsed>... sources) {
+  static <T extends Comparable<T>> Reactive.Source<T> mergeAndSort(Reactive.Source<T>... sources) {
     if (sources.length == 1) {
       return sources[0];
     }
@@ -160,20 +147,18 @@ public interface SqlConnector extends
   // could it be that feuerwehr works not because it is 2 * 3 queries but 3 * 2 queries? so meta query does not count
   // then luftreinhalteplan would be 3 * 5, so maxThreads=15 -> test
 
-  static <T extends Comparable<T>> Source<T, NotUsed> mergeAndSort(Source<T, NotUsed> source1,
-      Source<T, NotUsed> source2,
-      Iterable<Source<T, NotUsed>> rest) {
+  static <T extends Comparable<T>> Reactive.Source<T> mergeAndSort(Reactive.Source<T> source1,
+      Reactive.Source<T> source2,
+      Iterable<Reactive.Source<T>> rest) {
     Comparator<T> comparator = Comparator.naturalOrder();
-    Source<T, NotUsed> mergedAndSorted = source1.mergeSorted(source2, comparator);
-    for (Source<T, NotUsed> source3 : rest) {
+    Reactive.Source<T> mergedAndSorted = source1.mergeSorted(source2, comparator);
+    for (Reactive.Source<T> source3 : rest) {
       mergedAndSorted = mergedAndSorted.mergeSorted(source3, comparator);
     }
     return mergedAndSorted;
   }
 
-  JavaPartialFunction<Throwable, Throwable> PSQL_CONTEXT = new JavaPartialFunction<>() {
-    @Override
-    public Throwable apply(Throwable throwable, boolean isCheck) {
+  Function<Throwable, Throwable> PSQL_CONTEXT = throwable ->  {
       if (throwable instanceof PSQLException) {
         PSQLException e = (PSQLException) throwable;
         String message = Optional.ofNullable(e.getServerErrorMessage())
@@ -211,6 +196,5 @@ public interface SqlConnector extends
         return new PSQLException("Unexpected SQL query error: " + message, PSQLState.UNKNOWN_STATE);
       }
       return throwable;
-    }
   };
 }

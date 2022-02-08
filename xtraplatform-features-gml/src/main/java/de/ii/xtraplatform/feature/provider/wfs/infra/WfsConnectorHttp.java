@@ -7,10 +7,6 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.infra;
 
-import akka.Done;
-import akka.NotUsed;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
@@ -23,7 +19,6 @@ import de.ii.xtraplatform.feature.provider.wfs.app.FeatureProviderWfs;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
-import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.wfs.GetCapabilities;
@@ -31,11 +26,11 @@ import de.ii.xtraplatform.ogc.api.wfs.WfsOperation;
 import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder;
 import de.ii.xtraplatform.streams.domain.Http;
 import de.ii.xtraplatform.streams.domain.HttpClient;
+import de.ii.xtraplatform.streams.domain.Reactive;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Invalidate;
 import org.apache.felix.ipojo.annotations.Property;
@@ -150,20 +145,14 @@ public class WfsConnectorHttp implements WfsConnector {
     }
 
 
-    @Override
-    public CompletionStage<Done> runQuery(FeatureQuery query, Sink<byte[], CompletionStage<Done>> consumer,
-                                          Map<String, String> additionalQueryParameters) {
-        return null;
+  @Override
+    public Reactive.Source<byte[]> getSourceStream(String query) {
+        return Reactive.Source.akka(httpClient.get(query).map(ByteString::toArray));
     }
 
     @Override
-    public Source<byte[], NotUsed> getSourceStream(String query) {
-        return httpClient.get(query).map(ByteString::toArray);
-    }
-
-    @Override
-    public Source<byte[], NotUsed> getSourceStream(String query, QueryOptions options) {
-        return httpClient.get(query).map(ByteString::toArray);
+    public Reactive.Source<byte[]> getSourceStream(String query, QueryOptions options) {
+        return Reactive.Source.akka(httpClient.get(query).map(ByteString::toArray));
     }
 
     @Override

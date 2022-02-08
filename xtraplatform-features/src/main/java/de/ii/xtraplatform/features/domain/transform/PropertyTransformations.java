@@ -96,7 +96,7 @@ public interface PropertyTransformations {
   }
 
 
-  default TransformerChain<ModifiableContext, FeaturePropertyContextTransformer> getContextTransformations(
+  default TransformerChain<ModifiableContext<FeatureSchema, SchemaMapping>, FeaturePropertyContextTransformer> getContextTransformations(
       SchemaMapping schemaMapping) {
     return new ContextTransformerChain(getTransformations(), schemaMapping);
   }
