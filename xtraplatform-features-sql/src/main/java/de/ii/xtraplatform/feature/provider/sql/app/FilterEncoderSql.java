@@ -248,9 +248,24 @@ public class FilterEncoderSql {
             if (function.isInterval()) {
                 String start = children.get(0);
                 String end = children.get(1);
-                String endColumn = end.substring(end.indexOf("%1$s") + 4, end.indexOf("%2$s"));
 
-                return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
+                // process special values for a half-bounded interval
+                if (start.equals("'..'"))
+                    start = sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin());
+                if (end.equals("'..'"))
+                    end = sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax());
+
+                Operand arg1 = function.getArguments().get(0);
+                Operand arg2 = function.getArguments().get(1);
+                if (arg1 instanceof Property && arg2 instanceof Property) {
+                    String endColumn = end.substring(end.indexOf("%1$s") + 4, end.indexOf("%2$s"));
+                    return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
+                } else if (arg1 instanceof Property && arg2 instanceof TemporalLiteral) {
+                    return String.format(start, "%1$s(", ", " + end + ")%2$s");
+                } else if (arg1 instanceof TemporalLiteral && arg2 instanceof Property) {
+                    return String.format(end, "%1$s("+ start + ", ", ")%2$s");
+                }
+                throw new IllegalStateException("unsupported interval function: " + function);
             } else if (function.isPosition()) {
                 return "%1$s" + ROW_NUMBER + "%2$s";
             } else if (function.isUpper()) {
@@ -465,8 +480,8 @@ public class FilterEncoderSql {
         private String getStartAsString(TemporalLiteral literal) {
             Instant instant = getStart(literal);
             if (instant==Instant.MIN)
-                return "TIMESTAMP '-infinity'";
-            return String.format("TIMESTAMP '%s'", instant);
+                return sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin());
+            return sqlDialect.applyToDatetimeLiteral(instant.toString());
         }
 
         private Instant getEnd(TemporalLiteral literal) {
@@ -482,12 +497,11 @@ public class FilterEncoderSql {
             }
         }
 
-        // TODO: currently specific to postgres, add support for gpkg, use sqlDialect
         private String getEndAsString(TemporalLiteral literal) {
             Instant instant = getEnd(literal);
             if (instant==Instant.MAX)
-                return "TIMESTAMP 'infinity'";
-            return String.format("TIMESTAMP '%s'", instant);
+                return sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax());
+            return sqlDialect.applyToDatetimeLiteral(instant.toString());
         }
 
         private Instant getEndExclusive(TemporalLiteral literal) {
@@ -503,8 +517,8 @@ public class FilterEncoderSql {
         private String getEndExclusiveAsString(TemporalLiteral literal) {
             Instant instant = getEndExclusive(literal);
             if (instant==Instant.MAX)
-                return "TIMESTAMP 'infinity'";
-            return String.format("TIMESTAMP '%s'", instant);
+                return sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax());
+            return sqlDialect.applyToDatetimeLiteral(instant.toString());
         }
 
         @Override
@@ -567,15 +581,25 @@ public class FilterEncoderSql {
         public String visit(TemporalLiteral temporalLiteral, List<String> children) {
             if (temporalLiteral.getType() == Instant.class) {
                 Instant instant = ((Instant) temporalLiteral.getValue());
+                String literal;
                 if (instant==Instant.MIN)
-                    return "TIMESTAMP '-infinity'";
+                    literal = sqlDialect.applyToInstantMin();
                 else if (instant==Instant.MAX)
-                    return "TIMESTAMP 'infinity'";
-                return String.format("TIMESTAMP '%s'", ((Instant) temporalLiteral.getValue()).toString());
+                    literal = sqlDialect.applyToInstantMax();
+                else
+                    literal = ((Instant) temporalLiteral.getValue()).toString();
+                return sqlDialect.applyToDatetimeLiteral(literal);
             } else if (temporalLiteral.getType() == Interval.class) {
+                // this can only occur in the T_INTERSECTS() operator
                 return getInterval(temporalLiteral);
             } else if (temporalLiteral.getType() == LocalDate.class) {
-                return String.format("'%s'", ((LocalDate) temporalLiteral.getValue()).toString());
+                return sqlDialect.applyToDateLiteral(((LocalDate) temporalLiteral.getValue()).toString());
+            } else if (temporalLiteral.getType() == TemporalLiteral.OPEN.class) {
+                // if we are here, we are an argument in an interval() function, but
+                // here we do not know, if we are Instant.MIN (first argument) or
+                // Instant.MAX (second argument); so, we use a placeholder that we
+                // then process in the interval() function
+                return "'..'";
             }
             throw new IllegalStateException("unsupported temporal SQL literal: " + temporalLiteral);
         }

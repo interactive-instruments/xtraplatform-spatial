@@ -27,6 +27,14 @@ public interface SqlDialect {
 
   String applyToDatetime(String column);
 
+  String applyToDateLiteral(String date);
+
+  String applyToDatetimeLiteral(String datetime);
+
+  String applyToInstantMin();
+
+  String applyToInstantMax();
+
   Optional<BoundingBox> parseExtent(String extent, EpsgCrs crs);
 
   Optional<Interval> parseTemporalExtent(String start, String end);

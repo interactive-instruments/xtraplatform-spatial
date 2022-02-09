@@ -78,6 +78,26 @@ public class SqlDialectPostGis implements SqlDialect {
   }
 
   @Override
+  public String applyToDateLiteral(String date) {
+    return String.format("DATE '%s'", date);
+  }
+
+  @Override
+  public String applyToDatetimeLiteral(String datetime) {
+    return String.format("TIMESTAMP '%s'", datetime);
+  }
+
+  @Override
+  public String applyToInstantMin() {
+    return "-infinity";
+  };
+
+  @Override
+  public String applyToInstantMax() {
+    return "infinity";
+  };
+
+  @Override
   public String escapeString(String value) {
     return value.replaceAll("'", "''");
   }
