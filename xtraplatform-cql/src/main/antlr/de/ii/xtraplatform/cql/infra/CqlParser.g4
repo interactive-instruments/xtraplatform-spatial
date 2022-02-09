@@ -42,7 +42,7 @@ comparisonPredicate : binaryComparisonPredicate
 
 binaryComparisonPredicate : scalarExpression ComparisonOperator scalarExpression;
 
-propertyIsLikePredicate :  characterExpression (NOT)? LIKE scalarExpression;
+propertyIsLikePredicate :  characterExpression (NOT)? LIKE patternExpression;
 
 characterExpression : characterClause
                     | propertyName
@@ -54,7 +54,7 @@ characterClause : characterLiteral
                 | LOWER LEFTPAREN characterExpression RIGHTPAREN
                 | UPPER LEFTPAREN characterExpression RIGHTPAREN;
 
-propertyIsBetweenPredicate : scalarExpression (NOT)? BETWEEN numericExpression AND numericExpression;
+propertyIsBetweenPredicate : numericExpression (NOT)? BETWEEN numericExpression AND numericExpression;
 
 numericExpression : numericLiteral
                   | propertyName
@@ -91,8 +91,7 @@ booleanLiteral : BooleanLiteral;
 #       We want to be able to say stuff like "<prop> LIKE 'Toronto%'" where
 #       the '%' character means "match zero or more characters".
 */
-regularExpression : characterLiteral;
-
+patternExpression : characterClause;
 
 /*
 #=============================================================================#

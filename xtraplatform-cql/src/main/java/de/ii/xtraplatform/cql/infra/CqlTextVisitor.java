@@ -170,7 +170,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
             Scalar scalar1 = (Scalar) ctx.characterExpression()
                                          .accept(this);
-            Scalar scalar2 = (Scalar) ctx.scalarExpression()
+            Scalar scalar2 = (Scalar) ctx.patternExpression()
                                          .accept(this);
 
             Like like = new ImmutableLike.Builder()
@@ -191,12 +191,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         if (Objects.nonNull(ctx.BETWEEN())) {
 
-            Scalar scalar = (Scalar) ctx.scalarExpression()
+            Scalar scalar = (Scalar) ctx.numericExpression(0)
                                          .accept(this);
 
-            Scalar numeric1 = (Scalar) ctx.numericExpression(0)
+            Scalar numeric1 = (Scalar) ctx.numericExpression(1)
                                          .accept(this);
-            Scalar numeric2 = (Scalar) ctx.numericExpression(1)
+            Scalar numeric2 = (Scalar) ctx.numericExpression(2)
                                          .accept(this);
 
             Between between = new ImmutableBetween.Builder()
