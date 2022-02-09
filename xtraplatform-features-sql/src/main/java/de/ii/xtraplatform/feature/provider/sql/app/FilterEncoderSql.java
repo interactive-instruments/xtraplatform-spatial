@@ -538,7 +538,7 @@ public class FilterEncoderSql {
                     // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
                     children = ImmutableList.of(String.format("(%s, %s)", getStartAsString((TemporalLiteral) op1), getEndExclusiveAsString((TemporalLiteral) op1)), children.get(1));
                 } else if (op1 instanceof Function) {
-                    // nothing to do
+                    // nothing to do, this was handled in the interval() function
                 }
 
                 if (op2 instanceof Property) {
@@ -548,7 +548,7 @@ public class FilterEncoderSql {
                     // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
                     children = ImmutableList.of(children.get(0), getInterval((TemporalLiteral) op2));
                 } else if (op2 instanceof Function) {
-                    // nothing to do
+                    // nothing to do, this was handled in the interval() function
                 }
 
                 List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);

@@ -109,6 +109,8 @@ public interface FeatureProvider2 extends PersistentEntity {
         return false;
     }
 
+    default boolean supportsTIntersects() { return false; }
+
     default boolean supportsCaseAccentInsensitiveComparisons() {
         return this instanceof CaseAccentInsensitiveComparisons;
     }

@@ -28,9 +28,11 @@ import java.util.stream.Collectors;
 public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements CqlParserVisitor<CqlNode> {
 
     private final EpsgCrs defaultCrs;
+    private final boolean useTIntersects;
 
-    public CqlTextVisitor(EpsgCrs defaultCrs) {
+    public CqlTextVisitor(EpsgCrs defaultCrs, boolean useTIntersects) {
         this.defaultCrs = defaultCrs;
+        this.useTIntersects = useTIntersects;
     }
 
     @Override
@@ -297,15 +299,31 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                             CqlPredicate.of(new ImmutableGt.Builder().addOperands(getEnd(temporal1), getEnd(temporal2)).build()))
                         .build();
                 case T_DISJOINT:
-                    return new ImmutableNot.Builder()
-                        .predicate(
-                            CqlPredicate.of(new ImmutableTIntersects.Builder()
-                                            .operands(ImmutableList.of(temporal1,temporal2))
-                                            .build()))
+                    if (useTIntersects)
+                        return new ImmutableNot.Builder()
+                            .predicate(
+                                CqlPredicate.of(new ImmutableTIntersects.Builder()
+                                                    .operands(ImmutableList.of(temporal1,temporal2))
+                                                    .build()))
+                            .build();
+                    // end1 < start2 OR start1 > end2
+                    return new ImmutableOr.Builder()
+                        .addPredicates(
+                            CqlPredicate.of(new ImmutableLt.Builder().addOperands(getEnd(temporal1), getStart(temporal2)).build()),
+                            CqlPredicate.of(new ImmutableGt.Builder().addOperands(getStart(temporal1), getEnd(temporal2)).build()))
                         .build();
                 case T_INTERSECTS:
-                    return new ImmutableTIntersects.Builder()
-                        .operands(ImmutableList.of(temporal1,temporal2))
+                    if (useTIntersects)
+                        return new ImmutableTIntersects.Builder()
+                            .operands(ImmutableList.of(temporal1,temporal2))
+                            .build();
+                    // NOT (end1 < start2 OR start1 > end2)
+                    return new ImmutableNot.Builder()
+                        .predicate(CqlPredicate.of(new ImmutableOr.Builder()
+                                                       .addPredicates(
+                                                           CqlPredicate.of(new ImmutableLt.Builder().addOperands(getEnd(temporal1), getStart(temporal2)).build()),
+                                                           CqlPredicate.of(new ImmutableGt.Builder().addOperands(getStart(temporal1), getEnd(temporal2)).build()))
+                                                       .build()))
                         .build();
                 case T_FINISHES:
                     // start1 > start2 AND end1 = end2

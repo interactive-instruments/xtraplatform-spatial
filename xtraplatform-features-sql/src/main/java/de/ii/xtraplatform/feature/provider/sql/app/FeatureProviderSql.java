@@ -616,6 +616,11 @@ public class FeatureProviderSql extends
   }
 
   @Override
+  public boolean supportsTIntersects() {
+    return getData().getConnectionInfo().getDialect() == Dialect.PGIS;
+  }
+
+  @Override
   public Optional<String> getAccentiCollation() {
     return Optional.empty();
   }

@@ -18,7 +18,7 @@ public interface Cql {
 
     CqlFilter read(String cql, Format format) throws CqlParseException;
 
-    CqlFilter read(String cql, Format format, EpsgCrs crs) throws CqlParseException;
+    CqlFilter read(String cql, Format format, EpsgCrs crs, boolean useTIntersects) throws CqlParseException;
 
     String write(CqlFilter cql, Format format);
 

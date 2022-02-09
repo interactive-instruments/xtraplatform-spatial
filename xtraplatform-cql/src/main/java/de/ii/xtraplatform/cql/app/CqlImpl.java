@@ -58,15 +58,15 @@ public class CqlImpl implements Cql {
 
     @Override
     public CqlFilter read(String cql, Format format) throws CqlParseException {
-        return read(cql, format, OgcCrs.CRS84);
+        return read(cql, format, OgcCrs.CRS84, false);
     }
 
     @Override
-    public CqlFilter read(String cql, Format format, EpsgCrs crs) throws CqlParseException {
+    public CqlFilter read(String cql, Format format, EpsgCrs crs, boolean useTIntersects) throws CqlParseException {
         switch (format) {
 
             case TEXT:
-                return cqlTextParser.parse(cql, crs);
+                return cqlTextParser.parse(cql, crs, useTIntersects);
             case JSON:
                 cqlJsonMapper.setInjectableValues(new InjectableValues.Std().addValue("filterCrs", Optional.ofNullable(crs)));
                 try {
