@@ -7,10 +7,6 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import akka.NotUsed;
-import akka.japi.Pair;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
@@ -20,6 +16,8 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaVisitor;
+import de.ii.xtraplatform.features.domain.Tuple;
+import de.ii.xtraplatform.streams.domain.Reactive;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +45,7 @@ public class FeatureMutationsSql {
         this.generator = generator;
     }
 
-    public Flow<FeatureSql, String, NotUsed> getCreatorFlow(SchemaSql schema, ExecutionContext executionContext) {
+    public Reactive.Transformer<FeatureSql, String> getCreatorFlow(SchemaSql schema, ExecutionContext executionContext) {
 
         RowCursor rowCursor = new RowCursor(schema.getPath());
 
@@ -55,15 +53,15 @@ public class FeatureMutationsSql {
     }
 
 
-    public Flow<FeatureSql, String, NotUsed> getUpdaterFlow(SchemaSql schema, ExecutionContext executionContext, String id) {
+    public Reactive.Transformer<FeatureSql, String> getUpdaterFlow(SchemaSql schema, ExecutionContext executionContext, String id) {
 
         RowCursor rowCursor = new RowCursor(schema.getPath());
 
         return sqlClient.get().getMutationFlow(feature -> createInstanceInserts(schema, feature.getRowCounts(), rowCursor, Optional.of(id)), executionContext, Optional.of(id));
     }
 
-    public Source<SqlRow, NotUsed> getDeletionSource(SchemaSql schema, String id) {
-        Pair<String, Consumer<String>> delete = createInstanceDelete(schema, id).apply(null);
+    public Reactive.Source<SqlRow> getDeletionSource(SchemaSql schema, String id) {
+        Tuple<String, Consumer<String>> delete = createInstanceDelete(schema, id).apply(null);
 
         return sqlClient.get().getSourceStream(delete.first(), new ImmutableSqlQueryOptions.Builder().build());
     }
@@ -101,7 +99,7 @@ public class FeatureMutationsSql {
         return null;
     }
 
-    class StatementsVisitor implements SchemaVisitor<SchemaSql, List<Function<FeatureSql, Pair<String, Consumer<String>>>>> {
+    class StatementsVisitor implements SchemaVisitor<SchemaSql, List<Function<FeatureSql, Tuple<String, Consumer<String>>>>> {
         private final Map<List<String>, List<Integer>> rowNesting;
         private final RowCursor rowCursor;
         private final Optional<String> id;
@@ -113,14 +111,14 @@ public class FeatureMutationsSql {
         }
 
         @Override
-        public List<Function<FeatureSql, Pair<String, Consumer<String>>>> visit(SchemaSql schema, List<List<Function<FeatureSql, Pair<String, Consumer<String>>>>> visitedProperties) {
+        public List<Function<FeatureSql, Tuple<String, Consumer<String>>>> visit(SchemaSql schema, List<List<Function<FeatureSql, Tuple<String, Consumer<String>>>>> visitedProperties) {
 
             if (!schema.isObject()) {
                 return ImmutableList.of();
             }
 
-            List<Function<FeatureSql, Pair<String, Consumer<String>>>> before = new ArrayList<>();
-            List<Function<FeatureSql, Pair<String, Consumer<String>>>> after = new ArrayList<>();
+            List<Function<FeatureSql, Tuple<String, Consumer<String>>>> before = new ArrayList<>();
+            List<Function<FeatureSql, Tuple<String, Consumer<String>>>> after = new ArrayList<>();
 
             after.addAll(createObjectInserts(schema, rowNesting, rowCursor, id));
 
@@ -168,12 +166,12 @@ public class FeatureMutationsSql {
     }
 
 
-    List<Function<FeatureSql, Pair<String, Consumer<String>>>> createInstanceInserts(
+    List<Function<FeatureSql, Tuple<String, Consumer<String>>>> createInstanceInserts(
             SchemaSql schema, Map<List<String>, List<Integer>> rowNesting,
             RowCursor rowCursor, Optional<String> id) {
         boolean withId = id.isPresent();
 
-        Stream<Function<FeatureSql, Pair<String, Consumer<String>>>> instance = withId
+        Stream<Function<FeatureSql, Tuple<String, Consumer<String>>>> instance = withId
                 ? Stream.concat(
                 Stream.of(createInstanceDelete(schema, id.get())),
                 createObjectInserts(schema, rowNesting, rowCursor, id).stream()
@@ -191,17 +189,17 @@ public class FeatureMutationsSql {
     }
 
     //TODO: to InsertGenerator
-    Function<FeatureSql, Pair<String, Consumer<String>>> createInstanceDelete(
+    Function<FeatureSql, Tuple<String, Consumer<String>>> createInstanceDelete(
             SchemaSql schema, String id) {
 
         String table = schema.getName();
         String idColumn = schema.getIdProperty().map(SchemaBase::getName).orElseThrow(() -> new IllegalStateException("No property with role ID found for '" + schema.getSourcePath().orElse(schema.getName()) + "'."));
 
-        return featureSql -> new Pair<>(String.format("DELETE FROM %s WHERE %s=%s RETURNING %2$s", table, idColumn, id), ignore -> {
+        return featureSql -> Tuple.of(String.format("DELETE FROM %s WHERE %s=%s RETURNING %2$s", table, idColumn, id), ignore -> {
         });
     }
 
-    List<Function<FeatureSql, Pair<String, Consumer<String>>>> createObjectInserts(
+    List<Function<FeatureSql, Tuple<String, Consumer<String>>>> createObjectInserts(
             SchemaSql schema, Map<List<String>, List<Integer>> rowNesting,
             RowCursor rowCursor, Optional<String> id) {
 
@@ -246,10 +244,10 @@ public class FeatureMutationsSql {
                         .collect(Collectors.toList());
     }
 
-    List<Function<FeatureSql, Pair<String, Consumer<String>>>> createAttributesInserts(
+    List<Function<FeatureSql, Tuple<String, Consumer<String>>>> createAttributesInserts(
             SchemaSql schema, List<Integer> parentRows, Optional<String> id) {
 
-        ImmutableList.Builder<Function<FeatureSql, Pair<String, Consumer<String>>>> queries = ImmutableList.builder();
+        ImmutableList.Builder<Function<FeatureSql, Tuple<String, Consumer<String>>>> queries = ImmutableList.builder();
 
 
         queries.add(generator.createInsert(schema, parentRows, id));

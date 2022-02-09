@@ -18,6 +18,7 @@ import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import java.time.ZoneId;
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.immutables.value.Value;
 
@@ -28,7 +29,7 @@ import java.util.Optional;
  * @author zahnen
  */
 @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
-public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
+public interface FeatureProviderDataV2 extends EntityData, AutoEntity, ExtendableConfiguration {
 
     @Override
     @Value.Derived
@@ -60,6 +61,9 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
     default MODE getTypeValidation() {
         return MODE.NONE;
     }
+
+    @Override
+    List<ExtensionConfiguration> getExtensions();
 
     //behaves exactly like Map<String, FeatureSchema>, but supports mergeable builder deserialization
     // (immutables attributeBuilder does not work with maps yet)
@@ -93,6 +97,13 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity {
         public abstract T id(String id);
         public abstract T providerType(String providerType);
         public abstract T featureProviderType(String featureProviderType);
+
+        // jackson should append to instead of replacing extensions
+        @JsonIgnore
+        public abstract T extensions(Iterable<? extends ExtensionConfiguration> elements);
+
+        @JsonProperty("extensions")
+        public abstract T addAllExtensions(Iterable<? extends ExtensionConfiguration> elements);
 
     }
 

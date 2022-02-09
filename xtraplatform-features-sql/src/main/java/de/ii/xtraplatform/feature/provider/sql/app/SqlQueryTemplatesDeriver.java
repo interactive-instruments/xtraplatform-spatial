@@ -23,6 +23,7 @@ import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -77,13 +78,14 @@ public class SqlQueryTemplatesDeriver implements
   }
 
   MetaQueryTemplate createMetaQueryTemplate(SchemaSql schema) {
-    return (limit, offset, additionalSortKeys, cqlFilter) -> {
+    return (limit, offset, additionalSortKeys, cqlFilter, virtualTables) -> {
       String limitSql = limit > 0 ? String.format(" LIMIT %d", limit) : "";
       String offsetSql = offset > 0 ? String.format(" OFFSET %d", offset) : "";
       Optional<String> filter = getFilter(schema, cqlFilter);
       String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
 
-      String table = String.format("%s A", schema.getName());
+      String tableName = virtualTables.containsKey(schema.getName()) ? virtualTables.get(schema.getName()) : schema.getName();
+      String table = String.format("%s A", tableName);
       String columns = "";
       for (int i = 0; i < additionalSortKeys.size(); i++) {
         SortKey sortKey = additionalSortKeys.get(i);
@@ -101,7 +103,7 @@ public class SqlQueryTemplatesDeriver implements
       if (computeNumberMatched) {
         String numberMatched = String.format(
             "SELECT count(*) AS numberMatched FROM (SELECT A.%2$s AS %4$s FROM %1$s A%3$s ORDER BY 1) AS IDS",
-            schema.getName(), schema.getSortKey().get(), where, SKEY);
+            tableName, schema.getSortKey().get(), where, SKEY);
         return String
             .format("WITH\n%3$s%3$sNR AS (%s),\n%3$s%3$sNM AS (%s) \n%3$sSELECT * FROM NR, NM",
                 numberReturned, numberMatched, TAB);
@@ -114,7 +116,7 @@ public class SqlQueryTemplatesDeriver implements
   }
 
   ValueQueryTemplate createValueQueryTemplate(SchemaSql schema, List<SchemaSql> parents) {
-    return (limit, offset, additionalSortKeys, filter, minMaxKeys) -> {
+    return (limit, offset, additionalSortKeys, filter, minMaxKeys, virtualTables) -> {
       boolean isIdFilter = filter.flatMap(CqlFilter::getInOperator).isPresent();
       List<String> aliases = aliasGenerator.getAliases(schema);
 
@@ -129,20 +131,23 @@ public class SqlQueryTemplatesDeriver implements
           : Optional.of((limit > 0 ? String.format(" LIMIT %d", limit) : "") + (offset > 0 ? String
               .format(" OFFSET %d", offset) : ""));
 
-      return getTableQuery(schema, whereClause, pagingClause, additionalSortKeys, parents);
+      return getTableQuery(schema, whereClause, pagingClause, additionalSortKeys, parents, virtualTables);
     };
   }
 
   private String getTableQuery(SchemaSql schema,
       Optional<String> whereClause,
       Optional<String> pagingClause, List<SortKey> additionalSortKeys,
-      List<SchemaSql> parents) {
+      List<SchemaSql> parents, Map<String, String> virtualTables) {
     List<String> aliases = aliasGenerator.getAliases(parents, schema);
     String attributeContainerAlias = aliases.get(aliases.size() - 1);
 
     String mainTableName = parents.isEmpty()
         ? schema.getName()
         : parents.get(0).getName();
+    if (virtualTables.containsKey(mainTableName)) {
+      mainTableName = virtualTables.get(mainTableName);
+    }
     String mainTableSortKey = parents.isEmpty()
         ? schema.getSortKey().get()
         : parents.get(0).getSortKey().get();

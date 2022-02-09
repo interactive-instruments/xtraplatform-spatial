@@ -23,8 +23,8 @@ public class NestingTracker {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(NestingTracker.class);
 
-  private final FeatureEventHandler<ModifiableContext> downstream;
-  private final ModifiableContext context;
+  private final FeatureEventHandler<?,?,ModifiableContext<?,?>> downstream;
+  private final ModifiableContext<?,?> context;
   private final List<String> mainPath;
   private final boolean flattenObjects;
   private final boolean flattenArrays;
@@ -33,10 +33,10 @@ public class NestingTracker {
   private final List<String> flattened;
   private final boolean skippable;
 
-  public NestingTracker(FeatureEventHandler<ModifiableContext> downstream,
-      ModifiableContext context, List<String> mainPath,
+  public <T extends ModifiableContext<?,?>> NestingTracker(FeatureEventHandler<?,?,T> downstream,
+      T context, List<String> mainPath,
       boolean flattenObjects, boolean flattenArrays, boolean skippable) {
-    this.downstream = downstream;
+    this.downstream = (FeatureEventHandler<?, ?, ModifiableContext<?, ?>>) downstream;
     this.context = context;
     this.mainPath = mainPath;
     this.flattenObjects = flattenObjects;

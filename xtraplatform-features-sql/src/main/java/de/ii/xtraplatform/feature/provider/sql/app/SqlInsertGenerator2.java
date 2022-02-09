@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import akka.japi.Pair;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -17,11 +16,9 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathDefaults;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
-import java.util.LinkedHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,6 +28,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author zahnen
@@ -54,7 +53,7 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
         return sqlOptions;
     }
 
-    public Function<FeatureSql, Pair<String, Consumer<String>>> createInsert(
+    public Function<FeatureSql, Tuple<String, Consumer<String>>> createInsert(
             SchemaSql schema,
             List<Integer> parentRows, Optional<String> id) {
 
@@ -144,7 +143,7 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
             Optional<ObjectSql> currentRow = schema.isFeature() ? Optional.of(feature) : feature.getNestedObject(schema.getFullPath(), parentRows);
 
             if (!currentRow.isPresent()) {
-                return new Pair<>(null, null);
+                return Tuple.of(null, null);
             }
 
             //TODO: pass id to getValues if given
@@ -162,11 +161,11 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
                                                        .orElse(returned -> {
                                                        });
 
-            return new Pair<>(query, idConsumer);
+            return Tuple.of(query, idConsumer);
         };
     }
 
-    public Function<FeatureSql, Pair<String, Consumer<String>>> createJunctionInsert(
+    public Function<FeatureSql, Tuple<String, Consumer<String>>> createJunctionInsert(
             SchemaSql schema, List<Integer> parentRows) {
 
         if (schema.getRelation()
@@ -192,18 +191,18 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
             Optional<ObjectSql> currentRow = feature.getNestedObject(schema.getFullPath(), parentRows);
 
             if (!currentRow.isPresent()) {
-                return new Pair<>(null, null);
+                return Tuple.of(null, null);
             }
 
             Map<String, String> ids = currentRow.get().getIds();
 
             String columnValues = String.format("%s,%s", ids.get(sourceIdColumn), ids.get(targetIdColumn));
 
-            return new Pair<>(String.format("INSERT INTO %s (%s) VALUES (%s) RETURNING null;", table, columnNames, columnValues), id -> {});
+            return Tuple.of(String.format("INSERT INTO %s (%s) VALUES (%s) RETURNING null;", table, columnNames, columnValues), id -> {});
         };
     }
 
-    public Function<FeatureSql, Pair<String, Consumer<String>>> createForeignKeyUpdate(
+    public Function<FeatureSql, Tuple<String, Consumer<String>>> createForeignKeyUpdate(
             SchemaSql schema, List<Integer> parentRows) {
 
         if (schema.getRelation()
@@ -228,12 +227,12 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
             Optional<ObjectSql> currentRow = feature.getNestedObject(schema.getFullPath(), parentRows);
 
             if (!currentRow.isPresent()) {
-                return new Pair<>(null, null);
+                return Tuple.of(null, null);
             }
 
             Map<String, String> ids = currentRow.get().getIds();
 
-            return new Pair<>(String.format("UPDATE %s SET %s=%s WHERE id=%s RETURNING null;", table, column, ids.get(columnKey), ids.get(refKey)), id -> {});
+            return Tuple.of(String.format("UPDATE %s SET %s=%s WHERE id=%s RETURNING null;", table, column, ids.get(columnKey), ids.get(refKey)), id -> {});
         };
     }
 

@@ -16,42 +16,42 @@ public class FeatureTokenTransformerLogger extends FeatureTokenTransformer {
       .getLogger(FeatureTokenTransformerLogger.class);
 
   @Override
-  public void onFeatureStart(ModifiableContext context) {
+  public void onFeatureStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     LOGGER.debug("START FEATURE");
 
     super.onFeatureStart(context);
   }
 
   @Override
-  public void onObjectStart(ModifiableContext context) {
+  public void onObjectStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     LOGGER.debug("START OBJECT {} {}", context.pathAsString(), context.indexes());
 
     super.onObjectStart(context);
   }
 
   @Override
-  public void onObjectEnd(ModifiableContext context) {
+  public void onObjectEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     LOGGER.debug("END OBJECT {} {}", context.pathAsString(), context.indexes());
 
     super.onObjectEnd(context);
   }
 
   @Override
-  public void onArrayStart(ModifiableContext context) {
+  public void onArrayStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     LOGGER.debug("START ARRAY {}", context.pathAsString());
 
     super.onArrayStart(context);
   }
 
   @Override
-  public void onArrayEnd(ModifiableContext context) {
+  public void onArrayEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     LOGGER.debug("END ARRAY {}", context.pathAsString());
 
     super.onArrayEnd(context);
   }
 
   @Override
-  public void onValue(ModifiableContext context) {
+  public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
 
     super.onValue(context);
   }

@@ -7,10 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.app;
 
-import akka.NotUsed;
 import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import akka.util.ByteString;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
@@ -28,6 +25,7 @@ import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureConsumer;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
+import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
 import de.ii.xtraplatform.features.domain.FeatureMetadata;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
@@ -38,21 +36,20 @@ import de.ii.xtraplatform.features.domain.FeatureQueriesPassThrough;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureSchemaToTypeVisitor;
 import de.ii.xtraplatform.features.domain.FeatureSourceStream;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureStream2.ResultOld;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
-import de.ii.xtraplatform.features.domain.FeatureType;
 import de.ii.xtraplatform.features.domain.Metadata;
+import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
+import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
-import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map;
 import java.util.Objects;
@@ -88,8 +85,9 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, 
     public FeatureProviderWfs(@Requires CrsTransformerFactory crsTransformerFactory,
                               @Requires ConnectorFactory connectorFactory,
                               @Requires Reactive reactive,
-                              @Requires EntityRegistry entityRegistry) {
-        super(connectorFactory, reactive, crsTransformerFactory);
+                              @Requires EntityRegistry entityRegistry,
+                              @Requires ProviderExtensionRegistry extensionRegistry) {
+        super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry);
 
         this.crsTransformerFactory = crsTransformerFactory;
         this.entityRegistry = entityRegistry;
@@ -148,7 +146,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, 
     }
 
     @Override
-    protected FeatureTokenDecoder<byte[]> getDecoder(FeatureQuery query) {
+    protected FeatureTokenDecoder<byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> getDecoder(FeatureQuery query) {
         Map<String, String> namespaces = getData().getConnectionInfo()
             .getNamespaces();
         XMLNamespaceNormalizer namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
@@ -260,14 +258,16 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, 
                 FeatureProviderConnector.QueryOptions options = getQueryTransformer()
                     .getOptions(query);
 
-                Source<byte[], NotUsed> sourceStream = getConnector()
+                Reactive.Source<byte[]> sourceStream = getConnector()
                     .getSourceStream(transformedQuery, options);
 
                 Sink<byte[], CompletionStage<ResultOld>> sink = featureNormalizer
                     .normalizeAndConsume(consumer, query);
 
-                //TODO: use Reactive
-                return getStreamRunner().run(sourceStream, sink);
+                return sourceStream
+                    .to(Reactive.Sink.akka(sink))
+                    .on(getStreamRunner())
+                    .run();
             }
 
             @Override

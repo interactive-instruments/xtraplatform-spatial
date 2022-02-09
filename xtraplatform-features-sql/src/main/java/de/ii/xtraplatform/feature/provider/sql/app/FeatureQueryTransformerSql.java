@@ -10,9 +10,9 @@ package de.ii.xtraplatform.feature.provider.sql.app;
 import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlQueryOptions;
-import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRowMeta;
@@ -69,13 +69,14 @@ class FeatureQueryTransformerSql implements FeatureQueryTransformer<SqlQueries, 
         : Optional.of(queries
             .getMetaQueryTemplate()
             .generateMetaQuery(featureQuery.getLimit(), featureQuery.getOffset(),
-                sortKeys, featureQuery.getFilter()));
+                sortKeys, featureQuery.getFilter(), additionalQueryParameters));
 
     Function<SqlRowMeta, Stream<String>> valueQueries = metaResult -> queries
         .getValueQueryTemplates()
         .stream()
     .map(valueQueryTemplate -> valueQueryTemplate.generateValueQuery(featureQuery.getLimit(), featureQuery.getOffset(), sortKeys,
-        featureQuery.getFilter(), ((Objects.nonNull(metaResult.getMinKey()) && Objects.nonNull(metaResult.getMaxKey())) || metaResult.getNumberReturned() == 0) ? Optional.of(Tuple.of(metaResult.getMinKey(), metaResult.getMaxKey())) : Optional.empty()));
+        featureQuery.getFilter(), ((Objects.nonNull(metaResult.getMinKey()) && Objects.nonNull(metaResult.getMaxKey())) || metaResult.getNumberReturned() == 0) ? Optional.of(Tuple.of(metaResult.getMinKey(), metaResult.getMaxKey())) : Optional.empty(),
+        additionalQueryParameters));
 
     return new ImmutableSqlQueries.Builder()
         .metaQuery(metaQuery)

@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
+import de.ii.xtraplatform.features.domain.FeatureEventHandlerGeneric.GenericContext;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomFuseableIn;
 import de.ii.xtraplatform.streams.domain.Reactive.TranformerCustomFuseableOut;
@@ -15,12 +16,12 @@ import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomSource;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public abstract class FeatureTokenDecoder<T> implements
+public abstract class FeatureTokenDecoder<T, U extends SchemaBase<U>, V extends SchemaMappingBase<U>, W extends ModifiableContext<U, V>> implements
     TranformerCustomFuseableOut<T, Object, FeatureEventHandler>,
     TransformerCustomSource<T, Object, FeatureTokenSource>,
-    FeatureTokenContext<ModifiableContext> {
+    FeatureTokenContext<W> {
 
-  private FeatureEventHandler<ModifiableContext> downstream;
+  private FeatureEventHandler<U, V, W> downstream;
 
   @Override
   public final Class<? extends FeatureEventHandler> getFusionInterface() {
@@ -61,7 +62,7 @@ public abstract class FeatureTokenDecoder<T> implements
   @Override
   public final void init(Consumer<Object> push) {
     if (Objects.isNull(downstream)) {
-      this.downstream = (FeatureTokenEmitter2) push::accept;
+      this.downstream = (FeatureTokenEmitter2<U,V,W>) push::accept;
       init();
     }
   }
@@ -77,24 +78,30 @@ public abstract class FeatureTokenDecoder<T> implements
   }
 
   @Override
-  public Class<? extends ModifiableContext> getContextInterface() {
+  public Class<? extends W> getContextInterface() {
     if (downstream instanceof FeatureTokenContext<?>) {
-      return ((FeatureTokenContext<?>) downstream).getContextInterface();
+      return ((FeatureTokenContext<W>) downstream).getContextInterface();
     }
 
-    return ModifiableContext.class;
+    return (Class<? extends W>) GenericContext.class;
   }
 
   @Override
-  public final ModifiableContext createContext() {
+  public final W createContext() {
     if (downstream instanceof FeatureTokenContext<?>) {
-      return ((FeatureTokenContext<?>) downstream).createContext();
+      return ((FeatureTokenContext<W>) downstream).createContext();
     }
 
-    return ModifiableGenericContext.create();
+    return (W) ModifiableGenericContext.create()
+        .setMapping(new ImmutableSchemaMapping.Builder()
+            .targetSchema(new ImmutableFeatureSchema.Builder().name("default").build())
+            .build())
+        .setQuery(ImmutableFeatureQuery.builder()
+            .type("default")
+            .build());
   }
 
-  protected final FeatureEventHandler<ModifiableContext> getDownstream() {
+  protected final FeatureEventHandler<U, V, W> getDownstream() {
     return downstream;
   }
 
