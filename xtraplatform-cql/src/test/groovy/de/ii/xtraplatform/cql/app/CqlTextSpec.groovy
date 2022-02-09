@@ -11,6 +11,7 @@ package de.ii.xtraplatform.cql.app
 import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.CqlParseException
 import de.ii.xtraplatform.cql.domain.CqlPredicate
+import de.ii.xtraplatform.crs.domain.OgcCrs
 import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
@@ -554,7 +555,7 @@ class CqlTextSpec extends Specification {
         String cqlText = "T_INTERSECTS(event_date, INTERVAL(startDate,endDate))"
 
         when: 'reading text'
-        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT, OgcCrs.CRS84, true)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_TINTERSECTS
