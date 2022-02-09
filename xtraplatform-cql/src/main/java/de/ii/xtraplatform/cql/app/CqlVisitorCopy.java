@@ -126,20 +126,13 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
 
     @Override
     public CqlNode visit(TemporalOperation temporalOperation, List<CqlNode> children) {
-        TemporalOperation.Builder<?> builder = null;
-
-        if (temporalOperation instanceof TIntersects) {
-            builder = new ImmutableTIntersects.Builder();
-        }
-
-        if (Objects.nonNull(builder)) {
-            return builder.operands(children.stream()
-                                            .filter(child -> child instanceof Temporal)
-                                            .map(child -> (Temporal) child)
-                                            .collect(Collectors.toUnmodifiableList())).build();
-        }
-
-        return null;
+        return new ImmutableTemporalOperation.Builder()
+            .operator(temporalOperation.getOperator())
+            .operands(children.stream()
+                          .filter(child -> child instanceof Temporal)
+                          .map(child -> (Temporal) child)
+                          .collect(Collectors.toUnmodifiableList()))
+            .build();
     }
 
     @Override

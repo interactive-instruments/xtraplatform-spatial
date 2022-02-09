@@ -117,12 +117,6 @@ public class SqlDialectGpkg implements SqlDialect {
   }
 
   @Override
-  public String getTemporalOperator(Class<? extends TemporalOperation> clazz) {
-    // TODO: SQLite has no support for temporal data types
-    return null;
-  }
-
-  @Override
   public List<String> getSystemTables() {
     return ImmutableList
         .of("gpkg_.*", "sqlite_.*", "rtree_.*", "spatial_ref_sys.*", "geometry_columns.*",

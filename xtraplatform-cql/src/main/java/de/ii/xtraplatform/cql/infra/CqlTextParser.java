@@ -37,8 +37,8 @@ public class CqlTextParser {
         return parser.cqlFilter();
     }
 
-    public CqlFilter parse(String cql, EpsgCrs defaultCrs, boolean useTIntersects) throws CqlParseException {
-        return parse(cql, new CqlTextVisitor(defaultCrs, useTIntersects));
+    public CqlFilter parse(String cql, EpsgCrs defaultCrs) throws CqlParseException {
+        return parse(cql, new CqlTextVisitor(defaultCrs));
     }
 
     public CqlFilter parse(String cql, CqlTextVisitor visitor) throws CqlParseException {

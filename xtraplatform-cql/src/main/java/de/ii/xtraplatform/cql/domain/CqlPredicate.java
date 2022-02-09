@@ -50,8 +50,8 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
             builder.like((Like) node);
         } else if (node instanceof IsNull) {
             builder.isNull((IsNull) node);
-        } else if (node instanceof TIntersects) {
-            builder.tIntersects((TIntersects) node);
+        } else if (node instanceof TemporalOperation) {
+            builder.temporalOperation((TemporalOperation) node);
         } else if (node instanceof SEquals) {
             builder.sEquals((SEquals) node);
         } else if (node instanceof SDisjoint) {
@@ -114,7 +114,7 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
                 getSCrosses(),
                 getSIntersects(),
                 getSContains(),
-                getTIntersects(),
+                getTemporalOperation(),
                 getAContains(),
                 getAEquals(),
                 getAOverlaps(),

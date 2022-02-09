@@ -53,10 +53,6 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
     final static Splitter ARRAY_SPLITTER = Splitter.on(",").trimResults().omitEmptyStrings();
 
-    private final static Map<Class<?>, List<String>> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, List<String>>()
-            .put(ImmutableTIntersects.class, ImmutableList.of("OVERLAPS"))
-            .build();
-
     private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
             .put(ImmutableSEquals.class, "ST_Equals")
             .put(ImmutableSDisjoint.class, "ST_Disjoint")
@@ -477,46 +473,6 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         private String getEndExclusiveAsString(TemporalLiteral literal) {
             return String.format("TIMESTAMP '%s'", getEndExclusive(literal))
                          .replace("'+10000-01-01T00:00:00Z'", "'infinity'");
-        }
-
-        @Override
-        public String visit(TemporalOperation temporalOperation, List<String> children) {
-            List<String> operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
-
-            Temporal op1 = (Temporal) temporalOperation.getOperands().get(0);
-            Temporal op2 = (Temporal) temporalOperation.getOperands().get(1);
-
-            if (temporalOperation instanceof TIntersects) {
-                if (op1 instanceof Property) {
-                    // need to change "column" to "(column,column)"
-                    children = ImmutableList.of(replaceColumnWithInterval(children.get(0), reduceSelectToColumn(children.get(0))), children.get(1));
-                } else if (op1 instanceof TemporalLiteral) {
-                    // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
-                    children = ImmutableList.of(String.format("(%s, %s)", getStartAsString((TemporalLiteral) op1), getEndExclusiveAsString((TemporalLiteral) op1)), children.get(1));
-                }
-
-                if (op2 instanceof Property) {
-                    // need to change "column" to "(column,column)"
-                    children = ImmutableList.of(children.get(0),replaceColumnWithInterval(children.get(1), reduceSelectToColumn(children.get(1))));
-                } else if (op2 instanceof TemporalLiteral) {
-                    // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
-                    children = ImmutableList.of(children.get(0), getInterval(op2));
-                }
-                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator.get(0), expressions.get(1)));
-            }
-
-            throw new IllegalArgumentException(String.format("unsupported temporal operator: %s", operator));
-        }
-
-        /**
-         * ISO 8601 intervals include both the start and end instant
-         * PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
-         * @param literal temporal literal
-         * @return PostgreSQL interval
-         */
-        private String getInterval(Temporal literal) {
-            return String.format("(%s, %s)", getStartAsString((TemporalLiteral) literal), getEndExclusiveAsString((TemporalLiteral) literal));
         }
 
         @Override

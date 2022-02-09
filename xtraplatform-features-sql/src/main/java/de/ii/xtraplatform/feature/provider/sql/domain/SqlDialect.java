@@ -9,12 +9,17 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+
 import org.threeten.extra.Interval;
 
 public interface SqlDialect {
@@ -45,12 +50,17 @@ public interface SqlDialect {
 
   List<String> getSystemTables();
 
- default String getSpatialOperator(Class<? extends SpatialOperation> clazz) {
+  default String getSpatialOperator(Class<? extends SpatialOperation> clazz) {
    return SPATIAL_OPERATORS.get(clazz);
  }
 
-  default String getTemporalOperator(Class<? extends TemporalOperation> clazz) {
-    return TEMPORAL_OPERATORS.get(clazz);
+  default String getTemporalOperator(TemporalOperation temporalOperation) {
+    // this is implementation specific
+    return null;
+  }
+
+  default Set<TemporalOperator> getTemporalOperators() {
+    return ImmutableSet.of();
   }
 
   interface GeoInfo {
@@ -62,10 +72,6 @@ public interface SqlDialect {
     String SRID = "srid";
     String TYPE = "type";
   }
-
-  Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-      .put(ImmutableTIntersects.class, "OVERLAPS") // "({start1},{end1}) OVERLAPS ({start2},{end2})"
-      .build();
 
   Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
       .put(ImmutableSEquals.class, "ST_Equals")

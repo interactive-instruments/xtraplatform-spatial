@@ -11,7 +11,6 @@ package de.ii.xtraplatform.cql.app
 import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.CqlParseException
 import de.ii.xtraplatform.cql.domain.CqlPredicate
-import de.ii.xtraplatform.crs.domain.OgcCrs
 import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
@@ -253,7 +252,6 @@ class CqlTextSpec extends Specification {
 
         given:
         String cqlText = "T_BEFORE(built, TIMESTAMP('2012-06-05T00:00:00Z'))"
-        String cqlText2 = "built < TIMESTAMP('2012-06-05T00:00:00Z')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -267,14 +265,13 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_12, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'Built after June 5, 2012'() {
 
         given:
         String cqlText = "T_AFTER(built, TIMESTAMP('2012-06-05T00:00:00Z'))"
-        String cqlText2 = "built > TIMESTAMP('2012-06-05T00:00:00Z')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -288,14 +285,13 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'Updated between 7:30am June 10, 2017 and 10:30am June 11, 2017'() {
 
         given:
         String cqlText = "T_DURING(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        String cqlText2 = "updated > TIMESTAMP('2017-06-10T07:30:00Z') AND updated < TIMESTAMP('2017-06-11T10:30:00Z')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -309,7 +305,7 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_14, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
 
     }
 
@@ -453,7 +449,6 @@ class CqlTextSpec extends Specification {
     def 'Built before 2015 (only date, no time information)'() {
         given:
         String cqlText = "T_BEFORE(built, DATE('2015-01-01'))"
-        String cqlText2 = "built < DATE('2015-01-01')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -467,13 +462,12 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_24, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'Updated between June 10, 2017 and June 11, 2017'() {
         given:
         String cqlText = "T_DURING(updated, INTERVAL('2017-06-10','2017-06-11'))"
-        String cqlText2 = "updated > TIMESTAMP('2017-06-10T00:00:00Z') AND updated < TIMESTAMP('2017-06-11T23:59:59Z')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -487,13 +481,12 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_25, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'Updated between 7:30am June 10, 2017 and open end date'() {
         given:
         String cqlText = "T_DURING(updated, INTERVAL('2017-06-10T07:30:00Z','..'))"
-        String cqlText2 = "updated > TIMESTAMP('2017-06-10T07:30:00Z') AND updated < TIMESTAMP('infinity')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -507,13 +500,12 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_26, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'Updated between open start date and 10:30am June 11, 2017'() {
         given:
         String cqlText = "T_DURING(updated, INTERVAL('..','2017-06-11T10:30:00Z'))"
-        String cqlText2 = "updated > TIMESTAMP('-infinity') AND updated < TIMESTAMP('2017-06-11T10:30:00Z')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -527,13 +519,12 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_27, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'Open interval on both ends'() {
         given:
         String cqlText = "T_DURING(updated, INTERVAL('..','..'))"
-        String cqlText2 = "updated > TIMESTAMP('-infinity') AND updated < TIMESTAMP('infinity')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -547,7 +538,7 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_28, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'Interval with properties on both ends'() {
@@ -555,7 +546,7 @@ class CqlTextSpec extends Specification {
         String cqlText = "T_INTERSECTS(event_date, INTERVAL(startDate,endDate))"
 
         when: 'reading text'
-        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT, OgcCrs.CRS84, true)
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_TINTERSECTS
@@ -846,12 +837,12 @@ class CqlTextSpec extends Specification {
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_12
+        actual == CqlFilterExamples.EXAMPLE_12_alt
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_12, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_12_alt, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText
@@ -865,12 +856,12 @@ class CqlTextSpec extends Specification {
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_12a
+        actual == CqlFilterExamples.EXAMPLE_12eq_alt
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_12a, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_12eq_alt, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText
@@ -884,12 +875,12 @@ class CqlTextSpec extends Specification {
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_13
+        actual == CqlFilterExamples.EXAMPLE_13_alt
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13_alt, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText
@@ -903,12 +894,12 @@ class CqlTextSpec extends Specification {
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_13b
+        actual == CqlFilterExamples.EXAMPLE_13eq_alt
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13b, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13eq_alt, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText
@@ -922,12 +913,12 @@ class CqlTextSpec extends Specification {
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_13a
+        actual == CqlFilterExamples.EXAMPLE_13A_alt
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13a, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13A_alt, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText
@@ -941,12 +932,12 @@ class CqlTextSpec extends Specification {
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_13d
+        actual == CqlFilterExamples.EXAMPLE_13Aneq_alt
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13d, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13Aneq_alt, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText
@@ -957,7 +948,6 @@ class CqlTextSpec extends Specification {
     def 'BETWEEN with temporal arguments'() {
         given:
         String cqlText = "updated BETWEEN TIMESTAMP('2017-06-10T07:30:00Z') AND TIMESTAMP('2017-06-11T10:30:00Z')"
-        String cqlText2 = "T_DURING(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -971,7 +961,7 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_14, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'IN with temporal arguments'() {

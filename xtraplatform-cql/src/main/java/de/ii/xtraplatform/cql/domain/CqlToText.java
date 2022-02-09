@@ -45,10 +45,6 @@ public class CqlToText implements CqlVisitor<String> {
             .put(ImmutableIsNull.class, "IS NULL")
             .build();
 
-    private final static Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableTIntersects.class, "T_INTERSECTS")
-            .build();
-
     private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
             .put(ImmutableSEquals.class, "S_EQUALS")
             .put(ImmutableSDisjoint.class, "S_DISJOINT")
@@ -190,7 +186,7 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(TemporalOperation temporalOperation, List<String> children) {
-        String operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
+        String operator = temporalOperation.getOperator().toString();
 
         return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
     }
@@ -303,21 +299,28 @@ public class CqlToText implements CqlVisitor<String> {
             String end;
             Interval interval = (Interval) temporalLiteral.getValue();
             start = interval.getStart().equals(Instant.MIN)
-                ? "'..'"
+                ? ".."
                 : DateTimeFormatter.ISO_INSTANT.format(interval.getStart());
             end = interval.getEnd().equals(Instant.MAX)
-                ? "'..'"
+                ? ".."
                 : DateTimeFormatter.ISO_INSTANT.format(interval.getEnd().minusSeconds(1));
-            return String.format("INTERVAL(%s,%s)", start, end);
+            return String.format("INTERVAL('%s','%s')", start, end);
         } else if (temporalLiteral.getType() == Instant.class) {
             Instant instant = (Instant) temporalLiteral.getValue();
-            if (instant == Instant.MIN)
-                return "TIMESTAMP('-infinity')"; // TODO what to write in this case?
-            else if (instant == Instant.MAX)
-                return "TIMESTAMP('infinity')"; // TODO what to write in this case?
+            if (instant == Instant.MIN ||  instant == Instant.MAX)
+                return "'..'";
             return String.format("TIMESTAMP('%s')", DateTimeFormatter.ISO_INSTANT.format(instant));
         } else if (temporalLiteral.getType() == LocalDate.class) {
             return String.format("DATE('%s')", DateTimeFormatter.ISO_DATE.format((LocalDate) temporalLiteral.getValue()));
+        } else if (temporalLiteral.getType() == Function.class) {
+            Function function = (Function) temporalLiteral.getValue();
+            return String.format("%s(%s)", function.getName(), function.getArguments()
+                .stream()
+                .map(arg -> arg.accept(this)
+                    .replace("DATE(","")
+                    .replace("TIMESTAMP(","")
+                    .replace(")",""))
+                .collect(Collectors.joining(",")));
         }
 
         throw new IllegalStateException("unsupported temporal literal type: " + temporalLiteral.getType().getSimpleName());

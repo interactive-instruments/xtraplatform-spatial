@@ -11,6 +11,6 @@ import java.util.Optional;
 
 public interface TemporalExpression {
 
-    Optional<TIntersects> getTIntersects();
+    Optional<TemporalOperation> getTemporalOperation();
 
 }

@@ -28,11 +28,9 @@ import java.util.stream.Collectors;
 public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements CqlParserVisitor<CqlNode> {
 
     private final EpsgCrs defaultCrs;
-    private final boolean useTIntersects;
 
-    public CqlTextVisitor(EpsgCrs defaultCrs, boolean useTIntersects) {
+    public CqlTextVisitor(EpsgCrs defaultCrs) {
         this.defaultCrs = defaultCrs;
-        this.useTIntersects = useTIntersects;
     }
 
     @Override
@@ -244,175 +242,14 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         Temporal temporal2 = (Temporal) ctx.temporalExpression(1)
             .accept(this);
 
-        assert !(temporal1 instanceof Function) || ((Function) temporal1).isInterval();
-        assert !(temporal2 instanceof Function) || ((Function) temporal2).isInterval();
+        if (Objects.isNull(ctx.TemporalOperator()))
+            throw new IllegalStateException("unknown temporal predicate: " + ctx.getText());
 
-        if (Objects.nonNull(ctx.TemporalOperator())) {
-            TemporalOperator temporalOperator = TemporalOperator.valueOf(ctx.TemporalOperator()
-                                                                             .getText()
-                                                                             .toUpperCase());
+        TemporalOperator temporalOperator = TemporalOperator.valueOf(ctx.TemporalOperator()
+                                                                         .getText()
+                                                                         .toUpperCase());
 
-            switch (temporalOperator) {
-                case T_AFTER:
-                    // start1 > end2
-                    return new ImmutableGt.Builder()
-                        .addOperands(getStart(temporal1), getEnd(temporal2))
-                        .build();
-                case T_BEFORE:
-                    // end1 < start2
-                    return new ImmutableLt.Builder()
-                        .addOperands(getEnd(temporal1), getStart(temporal2))
-                        .build();
-                case T_DURING:
-                    // start1 > start2 AND end1 < end2
-                    return new ImmutableAnd.Builder()
-                        .addPredicates(
-                            CqlPredicate.of(new ImmutableGt.Builder().addOperands(getStart(temporal1), getStart(temporal2)).build()),
-                            CqlPredicate.of(new ImmutableLt.Builder().addOperands(getEnd(temporal1), getEnd(temporal2)).build()))
-                        .build();
-                case T_EQUALS:
-                    // start1 = start2 AND end1 = end2
-                    return new ImmutableAnd.Builder()
-                        .addPredicates(
-                            CqlPredicate.of(new ImmutableEq.Builder().addOperands(getStart(temporal1), getStart(temporal2)).build()),
-                            CqlPredicate.of(new ImmutableEq.Builder().addOperands(getEnd(temporal1), getEnd(temporal2)).build()))
-                        .build();
-                case T_STARTS:
-                    // start1 = start2 AND end1 < end2
-                    return new ImmutableAnd.Builder()
-                        .addPredicates(
-                            CqlPredicate.of(new ImmutableEq.Builder().addOperands(getStart(temporal1), getStart(temporal2)).build()),
-                            CqlPredicate.of(new ImmutableLt.Builder().addOperands(getEnd(temporal1), getEnd(temporal2)).build()))
-                        .build();
-                case T_STARTEDBY:
-                    // start1 = start2 AND end1 > end2
-                    return new ImmutableAnd.Builder()
-                        .addPredicates(
-                            CqlPredicate.of(new ImmutableEq.Builder().addOperands(getStart(temporal1), getStart(temporal2)).build()),
-                            CqlPredicate.of(new ImmutableGt.Builder().addOperands(getEnd(temporal1), getEnd(temporal2)).build()))
-                        .build();
-                case T_CONTAINS:
-                    // start1 < start2 AND end1 > end2
-                    return new ImmutableAnd.Builder()
-                        .addPredicates(
-                            CqlPredicate.of(new ImmutableLt.Builder().addOperands(getStart(temporal1), getStart(temporal2)).build()),
-                            CqlPredicate.of(new ImmutableGt.Builder().addOperands(getEnd(temporal1), getEnd(temporal2)).build()))
-                        .build();
-                case T_DISJOINT:
-                    if (useTIntersects)
-                        return new ImmutableNot.Builder()
-                            .predicate(
-                                CqlPredicate.of(new ImmutableTIntersects.Builder()
-                                                    .operands(ImmutableList.of(temporal1,temporal2))
-                                                    .build()))
-                            .build();
-                    // end1 < start2 OR start1 > end2
-                    return new ImmutableOr.Builder()
-                        .addPredicates(
-                            CqlPredicate.of(new ImmutableLt.Builder().addOperands(getEnd(temporal1), getStart(temporal2)).build()),
-                            CqlPredicate.of(new ImmutableGt.Builder().addOperands(getStart(temporal1), getEnd(temporal2)).build()))
-                        .build();
-                case T_INTERSECTS:
-                    if (useTIntersects)
-                        return new ImmutableTIntersects.Builder()
-                            .operands(ImmutableList.of(temporal1,temporal2))
-                            .build();
-                    // NOT (end1 < start2 OR start1 > end2)
-                    return new ImmutableNot.Builder()
-                        .predicate(CqlPredicate.of(new ImmutableOr.Builder()
-                                                       .addPredicates(
-                                                           CqlPredicate.of(new ImmutableLt.Builder().addOperands(getEnd(temporal1), getStart(temporal2)).build()),
-                                                           CqlPredicate.of(new ImmutableGt.Builder().addOperands(getStart(temporal1), getEnd(temporal2)).build()))
-                                                       .build()))
-                        .build();
-                case T_FINISHES:
-                    // start1 > start2 AND end1 = end2
-                    return new ImmutableAnd.Builder()
-                        .addPredicates(
-                            CqlPredicate.of(new ImmutableGt.Builder().addOperands(getStart(temporal1), getStart(temporal2)).build()),
-                            CqlPredicate.of(new ImmutableEq.Builder().addOperands(getEnd(temporal1), getEnd(temporal2)).build()))
-                        .build();
-                case T_FINISHEDBY:
-                    // start1 < start2 AND end1 = end2
-                    return new ImmutableAnd.Builder()
-                        .addPredicates(
-                            CqlPredicate.of(new ImmutableLt.Builder().addOperands(getStart(temporal1), getStart(temporal2)).build()),
-                            CqlPredicate.of(new ImmutableEq.Builder().addOperands(getEnd(temporal1), getEnd(temporal2)).build()))
-                        .build();
-                case T_MEETS:
-                    // end1 = start2
-                    return new ImmutableEq.Builder()
-                        .addOperands(getEnd(temporal1), getStart(temporal2))
-                        .build();
-                case T_METBY:
-                    // start1 = end2
-                    return new ImmutableEq.Builder()
-                        .addOperands(getStart(temporal1), getEnd(temporal2))
-                        .build();
-                case T_OVERLAPS:
-                    // start1 < start2 AND end1 > start2 AND end1 < end2
-                    return new ImmutableAnd.Builder()
-                        .addPredicates(
-                            CqlPredicate.of(new ImmutableLt.Builder().addOperands(getStart(temporal1), getStart(temporal2)).build()),
-                            CqlPredicate.of(new ImmutableGt.Builder().addOperands(getEnd(temporal1), getStart(temporal2)).build()),
-                            CqlPredicate.of(new ImmutableLt.Builder().addOperands(getEnd(temporal1), getEnd(temporal2)).build()))
-                        .build();
-                case T_OVERLAPPEDBY:
-                    // start1 > start2 AND start1 < end2 AND end1 > end2
-                    return new ImmutableAnd.Builder()
-                        .addPredicates(
-                            CqlPredicate.of(new ImmutableGt.Builder().addOperands(getStart(temporal1), getStart(temporal2)).build()),
-                            CqlPredicate.of(new ImmutableLt.Builder().addOperands(getStart(temporal1), getEnd(temporal2)).build()),
-                            CqlPredicate.of(new ImmutableGt.Builder().addOperands(getEnd(temporal1), getEnd(temporal2)).build()))
-                        .build();
-                default:
-                    throw new IllegalStateException("unknown temporal operator: " + temporalOperator);
-            }
-        }
-        throw new IllegalStateException("unknown temporal predicate: " + ctx.getText());
-    }
-
-    private Temporal getStart(Temporal temporal) {
-        if (temporal instanceof Property) {
-            return temporal;
-        } else if (temporal instanceof TemporalLiteral) {
-            if (((TemporalLiteral) temporal).getType() == Interval.class) {
-                return TemporalLiteral.of(((Interval) ((TemporalLiteral) temporal).getValue()).getStart());
-            }
-            return temporal;
-        } else if (temporal instanceof Function) {
-            Temporal start = (Temporal) ((Function) temporal).getArguments().get(0);
-            if (start instanceof TemporalLiteral && ((TemporalLiteral) start).getType() == TemporalLiteral.OPEN.class) {
-                return TemporalLiteral.of(Instant.MIN);
-            }
-            return start;
-        }
-
-        throw new IllegalStateException("unknown temporal type: " + temporal.getClass().getSimpleName());
-    }
-
-    private Temporal getEnd(Temporal temporal) {
-        if (temporal instanceof Property) {
-            return temporal;
-        } else if (temporal instanceof TemporalLiteral) {
-            if (((TemporalLiteral) temporal).getType() == Interval.class) {
-                Instant end = ((Interval) ((TemporalLiteral) temporal).getValue()).getEnd();
-                if (end==Instant.MAX)
-                    return TemporalLiteral.of(Instant.MAX);
-                return TemporalLiteral.of(end.minusSeconds(1));
-            } else if (((TemporalLiteral) temporal).getType() == TemporalLiteral.OPEN.class) {
-                return TemporalLiteral.of(Instant.MAX);
-            }
-            return temporal;
-        } else if (temporal instanceof Function) {
-            Temporal end = (Temporal) ((Function) temporal).getArguments().get(1);
-            if (end instanceof TemporalLiteral && ((TemporalLiteral) end).getType() == TemporalLiteral.OPEN.class) {
-                return TemporalLiteral.of(Instant.MAX);
-            }
-            return end;
-        }
-
-        throw new IllegalStateException("unknown temporal type: " + temporal.getClass().getSimpleName());
+        return TemporalOperation.of(temporalOperator, temporal1, temporal2);
     }
 
     @Override

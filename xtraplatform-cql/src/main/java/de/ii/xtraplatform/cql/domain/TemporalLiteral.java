@@ -10,6 +10,7 @@ package de.ii.xtraplatform.cql.domain;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 import org.threeten.extra.Interval;
 
@@ -45,7 +46,7 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
     }
 
     static TemporalLiteral of(String startInclusive, String endInclusive) {
-        return new Builder(startInclusive, endInclusive).build();
+        return new Builder(TemporalLiteral.of(startInclusive), TemporalLiteral.of(endInclusive)).build();
     }
 
     static TemporalLiteral of(TemporalLiteral startInclusive, TemporalLiteral endInclusive) {
@@ -54,7 +55,7 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
 
     static TemporalLiteral of(List<String> startEndInclusive) {
         assert startEndInclusive.size()>=2;
-        return new Builder(startEndInclusive.get(0), startEndInclusive.get(1)).build();
+        return new Builder(TemporalLiteral.of(startEndInclusive.get(0)), TemporalLiteral.of(startEndInclusive.get(1))).build();
     }
 
     static TemporalLiteral of(Instant startInclusive, Instant endExclusive) {
@@ -102,14 +103,14 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
 
         public Builder(TemporalLiteral startInclusive, TemporalLiteral endInclusive) throws CqlParseException {
             super();
-            value(Interval.of(getStartInclusive(startInclusive.getValue()), getEndExclusive(endInclusive.getValue())));
-            type(Interval.class);
-        }
-
-        public Builder(String startInclusive, String endInclusive) throws CqlParseException {
-            super();
-            value(Interval.of(getStartInclusive(castToType(startInclusive)), getEndExclusive(castToType(endInclusive))));
-            type(Interval.class);
+            if ((startInclusive.getType()==Instant.class || startInclusive.getType()==OPEN.class)
+                && (endInclusive.getType()==Instant.class || endInclusive.getType()==OPEN.class)) {
+                value(Interval.of(getStartInclusive(startInclusive.getValue()), getEndExclusive(endInclusive.getValue())));
+                type(Interval.class);
+            } else {
+                value(Function.of("INTERVAL", ImmutableList.of(startInclusive, endInclusive)));
+                type(Function.class);
+            }
         }
 
         private Instant getStartInclusive(Object instant) {

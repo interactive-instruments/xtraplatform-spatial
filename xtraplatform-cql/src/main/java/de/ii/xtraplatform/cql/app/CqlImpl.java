@@ -17,9 +17,11 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.CqlToText;
+import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.cql.infra.CqlTextParser;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
@@ -34,6 +36,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 @Provides
@@ -58,15 +61,15 @@ public class CqlImpl implements Cql {
 
     @Override
     public CqlFilter read(String cql, Format format) throws CqlParseException {
-        return read(cql, format, OgcCrs.CRS84, false);
+        return read(cql, format, OgcCrs.CRS84);
     }
 
     @Override
-    public CqlFilter read(String cql, Format format, EpsgCrs crs, boolean useTIntersects) throws CqlParseException {
+    public CqlFilter read(String cql, Format format, EpsgCrs crs) throws CqlParseException {
         switch (format) {
 
             case TEXT:
-                return cqlTextParser.parse(cql, crs, useTIntersects);
+                return cqlTextParser.parse(cql, crs);
             case JSON:
                 cqlJsonMapper.setInjectableValues(new InjectableValues.Std().addValue("filterCrs", Optional.ofNullable(crs)));
                 try {
@@ -101,6 +104,13 @@ public class CqlImpl implements Cql {
         CqlPropertyChecker visitor = new CqlPropertyChecker(validProperties);
 
         return cqlPredicate.accept(visitor);
+    }
+
+    @Override
+    public CqlNode mapTemporalOperators(CqlFilter cqlFilter, Set<TemporalOperator> supportedOperators) {
+        CqlVisitorMapTemporalOperators visitor = new CqlVisitorMapTemporalOperators(supportedOperators);
+
+        return cqlFilter.accept(visitor);
     }
 
     static class IntervalConverter extends StdConverter<Interval, List<String>> {
