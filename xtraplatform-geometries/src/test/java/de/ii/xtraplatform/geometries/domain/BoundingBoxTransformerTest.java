@@ -93,12 +93,7 @@ public class BoundingBoxTransformerTest {
             return null;
         }
 
-        @Override
-        public boolean isTargetMetric() {
-            return false;
-        }
-
-        // fake transformation
+      // fake transformation
         @Override
         public CoordinateTuple transform(double x, double y) {
             if (this.useRnd) {
@@ -121,18 +116,13 @@ public class BoundingBoxTransformerTest {
         }
 
         @Override
-        public CoordinateTuple transform(CoordinateTuple coordinateTuple, boolean swap) {
+        public CoordinateTuple transform(CoordinateTuple coordinateTuple) {
             throw new UnsupportedOperationException("Not supported yet.");
         }
 
         @Override
-        public double[] transform(double[] coordinates, int numberOfPoints, boolean swap) {
+        public double[] transform(double[] coordinates, int numberOfPoints, int dimension) {
             throw new UnsupportedOperationException("Not supported yet.");
-        }
-
-        @Override
-        public double[] transform3d(double[] coordinates, int numberOfPoints, boolean swap) {
-            return new double[0];
         }
 
         @Override
@@ -145,12 +135,7 @@ public class BoundingBoxTransformerTest {
             return 0;
         }
 
-        @Override
-        public boolean needsCoordinateSwap() {
-            return false;
-        }
-
-        @Override
+      @Override
         public int getSourceDimension() {
             return 2;
         }

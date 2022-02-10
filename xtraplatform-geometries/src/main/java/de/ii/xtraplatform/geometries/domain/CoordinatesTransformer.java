@@ -7,11 +7,13 @@
  */
 package de.ii.xtraplatform.geometries.domain;
 
+import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import org.immutables.value.Value;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -49,8 +51,8 @@ public abstract class CoordinatesTransformer extends Writer {
     }
 
     @Value.Default
-    protected int getPrecision() {
-        return 0;
+    protected List<Integer> getPrecision() {
+        return ImmutableList.of(0, 0, 0);
     }
 
     @Value.Derived
@@ -75,7 +77,7 @@ public abstract class CoordinatesTransformer extends Writer {
     @Value.Derived
     protected Optional<DoubleArrayProcessor> getTransformationPipeline() {
         DoubleArrayProcessor lastTransformation = ImmutableToChars.of(getCoordinatesWriter(), getPrecision());
-        boolean doTransform = getPrecision()>0;
+        boolean doTransform = getPrecision().stream().anyMatch(precision -> precision>0);
 
         //last
         if (isSwapXY()) {

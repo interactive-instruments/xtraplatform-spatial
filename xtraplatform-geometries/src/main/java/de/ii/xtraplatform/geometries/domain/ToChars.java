@@ -12,6 +12,7 @@ import org.immutables.value.Value;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 @Value.Immutable
 public abstract class ToChars implements DoubleArrayProcessor {
@@ -22,7 +23,7 @@ public abstract class ToChars implements DoubleArrayProcessor {
     protected abstract SeperateStringsProcessor getCoordinatesProcessor();
 
     @Value.Parameter
-    protected abstract int getPrecision();
+    protected abstract List<Integer> getPrecision();
 
     @Override
     public void onStart() throws IOException {
@@ -31,17 +32,18 @@ public abstract class ToChars implements DoubleArrayProcessor {
 
     @Override
     public void onCoordinates(double[] coordinates, int length, int dimension) throws IOException {
-
+        Integer[] precision = getPrecision().toArray(getPrecision().toArray(new Integer[0]));
         for (int i = 0; i < length; i++) {
-            Axis axis = Axis.fromInt[i % dimension];
+            int axisIndex = i % dimension;
+            Axis axis = Axis.fromInt[axisIndex];
             String value = String.valueOf(coordinates[i]);
 
             /*
             TODO: will not be applied when no transformations are given
              move to separate step
             */
-            if (getPrecision() > 0) {
-                BigDecimal bd = new BigDecimal(value).setScale(getPrecision(), RoundingMode.HALF_UP);
+            if (precision[axisIndex] > 0) {
+                BigDecimal bd = new BigDecimal(value).setScale(precision[axisIndex], RoundingMode.HALF_UP);
                 value = bd.toPlainString();
             }
 

@@ -2,4 +2,7 @@
 dependencies {
     provided project(":xtraplatform-string-templates")
     provided project(":xtraplatform-ogc-wfs-api")
+
+    embedded group: 'com.fasterxml', name: 'aalto-xml', version: '1.0.0'
+    embedded group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1'
 }

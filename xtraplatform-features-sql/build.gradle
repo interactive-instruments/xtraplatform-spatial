@@ -33,7 +33,6 @@ dependencies {
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-feature-transformer-api')
-    provided project(':xtraplatform-geotools')
 
     //TODO: upgrade
     embedded (group: 'com.lightbend.akka', name: 'akka-stream-alpakka-slick_2.12', version: '2.0.1') {

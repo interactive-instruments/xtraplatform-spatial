@@ -16,8 +16,6 @@ import de.ii.xtraplatform.codelists.domain.ImmutableCodelistData;
 import de.ii.xtraplatform.streams.domain.Http;
 import de.ii.xtraplatform.streams.domain.HttpClient;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
-import de.ii.xtraplatform.ogc.api.GMLDictionaryAnalyzer;
-import de.ii.xtraplatform.ogc.api.GMLDictionaryParser;
 import org.apache.felix.ipojo.annotations.Component;
 import org.apache.felix.ipojo.annotations.Instantiate;
 import org.apache.felix.ipojo.annotations.Provides;
