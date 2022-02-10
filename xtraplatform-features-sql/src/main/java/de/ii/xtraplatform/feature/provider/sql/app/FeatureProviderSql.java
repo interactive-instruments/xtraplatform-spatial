@@ -36,34 +36,12 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueries;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
 import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlTypeInfoValidator;
-import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
-import de.ii.xtraplatform.features.domain.ConnectionInfo;
-import de.ii.xtraplatform.features.domain.ConnectorFactory;
-import de.ii.xtraplatform.features.domain.ExtentReader;
-import de.ii.xtraplatform.features.domain.FeatureCrs;
-import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
-import de.ii.xtraplatform.features.domain.FeatureExtents;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
-import de.ii.xtraplatform.features.domain.FeatureQueries;
-import de.ii.xtraplatform.features.domain.FeatureQuery;
-import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
-import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
-import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
-import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
-import de.ii.xtraplatform.features.domain.FeatureTokenSource;
-import de.ii.xtraplatform.features.domain.FeatureTransactions;
+import de.ii.xtraplatform.features.domain.*;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
-import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
-import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
-import de.ii.xtraplatform.features.domain.SchemaMapping;
-import de.ii.xtraplatform.features.domain.TypeInfoValidator;
+import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.store.domain.entities.EntityComponent;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
-import de.ii.xtraplatform.streams.app.RunnerAkka;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
@@ -168,11 +146,14 @@ public class FeatureProviderSql extends
 
     //TODO: from config
     SqlDialect sqlDialect = getData().getConnectionInfo().getDialect() == Dialect.PGIS ? new SqlDialectPostGis() : new SqlDialectGpkg();
+    String accentiCollation = Objects.nonNull(getData().getQueryGeneration())
+        ? getData().getQueryGeneration().getAccentiCollation().orElse(null)
+        : null;
     FilterEncoderSql filterEncoder = new FilterEncoderSql(getData().getNativeCrs()
-        .orElse(OgcCrs.CRS84), sqlDialect, crsTransformerFactory, cql);
+        .orElse(OgcCrs.CRS84), sqlDialect, crsTransformerFactory, cql, accentiCollation);
     FeatureStoreQueryGeneratorSql queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect,
-        getData().getNativeCrs()
-            .orElse(OgcCrs.CRS84), crsTransformerFactory);
+                                                                                        getData().getNativeCrs()
+                                                                                            .orElse(OgcCrs.CRS84), crsTransformerFactory);
 
     this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql);
     QuerySchemaDeriver querySchemaDeriver = new QuerySchemaDeriver(pathParser3);
@@ -189,8 +170,7 @@ public class FeatureProviderSql extends
             ImmutableList.of(entry.getValue().accept(querySchemaDeriver).get(0).accept(queryTemplatesDeriver))))
         .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
-    this.queryTransformer = new FeatureQueryTransformerSql(schemas, getTypeInfos(), queryGeneratorSql,
-        getData().getQueryGeneration().getComputeNumberMatched());
+    this.queryTransformer = new FeatureQueryTransformerSql(schemas, getTypeInfos());
 
     this.extentReader = new ExtentReaderSql(this::getSqlClient, queryGeneratorSql, sqlDialect,
         getData().getNativeCrs()
@@ -642,5 +622,12 @@ public class FeatureProviderSql extends
   @Override
   public boolean supportsHighLoad() {
     return true;
+  }
+
+  @Override
+  public boolean supportsAccenti() {
+    if (Objects.nonNull(getData().getQueryGeneration()))
+      return getData().getQueryGeneration().getAccentiCollation().isPresent();
+    return false;
   }
 }

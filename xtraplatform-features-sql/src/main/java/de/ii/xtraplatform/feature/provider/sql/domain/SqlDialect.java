@@ -7,27 +7,19 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.domain;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.cql.domain.ImmutableAfter;
-import de.ii.xtraplatform.cql.domain.ImmutableAnyInteracts;
-import de.ii.xtraplatform.cql.domain.ImmutableBefore;
-import de.ii.xtraplatform.cql.domain.ImmutableContains;
-import de.ii.xtraplatform.cql.domain.ImmutableCrosses;
-import de.ii.xtraplatform.cql.domain.ImmutableDisjoint;
-import de.ii.xtraplatform.cql.domain.ImmutableDuring;
-import de.ii.xtraplatform.cql.domain.ImmutableEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableIntersects;
-import de.ii.xtraplatform.cql.domain.ImmutableOverlaps;
-import de.ii.xtraplatform.cql.domain.ImmutableTEquals;
-import de.ii.xtraplatform.cql.domain.ImmutableTouches;
-import de.ii.xtraplatform.cql.domain.ImmutableWithin;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
+import com.google.common.collect.ImmutableSet;
+import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+
 import org.threeten.extra.Interval;
 
 public interface SqlDialect {
@@ -36,7 +28,17 @@ public interface SqlDialect {
 
   String applyToExtent(String column);
 
+  String applyToDate(String column);
+
   String applyToDatetime(String column);
+
+  String applyToDateLiteral(String date);
+
+  String applyToDatetimeLiteral(String datetime);
+
+  String applyToInstantMin();
+
+  String applyToInstantMax();
 
   Optional<BoundingBox> parseExtent(String extent, EpsgCrs crs);
 
@@ -48,12 +50,17 @@ public interface SqlDialect {
 
   List<String> getSystemTables();
 
- default String getSpatialOperator(Class<? extends SpatialOperation> clazz) {
-   return SPATIAL_OPERATORS.get(clazz);
+  default String getSpatialOperator(SpatialOperation spatialOperation) {
+   return SPATIAL_OPERATORS.get(spatialOperation.getOperator());
  }
 
-  default String getTemporalOperator(Class<? extends TemporalOperation> clazz) {
-    return TEMPORAL_OPERATORS.get(clazz);
+  default String getTemporalOperator(TemporalOperation temporalOperation) {
+    // this is implementation specific
+    return null;
+  }
+
+  default Set<TemporalOperator> getTemporalOperators() {
+    return ImmutableSet.of();
   }
 
   interface GeoInfo {
@@ -66,23 +73,15 @@ public interface SqlDialect {
     String TYPE = "type";
   }
 
-  Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-      .put(ImmutableAfter.class, ">")
-      .put(ImmutableBefore.class, "<")
-      .put(ImmutableDuring.class, "BETWEEN")
-      .put(ImmutableTEquals.class, "=")
-      .put(ImmutableAnyInteracts.class, "OVERLAPS")
-      .build();
-
-  Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-      .put(ImmutableEquals.class, "ST_Equals")
-      .put(ImmutableDisjoint.class, "ST_Disjoint")
-      .put(ImmutableTouches.class, "ST_Touches")
-      .put(ImmutableWithin.class, "ST_Within")
-      .put(ImmutableOverlaps.class, "ST_Overlaps")
-      .put(ImmutableCrosses.class, "ST_Crosses")
-      .put(ImmutableIntersects.class, "ST_Intersects")
-      .put(ImmutableContains.class, "ST_Contains")
+  Map<SpatialOperator, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<SpatialOperator, String>()
+      .put(SpatialOperator.S_EQUALS, "ST_Equals")
+      .put(SpatialOperator.S_DISJOINT, "ST_Disjoint")
+      .put(SpatialOperator.S_TOUCHES, "ST_Touches")
+      .put(SpatialOperator.S_WITHIN, "ST_Within")
+      .put(SpatialOperator.S_OVERLAPS, "ST_Overlaps")
+      .put(SpatialOperator.S_CROSSES, "ST_Crosses")
+      .put(SpatialOperator.S_INTERSECTS, "ST_Intersects")
+      .put(SpatialOperator.S_CONTAINS, "ST_Contains")
       .build();
 
 }

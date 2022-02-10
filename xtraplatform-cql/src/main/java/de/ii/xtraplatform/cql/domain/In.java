@@ -27,13 +27,13 @@ public interface In extends CqlNode, NonBinaryScalarOperation {
 
     String ID_PLACEHOLDER = "_ID_";
 
-    static In of(String property, List<ScalarLiteral> values) {
+    static In of(String property, List<Scalar> values) {
         return new ImmutableIn.Builder().value(Property.of(property))
                                         .list(values)
                                         .build();
     }
 
-    static In of(String property, ScalarLiteral... values) {
+    static In of(String property, Scalar... values) {
         return new ImmutableIn.Builder().value(Property.of(property))
                                         .list(Arrays.asList(values))
                                         .build();
@@ -45,7 +45,7 @@ public interface In extends CqlNode, NonBinaryScalarOperation {
                 .build();
     }
 
-    static In of(ScalarLiteral... values) {
+    static In of(Scalar... values) {
         return new ImmutableIn.Builder().value(Property.of(ID_PLACEHOLDER))
                                         .addList(values)
                                         .build();
@@ -56,7 +56,7 @@ public interface In extends CqlNode, NonBinaryScalarOperation {
                                         .list(values)
                                         .build();
     }
-    static In ofFunction(Function function, List<ScalarLiteral> values) {
+    static In ofFunction(Function function, List<Scalar> values) {
         return new ImmutableIn.Builder()
                 .value(function)
                 .list(values)
@@ -76,13 +76,6 @@ public interface In extends CqlNode, NonBinaryScalarOperation {
 
         public abstract In.Builder value(Scalar property);
     }
-
-    /* TODO not yet supported
-    @Value.Default
-    default Boolean getNocase() {
-        return Boolean.TRUE;
-    }
-     */
 
     Optional<Scalar> getValue();
 

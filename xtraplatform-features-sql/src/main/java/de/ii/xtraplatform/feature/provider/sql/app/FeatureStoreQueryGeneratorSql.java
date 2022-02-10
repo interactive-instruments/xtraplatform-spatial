@@ -53,93 +53,6 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
   }
 
   @Override
-  public String getMetaQuery(FeatureStoreInstanceContainer instanceContainer, int limit,
-      int offset, Optional<CqlFilter> cqlFilter,
-      List<SortKey> sortKeys,
-      boolean computeNumberMatched) {
-    String limitSql = limit > 0 ? String.format(" LIMIT %d", limit) : "";
-    String offsetSql = offset > 0 ? String.format(" OFFSET %d", offset) : "";
-    Optional<String> filter = getFilter(instanceContainer, cqlFilter);
-    String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
-
-    Tuple<String, String> sortKeyColumnsAndOrderBy = getSortKeyColumnsAndOrderBy(sortKeys,
-        instanceContainer.getSortKey());
-    String columns = sortKeyColumnsAndOrderBy.first();
-    String orderBy = sortKeyColumnsAndOrderBy.second();
-    String minMaxColumns = getMinMaxColumns(sortKeys,
-        instanceContainer.getSortKey());
-
-    String numberReturned = String.format(
-        "SELECT %7$s, count(*) AS numberReturned FROM (SELECT %2$s FROM %1$s A%6$s ORDER BY %3$s%4$s%5$s) AS NR",
-        instanceContainer.getName(), columns, orderBy, limitSql, offsetSql, where, minMaxColumns);
-
-    if (computeNumberMatched) {
-      String numberMatched = String.format(
-          "SELECT count(*) AS numberMatched FROM (SELECT A.%2$s AS SKEY FROM %1$s A%3$s ORDER BY 1) AS NM",
-          instanceContainer.getName(), instanceContainer.getSortKey(), where);
-      return String.format("SELECT * FROM (%s) AS NR2, (%s) AS NM2", numberReturned, numberMatched);
-    } else {
-      return String.format("SELECT *,-1::bigint AS numberMatched FROM (%s) AS META", numberReturned);
-    }
-  }
-
-  private Tuple<String, String> getSortKeyColumnsAndOrderBy(List<SortKey> sortKeys,
-      String mainSortKey) {
-    String columns = "";
-    String orderBy = "";
-
-    for (int i = 0; i < sortKeys.size(); i++) {
-      SortKey sortKey = sortKeys.get(i);
-
-      columns += "A." + sortKey.getField() + " AS CSKEY_" + i + ", ";
-      orderBy +=
-          "CSKEY_" + i + (sortKey.getDirection() == Direction.DESCENDING ? " DESC" : "") + ", ";
-    }
-
-    columns += "A." + mainSortKey + " AS SKEY";
-    orderBy += "SKEY";
-
-    return ImmutableTuple.of(columns, orderBy);
-  }
-
-  private String getMinMaxColumns(List<SortKey> sortKeys,
-      String mainSortKey) {
-    String minMaxKeys = "";
-
-    for (int i = 0; i < sortKeys.size(); i++) {
-      minMaxKeys += "MIN(CSKEY_" + i + ") AS minKey_" + i + ", ";
-      minMaxKeys += "MAX(CSKEY_" + i + ") AS maxKey_" + i + ", ";
-    }
-
-    minMaxKeys += "MIN(SKEY) AS minKey, ";
-    minMaxKeys += "MAX(SKEY) AS maxKey";
-
-    return minMaxKeys;
-  }
-
-  @Override
-  public Stream<String> getInstanceQueries(FeatureStoreInstanceContainer instanceContainer,
-      Optional<CqlFilter> cqlFilter,
-      List<SortKey> sortKeys, Object minKey,
-      Object maxKey, List<Object> customMinKeys, List<Object> customMaxKeys) {
-
-    boolean isIdFilter = cqlFilter.flatMap(CqlFilter::getInOperator).isPresent();
-    List<String> aliases = getAliases(instanceContainer);
-    Optional<String> sqlFilter = getFilter(instanceContainer, cqlFilter);
-
-    Optional<String> whereClause = isIdFilter
-        ? sqlFilter
-        : Optional
-            .of(toWhereClause(aliases.get(0), instanceContainer.getSortKey(), sortKeys, minKey,
-                maxKey, customMinKeys, customMaxKeys,
-                sqlFilter));
-
-    return instanceContainer.getAllAttributesContainers()
-        .stream()
-        .map(attributeContainer -> getTableQuery(attributeContainer, whereClause, sortKeys));
-  }
-
-  @Override
   public String getExtentQuery(FeatureStoreInstanceContainer instanceContainer, FeatureStoreAttributesContainer attributesContainer) {
 
     List<String> aliases = getAliases(attributesContainer);
@@ -155,7 +68,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
     String join = getJoins(attributesContainer, aliases, Optional.empty());
 
-    Optional<String> filter = getFilter(instanceContainer, Optional.empty());
+    Optional<String> filter = getFilter(instanceContainer);
     String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
 
     return String
@@ -175,7 +88,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         .get();
     String join = getJoins(attributesContainer, aliases, Optional.empty());
 
-    Optional<String> filter = getFilter(instanceContainer, Optional.empty());
+    Optional<String> filter = getFilter(instanceContainer);
     String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
 
     return String.format("SELECT MIN(%s), MAX(%s) FROM %s%s%s%s", column, column, table,
@@ -201,7 +114,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
           .get();
       String join = getJoins(startAttributesContainer, aliases, Optional.empty());
 
-      Optional<String> filter = getFilter(instanceContainer, Optional.empty());
+      Optional<String> filter = getFilter(instanceContainer);
       String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
 
       return String.format("SELECT MIN(%s), MAX(%s) FROM %s%s%s%s", startColumn, endColumn, table,
@@ -235,7 +148,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
       String endTableWithJoins = String
           .format("%s%s%s", endTable, endTableJoin.isEmpty() ? "" : " ", endTableJoin);
 
-      Optional<String> filter = getFilter(instanceContainer, Optional.empty());
+      Optional<String> filter = getFilter(instanceContainer);
       String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
 
       return String
@@ -243,54 +156,6 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
               startColumn, startTableWithJoins, where, endColumn, endTableWithJoins, where);
     }
 
-  }
-
-  private String getTableQuery(FeatureStoreAttributesContainer attributeContainer,
-      Optional<String> whereClause,
-      List<SortKey> sortKeys) {
-    List<String> aliases = getAliases(attributeContainer);
-    String attributeContainerAlias = aliases.get(aliases.size() - 1);
-
-    String mainTable = String
-        .format("%s %s", attributeContainer.getInstanceContainerName(), aliases.get(0));
-    List<String> sortFields = getSortFields(attributeContainer, aliases, sortKeys);
-
-    String columns = Stream.concat(sortFields.stream(), attributeContainer.getAttributes()
-        .stream()
-        .map(column -> {
-          String name =
-              column.isConstant() ? column.getConstantValue().get() + " AS " + column.getName()
-                  : getQualifiedColumn(attributeContainerAlias, column.getName());
-          if (column.isSpatial()) {
-            return sqlDialect.applyToWkt(name, true);
-          }
-          if (column.isTemporal()) {
-            return sqlDialect.applyToDatetime(name);
-          }
-
-          return name;
-        }))
-        .collect(Collectors.joining(", "));
-
-    String join = getJoins(attributeContainer, aliases, Optional.empty());
-
-    //String limit2 = limit > 0 ? " LIMIT " + limit : "";
-    //String offset2 = offset > 0 ? " OFFSET " + offset : "";
-    String where = whereClause.map(w -> " WHERE " + w)
-        .orElse("");
-    String orderBy = IntStream.rangeClosed(1, sortFields.size())
-        .boxed()
-        .map(index -> {
-          if (index <= sortKeys.size()
-              && sortKeys.get(index - 1).getDirection() == Direction.DESCENDING) {
-            return index + " DESC";
-          }
-          return String.valueOf(index);
-        })
-        .collect(Collectors.joining(","));
-
-    return String.format("SELECT %s FROM %s%s%s%s ORDER BY %s", columns, mainTable,
-        join.isEmpty() ? "" : " ", join, where, orderBy);
   }
 
   private List<String> getAliases(FeatureStoreAttributesContainer attributeContainer) {
@@ -403,38 +268,24 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         targetField, sourceAlias, sourceField, additionalFilter);
   }
 
-  private Optional<String> getFilter(FeatureStoreInstanceContainer instanceContainer,
-      Optional<CqlFilter> cqlFilter) {
-    if (!instanceContainer.getFilter().isPresent() && !cqlFilter.isPresent()) {
+  private Optional<String> getFilter(FeatureStoreInstanceContainer instanceContainer) {
+    if (instanceContainer.getFilter().isEmpty()) {
       return Optional.empty();
     }
-    if (instanceContainer.getFilter().isPresent() && !cqlFilter.isPresent()) {
-      return Optional
-          .of(filterEncoder.encode(instanceContainer.getFilter().get(), instanceContainer));
-    }
-    if (!instanceContainer.getFilter().isPresent() && cqlFilter.isPresent()) {
-      return Optional.of(filterEncoder.encode(cqlFilter.get(), instanceContainer));
-    }
 
-    CqlFilter mergedFilter = CqlFilter.of(And.of(
-        ImmutableCqlPredicate.copyOf(instanceContainer.getFilter()
-            .get()),
-        ImmutableCqlPredicate.copyOf(cqlFilter.get())
-    ));
-
-    return Optional.of(filterEncoder.encode(mergedFilter, instanceContainer));
+    return Optional.of(filterEncoder.encode(instanceContainer.getFilter().get(), instanceContainer));
   }
 
   private Optional<String> getFilter(FeatureStoreAttributesContainer attributesContainer,
       FeatureStoreRelation relation, Optional<CqlFilter> cqlFilter) {
-    if (!relation.getFilter().isPresent() && !cqlFilter.isPresent()) {
+    if (relation.getFilter().isEmpty() && cqlFilter.isEmpty()) {
       return Optional.empty();
     }
-    if (relation.getFilter().isPresent() && !cqlFilter.isPresent()) {
+    if (relation.getFilter().isPresent() && cqlFilter.isEmpty()) {
       return Optional
           .of(filterEncoder.encodeNested(relation.getFilter().get(), attributesContainer, false));
     }
-    if (!relation.getFilter().isPresent() && cqlFilter.isPresent()) {
+    if (relation.getFilter().isEmpty() && cqlFilter.isPresent()) {
       return Optional.of(filterEncoder.encodeNested(cqlFilter.get(), attributesContainer, true));
     }
 
@@ -447,92 +298,9 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
     return Optional.of(filterEncoder.encodeNested(mergedFilter, attributesContainer, true));
   }
 
-  private List<String> getSortFields(FeatureStoreAttributesContainer attributesContainer,
-      List<String> aliases, List<SortKey> sortKeys) {
-
-    final int[] i = {0};
-    Stream<String> customSortKeys = sortKeys.stream().map(
-        sortKey -> String.format("%s.%s AS CSKEY_%s", aliases.get(0), sortKey.getField(), i[0]++));
-
-    if (attributesContainer instanceof FeatureStoreRelatedContainer) {
-      FeatureStoreRelatedContainer relatedContainer = (FeatureStoreRelatedContainer) attributesContainer;
-      ListIterator<String> aliasesIterator = aliases.listIterator();
-
-      return Stream.concat(customSortKeys, relatedContainer.getSortKeys(aliasesIterator).stream()).collect(Collectors.toList());
-    } else {
-      return Stream.concat(customSortKeys, Stream.of(String.format("%s.%s AS SKEY", aliases.get(0), attributesContainer.getSortKey())))
-          .collect(Collectors.toList());
-    }
-  }
-
   private String getQualifiedColumn(String table, String column) {
     return column.contains("(")
         ? column.replaceAll("((?:\\w+\\()+)(\\w+)((?:\\))+)", "$1" + table + ".$2$3 AS $2")
         : String.format("%s.%s", table, column);
-  }
-
-
-  private String toWhereClause(String alias, String keyField,
-      List<SortKey> sortKeys, Object minKey,
-      Object maxKey,
-      List<Object> customMinKeys, List<Object> customMaxKeys,
-      Optional<String> additionalFilter) {
-    StringBuilder filter = new StringBuilder()
-        .append("(");
-
-    addMinMaxFilter(filter, alias, keyField, minKey, maxKey);
-
-    for (int i = 0; i < sortKeys.size(); i++) {
-      filter.append(" AND ");
-      addMinMaxFilter(filter, alias, sortKeys.get(i).getField(), customMinKeys.get(i),
-          customMaxKeys.get(i));
-    }
-
-    filter.append(")");
-
-    if (additionalFilter.isPresent()) {
-      filter.append(" AND ")
-          .append("(")
-          .append(additionalFilter.get())
-          .append(")");
-    }
-
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("SUB FILTER: {}", filter);
-    }
-
-    return filter.toString();
-  }
-
-  private StringBuilder addMinMaxFilter(StringBuilder whereClause, String alias, String keyField,
-      Object minKey,
-      Object maxKey) {
-    return whereClause
-        .append(alias)
-        .append(".")
-        .append(keyField)
-        .append(" >= ")
-        .append(formatLiteral(minKey))
-        .append(" AND ")
-        .append(alias)
-        .append(".")
-        .append(keyField)
-        .append(" <= ")
-        .append(formatLiteral(maxKey));
-  }
-
-  private String formatLiteral(Object literal) {
-    if (Objects.isNull(literal)) {
-      return "NULL";
-    }
-    if (literal instanceof Number) {
-      return String.valueOf(literal);
-    }
-
-    String literalString = literal instanceof Timestamp
-        ? String.valueOf(((Timestamp) literal).toInstant())
-        : String.valueOf(literal);
-
-    return String.format("'%s'", sqlDialect.escapeString(literalString));
   }
 }

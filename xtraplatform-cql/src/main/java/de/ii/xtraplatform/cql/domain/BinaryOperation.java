@@ -7,23 +7,16 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.immutables.value.Value;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface BinaryOperation<T extends Literal> extends CqlNode {
 
-    @JsonValue
+    //@JsonValue
     List<Operand> getOperands();
 
     @Value.Check
@@ -36,7 +29,7 @@ public interface BinaryOperation<T extends Literal> extends CqlNode {
 
         public abstract U build();
 
-        @JsonValue
+        //@JsonValue
         public abstract Builder<T,U> operands(Iterable<? extends Operand> operands);
     }
 

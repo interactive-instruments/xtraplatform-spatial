@@ -28,26 +28,8 @@ public interface Like extends NonBinaryScalarOperation, CqlNode {
                                           .build();
     }
 
-    static Like of(String property, ScalarLiteral scalarLiteral, String wildCard, String singlechar, String escapechar, Boolean nocase) {
-        return new ImmutableLike.Builder().operands(ImmutableList.of(Property.of(property),scalarLiteral))
-                                          .wildcard(Optional.ofNullable(wildCard))
-                                          .singleChar(Optional.ofNullable(singlechar))
-                                          .escapeChar(Optional.ofNullable(escapechar))
-                                          .nocase(Optional.ofNullable(nocase))
-                                          .build();
-    }
-
     static Like of(String property, String property2) {
         return new ImmutableLike.Builder().operands(ImmutableList.of(Property.of(property),Property.of(property2)))
-                                          .build();
-    }
-
-    static Like of(String property, String property2, String wildCard, String singlechar, String escapechar, Boolean nocase) {
-        return new ImmutableLike.Builder().operands(ImmutableList.of(Property.of(property), Property.of(property2)))
-                                          .wildcard(Optional.ofNullable(wildCard))
-                                          .singleChar(Optional.ofNullable(singlechar))
-                                          .escapeChar(Optional.ofNullable(escapechar))
-                                          .nocase(Optional.ofNullable(nocase))
                                           .build();
     }
 
@@ -56,24 +38,7 @@ public interface Like extends NonBinaryScalarOperation, CqlNode {
                                           .build();
     }
 
-    static Like ofFunction(Function function, ScalarLiteral scalarLiteral, String wildCard, String singlechar, String escapechar, Boolean nocase) {
-        return new ImmutableLike.Builder().operands(ImmutableList.of(function, scalarLiteral))
-                                          .wildcard(Optional.ofNullable(wildCard))
-                                          .singleChar(Optional.ofNullable(singlechar))
-                                          .escapeChar(Optional.ofNullable(escapechar))
-                                          .nocase(Optional.ofNullable(nocase))
-                                          .build();
-    }
-
     List<Operand> getOperands();
-
-    Optional<String> getWildcard();
-
-    Optional<String> getSingleChar();
-
-    Optional<String> getEscapeChar();
-
-    Optional<Boolean> getNocase();
 
     @Value.Check
     default void check() {
@@ -87,13 +52,6 @@ public interface Like extends NonBinaryScalarOperation, CqlNode {
 
         public abstract Like.Builder operands(Iterable<? extends Operand> operands);
 
-        public abstract Like.Builder wildcard(Optional<String> wildcard);
-
-        public abstract Like.Builder singleChar(Optional<String> singlechar);
-
-        public abstract Like.Builder escapeChar(Optional<String> escapechar);
-
-        public abstract Like.Builder nocase(Optional<Boolean> nocase);
     }
 
     @Override

@@ -7,48 +7,12 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
-import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
-
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Doubles;
-import de.ii.xtraplatform.cql.domain.AContains;
-import de.ii.xtraplatform.cql.domain.AEquals;
-import de.ii.xtraplatform.cql.domain.AOverlaps;
-import de.ii.xtraplatform.cql.domain.After;
-import de.ii.xtraplatform.cql.domain.And;
-import de.ii.xtraplatform.cql.domain.AnyInteracts;
-import de.ii.xtraplatform.cql.domain.ArrayLiteral;
-import de.ii.xtraplatform.cql.domain.ArrayOperation;
-import de.ii.xtraplatform.cql.domain.Before;
-import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
-import de.ii.xtraplatform.cql.domain.ContainedBy;
-import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlNode;
-import de.ii.xtraplatform.cql.domain.CqlToText;
-import de.ii.xtraplatform.cql.domain.During;
-import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
-import de.ii.xtraplatform.cql.domain.ImmutableCqlPredicate;
-import de.ii.xtraplatform.cql.domain.ImmutableMultiPolygon;
-import de.ii.xtraplatform.cql.domain.ImmutablePolygon;
-import de.ii.xtraplatform.cql.domain.In;
-import de.ii.xtraplatform.cql.domain.IsNull;
-import de.ii.xtraplatform.cql.domain.Like;
-import de.ii.xtraplatform.cql.domain.LogicalOperation;
-import de.ii.xtraplatform.cql.domain.Not;
-import de.ii.xtraplatform.cql.domain.Operand;
-import de.ii.xtraplatform.cql.domain.Property;
-import de.ii.xtraplatform.cql.domain.Scalar;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.TEquals;
-import de.ii.xtraplatform.cql.domain.Temporal;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -56,20 +20,30 @@ import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
+import java.util.Map.Entry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.threeten.extra.Interval;
+
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.threeten.extra.Interval;
+
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINEDBY;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINS;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_EQUALS;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_OVERLAPS;
+import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+import static de.ii.xtraplatform.features.domain.SchemaBase.Type.DATE;
 
 public class FilterEncoderSql {
 
@@ -84,30 +58,36 @@ public class FilterEncoderSql {
     private final SqlDialect sqlDialect;
     private final CrsTransformerFactory crsTransformerFactory;
     private final Cql cql;
+    private final String accentiCollation;
     BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>> coordinatesTransformer;
 
     public FilterEncoderSql(
             EpsgCrs nativeCrs, SqlDialect sqlDialect,
-            CrsTransformerFactory crsTransformerFactory, Cql cql) {
+            CrsTransformerFactory crsTransformerFactory, Cql cql,
+            String accentiCollation) {
         this.aliasGenerator = new AliasGenerator();
         this.joinGenerator = new JoinGenerator();
         this.nativeCrs = nativeCrs;
         this.sqlDialect = sqlDialect;
         this.crsTransformerFactory = crsTransformerFactory;
         this.cql = cql;
+        this.accentiCollation = accentiCollation;
         this.coordinatesTransformer = this::transformCoordinatesIfNecessary;
     }
 
     public String encode(CqlFilter cqlFilter, SchemaSql schema) {
-        return cqlFilter.accept(new CqlToSql(schema));
+        return cql.mapTemporalOperators(cqlFilter, sqlDialect.getTemporalOperators())
+            .accept(new CqlToSql(schema));
     }
 
     public String encode(String cqlFilter, SchemaSql schema) {
-        return cql.read(cqlFilter, Format.TEXT).accept(new CqlToSql(schema));
+        return cql.mapTemporalOperators(cql.read(cqlFilter, Format.TEXT), sqlDialect.getTemporalOperators())
+            .accept(new CqlToSql(schema));
     }
 
     private String encodeNested(CqlFilter cqlFilter, SchemaSql schema, boolean isUserFilter) {
-        return cqlFilter.accept(new CqlToSqlNested(schema, isUserFilter));
+        return cql.mapTemporalOperators(cqlFilter, sqlDialect.getTemporalOperators())
+            .accept(new CqlToSqlNested(schema, isUserFilter));
     }
 
     private List<Double> transformCoordinatesIfNecessary(List<Double> coordinates, Optional<EpsgCrs> sourceCrs) {
@@ -157,9 +137,10 @@ public class FilterEncoderSql {
         return Optional.of(encodeNested(mergedFilter, table.get(), true));
     }
     
-    private static Predicate<SchemaSql> getPropertyNameMatcher(String propertyName) {
+    private static Predicate<SchemaSql> getPropertyNameMatcher(String propertyName,
+        boolean includeObjects) {
         return property -> (property.isId() && Objects.equals(propertyName, ID_PLACEHOLDER)) 
-            || (property.isValue() && property.getSourcePath().isPresent() && Objects.equals(propertyName, property.getSourcePath().get()));
+            || ((property.isValue() || includeObjects) && property.getSourcePath().isPresent() && Objects.equals(propertyName, property.getSourcePath().get()));
     }
 
     private class CqlToSql extends CqlToText {
@@ -171,18 +152,28 @@ public class FilterEncoderSql {
             this.rootSchema = rootSchema;
         }
 
-        protected SchemaSql getTable(String propertyName) {
+        protected SchemaSql getTable(String propertyName, boolean isObject) {
+            if (isObject) {
+                return rootSchema.getAllObjects()
+                    .stream()
+                    .filter(getPropertyNameMatcher(propertyName, true))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName)));
+            }
             return rootSchema.getAllObjects()
                                     .stream()
                                     .filter(obj -> obj.getProperties()
                                                       .stream()
-                                                      .anyMatch(getPropertyNameMatcher(propertyName)))
+                                                      .anyMatch(getPropertyNameMatcher(propertyName,
+                                                          false)))
                                     .findFirst()
                                     .orElseThrow(() -> new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName)));
         }
 
-        protected String getColumn(SchemaSql table,
-                                   String propertyName, boolean allowColumnFallback) {
+        protected String getQualifiedColumn(SchemaSql table,
+                                            String propertyName,
+                                            String alias,
+                                            boolean allowColumnFallback) {
             //TODO: support nested mapping filters
             if (Objects.equals(table.getParentPath(), ImmutableList.of("_route_"))
                 && propertyName.equals("node")) {
@@ -190,19 +181,22 @@ public class FilterEncoderSql {
             }
             if (Objects.equals(table.getParentPath(), ImmutableList.of("_route_"))
                 && propertyName.equals("source")) {
-                return propertyName;
+                return String.format("%s.%s", alias, propertyName);
             }
             return table.getProperties()
                         .stream()
-                        .filter(getPropertyNameMatcher(propertyName))
+                        .filter(getPropertyNameMatcher(propertyName, false))
                         .findFirst()
                         .map(column -> {
+                            String qualifiedColumn = String.format("%s.%s", alias, column.getName());
                             if (column.isTemporal()) {
-                                return sqlDialect.applyToDatetime(column.getName());
+                                if (column.getType()==DATE)
+                                    return sqlDialect.applyToDate(qualifiedColumn);
+                                return sqlDialect.applyToDatetime(qualifiedColumn);
                             }
-                            return column.getName();
+                            return qualifiedColumn;
                         })
-                    .or(() -> allowColumnFallback ? Optional.of(propertyName.substring(propertyName.lastIndexOf(".")+1)) : Optional.empty())
+                    .or(() -> allowColumnFallback ? Optional.of(String.format("%s.%s", alias, propertyName.substring(propertyName.lastIndexOf(".")+1))) : Optional.empty())
                     .orElseThrow(() -> new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName)));
         }
 
@@ -210,12 +204,15 @@ public class FilterEncoderSql {
         public String visit(Property property, List<String> children) {
             // strip double quotes from the property name
             String propertyName = property.getName().replaceAll("^\"|\"$", "");
-            SchemaSql table = getTable(propertyName);
-            String column = getColumn(table, propertyName, false);
+            SchemaSql table = getTable(propertyName, false);
 
-            List<SchemaSql> allObjects = rootSchema.getAllObjects();
+            //TODO: pass all parents
+            List<SchemaSql> parents = ImmutableList.of(rootSchema);
+            List<String> aliases = aliasGenerator.getAliases(parents, table, 1);
+            String qualifiedColumn = getQualifiedColumn(table, propertyName, aliases.get(aliases.size() - 1), false);
+
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("PROP {} {}", table.getName(), column);
+                LOGGER.trace("PROP {} {}", table.getName(), qualifiedColumn);
             }
 
             Optional<CqlFilter> userFilter;
@@ -223,26 +220,21 @@ public class FilterEncoderSql {
             Optional<String> instanceFilter = Optional.empty();
             if (!property.getNestedFilters()
                 .isEmpty()) {
-                userFilter = property.getNestedFilters()
-                    .values()
+                Optional<Entry<String, CqlFilter>> nestedFilter = property.getNestedFilters()
+                    .entrySet()
                     .stream()
                     .findFirst();
+                userFilter = nestedFilter.map(Entry::getValue);
                 String userFilterPropertyName = getUserFilterPropertyName(userFilter.get());
                 if (userFilterPropertyName.contains(ROW_NUMBER)) {
-                    userFilterTable = Optional.of(table);
+                    userFilterTable = Optional.of(getTable(nestedFilter.get().getKey(), true));
                     instanceFilter = rootSchema.getFilter().map(cql -> encode(cql , rootSchema));
                 } else {
-                    userFilterTable = Optional.ofNullable(getTable(userFilterPropertyName));
+                    userFilterTable = Optional.ofNullable(getTable(userFilterPropertyName, false));
                 }
             } else {
                 userFilter = Optional.empty();
             }
-
-            //TODO: pass all parents
-            List<SchemaSql> parents = ImmutableList.of(rootSchema);
-
-            List<String> aliases = aliasGenerator.getAliases(parents, table, 1);
-            String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
 
             List<Optional<String>> relationFilters = Stream.concat(
                 parents.stream().flatMap(parent -> parent.getRelation().stream()),
@@ -287,18 +279,66 @@ public class FilterEncoderSql {
             if (function.isInterval()) {
                 String start = children.get(0);
                 String end = children.get(1);
-                String endColumn = end.substring(end.indexOf("%1$s") + 4, end.indexOf("%2$s"));
 
-                return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
+                // process special values for a half-bounded interval
+                if (start.equals("'..'"))
+                    start = sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin());
+                if (end.equals("'..'"))
+                    end = sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax());
+
+                Operand arg1 = function.getArguments().get(0);
+                Operand arg2 = function.getArguments().get(1);
+                if (arg1 instanceof Property && arg2 instanceof Property) {
+                    String endColumn = end.substring(end.indexOf("%1$s") + 4, end.indexOf("%2$s"));
+                    return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
+                } else if (arg1 instanceof Property && arg2 instanceof TemporalLiteral) {
+                    return String.format(start, "%1$s(", ", " + end + ")%2$s");
+                } else if (arg1 instanceof TemporalLiteral && arg2 instanceof Property) {
+                    return String.format(end, "%1$s("+ start + ", ", ")%2$s");
+                }
+                throw new IllegalStateException("unsupported interval function: " + function);
             } else if (function.isPosition()) {
                 return "%1$s" + ROW_NUMBER + "%2$s";
+            } else if (function.isUpper()) {
+                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                    return children.get(0).toLowerCase();
+                } else if (function.getArguments().get(0) instanceof Property || function.getArguments().get(0) instanceof Function) {
+                    return String.format(children.get(0), "%1$sUPPER(", ")%2$s");
+                } else if (function.getArguments().get(0) instanceof Function) {
+                    if (children.get(0).contains("%1$s") && children.get(0).contains("%2$s"))
+                        return String.format(children.get(0), "%1$sUPPER(", ")%2$s");
+                    return String.format("UPPER(%s)", children.get(0));
+                }
+            } else if (function.isCasei() || function.isLower()) {
+                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                    return children.get(0).toLowerCase();
+                } else if (function.getArguments().get(0) instanceof Property) {
+                    return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
+                } else if (function.getArguments().get(0) instanceof Function) {
+                    if (children.get(0).contains("%1$s") && children.get(0).contains("%2$s"))
+                        return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
+                    return String.format("LOWER(%s)", children.get(0));
+                }
+            } else if (function.isAccenti()) {
+                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                    if (Objects.nonNull(accentiCollation))
+                        return String.format("%s COLLATE \"%s\"", children.get(0), accentiCollation);
+                    throw new IllegalArgumentException("ACCENTI() is not supported by this API.");
+                } else if (function.getArguments().get(0) instanceof Property) {
+                    if (Objects.nonNull(accentiCollation))
+                        return children.get(0).replace("%2$s", " COLLATE \""+accentiCollation+"\"%2$s");
+                    throw new IllegalArgumentException("ACCENTI() is not supported by this API.");
+                }
+                return children.get(0);
             }
 
             return super.visit(function, children);
         }
 
         private String reduceSelectToColumn(String expression) {
-            return String.format(expression.contains(" WHERE ") ? expression.substring(expression.indexOf(" WHERE ") + 7, expression.length() - 1) : expression, "", "");
+            if (expression.contains("%1$s") && expression.contains("%2$s"))
+                return String.format(expression.contains(" WHERE ") ? expression.substring(expression.indexOf(" WHERE ") + 7, expression.length() - 1) : expression, "", "");
+            return expression;
         }
 
         private String replaceColumnWithLiteral(String expression, String column, String literal) {
@@ -396,42 +436,10 @@ public class FilterEncoderSql {
             List<String> expressions = processBinary(like.getOperands(), children);
 
             // we may need to change the second expression
-            Scalar op2 = (Scalar) like.getOperands().get(1);
             String secondExpression = expressions.get(1);
 
             String functionStart = "";
             String functionEnd = "";
-            // modifiers only work with a literal as the second value
-            if (op2 instanceof ScalarLiteral) {
-                if (like.getWildcard().isPresent() &&
-                        !Objects.equals("%", like.getWildcard().get())) {
-                    String wildCard = like.getWildcard().get();
-                    secondExpression = secondExpression.replaceAll("%", "\\%")
-                                                       .replaceAll(String.format("\\%s", wildCard), "%");
-                }
-                if (like.getSingleChar().isPresent() &&
-                        !Objects.equals("_", like.getSingleChar().get())) {
-                    String singlechar = like.getSingleChar().get();
-                    secondExpression = secondExpression.replaceAll("_", "\\_")
-                                                       .replaceAll(String.format("\\%s", singlechar), "_");
-                }
-                if (like.getEscapeChar().isPresent() &&
-                        !Objects.equals("\\", like.getEscapeChar().get())) {
-                    String escapechar = like.getEscapeChar().get();
-                    secondExpression = secondExpression.replaceAll("\\\\", "\\\\")
-                                                       .replaceAll(String.format("\\%s", escapechar), "\\");
-                }
-            }
-            if ((like.getNocase().isEmpty()) ||
-                    (like.getNocase().isPresent() && Objects.equals(Boolean.TRUE, like.getNocase().get()))) {
-                functionStart = "LOWER(";
-                functionEnd = ")";
-                if (op2 instanceof ScalarLiteral) {
-                    secondExpression = secondExpression.toLowerCase();
-                } else if (op2 instanceof Property) {
-                    secondExpression = String.format("LOWER(%s::varchar)", secondExpression.toLowerCase());
-                }
-            }
 
             String operation = String.format("::varchar%s %s %s", functionEnd, operator, secondExpression);
             return String.format(expressions.get(0), functionStart, operation);
@@ -492,128 +500,104 @@ public class FilterEncoderSql {
             return String.format(expressions.get(0), "", operation);
         }
 
-        private Instant getStart(TemporalLiteral literal) {
-            return (literal.getType() == Interval.class)
-                    ? ((Interval) literal.getValue()).getStart()
-                    : (Instant) literal.getValue();
-        }
-
-        private String getStartAsString(TemporalLiteral literal) {
-            return String.format("TIMESTAMP '%s'", getStart(literal))
-                         .replace("'0000-01-01T00:00:00Z'", "'-infinity'");
-        }
-
-        private Instant getEnd(TemporalLiteral literal) {
-            return (literal.getType() == Interval.class)
-                    ? ((Interval) literal.getValue()).getEnd()
-                    : (Instant) literal.getValue();
-        }
-
-        private String getEndAsString(TemporalLiteral literal) {
-            return String.format("TIMESTAMP '%s'", getEnd(literal))
-                         .replace("'9999-12-31T23:59:59Z'", "'infinity'");
-        }
-
-        private Instant getEndExclusive(TemporalLiteral literal) {
-            return (literal.getType() == Interval.class)
-                    ? ((Interval) literal.getValue()).getEnd().plusSeconds(1)
-                    : (Instant) literal.getValue();
-        }
-
-        private String getEndExclusiveAsString(TemporalLiteral literal) {
-            return String.format("TIMESTAMP '%s'", getEndExclusive(literal))
-                         .replace("'+10000-01-01T00:00:00Z'", "'infinity'");
-        }
-
         @Override
         public String visit(TemporalOperation temporalOperation, List<String> children) {
-            String operator = sqlDialect.getTemporalOperator(temporalOperation.getClass());
+            String operator = sqlDialect.getTemporalOperator(temporalOperation);
+            if (Objects.isNull(operator))
+                throw new IllegalStateException(String.format("unexpected temporal operator: %s", temporalOperation.getClass()));
 
             Temporal op1 = (Temporal) temporalOperation.getOperands().get(0);
             Temporal op2 = (Temporal) temporalOperation.getOperands().get(1);
 
-            // TODO The behaviour of the temporal predicates should be improved by 
-            //      distinguishing datetime properties of different granularity in
-            //      the provider schema; at least second and day, but a more flexible 
-            //      solution would be better.
-            //      The public review of CQL resulted in a number of comments on the
-            //      temporal predicates, partly also relates to this - wait for their 
-            //      resolution.
-
-            if (temporalOperation instanceof TEquals) {
-                // Both side are a property or an instant, this was checked when the operation was built.
-                if (op1 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(String.format("TIMESTAMP %s", children.get(0)), children.get(1));
-                }
-                if (op2 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(children.get(0), String.format("TIMESTAMP %s", children.get(1)));
-                }
-                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
-
-            } else if (temporalOperation instanceof Before) {
-                if (op1 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(getEndAsString((TemporalLiteral) op1), children.get(1));
-                }
-                if (op2 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2));
-                }
-                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
-
-            } else if (temporalOperation instanceof After) {
-                if (op1 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(getStartAsString((TemporalLiteral) op1), children.get(1));
-                }
-                if (op2 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(children.get(0), getEndAsString((TemporalLiteral) op2));
-                }
-                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
-
-            } else if (temporalOperation instanceof During) {
-                // The left hand side is a property or an instant, this was checked when the operation was built.
-                // The right hand side is an interval, this was checked when the operation was built.
-                Temporal op2a = op2;
-                Temporal op2b = op2;
-                if (op2 instanceof TemporalLiteral) {
-                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
-                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
-                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
-                } else if (op2 instanceof Property) {
-                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
-                }
-                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s AND %s", operator, expressions.get(1), expressions.get(2)));
-
-            } else if (temporalOperation instanceof AnyInteracts) {
-                // ISO 8601 intervals include both the start and end instant
-                // PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
-                if (op1 instanceof Property) {
-                    // need to change "column" to "(column,column)"
-                    children = ImmutableList.of(replaceColumnWithInterval(children.get(0), reduceSelectToColumn(children.get(0))), children.get(1));
-                } else if (op1 instanceof TemporalLiteral) {
-                    // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
-                    children = ImmutableList.of(String.format("(%s, %s)", getStartAsString((TemporalLiteral) op1), getEndExclusiveAsString((TemporalLiteral) op1)), children.get(1));
-                }
-
-                if (op2 instanceof Property) {
-                    // need to change "column" to "(column,column)"
-                    children = ImmutableList.of(children.get(0),replaceColumnWithInterval(children.get(1), reduceSelectToColumn(children.get(1))));
-                } else if (op2 instanceof TemporalLiteral) {
-                    // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
-                    children = ImmutableList.of(children.get(0), String.format("(%s, %s)", getStartAsString((TemporalLiteral) op2), getEndExclusiveAsString((TemporalLiteral) op2)));
-                }
-                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
+            if (op1 instanceof Property) {
+                // need to change "column" to "(column,column)"
+                children = ImmutableList.of(replaceColumnWithInterval(children.get(0), reduceSelectToColumn(children.get(0))), children.get(1));
+            } else if (op1 instanceof TemporalLiteral) {
+                // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
+                children = ImmutableList.of(String.format("(%s, %s)", getStartAsString((TemporalLiteral) op1), getEndExclusiveAsString((TemporalLiteral) op1)), children.get(1));
+            } else if (op1 instanceof Function) {
+                // nothing to do here, this was handled in the interval() function
             }
 
-            throw new IllegalArgumentException(String.format("unsupported temporal operator: %s", operator));
+            if (op2 instanceof Property) {
+                // need to change "column" to "(column,column)"
+                children = ImmutableList.of(children.get(0),replaceColumnWithInterval(children.get(1), reduceSelectToColumn(children.get(1))));
+            } else if (op2 instanceof TemporalLiteral) {
+                if (((TemporalLiteral)op2).getType()==Function.class) {
+                    // nothing to do, this was handled in the temporal literal
+                } else {
+                    // we have a Java interval and need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
+                    children = ImmutableList.of(children.get(0), getInterval((TemporalLiteral) op2));
+                }
+            } else if (op2 instanceof Function) {
+                // nothing to do here, this was handled in the interval() function
+            }
+
+            List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
+            return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
+        }
+
+        /**
+         * ISO 8601 intervals include both the start and end instant
+         * PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
+         * @param literal temporal literal
+         * @return PostgreSQL interval
+         */
+        private String getInterval(TemporalLiteral literal) {
+            return String.format("(%s,%s)", getStartAsString(literal), getEndExclusiveAsString(literal));
+        }
+
+        private Instant getStart(TemporalLiteral literal) {
+            if (literal.getType() == Interval.class) {
+                return ((Interval) literal.getValue()).getStart();
+            } else if (literal.getType() == Instant.class) {
+                return ((Instant) literal.getValue());
+            } else if (literal.getType() == TemporalLiteral.OPEN.class) {
+                return Instant.MIN;
+            } else if (literal.getType() == Function.class) {
+                Function function = (Function) literal.getValue();
+                assert function.isInterval();
+                assert function.getArguments().get(0) instanceof TemporalLiteral;
+                return getStart((TemporalLiteral) function.getArguments().get(0));
+            } else {
+                return ((LocalDate) literal.getValue()).atStartOfDay(ZoneOffset.UTC).toInstant();
+            }
+        }
+
+        private String getStartAsString(TemporalLiteral literal) {
+            Instant instant = getStart(literal);
+            if (instant==Instant.MIN)
+                return sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin());
+            return sqlDialect.applyToDatetimeLiteral(instant.toString());
+        }
+
+        private Instant getEndExclusive(TemporalLiteral literal) {
+            if (literal.getType() == Interval.class) {
+                return ((Interval) literal.getValue()).getEnd();
+            } else if (literal.getType() == Instant.class) {
+                return ((Instant) literal.getValue());
+            } else if (literal.getType() == TemporalLiteral.OPEN.class) {
+                return Instant.MAX;
+            } else if (literal.getType() == Function.class) {
+                Function function = (Function) literal.getValue();
+                assert function.isInterval();
+                assert function.getArguments().get(1) instanceof TemporalLiteral;
+                return getEndExclusive((TemporalLiteral) function.getArguments().get(1));
+            } else {
+                return ((LocalDate) literal.getValue()).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+            }
+        }
+
+        private String getEndExclusiveAsString(TemporalLiteral literal) {
+            Instant instant = getEndExclusive(literal);
+            if (instant==Instant.MAX)
+                return sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax());
+            return sqlDialect.applyToDatetimeLiteral(instant.toString());
         }
 
         @Override
         public String visit(SpatialOperation spatialOperation, List<String> children) {
-            String operator = sqlDialect.getSpatialOperator(spatialOperation.getClass());
+            String operator = sqlDialect.getSpatialOperator(spatialOperation);
 
             List<String> expressions = processBinary(spatialOperation.getOperands(), children);
 
@@ -622,7 +606,39 @@ public class FilterEncoderSql {
 
         @Override
         public String visit(TemporalLiteral temporalLiteral, List<String> children) {
-            return String.format("'%s'", temporalLiteral.getValue());
+            if (temporalLiteral.getType() == Instant.class) {
+                Instant instant = ((Instant) temporalLiteral.getValue());
+                String literal;
+                if (instant==Instant.MIN)
+                    literal = sqlDialect.applyToInstantMin();
+                else if (instant==Instant.MAX)
+                    literal = sqlDialect.applyToInstantMax();
+                else
+                    literal = ((Instant) temporalLiteral.getValue()).toString();
+                return sqlDialect.applyToDatetimeLiteral(literal);
+            } else if (temporalLiteral.getType() == Interval.class) {
+                // this can only occur in the T_INTERSECTS() operator
+                return getInterval(temporalLiteral);
+            } else if (temporalLiteral.getType() == Function.class) {
+                // this can only occur in the T_INTERSECTS() operator
+                // an INTERVAL() with dates
+                Function function = (Function) temporalLiteral.getValue();
+                assert function.isInterval();
+                Operand arg1 = function.getArguments().get(0);
+                assert arg1 instanceof TemporalLiteral;
+                Operand arg2 = function.getArguments().get(1);
+                assert arg2 instanceof TemporalLiteral;
+                return String.format("(%s,%s)", getStartAsString((TemporalLiteral) arg1), getEndExclusiveAsString((TemporalLiteral) arg2));
+            } else if (temporalLiteral.getType() == LocalDate.class) {
+                return sqlDialect.applyToDateLiteral(((LocalDate) temporalLiteral.getValue()).toString());
+            } else if (temporalLiteral.getType() == TemporalLiteral.OPEN.class) {
+                // if we are here, we are an argument in an interval() function, but
+                // here we do not know, if we are Instant.MIN (first argument) or
+                // Instant.MAX (second argument); so, we use a placeholder that we
+                // then process in the interval() function
+                return "'..'";
+            }
+            throw new IllegalStateException("unsupported temporal SQL literal: " + temporalLiteral);
         }
 
         @Override
@@ -737,28 +753,29 @@ public class FilterEncoderSql {
                     // literal op literal, we can decide here
                     List<String> firstOp = ARRAY_SPLITTER.splitToList(mainExpression.replaceAll("\\[|\\]", ""));
                     List<String> secondOp = ARRAY_SPLITTER.splitToList(secondExpression.replaceAll("\\[|\\]", ""));
-                    if (arrayOperation instanceof AContains) {
-                        // each item of the second array must be in the first array
-                        return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
-                    } else if (arrayOperation instanceof AEquals) {
-                        // items must be identical
-                        if (firstOp.size()!=secondOp.size())
-                            return "1=0";
-                        return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
-                    } else if (arrayOperation instanceof AOverlaps) {
-                        // at least one common element
-                        return secondOp.stream().anyMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
-                    } else if (arrayOperation instanceof ContainedBy) {
-                        // each item of the first array must be in the second array
-                        return firstOp.stream().allMatch(item -> secondOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                    switch (arrayOperation.getOperator()) {
+                        case A_CONTAINS:
+                            // each item of the second array must be in the first array
+                            return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                        case A_EQUALS:
+                            // items must be identical
+                            if (firstOp.size()!=secondOp.size())
+                                return "1=0";
+                            return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                        case A_OVERLAPS:
+                            // at least one common element
+                            return secondOp.stream().anyMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                        case A_CONTAINEDBY:
+                            // each item of the first array must be in the second array
+                            return firstOp.stream().allMatch(item -> secondOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
                     }
-                    throw new IllegalArgumentException("unsupported array operator");
+                    throw new IllegalArgumentException("unsupported array operator: " + arrayOperation.getOperator());
                 }
             }
 
             if (op1hasSelect && op2hasSelect) {
-                // property op property
-                // TODO
+                // TODO property op property
+                throw new IllegalArgumentException("Array predicates with property references on both sides are not supported.");
 
             }
 
@@ -767,31 +784,28 @@ public class FilterEncoderSql {
             int elementCount = secondExpression.split(",").length;
 
             String propertyName = ((Property) arrayOperation.getOperands().get(notInverse ? 0 : 1)).getName();
-            SchemaSql table = getTable(propertyName);
-            String column = getColumn(table, propertyName, false);
+            SchemaSql table = getTable(propertyName, false);
             List<String> aliases = aliasGenerator.getAliases(table, 1);
-            String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
-            List<Map<String, List<String>>> x = ImmutableList.of();
-            boolean xx = x.stream().map(theme -> theme.get("concept")).flatMap(List::stream).filter(concept -> concept.equals("DLKM")).distinct().count() == 1;
+            String qualifiedColumn = getQualifiedColumn(table, propertyName, aliases.get(aliases.size() - 1), false);
 
-            if (notInverse ? arrayOperation instanceof AContains : arrayOperation instanceof ContainedBy) {
+            if (notInverse ? arrayOperation.getOperator()==A_CONTAINS : arrayOperation.getOperator()==A_CONTAINEDBY) {
                 String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s", secondExpression, aliases.get(0), rootSchema
                     .getSortKey().get(), qualifiedColumn, elementCount);
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (arrayOperation instanceof AEquals) {
+            } else if (arrayOperation.getOperator()==A_EQUALS) {
                 String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s AND count(case when %4$s not in %1$s then %4$s else null end) = 0",
                                                   secondExpression, aliases.get(0), rootSchema.getSortKey().get(), qualifiedColumn, elementCount);
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (arrayOperation instanceof AOverlaps) {
+            } else if (arrayOperation.getOperator()==A_OVERLAPS) {
                 String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s", secondExpression, aliases.get(0), rootSchema
                     .getSortKey().get());
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (notInverse ? arrayOperation instanceof ContainedBy : arrayOperation instanceof AContains) {
+            } else if (notInverse ? arrayOperation.getOperator()==A_CONTAINEDBY : arrayOperation.getOperator()==A_CONTAINS) {
                 String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(case when %4$s not in %1$s then %4$s else null end) = 0",
                                                   secondExpression, aliases.get(0), rootSchema.getSortKey().get(), qualifiedColumn);
                 return String.format(mainExpression, "", arrayQuery);
             }
-            throw new IllegalArgumentException("unsupported array operator");
+            throw new IllegalStateException("unexpected array operator: " + arrayOperation);
         }
 
         @Override
@@ -863,14 +877,13 @@ public class FilterEncoderSql {
             String prefix = hasPrefix ? propertyName.substring(0, propertyName.lastIndexOf(".") + 1) : "";
             boolean hasAllowedPrefix = hasPrefix && allowedColumnPrefixes.contains(prefix);
             boolean allowColumnFallback = !hasPrefix || hasAllowedPrefix;
-            String column = getColumn(schema, propertyName, !isUserFilter && allowColumnFallback);
             List<String> aliases = aliasGenerator.getAliases(schema, isUserFilter ? 1 : 0);
             String alias = hasAllowedPrefix ? aliases.get(allowedColumnPrefixes.indexOf(prefix)) : aliases.get(aliases.size() - 1);
-            String qualifiedColumn = String.format("%s.%s", alias, column);
+            String qualifiedColumn = getQualifiedColumn(schema, propertyName, alias, !isUserFilter && allowColumnFallback);
 
             //TODO: support nested mapping filters
-            if (column.startsWith("_route_")) {
-                qualifiedColumn = "A." + column.replace("_route_", "");
+            if (qualifiedColumn.startsWith("_route_")) {
+                qualifiedColumn = "A." + qualifiedColumn.replace("_route_", "");
             }
 
             return String.format("%%1$s%1$s%%2$s", qualifiedColumn);

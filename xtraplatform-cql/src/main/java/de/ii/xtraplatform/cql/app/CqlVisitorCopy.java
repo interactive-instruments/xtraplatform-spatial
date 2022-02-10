@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.cql.app;
 
-import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.*;
 
 import java.util.ArrayList;
@@ -127,102 +126,29 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
 
     @Override
     public CqlNode visit(TemporalOperation temporalOperation, List<CqlNode> children) {
-        TemporalOperation.Builder<?> builder = null;
-
-        if (temporalOperation instanceof After) {
-            builder = new ImmutableAfter.Builder();
-        } else if (temporalOperation instanceof Before) {
-            builder = new ImmutableBefore.Builder();
-        } else if (temporalOperation instanceof Begins) {
-            builder = new ImmutableBegins.Builder();
-        } else if (temporalOperation instanceof BegunBy) {
-            builder = new ImmutableBegunBy.Builder();
-        } else if (temporalOperation instanceof During) {
-            builder = new ImmutableDuring.Builder();
-        } else if (temporalOperation instanceof EndedBy) {
-            builder = new ImmutableEndedBy.Builder();
-        } else if (temporalOperation instanceof Ends) {
-            builder = new ImmutableEnds.Builder();
-        } else if (temporalOperation instanceof Meets) {
-            builder = new ImmutableMeets.Builder();
-        } else if (temporalOperation instanceof MetBy) {
-            builder = new ImmutableMetBy.Builder();
-        } else if (temporalOperation instanceof OverlappedBy) {
-            builder = new ImmutableOverlappedBy.Builder();
-        } else if (temporalOperation instanceof TContains) {
-            builder = new ImmutableTContains.Builder();
-        } else if (temporalOperation instanceof TEquals) {
-            builder = new ImmutableTEquals.Builder();
-        } else if (temporalOperation instanceof TOverlaps) {
-            builder = new ImmutableTOverlaps.Builder();
-        } else if (temporalOperation instanceof AnyInteracts) {
-            builder = new ImmutableAnyInteracts.Builder();
-        }
-
-        if (Objects.nonNull(builder)) {
-            return builder.operands(children.stream()
-                                            .filter(child -> child instanceof Temporal)
-                                            .map(child -> (Temporal) child)
-                                            .collect(Collectors.toUnmodifiableList())).build();
-        }
-
-        return null;
+        return TemporalOperation.of(temporalOperation.getOperator(),
+                                    children.stream()
+                                        .filter(child -> child instanceof Temporal)
+                                        .map(child -> (Temporal) child)
+                                        .collect(Collectors.toUnmodifiableList()));
     }
 
     @Override
     public CqlNode visit(SpatialOperation spatialOperation, List<CqlNode> children) {
-        SpatialOperation.Builder<?> builder = null;
-
-        if (spatialOperation instanceof Contains) {
-            builder = new ImmutableContains.Builder();
-        } else if (spatialOperation instanceof Crosses) {
-            builder = new ImmutableCrosses.Builder();
-        } else if (spatialOperation instanceof Disjoint) {
-            builder = new ImmutableDisjoint.Builder();
-        } else if (spatialOperation instanceof Equals) {
-            builder = new ImmutableEquals.Builder();
-        } else if (spatialOperation instanceof Intersects) {
-            builder = new ImmutableIntersects.Builder();
-        } else if (spatialOperation instanceof Overlaps) {
-            builder = new ImmutableOverlaps.Builder();
-        } else if (spatialOperation instanceof Touches) {
-            builder = new ImmutableTouches.Builder();
-        } else if (spatialOperation instanceof Within) {
-            builder = new ImmutableWithin.Builder();
-        }
-
-        if (Objects.nonNull(builder)) {
-            return builder.operands(children.stream()
-                                            .filter(child -> child instanceof Spatial)
-                                            .map(child -> (Spatial) child)
-                                            .collect(Collectors.toUnmodifiableList())).build();
-        }
-
-        return null;
+        return SpatialOperation.of(spatialOperation.getOperator(),
+                                   children.stream()
+                                       .filter(child -> child instanceof Spatial)
+                                       .map(child -> (Spatial) child)
+                                       .collect(Collectors.toUnmodifiableList()));
     }
 
     @Override
     public CqlNode visit(ArrayOperation arrayOperation, List<CqlNode> children) {
-        ArrayOperation.Builder<?> builder = null;
-
-        if (arrayOperation instanceof AContains) {
-            builder = new ImmutableAContains.Builder();
-        } else if (arrayOperation instanceof AEquals) {
-            builder = new ImmutableAEquals.Builder();
-        } else if (arrayOperation instanceof AOverlaps) {
-            builder = new ImmutableAOverlaps.Builder();
-        } else if (arrayOperation instanceof ContainedBy) {
-            builder = new ImmutableContainedBy.Builder();
-        }
-
-        if (Objects.nonNull(builder)) {
-            return builder.operands(children.stream()
-                                            .filter(child -> child instanceof Vector)
-                                            .map(child -> (Vector) child)
-                                            .collect(Collectors.toUnmodifiableList())).build();
-        }
-
-        return null;
+        return ArrayOperation.of(arrayOperation.getOperator(),
+                                 children.stream()
+                                     .filter(child -> child instanceof Vector)
+                                     .map(child -> (Vector) child)
+                                     .collect(Collectors.toUnmodifiableList()));
     }
 
     @Override

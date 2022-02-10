@@ -9,6 +9,7 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import java.time.Instant;
@@ -68,9 +69,34 @@ public class SqlDialectGpkg implements SqlDialect {
   }
 
   @Override
+  public String applyToDate(String column) {
+    return String.format("date(%s)", column);
+  }
+
+  @Override
   public String applyToDatetime(String column) {
     return String.format("datetime(%s)", column);
   }
+
+  @Override
+  public String applyToDateLiteral(String date) {
+    return String.format("date('%s')", date);
+  }
+
+  @Override
+  public String applyToDatetimeLiteral(String datetime) {
+    return String.format("datetime('%s')", datetime);
+  }
+
+  @Override
+  public String applyToInstantMin() {
+    return "0001-01-01T00:00:00Z";
+  };
+
+  @Override
+  public String applyToInstantMax() {
+    return "9999-12-31T23:59:59Z";
+  };
 
   @Override
   public String escapeString(String value) {

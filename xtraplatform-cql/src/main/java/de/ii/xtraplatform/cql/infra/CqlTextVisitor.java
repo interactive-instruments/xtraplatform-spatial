@@ -12,8 +12,12 @@ import de.ii.xtraplatform.cql.app.CqlVisitorPropertyPrefix;
 import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.threeten.extra.Interval;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -122,12 +126,13 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitBinaryComparisonPredicate(CqlParser.BinaryComparisonPredicateContext ctx) {
 
+        ComparisonOperator comparisonOperator = ComparisonOperator.valueOfCqlText(ctx.ComparisonOperator()
+                .getText());
+
         Scalar scalar1 = (Scalar) ctx.scalarExpression(0)
                                      .accept(this);
         Scalar scalar2 = (Scalar) ctx.scalarExpression(1)
                                      .accept(this);
-        ComparisonOperator comparisonOperator = ComparisonOperator.valueOfCqlText(ctx.ComparisonOperator()
-                                                                                     .getText());
 
         BinaryScalarOperation.Builder<? extends BinaryScalarOperation> builder;
 
@@ -163,9 +168,9 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         if (Objects.nonNull(ctx.LIKE())) {
 
-            Scalar scalar1 = (Scalar) ctx.scalarExpression().get(0)
+            Scalar scalar1 = (Scalar) ctx.characterExpression()
                                          .accept(this);
-            Scalar scalar2 = (Scalar) ctx.scalarExpression().get(1)
+            Scalar scalar2 = (Scalar) ctx.patternExpression()
                                          .accept(this);
 
             Like like = new ImmutableLike.Builder()
@@ -174,30 +179,6 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
             if (Objects.nonNull(ctx.NOT())) {
                 return Not.of(like);
-            }
-
-            List<CqlParser.LikeModifierContext> likeModifiers = ctx.likeModifier();
-
-            for (CqlParser.LikeModifierContext likeModifier : likeModifiers) {
-                if (Objects.nonNull(likeModifier.wildcard())) {
-                    ScalarLiteral wildcard = (ScalarLiteral) likeModifier.wildcard().accept(this);
-                    like = new ImmutableLike.Builder().from(like).wildcard((String) wildcard.getValue()).build();
-                }
-
-                if (Objects.nonNull(likeModifier.singlechar())) {
-                    ScalarLiteral singlechar = (ScalarLiteral) likeModifier.singlechar().accept(this);
-                    like = new ImmutableLike.Builder().from(like).singleChar((String) singlechar.getValue()).build();
-                }
-
-                if (Objects.nonNull(likeModifier.escapechar())) {
-                    ScalarLiteral escapechar = (ScalarLiteral) likeModifier.escapechar().accept(this);
-                    like = new ImmutableLike.Builder().from(like).escapeChar((String) escapechar.getValue()).build();
-                }
-
-                if (Objects.nonNull(likeModifier.nocase())) {
-                    ScalarLiteral nocase = (ScalarLiteral) likeModifier.nocase().accept(this);
-                    like = new ImmutableLike.Builder().from(like).nocase((Boolean) nocase.getValue()).build();
-                }
             }
 
             return like;
@@ -210,47 +191,24 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         if (Objects.nonNull(ctx.BETWEEN())) {
 
-            Scalar scalar1 = (Scalar) ctx.scalarExpression().get(0)
+            Scalar scalar = (Scalar) ctx.numericExpression(0)
                                          .accept(this);
 
-            if (!ctx.temporalExpression().isEmpty()) {
-                Temporal temporal1 = (Temporal) ctx.temporalExpression(0)
-                        .accept(this);
-                Temporal temporal2 = (Temporal) ctx.temporalExpression(1)
-                        .accept(this);
-                if (!isInstant(temporal1) || !isInstant(temporal2)) {
-                    throw new IllegalArgumentException("intervals are not supported for the BETWEEN predicate");
-                }
-
-                TemporalLiteral temporalLiteral = TemporalLiteral.of(String.format("%s/%s", ctx.temporalExpression(0).getText(), ctx.temporalExpression(1).getText()));
-
-                During during = new ImmutableDuring.Builder()
-                        .operands(ImmutableList.of(scalar1, temporalLiteral))
-                        .build();
-
-                if (Objects.nonNull(ctx.NOT())) {
-                    return Not.of(during);
-                }
-                return during;
-
-            } else {
-            Scalar scalar2 = (Scalar) ctx.scalarExpression().get(1)
+            Scalar numeric1 = (Scalar) ctx.numericExpression(1)
                                          .accept(this);
-            Scalar scalar3 = (Scalar) ctx.scalarExpression().get(2)
+            Scalar numeric2 = (Scalar) ctx.numericExpression(2)
                                          .accept(this);
 
             Between between = new ImmutableBetween.Builder()
-                    .value(scalar1)
-                    .lower(scalar2)
-                    .upper(scalar3)
+                    .value(scalar)
+                    .lower(numeric1)
+                    .upper(numeric2)
                     .build();
 
             if (Objects.nonNull(ctx.NOT())) {
                 return Not.of(between);
             }
             return between;
-        }
-
         }
         return null;
     }
@@ -279,168 +237,65 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitTemporalPredicate(CqlParser.TemporalPredicateContext ctx) {
 
-        Temporal temporal1 = (Temporal) ctx.temporalExpression(0)
-                                           .accept(this);
-        Temporal temporal2 = (Temporal) ctx.temporalExpression(1)
-                                           .accept(this);
+        if (Objects.isNull(ctx.TemporalOperator()))
+            throw new IllegalStateException("unknown temporal predicate: " + ctx.getText());
 
-        TemporalOperation.Builder<? extends TemporalOperation> builder = null;
-
-        if (Objects.nonNull(ctx.ComparisonOperator())) {
-            if (!isInstant(temporal2)) {
-                throw new IllegalArgumentException("intervals are not supported for temporal comparisons");
-            }
-            ComparisonOperator comparisonOperator = ComparisonOperator.valueOfCqlText(ctx.ComparisonOperator()
-                    .getText());
-            switch (comparisonOperator) {
-                case EQ:
-                    builder = new ImmutableTEquals.Builder();
-                    break;
-                case NEQ:
-                    TEquals tEquals = new ImmutableTEquals.Builder()
-                            .operands(ImmutableList.of(temporal1, temporal2))
-                            .build();
-                    return Not.of(tEquals);
-                case GT:
-                    builder = new ImmutableAfter.Builder();
-                    break;
-                case GTEQ:
-                    After after = new ImmutableAfter.Builder().operands(ImmutableList.of(temporal1, temporal2)).build();
-                    tEquals = new ImmutableTEquals.Builder().operands(ImmutableList.of(temporal1, temporal2)).build();
-                    return Or.of(CqlPredicate.of(after), CqlPredicate.of(tEquals));
-                case LT:
-                    builder = new ImmutableBefore.Builder();
-                    break;
-                case LTEQ:
-                    Before before = new ImmutableBefore.Builder().operands(ImmutableList.of(temporal1, temporal2)).build();
-                    tEquals = new ImmutableTEquals.Builder().operands(ImmutableList.of(temporal1, temporal2)).build();
-                    return Or.of(CqlPredicate.of(before), CqlPredicate.of(tEquals));
-                default:
-                    throw new IllegalStateException("unsupported temporal comparison operator: " + comparisonOperator);
-            }
-        } else if (Objects.nonNull(ctx.TemporalOperator())) {
         TemporalOperator temporalOperator = TemporalOperator.valueOf(ctx.TemporalOperator()
-                                                                        .getText()
-                                                                        .toUpperCase());
+                                                                         .getText()
+                                                                         .toUpperCase());
 
-        switch (temporalOperator) {
-            case AFTER:
-                builder = new ImmutableAfter.Builder();
-                break;
-            case BEFORE:
-                builder = new ImmutableBefore.Builder();
-                break;
-            case DURING:
-                builder = new ImmutableDuring.Builder();
-                break;
-            case TEQUALS:
-                builder = new ImmutableTEquals.Builder();
-                break;
-            case ANYINTERACTS:
-                builder = new ImmutableAnyInteracts.Builder();
-                break;
-            case BEGINS:
-            case BEGUNBY:
-            case TCONTAINS:
-            case ENDEDBY:
-            case ENDS:
-            case MEETS:
-            case METBY:
-            case TOVERLAPS:
-            case OVERLAPPEDBY:
-                throw new IllegalArgumentException(String.format("unsupported temporal operator (%s)", temporalOperator));
-            default:
-                throw new IllegalStateException("unknown temporal operator: " + temporalOperator);
-        }
-        }
+        Temporal temporal1 = (Temporal) ctx.temporalExpression(0)
+            .accept(this);
+        Temporal temporal2 = (Temporal) ctx.temporalExpression(1)
+            .accept(this);
 
-        return builder.operands(ImmutableList.of(temporal1,temporal2))
-                      .build();
+        return TemporalOperation.of(temporalOperator, temporal1, temporal2);
     }
 
     @Override
     public CqlNode visitSpatialPredicate(CqlParser.SpatialPredicateContext ctx) {
 
-        Spatial spatial1 = (Spatial) ctx.geomExpression()
-                                        .get(0)
-                                        .accept(this);
-        Spatial spatial2 = (Spatial) ctx.geomExpression()
-                                        .get(1)
-                                        .accept(this);
+        if (Objects.isNull(ctx.SpatialOperator()))
+            throw new IllegalStateException("unknown spatial operator: " + ctx.getText());
+
         SpatialOperator spatialOperator = SpatialOperator.valueOf(ctx.SpatialOperator()
                                                                      .getText()
                                                                      .toUpperCase());
 
-        SpatialOperation.Builder<? extends SpatialOperation> builder;
+        Spatial spatial1 = (Spatial) ctx.geomExpression()
+            .get(0)
+            .accept(this);
+        Spatial spatial2 = (Spatial) ctx.geomExpression()
+            .get(1)
+            .accept(this);
 
-        switch (spatialOperator) {
-            case EQUALS:
-                builder = new ImmutableEquals.Builder();
-                break;
-            case DISJOINT:
-                builder = new ImmutableDisjoint.Builder();
-                break;
-            case TOUCHES:
-                builder = new ImmutableTouches.Builder();
-                break;
-            case WITHIN:
-                builder = new ImmutableWithin.Builder();
-                break;
-            case OVERLAPS:
-                builder = new ImmutableOverlaps.Builder();
-                break;
-            case CROSSES:
-                builder = new ImmutableCrosses.Builder();
-                break;
-            case INTERSECTS:
-                builder = new ImmutableIntersects.Builder();
-                break;
-            case CONTAINS:
-                builder = new ImmutableContains.Builder();
-                break;
-            default:
-                throw new IllegalStateException("unknown spatial operator: " + spatialOperator);
-        }
-
-        return builder.operands(ImmutableList.of(spatial1,spatial2))
-                      .build();
+        return new ImmutableSpatialOperation.Builder()
+            .operator(spatialOperator)
+            .operands(ImmutableList.of(spatial1,spatial2))
+            .build();
     }
 
     @Override
     public CqlNode visitArrayPredicate(CqlParser.ArrayPredicateContext ctx) {
 
+        if (Objects.isNull(ctx.ArrayOperator()))
+            throw new IllegalStateException("unknown array operator: " + ctx.getText());
+
+        ArrayOperator arrayOperator = ArrayOperator.valueOf(ctx.ArrayOperator()
+                                                                .getText()
+                                                                .toUpperCase());
+
         Vector vector1 = (Vector) ctx.arrayExpression().get(0).accept(this);
         Vector vector2 = (Vector) ctx.arrayExpression().get(1).accept(this);
 
-        ArrayOperator arrayOperator = ArrayOperator.valueOf(ctx.ArrayOperator()
-                .getText()
-                .toUpperCase());
-
-        ArrayOperation.Builder<? extends ArrayOperation> builder;
-
-        switch (arrayOperator) {
-            case ACONTAINS:
-                builder = new ImmutableAContains.Builder();
-                break;
-            case AEQUALS:
-                builder = new ImmutableAEquals.Builder();
-                break;
-            case AOVERLAPS:
-                builder = new ImmutableAOverlaps.Builder();
-                break;
-            case CONTAINEDBY:
-                builder = new ImmutableContainedBy.Builder();
-                break;
-            default:
-                throw new IllegalStateException("unknown array operator: " + arrayOperator);
-        }
-
-        return builder.operands(ImmutableList.of(vector1, vector2))
-                      .build();
+        return new ImmutableArrayOperation.Builder()
+            .operator(arrayOperator)
+            .operands(ImmutableList.of(vector1, vector2))
+            .build();
     }
 
     @Override
-    public CqlNode visitArrayLiteral(CqlParser.ArrayLiteralContext ctx) {
+    public CqlNode visitArrayClause(CqlParser.ArrayClauseContext ctx) {
         try {
             List<Scalar> values = ctx.arrayElement()
                     .stream()
@@ -455,34 +310,17 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitInPredicate(CqlParser.InPredicateContext ctx) {
         In in;
-        List<Scalar> values = ImmutableList.of(ctx.characterLiteral(), ctx.numericLiteral(), ctx.temporalLiteral())
+        List<Scalar> values = ImmutableList.of(ctx.scalarExpression().subList(1, ctx.scalarExpression().size()))
                                                   .stream()
                                                   .flatMap(Collection::stream)
                                                   .map(v -> (Scalar) v.accept(this))
                                                   .collect(Collectors.toList());
 
-        if (!ctx.temporalLiteral().isEmpty()) {
-            values.stream()
-                    .map(t -> ((TemporalLiteral) t).getType())
-                    .filter(t -> t.equals(Instant.class))
-                    .findAny()
-                    .orElseThrow(() -> new IllegalArgumentException("intervals are not supported for the IN predicate"));
-        }
-
-        if (Objects.nonNull(ctx.function())) {
-            in = new ImmutableIn.Builder()
-                    .value((Function) ctx.function().accept(this))
-                    .list(values)
-                    .build();
-        } else if (Objects.isNull(ctx.propertyName())) {
-            in = In.of(values);
-        } else {
-            // TODO IN currently requires a property on the left side and literals on the right side
-            in = new ImmutableIn.Builder()
-                    .value((Property) ctx.propertyName().accept(this))
-                    .list(values)
-                    .build();
-        }
+        // TODO IN currently requires a property on the left side and literals on the right side
+        in = new ImmutableIn.Builder()
+                .value((Scalar) ctx.scalarExpression(0).accept(this))
+                .list(values)
+                .build();
         if (Objects.nonNull(ctx.NOT())) {
             return Not.of(in);
         }
@@ -505,9 +343,8 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                     .map(ParseTree::getText)
                     .collect(Collectors.joining("."));
             return Property.of(path, nestedFilters);
-        } else {
-            return Property.of(ctx.getText());
         }
+        return Property.of(ctx.getText());
     }
 
     @Override
@@ -521,20 +358,96 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     }
 
     @Override
-    public CqlNode visitTemporalLiteral(CqlParser.TemporalLiteralContext ctx) {
+    public CqlNode visitTemporalClause(CqlParser.TemporalClauseContext ctx) {
         try {
-            return TemporalLiteral.of(ctx.getText());
+            if (Objects.nonNull(ctx.interval())) {
+                return ctx.interval().accept(this);
+            }
         } catch (CqlParseException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
+        return ctx.instantLiteral().accept(this);
+    }
+
+    @Override
+    public CqlNode visitInterval(CqlParser.IntervalContext ctx) {
+        CqlNode arg1 = ctx.intervalParameter(0)
+            .accept(this);
+        CqlNode arg2 = ctx.intervalParameter(1)
+            .accept(this);
+
+        // if at least one parameter is a property, we create a function, otherwise a fixed interval
+        if (arg1 instanceof Property && arg2 instanceof Property) {
+            return Function.of("INTERVAL", ImmutableList.of((Property) arg1, (Property) arg2));
+        } else if (arg1 instanceof Property &&  arg2 instanceof TemporalLiteral) {
+            return Function.of("INTERVAL", ImmutableList.of((Property) arg1, (TemporalLiteral) arg2));
+        } else if (arg1 instanceof TemporalLiteral &&  arg2 instanceof Property) {
+            return Function.of("INTERVAL", ImmutableList.of((TemporalLiteral) arg1, (Property) arg2));
+        } else if (arg1 instanceof TemporalLiteral &&  arg2 instanceof TemporalLiteral) {
+            return TemporalLiteral.of((TemporalLiteral) arg1, (TemporalLiteral) arg2);
+        }
+
+        throw new IllegalStateException("unsupported interval value: " + ctx.getText());
+    }
+
+    @Override
+    public CqlNode visitIntervalParameter(CqlParser.IntervalParameterContext ctx) {
+        if (Objects.nonNull(ctx.NOW())) {
+            return TemporalLiteral.of(Instant.now().truncatedTo(ChronoUnit.SECONDS));
+        } else if (Objects.nonNull(ctx.DotDotString())) {
+            return TemporalLiteral.of("..");
+        } else if (Objects.nonNull(ctx.propertyName())) {
+            return ctx.propertyName().accept(this);
+        } else if (Objects.nonNull(ctx.DateString())) {
+            String s = ctx.DateString().getText();
+            return TemporalLiteral.of(s.substring(1, s.length()-1));
+        } else if (Objects.nonNull(ctx.TimestampString())) {
+            String s = ctx.TimestampString().getText();
+            return TemporalLiteral.of(s.substring(1, s.length()-1));
+        }
+        throw new IllegalStateException("unsupported interval parameter: " + ctx.getText());
+    }
+
+    @Override
+    public CqlNode visitInstantLiteral(CqlParser.InstantLiteralContext ctx) {
+        if (Objects.nonNull(ctx.NOW())) {
+            return TemporalLiteral.of(Instant.now().truncatedTo(ChronoUnit.SECONDS));
+        }
+
+        String s = Objects.nonNull(ctx.DATE()) ? ctx.DateString().getText() : ctx.TimestampString().getText();
+        return TemporalLiteral.of(s.substring(1, s.length()-1));
+    }
+
+    @Override
+    public CqlNode visitCharacterClause(CqlParser.CharacterClauseContext ctx) {
+        if (Objects.nonNull(ctx.CASEI())) {
+            Scalar scalar = (Scalar) ctx.characterExpression()
+                .accept(this);
+
+            return Function.of("CASEI", ImmutableList.of(scalar));
+        } else if (Objects.nonNull(ctx.ACCENTI())) {
+            Scalar scalar = (Scalar) ctx.characterExpression()
+                .accept(this);
+
+            return Function.of("ACCENTI", ImmutableList.of(scalar));
+        } else if (Objects.nonNull(ctx.LOWER())) {
+            Scalar scalar = (Scalar) ctx.characterExpression()
+                .accept(this);
+
+            return Function.of("LOWER", ImmutableList.of(scalar));
+        } else if (Objects.nonNull(ctx.UPPER())) {
+            Scalar scalar = (Scalar) ctx.characterExpression()
+                .accept(this);
+
+            return Function.of("UPPER", ImmutableList.of(scalar));
+        }
+
+        return ctx.characterLiteral().accept(this);
     }
 
     @Override
     public CqlNode visitCharacterLiteral(CqlParser.CharacterLiteralContext ctx) {
-        return ScalarLiteral.of(ctx.getText()
-                                   .substring(1, ctx.getText()
-                                                    .length() - 1)
-                                   .replaceAll("''", "'"));
+        return getScalarLiteralFromText(ctx.getText());
     }
 
     @Override
@@ -670,37 +583,18 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         if (Objects.isNull(ctx.argumentList().positionalArgument())) {
             return Function.of(functionName, ImmutableList.of());
         }
+
         List<Operand> args = ctx.argumentList().positionalArgument()
                 .argument()
                 .stream()
                 .map(arg -> (Operand) arg.accept(this))
                 .collect(Collectors.toList());
         return Function.of(functionName, args);
-
     }
 
-    @Override
-    public CqlNode visitWildcard(CqlParser.WildcardContext ctx) {
-        return ctx.characterLiteral().accept(this);
-    }
-
-    @Override
-    public CqlNode visitSinglechar(CqlParser.SinglecharContext ctx) {
-        return ctx.characterLiteral().accept(this);
-    }
-
-    @Override
-    public CqlNode visitEscapechar(CqlParser.EscapecharContext ctx) {
-        return ctx.characterLiteral().accept(this);
-    }
-
-    @Override
-    public CqlNode visitNocase(CqlParser.NocaseContext ctx) {
-        return ctx.booleanLiteral().accept(this);
-    }
-
-    private boolean isInstant(Temporal temporal) {
-        return temporal instanceof TemporalLiteral && ((TemporalLiteral) temporal).getType().equals(Instant.class);
+    private ScalarLiteral getScalarLiteralFromText(String cqlText) {
+        return ScalarLiteral.of(cqlText.substring(1, cqlText.length() - 1)
+                .replaceAll("''", "'"));
     }
 
 }

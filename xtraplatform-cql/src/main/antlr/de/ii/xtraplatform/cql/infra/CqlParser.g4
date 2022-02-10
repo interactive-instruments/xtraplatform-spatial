@@ -3,7 +3,7 @@ options { tokenVocab=CqlLexer; superClass=CqlTextParser.CqlParserCustom; }
 
 /*
 #=============================================================================#
-# A CQL filter is a logically connected expression of one or more predicates.
+# A CQL2 filter is a logically connected expression of one or more predicates.
 #=============================================================================#
 */
 cqlFilter : booleanValueExpression EOF;
@@ -16,7 +16,7 @@ booleanPrimary : predicate
 
 /*
 #=============================================================================#
-#  CQL supports scalar, spatial, temporal and existence predicates.
+#  CQL2 supports scalar, spatial, temporal and array predicates.
 #=============================================================================#
 */
 
@@ -24,7 +24,6 @@ predicate : comparisonPredicate
             | spatialPredicate
             | temporalPredicate
             | arrayPredicate
-//            | existencePredicate
             | inPredicate;
 
 /*
@@ -43,15 +42,24 @@ comparisonPredicate : binaryComparisonPredicate
 
 binaryComparisonPredicate : scalarExpression ComparisonOperator scalarExpression;
 
-likeModifier: wildcard | singlechar | escapechar | nocase;
-wildcard : WILDCARD characterLiteral;
-singlechar : SINGLECHAR characterLiteral;
-escapechar : ESCAPECHAR characterLiteral;
-nocase : NOCASE booleanLiteral;
-propertyIsLikePredicate :  scalarExpression (NOT)? LIKE scalarExpression (likeModifier)*;
+propertyIsLikePredicate :  characterExpression (NOT)? LIKE patternExpression;
 
-propertyIsBetweenPredicate : scalarExpression (NOT)? BETWEEN
-                             (scalarExpression | temporalExpression) AND (scalarExpression | temporalExpression);
+characterExpression : characterClause
+                    | propertyName
+                    | function;
+
+characterClause : characterLiteral
+                | CASEI LEFTPAREN characterExpression RIGHTPAREN
+                | ACCENTI LEFTPAREN characterExpression RIGHTPAREN
+                | LOWER LEFTPAREN characterExpression RIGHTPAREN
+                | UPPER LEFTPAREN characterExpression RIGHTPAREN;
+
+propertyIsBetweenPredicate : numericExpression (NOT)? BETWEEN numericExpression AND numericExpression;
+
+numericExpression : numericLiteral
+                  | propertyName
+                  | function
+                  /*| arithmeticExpression*/;
 
 propertyIsNullPredicate : scalarExpression IS (NOT)? NULL;
 
@@ -59,32 +67,31 @@ propertyIsNullPredicate : scalarExpression IS (NOT)? NULL;
 # A scalar expression is the property name, a chracter literal, a numeric
 # literal or a function/method invocation that returns a scalar value.
 */
-scalarExpression : propertyName
-                    | characterLiteral
-                    | numericLiteral
-                    | booleanLiteral
-                    | function
-                    /*| arithmeticExpression*/;
+scalarExpression : characterClause
+                 | numericLiteral
+                 | booleanLiteral
+                 | instantLiteral
+                 | propertyName
+                 | function
+                 /*
+                 | arithmeticExpression*/;
 
 //CHANGE: support compound property names
 //CHANGE: support nested filters
-propertyName: (Identifier (LEFTSQUAREBRACKET nestedCqlFilter RIGHTSQUAREBRACKET)? PERIOD)* Identifier;
+propertyName : (Identifier (LEFTSQUAREBRACKET nestedCqlFilter RIGHTSQUAREBRACKET)? PERIOD)* Identifier;
 
-characterLiteral: CharacterStringLiteral
-                   | BitStringLiteral
-                   | HexStringLiteral;
+characterLiteral : CharacterStringLiteral;
 
-numericLiteral: NumericLiteral;
+numericLiteral : NumericLiteral;
 
-booleanLiteral: BooleanLiteral;
+booleanLiteral : BooleanLiteral;
 
 /*
 # NOTE: This is just a place holder for a regular expression
 #       We want to be able to say stuff like "<prop> LIKE 'Toronto%'" where
 #       the '%' character means "match zero or more characters".
 */
-regularExpression : characterLiteral;
-
+patternExpression : characterClause;
 
 /*
 #=============================================================================#
@@ -102,7 +109,7 @@ spatialPredicate :  SpatialOperator LEFTPAREN geomExpression COMMA geomExpressio
 */
 geomExpression : propertyName
                | geomLiteral
-               /*| function*/;
+               | function;
 
 /*
 #=============================================================================#
@@ -169,14 +176,26 @@ maxElev : NumericLiteral;
 # specified temporal operator.
 #=============================================================================#
 */
-//CHANGE: allow intervals with /
-temporalPredicate : temporalExpression (TemporalOperator | ComparisonOperator) temporalExpression;
+temporalPredicate : TemporalOperator LEFTPAREN temporalExpression COMMA temporalExpression RIGHTPAREN;
 
 temporalExpression : propertyName
-                   | temporalLiteral
-                   /*| function*/;
+                   | temporalClause
+                   | function;
 
-temporalLiteral: TemporalLiteral;
+temporalClause: instantLiteral | interval;
+
+instantLiteral: DATE LEFTPAREN DateString RIGHTPAREN
+              | TIMESTAMP LEFTPAREN TimestampString RIGHTPAREN
+              | NOW LEFTPAREN RIGHTPAREN;
+
+interval: INTERVAL LEFTPAREN intervalParameter COMMA intervalParameter RIGHTPAREN;
+
+intervalParameter: propertyName
+                 | DateString
+                 | TimestampString
+                 | DotDotString
+                 | NOW LEFTPAREN RIGHTPAREN
+                 | function;
 
 /*
 #=============================================================================#
@@ -187,27 +206,14 @@ temporalLiteral: TemporalLiteral;
 #=============================================================================#
 */
 
-arrayPredicate: arrayExpression ArrayOperator arrayExpression;
+arrayPredicate: ArrayOperator LEFTPAREN arrayExpression COMMA arrayExpression RIGHTPAREN;
 
-arrayExpression: propertyName | function | arrayLiteral;
+arrayExpression: propertyName | arrayClause | function;
 
-arrayLiteral: LEFTSQUAREBRACKET arrayElement ( COMMA arrayElement )* RIGHTSQUAREBRACKET;
+arrayClause: LEFTSQUAREBRACKET arrayElement ( COMMA arrayElement )* RIGHTSQUAREBRACKET;
 
-arrayElement: characterLiteral | numericLiteral | booleanLiteral | temporalLiteral | propertyName | function | arrayLiteral;
+arrayElement: characterClause | numericLiteral | booleanLiteral | temporalClause | propertyName | arrayClause |function;
 
-
-/*
-#=============================================================================#
-# The existence predicate evalues whether the specified property exists
-# in the current context. This predicate was added to accomodate the fact
-# that OAPIF feature collections (and likely other specification) are
-# heterogeneous with respect to schema.
-#=============================================================================#
-*/
-
-//DEACTIVATED, in ogcapi using a non-existing property is a 404
-//existencePredicate : PropertyName EXISTS
-//                   | PropertyName DOES MINUS NOT MINUS EXIST;
 
 /*
 #=============================================================================#
@@ -216,21 +222,11 @@ arrayElement: characterLiteral | numericLiteral | booleanLiteral | temporalLiter
 */
 //CHANGE: optional PropertyName for id filters
 //CHANGE: added missing comma
-inPredicate : (propertyName | function)? (NOT)? IN LEFTPAREN ( characterLiteral |
-                                            numericLiteral |
-                                            geomLiteral |
-                                            temporalLiteral /*|
-                                            function*/ ) ( COMMA (characterLiteral |
-                                                              numericLiteral |
-                                                              geomLiteral |
-                                                              temporalLiteral) /*|
-                                                              function*/ )* RIGHTPAREN;
+inPredicate : scalarExpression (NOT)? IN LEFTPAREN scalarExpression ( COMMA scalarExpression )* RIGHTPAREN;
 
 /*
 #=============================================================================#
 # Definition of a FUNCTION
-# NOTE: How do we advertise which functions an implementation offer?
-#       In the OpenAPI document I suppose!
 #=============================================================================#
 */
 
@@ -240,13 +236,15 @@ argumentList : LEFTPAREN (positionalArgument)?  RIGHTPAREN;
 
 positionalArgument : argument ( COMMA argument )*;
 
-argument : characterLiteral
+argument : characterClause
          | numericLiteral
+         | booleanLiteral
          | geomLiteral
-         | temporalLiteral
+         | temporalClause
          | propertyName
+         | function
+         | arrayExpression
          /*| arithmeticExpression*/;
-
 
 /*
 #=============================================================================#
@@ -264,12 +262,3 @@ arithemticOperator : propertyName
                    | numericLiteral
                    | function;
 */
-
-
-
-
-
-
-
-
-

@@ -8,18 +8,19 @@
 package de.ii.xtraplatform.cql.domain;
 
 public enum TemporalOperator implements CqlNode {
-    AFTER,
-    BEFORE,
-    BEGINS,
-    BEGUNBY,
-    TCONTAINS,
-    DURING,
-    ENDEDBY,
-    ENDS,
-    TEQUALS,
-    MEETS,
-    METBY,
-    TOVERLAPS,
-    OVERLAPPEDBY,
-    ANYINTERACTS
+    T_AFTER,
+    T_BEFORE,
+    T_CONTAINS,
+    T_DISJOINT,
+    T_DURING,
+    T_EQUALS,
+    T_FINISHEDBY,
+    T_FINISHES,
+    T_INTERSECTS,
+    T_MEETS,
+    T_METBY,
+    T_OVERLAPPEDBY,
+    T_OVERLAPS,
+    T_STARTEDBY,
+    T_STARTS
 }

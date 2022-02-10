@@ -8,8 +8,8 @@
 package de.ii.xtraplatform.cql.domain;
 
 public enum ArrayOperator implements CqlNode {
-    ACONTAINS,
-    AEQUALS,
-    AOVERLAPS,
-    CONTAINEDBY
+    A_EQUALS,
+    A_CONTAINS,
+    A_CONTAINEDBY,
+    A_OVERLAPS
 }

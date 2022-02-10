@@ -10,9 +10,12 @@ package de.ii.xtraplatform.cql.domain;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 import org.threeten.extra.Interval;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -20,6 +23,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -28,63 +32,38 @@ import java.util.regex.Pattern;
 @JsonDeserialize(builder = TemporalLiteral.Builder.class)
 public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
 
-    Instant MIN_DATE = Instant.parse("0000-01-01T00:00:00Z");
-    Instant MAX_DATE = Instant.parse("9999-12-31T23:59:59Z");
+    enum OPEN { OPEN }
 
-    String NOW_AS_INSTANT_REGEX = "([nN][oO][wW](\\(\\))?)";
-    String NOW_IN_INTERVAL_REGEX = "([nN][oO][wW])";
-    String DATE_REGEX = "([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])";
-    String TIMESTAMP_REGEX = "([0-9]+)-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])[Tt]([01][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\\.[0-9]+)?(([Zz])|([\\+|\\-]([01][0-9]|2[0-3]):[0-5][0-9]))";
-    String OPEN_REGEX = "(\\.\\.)?";
-    Predicate<String> NOW_PATTERN = Pattern.compile(String.format("^%s$", NOW_AS_INSTANT_REGEX))
-                                           .asPredicate();
-    Predicate<String> INSTANT_PATTERN = Pattern.compile(String.format("^%s$", TIMESTAMP_REGEX))
-                                               .asPredicate();
-    Predicate<String> INTERVAL_PATTERN = Pattern.compile(String.format("^%s/%s$", TIMESTAMP_REGEX, TIMESTAMP_REGEX))
-                                                .asPredicate();
-    Predicate<String> INTERVAL_OPEN_START_PATTERN = Pattern.compile(String.format("^%s/%s$", OPEN_REGEX, TIMESTAMP_REGEX))
-                                                           .asPredicate();
-    Predicate<String> INTERVAL_OPEN_END_PATTERN = Pattern.compile(String.format("^%s/%s$", TIMESTAMP_REGEX, OPEN_REGEX))
-                                                         .asPredicate();
-    Predicate<String> INTERVAL_OPEN_PATTERN = Pattern.compile(String.format("^%s/%s$", OPEN_REGEX, OPEN_REGEX))
-                                                     .asPredicate();
-    Predicate<String> INTERVAL_NOW_START_PATTERN = Pattern.compile(String.format("^%s/%s$", NOW_IN_INTERVAL_REGEX, TIMESTAMP_REGEX))
-                                                .asPredicate();
-    Predicate<String> INTERVAL_NOW_END_PATTERN = Pattern.compile(String.format("^%s/%s$", TIMESTAMP_REGEX, NOW_IN_INTERVAL_REGEX))
-                                                          .asPredicate();
-    Predicate<String> INTERVAL_OPEN_START_NOW_END_PATTERN = Pattern.compile(String.format("^%s/%s$", OPEN_REGEX, NOW_IN_INTERVAL_REGEX))
-                                                           .asPredicate();
-    Predicate<String> INTERVAL_NOW_START_OPEN_END_PATTERN = Pattern.compile(String.format("^%s/%s$", NOW_IN_INTERVAL_REGEX, OPEN_REGEX))
-                                                         .asPredicate();
+    String DATE_REGEX = "(?:[0-9]+)-(?:0[1-9]|1[012])-(?:0[1-9]|[12][0-9]|3[01])";
+    String TIMESTAMP_REGEX = DATE_REGEX + "T(?:[01][0-9]|2[0-3]):(?:[0-5][0-9]):(?:[0-5][0-9]|60)(?:\\.[0-9]+)?Z";
+    Predicate<String> TIMESTAMP_PATTERN = Pattern.compile(String.format("^%s$", TIMESTAMP_REGEX))
+        .asPredicate();
     Predicate<String> DATE_PATTERN = Pattern.compile(String.format("^%s$", DATE_REGEX))
-                                            .asPredicate();
-    Predicate<String> DATE_INTERVAL_PATTERN = Pattern.compile(String.format("^%s/%s$", DATE_REGEX, DATE_REGEX))
-                                                .asPredicate();
-    Predicate<String> DATE_INTERVAL_OPEN_START_PATTERN = Pattern.compile(String.format("^%s/%s$", OPEN_REGEX, DATE_REGEX))
-                                                                .asPredicate();
-    Predicate<String> DATE_INTERVAL_OPEN_END_PATTERN = Pattern.compile(String.format("^%s/%s$", DATE_REGEX, OPEN_REGEX))
-                                                              .asPredicate();
-    Predicate<String> DATE_INTERVAL_NOW_START_PATTERN = Pattern.compile(String.format("^%s/%s$", NOW_IN_INTERVAL_REGEX, DATE_REGEX))
-                                                     .asPredicate();
-    Predicate<String> DATE_INTERVAL_NOW_END_PATTERN = Pattern.compile(String.format("^%s/%s$", DATE_REGEX, NOW_IN_INTERVAL_REGEX))
-                                                     .asPredicate();
-    Joiner INTERVAL_JOINER = Joiner.on('/')
-                                   .skipNulls();
+        .asPredicate();
 
-    static TemporalLiteral of(Instant literal) {
-        return new TemporalLiteral.Builder(literal).build();
+    static TemporalLiteral of(Instant instant) {
+        return new Builder(instant).build();
     }
 
-    static TemporalLiteral of(Interval literal) {
-        return new TemporalLiteral.Builder(literal).build();
+    static TemporalLiteral of(String startInclusive, String endInclusive) {
+        return new Builder(TemporalLiteral.of(startInclusive), TemporalLiteral.of(endInclusive)).build();
     }
 
-    static TemporalLiteral of(List<String> literal) throws CqlParseException {
-        return new TemporalLiteral.Builder(literal).build();
+    static TemporalLiteral of(TemporalLiteral startInclusive, TemporalLiteral endInclusive) {
+        return new Builder(startInclusive, endInclusive).build();
     }
 
-    static TemporalLiteral of(String literal) throws CqlParseException {
-        return new TemporalLiteral.Builder(literal).build();
+    static TemporalLiteral of(List<String> startEndInclusive) {
+        assert startEndInclusive.size()>=2;
+        return new Builder(TemporalLiteral.of(startEndInclusive.get(0)), TemporalLiteral.of(startEndInclusive.get(1))).build();
+    }
+
+    static TemporalLiteral of(Instant startInclusive, Instant endExclusive) {
+        return new Builder(startInclusive, endExclusive).build();
+    }
+
+    static TemporalLiteral of(String instantLiteral) throws CqlParseException {
+        return new Builder(instantLiteral).build();
     }
 
     static Instant now() {
@@ -96,134 +75,84 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
             super();
         }
 
-        public Builder(Instant literal) {
+        public Builder(Instant instant) {
             super();
-            value(literal);
+            value(instant);
             type(Instant.class);
         }
 
-        public Builder(Interval literal) {
+        public Builder(Instant startInclusive, Instant endExclusive) {
             super();
-            value(literal);
+            value(Interval.of(startInclusive, endExclusive));
+            type(Interval.class);
+        }
+
+        public Builder(Interval interval) {
+            super();
+            value(interval);
             type(Interval.class);
         }
 
         @JsonCreator
-        public Builder(List<String> literal) throws CqlParseException {
-            this(INTERVAL_JOINER.join(literal));
-        }
-
-        @JsonCreator
-        public Builder(String literal) throws CqlParseException {
+        public Builder(String instantLiteral) throws CqlParseException {
             super();
-            Object castedLiteral = castToType(literal);
+            Object castedLiteral = castToType(instantLiteral);
             value(castedLiteral);
             type(castedLiteral.getClass());
         }
 
-        private Object castToType(String literal) throws CqlParseException {
-            /*try {
-                return Interval.parse(literal);
-            } catch (DateTimeParseException e) {
-                try {
-                    return Instant.parse(literal);
-                } catch (DateTimeParseException e2) {
-                    try {
-                        return LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal));
-                    } catch (DateTimeParseException e3) {
-                        //ignore
-                    }
-                }
-            }*/
+        public Builder(TemporalLiteral startInclusive, TemporalLiteral endInclusive) throws CqlParseException {
+            super();
+            if ((startInclusive.getType()==Instant.class || startInclusive.getType()==OPEN.class)
+                && (endInclusive.getType()==Instant.class || endInclusive.getType()==OPEN.class)) {
+                value(Interval.of(getStartInclusive(startInclusive.getValue()), getEndExclusive(endInclusive.getValue())));
+                type(Interval.class);
+            } else {
+                value(Function.of("INTERVAL", ImmutableList.of(startInclusive, endInclusive)));
+                type(Function.class);
+            }
+        }
+
+        private Instant getStartInclusive(Object instant) {
+            if (instant instanceof OPEN)
+                return Instant.MIN;
+            else if (instant instanceof LocalDate)
+                return ((LocalDate) instant).atStartOfDay(ZoneOffset.UTC).toInstant();
+            return (Instant) instant;
+        }
+
+        private Instant getEndExclusive(Object instant) {
+            if (instant instanceof OPEN)
+                return Instant.MAX;
+            else if (instant instanceof LocalDate)
+                return ((LocalDate) instant).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+            return ((Instant) instant).plusSeconds(1);
+        }
+
+        private Object castToType(String instantLiteral) throws CqlParseException {
 
             // If the datetime parameter uses dates, not timestamps, the result is always an interval that
             // starts on the first second of the start date and ends at the last second of the end date.
             try {
-                if (INTERVAL_PATTERN.test(literal)) {
-                    // a fully specified datetime interval
-                    return Interval.parse(literal);
-                } else if (INSTANT_PATTERN.test(literal)) {
+                if (TIMESTAMP_PATTERN.test(instantLiteral.toUpperCase())) {
                     // a fully specified datetime instant
                     // Instant does not support timezones, convert to UTC
-                    return ZonedDateTime.parse(literal).toInstant();
-                } else if (DATE_PATTERN.test(literal)) {
+                    return ZonedDateTime.parse(instantLiteral).toInstant();
+                } else if (DATE_PATTERN.test(instantLiteral.toUpperCase())) {
                     // a date only instant
-                    Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal))
-                                             .atStartOfDay()
-                                             .toInstant(ZoneOffset.UTC);
-                    Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal))
-                                           .atTime(23,59,59)
-                                           .toInstant(ZoneOffset.UTC);
-                    return Interval.of(start, end);
-                } else if (NOW_PATTERN.test(literal)) {
-                    // now instant
-                    return now();
-                } else if (INTERVAL_OPEN_PATTERN.test(literal)) {
-                    // open start and end
-                    return Interval.of(MIN_DATE, MAX_DATE);
-                } else if (INTERVAL_OPEN_END_PATTERN.test(literal)) {
-                    // start datetime instant, end open
-                    Instant start = Instant.parse(literal.substring(0, literal.indexOf("/")));
-                    return Interval.of(start, MAX_DATE);
-                } else if (INTERVAL_OPEN_START_PATTERN.test(literal)) {
-                    // start open, end datetime instant
-                    Instant end = Instant.parse(literal.substring(literal.indexOf("/") + 1));
-                    return Interval.of(MIN_DATE, end);
-                } else if (INTERVAL_NOW_END_PATTERN.test(literal)) {
-                    // start datetime instant, end now
-                    Instant start = Instant.parse(literal.substring(0, literal.indexOf("/")));
-                    return Interval.of(start, now());
-                } else if (INTERVAL_NOW_START_PATTERN.test(literal)) {
-                    // start now, end datetime instant
-                    Instant end = Instant.parse(literal.substring(literal.indexOf("/") + 1));
-                    return Interval.of(now(), end);
-                } else if (INTERVAL_NOW_START_OPEN_END_PATTERN.test(literal)) {
-                    // start now, end open
-                    return Interval.of(now(), MAX_DATE);
-                } else if (INTERVAL_OPEN_START_NOW_END_PATTERN.test(literal)) {
-                    // start open, end now
-                    return Interval.of(MIN_DATE, now());
-                } else if (DATE_INTERVAL_PATTERN.test(literal)) {
-                    // start date instant, end date instant
-                    Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(0, literal.indexOf("/"))))
-                                             .atStartOfDay()
-                                             .toInstant(ZoneOffset.UTC);
-                    Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(literal.indexOf("/") + 1)))
-                                           .atTime(23,59,59)
-                                           .toInstant(ZoneOffset.UTC);
-                    return Interval.of(start, end);
-                } else if (DATE_INTERVAL_OPEN_END_PATTERN.test(literal)) {
-                    // start date instant, end open
-                    Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(0, literal.indexOf("/"))))
-                                             .atStartOfDay()
-                                             .toInstant(ZoneOffset.UTC);
-                    return Interval.of(start, MAX_DATE);
-                } else if (DATE_INTERVAL_OPEN_START_PATTERN.test(literal)) {
-                    // start open, end date instant
-                    Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(literal.indexOf("/") + 1)))
-                                           .atTime(23,59,59)
-                                           .toInstant(ZoneOffset.UTC);
-                    return Interval.of(MIN_DATE, end);
-                } else if (DATE_INTERVAL_NOW_END_PATTERN.test(literal)) {
-                    // start date instant, end now
-                    Instant start = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(0, literal.indexOf("/"))))
-                                             .atStartOfDay()
-                                             .toInstant(ZoneOffset.UTC);
-                    return Interval.of(start, now());
-                } else if (DATE_INTERVAL_NOW_START_PATTERN.test(literal)) {
-                    // start now, end date instant
-                    Instant end = LocalDate.from(DateTimeFormatter.ISO_LOCAL_DATE.parse(literal.substring(literal.indexOf("/") + 1)))
-                                           .atTime(23,59,59)
-                                           .toInstant(ZoneOffset.UTC);
-                    return Interval.of(now(), end);
+                    return LocalDate.parse(instantLiteral);
+                } else if (instantLiteral.equalsIgnoreCase("NOW()")) {
+                    // now
+                    return Instant.now();
+                } else if (instantLiteral.equals("..")) {
+                    // an open interval boundary, we do not know, if this is start or end, so we need a special value
+                    return OPEN.OPEN;
                 }
             } catch (DateTimeParseException e) {
                 //ignore
             }
 
-            throw new CqlParseException("not a valid temporal literal: " + literal);
+            throw new CqlParseException("not a valid instant literal: " + instantLiteral);
         }
     }
-
-
 }

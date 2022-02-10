@@ -49,13 +49,13 @@ public class FeatureTokenSource implements Source<Object> {
   public Source<Object> prepend(Source<Object> other) {
     delegate.prepend(other);
 
-    return this;
+    return other;
   }
 
   @Override
   public Source<Object> mergeSorted(Source<Object> other, Comparator<Object> comparator) {
     delegate.mergeSorted(other, comparator);
 
-    return this;
+    return other;
   }
 }

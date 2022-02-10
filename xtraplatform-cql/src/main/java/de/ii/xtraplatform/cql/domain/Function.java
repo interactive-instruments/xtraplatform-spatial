@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.immutables.value.Value;
+import org.threeten.extra.Interval;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableFunction.Builder.class)
@@ -45,6 +46,42 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
                 .collect(Collectors.toList());
 
         return visitor.visit(this, arguments);
+    }
+
+    @JsonIgnore
+    @Value.Lazy
+    default Class<?> getType() {
+        if (isAccenti() || isCasei() || isLower() || isUpper())
+            return String.class;
+        else if (isInterval())
+            return Interval.class;
+        else if (isPosition())
+            return Integer.class;
+        return Object.class;
+    }
+
+    @JsonIgnore
+    @Value.Lazy
+    default boolean isCasei() {
+        return "casei".equalsIgnoreCase(getName());
+    }
+
+    @JsonIgnore
+    @Value.Lazy
+    default boolean isAccenti() {
+        return "accenti".equalsIgnoreCase(getName());
+    }
+
+    @JsonIgnore
+    @Value.Lazy
+    default boolean isLower() {
+        return "lower".equalsIgnoreCase(getName());
+    }
+
+    @JsonIgnore
+    @Value.Lazy
+    default boolean isUpper() {
+        return "upper".equalsIgnoreCase(getName());
     }
 
     @JsonIgnore

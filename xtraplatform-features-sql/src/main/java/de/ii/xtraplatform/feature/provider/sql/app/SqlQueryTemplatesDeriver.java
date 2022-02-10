@@ -167,6 +167,8 @@ public class SqlQueryTemplatesDeriver implements
             return sqlDialect.applyToWkt(name, column.isForcePolygonCCW());
           }
           if (column.isTemporal()) {
+            if (column.getType()==SchemaBase.Type.DATE)
+              return sqlDialect.applyToDate(name);
             return sqlDialect.applyToDatetime(name);
           }
 

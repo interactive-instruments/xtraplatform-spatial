@@ -7,12 +7,40 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINEDBY;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINS;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_EQUALS;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_OVERLAPS;
+import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Doubles;
-import de.ii.xtraplatform.cql.domain.*;
+import de.ii.xtraplatform.cql.domain.ArrayLiteral;
+import de.ii.xtraplatform.cql.domain.ArrayOperation;
+import de.ii.xtraplatform.cql.domain.Between;
+import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.CqlNode;
+import de.ii.xtraplatform.cql.domain.CqlToText;
+import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
+import de.ii.xtraplatform.cql.domain.ImmutableMultiPolygon;
+import de.ii.xtraplatform.cql.domain.ImmutablePolygon;
+import de.ii.xtraplatform.cql.domain.In;
+import de.ii.xtraplatform.cql.domain.IsNull;
+import de.ii.xtraplatform.cql.domain.Like;
+import de.ii.xtraplatform.cql.domain.LogicalOperation;
+import de.ii.xtraplatform.cql.domain.Not;
+import de.ii.xtraplatform.cql.domain.Operand;
+import de.ii.xtraplatform.cql.domain.Property;
+import de.ii.xtraplatform.cql.domain.Scalar;
+import de.ii.xtraplatform.cql.domain.ScalarLiteral;
+import de.ii.xtraplatform.cql.domain.SpatialOperation;
+import de.ii.xtraplatform.cql.domain.SpatialOperator;
+import de.ii.xtraplatform.cql.domain.TemporalLiteral;
+import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -22,11 +50,9 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.threeten.extra.Interval;
-
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +62,13 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.threeten.extra.Interval;
 
-import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+// TODO: This is now only used for the SQL queries for spatial/temporal extents, and only,
+//       if the properties are only accessible via joins - which is typically not the case.
+//       Delete after updating the ExtentReaderSql logic.
 
 public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
@@ -45,32 +76,16 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
     final static Splitter ARRAY_SPLITTER = Splitter.on(",").trimResults().omitEmptyStrings();
 
-    //TODO: move operator translation to SqlDialect
-    private final static Map<Class<?>, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableAfter.class, ">")
-            .put(ImmutableBefore.class, "<")
-            .put(ImmutableDuring.class, "BETWEEN")
-            .put(ImmutableTEquals.class, "=")
-            .put(ImmutableAnyInteracts.class, "OVERLAPS")
-            .build();
-
-    private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableEquals.class, "ST_Equals")
-            .put(ImmutableDisjoint.class, "ST_Disjoint")
-            .put(ImmutableTouches.class, "ST_Touches")
-            .put(ImmutableWithin.class, "ST_Within")
-            .put(ImmutableOverlaps.class, "ST_Overlaps")
-            .put(ImmutableCrosses.class, "ST_Crosses")
-            .put(ImmutableIntersects.class, "ST_Intersects")
-            .put(ImmutableContains.class, "ST_Contains")
-            .build();
-
-    private final static Map<Class<?>, String> ARRAY_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableAContains.class, "@>")
-            .put(ImmutableAEquals.class, "=")
-            .put(ImmutableAOverlaps.class, "&&")
-            .put(ImmutableContainedBy.class, "<@")
-            .build();
+    private final static Map<SpatialOperator, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<SpatialOperator, String>()
+        .put(SpatialOperator.S_EQUALS, "ST_Equals")
+        .put(SpatialOperator.S_DISJOINT, "ST_Disjoint")
+        .put(SpatialOperator.S_TOUCHES, "ST_Touches")
+        .put(SpatialOperator.S_WITHIN, "ST_Within")
+        .put(SpatialOperator.S_OVERLAPS, "ST_Overlaps")
+        .put(SpatialOperator.S_CROSSES, "ST_Crosses")
+        .put(SpatialOperator.S_INTERSECTS, "ST_Intersects")
+        .put(SpatialOperator.S_CONTAINS, "ST_Contains")
+        .build();
 
     private final Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator;
     private final BiFunction<FeatureStoreAttributesContainer, List<String>, BiFunction<FeatureStoreAttributesContainer, Optional<CqlFilter>, Function<Optional<String>, String>>> joinsGenerator;
@@ -184,7 +199,6 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         @Override
         public String visit(Property property, List<String> children) {
-            // TODO: fast enough? maybe pass all typeInfos to constructor and create map?
             // strip double quotes from the property name
             String propertyName = property.getName().replaceAll("^\"|\"$", "");
             Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(propertyName, attribute.getQueryable()) || (Objects.equals(propertyName, ID_PLACEHOLDER) && attribute.isId());
@@ -260,6 +274,18 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
             } else if (Objects.equals(function.getName(), "position")) {
                 return "%1$srow_number%2$s";
+            } else if (Objects.equals(function.getName().toUpperCase(), "CASEI")) {
+                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                    return children.get(0).toLowerCase();
+                } else if (function.getArguments().get(0) instanceof Property) {
+                    return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
+                }
+            } else if (Objects.equals(function.getName().toUpperCase(), "ACCENTI")) {
+                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                    return String.format("%s %s", children.get(0), "COLLATE \"de-DE-x-icu\"");
+                } else if (function.getArguments().get(0) instanceof Property) {
+                    return children.get(0).replace("%2$s", " COLLATE \"de-DE-x-icu\"%2$s");
+                }
             }
 
             return super.visit(function, children);
@@ -364,42 +390,10 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             List<String> expressions = processBinary(like.getOperands(), children);
 
             // we may need to change the second expression
-            Scalar op2 = (Scalar) like.getOperands().get(1);
             String secondExpression = expressions.get(1);
 
             String functionStart = "";
             String functionEnd = "";
-            // modifiers only work with a literal as the second value
-            if (op2 instanceof ScalarLiteral) {
-                if (like.getWildcard().isPresent() &&
-                        !Objects.equals("%", like.getWildcard().get())) {
-                    String wildCard = like.getWildcard().get();
-                    secondExpression = secondExpression.replaceAll("%", "\\%")
-                                                       .replaceAll(String.format("\\%s", wildCard), "%");
-                }
-                if (like.getSingleChar().isPresent() &&
-                        !Objects.equals("_", like.getSingleChar().get())) {
-                    String singlechar = like.getSingleChar().get();
-                    secondExpression = secondExpression.replaceAll("_", "\\_")
-                                                       .replaceAll(String.format("\\%s", singlechar), "_");
-                }
-                if (like.getEscapeChar().isPresent() &&
-                        !Objects.equals("\\", like.getEscapeChar().get())) {
-                    String escapechar = like.getEscapeChar().get();
-                    secondExpression = secondExpression.replaceAll("\\\\", "\\\\")
-                                                       .replaceAll(String.format("\\%s", escapechar), "\\");
-                }
-            }
-            if ((like.getNocase().isEmpty()) ||
-                    (like.getNocase().isPresent() && Objects.equals(Boolean.TRUE, like.getNocase().get()))) {
-                functionStart = "LOWER(";
-                functionEnd = ")";
-                if (op2 instanceof ScalarLiteral) {
-                    secondExpression = secondExpression.toLowerCase();
-                } else if (op2 instanceof Property) {
-                    secondExpression = String.format("LOWER(%s::varchar)", secondExpression.toLowerCase());
-                }
-            }
 
             String operation = String.format("::varchar%s %s %s", functionEnd, operator, secondExpression);
             return String.format(expressions.get(0), functionStart, operation);
@@ -461,9 +455,13 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         }
 
         private Instant getStart(TemporalLiteral literal) {
-            return (literal.getType() == Interval.class)
-                    ? ((Interval) literal.getValue()).getStart()
-                    : (Instant) literal.getValue();
+            if (literal.getType() == Interval.class) {
+                return ((Interval) literal.getValue()).getStart();
+            } else if (literal.getType() == Instant.class) {
+                return ((Instant) literal.getValue());
+            } else {
+                return ((LocalDate) literal.getValue()).atStartOfDay(ZoneOffset.UTC).toInstant();
+            }
         }
 
         private String getStartAsString(TemporalLiteral literal) {
@@ -472,9 +470,13 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         }
 
         private Instant getEnd(TemporalLiteral literal) {
-            return (literal.getType() == Interval.class)
-                    ? ((Interval) literal.getValue()).getEnd()
-                    : (Instant) literal.getValue();
+            if (literal.getType() == Interval.class) {
+                return ((Interval) literal.getValue()).getEnd().minusSeconds(1);
+            } else if (literal.getType() == Instant.class) {
+                return ((Instant) literal.getValue());
+            } else {
+                return ((LocalDate) literal.getValue()).atTime(23,59,59).atZone(ZoneOffset.UTC).toInstant();
+            }
         }
 
         private String getEndAsString(TemporalLiteral literal) {
@@ -483,100 +485,18 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         }
 
         private Instant getEndExclusive(TemporalLiteral literal) {
-            return (literal.getType() == Interval.class)
-                    ? ((Interval) literal.getValue()).getEnd().plusSeconds(1)
-                    : (Instant) literal.getValue();
+            if (literal.getType() == Interval.class) {
+                return ((Interval) literal.getValue()).getEnd();
+            } else if (literal.getType() == Instant.class) {
+                return ((Instant) literal.getValue());
+            } else {
+                return ((LocalDate) literal.getValue()).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+            }
         }
 
         private String getEndExclusiveAsString(TemporalLiteral literal) {
             return String.format("TIMESTAMP '%s'", getEndExclusive(literal))
                          .replace("'+10000-01-01T00:00:00Z'", "'infinity'");
-        }
-
-        @Override
-        public String visit(TemporalOperation temporalOperation, List<String> children) {
-            String operator = TEMPORAL_OPERATORS.get(temporalOperation.getClass());
-
-            Temporal op1 = (Temporal) temporalOperation.getOperands().get(0);
-            Temporal op2 = (Temporal) temporalOperation.getOperands().get(1);
-
-            // TODO The behaviour of the temporal predicates should be improved by 
-            //      distinguishing datetime properties of different granularity in
-            //      the provider schema; at least second and day, but a more flexible 
-            //      solution would be better.
-            //      The public review of CQL resulted in a number of comments on the
-            //      temporal predicates, partly also relates to this - wait for their 
-            //      resolution.
-
-            if (temporalOperation instanceof TEquals) {
-                // Both side are a property or an instant, this was checked when the operation was built.
-                if (op1 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(String.format("TIMESTAMP %s", children.get(0)), children.get(1));
-                }
-                if (op2 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(children.get(0), String.format("TIMESTAMP %s", children.get(1)));
-                }
-                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
-
-            } else if (temporalOperation instanceof Before) {
-                if (op1 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(getEndAsString((TemporalLiteral) op1), children.get(1));
-                }
-                if (op2 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2));
-                }
-                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
-
-            } else if (temporalOperation instanceof After) {
-                if (op1 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(getStartAsString((TemporalLiteral) op1), children.get(1));
-                }
-                if (op2 instanceof TemporalLiteral) {
-                    children = ImmutableList.of(children.get(0), getEndAsString((TemporalLiteral) op2));
-                }
-                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
-
-            } else if (temporalOperation instanceof During) {
-                // The left hand side is a property or an instant, this was checked when the operation was built.
-                // The right hand side is an interval, this was checked when the operation was built.
-                Temporal op2a = op2;
-                Temporal op2b = op2;
-                if (op2 instanceof TemporalLiteral) {
-                    op2a = TemporalLiteral.of(getStart((TemporalLiteral) op2));
-                    op2b = TemporalLiteral.of(getEnd((TemporalLiteral) op2));
-                    children = ImmutableList.of(children.get(0), getStartAsString((TemporalLiteral) op2a), getEndAsString((TemporalLiteral) op2b));
-                } else if (op2 instanceof Property) {
-                    children = ImmutableList.of(children.get(0), children.get(1), children.get(1));
-                }
-                List<String> expressions = processTernary(ImmutableList.of(op1, op2a, op2b), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s AND %s", operator, expressions.get(1), expressions.get(2)));
-
-            } else if (temporalOperation instanceof AnyInteracts) {
-                // ISO 8601 intervals include both the start and end instant
-                // PostgreSQL intervals are exclusive of the end instant, so we add one second to each end instant
-                if (op1 instanceof Property) {
-                    // need to change "column" to "(column,column)"
-                    children = ImmutableList.of(replaceColumnWithInterval(children.get(0), reduceSelectToColumn(children.get(0))), children.get(1));
-                } else if (op1 instanceof TemporalLiteral) {
-                    // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
-                    children = ImmutableList.of(String.format("(%s, %s)", getStartAsString((TemporalLiteral) op1), getEndExclusiveAsString((TemporalLiteral) op1)), children.get(1));
-                }
-
-                if (op2 instanceof Property) {
-                    // need to change "column" to "(column,column)"
-                    children = ImmutableList.of(children.get(0),replaceColumnWithInterval(children.get(1), reduceSelectToColumn(children.get(1))));
-                } else if (op2 instanceof TemporalLiteral) {
-                    // need to construct "(start, end)" where start and end are identical for an instant and end is exclusive otherwise
-                    children = ImmutableList.of(children.get(0), String.format("(%s, %s)", getStartAsString((TemporalLiteral) op2), getEndExclusiveAsString((TemporalLiteral) op2)));
-                }
-                List<String> expressions = processBinary(ImmutableList.of(op1, op2), children);
-                return String.format(expressions.get(0), "", String.format(" %s %s", operator, expressions.get(1)));
-            }
-
-            throw new IllegalArgumentException(String.format("unsupported temporal operator: %s", operator));
         }
 
         @Override
@@ -590,7 +510,14 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
         @Override
         public String visit(TemporalLiteral temporalLiteral, List<String> children) {
-            return String.format("'%s'", temporalLiteral.getValue());
+            if (temporalLiteral.getType() == Instant.class) {
+                return String.format("'%s'", ((Instant) temporalLiteral.getValue()).toString());
+            } else if (temporalLiteral.getType() == Interval.class) {
+                return String.format("'%s'", ((Interval) temporalLiteral.getValue()).toString());
+            } else if (temporalLiteral.getType() == LocalDate.class) {
+                return String.format("'%s'", ((LocalDate) temporalLiteral.getValue()).toString());
+            }
+            throw new IllegalArgumentException("unsupported temporal literal");
         }
 
         @Override
@@ -627,7 +554,6 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(Geometry.Envelope envelope, List<String> children) {
             List<Double> c = envelope.getCoordinates();
 
-            // TODO we should get this information from the CRS
             EpsgCrs crs = envelope.getCrs().orElse(OgcCrs.CRS84);
             int epsgCode = crs.getCode();
             boolean hasDiscontinuityAt180DegreeLongitude = ImmutableList.of(4326, 4979, 4259, 4269).contains(epsgCode);
@@ -689,7 +615,6 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             boolean notInverse = true;
             if (op1hasSelect) {
                 if (op2hasSelect) {
-                    // TODO
                     throw new IllegalArgumentException("Array predicates with property references on both sides are not supported.");
                     // secondExpression = reduceSelectToColumn(children.get(1));
                 }
@@ -705,28 +630,29 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     // literal op literal, we can decide here
                     List<String> firstOp = ARRAY_SPLITTER.splitToList(mainExpression.replaceAll("\\[|\\]", ""));
                     List<String> secondOp = ARRAY_SPLITTER.splitToList(secondExpression.replaceAll("\\[|\\]", ""));
-                    if (arrayOperation instanceof AContains) {
-                        // each item of the second array must be in the first array
-                        return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
-                    } else if (arrayOperation instanceof AEquals) {
-                        // items must be identical
-                        if (firstOp.size()!=secondOp.size())
-                            return "1=0";
-                        return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
-                    } else if (arrayOperation instanceof AOverlaps) {
-                        // at least one common element
-                        return secondOp.stream().anyMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
-                    } else if (arrayOperation instanceof ContainedBy) {
-                        // each item of the first array must be in the second array
-                        return firstOp.stream().allMatch(item -> secondOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                    switch (arrayOperation.getOperator()) {
+                        case A_CONTAINS:
+                            // each item of the second array must be in the first array
+                            return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item::equals)) ? "1=1" : "1=0";
+                        case A_EQUALS:
+                            // items must be identical
+                            if (firstOp.size() != secondOp.size())
+                                return "1=0";
+                            return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item::equals)) ? "1=1" : "1=0";
+                        case A_OVERLAPS:
+                            // at least one common element
+                            return secondOp.stream().anyMatch(item -> firstOp.stream().anyMatch(item::equals)) ? "1=1" : "1=0";
+                        case A_CONTAINEDBY:
+                            // each item of the first array must be in the second array
+                            return firstOp.stream().allMatch(item -> secondOp.stream().anyMatch(item::equals)) ? "1=1" : "1=0";
                     }
-                    throw new IllegalArgumentException("unsupported array operator");
+                    throw new IllegalArgumentException("unsupported array operator: " + arrayOperation.getOperator());
                 }
             }
 
             if (op1hasSelect && op2hasSelect) {
-                // property op property
-                // TODO
+                // TODO property op property
+                throw new IllegalArgumentException("Array predicates with property references on both sides are not supported.");
 
             }
 
@@ -740,20 +666,18 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String column = getColumn(table, propertyMatches, propertyName);
             List<String> aliases = getAliases(table);
             String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
-            List<Map<String, List<String>>> x = ImmutableList.of();
-            boolean xx = x.stream().map(theme -> theme.get("concept")).flatMap(List::stream).filter(concept -> concept.equals("DLKM")).distinct().count() == 1;
 
-            if (notInverse ? arrayOperation instanceof AContains : arrayOperation instanceof ContainedBy) {
+            if (notInverse ? arrayOperation.getOperator()==A_CONTAINS : arrayOperation.getOperator()==A_CONTAINEDBY) {
                 String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s", secondExpression, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (arrayOperation instanceof AEquals) {
+            } else if (arrayOperation.getOperator()==A_EQUALS) {
                 String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s AND count(case when %4$s not in %1$s then %4$s else null end) = 0",
                                                   secondExpression, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (arrayOperation instanceof AOverlaps) {
+            } else if (arrayOperation.getOperator()==A_OVERLAPS) {
                 String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s", secondExpression, aliases.get(0), instanceContainer.getSortKey());
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (notInverse ? arrayOperation instanceof ContainedBy : arrayOperation instanceof AContains) {
+            } else if (notInverse ? arrayOperation.getOperator()==A_CONTAINEDBY : arrayOperation.getOperator()==A_CONTAINS) {
                 String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(case when %4$s not in %1$s then %4$s else null end) = 0",
                                                   secondExpression, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn);
                 return String.format(mainExpression, "", arrayQuery);

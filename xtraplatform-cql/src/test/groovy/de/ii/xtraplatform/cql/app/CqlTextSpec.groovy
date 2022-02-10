@@ -9,7 +9,9 @@ package de.ii.xtraplatform.cql.app
 
 
 import de.ii.xtraplatform.cql.domain.Cql
+import de.ii.xtraplatform.cql.domain.CqlParseException
 import de.ii.xtraplatform.cql.domain.CqlPredicate
+import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -85,7 +87,7 @@ class CqlTextSpec extends Specification {
     def 'Owner name starts with "Mike"'() {
 
         given:
-        String cqlText = "owner LIKE 'Mike%' WILDCARD '%'"
+        String cqlText = "owner LIKE 'Mike%'"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -249,7 +251,7 @@ class CqlTextSpec extends Specification {
     def 'Built before 2015'() {
 
         given:
-        String cqlText = "built BEFORE 2012-06-05T00:00:00Z"
+        String cqlText = "T_BEFORE(built, TIMESTAMP('2012-06-05T00:00:00Z'))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -269,7 +271,7 @@ class CqlTextSpec extends Specification {
     def 'Built after June 5, 2012'() {
 
         given:
-        String cqlText = "built AFTER 2012-06-05T00:00:00Z"
+        String cqlText = "T_AFTER(built, TIMESTAMP('2012-06-05T00:00:00Z'))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -289,7 +291,7 @@ class CqlTextSpec extends Specification {
     def 'Updated between 7:30am June 10, 2017 and 10:30am June 11, 2017'() {
 
         given:
-        String cqlText = "updated DURING 2017-06-10T07:30:00Z/2017-06-11T10:30:00Z"
+        String cqlText = "T_DURING(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -310,7 +312,7 @@ class CqlTextSpec extends Specification {
     def 'Location in the box between -118,33.8 and -117.9,34 in long/lat (geometry 1)'() {
 
         given:
-        String cqlText = "WITHIN(location, ENVELOPE(-118.0,33.8,-117.9,34.0))"
+        String cqlText = "S_WITHIN(location, ENVELOPE(-118.0,33.8,-117.9,34.0))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -330,7 +332,7 @@ class CqlTextSpec extends Specification {
     def 'Location that intersects with geometry'() {
 
         given:
-        String cqlText = "INTERSECTS(location, POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))"
+        String cqlText = "S_INTERSECTS(location, POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -351,7 +353,7 @@ class CqlTextSpec extends Specification {
     def 'More than 5 floors and is within geometry 1 (below)'() {
 
         given:
-        String cqlText = "floors > 5 AND WITHIN(geometry, ENVELOPE(-118.0,33.8,-117.9,34.0))"
+        String cqlText = "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-118.0,33.8,-117.9,34.0))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -446,7 +448,7 @@ class CqlTextSpec extends Specification {
 
     def 'Built before 2015 (only date, no time information)'() {
         given:
-        String cqlText = "built BEFORE 2015-01-01"
+        String cqlText = "T_BEFORE(built, DATE('2015-01-01'))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -460,12 +462,12 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_24, Cql.Format.TEXT)
 
         then:
-        actual2 == "built BEFORE 2015-01-01T00:00:00Z/2015-01-01T23:59:59Z"
+        actual2 == cqlText
     }
 
     def 'Updated between June 10, 2017 and June 11, 2017'() {
         given:
-        String cqlText = "updated DURING 2017-06-10/2017-06-11"
+        String cqlText = "T_DURING(updated, INTERVAL('2017-06-10','2017-06-11'))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -479,12 +481,12 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_25, Cql.Format.TEXT)
 
         then:
-        actual2 == "updated DURING 2017-06-10T00:00:00Z/2017-06-11T23:59:59Z"
+        actual2 == cqlText
     }
 
     def 'Updated between 7:30am June 10, 2017 and open end date'() {
         given:
-        String cqlText = "updated DURING 2017-06-10T07:30:00Z/.."
+        String cqlText = "T_DURING(updated, INTERVAL('2017-06-10T07:30:00Z','..'))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -503,7 +505,7 @@ class CqlTextSpec extends Specification {
 
     def 'Updated between open start date and 10:30am June 11, 2017'() {
         given:
-        String cqlText = "updated DURING ../2017-06-11T10:30:00Z"
+        String cqlText = "T_DURING(updated, INTERVAL('..','2017-06-11T10:30:00Z'))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -522,7 +524,7 @@ class CqlTextSpec extends Specification {
 
     def 'Open interval on both ends'() {
         given:
-        String cqlText = "updated DURING ../.."
+        String cqlText = "T_DURING(updated, INTERVAL('..','..'))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -534,6 +536,25 @@ class CqlTextSpec extends Specification {
 
         when: 'writing text'
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_28, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Interval with properties on both ends'() {
+        given:
+        String cqlText = "T_INTERSECTS(event_date, INTERVAL(startDate,endDate))"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_TINTERSECTS
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_TINTERSECTS, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText
@@ -579,7 +600,7 @@ class CqlTextSpec extends Specification {
 
     def 'Function with a temporal argument'() {
         given:
-        String cqlText = "year(2012-06-05T00:00:00Z) = 2012"
+        String cqlText = "year(TIMESTAMP('2012-06-05T00:00:00Z')) = 2012"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -654,50 +675,10 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    def 'LIKE operator modifiers'() {
-
-        given:
-        String cqlText = "name LIKE 'Smith.' SINGLECHAR '.' ESCAPECHAR '+' NOCASE false"
-
-        when: 'reading text'
-        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
-
-        then:
-        actual == CqlFilterExamples.EXAMPLE_35
-
-        and:
-
-        when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_35, Cql.Format.TEXT)
-
-        then:
-        actual2 == cqlText
-    }
-
-    def 'ANYINTERACTS temporal operator'() {
-
-        given:
-        String cqlText = "event_date ANYINTERACTS 1969-07-16T05:32:00Z/1969-07-24T16:50:35Z"
-
-        when: 'reading text'
-        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
-
-        then:
-        actual == CqlFilterExamples.EXAMPLE_36
-
-        and:
-
-        when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_36, Cql.Format.TEXT)
-
-        then:
-        actual2 == cqlText
-    }
-
     def 'Evaluate if the value of an array property contains the specified subset of values'() {
 
         given:
-        String cqlText = "layer:ids ACONTAINS ['layers-ca','layers-us']"
+        String cqlText = "A_CONTAINS(layer:ids, ['layers-ca','layers-us'])"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -812,7 +793,7 @@ class CqlTextSpec extends Specification {
 
     def 'Array predicate with nested filter'() {
         given:
-        String cqlText = "theme[scheme = 'profile'].concept ACONTAINS ['DLKM','Basis-DLM','DLM50']"
+        String cqlText = "A_CONTAINS(theme[scheme = 'profile'].concept, ['DLKM','Basis-DLM','DLM50'])"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -850,128 +831,123 @@ class CqlTextSpec extends Specification {
 
     def 'LT with temporal values'() {
         given:
-        String cqlText = "built < 2012-06-05T00:00:00Z"
-        String cqlText2 = "built BEFORE 2012-06-05T00:00:00Z"
+        String cqlText = "built < TIMESTAMP('2012-06-05T00:00:00Z')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_12
+        actual == CqlFilterExamples.EXAMPLE_12_alt
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_12, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_12_alt, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'LTEQ with temporal values'() {
         given:
-        String cqlText = "built <= 2012-06-05T00:00:00Z"
-        String cqlText2 = "built BEFORE 2012-06-05T00:00:00Z OR built TEQUALS 2012-06-05T00:00:00Z"
+        String cqlText = "built <= TIMESTAMP('2012-06-05T00:00:00Z')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_12a
+        actual == CqlFilterExamples.EXAMPLE_12eq_alt
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_12a, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_12eq_alt, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'GT with temporal values'() {
         given:
-        String cqlText = "built > 2012-06-05T00:00:00Z"
-        String cqlText2 = "built AFTER 2012-06-05T00:00:00Z"
+        String cqlText = "built > TIMESTAMP('2012-06-05T00:00:00Z')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_13
+        actual == CqlFilterExamples.EXAMPLE_13_alt
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13_alt, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'GTEQ with temporal values'() {
         given:
-        String cqlText = "built >= 2012-06-05T00:00:00Z"
-        String cqlText2 = "built AFTER 2012-06-05T00:00:00Z OR built TEQUALS 2012-06-05T00:00:00Z"
+        String cqlText = "built >= TIMESTAMP('2012-06-05T00:00:00Z')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_13b
+        actual == CqlFilterExamples.EXAMPLE_13eq_alt
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13b, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13eq_alt, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'EQ with temporal values'() {
         given:
-        String cqlText = "built = 2012-06-05T00:00:00Z"
-        String cqlText2 = "built TEQUALS 2012-06-05T00:00:00Z"
+        String cqlText = "built = TIMESTAMP('2012-06-05T00:00:00Z')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_13a
+        actual == CqlFilterExamples.EXAMPLE_13A_alt
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13a, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13A_alt, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'NEQ with temporal values'() {
         given:
-        String cqlText = "built <> 2012-06-05T00:00:00Z"
-        String cqlText2 = "NOT (built TEQUALS 2012-06-05T00:00:00Z)"
+        String cqlText = "built <> TIMESTAMP('2012-06-05T00:00:00Z')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_13d
+        actual == CqlFilterExamples.EXAMPLE_13Aneq_alt
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13d, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_13Aneq_alt, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
+    // CQL2: between has been restricted to numeric values
+    @Ignore
     def 'BETWEEN with temporal arguments'() {
         given:
-        String cqlText = "updated BETWEEN 2017-06-10T07:30:00Z AND 2017-06-11T10:30:00Z"
-        String cqlText2 = "updated DURING 2017-06-10T07:30:00Z/2017-06-11T10:30:00Z"
+        String cqlText = "updated BETWEEN TIMESTAMP('2017-06-10T07:30:00Z') AND TIMESTAMP('2017-06-11T10:30:00Z')"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -985,12 +961,12 @@ class CqlTextSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_14, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText2
+        actual2 == cqlText
     }
 
     def 'IN with temporal arguments'() {
         given:
-        String cqlText = "updated IN (2017-06-10T07:30:00Z, 2018-06-10T07:30:00Z, 2019-06-10T07:30:00Z, 2020-06-10T07:30:00Z)"
+        String cqlText = "updated IN (TIMESTAMP('2017-06-10T07:30:00Z'), TIMESTAMP('2018-06-10T07:30:00Z'), TIMESTAMP('2019-06-10T07:30:00Z'), TIMESTAMP('2020-06-10T07:30:00Z'))"
 
         when: 'reading text'
         CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -1009,35 +985,73 @@ class CqlTextSpec extends Specification {
 
     def 'LT with temporal value -- interval'() {
         given:
-        String cqlText = "built < 2017-06-10T07:30:00Z/2017-06-11T10:30:00Z"
+        String cqlText = "built < INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z')"
 
         when: 'reading text'
         cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        thrown(IllegalArgumentException)
+        thrown(CqlParseException)
     }
 
     def 'BETWEEN with temporal arguments -- intervals'() {
         given:
-        String cqlText = "updated BETWEEN 2017-06-10T07:30:00Z/2017-06-11T10:30:00Z AND 2018-06-10T07:30:00Z/2018-06-11T10:30:00Z"
+        String cqlText = "updated BETWEEN INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z') AND INTERVAL('2018-06-10T07:30:00Z','2018-06-11T10:30:00Z')"
 
         when: 'reading text'
         cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        thrown(IllegalArgumentException)
+        thrown(CqlParseException)
     }
 
     def 'IN with temporal arguments -- intervals'() {
         given:
-        String cqlText = "updated IN (2017-06-10T07:30:00Z/2017-06-11T10:30:00Z, 2018-06-10T07:30:00Z/2018-06-11T10:30:00Z)"
+        String cqlText = "updated IN (INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), INTERVAL('2018-06-10T07:30:00Z','2018-06-11T10:30:00Z'))"
 
         when: 'reading text'
         cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        thrown(IllegalArgumentException)
+        thrown(CqlParseException)
+    }
+
+    def 'Case insensitive string comparison function CASEI'() {
+        given:
+        String cqlText = "CASEI(road_class) IN (CASEI('Οδος'), CASEI('Straße'))"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_CASEI
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_CASEI, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'Accent insensitive string comparison function ACCENTI'() {
+        given:
+        String cqlText = "ACCENTI(road_class) IN (ACCENTI('Οδος'), ACCENTI('Straße'))"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_ACCENTI
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_ACCENTI, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
     }
 
 }

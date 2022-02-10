@@ -40,18 +40,12 @@ class FeatureQueryTransformerSql implements FeatureQueryTransformer<SqlQueries, 
 
   private final Map<String, List<SqlQueryTemplates>> allQueryTemplates;
   private final Map<String, FeatureStoreTypeInfo> typeInfos;
-  private final FeatureStoreQueryGeneratorSql queryGenerator;
-  private final boolean computeNumberMatched;
 
   FeatureQueryTransformerSql(
       Map<String, List<SqlQueryTemplates>> allQueryTemplates,
-      Map<String, FeatureStoreTypeInfo> typeInfos,
-      FeatureStoreQueryGeneratorSql queryGenerator,
-      boolean computeNumberMatched) {
+      Map<String, FeatureStoreTypeInfo> typeInfos) {
     this.allQueryTemplates = allQueryTemplates;
     this.typeInfos = typeInfos;
-    this.queryGenerator = queryGenerator;
-    this.computeNumberMatched = computeNumberMatched;
   }
 
   //TODO: rest of code in this class, so mainly the query multiplexing, goes to SqlConnector

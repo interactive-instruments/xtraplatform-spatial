@@ -9,8 +9,13 @@ package de.ii.xtraplatform.feature.provider.sql.domain;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.cql.domain.TemporalOperation;
+import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import org.threeten.extra.Interval;
+
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -18,13 +23,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.threeten.extra.Interval;
+import java.util.Set;
 
 public class SqlDialectPostGis implements SqlDialect {
 
   private final static Splitter BBOX_SPLITTER = Splitter.onPattern("[(), ]")
       .omitEmptyStrings()
       .trimResults();
+  public final static Map<TemporalOperator, String> TEMPORAL_OPERATORS = new ImmutableMap.Builder<TemporalOperator, String>()
+      .put(TemporalOperator.T_INTERSECTS, "OVERLAPS") // "({start1},{end1}) OVERLAPS ({start2},{end2})"
+      .build();
 
   @Override
   public String applyToWkt(String column, boolean forcePolygonCCW) {
@@ -68,9 +76,44 @@ public class SqlDialectPostGis implements SqlDialect {
   }
 
   @Override
+  public String getTemporalOperator(TemporalOperation temporalOperation) {
+    return TEMPORAL_OPERATORS.get(temporalOperation.getOperator());
+  }
+
+  @Override
+  public Set<TemporalOperator> getTemporalOperators() {
+    return TEMPORAL_OPERATORS.keySet();
+  }
+
+  @Override
+  public String applyToDate(String column) {
+    return String.format("%s::date", column);
+  }
+
+  @Override
   public String applyToDatetime(String column) {
     return String.format("%s::timestamp(0)", column);
   }
+
+  @Override
+  public String applyToDateLiteral(String date) {
+    return String.format("DATE '%s'", date);
+  }
+
+  @Override
+  public String applyToDatetimeLiteral(String datetime) {
+    return String.format("TIMESTAMP '%s'", datetime);
+  }
+
+  @Override
+  public String applyToInstantMin() {
+    return "-infinity";
+  };
+
+  @Override
+  public String applyToInstantMax() {
+    return "infinity";
+  };
 
   @Override
   public String escapeString(String value) {
