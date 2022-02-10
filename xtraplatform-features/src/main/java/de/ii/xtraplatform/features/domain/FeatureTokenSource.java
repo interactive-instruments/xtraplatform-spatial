@@ -12,6 +12,8 @@ import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReducedTransformed;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
+import java.util.Comparator;
+import java.util.function.Function;
 
 public class FeatureTokenSource implements Source<Object> {
 
@@ -34,5 +36,26 @@ public class FeatureTokenSource implements Source<Object> {
   @Override
   public <V, W> BasicStream<V, W> to(SinkReducedTransformed<Object, V, W> sink) {
     return delegate.to(sink);
+  }
+
+  @Override
+  public Source<Object> mapError(Function<Throwable, Throwable> errorMapper) {
+    delegate.mapError(errorMapper);
+
+    return this;
+  }
+
+  @Override
+  public Source<Object> prepend(Source<Object> other) {
+    delegate.prepend(other);
+
+    return this;
+  }
+
+  @Override
+  public Source<Object> mergeSorted(Source<Object> other, Comparator<Object> comparator) {
+    delegate.mergeSorted(other, comparator);
+
+    return this;
   }
 }

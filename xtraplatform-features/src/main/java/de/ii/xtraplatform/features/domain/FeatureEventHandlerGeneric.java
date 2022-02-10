@@ -13,11 +13,11 @@ import org.immutables.value.Value;
 import org.immutables.value.Value.Modifiable;
 
 //TODO: more comfortable variant of consumer, use in encoder/transformer
-public interface FeatureEventHandlerGeneric extends FeatureEventHandler<ModifiableContext>, FeatureTokenContext<GenericContext> {
+public interface FeatureEventHandlerGeneric extends FeatureEventHandler<FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>, FeatureTokenContext<GenericContext> {
 
   @Modifiable
   @Value.Style(deepImmutablesDetection = true)
-  interface GenericContext extends ModifiableContext {}
+  interface GenericContext extends ModifiableContext<FeatureSchema, SchemaMapping> {}
 
   @Override
   default GenericContext createContext() {

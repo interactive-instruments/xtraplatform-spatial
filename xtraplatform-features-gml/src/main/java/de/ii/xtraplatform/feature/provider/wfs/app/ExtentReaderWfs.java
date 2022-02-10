@@ -21,6 +21,7 @@ import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.util.Optional;
+import org.threeten.extra.Interval;
 
 public class ExtentReaderWfs implements ExtentReader {
 
@@ -40,8 +41,21 @@ public class ExtentReaderWfs implements ExtentReader {
                                                       .flatMap(boundingBoxes -> Optional.ofNullable(boundingBoxes.get(typeInfo.getName())))
                                                       .flatMap(boundingBox1 -> crsTransformer.map(mayThrow(crsTransformer1 -> crsTransformer1.transformBoundingBox(boundingBox1))));
 
-        //TODO: test
         return Reactive.Source.single(boundingBox)
+            .to(Reactive.Sink.head());
+    }
+
+    @Override
+    public Stream<Optional<Interval>> getTemporalExtent(FeatureStoreTypeInfo typeInfo,
+        String property) {
+        return Reactive.Source.single(Optional.<Interval>empty())
+            .to(Reactive.Sink.head());
+    }
+
+    @Override
+    public Stream<Optional<Interval>> getTemporalExtent(FeatureStoreTypeInfo typeInfo,
+        String startProperty, String endProperty) {
+        return Reactive.Source.single(Optional.<Interval>empty())
             .to(Reactive.Sink.head());
     }
 }

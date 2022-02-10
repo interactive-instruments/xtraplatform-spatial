@@ -30,10 +30,10 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       .getLogger(FeatureTokenTransformerSchemaMappings.class);
 
   private final PropertyTransformations propertyTransformations;
-  private ModifiableContext newContext;
+  private ModifiableContext<FeatureSchema, SchemaMapping> newContext;
   private NestingTracker nestingTracker;
   private TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> schemaTransformerChain;
-  private TransformerChain<ModifiableContext, FeaturePropertyContextTransformer> contextTransformerChain;
+  private TransformerChain<ModifiableContext<FeatureSchema, SchemaMapping>, FeaturePropertyContextTransformer> contextTransformerChain;
   private final List<List<String>> indexedArrays;
   private final List<List<String>> openedArrays;
 
@@ -45,7 +45,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   }
 
   @Override
-  public void onStart(ModifiableContext context) {
+  public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     //TODO: slow, precompute, same for original in decoder
     SchemaMapping schemaMapping = SchemaMapping.withTargetPaths(getContext().mapping());
     this.newContext = createContext()
@@ -90,17 +90,17 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   }
 
   @Override
-  public void onEnd(ModifiableContext context) {
+  public void onEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     getDownstream().onEnd(newContext);
   }
 
   @Override
-  public void onFeatureStart(ModifiableContext context) {
+  public void onFeatureStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     getDownstream().onFeatureStart(newContext);
   }
 
   @Override
-  public void onFeatureEnd(ModifiableContext context) {
+  public void onFeatureEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     while (nestingTracker.isNested()) {
       //nestingTracker.close();
       if (nestingTracker.inObject()) {
@@ -115,7 +115,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   }
 
   @Override
-  public void onObjectStart(ModifiableContext context) {
+  public void onObjectStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (context.schema()
         .filter(FeatureSchema::isSpatial)
         .isPresent()) {
@@ -151,7 +151,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
   //TODO: geometry arrays
   @Override
-  public void onObjectEnd(ModifiableContext context) {
+  public void onObjectEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (context.schema()
         .filter(FeatureSchema::isSpatial)
         .isPresent()) {
@@ -165,7 +165,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   }
 
   @Override
-  public void onArrayStart(ModifiableContext context) {
+  public void onArrayStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (context.inGeometry() && !newContext.shouldSkip()) {
       getDownstream().onArrayStart(newContext);
     }
@@ -182,14 +182,14 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   }
 
   @Override
-  public void onArrayEnd(ModifiableContext context) {
+  public void onArrayEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (context.inGeometry() && !newContext.shouldSkip()) {
       getDownstream().onArrayEnd(newContext);
     }
   }
 
   @Override
-  public void onValue(ModifiableContext context) {
+  public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (context.inGeometry()) {
       newContext.setValue(context.value());
       newContext.setValueType(context.valueType());

@@ -7,17 +7,11 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import akka.Done;
-import akka.NotUsed;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import de.ii.xtraplatform.dropwizard.domain.JacksonProvider;
-
-import java.util.Map;
+import de.ii.xtraplatform.streams.domain.Reactive;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 
 /**
  * @author zahnen
@@ -41,13 +35,9 @@ public interface FeatureProviderConnector<T,U,V extends FeatureProviderConnector
 
     Optional<Throwable> getConnectionError();
 
-    //TODO: refactor FeatureProviderWfs to use getSourceStream, remove this
-    @Deprecated
-    CompletionStage<Done> runQuery(final FeatureQuery query, final Sink<T, CompletionStage<Done>> consumer, final Map<String, String> additionalQueryParameters);
+    Reactive.Source<T> getSourceStream(U query);
 
-    Source<T, NotUsed> getSourceStream(U query);
-
-    Source<T, NotUsed> getSourceStream(U query, V options);
+    Reactive.Source<T> getSourceStream(U query, V options);
 
     default Tuple<Boolean, String> canBeSharedWith(ConnectionInfo connectionInfo, boolean checkAllParameters) {
         return Tuple.of(false, null);

@@ -182,7 +182,16 @@ public class FilterEncoderSql {
         }
 
         protected String getColumn(SchemaSql table,
-            String propertyName, boolean allowColumnFallback) {
+                                   String propertyName, boolean allowColumnFallback) {
+            //TODO: support nested mapping filters
+            if (Objects.equals(table.getParentPath(), ImmutableList.of("_route_"))
+                && propertyName.equals("node")) {
+                return "_route_" + propertyName;
+            }
+            if (Objects.equals(table.getParentPath(), ImmutableList.of("_route_"))
+                && propertyName.equals("source")) {
+                return propertyName;
+            }
             return table.getProperties()
                         .stream()
                         .filter(getPropertyNameMatcher(propertyName))
@@ -858,6 +867,11 @@ public class FilterEncoderSql {
             List<String> aliases = aliasGenerator.getAliases(schema, isUserFilter ? 1 : 0);
             String alias = hasAllowedPrefix ? aliases.get(allowedColumnPrefixes.indexOf(prefix)) : aliases.get(aliases.size() - 1);
             String qualifiedColumn = String.format("%s.%s", alias, column);
+
+            //TODO: support nested mapping filters
+            if (column.startsWith("_route_")) {
+                qualifiedColumn = "A." + column.replace("_route_", "");
+            }
 
             return String.format("%%1$s%1$s%%2$s", qualifiedColumn);
         }

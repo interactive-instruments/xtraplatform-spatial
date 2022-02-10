@@ -20,6 +20,7 @@ import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
 import de.ii.xtraplatform.features.domain.NestingTracker;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.SchemaMapping;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +30,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow> {
+public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDecoderSql.class);
 
@@ -44,7 +45,7 @@ public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow> {
   private Object currentId;
   private boolean isAtLeastOneFeatureWritten;
 
-  private ModifiableContext context;
+  private ModifiableContext<FeatureSchema, SchemaMapping> context;
   private GeometryDecoderWkt geometryDecoder;
   private NestingTracker nestingTracker;
 

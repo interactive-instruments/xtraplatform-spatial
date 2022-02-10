@@ -15,15 +15,16 @@ import spock.lang.Specification
  */
 class FeatureTokenEmitterSpec extends Specification {
 
-    FeatureEventHandler<FeatureEventHandler.ModifiableContext> eventHandler
+    FeatureEventHandler<FeatureSchema, SchemaMapping, FeatureEventHandler.ModifiableContext<FeatureSchema, SchemaMapping>> eventHandler
     FeatureTokenReader tokenReader
     List<Object> tokens
 
     def setup() {
         tokens = []
-        eventHandler = (FeatureTokenEmitter2<FeatureEventHandler.ModifiableContext>) (token -> tokens.add(token))
-        FeatureEventHandler.ModifiableContext context = ModifiableGenericContext.create();
+        eventHandler = (FeatureTokenEmitter2<FeatureSchema, SchemaMapping, FeatureEventHandler.ModifiableContext<FeatureSchema, SchemaMapping>>) (token -> tokens.add(token))
+        FeatureEventHandler.ModifiableContext<FeatureSchema, SchemaMapping> context = ModifiableGenericContext.create();
         SchemaMapping mapping = Mock()
+        mapping.getPathSeparator() >> Optional.empty()
         context.setMapping(mapping)
         tokenReader = new FeatureTokenReader(eventHandler, context)
     }

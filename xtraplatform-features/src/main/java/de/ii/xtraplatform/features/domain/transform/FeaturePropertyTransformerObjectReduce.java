@@ -9,9 +9,11 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.SchemaMapping;
 import java.util.Objects;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -27,7 +29,7 @@ public interface FeaturePropertyTransformerObjectReduce extends FeaturePropertyC
     }
 
     @Override
-    default ModifiableContext transform(String currentPropertyPath, ModifiableContext context) {
+    default ModifiableContext<FeatureSchema, SchemaMapping> transform(String currentPropertyPath, ModifiableContext<FeatureSchema, SchemaMapping> context) {
         if (Objects.equals(currentPropertyPath, getPropertyPath()) && context.currentSchema().filter(
             SchemaBase::isObject).isPresent()) {
             if (context.currentSchema().get().isArray() && !context.inArray()) {

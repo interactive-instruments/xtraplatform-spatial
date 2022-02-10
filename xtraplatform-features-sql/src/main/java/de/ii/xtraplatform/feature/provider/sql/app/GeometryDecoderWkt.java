@@ -11,7 +11,9 @@ import com.google.common.base.Splitter;
 import de.ii.xtraplatform.dropwizard.domain.LambdaWithException;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.io.IOException;
 import java.io.StreamTokenizer;
@@ -20,12 +22,12 @@ import java.util.Objects;
 
 public class GeometryDecoderWkt {
 
-  private final FeatureEventHandler<ModifiableContext> handler;
-  private final ModifiableContext context;
+  private final FeatureEventHandler<FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> handler;
+  private final ModifiableContext<FeatureSchema, SchemaMapping> context;
 
   public GeometryDecoderWkt(
-      FeatureEventHandler<ModifiableContext> handler,
-      ModifiableContext context) {
+      FeatureEventHandler<FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> handler,
+      ModifiableContext<FeatureSchema, SchemaMapping> context) {
     this.handler = handler;
     this.context = context;
   }

@@ -68,7 +68,9 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         return getSourcePath().map(element -> (List<String>)ImmutableList.of(element)).orElse(getSourcePaths());
     }
 
-    Optional<Boolean> getForcePolygonCCW();
+  Optional<SchemaConstraints> getConstraints();
+
+  Optional<Boolean> getForcePolygonCCW();
 
     @JsonIgnore
     @Value.Derived
@@ -259,6 +261,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     @Value.Auxiliary
     default boolean isType() {
         return getRole().filter(role -> role == Role.TYPE).isPresent();
+    }
+
+    @JsonIgnore
+    @Value.Derived
+    @Value.Auxiliary
+    default boolean isRequired() {
+        return getConstraints().filter(SchemaConstraints::isRequired).isPresent();
     }
 
     default <U> U accept(SchemaVisitor<T, U> visitor) {

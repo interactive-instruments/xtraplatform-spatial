@@ -44,7 +44,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
   }
 
   @Override
-  public void onStart(ModifiableContext context) {
+  public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     //TODO: slow, precompute, same for original in decoder
     SchemaMapping schemaMapping = SchemaMapping.withTargetPaths(getContext().mapping());
 
@@ -55,7 +55,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
   }
 
   @Override
-  public void onObjectStart(ModifiableContext context) {
+  public void onObjectStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (context.schema()
     .filter(SchemaBase::isSpatial)
     .isPresent()
@@ -100,7 +100,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
   }
 
   @Override
-  public void onValue(ModifiableContext context) {
+  public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (context.inGeometry()) {
       CoordinatesTransformer coordinatesTransformer = coordinatesTransformerBuilder.coordinatesWriter(
           ImmutableCoordinatesWriterFeatureTokens.of(getDownstream(), targetDimension, context))
@@ -129,7 +129,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
     }
   }
 
-  private void transformValueBuffer(ModifiableContext context, String path) {
+  private void transformValueBuffer(ModifiableContext<FeatureSchema, SchemaMapping> context, String path) {
     for(Iterator<Entry<String, String>> it = context.valueBuffer().entrySet().iterator(); it.hasNext(); ) {
       Map.Entry<String, String> entry = it.next();
       String key = entry.getKey();

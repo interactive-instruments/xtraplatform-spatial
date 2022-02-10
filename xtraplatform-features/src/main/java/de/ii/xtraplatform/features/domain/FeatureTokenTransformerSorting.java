@@ -32,7 +32,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   }
 
   @Override
-  public void onStart(ModifiableContext context) {
+  public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     this.pathOrder = new LinkedHashMap<>();
     int counter = 0;
     for (List<String> path : context.mapping().getTargetSchemasByPath().keySet()) {
@@ -45,7 +45,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   }
 
   @Override
-  public void onFeatureStart(ModifiableContext context) {
+  public void onFeatureStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     this.lastIndexes = ImmutableList.of();
     this.lastOrder = 0;
 
@@ -53,7 +53,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   }
 
   @Override
-  public void onObjectStart(ModifiableContext context) {
+  public void onObjectStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     //LOGGER.warn("{} - {} - O", pathOrder.get(context.path()), context.path());
 
     if (pathOrder.containsKey(context.path())) {
@@ -66,24 +66,24 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   }
 
   @Override
-  public void onObjectEnd(ModifiableContext context) {
+  public void onObjectEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     super.onObjectEnd(context);
   }
 
   @Override
-  public void onArrayStart(ModifiableContext context) {
+  public void onArrayStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     //LOGGER.warn("{} - {} - A", pathOrder.get(context.path()), context.path());
 
     super.onArrayStart(context);
   }
 
   @Override
-  public void onArrayEnd(ModifiableContext context) {
+  public void onArrayEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     super.onArrayEnd(context);
   }
 
   @Override
-  public void onValue(ModifiableContext context) {
+  public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     int order = pathOrder.get(context.path());
 
     if (order > lastOrder + 1 && Objects.equals(lastIndexes, context.indexes())) {

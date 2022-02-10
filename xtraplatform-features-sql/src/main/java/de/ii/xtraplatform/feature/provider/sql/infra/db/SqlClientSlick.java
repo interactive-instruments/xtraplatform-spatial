@@ -7,13 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.infra.db;
 
-import akka.NotUsed;
-import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
 import akka.stream.alpakka.slick.javadsl.SlickSession;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.feature.provider.sql.SlickSql;
 import de.ii.xtraplatform.feature.provider.sql.app.FeatureSql;
@@ -21,24 +15,23 @@ import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow;
-import de.ii.xtraplatform.runtime.domain.LogContext;
+import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.runtime.domain.LogContext.MARKER;
+import de.ii.xtraplatform.streams.domain.Reactive;
 import java.sql.Connection;
 import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import scala.concurrent.ExecutionContext;
-
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import scala.concurrent.ExecutionContext;
 
 public class SqlClientSlick implements SqlClient {
 
@@ -61,42 +54,29 @@ public class SqlClientSlick implements SqlClient {
     }
 
     @Override
-    public Source<SqlRow, NotUsed> getSourceStream(String query, SqlQueryOptions options) {
+    public Reactive.Source<SqlRow> getSourceStream(String query, SqlQueryOptions options) {
         if (LOGGER.isDebugEnabled(MARKER.SQL)) {
             LOGGER.debug(MARKER.SQL, "Executing statement: {}", query);
         }
-        return SlickSql.source(session, query, positionedResult -> new SqlRowSlick().read(positionedResult, options));
+        return Reactive.Source.akka(SlickSql.source(session, query, positionedResult -> new SqlRowSlick().read(positionedResult, options)));
     }
 
     @Override
-    public <T> CompletionStage<String> executeMutation(List<Function<T, String>> mutations, T mutationContext,
-                                                       List<Consumer<String>> idConsumers,
-                                                       ActorMaterializer materializer) {
-
-        int[] i = {0};
-        BiFunction<SlickSql.SlickRow, String, String> mapper = (slickRow, previousId) -> {
-            LOGGER.debug("QUERY {}", i[0]);
-            // null not allowed as return value
-            String id = slickRow.nextString();
-            LOGGER.debug("RETURNED {}", id);
-            idConsumers.get(i[0])
-                       .accept(id);
-            //LOGGER.debug("VALUES {}", values);
-            LOGGER.debug("");
-            i[0]++;
-
-            return previousId != null ? previousId : id;
-        };
-
-        return SlickSql.source(session, materializer.system()
-                                                    .dispatcher(), mutations, mapper, mutationContext)
-                       .runWith(Sink.fold("", (id1, id2) -> id1.isEmpty() ? id2 : id1), materializer);
-    }
-
-    @Override
-    public Source<String, NotUsed> getMutationSource(FeatureSql feature, List<Function<FeatureSql, String>> toStatements,
+    public Reactive.Source<String> getMutationSource(FeatureSql feature, List<Function<FeatureSql, String>> toStatements,
                                                      List<Consumer<String>> idConsumers,
                                                      ExecutionContext executionContext) {
+        List<Function<FeatureSql, String>> toStatementsWithLog = toStatements.stream()
+            .map(function -> (Function<FeatureSql, String>) featureSql -> {
+                String statement = function.apply(featureSql);
+
+                if (LOGGER.isDebugEnabled(MARKER.SQL)) {
+                    LOGGER.debug(MARKER.SQL, "Executing statement: {}", statement);
+                }
+
+                return statement;
+            })
+            .collect(Collectors.toList());
+
         int[] i = {0};
         BiFunction<SlickSql.SlickRow, String, String> mapper = (slickRow, previousId) -> {
             LOGGER.debug("QUERY {}", i[0]);
@@ -112,24 +92,17 @@ public class SqlClientSlick implements SqlClient {
             return previousId != null ? previousId : id;
         };
 
-        return SlickSql.source(session, executionContext, toStatements, mapper, feature)
-                       .fold("", (id1, id2) -> id1.isEmpty() ? id2 : id1);
+        return Reactive.Source.akka(SlickSql.source(session, executionContext, toStatementsWithLog, mapper, feature)
+                       .fold("", (id1, id2) -> id1.isEmpty() ? id2 : id1));
     }
 
     @Override
-    public Flow<FeatureSql, String, NotUsed> getMutationFlow(
-            Function<FeatureSql, List<Function<FeatureSql, Pair<String, Consumer<String>>>>> mutations,
+    public Reactive.Transformer<FeatureSql, String> getMutationFlow(
+            Function<FeatureSql, List<Function<FeatureSql, Tuple<String, Consumer<String>>>>> mutations,
             ExecutionContext executionContext, Optional<String> id) {
 
-        Flow<FeatureSql, FeatureSql, NotUsed> flow = Flow.create();
-
-        if (id.isPresent()) {
-            //TODO: check that feature id equals given id
-            flow = flow.filter(feature -> true);
-        }
-
-        return flow.flatMapMerge(1, feature -> {
-            List<Function<FeatureSql, Pair<String, Consumer<String>>>> m = mutations.apply(feature);
+        Reactive.Transformer<FeatureSql, String> toQueries = Reactive.Transformer.flatMap(feature -> {
+            List<Function<FeatureSql, Tuple<String, Consumer<String>>>> m = mutations.apply(feature);
 
             List<Function<FeatureSql, String>> toStatements = m.stream()
                                                                .map(queryFunction -> Objects.isNull(queryFunction.apply(feature).first())
@@ -142,7 +115,7 @@ public class SqlClientSlick implements SqlClient {
             List<Consumer<String>> idConsumers = m.stream()
                                                   .map(queryFunction -> {
                                                       //TODO
-                                                      Pair<String, Consumer<String>> query = queryFunction.apply(feature);
+                                                      Tuple<String, Consumer<String>> query = queryFunction.apply(feature);
                                                       return query.second();
                                                   })
                                                   .filter(Objects::nonNull)
@@ -150,6 +123,15 @@ public class SqlClientSlick implements SqlClient {
 
             return getMutationSource(feature, toStatements, idConsumers, executionContext);
         });
+
+        if (id.isPresent()) {
+            //TODO: check that feature id equals given id
+            Reactive.Transformer<FeatureSql, FeatureSql> filter = Reactive.Transformer.filter(featureSql -> true);
+
+            return filter.via(toQueries);
+        }
+
+        return toQueries;
     }
 
     @Override
