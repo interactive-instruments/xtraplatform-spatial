@@ -1,7 +1,0 @@
-
-dependencies {
-    provided project(':xtraplatform-geotools')    
-}
-
-//apply from: 'license-report.gradle'
-

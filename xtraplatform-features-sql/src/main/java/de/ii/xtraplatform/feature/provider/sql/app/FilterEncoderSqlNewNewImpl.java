@@ -94,7 +94,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             Optional<CrsTransformer> transformer = crsTransformerFactory.getTransformer(sourceCrs.get(), nativeCrs);
             if (transformer.isPresent()) {
                 double[] transformed = transformer.get()
-                                                  .transform(Doubles.toArray(coordinates), coordinates.size() / 2, false);
+                                                  .transform(Doubles.toArray(coordinates), coordinates.size() / 2,
+                                                      2);
                 return Doubles.asList(transformed);
             }
         }

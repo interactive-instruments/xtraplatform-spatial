@@ -7,10 +7,9 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.domain;
 
-import akka.util.ByteString;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.Metadata;
-import de.ii.xtraplatform.ogc.api.wfs.WfsOperation;
+import de.ii.xtraplatform.feature.provider.wfs.app.request.WfsOperation;
 
 import java.io.InputStream;
 import java.util.Optional;

@@ -20,14 +20,7 @@ public abstract class CrsTransform implements CoordinatesTransformation {
 
     @Override
     public void onCoordinates(double[] coordinates, int length, int dimension) throws IOException {
-
-        //TODO: transform in place???
-        double[] transformed;
-        if (dimension == 3) {
-            transformed = getCrsTransformer().transform3d(coordinates, length / dimension, /*TODO*/false);
-        } else {
-            transformed = getCrsTransformer().transform(coordinates, length / dimension, /*TODO*/false);
-        }
+        double[] transformed = getCrsTransformer().transform(coordinates, length / dimension, dimension);
 
         getNext().onCoordinates(transformed, length, dimension);
     }

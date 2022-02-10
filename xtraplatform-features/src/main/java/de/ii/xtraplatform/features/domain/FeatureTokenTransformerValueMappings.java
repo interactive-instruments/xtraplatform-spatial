@@ -86,7 +86,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
       coordinatesTransformerBuilder.isSwapXY(true);
     }*/
 
-      if (context.query().getGeometryPrecision() > 0) {
+      if (context.query().getGeometryPrecision().get(0) > 0) {
         coordinatesTransformerBuilder.precision(context.query().getGeometryPrecision());
       }
 

@@ -11,6 +11,9 @@ import com.fasterxml.aalto.stax.InputFactoryImpl
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderDataWfsFromMetadata
 import de.ii.xtraplatform.feature.provider.wfs.WFSCapabilitiesParser
+import de.ii.xtraplatform.feature.provider.wfs.app.request.GetCapabilities
+import de.ii.xtraplatform.feature.provider.wfs.app.request.WfsOperation
+import de.ii.xtraplatform.feature.provider.wfs.app.request.WfsRequestEncoder
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp
 import de.ii.xtraplatform.feature.provider.wfs.domain.ImmutableConnectionInfoWfsHttp
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector
@@ -18,9 +21,6 @@ import de.ii.xtraplatform.features.domain.Metadata
 import de.ii.xtraplatform.features.domain.SchemaBase
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 import de.ii.xtraplatform.ogc.api.WFS
-import de.ii.xtraplatform.ogc.api.wfs.GetCapabilities
-import de.ii.xtraplatform.ogc.api.wfs.WfsOperation
-import de.ii.xtraplatform.ogc.api.wfs.WfsRequestEncoder
 import org.codehaus.staxmate.SMInputFactory
 import spock.lang.Ignore
 import spock.lang.Specification
@@ -48,24 +48,23 @@ class WfsSchemaCrawlerPlayground extends Specification {
 
         featureTypeList.size() == 7
         featureTypeList.get(0).getName() == "flurstueck"
-        featureTypeList.get(0).getSourcePath().get() == "/flurstueck"
+        featureTypeList.get(0).getSourcePath().get() == "/ave:Flurstueck"
         featureTypeList.get(0).getPropertyMap().containsKey("id")
         featureTypeList.get(0).getPropertyMap().get("id").role.get() == SchemaBase.Role.ID
         featureTypeList.get(0).getPropertyMap().get("id").type == SchemaBase.Type.STRING
-        featureTypeList.get(0).getPropertyMap().get("id").sourcePath.get() == "@id"
+        featureTypeList.get(0).getPropertyMap().get("id").sourcePath.get() == "gml:@id"
         featureTypeList.get(0).getPropertyMap().containsKey("kreis")
         featureTypeList.get(0).getPropertyMap().get("kreis").additionalInfo.get("multiple") == "false"
         featureTypeList.get(0).getPropertyMap().get("kreis").type == SchemaBase.Type.STRING
-        featureTypeList.get(0).getPropertyMap().get("kreis").sourcePath.get() == "kreis"
+        featureTypeList.get(0).getPropertyMap().get("kreis").sourcePath.get() == "ave:kreis"
         featureTypeList.get(0).getPropertyMap().containsKey("geometrie")
         featureTypeList.get(0).getPropertyMap().get("geometrie").type == SchemaBase.Type.GEOMETRY
         featureTypeList.get(0).getPropertyMap().get("geometrie").geometryType.get() == SimpleFeatureGeometry.MULTI_POLYGON
-        featureTypeList.get(0).getPropertyMap().get("geometrie").sourcePath.get() == "geometrie"
+        featureTypeList.get(0).getPropertyMap().get("geometrie").sourcePath.get() == "ave:geometrie"
         featureTypeList.get(0).getPropertyMap().get("geometrie").additionalInfo.get("crs") == "25832"
         featureTypeList.get(0).getPropertyMap().get("geometrie").additionalInfo.get("multiple") == "false"
         featureTypeList.get(0).getPropertyMap().get("flaeche").type == SchemaBase.Type.FLOAT
         featureTypeList.get(0).getPropertyMap().get("aktualit").type == SchemaBase.Type.DATETIME
-        featureTypeList.get(0).getPropertyMap().get("surfaceMember").additionalInfo.get("multiple") == "true"
 
     }
 
@@ -89,7 +88,7 @@ class WfsSchemaCrawlerPlayground extends Specification {
         featureTypeList.get(0).getPropertyMap().containsKey("id")
         featureTypeList.get(0).getPropertyMap().get("id").getRole().get() == SchemaBase.Role.ID
         featureTypeList.get(0).getPropertyMap().get("id").getType() == SchemaBase.Type.STRING
-        featureTypeList.get(0).getPropertyMap().get("id").getSourcePath().get() == "@id"
+        featureTypeList.get(0).getPropertyMap().get("id").getSourcePath().get() == "gml:@id"
         featureTypeList.get(0).getPropertyMap().containsKey("inspireId")
         featureTypeList.get(0).getPropertyMap().get("inspireId").getType() == SchemaBase.Type.OBJECT
         featureTypeList.get(0).getPropertyMap().get("inspireId").getProperties().size() == 3

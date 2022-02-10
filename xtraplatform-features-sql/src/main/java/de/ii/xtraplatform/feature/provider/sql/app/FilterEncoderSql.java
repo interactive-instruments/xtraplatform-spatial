@@ -93,10 +93,15 @@ public class FilterEncoderSql {
     private List<Double> transformCoordinatesIfNecessary(List<Double> coordinates, Optional<EpsgCrs> sourceCrs) {
 
         if (sourceCrs.isPresent() && !Objects.equals(sourceCrs.get(), nativeCrs)) {
-            Optional<CrsTransformer> transformer = crsTransformerFactory.getTransformer(sourceCrs.get(), nativeCrs);
+            Optional<CrsTransformer> transformer = crsTransformerFactory.getTransformer(sourceCrs.get(), nativeCrs, true);
             if (transformer.isPresent()) {
                 double[] transformed = transformer.get()
-                                                  .transform(Doubles.toArray(coordinates), coordinates.size() / 2, false);
+                                                  .transform(Doubles.toArray(coordinates), coordinates.size() / 2,
+                                                      2);
+                if (Objects.isNull(transformed)) {
+                    throw new IllegalArgumentException(String.format("Filter is invalid. Coordinates cannot be transformed: %s", coordinates));
+                }
+
                 return Doubles.asList(transformed);
             }
         }
