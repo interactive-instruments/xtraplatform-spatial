@@ -219,20 +219,4 @@ class CrsTransformerProjSpec extends Specification {
         EpsgCrs.of(25832, 7837) | OgcCrs.CRS84h           | [420735.071, 5392914.343] | [7.923077973066287, 48.68423644912392]
     }
 
-    @Ignore//Rest
-    def 'PROJ issues'() {
-
-        when:
-        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
-        double[] result = gct.transform(source as double[], 1, 2)
-
-        then:
-        result == target as double[]
-
-        where:
-        sourceCrs        | targetCrs         | source                                             | target
-        EpsgCrs.of(3857) | EpsgCrs.of(25832) | [10018754.171394695, -0.00000006332993507385254] | [-505646.16680603754, -0.00000006367001688712992]
-
-    }
-
 }
