@@ -7,12 +7,40 @@
  */
 package de.ii.xtraplatform.feature.provider.sql.app;
 
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINEDBY;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINS;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_EQUALS;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_OVERLAPS;
+import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Doubles;
-import de.ii.xtraplatform.cql.domain.*;
+import de.ii.xtraplatform.cql.domain.ArrayLiteral;
+import de.ii.xtraplatform.cql.domain.ArrayOperation;
+import de.ii.xtraplatform.cql.domain.Between;
+import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.CqlNode;
+import de.ii.xtraplatform.cql.domain.CqlToText;
+import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
+import de.ii.xtraplatform.cql.domain.ImmutableMultiPolygon;
+import de.ii.xtraplatform.cql.domain.ImmutablePolygon;
+import de.ii.xtraplatform.cql.domain.In;
+import de.ii.xtraplatform.cql.domain.IsNull;
+import de.ii.xtraplatform.cql.domain.Like;
+import de.ii.xtraplatform.cql.domain.LogicalOperation;
+import de.ii.xtraplatform.cql.domain.Not;
+import de.ii.xtraplatform.cql.domain.Operand;
+import de.ii.xtraplatform.cql.domain.Property;
+import de.ii.xtraplatform.cql.domain.Scalar;
+import de.ii.xtraplatform.cql.domain.ScalarLiteral;
+import de.ii.xtraplatform.cql.domain.SpatialOperation;
+import de.ii.xtraplatform.cql.domain.SpatialOperator;
+import de.ii.xtraplatform.cql.domain.TemporalLiteral;
+import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -22,12 +50,6 @@ import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
-import de.ii.xtraplatform.features.domain.SchemaBase;
-import org.opengis.filter.temporal.OverlappedBy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.threeten.extra.Interval;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -40,12 +62,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINEDBY;
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINS;
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_EQUALS;
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_OVERLAPS;
-import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.threeten.extra.Interval;
 
 // TODO: This is now only used for the SQL queries for spatial/temporal extents, and only,
 //       if the properties are only accessible via joins - which is typically not the case.
