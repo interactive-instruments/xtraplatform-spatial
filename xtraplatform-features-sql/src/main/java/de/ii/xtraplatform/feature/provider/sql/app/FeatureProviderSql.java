@@ -64,7 +64,7 @@ import org.threeten.extra.Interval;
 @Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderSql.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderSqlData.class)
 public class FeatureProviderSql extends
     AbstractFeatureProvider<SqlRow, SqlQueries, SqlQueryOptions> implements FeatureProvider2,
-    FeatureQueries, FeatureExtents, FeatureCrs, FeatureTransactions, CaseAccentInsensitiveComparisons {
+    FeatureQueries, FeatureExtents, FeatureCrs, FeatureTransactions {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
 
@@ -145,8 +145,11 @@ public class FeatureProviderSql extends
 
     //TODO: from config
     SqlDialect sqlDialect = getData().getConnectionInfo().getDialect() == Dialect.PGIS ? new SqlDialectPostGis() : new SqlDialectGpkg();
+    String accentiCollation = Objects.nonNull(getData().getQueryGeneration())
+        ? getData().getQueryGeneration().getAccentiCollation().orElse(null)
+        : null;
     FilterEncoderSql filterEncoder = new FilterEncoderSql(getData().getNativeCrs()
-        .orElse(OgcCrs.CRS84), sqlDialect, crsTransformerFactory, cql, getData().getAccentiCollation().orElse(null));
+        .orElse(OgcCrs.CRS84), sqlDialect, crsTransformerFactory, cql, accentiCollation);
     FeatureStoreQueryGeneratorSql queryGeneratorSql = new FeatureStoreQueryGeneratorSql(sqlDialect,
                                                                                         getData().getNativeCrs()
                                                                                             .orElse(OgcCrs.CRS84), crsTransformerFactory);
@@ -621,7 +624,9 @@ public class FeatureProviderSql extends
   }
 
   @Override
-  public Optional<String> getAccentiCollation() {
-    return Optional.empty();
+  public boolean supportsAccenti() {
+    if (Objects.nonNull(getData().getQueryGeneration()))
+      return getData().getQueryGeneration().getAccentiCollation().isPresent();
+    return false;
   }
 }

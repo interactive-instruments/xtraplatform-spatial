@@ -159,6 +159,11 @@ public interface FeatureProviderSqlData extends FeatureProviderDataV2,
     default boolean getComputeNumberMatched() {
       return true;
     }
+
+    @Value.Default
+    default Optional<String> getAccentiCollation() {
+      return Optional.empty();
+    }
   }
 
 }

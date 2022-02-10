@@ -308,9 +308,11 @@ public class FilterEncoderSql {
                 if (function.getArguments().get(0) instanceof ScalarLiteral) {
                     if (Objects.nonNull(accentiCollation))
                         return String.format("%s COLLATE \"%s\"", children.get(0), accentiCollation);
+                    throw new IllegalArgumentException("ACCENTI() is not supported by this API.");
                 } else if (function.getArguments().get(0) instanceof Property) {
                     if (Objects.nonNull(accentiCollation))
                         return children.get(0).replace("%2$s", " COLLATE \""+accentiCollation+"\"%2$s");
+                    throw new IllegalArgumentException("ACCENTI() is not supported by this API.");
                 }
                 return children.get(0);
             }

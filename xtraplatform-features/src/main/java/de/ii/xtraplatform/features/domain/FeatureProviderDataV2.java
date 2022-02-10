@@ -54,9 +54,6 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
 
     Optional<String> getDefaultLanguage();
 
-    // TODO: move filter aspects to a separate object in the configuration?
-    Optional<String> getAccentiCollation();
-
     @Value.Default
     default MODE getTypeValidation() {
         return MODE.NONE;
