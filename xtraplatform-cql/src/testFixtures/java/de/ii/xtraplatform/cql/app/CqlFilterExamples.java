@@ -79,9 +79,9 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_14 = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated", TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z"))));
 
-    public static final CqlFilter EXAMPLE_15 = CqlFilter.of(SWithin.of("location", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))));
+    public static final CqlFilter EXAMPLE_15 = CqlFilter.of(SpatialOperation.of(SpatialOperator.S_WITHIN, "location", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))));
 
-    public static final CqlFilter EXAMPLE_16 = CqlFilter.of(SIntersects.of("location", SpatialLiteral.of(Geometry.Polygon.of(OgcCrs.CRS84, ImmutableList.of(
+    public static final CqlFilter EXAMPLE_16 = CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "location", SpatialLiteral.of(Geometry.Polygon.of(OgcCrs.CRS84, ImmutableList.of(
             Geometry.Coordinate.of(-10.0, -10.0),
             Geometry.Coordinate.of(10.0, -10.0),
             Geometry.Coordinate.of(10.0, 10.0),
@@ -90,7 +90,7 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_17 = CqlFilter.of(And.of(
             EXAMPLE_1,
-            CqlPredicate.of(SWithin.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))))
+            CqlPredicate.of(SpatialOperation.of(SpatialOperator.S_WITHIN, "geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))))
     ));
 
     public static final CqlFilter EXAMPLE_18 = CqlFilter.of(Between.of("floors", ScalarLiteral.of(4), ScalarLiteral.of(8)));
@@ -151,7 +151,7 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_37 = CqlFilter.of(Lt.of("height", "floors"));
 
-    public static final CqlFilter EXAMPLE_38 = CqlFilter.of(AContains.of("layer:ids", ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("layers-ca"), ScalarLiteral.of("layers-us")))));
+    public static final CqlFilter EXAMPLE_38 = CqlFilter.of(ArrayOperation.of(ArrayOperator.A_CONTAINS, "layer:ids", ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("layers-ca"), ScalarLiteral.of("layers-us")))));
 
     public static final CqlFilter EXAMPLE_39 = CqlFilter.of(Not.of(Between.of("floors", ScalarLiteral.of(4), ScalarLiteral.of(8))));
 
@@ -163,17 +163,17 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_TINTERSECTS = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_INTERSECTS,ImmutableList.of(Property.of("event_date"), Function.of("INTERVAL", ImmutableList.of(Property.of("startDate"), Property.of("endDate"))))));
 
-    public static final CqlFilter EXAMPLE_SDISJOINT = CqlFilter.of(SDisjoint.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+    public static final CqlFilter EXAMPLE_SDISJOINT = CqlFilter.of(SpatialOperation.of(SpatialOperator.S_DISJOINT, "geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
-    public static final CqlFilter EXAMPLE_SEQUALS = CqlFilter.of(SEquals.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+    public static final CqlFilter EXAMPLE_SEQUALS = CqlFilter.of(SpatialOperation.of(SpatialOperator.S_EQUALS, "geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
-    public static final CqlFilter EXAMPLE_STOUCHES = CqlFilter.of(STouches.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+    public static final CqlFilter EXAMPLE_STOUCHES = CqlFilter.of(SpatialOperation.of(SpatialOperator.S_TOUCHES, "geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
-    public static final CqlFilter EXAMPLE_SOVERLAPS = CqlFilter.of(SOverlaps.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+    public static final CqlFilter EXAMPLE_SOVERLAPS = CqlFilter.of(SpatialOperation.of(SpatialOperator.S_OVERLAPS, "geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
-    public static final CqlFilter EXAMPLE_SCROSSES = CqlFilter.of(SCrosses.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+    public static final CqlFilter EXAMPLE_SCROSSES = CqlFilter.of(SpatialOperation.of(SpatialOperator.S_CROSSES, "geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
-    public static final CqlFilter EXAMPLE_SCONTAINS = CqlFilter.of(SContains.of("geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+    public static final CqlFilter EXAMPLE_SCONTAINS = CqlFilter.of(SpatialOperation.of(SpatialOperator.S_CONTAINS, "geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
     public static final CqlFilter EXAMPLE_NESTED_TEMPORAL = CqlFilter.of(
             Gt.of(Property.of("filterValues.measure",
@@ -182,7 +182,7 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_NESTED_SPATIAL = CqlFilter.of(
             Gt.of(Property.of("filterValues.measure",
-                    ImmutableMap.of("filterValues", CqlFilter.of(STouches.of("filterValues.location", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0)))))),
+                    ImmutableMap.of("filterValues", CqlFilter.of(SpatialOperation.of(SpatialOperator.S_TOUCHES, "filterValues.location", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0)))))),
                     ScalarLiteral.of(0.1)));
 
     public static final CqlFilter EXAMPLE_IN_WITH_FUNCTION = CqlFilter.of(In.ofFunction(
@@ -194,8 +194,10 @@ public class CqlFilterExamples {
                     ScalarLiteral.of(1),
                     ScalarLiteral.of(5)));
 
-    public static final CqlFilter EXAMPLE_NESTED_WITH_ARRAYS = CqlFilter.of(AContains.of(Property.of("theme.concept",
-            ImmutableMap.of("theme", CqlFilter.of(Eq.of("theme.scheme", ScalarLiteral.of("profile"))))), ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("DLKM"), ScalarLiteral.of("Basis-DLM"), ScalarLiteral.of("DLM50")))));
+    public static final CqlFilter EXAMPLE_NESTED_WITH_ARRAYS = CqlFilter.of(
+            ArrayOperation.of(ArrayOperator.A_CONTAINS,
+                              Property.of("theme.concept", ImmutableMap.of("theme", CqlFilter.of(Eq.of("theme.scheme", ScalarLiteral.of("profile"))))),
+                              ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("DLKM"), ScalarLiteral.of("Basis-DLM"), ScalarLiteral.of("DLM50")))));
 
     public static final CqlFilter EXAMPLE_IN_WITH_TEMPORAL = CqlFilter.of(In.of("updated",
             TemporalLiteral.of("2017-06-10T07:30:00Z"), TemporalLiteral.of("2018-06-10T07:30:00Z"),

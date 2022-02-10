@@ -11,11 +11,6 @@ import java.util.Optional;
 
 public interface ArrayExpression {
 
-    Optional<AContains> getAContains();
+    Optional<ArrayOperation> getArrayOperation();
 
-    Optional<AEquals> getAEquals();
-
-    Optional<AOverlaps> getAOverlaps();
-
-    Optional<AContainedBy> getAContainedBy();
 }

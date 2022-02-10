@@ -54,30 +54,10 @@ public interface CqlFilter extends CqlPredicate {
             builder.isNull((IsNull) node);
         } else if (node instanceof TemporalOperation) {
             builder.temporalOperation((TemporalOperation) node);
-        } else if (node instanceof SEquals) {
-            builder.sEquals((SEquals) node);
-        } else if (node instanceof SDisjoint) {
-            builder.sDisjoint((SDisjoint) node);
-        } else if (node instanceof STouches) {
-            builder.sTouches((STouches) node);
-        } else if (node instanceof SWithin) {
-            builder.sWithin((SWithin) node);
-        } else if (node instanceof SOverlaps) {
-            builder.sOverlaps((SOverlaps) node);
-        } else if (node instanceof SCrosses) {
-            builder.sCrosses((SCrosses) node);
-        } else if (node instanceof SIntersects) {
-            builder.sIntersects((SIntersects) node);
-        } else if (node instanceof SContains) {
-            builder.sContains((SContains) node);
-        } else if (node instanceof AContains) {
-            builder.aContains((AContains) node);
-        } else if (node instanceof AEquals) {
-            builder.aEquals((AEquals) node);
-        } else if (node instanceof AOverlaps) {
-            builder.aOverlaps((AOverlaps) node);
-        } else if (node instanceof AContainedBy) {
-            builder.aContainedBy((AContainedBy) node);
+        } else if (node instanceof SpatialOperation) {
+            builder.spatialOperation((SpatialOperation) node);
+        } else if (node instanceof ArrayOperation) {
+            builder.arrayOperation((ArrayOperation) node);
         }
 
         return builder.build();

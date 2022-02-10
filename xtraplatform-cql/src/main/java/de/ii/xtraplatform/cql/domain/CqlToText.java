@@ -45,24 +45,6 @@ public class CqlToText implements CqlVisitor<String> {
             .put(ImmutableIsNull.class, "IS NULL")
             .build();
 
-    private final static Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableSEquals.class, "S_EQUALS")
-            .put(ImmutableSDisjoint.class, "S_DISJOINT")
-            .put(ImmutableSTouches.class, "S_TOUCHES")
-            .put(ImmutableSWithin.class, "S_WITHIN")
-            .put(ImmutableSOverlaps.class, "S_OVERLAPS")
-            .put(ImmutableSCrosses.class, "S_CROSSES")
-            .put(ImmutableSIntersects.class, "S_INTERSECTS")
-            .put(ImmutableSContains.class, "S_CONTAINS")
-            .build();
-
-    private final static Map<Class<?>, String> ARRAY_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-            .put(ImmutableAContains.class, "A_CONTAINS")
-            .put(ImmutableAEquals.class, "A_EQUALS")
-            .put(ImmutableAOverlaps.class, "A_OVERLAPS")
-            .put(ImmutableAContainedBy.class, "A_CONTAINEDBY")
-            .build();
-
     private final Optional<java.util.function.BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>>> coordinatesTransformer;
 
     public CqlToText() {
@@ -193,14 +175,15 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(SpatialOperation spatialOperation, List<String> children) {
-        String operator = SPATIAL_OPERATORS.get(spatialOperation.getClass());
+        String operator = spatialOperation.getOperator().toString();
 
         return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
     }
 
     @Override
     public String visit(ArrayOperation arrayOperation, List<String> children) {
-        String operator = ARRAY_OPERATORS.get(arrayOperation.getClass());
+        String operator = arrayOperation.getOperator().toString();
+
         return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
     }
 

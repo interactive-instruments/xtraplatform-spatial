@@ -38,6 +38,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINEDBY;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINS;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_EQUALS;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_OVERLAPS;
 import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 import static de.ii.xtraplatform.features.domain.SchemaBase.Type.DATE;
 
@@ -576,7 +580,7 @@ public class FilterEncoderSql {
 
         @Override
         public String visit(SpatialOperation spatialOperation, List<String> children) {
-            String operator = sqlDialect.getSpatialOperator(spatialOperation.getClass());
+            String operator = sqlDialect.getSpatialOperator(spatialOperation);
 
             List<String> expressions = processBinary(spatialOperation.getOperands(), children);
 
@@ -732,28 +736,29 @@ public class FilterEncoderSql {
                     // literal op literal, we can decide here
                     List<String> firstOp = ARRAY_SPLITTER.splitToList(mainExpression.replaceAll("\\[|\\]", ""));
                     List<String> secondOp = ARRAY_SPLITTER.splitToList(secondExpression.replaceAll("\\[|\\]", ""));
-                    if (arrayOperation instanceof AContains) {
-                        // each item of the second array must be in the first array
-                        return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
-                    } else if (arrayOperation instanceof AEquals) {
-                        // items must be identical
-                        if (firstOp.size()!=secondOp.size())
-                            return "1=0";
-                        return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
-                    } else if (arrayOperation instanceof AOverlaps) {
-                        // at least one common element
-                        return secondOp.stream().anyMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
-                    } else if (arrayOperation instanceof AContainedBy) {
-                        // each item of the first array must be in the second array
-                        return firstOp.stream().allMatch(item -> secondOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                    switch (arrayOperation.getOperator()) {
+                        case A_CONTAINS:
+                            // each item of the second array must be in the first array
+                            return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                        case A_EQUALS:
+                            // items must be identical
+                            if (firstOp.size()!=secondOp.size())
+                                return "1=0";
+                            return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                        case A_OVERLAPS:
+                            // at least one common element
+                            return secondOp.stream().anyMatch(item -> firstOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
+                        case A_CONTAINEDBY:
+                            // each item of the first array must be in the second array
+                            return firstOp.stream().allMatch(item -> secondOp.stream().anyMatch(item2 -> item.equals(item2))) ? "1=1" : "1=0";
                     }
-                    throw new IllegalArgumentException("unsupported array operator");
+                    throw new IllegalArgumentException("unsupported array operator: " + arrayOperation.getOperator());
                 }
             }
 
             if (op1hasSelect && op2hasSelect) {
-                // property op property
-                // TODO
+                // TODO property op property
+                throw new IllegalArgumentException("Array predicates with property references on both sides are not supported.");
 
             }
 
@@ -765,22 +770,20 @@ public class FilterEncoderSql {
             SchemaSql table = getTable(propertyName);
             List<String> aliases = aliasGenerator.getAliases(table, 1);
             String qualifiedColumn = getQualifiedColumn(table, propertyName, aliases.get(aliases.size() - 1), false);
-            List<Map<String, List<String>>> x = ImmutableList.of();
-            boolean xx = x.stream().map(theme -> theme.get("concept")).flatMap(List::stream).filter(concept -> concept.equals("DLKM")).distinct().count() == 1;
 
-            if (notInverse ? arrayOperation instanceof AContains : arrayOperation instanceof AContainedBy) {
+            if (notInverse ? arrayOperation.getOperator()==A_CONTAINS : arrayOperation.getOperator()==A_CONTAINEDBY) {
                 String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s", secondExpression, aliases.get(0), rootSchema
                     .getSortKey().get(), qualifiedColumn, elementCount);
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (arrayOperation instanceof AEquals) {
+            } else if (arrayOperation.getOperator()==A_EQUALS) {
                 String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s AND count(case when %4$s not in %1$s then %4$s else null end) = 0",
                                                   secondExpression, aliases.get(0), rootSchema.getSortKey().get(), qualifiedColumn, elementCount);
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (arrayOperation instanceof AOverlaps) {
+            } else if (arrayOperation.getOperator()==A_OVERLAPS) {
                 String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s", secondExpression, aliases.get(0), rootSchema
                     .getSortKey().get());
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (notInverse ? arrayOperation instanceof AContainedBy : arrayOperation instanceof AContains) {
+            } else if (notInverse ? arrayOperation.getOperator()==A_CONTAINEDBY : arrayOperation.getOperator()==A_CONTAINS) {
                 String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(case when %4$s not in %1$s then %4$s else null end) = 0",
                                                   secondExpression, aliases.get(0), rootSchema.getSortKey().get(), qualifiedColumn);
                 return String.format(mainExpression, "", arrayQuery);

@@ -237,11 +237,6 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitTemporalPredicate(CqlParser.TemporalPredicateContext ctx) {
 
-        Temporal temporal1 = (Temporal) ctx.temporalExpression(0)
-            .accept(this);
-        Temporal temporal2 = (Temporal) ctx.temporalExpression(1)
-            .accept(this);
-
         if (Objects.isNull(ctx.TemporalOperator()))
             throw new IllegalStateException("unknown temporal predicate: " + ctx.getText());
 
@@ -249,88 +244,54 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                                                          .getText()
                                                                          .toUpperCase());
 
+        Temporal temporal1 = (Temporal) ctx.temporalExpression(0)
+            .accept(this);
+        Temporal temporal2 = (Temporal) ctx.temporalExpression(1)
+            .accept(this);
+
         return TemporalOperation.of(temporalOperator, temporal1, temporal2);
     }
 
     @Override
     public CqlNode visitSpatialPredicate(CqlParser.SpatialPredicateContext ctx) {
 
-        Spatial spatial1 = (Spatial) ctx.geomExpression()
-                                        .get(0)
-                                        .accept(this);
-        Spatial spatial2 = (Spatial) ctx.geomExpression()
-                                        .get(1)
-                                        .accept(this);
+        if (Objects.isNull(ctx.SpatialOperator()))
+            throw new IllegalStateException("unknown spatial operator: " + ctx.getText());
+
         SpatialOperator spatialOperator = SpatialOperator.valueOf(ctx.SpatialOperator()
                                                                      .getText()
                                                                      .toUpperCase());
 
-        SpatialOperation.Builder<? extends SpatialOperation> builder;
+        Spatial spatial1 = (Spatial) ctx.geomExpression()
+            .get(0)
+            .accept(this);
+        Spatial spatial2 = (Spatial) ctx.geomExpression()
+            .get(1)
+            .accept(this);
 
-        switch (spatialOperator) {
-            case S_EQUALS:
-                builder = new ImmutableSEquals.Builder();
-                break;
-            case S_DISJOINT:
-                builder = new ImmutableSDisjoint.Builder();
-                break;
-            case S_TOUCHES:
-                builder = new ImmutableSTouches.Builder();
-                break;
-            case S_WITHIN:
-                builder = new ImmutableSWithin.Builder();
-                break;
-            case S_OVERLAPS:
-                builder = new ImmutableSOverlaps.Builder();
-                break;
-            case S_CROSSES:
-                builder = new ImmutableSCrosses.Builder();
-                break;
-            case S_INTERSECTS:
-                builder = new ImmutableSIntersects.Builder();
-                break;
-            case S_CONTAINS:
-                builder = new ImmutableSContains.Builder();
-                break;
-            default:
-                throw new IllegalStateException("unknown spatial operator: " + spatialOperator);
-        }
-
-        return builder.operands(ImmutableList.of(spatial1,spatial2))
-                      .build();
+        return new ImmutableSpatialOperation.Builder()
+            .operator(spatialOperator)
+            .operands(ImmutableList.of(spatial1,spatial2))
+            .build();
     }
 
     @Override
     public CqlNode visitArrayPredicate(CqlParser.ArrayPredicateContext ctx) {
 
+        if (Objects.isNull(ctx.ArrayOperator()))
+            throw new IllegalStateException("unknown array operator: " + ctx.getText());
+
+        ArrayOperator arrayOperator = ArrayOperator.valueOf(ctx.ArrayOperator()
+                                                                .getText()
+                                                                .toUpperCase());
+
         Vector vector1 = (Vector) ctx.arrayExpression().get(0).accept(this);
         Vector vector2 = (Vector) ctx.arrayExpression().get(1).accept(this);
 
-        ArrayOperator arrayOperator = ArrayOperator.valueOf(ctx.ArrayOperator()
-                .getText()
-                .toUpperCase());
-
-        ArrayOperation.Builder<? extends ArrayOperation> builder;
-
-        switch (arrayOperator) {
-            case A_CONTAINS:
-                builder = new ImmutableAContains.Builder();
-                break;
-            case A_EQUALS:
-                builder = new ImmutableAEquals.Builder();
-                break;
-            case A_OVERLAPS:
-                builder = new ImmutableAOverlaps.Builder();
-                break;
-            case A_CONTAINEDBY:
-                builder = new ImmutableAContainedBy.Builder();
-                break;
-            default:
-                throw new IllegalStateException("unknown array operator: " + arrayOperator);
-        }
-
-        return builder.operands(ImmutableList.of(vector1, vector2))
-                      .build();
+        return new ImmutableArrayOperation.Builder()
+            .operator(arrayOperator)
+            .operands(ImmutableList.of(vector1, vector2))
+            .build();
     }
 
     @Override

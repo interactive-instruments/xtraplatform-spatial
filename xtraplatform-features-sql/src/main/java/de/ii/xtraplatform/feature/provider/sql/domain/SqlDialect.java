@@ -50,8 +50,8 @@ public interface SqlDialect {
 
   List<String> getSystemTables();
 
-  default String getSpatialOperator(Class<? extends SpatialOperation> clazz) {
-   return SPATIAL_OPERATORS.get(clazz);
+  default String getSpatialOperator(SpatialOperation spatialOperation) {
+   return SPATIAL_OPERATORS.get(spatialOperation.getOperator());
  }
 
   default String getTemporalOperator(TemporalOperation temporalOperation) {
@@ -73,15 +73,15 @@ public interface SqlDialect {
     String TYPE = "type";
   }
 
-  Map<Class<?>, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
-      .put(ImmutableSEquals.class, "ST_Equals")
-      .put(ImmutableSDisjoint.class, "ST_Disjoint")
-      .put(ImmutableSTouches.class, "ST_Touches")
-      .put(ImmutableSWithin.class, "ST_Within")
-      .put(ImmutableSOverlaps.class, "ST_Overlaps")
-      .put(ImmutableSCrosses.class, "ST_Crosses")
-      .put(ImmutableSIntersects.class, "ST_Intersects")
-      .put(ImmutableSContains.class, "ST_Contains")
+  Map<SpatialOperator, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<SpatialOperator, String>()
+      .put(SpatialOperator.S_EQUALS, "ST_Equals")
+      .put(SpatialOperator.S_DISJOINT, "ST_Disjoint")
+      .put(SpatialOperator.S_TOUCHES, "ST_Touches")
+      .put(SpatialOperator.S_WITHIN, "ST_Within")
+      .put(SpatialOperator.S_OVERLAPS, "ST_Overlaps")
+      .put(SpatialOperator.S_CROSSES, "ST_Crosses")
+      .put(SpatialOperator.S_INTERSECTS, "ST_Intersects")
+      .put(SpatialOperator.S_CONTAINS, "ST_Contains")
       .build();
 
 }

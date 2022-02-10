@@ -126,69 +126,29 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
 
     @Override
     public CqlNode visit(TemporalOperation temporalOperation, List<CqlNode> children) {
-        return new ImmutableTemporalOperation.Builder()
-            .operator(temporalOperation.getOperator())
-            .operands(children.stream()
-                          .filter(child -> child instanceof Temporal)
-                          .map(child -> (Temporal) child)
-                          .collect(Collectors.toUnmodifiableList()))
-            .build();
+        return TemporalOperation.of(temporalOperation.getOperator(),
+                                    children.stream()
+                                        .filter(child -> child instanceof Temporal)
+                                        .map(child -> (Temporal) child)
+                                        .collect(Collectors.toUnmodifiableList()));
     }
 
     @Override
     public CqlNode visit(SpatialOperation spatialOperation, List<CqlNode> children) {
-        SpatialOperation.Builder<?> builder = null;
-
-        if (spatialOperation instanceof SContains) {
-            builder = new ImmutableSContains.Builder();
-        } else if (spatialOperation instanceof SCrosses) {
-            builder = new ImmutableSCrosses.Builder();
-        } else if (spatialOperation instanceof SDisjoint) {
-            builder = new ImmutableSDisjoint.Builder();
-        } else if (spatialOperation instanceof SEquals) {
-            builder = new ImmutableSEquals.Builder();
-        } else if (spatialOperation instanceof SIntersects) {
-            builder = new ImmutableSIntersects.Builder();
-        } else if (spatialOperation instanceof SOverlaps) {
-            builder = new ImmutableSOverlaps.Builder();
-        } else if (spatialOperation instanceof STouches) {
-            builder = new ImmutableSTouches.Builder();
-        } else if (spatialOperation instanceof SWithin) {
-            builder = new ImmutableSWithin.Builder();
-        }
-
-        if (Objects.nonNull(builder)) {
-            return builder.operands(children.stream()
-                                            .filter(child -> child instanceof Spatial)
-                                            .map(child -> (Spatial) child)
-                                            .collect(Collectors.toUnmodifiableList())).build();
-        }
-
-        return null;
+        return SpatialOperation.of(spatialOperation.getOperator(),
+                                   children.stream()
+                                       .filter(child -> child instanceof Spatial)
+                                       .map(child -> (Spatial) child)
+                                       .collect(Collectors.toUnmodifiableList()));
     }
 
     @Override
     public CqlNode visit(ArrayOperation arrayOperation, List<CqlNode> children) {
-        ArrayOperation.Builder<?> builder = null;
-
-        if (arrayOperation instanceof AContains) {
-            builder = new ImmutableAContains.Builder();
-        } else if (arrayOperation instanceof AEquals) {
-            builder = new ImmutableAEquals.Builder();
-        } else if (arrayOperation instanceof AOverlaps) {
-            builder = new ImmutableAOverlaps.Builder();
-        } else if (arrayOperation instanceof AContainedBy) {
-            builder = new ImmutableAContainedBy.Builder();
-        }
-
-        if (Objects.nonNull(builder)) {
-            return builder.operands(children.stream()
-                                            .filter(child -> child instanceof Vector)
-                                            .map(child -> (Vector) child)
-                                            .collect(Collectors.toUnmodifiableList())).build();
-        }
-
-        return null;
+        return ArrayOperation.of(arrayOperation.getOperator(),
+                                 children.stream()
+                                     .filter(child -> child instanceof Vector)
+                                     .map(child -> (Vector) child)
+                                     .collect(Collectors.toUnmodifiableList()));
     }
 
     @Override
