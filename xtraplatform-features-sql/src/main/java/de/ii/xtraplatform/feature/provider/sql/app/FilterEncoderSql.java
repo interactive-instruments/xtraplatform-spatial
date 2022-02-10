@@ -20,6 +20,7 @@ import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialect;
 import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation;
+import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
@@ -30,7 +31,6 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -137,9 +137,10 @@ public class FilterEncoderSql {
         return Optional.of(encodeNested(mergedFilter, table.get(), true));
     }
     
-    private static Predicate<SchemaSql> getPropertyNameMatcher(String propertyName) {
+    private static Predicate<SchemaSql> getPropertyNameMatcher(String propertyName,
+        boolean includeObjects) {
         return property -> (property.isId() && Objects.equals(propertyName, ID_PLACEHOLDER)) 
-            || (property.isValue() && property.getSourcePath().isPresent() && Objects.equals(propertyName, property.getSourcePath().get()));
+            || ((property.isValue() || includeObjects) && property.getSourcePath().isPresent() && Objects.equals(propertyName, property.getSourcePath().get()));
     }
 
     private class CqlToSql extends CqlToText {
@@ -151,12 +152,20 @@ public class FilterEncoderSql {
             this.rootSchema = rootSchema;
         }
 
-        protected SchemaSql getTable(String propertyName) {
+        protected SchemaSql getTable(String propertyName, boolean isObject) {
+            if (isObject) {
+                return rootSchema.getAllObjects()
+                    .stream()
+                    .filter(getPropertyNameMatcher(propertyName, true))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName)));
+            }
             return rootSchema.getAllObjects()
                                     .stream()
                                     .filter(obj -> obj.getProperties()
                                                       .stream()
-                                                      .anyMatch(getPropertyNameMatcher(propertyName)))
+                                                      .anyMatch(getPropertyNameMatcher(propertyName,
+                                                          false)))
                                     .findFirst()
                                     .orElseThrow(() -> new IllegalArgumentException(String.format("Filter is invalid. Unknown property: %s", propertyName)));
         }
@@ -176,7 +185,7 @@ public class FilterEncoderSql {
             }
             return table.getProperties()
                         .stream()
-                        .filter(getPropertyNameMatcher(propertyName))
+                        .filter(getPropertyNameMatcher(propertyName, false))
                         .findFirst()
                         .map(column -> {
                             String qualifiedColumn = String.format("%s.%s", alias, column.getName());
@@ -195,7 +204,7 @@ public class FilterEncoderSql {
         public String visit(Property property, List<String> children) {
             // strip double quotes from the property name
             String propertyName = property.getName().replaceAll("^\"|\"$", "");
-            SchemaSql table = getTable(propertyName);
+            SchemaSql table = getTable(propertyName, false);
 
             //TODO: pass all parents
             List<SchemaSql> parents = ImmutableList.of(rootSchema);
@@ -211,16 +220,17 @@ public class FilterEncoderSql {
             Optional<String> instanceFilter = Optional.empty();
             if (!property.getNestedFilters()
                 .isEmpty()) {
-                userFilter = property.getNestedFilters()
-                    .values()
+                Optional<Entry<String, CqlFilter>> nestedFilter = property.getNestedFilters()
+                    .entrySet()
                     .stream()
                     .findFirst();
+                userFilter = nestedFilter.map(Entry::getValue);
                 String userFilterPropertyName = getUserFilterPropertyName(userFilter.get());
                 if (userFilterPropertyName.contains(ROW_NUMBER)) {
-                    userFilterTable = Optional.of(table);
+                    userFilterTable = Optional.of(getTable(nestedFilter.get().getKey(), true));
                     instanceFilter = rootSchema.getFilter().map(cql -> encode(cql , rootSchema));
                 } else {
-                    userFilterTable = Optional.ofNullable(getTable(userFilterPropertyName));
+                    userFilterTable = Optional.ofNullable(getTable(userFilterPropertyName, false));
                 }
             } else {
                 userFilter = Optional.empty();
@@ -774,7 +784,7 @@ public class FilterEncoderSql {
             int elementCount = secondExpression.split(",").length;
 
             String propertyName = ((Property) arrayOperation.getOperands().get(notInverse ? 0 : 1)).getName();
-            SchemaSql table = getTable(propertyName);
+            SchemaSql table = getTable(propertyName, false);
             List<String> aliases = aliasGenerator.getAliases(table, 1);
             String qualifiedColumn = getQualifiedColumn(table, propertyName, aliases.get(aliases.size() - 1), false);
 
