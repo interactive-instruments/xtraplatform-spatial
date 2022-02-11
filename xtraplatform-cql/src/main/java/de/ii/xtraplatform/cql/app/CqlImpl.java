@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -102,6 +103,13 @@ public class CqlImpl implements Cql {
     @Override
     public List<String> findInvalidProperties(CqlPredicate cqlPredicate, Collection<String> validProperties) {
         CqlPropertyChecker visitor = new CqlPropertyChecker(validProperties);
+
+        return cqlPredicate.accept(visitor);
+    }
+
+    @Override
+    public List<String> findIncompatibleTypes(CqlPredicate cqlPredicate, Map<String, String> propertyTypes) {
+        CqlTypeChecker visitor = new CqlTypeChecker(propertyTypes, this);
 
         return cqlPredicate.accept(visitor);
     }
