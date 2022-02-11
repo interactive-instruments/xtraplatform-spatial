@@ -53,6 +53,10 @@ public class CqlTypeChecker extends CqlVisitorBase<List<String>> {
         ImmutableList.of("LocalDate", "Instant", "Interval", UNKNOWN)
     );
 
+    private static final List<List<String>> TEMPORALS_INTERVAL = ImmutableList.of(
+        ImmutableList.of("LocalDate", "Instant", "Interval", "OPEN", UNKNOWN)
+    );
+
     private static final List<List<String>> SPATIALS = ImmutableList.of(
         // TODO geometry types, some of the operations only accept a subset or certain combinations of the geometry types
         ImmutableList.of("Geometry", UNKNOWN)
@@ -151,7 +155,7 @@ public class CqlTypeChecker extends CqlVisitorBase<List<String>> {
     @Override
     public List<String> visit(Function function, List<List<String>> children) {
         if (function.isInterval()) {
-            checkFunction(TEMPORALS,
+            checkFunction(TEMPORALS_INTERVAL,
                           function.getArguments().stream()
                               .map(this::getType)
                               .collect(Collectors.toUnmodifiableList()),
@@ -177,7 +181,7 @@ public class CqlTypeChecker extends CqlVisitorBase<List<String>> {
         if (Objects.nonNull(compatibilityList) &&
             compatibilityList.stream()
                 .noneMatch(compatibleTypes -> compatibleTypes.contains(type1) && compatibleTypes.contains(type2))) {
-            String predicateText = cql.write(CqlFilter.of(node), Cql.Format.TEXT);
+            String predicateText = cql.write(CqlFilter.of(node), Cql.Format.TEXT) + "; types: " + type1 + " / " + type2;
             if (!invalidPredicates.contains(predicateText))
                 invalidPredicates.add(predicateText);
         }
@@ -188,7 +192,7 @@ public class CqlTypeChecker extends CqlVisitorBase<List<String>> {
             compatibilityList.stream()
                 .noneMatch(compatibleTypes -> compatibleTypes.containsAll(types))) {
             String functionText = cql.write(CqlFilter.of(Eq.ofFunction(function,ScalarLiteral.of("DUMMY"))), Cql.Format.TEXT)
-                .replace(" = 'DUMMY'", "");
+                .replace(" = 'DUMMY'", "") + "; types: " + String.join(" / ", types);
             if (!invalidPredicates.contains(functionText))
                 invalidPredicates.add(functionText);
         }
