@@ -72,6 +72,11 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
     }
 
     @Override
+    public Type visit(CqlPredicate cqlPredicate, List<Type> children) {
+        return children.get(0);
+    }
+
+    @Override
     public Type visit(LogicalOperation logicalOperation, List<Type> children) {
         check(children, ImmutableList.of(Type.Boolean), logicalOperation);
         return Type.Boolean;
@@ -169,7 +174,10 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
 
     @Override
     public Type visit(TemporalLiteral temporalLiteral, List<Type> children) {
+        if (temporalLiteral.getType()==Function.class)
+            return ((Function)temporalLiteral.getValue()).accept(this);
         return Type.valueOf(temporalLiteral.getType().getSimpleName());
+
     }
 
     @Override
@@ -187,6 +195,18 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
         if (firstType==Type.UNKNOWN)
             return;
         final List<Type> otherTypes = types.subList(1, types.size());
+
+        List<List<Type>> compatibilityLists = COMPATIBILITY_PREDICATES.get(node.getClass());
+        if (Objects.isNull(compatibilityLists))
+            throw new CqlIncompatibleTypes(getText(node), firstType.schemaType(), ImmutableList.of());
+        if (compatibilityLists.stream().noneMatch(list -> list.contains(firstType)))
+            throw new CqlIncompatibleTypes(getText(node), firstType.schemaType(),
+                                           compatibilityLists.stream()
+                                               .flatMap(Collection::stream)
+                                               .distinct()
+                                               .map(Type::schemaType)
+                                               .collect(Collectors.toUnmodifiableList()));
+
         final List<Type> compatibleTypes = Objects.requireNonNullElse(COMPATIBILITY_PREDICATES.get(node.getClass()),
                                                                       ImmutableList.of(ImmutableList.<Type>of()))
             .stream()

@@ -29,7 +29,13 @@ class CqlTypeCheckerSpec extends Specification {
 
     def setupSpec() {
         cql = new CqlImpl()
-        def propertyTypes = ImmutableMap.of("road_class", "STRING", "length", "FLOAT")
+        def propertyTypes = ImmutableMap.of(
+                "road_class", "STRING",
+                "count", "LONG",
+                "length", "FLOAT",
+                "begin", "DATE",
+                "end", "DATE",
+                "event", "DATE")
         visitor = new CqlTypeChecker(propertyTypes, cql)
     }
 
@@ -40,8 +46,9 @@ class CqlTypeCheckerSpec extends Specification {
         when:
         CqlFilter.of(
                 Or.of(
-                        CqlPredicate.of(Gt.of("road_class", ScalarLiteral.of(1))),
-                        CqlPredicate.of(Lt.of("length", ScalarLiteral.of(1)))
+                        CqlPredicate.of(Lt.of("length", ScalarLiteral.of(1))),
+                        CqlPredicate.of(Lt.of("length", "count")),
+                        CqlPredicate.of(Gt.of("road_class", ScalarLiteral.of(1)))
                 )).accept(visitor)
 
         then:
@@ -70,7 +77,7 @@ class CqlTypeCheckerSpec extends Specification {
     // these are tested with a different visitor
     def 'Ignore invalid properties'() {
         given:
-        String cqlText = "dummy = 'dummy'"
+        String cqlText = "dummy > event"
 
         when: 'reading text'
         def test = cql.read(cqlText, Cql.Format.TEXT).accept(visitor)
@@ -78,5 +85,19 @@ class CqlTypeCheckerSpec extends Specification {
         then:
         noExceptionThrown()
     }
+
+    def 'temporal'() {
+        given:
+        String cqlText = "T_INTERSECTS(TIMESTAMP('2011-12-26T20:55:27Z'), INTERVAL('2011-01-01','2011-12-31')) OR " +
+                "T_INTERSECTS(INTERVAL('..','2011-12-31'), INTERVAL(begin,end)) OR " +
+                "T_BEFORE(event,DATE('2000-01-01'))"
+
+        when: 'reading text'
+        def test = cql.read(cqlText, Cql.Format.TEXT).accept(visitor)
+
+        then:
+        noExceptionThrown()
+    }
+
 
 }
