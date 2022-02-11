@@ -200,12 +200,11 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
         if (Objects.isNull(compatibilityLists))
             throw new CqlIncompatibleTypes(getText(node), firstType.schemaType(), ImmutableList.of());
         if (compatibilityLists.stream().noneMatch(list -> list.contains(firstType)))
-            throw new CqlIncompatibleTypes(getText(node), firstType.schemaType(),
-                                           compatibilityLists.stream()
-                                               .flatMap(Collection::stream)
-                                               .distinct()
-                                               .map(Type::schemaType)
-                                               .collect(Collectors.toUnmodifiableList()));
+            throw new CqlIncompatibleTypes(getText(node),
+                                           firstType.schemaType(),
+                                           asSchemaTypes(compatibilityLists.stream()
+                                                             .flatMap(Collection::stream)
+                                                             .collect(Collectors.toUnmodifiableList())));
 
         final List<Type> compatibleTypes = Objects.requireNonNullElse(COMPATIBILITY_PREDICATES.get(node.getClass()),
                                                                       ImmutableList.of(ImmutableList.<Type>of()))
@@ -238,7 +237,7 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
     }
 
     private List<String> asSchemaTypes(List<Type> types) {
-        return types.stream().map(Type::schemaType).collect(Collectors.toUnmodifiableList());
+        return types.stream().map(Type::schemaType).distinct().collect(Collectors.toUnmodifiableList());
     }
 
     private void check(List<Type> types, List<Type> expectedTypes, CqlNode node) {
