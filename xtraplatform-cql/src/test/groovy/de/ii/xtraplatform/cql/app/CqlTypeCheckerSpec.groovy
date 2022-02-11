@@ -15,6 +15,7 @@ import de.ii.xtraplatform.cql.domain.Or
 import de.ii.xtraplatform.cql.domain.Lt
 import de.ii.xtraplatform.cql.domain.Gt
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
+import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -37,23 +38,22 @@ class CqlTypeCheckerSpec extends Specification {
         // run the test on 2 different queries to make sure that old reports are removed
 
         when:
-        def test1 = CqlFilter.of(
+        CqlFilter.of(
                 Or.of(
                         CqlPredicate.of(Gt.of("road_class", ScalarLiteral.of(1))),
                         CqlPredicate.of(Lt.of("length", ScalarLiteral.of(1)))
                 )).accept(visitor)
 
         then:
-        test1.size() == 1
-        test1.get(0).startsWith("road_class > 1")
+        thrown CqlIncompatibleTypes
 
         and:
 
         when:
-        def test2 = CqlFilter.of(Gt.of("road_class", ScalarLiteral.of("1"))).accept(visitor)
+        CqlFilter.of(Gt.of("road_class", ScalarLiteral.of("1"))).accept(visitor)
 
         then:
-        test2.size() == 0
+        noExceptionThrown()
     }
 
     def 'CASEI must be Strings'() {
@@ -64,8 +64,7 @@ class CqlTypeCheckerSpec extends Specification {
         def test = cql.read(cqlText, Cql.Format.TEXT).accept(visitor)
 
         then:
-        test.size() == 1
-        test.get(0).startsWith("CASEI(length);")
+        thrown CqlIncompatibleTypes
     }
 
     // these are tested with a different visitor
@@ -77,7 +76,7 @@ class CqlTypeCheckerSpec extends Specification {
         def test = cql.read(cqlText, Cql.Format.TEXT).accept(visitor)
 
         then:
-        test.size() == 0
+        noExceptionThrown()
     }
 
 }

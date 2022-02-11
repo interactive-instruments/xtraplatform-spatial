@@ -108,10 +108,10 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public List<String> findIncompatibleTypes(CqlPredicate cqlPredicate, Map<String, String> propertyTypes) {
+    public void checkTypes(CqlPredicate cqlPredicate, Map<String, String> propertyTypes) {
         CqlTypeChecker visitor = new CqlTypeChecker(propertyTypes, this);
 
-        return cqlPredicate.accept(visitor);
+        cqlPredicate.accept(visitor);
     }
 
     @Override

@@ -26,7 +26,7 @@ public interface Cql {
 
     List<String> findInvalidProperties(CqlPredicate cqlPredicate, Collection<String> validProperties);
 
-    List<String> findIncompatibleTypes(CqlPredicate cqlPredicate, Map<String, String> propertyTypes);
+    void checkTypes(CqlPredicate cqlPredicate, Map<String, String> propertyTypes);
 
     CqlNode mapTemporalOperators(CqlFilter cqlFilter, Set<TemporalOperator> supportedOperators);
 }
