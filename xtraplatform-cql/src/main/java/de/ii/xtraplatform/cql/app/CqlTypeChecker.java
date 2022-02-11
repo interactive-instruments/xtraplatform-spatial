@@ -177,7 +177,9 @@ public class CqlTypeChecker extends CqlVisitorBase<List<String>> {
         if (Objects.nonNull(compatibilityList) &&
             compatibilityList.stream()
                 .noneMatch(compatibleTypes -> compatibleTypes.contains(type1) && compatibleTypes.contains(type2))) {
-            invalidPredicates.add(cql.write(CqlFilter.of(node), Cql.Format.TEXT));
+            String predicateText = cql.write(CqlFilter.of(node), Cql.Format.TEXT);
+            if (!invalidPredicates.contains(predicateText))
+                invalidPredicates.add(predicateText);
         }
     }
 
@@ -185,7 +187,10 @@ public class CqlTypeChecker extends CqlVisitorBase<List<String>> {
         if (Objects.nonNull(compatibilityList) &&
             compatibilityList.stream()
                 .noneMatch(compatibleTypes -> compatibleTypes.containsAll(types))) {
-            invalidPredicates.add(cql.write(CqlFilter.of(Eq.ofFunction(function,ScalarLiteral.of("DUMMY"))), Cql.Format.TEXT).replace(" = 'DUMMY'", ""));
+            String functionText = cql.write(CqlFilter.of(Eq.ofFunction(function,ScalarLiteral.of("DUMMY"))), Cql.Format.TEXT)
+                .replace(" = 'DUMMY'", "");
+            if (!invalidPredicates.contains(functionText))
+                invalidPredicates.add(functionText);
         }
     }
 
