@@ -45,7 +45,7 @@ class CqlTypeCheckerSpec extends Specification {
 
         then:
         test1.size() == 1
-        test1.get(0) == "road_class > 1"
+        test1.get(0).startsWith("road_class > 1")
 
         and:
 
@@ -65,7 +65,7 @@ class CqlTypeCheckerSpec extends Specification {
 
         then:
         test.size() == 1
-        test.get(0) == "CASEI(length)"
+        test.get(0).startsWith("CASEI(length);")
     }
 
     // these are tested with a different visitor
