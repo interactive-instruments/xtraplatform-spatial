@@ -8,12 +8,17 @@
 package de.ii.xtraplatform.cql.infra;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CqlIncompatibleTypes extends IllegalArgumentException {
   public CqlIncompatibleTypes(String cqlText, String type, List<String> expectedTypes) {
-    super(String.format("Incompatible types in CQL2 filter. Found type '%s' in expression [%s]. Expected types: %s", type, cqlText, String.join(", ", expectedTypes)));
+    super(String.format("Incompatible types in CQL2 filter. Found type '%s' in expression [%s]. Valid types: %s", type, cqlText, String.join(", ", expectedTypes)));
   }
   public CqlIncompatibleTypes(String cqlText, List<String> types, List<String> expectedTypes) {
-    super(String.format("Incompatible types in CQL2 filter. Expression [%s] has types: %s. Expected types: %s", cqlText, String.join(", ", types), String.join(", ", expectedTypes)));
+    super(String.format("Incompatible types in CQL2 filter. Expression [%s] has types: %s. Valid types: %s", cqlText, String.join(", ", types), String.join(", ", expectedTypes)));
+  }
+  public CqlIncompatibleTypes(String cqlText, List<String> types, Set<List<String>> expectedTypes) {
+    super(String.format("Incompatible types in CQL2 filter. Expression [%s] has types: %s. Valid type combinations: [%s]", cqlText, String.join(", ", types), expectedTypes.stream().map(typeList -> String.join(", ", typeList)).collect(Collectors.joining("] or ["))));
   }
 }

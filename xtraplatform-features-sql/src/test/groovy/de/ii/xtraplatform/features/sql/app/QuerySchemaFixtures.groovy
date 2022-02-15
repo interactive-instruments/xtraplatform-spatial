@@ -236,7 +236,7 @@ class QuerySchemaFixtures {
                     .build())
             .build();
 
-    static SchemaSql SIMPLE_INSTANT = new ImmutableSchemaSql.Builder()
+    static SchemaSql SIMPLE_TIMESTAMP = new ImmutableSchemaSql.Builder()
             .name("building")
             .type(Type.OBJECT)
             .sortKey("id")
@@ -244,6 +244,18 @@ class QuerySchemaFixtures {
                     .name("built")
                     .sourcePath("built")
                     .type(Type.DATETIME)
+                    .parentPath(["building"])
+                    .build())
+            .build()
+
+    static SchemaSql SIMPLE_DATE = new ImmutableSchemaSql.Builder()
+            .name("building")
+            .type(Type.OBJECT)
+            .sortKey("id")
+            .addProperties(new ImmutableSchemaSql.Builder()
+                    .name("built")
+                    .sourcePath("built")
+                    .type(Type.DATE)
                     .parentPath(["building"])
                     .build())
             .build()

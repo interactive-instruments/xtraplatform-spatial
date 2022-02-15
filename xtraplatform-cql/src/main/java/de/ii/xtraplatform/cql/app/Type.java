@@ -28,10 +28,11 @@ public enum Type {
             case LocalDate:
                 return "DATE";
             case OPEN:
+                return "UNBOUNDED_START_OR_END";
             case Instant:
                 return "DATETIME";
             case Interval:
-                return "STRING";
+                return "INTERVAL";
             case Geometry:
                 return "GEOMETRY";
             case List:

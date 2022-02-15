@@ -65,6 +65,7 @@ public class CqlFilterExamples {
     ));
 
     public static final CqlFilter EXAMPLE_12 = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
+    public static final CqlFilter EXAMPLE_12_date = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2012-06-05")));
 
     public static final CqlFilter EXAMPLE_12_alt = CqlFilter.of(Lt.of(ImmutableList.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z"))));
     public static final CqlFilter EXAMPLE_12eq_alt = CqlFilter.of(Lte.of(ImmutableList.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z"))));
