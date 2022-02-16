@@ -14,7 +14,14 @@ pluginManagement {
 rootProject.name = 'xtraplatform-spatial'
 
 rootDir.listFiles().each { file ->
-    if (file.isDirectory() && file.name.startsWith('xtraplatform-')) {
+    if (file.isDirectory() && file.name.startsWith('xtraplatform-')
+            && !file.name.startsWith('xtraplatform-features-gml')
+            && (file.name.startsWith('xtraplatform-codelists')
+            || file.name.startsWith('xtraplatform-crs')
+            || file.name.startsWith('xtraplatform-geometries')
+            || file.name.startsWith('xtraplatform-ogc-wfs-api')
+            || file.name.startsWith('xtraplatform-string-templates'))
+    ) {
         include file.name
     }  
 }

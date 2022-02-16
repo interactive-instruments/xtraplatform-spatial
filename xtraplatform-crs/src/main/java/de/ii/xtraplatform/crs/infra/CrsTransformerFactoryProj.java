@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.crs.infra;
 
+import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -17,7 +18,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.nativ.proj.api.ProjLoader;
-import de.ii.xtraplatform.runtime.domain.LogContext;
+import de.ii.xtraplatform.base.domain.LogContext;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,11 +27,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.measure.Unit;
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Instantiate;
-import org.apache.felix.ipojo.annotations.Provides;
-import org.apache.felix.ipojo.annotations.Requires;
 import org.kortforsyningen.proj.CoordinateOperationContext;
 import org.kortforsyningen.proj.GridAvailabilityUse;
 import org.kortforsyningen.proj.Proj;
@@ -52,9 +51,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author zahnen
  */
-@Component
-@Provides
-@Instantiate
+@Singleton
+@AutoBind
 public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CrsTransformerFactoryProj.class);
@@ -63,7 +61,8 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
   private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
   private final boolean useCaches = true;
 
-  public CrsTransformerFactoryProj(@Requires ProjLoader projLoader) {
+  @Inject
+  public CrsTransformerFactoryProj(ProjLoader projLoader) {
     this.crsCache = new ConcurrentHashMap<>();
     this.transformerCache = new ConcurrentHashMap<>();
 

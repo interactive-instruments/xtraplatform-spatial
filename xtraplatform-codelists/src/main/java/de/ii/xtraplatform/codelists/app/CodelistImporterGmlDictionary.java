@@ -13,14 +13,7 @@ import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.codelists.domain.CodelistData;
 import de.ii.xtraplatform.codelists.domain.CodelistImporter;
 import de.ii.xtraplatform.codelists.domain.ImmutableCodelistData;
-import de.ii.xtraplatform.streams.domain.Http;
-import de.ii.xtraplatform.streams.domain.HttpClient;
 import de.ii.xtraplatform.store.domain.entities.handler.Entity;
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Instantiate;
-import org.apache.felix.ipojo.annotations.Provides;
-import org.apache.felix.ipojo.annotations.Requires;
-import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.codehaus.staxmate.SMInputFactory;
 import org.codehaus.staxmate.in.SMInputCursor;
 
@@ -29,19 +22,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-@Component
-@Provides(properties = {
-        @StaticServiceProperty(name = Entity.TYPE_KEY, type = "java.lang.String", value = Codelist.ENTITY_TYPE)
-})
-@Instantiate
+//TODO: http, needed at all?
 public class CodelistImporterGmlDictionary implements CodelistImporter {
 
-    private final HttpClient httpClient;
+    //private final HttpClient httpClient;
     private final SMInputFactory staxFactory;
 
-    public CodelistImporterGmlDictionary(@Requires Http http) {
+    public CodelistImporterGmlDictionary() {
 
-        this.httpClient = http.getDefaultClient();
+        //this.httpClient = http.getDefaultClient();
         this.staxFactory = new SMInputFactory(new InputFactoryImpl());
     }
 
@@ -70,7 +59,7 @@ public class CodelistImporterGmlDictionary implements CodelistImporter {
         CodelistFromGMLDictionary analyzer = new CodelistFromGMLDictionary(codelistBuilder);
         GMLDictionaryParser gmlDictionaryParser = new GMLDictionaryParser(analyzer, staxFactory);
 
-        InputStream response = httpClient.getAsInputStream(sourceUrl);
+        InputStream response = null;//httpClient.getAsInputStream(sourceUrl);
         gmlDictionaryParser.parse(response);
 
         return codelistBuilder.build();

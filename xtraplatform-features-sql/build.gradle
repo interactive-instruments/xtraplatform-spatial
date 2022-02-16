@@ -23,11 +23,11 @@ sourceSets {
     }*/
 }
 
-tasks.compileJava.dependsOn compileScala
-tasks.compileScala.dependsOn.remove("compileJava")
+//tasks.compileJava.dependsOn compileScala
+//tasks.compileScala.dependsOn.remove("compileJava")
 
 dependencies {
-    compile files("$sourceSets.main.scala.outputDir")
+    implementation files("$sourceSets.main.scala.outputDir")
 
     provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-crs')
@@ -55,14 +55,11 @@ dependencies {
 
     embeddedFlat group: 'com.github.jsqlparser', name: 'jsqlparser', version: '3.2'
 
-    testCompile project(':xtraplatform-feature-transformer-api')
-    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.6.15'
-
     //TODO: gradle 6 fixtures
     testImplementation(project(":xtraplatform-cql"))
     //testImplementation(testFixtures(project(":xtraplatform-cql")))
 }
-
+/*
 jar {
     manifest {
         instructionFirst 'Import-Package', "!waffle.windows.auth"
@@ -80,7 +77,7 @@ jar {
         instructionFirst 'Import-Package', "!io.micrometer.core.instrument"
     }
 }
-
+*/
 // workaround for known issue when using java-library plugin with groovy/scala: https://docs.gradle.org/5.2.1/userguide/java_library_plugin.html#sec:java_library_known_issues
 configurations {
     apiElements {

@@ -13,6 +13,7 @@ dependencies {
     compileOnly "org.codehaus.groovy:groovy:3.+"
     compileOnly"org.spockframework:spock-core:2.+"
 }
+/*
 jar {
     manifest {
         instructionFirst 'Import-Package', "!groovy.*"
@@ -21,3 +22,5 @@ jar {
         instructionFirst 'Import-Package', "!org.spockframework.*"
     }
 }
+
+ */

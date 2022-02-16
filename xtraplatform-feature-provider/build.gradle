@@ -1,4 +1,4 @@
 
 dependencies {
-    compile project(':xtraplatform-features')
+    provided project(':xtraplatform-features')
 }

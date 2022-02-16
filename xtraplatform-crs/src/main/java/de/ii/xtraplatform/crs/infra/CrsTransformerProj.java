@@ -15,7 +15,7 @@ import de.ii.xtraplatform.crs.domain.CoordinateTuple;
 import de.ii.xtraplatform.crs.domain.CoordinateTupleWithPrecision;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.runtime.domain.LogContext;
+import de.ii.xtraplatform.base.domain.LogContext;
 import java.util.Optional;
 import javax.measure.Unit;
 import org.kortforsyningen.proj.Units;

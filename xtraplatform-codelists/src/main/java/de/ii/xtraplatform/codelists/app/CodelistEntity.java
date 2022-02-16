@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.codelists.app;
 
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.codelists.domain.CodelistData;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
@@ -26,6 +28,11 @@ import java.util.Optional;
 public class CodelistEntity extends AbstractPersistentEntity<CodelistData> implements Codelist {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CodelistEntity.class);
+
+    @AssistedInject
+    public CodelistEntity(@Assisted CodelistData data) {
+        super(data);
+    }
 
     @Override
     protected void onStarted() {

@@ -9,13 +9,10 @@ package de.ii.xtraplatform.codelists.app;
 
 import de.ii.xtraplatform.codelists.domain.CodelistData;
 import de.ii.xtraplatform.codelists.domain.CodelistImporter;
-import de.ii.xtraplatform.dropwizard.domain.Endpoint;
+import de.ii.xtraplatform.web.domain.Endpoint;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataStore;
 import io.dropwizard.jersey.caching.CacheControl;
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Provides;
-import org.apache.felix.ipojo.annotations.Requires;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,9 +35,6 @@ import java.util.concurrent.ExecutionException;
  * @author zahnen
  */
 //TODO: move to xtraplatform, adjust to auto mode
-@Component
-@Provides
-//@Instantiate
 @Path("/admin/codelists/")
 @Produces(MediaType.APPLICATION_JSON)
 public class CodelistEndpoint implements Endpoint {
@@ -50,8 +44,8 @@ public class CodelistEndpoint implements Endpoint {
     private final EntityDataStore<CodelistData> codelistRepository;
     private final CodelistImporter codelistImporter;
 
-    CodelistEndpoint(@Requires EntityDataStore<EntityData> entityRepository,
-                     @Requires CodelistImporter codelistImporter) {
+    CodelistEndpoint(EntityDataStore<EntityData> entityRepository,
+                     CodelistImporter codelistImporter) {
         this.codelistRepository = entityRepository.forType(CodelistData.class);
         this.codelistImporter = codelistImporter;
     }
