@@ -1,6 +1,6 @@
 
 dependencies {
-    provided project(":xtraplatform-string-templates")
+    provided project(":xtraplatform-strings")
     provided project(":xtraplatform-ogc-wfs-api")
 
     embedded group: 'com.fasterxml', name: 'aalto-xml', version: '1.0.0'

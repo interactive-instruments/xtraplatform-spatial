@@ -25,7 +25,7 @@ import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
-import de.ii.xtraplatform.runtime.domain.LogContext;
+import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
@@ -62,7 +62,9 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
 
     protected AbstractFeatureProvider(ConnectorFactory connectorFactory, Reactive reactive,
         CrsTransformerFactory crsTransformerFactory,
-        ProviderExtensionRegistry extensionRegistry) {
+        ProviderExtensionRegistry extensionRegistry,
+        FeatureProviderDataV2 data) {
+        super(data);
         this.connectorFactory = connectorFactory;
         this.reactive = reactive;
         this.crsTransformerFactory = crsTransformerFactory;
@@ -158,7 +160,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(),
             startupInfo);
 
-        extensionRegistry.getRegistryState().get().forEach(extension -> {
+        extensionRegistry.getAll().forEach(extension -> {
             if (extension.isSupported(getConnector())) {
                 extension.on(LIFECYCLE_HOOK.STARTED, getData(), getConnector());
             }
@@ -299,7 +301,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                 //TODO: pass aliases to getFeatureTokenSource, use for query generation
                 Map<String, String> virtualTables = new HashMap<>();
 
-                extensionRegistry.getRegistryState().get().forEach(extension -> {
+                extensionRegistry.getAll().forEach(extension -> {
                     if (extension.isSupported(getConnector())) {
                         extension.on(QUERY_HOOK.BEFORE, getData(), getConnector(), query, virtualTables::put);
                     }
@@ -320,7 +322,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                     .on(streamRunner);
 
                 return runnableStream.run().whenComplete((result, throwable) -> {
-                    extensionRegistry.getRegistryState().get().forEach(extension -> {
+                    extensionRegistry.getAll().forEach(extension -> {
                         if (extension.isSupported(getConnector())) {
                             extension.on(QUERY_HOOK.AFTER, getData(), getConnector(), query, (a,t) -> {});
                         }

@@ -1,6 +1,8 @@
 
 dependencies {
     provided project(':xtraplatform-features')
+    provided project(':xtraplatform-geometries')
+    provided project(':xtraplatform-crs')
     // xml path tracker
     provided project(':xtraplatform-ogc-wfs-api')
     provided project(':xtraplatform-feature-transformer-api')

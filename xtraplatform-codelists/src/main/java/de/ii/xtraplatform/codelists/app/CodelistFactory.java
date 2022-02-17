@@ -7,6 +7,7 @@ import de.ii.xtraplatform.auth.app.User;
 import de.ii.xtraplatform.auth.app.User.UserData;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.codelists.domain.CodelistData;
+import de.ii.xtraplatform.codelists.domain.ImmutableCodelistData;
 import de.ii.xtraplatform.store.domain.entities.AbstractEntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;

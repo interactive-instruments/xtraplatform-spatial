@@ -7,40 +7,36 @@
  */
 package de.ii.xtraplatform.features.app;
 
-import de.ii.xtraplatform.di.domain.Registry;
-import de.ii.xtraplatform.di.domain.RegistryState;
+import com.github.azahnen.dagger.annotations.AutoBind;
+import dagger.Lazy;
+import de.ii.xtraplatform.base.domain.Registry;
+import de.ii.xtraplatform.base.domain.RegistryState;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Context;
-import org.apache.felix.ipojo.annotations.Instantiate;
-import org.apache.felix.ipojo.annotations.Provides;
-import org.apache.felix.ipojo.whiteboard.Wbp;
-import org.osgi.framework.BundleContext;
+import java.util.Optional;
+import java.util.Set;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
-@Component
-@Provides
-@Instantiate
-@Wbp(
-    filter =
-        Registry.FILTER_PREFIX
-            + ProviderExtensionRegistryImpl.EXTENSION
-            + Registry.FILTER_SUFFIX,
-    onArrival = Registry.ON_ARRIVAL_METHOD,
-    onDeparture = Registry.ON_DEPARTURE_METHOD)
+@Singleton
+@AutoBind
 public class ProviderExtensionRegistryImpl implements ProviderExtensionRegistry {
 
-  static final String EXTENSION =
-      "de.ii.xtraplatform.features.domain.FeatureQueriesExtension";
+  private final Lazy<Set<FeatureQueriesExtension>> extensions;
 
-  private final Registry.State<FeatureQueriesExtension> extensions;
-
-  public ProviderExtensionRegistryImpl(@Context BundleContext context) {
-    this.extensions = new RegistryState<>(EXTENSION, context);
+  @Inject
+  public ProviderExtensionRegistryImpl(Lazy<Set<FeatureQueriesExtension>> extensions) {
+    this.extensions = extensions;
   }
 
   @Override
-  public State<FeatureQueriesExtension> getRegistryState() {
-    return extensions;
+  public Set<FeatureQueriesExtension> getAll() {
+    return extensions.get();
+  }
+
+  @Override
+  public Optional<FeatureQueriesExtension> get(
+      String... identifiers) {
+    return Optional.empty();
   }
 }

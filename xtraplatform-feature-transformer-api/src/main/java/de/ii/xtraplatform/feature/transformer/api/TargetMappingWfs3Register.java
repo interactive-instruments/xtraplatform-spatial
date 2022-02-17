@@ -8,18 +8,13 @@
 package de.ii.xtraplatform.feature.transformer.api;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.dropwizard.domain.JacksonSubTypeIds;
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Provides;
+import de.ii.xtraplatform.base.domain.JacksonSubTypeIds;
 
 import java.util.Map;
 
 /**
  * @author zahnen
  */
-@Component
-@Provides
-//@Instantiate
 public class TargetMappingWfs3Register implements JacksonSubTypeIds {
 
     @Override

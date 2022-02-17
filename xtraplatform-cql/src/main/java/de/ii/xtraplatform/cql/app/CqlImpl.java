@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdDelegatingSerializer;
 import com.fasterxml.jackson.databind.util.StdConverter;
+import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
@@ -26,9 +27,8 @@ import de.ii.xtraplatform.cql.infra.CqlTextParser;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import io.dropwizard.jackson.Jackson;
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Instantiate;
-import org.apache.felix.ipojo.annotations.Provides;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.threeten.extra.Interval;
 
 import java.io.IOException;
@@ -38,14 +38,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-@Component
-@Provides
-@Instantiate
+@Singleton
+@AutoBind
 public class CqlImpl implements Cql {
 
     private final CqlTextParser cqlTextParser;
     private final ObjectMapper cqlJsonMapper;
 
+    @Inject
     public CqlImpl() {
         this.cqlTextParser = new CqlTextParser();
 

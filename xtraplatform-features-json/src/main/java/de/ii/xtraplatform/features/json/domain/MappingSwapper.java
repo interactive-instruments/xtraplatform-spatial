@@ -7,8 +7,8 @@
  */
 package de.ii.xtraplatform.features.json.domain;
 
-import akka.japi.Pair;
 import com.google.common.base.Splitter;
+import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
 import de.ii.xtraplatform.feature.transformer.api.ImmutableFeatureTypeMapping;
@@ -52,7 +52,7 @@ public class MappingSwapper {
                                                                                   .equals(getSourceFormat()) && Objects.nonNull(targetMappingEntry.getValue()
                                                                                                                                                   .getName()))
                                   .forEach(targetMappingEntry -> {
-                                      Pair<String, String> swappedPaths = swapMultiplicities(path, targetMappingEntry.getValue()
+                                      Tuple<String, String> swappedPaths = swapMultiplicities(path, targetMappingEntry.getValue()
                                                                                                                      .getName(), targetMappingEntry.getValue()
                                                                                                                                                    .isSpatial());
 
@@ -65,7 +65,7 @@ public class MappingSwapper {
         return builder.build();
     }
 
-    private Pair<String, String> swapMultiplicities(String sourcePath, String jsonPath, boolean isSpatial) {
+    private Tuple<String, String> swapMultiplicities(String sourcePath, String jsonPath, boolean isSpatial) {
         String newSourcePath = sourcePath;
         String newJsonPath = jsonPath;
 
@@ -85,7 +85,7 @@ public class MappingSwapper {
             newSourcePath = geomToWkt(newSourcePath);
         }
 
-        return new Pair<>(newJsonPath.replace('.', '/'), newSourcePath);
+        return Tuple.of(newJsonPath.replace('.', '/'), newSourcePath);
     }
 
     private String formatToRegex(String format) {

@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import de.ii.xtraplatform.dropwizard.domain.JacksonProvider;
+import de.ii.xtraplatform.base.domain.JacksonProvider;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import java.util.Optional;
 
@@ -28,6 +28,8 @@ public interface FeatureProviderConnector<T,U,V extends FeatureProviderConnector
     String CONNECTOR_TYPE_KEY = "connectorType";
 
     interface QueryOptions {}
+
+    String getType();
 
     String getProviderId();
 

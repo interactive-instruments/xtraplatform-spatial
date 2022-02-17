@@ -7,8 +7,14 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import de.ii.xtraplatform.di.domain.Registry;
+import de.ii.xtraplatform.base.domain.Registry;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.Set;
 
-public interface ProviderExtensionRegistry extends Registry<FeatureQueriesExtension> {
+public interface ProviderExtensionRegistry {
 
+  Set<FeatureQueriesExtension> getAll();
+
+  Optional<FeatureQueriesExtension> get(String... identifiers);
 }
