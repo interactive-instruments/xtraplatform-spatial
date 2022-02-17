@@ -9,10 +9,16 @@ package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
+import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SortKey.Direction;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Time;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,9 +121,10 @@ class SqlRowSlick implements SqlRow {
     }
 
     //TODO: use result.nextObject when column type info is supported
-    /*SqlRow read(PositionedResult result, SqlQueryOptions queryOptions) {
+    SqlRow read(ResultSet result, SqlQueryOptions queryOptions) {
         this.priority = queryOptions.getContainerPriority();
         List<Class<?>> columnTypes;
+        int cursor = 0;
 
         if (queryOptions.getTableSchema()
                         .isPresent()) {
@@ -129,7 +136,7 @@ class SqlRowSlick implements SqlRow {
 
             for (int i = 0; i < sortKeyNames.size(); i++) {
                 try {
-                    Object id = result.nextObject();
+                    Object id = result.getObject(cursor++);
                     if (Objects.isNull(id)) {
                         sortKeys.add(null);
                         if (i >= queryOptions.getCustomSortKeys().size()) {
@@ -156,7 +163,7 @@ class SqlRowSlick implements SqlRow {
 
         for (int i = 0; i < columnTypes.size(); i++) {
             try {
-                values.add(getValue(result, columnTypes.get(i)));
+                values.add(getValue(result, cursor++, columnTypes.get(i)));
             } catch (Throwable e) {
                 break;
             }
@@ -165,25 +172,25 @@ class SqlRowSlick implements SqlRow {
         return this;
     }
 
-    private Object getValue(PositionedResult result, Class<?> type) {
-        if (type == BigDecimal.class) return result.nextBigDecimal();
-        if (type == Blob.class) return result.nextBlob();
-        if (type == Byte.class) return result.nextByte();
-        if (type == byte[].class) return result.nextBytes();
-        if (type == Clob.class) return result.nextClob();
-        if (type == Date.class) return result.nextDate();
-        if (type == Double.class) return result.nextDouble();
-        if (type == Float.class) return result.nextFloat();
-        if (type == Integer.class) return result.nextInt();
-        if (type == Long.class) return result.nextLong();
-        if (type == Object.class) return result.nextObject();
-        if (type == Short.class) return result.nextShort();
-        if (type == String.class) return result.nextString();
-        if (type == Time.class) return result.nextTime();
-        if (type == Timestamp.class) return result.nextTimestamp();
+    private Object getValue(ResultSet result, int cursor, Class<?> type) throws SQLException {
+        if (type == BigDecimal.class) return result.getBigDecimal(cursor);
+        if (type == Blob.class) return result.getBlob(cursor);
+        if (type == Byte.class) return result.getByte(cursor);
+        if (type == byte[].class) return result.getBytes(cursor);
+        if (type == Clob.class) return result.getClob(cursor);
+        if (type == Date.class) return result.getDate(cursor);
+        if (type == Double.class) return result.getDouble(cursor);
+        if (type == Float.class) return result.getFloat(cursor);
+        if (type == Integer.class) return result.getInt(cursor);
+        if (type == Long.class) return result.getLong(cursor);
+        if (type == Object.class) return result.getObject(cursor);
+        if (type == Short.class) return result.getShort(cursor);
+        if (type == String.class) return result.getString(cursor);
+        if (type == Time.class) return result.getTime(cursor);
+        if (type == Timestamp.class) return result.getTimestamp(cursor);
 
-        return result.nextString();
-    }*/
+        return result.getString(cursor);
+    }
 
     void clear() {
         this.values.clear();

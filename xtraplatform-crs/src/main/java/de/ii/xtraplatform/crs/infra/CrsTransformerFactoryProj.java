@@ -17,7 +17,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.nativ.proj.api.ProjLoader;
+import de.ii.xtraplatform.proj.domain.ProjLoader;
 import de.ii.xtraplatform.base.domain.LogContext;
 import java.util.List;
 import java.util.Map;

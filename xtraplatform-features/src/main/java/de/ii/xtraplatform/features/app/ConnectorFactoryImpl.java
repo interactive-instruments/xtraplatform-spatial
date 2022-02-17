@@ -112,7 +112,8 @@ public class ConnectorFactoryImpl implements ConnectorFactory {
     private Optional<ConnectorFactory2<?,?,?>> getFactory(String type, String subType) {
         return connectorFactories.get()
             .stream()
-            .filter(connectorFactory2 -> Objects.equals(type, connectorFactory2.type()) && Objects.equals(subType, connectorFactory2.subType()))
+            .filter(connectorFactory2 -> Objects.equals(type, connectorFactory2.type())
+                && connectorFactory2.subType().filter(s -> Objects.equals(subType, s)).isPresent())
             .findFirst();
     }
 

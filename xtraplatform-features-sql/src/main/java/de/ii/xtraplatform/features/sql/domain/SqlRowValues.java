@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+//TODO: not used, shouldn't this replace SqlRowSlick?
 public class SqlRowValues implements SqlRow {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlRowValues.class);

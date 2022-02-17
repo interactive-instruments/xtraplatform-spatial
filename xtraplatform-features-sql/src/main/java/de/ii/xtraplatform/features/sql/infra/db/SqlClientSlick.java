@@ -8,15 +8,16 @@
 package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.base.domain.LogContext.MARKER;
+import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.app.FeatureSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
-import de.ii.xtraplatform.features.domain.Tuple;
-import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.streams.domain.Reactive;
-import java.io.Closeable;
+import hu.akarnokd.rxjava3.bridge.RxJavaBridge;
+import io.reactivex.Flowable;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.List;
@@ -24,9 +25,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.davidmoten.rx.jdbc.Database;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,10 +37,10 @@ public class SqlClientSlick implements SqlClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SqlClientSlick.class);
 
-    private final Closeable session;
+    private final Database session;
     private final Dialect dialect;
 
-    public SqlClientSlick(Closeable session, Dialect dialect) {
+    public SqlClientSlick(Database session, Dialect dialect) {
         this.session = session;
         this.dialect = dialect;
     }
@@ -47,7 +50,14 @@ public class SqlClientSlick implements SqlClient {
         if (LOGGER.isDebugEnabled(MARKER.SQL)) {
             LOGGER.debug(MARKER.SQL, "Executing statement: {}", query);
         }
-        return null;//SlickSql.run(session, query, positionedResult -> new SqlRowSlick().read(positionedResult, options)).toCompletableFuture();
+        CompletableFuture<Collection<SqlRow>> result = new CompletableFuture<>();
+
+        session.select(query)
+            .get(resultSet -> new SqlRowSlick().read(resultSet, options))
+            .toList()
+            .subscribe(result::complete);
+
+        return result;
     }
 
     @Override
@@ -55,7 +65,10 @@ public class SqlClientSlick implements SqlClient {
         if (LOGGER.isDebugEnabled(MARKER.SQL)) {
             LOGGER.debug(MARKER.SQL, "Executing statement: {}", query);
         }
-        return null;//Reactive.Source.akka(SlickSql.source(session, query, positionedResult -> new SqlRowSlick().read(positionedResult, options)));
+        Flowable<SqlRow> flowable = session.select(query)
+            .get(resultSet -> new SqlRowSlick().read(resultSet, options));
+
+        return Reactive.Source.publisher(RxJavaBridge.toV3Flowable(flowable));
     }
 
     @Override
@@ -133,7 +146,7 @@ public class SqlClientSlick implements SqlClient {
 
     @Override
     public Connection getConnection() {
-        return null; //session.db().source().createConnection();
+    return session.connection().blockingGet();
     }
 
     @Override

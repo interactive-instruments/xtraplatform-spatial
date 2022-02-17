@@ -33,6 +33,10 @@ public interface FeatureProviderConnector<T,U,V extends FeatureProviderConnector
 
     String getProviderId();
 
+    void start();
+
+    void stop();
+
     boolean isConnected();
 
     Optional<Throwable> getConnectionError();
