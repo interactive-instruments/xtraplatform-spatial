@@ -9,7 +9,7 @@ package de.ii.xtraplatform.feature.provider.pgis;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.provider.sql.SQL_PATH_TYPE_DEPRECATED;
+import de.ii.xtraplatform.features.sql.SQL_PATH_TYPE_DEPRECATED;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

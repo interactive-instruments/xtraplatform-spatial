@@ -9,8 +9,8 @@ package de.ii.xtraplatform.feature.provider.pgis;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureActionTrigger;
-import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlConnectorSlick;
+import de.ii.xtraplatform.features.sql.domain.FeatureActionTrigger;
+import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorSlick;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.features.domain.ImmutableMappingStatus;
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;

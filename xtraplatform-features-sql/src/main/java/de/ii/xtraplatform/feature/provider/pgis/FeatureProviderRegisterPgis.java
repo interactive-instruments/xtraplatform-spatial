@@ -7,23 +7,27 @@
  */
 package de.ii.xtraplatform.feature.provider.pgis;
 
+import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.dropwizard.domain.JacksonSubTypeIds;
-import de.ii.xtraplatform.feature.provider.sql.domain.ConnectionInfoSql;
-import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlConnectorSlick;
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Instantiate;
-import org.apache.felix.ipojo.annotations.Provides;
+import de.ii.xtraplatform.base.domain.JacksonSubTypeIds;
+import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
+import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorSlick;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import java.util.Map;
 
 /**
  * @author zahnen
  */
-@Component
-@Provides
-@Instantiate
+@Singleton
+@AutoBind
 public class FeatureProviderRegisterPgis implements JacksonSubTypeIds {
+
+    @Inject
+    public FeatureProviderRegisterPgis() {
+    }
+
     @Override
     public Map<Class<?>, String> getMapping() {
         return new ImmutableMap.Builder<Class<?>, String>()

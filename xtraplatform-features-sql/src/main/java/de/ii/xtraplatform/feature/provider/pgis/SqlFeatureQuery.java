@@ -7,10 +7,10 @@
  */
 package de.ii.xtraplatform.feature.provider.pgis;
 
-import akka.japi.Pair;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
@@ -138,7 +138,7 @@ public abstract class SqlFeatureQuery implements FeatureStoreInstanceContainer {
                        .splitToList(path);
     }
 
-    private List<Pair<String, Optional<String>>> getJoinPathElements(String path) {
+    private List<Tuple<String, Optional<String>>> getJoinPathElements(String path) {
         List<String> pathElements = getPathElements(path);
 
         if (pathElements.size() <= 2) {
@@ -153,16 +153,16 @@ public abstract class SqlFeatureQuery implements FeatureStoreInstanceContainer {
                            .stream()
                            .map(this::getTableAndJoinCondition)
                            .map(tableAndJoinCondition -> {
-                               Pair<String, Optional<String>> tajc = tableAndJoinCondition;
+                               Tuple<String, Optional<String>> tajc = tableAndJoinCondition;
                                if (tableAndJoinCondition.first()
                                                         .equals(mainTable) && tables.size() < pathElements.size() - 3) {
                                    //TODO: increment alias names
-                                   tajc = new Pair<>(tableAndJoinCondition.first() + " AS A", tableAndJoinCondition.second());
+                                   tajc = Tuple.of(tableAndJoinCondition.first() + " AS A", tableAndJoinCondition.second());
                                    LOGGER.debug("ALIASING {} {} {}", mainTable, tables.size(), pathElements.size());
                                }
                                tables.add(tableAndJoinCondition.first());
 
-                               Pair<String, Optional<String>> qualifiedTableAndJoinCondition = qualifyTableAndJoinCondition(tajc, lastTable[0]);
+                               Tuple<String, Optional<String>> qualifiedTableAndJoinCondition = qualifyTableAndJoinCondition(tajc, lastTable[0]);
                                lastTable[0] = qualifiedTableAndJoinCondition.first();
 
                                return qualifiedTableAndJoinCondition;
@@ -192,13 +192,13 @@ public abstract class SqlFeatureQuery implements FeatureStoreInstanceContainer {
         return path;
     }
 
-    private Pair<String, Optional<String>> getTableAndJoinCondition(String pathElement) {
+    private Tuple<String, Optional<String>> getTableAndJoinCondition(String pathElement) {
         Optional<String> joinCondition = pathElement.contains("]") ? Optional.of(pathElement.substring(1, pathElement.indexOf("]"))) : Optional.empty();
         String table = joinCondition.isPresent() ? pathElement.substring(pathElement.indexOf("]") + 1) : pathElement;
-        return new Pair<>(table, joinCondition);
+        return Tuple.of(table, joinCondition);
     }
 
-    private Pair<String, Optional<String>> qualifyTableAndJoinCondition(Pair<String, Optional<String>> tableAndJoinCondition, String sourceTable) {
+    private Tuple<String, Optional<String>> qualifyTableAndJoinCondition(Tuple<String, Optional<String>> tableAndJoinCondition, String sourceTable) {
         String sourceTable2 = sourceTable.contains(" AS ") ? sourceTable.substring(sourceTable.lastIndexOf(" ") + 1) : sourceTable;
         String targetTable = tableAndJoinCondition.first()
                                                   .contains(" AS ") ? tableAndJoinCondition.first()
@@ -206,7 +206,7 @@ public abstract class SqlFeatureQuery implements FeatureStoreInstanceContainer {
                                                                                                                            .lastIndexOf(" ") + 1) : tableAndJoinCondition.first();
         return tableAndJoinCondition.second()
                                     .isPresent()
-                ? new Pair<>(tableAndJoinCondition.first(), tableAndJoinCondition.second()
+                ? Tuple.of(tableAndJoinCondition.first(), tableAndJoinCondition.second()
                                                                                  .map(joinCondition -> joinCondition.replaceAll("(\\w+)=(\\w+)", String.format("%s.$1=%s.$2", sourceTable2, targetTable))))
                 : tableAndJoinCondition;
     }
@@ -238,7 +238,7 @@ public abstract class SqlFeatureQuery implements FeatureStoreInstanceContainer {
     }
 
     public String getSortColumn() {
-        List<Pair<String, Optional<String>>> joinPathElements = getJoinPathElements(getPaths().get(0));
+        List<Tuple<String, Optional<String>>> joinPathElements = getJoinPathElements(getPaths().get(0));
         //TODO: might be different fields for any join, so collect from subqueries
 
 
