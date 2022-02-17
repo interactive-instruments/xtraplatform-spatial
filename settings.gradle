@@ -16,7 +16,6 @@ rootProject.name = 'xtraplatform-spatial'
 rootDir.listFiles().each { file ->
     if (file.isDirectory() && file.name.startsWith('xtraplatform-')
             && !file.name.startsWith('xtraplatform-features-gml')
-            && !file.name.startsWith('xtraplatform-routes-sql')
     ) {
         include file.name
     }  

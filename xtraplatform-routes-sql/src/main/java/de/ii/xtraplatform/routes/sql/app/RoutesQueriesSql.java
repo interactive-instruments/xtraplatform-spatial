@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.routes.sql.app;
 
+import com.github.azahnen.dagger.annotations.AutoBind;
 import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.Geometry.Point;
 import de.ii.xtraplatform.crs.domain.CoordinateTuple;
@@ -14,9 +15,9 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.feature.provider.sql.domain.ImmutableSqlQueryOptions.Builder;
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlClient;
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlConnector;
+import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryOptions.Builder;
+import de.ii.xtraplatform.features.sql.domain.SqlClient;
+import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
@@ -33,23 +34,21 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Instantiate;
-import org.apache.felix.ipojo.annotations.Provides;
-import org.apache.felix.ipojo.annotations.Requires;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Component
-@Provides
-@Instantiate
+@Singleton
+@AutoBind
 public class RoutesQueriesSql implements FeatureQueriesExtension {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RoutesQueriesSql.class);
 
   private final CrsTransformerFactory crsTransformerFactory;
 
-  public RoutesQueriesSql(@Requires CrsTransformerFactory crsTransformerFactory) {
+  @Inject
+  public RoutesQueriesSql(CrsTransformerFactory crsTransformerFactory) {
     this.crsTransformerFactory = crsTransformerFactory;
   }
 
