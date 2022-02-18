@@ -14,14 +14,9 @@ dependencies {
     compileOnly "org.codehaus.groovy:groovy:3.+"
     compileOnly"org.spockframework:spock-core:2.1-groovy-3.0"
 }
-/*
-jar {
-    manifest {
-        instructionFirst 'Import-Package', "!groovy.*"
-        instructionFirst 'Import-Package', "!spock.lang*"
-        instructionFirst 'Import-Package', "!org.codehaus.groovy*"
-        instructionFirst 'Import-Package', "!org.spockframework.*"
-    }
-}
 
- */
+moduleInfo {
+    requires = [
+            'java.xml',
+    ]
+}

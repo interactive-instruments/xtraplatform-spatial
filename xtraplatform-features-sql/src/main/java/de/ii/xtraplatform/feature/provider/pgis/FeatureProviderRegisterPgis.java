@@ -14,6 +14,7 @@ import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorSlick;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import com.github.azahnen.dagger.annotations.AutoBind;
 
 import java.util.Map;
 

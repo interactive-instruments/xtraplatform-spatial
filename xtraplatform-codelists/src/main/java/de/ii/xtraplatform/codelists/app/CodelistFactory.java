@@ -2,9 +2,6 @@ package de.ii.xtraplatform.codelists.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.assisted.AssistedFactory;
-import de.ii.xtraplatform.auth.app.ImmutableUserData;
-import de.ii.xtraplatform.auth.app.User;
-import de.ii.xtraplatform.auth.app.User.UserData;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.codelists.domain.CodelistData;
 import de.ii.xtraplatform.codelists.domain.ImmutableCodelistData;

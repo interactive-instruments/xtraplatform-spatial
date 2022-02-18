@@ -8,22 +8,21 @@
 package de.ii.xtraplatform.feature.provider.wfs;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.dropwizard.domain.JacksonSubTypeIds;
+import de.ii.xtraplatform.base.domain.JacksonSubTypeIds;
 import de.ii.xtraplatform.feature.provider.wfs.app.FeatureProviderWfs;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.infra.WfsConnectorHttp;
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Instantiate;
-import org.apache.felix.ipojo.annotations.Provides;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import com.github.azahnen.dagger.annotations.AutoBind;
 
 import java.util.Map;
 
 /**
  * @author zahnen
  */
-@Component
-@Provides
-@Instantiate
+@Singleton
+@AutoBind
 public class FeatureProviderRegisterWfs implements JacksonSubTypeIds {
     @Override
     public Map<Class<?>, String> getMapping() {

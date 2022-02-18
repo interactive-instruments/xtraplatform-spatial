@@ -19,6 +19,7 @@ import de.ii.xtraplatform.streams.domain.Reactive;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import com.github.azahnen.dagger.annotations.AutoBind;
 
 @Singleton
 @AutoBind

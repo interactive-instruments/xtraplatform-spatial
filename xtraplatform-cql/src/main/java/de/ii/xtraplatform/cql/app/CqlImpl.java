@@ -29,6 +29,7 @@ import de.ii.xtraplatform.crs.domain.OgcCrs;
 import io.dropwizard.jackson.Jackson;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import com.github.azahnen.dagger.annotations.AutoBind;
 import org.threeten.extra.Interval;
 
 import java.io.IOException;

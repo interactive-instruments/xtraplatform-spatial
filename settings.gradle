@@ -22,5 +22,6 @@ rootDir.listFiles().each { file ->
 }
 
 //TODO
-includeBuild '../xtraplatform-build'
-includeBuild '../xtraplatform/xtraplatform-core'
+//includeBuild '../../ws-dagger/dagger-auto'
+//includeBuild '../xtraplatform-build'
+//includeBuild '../xtraplatform/xtraplatform-core'

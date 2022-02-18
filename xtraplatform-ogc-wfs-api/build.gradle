@@ -2,3 +2,9 @@ dependencies {
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-geometries')
 }
+
+moduleInfo {
+    requires = [
+            'java.xml',
+    ]
+}

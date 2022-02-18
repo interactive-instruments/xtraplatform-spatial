@@ -23,12 +23,10 @@ import java.util.Optional;
  * @author zahnen
  */
 //TODO: still needed for migration???
-@Value.Immutable
-@Value.Modifiable
-//@JsonDeserialize(as = ModifiableFeatureProviderDataPgis.class)
-@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
-//@Value.Style(deepImmutablesDetection = true)
-@JsonDeserialize(builder = ImmutableFeatureProviderDataPgis.Builder.class)
+//@Value.Immutable
+//@Value.Modifiable
+//@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
+//@JsonDeserialize(builder = ImmutableFeatureProviderDataPgis.Builder.class)
 public abstract class FeatureProviderDataPgis extends FeatureProviderDataTransformer {
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json

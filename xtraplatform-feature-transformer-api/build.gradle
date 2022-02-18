@@ -5,3 +5,9 @@ dependencies {
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-ogc-wfs-api')
 }
+
+moduleInfo {
+    requires = [
+            'java.xml',
+    ]
+}
