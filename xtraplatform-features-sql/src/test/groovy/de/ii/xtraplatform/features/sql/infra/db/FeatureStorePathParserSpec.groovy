@@ -7,11 +7,11 @@
  */
 package de.ii.xtraplatform.features.sql.infra.db
 
-
 import de.ii.xtraplatform.cql.app.CqlImpl
-import de.ii.xtraplatform.feature.provider.sql.app.FeatureStorePathParserSql
+import de.ii.xtraplatform.features.domain.FeatureStoreRelation
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation
 import de.ii.xtraplatform.features.sql.ImmutableSqlPathSyntax
+import de.ii.xtraplatform.features.sql.app.FeatureStorePathParserSql
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -59,7 +59,7 @@ class FeatureStorePathParserSpec extends Specification {
         ]
         expected << [
                 [ImmutableFeatureStoreRelation.builder()
-                         .cardinality(ONE_2_ONE)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.ONE_2_ONE)
                          .sourceContainer('biotop')
                          .sourceField('id')
                          .targetContainer('osirisobjekt')
@@ -67,7 +67,7 @@ class FeatureStorePathParserSpec extends Specification {
                          .build()
                 ],
                 [ImmutableFeatureStoreRelation.builder()
-                         .cardinality(ONE_2_ONE)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.ONE_2_ONE)
                          .sourceContainer('biotop')
                          .sourceField('geom')
                          .sourceSortKey("id")
@@ -76,14 +76,14 @@ class FeatureStorePathParserSpec extends Specification {
                          .build()
                 ],
                 [ImmutableFeatureStoreRelation.builder()
-                         .cardinality(ONE_2_ONE)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.ONE_2_ONE)
                          .sourceContainer('biotop')
                          .sourceField('id')
                          .targetContainer('osirisobjekt')
                          .targetField('id')
                          .build(),
                  ImmutableFeatureStoreRelation.builder()
-                         .cardinality(ONE_2_ONE)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.ONE_2_ONE)
                          .sourceContainer('osirisobjekt')
                          .sourceField('geom')
                          .sourceSortKey("id")
@@ -92,7 +92,7 @@ class FeatureStorePathParserSpec extends Specification {
                          .build()
                 ],
                 [ImmutableFeatureStoreRelation.builder()
-                         .cardinality(M_2_N)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.M_2_N)
                          .sourceContainer('biotop')
                          .sourceField('id')
                          .junctionSource('biotop_id')
@@ -103,7 +103,7 @@ class FeatureStorePathParserSpec extends Specification {
                          .build()
                 ],
                 [ImmutableFeatureStoreRelation.builder()
-                         .cardinality(M_2_N)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.M_2_N)
                          .sourceContainer('massnahmebb')
                          .sourceField('id')
                          .junctionSource('massnahmebb_id')
@@ -113,7 +113,7 @@ class FeatureStorePathParserSpec extends Specification {
                          .targetField('id')
                          .build(),
                  ImmutableFeatureStoreRelation.builder()
-                         .cardinality(ONE_2_N)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.ONE_2_N)
                          .sourceContainer('massnahmeangabe')
                          .sourceField('id')
                          .targetContainer('massnahmeangabe_zusatzmerkmal')
@@ -121,14 +121,14 @@ class FeatureStorePathParserSpec extends Specification {
                          .build(),
                 ],
                 [ImmutableFeatureStoreRelation.builder()
-                         .cardinality(ONE_2_ONE)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.ONE_2_ONE)
                          .sourceContainer('biotop')
                          .sourceField('id')
                          .targetContainer('osirisobjekt')
                          .targetField('id')
                          .build(),
                  ImmutableFeatureStoreRelation.builder()
-                         .cardinality(M_2_N)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.M_2_N)
                          .sourceContainer('osirisobjekt')
                          .sourceField('id')
                          .junctionSource('osirisobjekt_id')
@@ -138,7 +138,7 @@ class FeatureStorePathParserSpec extends Specification {
                          .targetField('id')
                          .build(),
                  ImmutableFeatureStoreRelation.builder()
-                         .cardinality(M_2_N)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.M_2_N)
                          .sourceContainer('raumreferenz')
                          .sourceField('id')
                          .junctionSource('raumreferenz_id')
@@ -149,7 +149,7 @@ class FeatureStorePathParserSpec extends Specification {
                          .build(),
                 ],
                 [ImmutableFeatureStoreRelation.builder()
-                         .cardinality(M_2_N)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.M_2_N)
                          .sourceContainer('massnahmebb')
                          .sourceField('id')
                          .junctionSource('massnahmebb_id')
@@ -159,7 +159,7 @@ class FeatureStorePathParserSpec extends Specification {
                          .targetField('id')
                          .build(),
                  ImmutableFeatureStoreRelation.builder()
-                         .cardinality(M_2_N)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.M_2_N)
                          .sourceContainer('massnahmeangabe')
                          .sourceField('id')
                          .junctionSource('massnahmeangabe_id')
@@ -169,7 +169,7 @@ class FeatureStorePathParserSpec extends Specification {
                          .targetField('id')
                          .build(),
                  ImmutableFeatureStoreRelation.builder()
-                         .cardinality(M_2_N)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.M_2_N)
                          .sourceContainer('zustandangaben')
                          .sourceField('id')
                          .junctionSource('zustandangaben_id')
@@ -179,7 +179,7 @@ class FeatureStorePathParserSpec extends Specification {
                          .targetField('id')
                          .build(),
                  ImmutableFeatureStoreRelation.builder()
-                         .cardinality(M_2_N)
+                         .cardinality(FeatureStoreRelation.CARDINALITY.M_2_N)
                          .sourceContainer('biotopkurz')
                          .sourceField('id')
                          .junctionSource('biotopkurz_id')

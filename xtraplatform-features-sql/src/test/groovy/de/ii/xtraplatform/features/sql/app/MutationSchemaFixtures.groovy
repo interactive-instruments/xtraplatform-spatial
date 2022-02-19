@@ -8,8 +8,8 @@
 package de.ii.xtraplatform.features.sql.app
 
 
-import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation
+import de.ii.xtraplatform.features.sql.domain.SchemaSql
+import de.ii.xtraplatform.features.sql.domain.SqlRelation
 import de.ii.xtraplatform.features.domain.SchemaBase.Type
 import de.ii.xtraplatform.features.sql.domain.ImmutableSchemaSql
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlRelation

@@ -11,7 +11,7 @@ package de.ii.xtraplatform.features.sql.app
 import de.ii.xtraplatform.cql.app.CqlFilterExamples
 import de.ii.xtraplatform.cql.app.CqlImpl
 import de.ii.xtraplatform.crs.domain.OgcCrs
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis
+import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis
 import spock.lang.Shared
 import spock.lang.Specification
 

@@ -20,8 +20,3 @@ rootDir.listFiles().each { file ->
         include file.name
     }  
 }
-
-//TODO
-//includeBuild '../../ws-dagger/dagger-auto'
-//includeBuild '../xtraplatform-build'
-//includeBuild '../xtraplatform/xtraplatform-core'

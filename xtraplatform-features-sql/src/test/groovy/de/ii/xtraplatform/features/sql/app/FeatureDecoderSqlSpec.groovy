@@ -7,11 +7,8 @@
  */
 package de.ii.xtraplatform.features.sql.app
 
-import akka.actor.ActorSystem
-import akka.testkit.javadsl.TestKit
 import com.google.common.collect.ImmutableList
-import com.typesafe.config.Config
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlRow
+import de.ii.xtraplatform.features.sql.domain.SqlRow
 import de.ii.xtraplatform.features.domain.FeatureEventHandler
 import de.ii.xtraplatform.features.domain.FeatureSchema
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder
@@ -19,10 +16,8 @@ import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema
 import de.ii.xtraplatform.features.domain.SchemaMapping
 import de.ii.xtraplatform.features.sql.domain.SqlRowFixtures
-import de.ii.xtraplatform.streams.app.ReactiveAkka
-import de.ii.xtraplatform.streams.domain.ActorSystemProvider
+import de.ii.xtraplatform.streams.app.ReactiveRx
 import de.ii.xtraplatform.streams.domain.Reactive
-import org.osgi.framework.BundleContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import spock.lang.Ignore
@@ -38,8 +33,6 @@ class FeatureDecoderSqlSpec extends Specification {
     static final Logger LOGGER = LoggerFactory.getLogger(FeatureDecoderSqlSpec.class)
 
     @Shared
-    ActorSystem system
-    @Shared
     Reactive reactive
     @Shared
     Reactive.Runner runner
@@ -48,30 +41,12 @@ class FeatureDecoderSqlSpec extends Specification {
     FeatureTokenDecoder<SqlRow, FeatureSchema, SchemaMapping, FeatureEventHandler.ModifiableContext<FeatureSchema, SchemaMapping>> singleDecoder
 
     def setupSpec() {
-        reactive = new ReactiveAkka(null, new ActorSystemProvider() {
-            @Override
-            ActorSystem getActorSystem(BundleContext context) {
-                return null
-            }
-
-            @Override
-            ActorSystem getActorSystem(BundleContext context, Config config) {
-                return null
-            }
-
-            @Override
-            ActorSystem getActorSystem(BundleContext context, Config config, String name) {
-                system = ActorSystem.create(name, config)
-                return system
-            }
-        })
+        reactive = new ReactiveRx()
         runner = reactive.runner("test")
     }
 
     def cleanupSpec() {
         runner.close()
-        TestKit.shutdownActorSystem(system)
-        system = null
     }
 
     def setup() {

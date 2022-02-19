@@ -9,8 +9,8 @@ package de.ii.xtraplatform.features.sql.app
 
 import com.google.common.base.Joiner
 import com.google.common.collect.ImmutableList
-import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathDefaults
+import de.ii.xtraplatform.features.sql.domain.SchemaSql
+import de.ii.xtraplatform.features.sql.domain.SqlPathDefaults
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

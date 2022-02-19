@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.feature.provider.pgis
 
-import de.ii.xtraplatform.feature.provider.sql.app.SqlMultiplicityTracker
 import spock.lang.Specification
 
 /**

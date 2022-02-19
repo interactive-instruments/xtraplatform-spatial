@@ -12,8 +12,8 @@ import de.ii.xtraplatform.cql.domain.CqlFilter
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.Gt
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
-import de.ii.xtraplatform.feature.provider.sql.domain.SchemaSql
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlRelation
+import de.ii.xtraplatform.features.sql.domain.SchemaSql
+import de.ii.xtraplatform.features.sql.domain.SqlRelation
 import de.ii.xtraplatform.features.domain.SchemaBase
 import de.ii.xtraplatform.features.domain.SchemaBase.Type
 import de.ii.xtraplatform.features.sql.domain.ImmutableSchemaSql

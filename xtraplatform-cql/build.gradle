@@ -1,7 +1,5 @@
 
 plugins {
-    //TODO: gradle 6 fixtures, move to bundle plugin
-    //id 'java-test-fixtures'
     id 'antlr'
 }
 
@@ -19,18 +17,12 @@ ext {
     antlrOutDir = new File(buildDir, "/generated/src/main/antlr")
     javaOutRootDir = new File(buildDir, "/generated/src/main/java")
     javaOutDir = new File(javaOutRootDir, "de/ii/xtraplatform/cql/infra")
-    //TODO: gradle 6 fixtures
-    testFixturesDir = file('src/testFixtures/java')
 }
 
 compileJava {
     project.sourceSets.main.java { srcDir javaOutRootDir }
     outputs.dir(javaOutRootDir)
 }
-
-//sourceSets.main.java.srcDirs += antlrOutDir
-//TODO: gradle 6 fixtures
-sourceSets.main.java.srcDirs += testFixturesDir
 
 generateGrammarSource {
     outputDirectory = antlrOutDir

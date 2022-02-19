@@ -13,8 +13,6 @@ plugins {
     id 'com.github.hierynomus.license-report' version '0.16.1' apply false
 }
 
-//apply plugin: 'de.interactive_instruments.xtraplatform-feature'
-
 allprojects {
     group = 'de.interactive_instruments'
 }
@@ -43,24 +41,9 @@ subprojects {
             url "https://maven.ecc.no/releases"
         }
     }
-
-    //TODO: workaround for bug in version 2.1
-    /*dependencies {
-        testImplementation('com.athaydes:spock-reports') {
-            version {
-                strictly '2.0-groovy-3.0'
-            }
-        }
-    }*/
 }
 
-apply from: 'immutables.gradle'
-
-//apply from: 'unit-tests.gradle'
-
-//apply from: 'integration-tests.gradle'
-
-apply from: 'license-headers.gradle'
+//apply from: 'license-headers.gradle'
 
 //apply from: 'license-report.gradle'
 

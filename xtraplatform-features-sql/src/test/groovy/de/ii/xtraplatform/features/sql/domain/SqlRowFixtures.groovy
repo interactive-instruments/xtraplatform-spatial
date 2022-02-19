@@ -7,7 +7,18 @@
  */
 package de.ii.xtraplatform.features.sql.domain
 
-
+import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer
+import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer
+import de.ii.xtraplatform.features.domain.FeatureStoreRelatedContainer
+import de.ii.xtraplatform.features.domain.FeatureStoreRelation
+import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo
+import de.ii.xtraplatform.features.domain.FeatureTokenType
+import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreAttribute
+import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreInstanceContainer
+import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelatedContainer
+import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation
+import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreTypeInfo
+import de.ii.xtraplatform.features.domain.SchemaBase
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 
 import java.util.stream.Collectors

@@ -12,10 +12,11 @@ import de.ii.xtraplatform.cql.domain.CqlFilter
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.crs.domain.OgcCrs
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlDialectPostGis
+import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis
 import de.ii.xtraplatform.features.domain.SortKey
 import spock.lang.Shared
 import spock.lang.Specification
+import de.ii.xtraplatform.features.domain.Tuple;
 
 class SqlQueryTemplatesDeriverSpec extends Specification {
 

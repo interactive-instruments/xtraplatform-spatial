@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlImpl
-import de.ii.xtraplatform.feature.provider.sql.domain.SqlPathParser
+import de.ii.xtraplatform.features.sql.domain.SqlPathParser
 import de.ii.xtraplatform.features.sql.ImmutableSqlPathSyntax
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults
 import spock.lang.Ignore

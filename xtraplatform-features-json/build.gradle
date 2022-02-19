@@ -7,7 +7,6 @@ dependencies {
     provided project(':xtraplatform-ogc-wfs-api')
     provided project(':xtraplatform-feature-transformer-api')
 
-    //TODO: gradle 6 fixtures
-    testImplementation project(':xtraplatform-features')
+    testImplementation(testFixtures(project(":xtraplatform-features")))
 }
 
