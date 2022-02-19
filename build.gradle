@@ -41,6 +41,9 @@ subprojects {
             url "https://maven.ecc.no/releases"
         }
     }
+    tasks.withType(GenerateModuleMetadata).configureEach {
+        suppressedValidationErrors.add('enforced-platform')
+    }
 }
 
 //apply from: 'license-headers.gradle'
