@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -105,6 +106,13 @@ public class CqlImpl implements Cql {
         CqlPropertyChecker visitor = new CqlPropertyChecker(validProperties);
 
         return cqlPredicate.accept(visitor);
+    }
+
+    @Override
+    public void checkTypes(CqlPredicate cqlPredicate, Map<String, String> propertyTypes) {
+        CqlTypeChecker visitor = new CqlTypeChecker(propertyTypes, this);
+
+        cqlPredicate.accept(visitor);
     }
 
     @Override

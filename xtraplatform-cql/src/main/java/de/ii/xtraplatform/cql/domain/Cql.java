@@ -11,6 +11,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface Cql {
@@ -24,6 +25,8 @@ public interface Cql {
     String write(CqlFilter cql, Format format);
 
     List<String> findInvalidProperties(CqlPredicate cqlPredicate, Collection<String> validProperties);
+
+    void checkTypes(CqlPredicate cqlPredicate, Map<String, String> propertyTypes);
 
     CqlNode mapTemporalOperators(CqlFilter cqlFilter, Set<TemporalOperator> supportedOperators);
 }
