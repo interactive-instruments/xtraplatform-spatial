@@ -16,6 +16,8 @@ dependencies {
 //prevent antlr from leaking into the module path
 configurations.api {
     exclude(module: 'antlr4')
+    exclude(module: 'antlr4-runtime')
+    exclude(module: 'antlr-runtime')
 }
 
 ext {
