@@ -69,6 +69,7 @@ public class SqlConnectorSlick implements SqlConnector {
   private final String providerId;
 
   private Database session;
+  private HikariDataSource dataSource;
   private SqlClient sqlClient;
   private Throwable connectionError;
 
@@ -152,8 +153,8 @@ public class SqlConnectorSlick implements SqlConnector {
       hikariConfig.setMetricRegistry(metricRegistry);
       hikariConfig.setHealthCheckRegistry(healthCheckRegistry);
 
-      HikariDataSource ds = new HikariDataSource(hikariConfig);
-      this.session = Database.fromBlocking(new ConnectionProviderHikari(ds));
+      this.dataSource = new HikariDataSource(hikariConfig);
+      this.session = Database.fromBlocking(new ConnectionProviderHikari(dataSource));
       this.sqlClient = new SqlClientSlick(session, connectionInfo.getDialect());
 
     } catch (Throwable e) {
@@ -172,6 +173,8 @@ public class SqlConnectorSlick implements SqlConnector {
       } catch (Throwable e) {
         // ignore
       }
+      healthCheckRegistry.unregister(MetricRegistry.name(dataSource.getPoolName(), "pool",
+          "ConnectivityCheck"));
     }
   }
 
@@ -330,13 +333,14 @@ public class SqlConnectorSlick implements SqlConnector {
     return password;
   }
 
+  //TODO: instantiate dataSource, apply driverOptions
   private static String getDataSourceClass(ConnectionInfoSql connectionInfo) {
 
     switch (connectionInfo.getDialect()) {
       case PGIS:
         return "org.postgresql.ds.PGSimpleDataSource";
       case GPKG:
-        return "de.ii.xtraplatform.feature.provider.sql.infra.db.SpatialiteDataSource";
+        return "de.ii.xtraplatform.features.sql.infra.db.SpatialiteDataSource";
         // return "org.sqlite.SQLiteDataSource";
     }
 

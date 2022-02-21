@@ -12,6 +12,7 @@ import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReducedTransformed;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import org.immutables.value.Value;
@@ -31,6 +32,7 @@ public interface FeatureStream {
 
     abstract class Builder<T> extends ResultBase.Builder<ResultReduced<T>, Builder<T>> {
 
+      public abstract Builder<T> reduced(T bytes);
     }
 
     T reduced();

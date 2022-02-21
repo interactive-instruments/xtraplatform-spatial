@@ -124,7 +124,7 @@ class SqlRowSlick implements SqlRow {
     SqlRow read(ResultSet result, SqlQueryOptions queryOptions) {
         this.priority = queryOptions.getContainerPriority();
         List<Class<?>> columnTypes;
-        int cursor = 0;
+        int cursor = 1;
 
         if (queryOptions.getTableSchema()
                         .isPresent()) {

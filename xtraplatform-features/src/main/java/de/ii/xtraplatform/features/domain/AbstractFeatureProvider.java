@@ -45,6 +45,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -348,7 +349,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
                             return result.error(throwable);
                         })
                         .handleItem((builder, bytes) -> builder.reduced(bytes).isEmpty(bytes.length > 0))
-                        .handleEnd(ResultReduced.Builder::build)
+                        .handleEnd(ResultBase.Builder::build)
                         .on(streamRunner);
 
                     return runnableStream.run();

@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.app.FeatureSql;
@@ -19,6 +20,8 @@ import de.ii.xtraplatform.streams.domain.Reactive;
 import hu.akarnokd.rxjava3.bridge.RxJavaBridge;
 import io.reactivex.Flowable;
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -26,10 +29,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.davidmoten.rx.jdbc.Database;
+import org.davidmoten.rx.jdbc.Tx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,22 +93,46 @@ public class SqlClientSlick implements SqlClient {
             .collect(Collectors.toList());
 
         int[] i = {0};
-        /*BiFunction<SlickSql.SlickRow, String, String> mapper = (slickRow, previousId) -> {
+        BiFunction<ResultSet, String, String> mapper = (slickRow, previousId) -> {
             LOGGER.debug("QUERY {}", i[0]);
             // null not allowed as return value
-            String id = slickRow.nextString();
-            LOGGER.debug("RETURNED {}", id);
-            idConsumers.get(i[0])
-                       .accept(id);
-            //LOGGER.debug("VALUES {}", values);
-            LOGGER.debug("");
+            String id = null;
+            try {
+                id = slickRow.getString(1);
+                LOGGER.debug("RETURNED {}", id);
+                idConsumers.get(i[0])
+                    .accept(id);
+                //LOGGER.debug("VALUES {}", values);
+                LOGGER.debug("");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
             i[0]++;
 
             return previousId != null ? previousId : id;
-        };*/
+        };
 
-        return null;//Reactive.Source.akka(SlickSql.source(session, executionContext, toStatementsWithLog, mapper, feature)
-                      // .fold("", (id1, id2) -> id1.isEmpty() ? id2 : id1));
+        String first = toStatementsWithLog.get(0).apply(feature);
+
+        Flowable<Tx<String>> txFlowable = session.update(first)
+            .transacted()
+            .returnGeneratedKeys()
+            .get(resultSet -> mapper.apply(resultSet, null))
+            .filter(tx -> !tx.isComplete());
+
+        for (int j = 1; j < toStatementsWithLog.size(); j++) {
+            String next = toStatementsWithLog.get(j).apply(feature);
+
+            txFlowable = txFlowable.flatMap(tx -> tx.update(next)
+                .returnGeneratedKeys()
+                .get(resultSet -> mapper.apply(resultSet, tx.value()))
+                .filter(tx2 -> !tx2.isComplete()));
+        }
+
+        Flowable<String> flowable = txFlowable
+            .map(Tx::value);
+
+        return Reactive.Source.publisher(RxJavaBridge.toV3Flowable(flowable));
     }
 
     @Override
