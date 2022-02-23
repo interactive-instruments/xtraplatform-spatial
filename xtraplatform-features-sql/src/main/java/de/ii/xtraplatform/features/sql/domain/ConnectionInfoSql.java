@@ -142,9 +142,15 @@ public interface ConnectionInfoSql extends ConnectionInfo {
             return getMaxConnections();
         }
 
+        @Deprecated
         @Value.Default
         default boolean getInitFailFast() {
             return true;
+        }
+
+        @Value.Default
+        default String getInitFailTimeout() {
+            return "1";
         }
 
         @Value.Default

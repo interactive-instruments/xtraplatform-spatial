@@ -311,8 +311,8 @@ public class SqlConnectorSlick implements SqlConnector {
     config.setDataSourceClassName(getDataSourceClass(connectionInfo));
     config.setMaximumPoolSize(maxConnections);
     config.setMinimumIdle(minConnections);
-    config.setInitializationFailTimeout(connectionInfo.getPool().getInitFailFast() ? 1 : -1);
-    config.setIdleTimeout(Duration.parse("PT" + connectionInfo.getPool().getIdleTimeout()).toMillis());
+    config.setInitializationFailTimeout(getInitFailTimeout(connectionInfo));
+    config.setIdleTimeout(parseMs(connectionInfo.getPool().getIdleTimeout()));
     config.setPoolName(poolName);
 
     getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
@@ -320,6 +320,22 @@ public class SqlConnectorSlick implements SqlConnector {
     config.setDataSourceProperties(getDriverOptions(connectionInfo, dataDir, applicationName));
 
     return config;
+  }
+
+  private static long getInitFailTimeout(ConnectionInfoSql connectionInfo) {
+    if (!connectionInfo.getPool().getInitFailFast()) {
+      return -1;
+    }
+    return parseMs(connectionInfo.getPool().getInitFailTimeout());
+  }
+
+  private static long parseMs(String duration) {
+    try{
+      return Long.parseLong(duration) * 1000;
+    } catch (Throwable e) {
+      // ignore
+    }
+    return Duration.parse("PT" + duration).toMillis();
   }
 
   private static String getPassword(ConnectionInfoSql connectionInfo) {
