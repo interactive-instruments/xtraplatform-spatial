@@ -9,9 +9,11 @@ package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.OptBoolean;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -59,6 +61,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     @Override
     Optional<String> getSourcePath();
 
+    @JsonMerge(OptBoolean.FALSE)
     @JsonProperty(access = Access.WRITE_ONLY)
     @Override
     List<String> getSourcePaths();
