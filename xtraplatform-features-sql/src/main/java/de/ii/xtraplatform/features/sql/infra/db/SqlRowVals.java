@@ -31,9 +31,9 @@ import java.util.List;
 import java.util.Objects;
 
 //TODO: extensive unit tests for compareTo
-class SqlRowSlick implements SqlRow {
+class SqlRowVals implements SqlRow {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SqlRowSlick.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlRowVals.class);
 
     private final List<Comparable<?>> ids;
     private final List<Comparable<?>> sortKeys;
@@ -43,7 +43,7 @@ class SqlRowSlick implements SqlRow {
     private int priority;
     private SchemaSql tableSchema;
 
-    SqlRowSlick() {
+    SqlRowVals() {
         this.ids = new ArrayList<>(32);
         this.sortKeys = new ArrayList<>(32);
         this.values = new ArrayList<>(128);

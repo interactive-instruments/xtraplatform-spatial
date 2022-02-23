@@ -11,10 +11,9 @@ import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.base.domain.JacksonSubTypeIds;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
-import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorSlick;
+import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorRx;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import com.github.azahnen.dagger.annotations.AutoBind;
 
 import java.util.Map;
 
@@ -33,7 +32,7 @@ public class FeatureProviderRegisterPgis implements JacksonSubTypeIds {
     public Map<Class<?>, String> getMapping() {
         return new ImmutableMap.Builder<Class<?>, String>()
                 //.put(FeatureProviderDataPgis.class, FeatureProviderPgis.PROVIDER_TYPE)
-                .put(ConnectionInfoSql.class, SqlConnectorSlick.CONNECTOR_TYPE)
+                .put(ConnectionInfoSql.class, SqlConnectorRx.CONNECTOR_TYPE)
                 .build();
     }
 }

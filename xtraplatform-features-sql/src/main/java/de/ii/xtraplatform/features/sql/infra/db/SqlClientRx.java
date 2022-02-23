@@ -9,7 +9,6 @@ package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.app.FeatureSql;
@@ -29,7 +28,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -39,14 +37,14 @@ import org.davidmoten.rx.jdbc.Tx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SqlClientSlick implements SqlClient {
+public class SqlClientRx implements SqlClient {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SqlClientSlick.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SqlClientRx.class);
 
     private final Database session;
     private final Dialect dialect;
 
-    public SqlClientSlick(Database session, Dialect dialect) {
+    public SqlClientRx(Database session, Dialect dialect) {
         this.session = session;
         this.dialect = dialect;
     }
@@ -65,7 +63,7 @@ public class SqlClientSlick implements SqlClient {
         }
 
         session.select(query)
-            .get(resultSet -> new SqlRowSlick().read(resultSet, options))
+            .get(resultSet -> new SqlRowVals().read(resultSet, options))
             .toList()
             .subscribe(result::complete, result::completeExceptionally);
 
@@ -78,7 +76,7 @@ public class SqlClientSlick implements SqlClient {
             LOGGER.debug(MARKER.SQL, "Executing statement: {}", query);
         }
         Flowable<SqlRow> flowable = session.select(query)
-            .get(resultSet -> new SqlRowSlick().read(resultSet, options));
+            .get(resultSet -> new SqlRowVals().read(resultSet, options));
 
         return Reactive.Source.publisher(RxJavaBridge.toV3Flowable(flowable));
     }

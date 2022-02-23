@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql.Builder;
-import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorSlick;
+import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorRx;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.MergeableMapEncodingEnabled;
 import java.util.List;
@@ -36,7 +36,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
     @Override
     @Value.Derived
     default String getConnectorType() {
-        return SqlConnectorSlick.CONNECTOR_TYPE;
+        return SqlConnectorRx.CONNECTOR_TYPE;
     }
 
     @Value.Default

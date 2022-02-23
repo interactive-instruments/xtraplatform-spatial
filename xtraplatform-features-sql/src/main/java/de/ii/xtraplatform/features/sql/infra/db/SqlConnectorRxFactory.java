@@ -7,9 +7,12 @@
  */
 package de.ii.xtraplatform.features.sql.infra.db;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.health.HealthCheckRegistry;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableSet;
 import dagger.assisted.AssistedFactory;
+import de.ii.xtraplatform.base.domain.AppConfiguration;
 import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.features.domain.ConnectorFactory2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
@@ -20,28 +23,37 @@ import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.sql.domain.SqlQueries;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
-import de.ii.xtraplatform.web.domain.Dropwizard;
+import de.ii.xtraplatform.web.domain.DropwizardPlugin;
+import io.dropwizard.setup.Environment;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import com.github.azahnen.dagger.annotations.AutoBind;
 
 @Singleton
 @AutoBind
-public class SqlConnectorRxFactory implements ConnectorFactory2<SqlRow, SqlQueries, SqlQueryOptions> {
+public class SqlConnectorRxFactory implements ConnectorFactory2<SqlRow, SqlQueries, SqlQueryOptions>,
+    DropwizardPlugin {
 
   private final FactoryAssisted factoryAssisted;
   private final Map<String, SqlConnector> instances;
+  private MetricRegistry metricRegistry;
+  private HealthCheckRegistry healthCheckRegistry;
 
   @Inject
   public SqlConnectorRxFactory(
-      AppContext appContext, Dropwizard dropwizard, //TODO: needed because dagger-auto does not parse SqlConnectorSlick
+      AppContext appContext, //TODO: needed because dagger-auto does not parse SqlConnectorSlick
       FactoryAssisted factoryAssisted) {
     this.factoryAssisted = factoryAssisted;
     this.instances = new LinkedHashMap<>();
+  }
+
+  @Override
+  public void init(AppConfiguration configuration, Environment environment) {
+    this.metricRegistry = environment.metrics();
+    this.healthCheckRegistry = environment.healthChecks();
   }
 
   @Override
@@ -51,7 +63,7 @@ public class SqlConnectorRxFactory implements ConnectorFactory2<SqlRow, SqlQueri
 
   @Override
   public Optional<String> subType() {
-    return Optional.of(SqlConnectorSlick.CONNECTOR_TYPE);
+    return Optional.of(SqlConnectorRx.CONNECTOR_TYPE);
   }
 
   @Override
@@ -68,7 +80,7 @@ public class SqlConnectorRxFactory implements ConnectorFactory2<SqlRow, SqlQueri
   @Override
   public FeatureProviderConnector<SqlRow, SqlQueries, SqlQueryOptions> createInstance(
       FeatureProviderDataV2 data) {
-    SqlConnector sqlConnector = factoryAssisted.create((FeatureProviderSqlData) data);
+    SqlConnector sqlConnector = factoryAssisted.create(metricRegistry, healthCheckRegistry, (FeatureProviderSqlData) data);
     sqlConnector.start();
     instances.put(sqlConnector.getProviderId(), sqlConnector);
 
@@ -83,6 +95,6 @@ public class SqlConnectorRxFactory implements ConnectorFactory2<SqlRow, SqlQueri
 
   @AssistedFactory
   public interface FactoryAssisted {
-    SqlConnectorSlick create(FeatureProviderSqlData data);
+    SqlConnectorRx create(MetricRegistry metricRegistry, HealthCheckRegistry healthCheckRegistry, FeatureProviderSqlData data);
   }
 }

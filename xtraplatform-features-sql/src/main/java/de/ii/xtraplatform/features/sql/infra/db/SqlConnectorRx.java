@@ -9,10 +9,6 @@ package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheckRegistry;
-import java.time.Duration;
-import org.davidmoten.rx.jdbc.ConnectionProvider;
-import org.davidmoten.rx.jdbc.Database;;
-import org.davidmoten.rx.jdbc.exceptions.SQLRuntimeException;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -33,11 +29,11 @@ import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
-import de.ii.xtraplatform.web.domain.Dropwizard;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -47,15 +43,20 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import org.davidmoten.rx.jdbc.ConnectionProvider;
+import org.davidmoten.rx.jdbc.Database;
+import org.davidmoten.rx.jdbc.exceptions.SQLRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+;
+
 /** @author zahnen */
-public class SqlConnectorSlick implements SqlConnector {
+public class SqlConnectorRx implements SqlConnector {
 
   public static final String CONNECTOR_TYPE = "SLICK";
   private static final SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
-  private static final Logger LOGGER = LoggerFactory.getLogger(SqlConnectorSlick.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SqlConnectorRx.class);
 
   private final ConnectionInfoSql connectionInfo;
   private final String poolName;
@@ -74,12 +75,12 @@ public class SqlConnectorSlick implements SqlConnector {
   private Throwable connectionError;
 
   @AssistedInject
-  public SqlConnectorSlick(
-      AppContext appContext, Dropwizard dropwizard, @Assisted FeatureProviderSqlData data) {
+  public SqlConnectorRx(
+      AppContext appContext, @Assisted MetricRegistry metricRegistry, @Assisted HealthCheckRegistry healthCheckRegistry, @Assisted FeatureProviderSqlData data) {
     this.connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
     this.poolName = String.format("db.%s", data.getId());
-    this.metricRegistry = dropwizard.getEnvironment().metrics();
-    this.healthCheckRegistry = dropwizard.getEnvironment().healthChecks();
+    this.metricRegistry = metricRegistry;
+    this.healthCheckRegistry = healthCheckRegistry;
 
     int maxQueries = getMaxQueries(data);
     if (connectionInfo.getPool().getMaxConnections() > 0) {
@@ -155,7 +156,7 @@ public class SqlConnectorSlick implements SqlConnector {
 
       this.dataSource = new HikariDataSource(hikariConfig);
       this.session = Database.fromBlocking(new ConnectionProviderHikari(dataSource));
-      this.sqlClient = new SqlClientSlick(session, connectionInfo.getDialect());
+      this.sqlClient = new SqlClientRx(session, connectionInfo.getDialect());
 
     } catch (Throwable e) {
       // TODO: handle properly, service start should fail with error message, show in manager

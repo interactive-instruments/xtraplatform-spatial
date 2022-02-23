@@ -8,9 +8,8 @@
 package de.ii.xtraplatform.feature.provider.pgis;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.features.sql.domain.FeatureActionTrigger;
-import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorSlick;
+import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorRx;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.features.domain.ImmutableMappingStatus;
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
@@ -40,7 +39,7 @@ public abstract class FeatureProviderDataPgis extends FeatureProviderDataTransfo
     @Value.Default
     @Override
     public String getConnectorType() {
-        return SqlConnectorSlick.CONNECTOR_TYPE;
+        return SqlConnectorRx.CONNECTOR_TYPE;
     }
 
     //public abstract ConnectionInfo getConnectionInfo();
