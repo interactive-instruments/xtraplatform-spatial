@@ -26,6 +26,18 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
     return withColumnTypes(Arrays.asList(columnTypes));
   }
 
+  static SqlQueryOptions ddl() {
+    return withColumnTypes();
+  }
+
+  static SqlQueryOptions ignoreResults() {
+    return withColumnTypes();
+  }
+
+  static SqlQueryOptions mutation() {
+    return withColumnTypes();
+  }
+
   static SqlQueryOptions withColumnTypes(List<Class<?>> columnTypes) {
     return new ImmutableSqlQueryOptions.Builder().customColumnTypes(columnTypes).build();
   }

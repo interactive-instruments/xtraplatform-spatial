@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.sql.infra.db;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.base.domain.LogContext.MARKER;
@@ -57,10 +58,16 @@ public class SqlClientSlick implements SqlClient {
         }
         CompletableFuture<Collection<SqlRow>> result = new CompletableFuture<>();
 
+        if (options.getColumnTypes().isEmpty()) {
+            session.update(query)
+                .complete()
+                .subscribe(() -> result.complete(ImmutableList.of()), result::completeExceptionally);
+        }
+
         session.select(query)
             .get(resultSet -> new SqlRowSlick().read(resultSet, options))
             .toList()
-            .subscribe(result::complete);
+            .subscribe(result::complete, result::completeExceptionally);
 
         return result;
     }
