@@ -19,10 +19,12 @@ import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.proj.domain.ProjLoader;
 import de.ii.xtraplatform.base.domain.LogContext;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,6 +38,7 @@ import org.kortforsyningen.proj.GridAvailabilityUse;
 import org.kortforsyningen.proj.Proj;
 import org.kortforsyningen.proj.SpatialCriterion;
 import org.kortforsyningen.proj.spi.EPSG;
+import org.opengis.referencing.ReferenceIdentifier;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
 import org.opengis.referencing.crs.CRSFactory;
 import org.opengis.referencing.crs.CompoundCRS;
@@ -45,6 +48,7 @@ import org.opengis.referencing.crs.SingleCRS;
 import org.opengis.referencing.cs.AxisDirection;
 import org.opengis.referencing.cs.RangeMeaning;
 import org.opengis.referencing.operation.CoordinateOperation;
+import org.opengis.util.GenericName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -304,10 +308,17 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
       checkForMissingGridFiles(coordinateOperation);
 
+      LOGGER.debug("Chosen operation for {} -> {}: {}{}", sourceCrs.toHumanReadableString(), targetCrs.toHumanReadableString(), coordinateOperation.getName().getCode(), getGridFile(coordinateOperation).orElse(""));
+
       CoordinateOperation horizontalCoordinateOperation = null;
       if (sourceDimension == 3) {
         horizontalCoordinateOperation = Proj.createCoordinateOperation(getHorizontalCrs(sourceProjCrs),
             getHorizontalCrs(targetProjCrs), coordinateOperationContext);
+        LOGGER.debug("Chosen operation for '{}' -> '{}': {}{}",
+            getHorizontalCrs(sourceProjCrs).getName().getCode(),
+            getHorizontalCrs(targetProjCrs).getName().getCode(),
+            coordinateOperation.getName().getCode(),
+            getGridFile(horizontalCoordinateOperation).orElse(""));
       }
 
       return new CrsTransformerProj(sourceProjCrs, targetProjCrs,
@@ -337,5 +348,17 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     } catch (Throwable e) {
       //ignore
     }
+  }
+
+  private Optional<String> getGridFile(CoordinateOperation coordinateOperation) {
+
+      Pattern pattern = Pattern.compile("PARAMETERFILE\\[\"(.*?)\",\"(.*?)\"\\]");
+      Matcher matcher = pattern.matcher(coordinateOperation.toWKT());
+      if (matcher.find()) {
+        return Optional.of(
+            String.format(" with parameter file '%s' (%s)", matcher.group(2),
+                matcher.group(1)));
+      }
+      return Optional.empty();
   }
 }
