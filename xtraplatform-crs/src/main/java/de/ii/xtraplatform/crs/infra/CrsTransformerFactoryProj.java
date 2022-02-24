@@ -64,12 +64,14 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
   private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
   private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
+  private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCacheForce2d;
   private final boolean useCaches = true;
 
   @Inject
   public CrsTransformerFactoryProj(ProjLoader projLoader) {
     this.crsCache = new ConcurrentHashMap<>();
     this.transformerCache = new ConcurrentHashMap<>();
+    this.transformerCacheForce2d = new ConcurrentHashMap<>();
 
     try {
       projLoader.load();
@@ -162,7 +164,7 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     CoordinateReferenceSystem finalSourceProjCrs = sourceProjCrs;
     CoordinateReferenceSystem finalTargetProjCrs = targetProjCrs;
     CrsTransformer transformer = useCaches
-        ? getCacheForSource(sourceCrs).computeIfAbsent(targetCrs, ignore -> createCrsTransformer(sourceCrs, targetCrs,
+        ? getCacheForSource(sourceCrs, force2d).computeIfAbsent(targetCrs, ignore -> createCrsTransformer(sourceCrs, targetCrs,
                                                                                                  finalSourceProjCrs, finalTargetProjCrs))
         : createCrsTransformer(sourceCrs, targetCrs, sourceProjCrs, targetProjCrs);
 
@@ -286,8 +288,10 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     return crs;
   }
 
-  private Map<EpsgCrs, CrsTransformer> getCacheForSource(EpsgCrs crs) {
-    return transformerCache.computeIfAbsent(crs, ignore -> new ConcurrentHashMap<>());
+  private Map<EpsgCrs, CrsTransformer> getCacheForSource(EpsgCrs crs, boolean force2d) {
+    return force2d
+        ? transformerCacheForce2d.computeIfAbsent(crs, ignore -> new ConcurrentHashMap<>())
+        : transformerCache.computeIfAbsent(crs, ignore -> new ConcurrentHashMap<>());
   }
 
   private synchronized CrsTransformer createCrsTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs,
