@@ -60,6 +60,8 @@ public class SqlClientRx implements SqlClient {
             session.update(query)
                 .complete()
                 .subscribe(() -> result.complete(ImmutableList.of()), result::completeExceptionally);
+
+            return result;
         }
 
         session.select(query)
