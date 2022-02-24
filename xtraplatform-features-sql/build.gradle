@@ -27,7 +27,6 @@ dependencies {
     embeddedFlat group: 'org.postgresql', name: 'postgresql', version: '42.3.3'
 
     embeddedExport group: 'org.xerial', name: 'sqlite-jdbc', version: '3.36.0.3'
-    embedded group: 'de.interactive_instruments', name: 'xtraplatform-spatialite', version: '5.0.1-3'
 
     embedded group: 'us.fatehi', name: 'schemacrawler-api', version: '16.11.6'
     embedded group: 'us.fatehi', name: 'schemacrawler-tools', version: '16.11.6'

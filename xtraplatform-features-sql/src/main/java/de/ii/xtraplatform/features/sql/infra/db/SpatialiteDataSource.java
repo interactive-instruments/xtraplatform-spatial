@@ -10,9 +10,11 @@ package de.ii.xtraplatform.features.sql.infra.db;
 import static de.ii.xtraplatform.base.domain.Constants.TMP_DIR_PROP;
 
 import com.google.common.io.Resources;
+import de.ii.xtraplatform.spatialite.domain.SpatialiteLoader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -27,7 +29,9 @@ import org.sqlite.util.OSInfo;
 public class SpatialiteDataSource extends SQLiteDataSource {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SpatialiteDataSource.class);
-  private static final Path TMP_DIR = Paths.get(System.getProperty(TMP_DIR_PROP));
+  private static final Path TMP_DIR = Paths.get(System.getProperty(TMP_DIR_PROP))
+      .resolve("spatialite-5.0.1-1");
+  private static final String LIB_Z = "libz.so";
   private static final String LIB_GEOS = "libgeos.so";
   private static final String LIB_GEOS_C = "libgeos_c.so";
   private static final String LIB_SQLITE = "libsqlite3.so";
@@ -46,11 +50,18 @@ public class SpatialiteDataSource extends SQLiteDataSource {
         LOGGER.error("Could not load SQLite: {}", e.getMessage());
       }
 
+      try {
+        Files.createDirectories(TMP_DIR);
+      } catch (IOException e) {
+        throw new IllegalStateException("Could not create directory: " + TMP_DIR);
+      }
+      copyLibToTmpDir(LIB_Z);
       copyLibToTmpDir(LIB_GEOS);
       copyLibToTmpDir(LIB_GEOS_C);
       copyLibToTmpDir(LIB_SQLITE);
       copyLibToTmpDir(MOD_SPATIALITE_SO);
 
+      loadLib(LIB_Z);
       loadLib(LIB_GEOS);
       loadLib(LIB_GEOS_C);
       //TODO: should be redundant if libspatialite is built against xerial libsqlite
@@ -65,9 +76,9 @@ public class SpatialiteDataSource extends SQLiteDataSource {
     File lib = TMP_DIR.resolve(libName).toFile();
     if (!lib.exists()) {
       try {
-        Resources.copy(Resources.getResource(libName), new FileOutputStream(lib));
+        Resources.copy(Resources.getResource(SpatialiteLoader.class, "/" + libName), new FileOutputStream(lib));
       } catch (IOException e) {
-        throw new IllegalStateException("Could not create file: " + lib.toString());
+        throw new IllegalStateException("Could not create file: " + lib);
       }
     }
   }
