@@ -15,9 +15,9 @@ dependencies {
 
 //prevent antlr from leaking into the module path
 configurations.api {
-    exclude(module: 'antlr4')
-    exclude(module: 'antlr4-runtime')
-    exclude(module: 'antlr-runtime')
+    exclude(group: 'org.antlr', module: 'antlr4')
+    exclude(group: 'org.antlr', module: 'antlr4-runtime')
+    exclude(group: 'org.antlr', module: 'antlr-runtime')
 }
 
 ext {
@@ -49,5 +49,18 @@ generateGrammarSource {
         }
         println javaOutDir
         println outputs.files.files
+    }
+}
+
+//prevent antlr from leaking into the module path
+publishing {
+    publications.named('default').configure {
+        pom.withXml {
+            asNode().dependencies.'*'.findAll() {
+                it.artifactId.text().startsWith('antlr')
+            }.each {
+                it.parent().remove(it)
+            }
+        }
     }
 }
