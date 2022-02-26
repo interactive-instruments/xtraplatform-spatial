@@ -46,6 +46,7 @@ class SqlRowVals implements SqlRow {
     SqlRowVals() {
         this.ids = new ArrayList<>(32);
         this.sortKeys = new ArrayList<>(32);
+        this.sortKeyNames = new ArrayList<>(32);
         this.values = new ArrayList<>(128);
     }
 
