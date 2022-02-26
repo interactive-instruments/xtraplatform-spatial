@@ -56,9 +56,7 @@ public interface FeaturePropertyTransformerDateFormat extends FeaturePropertyVal
                 ta = ((OffsetDateTime)ta).atZoneSameInstant(UTC);
             } else if (ta instanceof LocalDateTime) {
                 ta = ((LocalDateTime)ta).atZone(getDefaultTimeZone().orElse(UTC)).withZoneSameInstant(UTC);
-            } else if (ta instanceof LocalDate) {
-                ta = ((LocalDate)ta).atStartOfDay(getDefaultTimeZone().orElse(UTC)).withZoneSameInstant(UTC);
-            }
+            } 
 
             return formatter.format(ta);
         } catch (Exception e) {
