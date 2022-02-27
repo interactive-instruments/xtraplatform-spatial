@@ -95,7 +95,6 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
         this.typeInfos = createTypeInfos(getPathParser(), getData().getTypes());
         this.streamRunner = reactive.runner(getData().getId(), getRunnerCapacity(((WithConnectionInfo<?>)getData()).getConnectionInfo()), getRunnerQueueSize(((WithConnectionInfo<?>)getData()).getConnectionInfo()));
         this.connector = (FeatureProviderConnector<T, U, V>) connectorFactory.createConnector(getData());
-        connectorFactory.onDispose(connector, this::onConnectorDispose);
 
         if (!getConnector().isConnected()) {
             connectorFactory.disposeConnector(connector);
@@ -109,6 +108,7 @@ public abstract class AbstractFeatureProvider<T,U,V extends FeatureProviderConne
             }
             return false;
         }
+        connectorFactory.onDispose(connector, this::onConnectorDispose);
 
         Optional<String> runnerError = getRunnerError(((WithConnectionInfo<?>)getData()).getConnectionInfo());
 

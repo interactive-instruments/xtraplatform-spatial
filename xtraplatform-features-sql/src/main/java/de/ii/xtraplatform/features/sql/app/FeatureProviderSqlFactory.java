@@ -114,7 +114,7 @@ public class FeatureProviderSqlFactory
       return cleanupAutoPersist(
           cleanupAdditionalInfo(generateNativeCrsIfNecessary(generateTypesIfNecessary(data))));
     } catch (Throwable e) {
-      LogContext.error(LOGGER, e, "Feature provider with id '{}' could not be hydrated", data.getId());
+      LogContext.error(LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
     }
 
     throw new IllegalStateException();
