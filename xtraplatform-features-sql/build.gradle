@@ -45,4 +45,7 @@ moduleInfo {
             'java.sql',
             'java.security.sasl', //TODO: who needs this? removing it breaks the build
     ]
+    uses = [
+            'schemacrawler.tools.databaseconnector.DatabaseConnector'
+    ]
 }
