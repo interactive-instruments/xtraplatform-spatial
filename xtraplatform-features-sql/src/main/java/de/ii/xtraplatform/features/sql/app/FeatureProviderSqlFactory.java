@@ -124,6 +124,18 @@ public class FeatureProviderSqlFactory
     if (data.isAuto() && data.getTypes().isEmpty()) {
       SqlConnector connector = (SqlConnector) connectorFactory.createConnector(data);
 
+      if (!connector.isConnected()) {
+        connectorFactory.disposeConnector(connector);
+
+        RuntimeException connectionError = connector.getConnectionError()
+            .map(throwable -> throwable instanceof RuntimeException
+                ? (RuntimeException)throwable
+                : new RuntimeException(throwable))
+            .orElse(new IllegalStateException("unknown reason"));
+
+        throw connectionError;
+      }
+
       try {
         ConnectionInfoSql connectionInfo = data.getConnectionInfo();
 

@@ -168,14 +168,18 @@ public class SqlConnectorRx implements SqlConnector {
   @Override
   public void stop() {
     this.sqlClient = null;
+    
+    if (Objects.nonNull(healthCheckRegistry)) {
+      healthCheckRegistry.unregister(
+          MetricRegistry.name(dataSource.getPoolName(), "pool", "ConnectivityCheck"));
+    }
+
     if (Objects.nonNull(session)) {
       try {
         session.close();
       } catch (Throwable e) {
         // ignore
       }
-      healthCheckRegistry.unregister(MetricRegistry.name(dataSource.getPoolName(), "pool",
-          "ConnectivityCheck"));
     }
   }
 
