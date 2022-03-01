@@ -28,28 +28,26 @@ import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import com.github.azahnen.dagger.annotations.AutoBind;
-import org.apache.felix.ipojo.annotations.Requires;
-import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
-
+/*
 @Component
 @Provides(properties = {
         @StaticServiceProperty(name = Entity.TYPE_KEY, type = "java.lang.String", value = FeatureProvider2.ENTITY_TYPE),
         @StaticServiceProperty(name = Entity.SUB_TYPE_KEY, type = "java.lang.String", value = FeatureProviderWfs.ENTITY_SUB_TYPE)
 })
-@Instantiate
+@Instantiate*/
 public class FeatureProviderDataHydratorWfs implements EntityHydrator<FeatureProviderWfsData> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderDataHydratorWfs.class);
 
     private final ConnectorFactory connectorFactory;
 
-    public FeatureProviderDataHydratorWfs(@Requires ConnectorFactory connectorFactory) {
+    public FeatureProviderDataHydratorWfs(ConnectorFactory connectorFactory) {
         this.connectorFactory = connectorFactory;
     }
 

@@ -9,9 +9,10 @@ package de.ii.xtraplatform.feature.provider.wfs.app;
 
 import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 
-import akka.japi.Pair;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.domain.CqlToText;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderDataWfsFromMetadata;
@@ -35,7 +36,7 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import javax.xml.namespace.QName;
+import javax.xml.namespace.QName;/*
 import org.geotools.filter.FilterFactoryImpl;
 import org.geotools.filter.spatial.BBOXImpl;
 import org.geotools.filter.text.cql2.CQLException;
@@ -63,7 +64,7 @@ import org.opengis.filter.temporal.TEquals;
 import org.opengis.filter.temporal.TOverlaps;
 import org.opengis.temporal.Instant;
 import org.opengis.temporal.Period;
-import org.opengis.temporal.TemporalPrimitive;
+import org.opengis.temporal.TemporalPrimitive;*/
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -72,7 +73,7 @@ import org.xml.sax.helpers.NamespaceSupport;
 public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<String, FeatureProviderConnector.QueryOptions> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryTransformerWfs.class);
-
+/*
     static {
         LOGGER.debug("warming up GeoTools Filter ...");
 
@@ -88,7 +89,7 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
 
         LOGGER.debug("done");
     }
-
+*/
     private final Map<String, FeatureStoreTypeInfo> typeInfos;
     private final Map<String, FeatureSchema> featureSchemas;
     private final XMLNamespaceNormalizer namespaceNormalizer;
@@ -135,7 +136,7 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
         return wfsRequestEncoder.getAsUrl(encode(query, additionalQueryParameters));
     }
 
-    public Pair<String, String> encodeFeatureQueryPost(FeatureQuery query, Map<String, String> additionalQueryParameters) {
+    public Tuple<String, String> encodeFeatureQueryPost(FeatureQuery query, Map<String, String> additionalQueryParameters) {
         return wfsRequestEncoder.getAsUrlAndBody(encode(query, additionalQueryParameters));
     }
 
@@ -144,7 +145,7 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
             final QName featureTypeName = getFeatureTypeName(query);
 
             return encode(query, featureTypeName, featureSchemas.get(query.getType()), additionalQueryParameters);
-        } catch (CQLException e) {
+        } catch (CqlParseException e) {
             throw new IllegalArgumentException("Filter is invalid", e.getCause());
         }
     }
@@ -153,12 +154,12 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
         return wfsRequestEncoder;
     }
 
-    private GetFeature encode(FeatureQuery query, QName featureTypeName, FeatureSchema featureSchema, Map<String, String> additionalQueryParameters) throws CQLException {
+    private GetFeature encode(FeatureQuery query, QName featureTypeName, FeatureSchema featureSchema, Map<String, String> additionalQueryParameters) throws CqlParseException {
         final String featureTypeNameFull = namespaceNormalizer.getQualifiedName(featureTypeName.getNamespaceURI(), featureTypeName.getLocalPart());
 
         final WfsQuery wfsQuery = new WfsQueryBuilder().typeName(featureTypeNameFull)
                                                        .crs(nativeCrs)
-                                                       .filter(encodeFilter(query.getFilter(), featureSchema))
+                                                       //.filter(encodeFilter(query.getFilter(), featureSchema))
                                                        .build();
         final GetFeatureBuilder getFeature = new GetFeatureBuilder();
 
@@ -180,7 +181,7 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
 
         return getFeature.build();
     }
-
+/*
     private Filter encodeFilter(final Optional<CqlFilter> filter, final FeatureSchema featureSchema) throws CQLException {
         if (!filter.isPresent() || Objects.isNull(featureSchema)) {
             return null;
@@ -414,6 +415,6 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
                 return p2 != null ? filterFactory.literal(p2) : e;
             }
         }
-    }
+    }*/
 
 }

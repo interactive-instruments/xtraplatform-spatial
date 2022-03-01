@@ -16,9 +16,10 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
-import de.ii.xtraplatform.xml.domain.XMLDocument;
+import de.ii.xtraplatform.xml.domain.XMLDocument;/*
 import org.geotools.filter.FidFilterImpl;
-import org.opengis.filter.Filter;
+import org.opengis.filter.Filter;*/
+import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -45,12 +46,12 @@ public class WfsQuery {
     );
 
     private final List<String> typeNames;
-    private final List<Filter> filter;
+    private final List<Object> filter;
     private final EpsgCrs crs;
 
-    WfsQuery(List<String> typeNames, List<Filter> filter, EpsgCrs crs) {
+    WfsQuery(List<String> typeNames, /*List<Filter> filter,*/ EpsgCrs crs) {
         this.typeNames = typeNames;
-        this.filter = filter;
+        this.filter = new ArrayList<>();
         this.crs = crs;
     }
 
@@ -86,7 +87,7 @@ public class WfsQuery {
 
         // check if the first level expression is BBOX
         // check if the first level expression is ResourceId
-
+/*
         if (!filter.isEmpty()) {
             if (filter.get(0) instanceof FidFilterImpl) {
                 builder.put(WFS.getWord(versions.getWfsVersion()
@@ -103,7 +104,7 @@ public class WfsQuery {
                                .toUpperCase(), filterString);
             }
         }
-
+*/
 
         return builder.build();
     }

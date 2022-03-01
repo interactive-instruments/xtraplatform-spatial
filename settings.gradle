@@ -14,9 +14,11 @@ pluginManagement {
 rootProject.name = 'xtraplatform-spatial'
 
 rootDir.listFiles().each { file ->
-    if (file.isDirectory() && file.name.startsWith('xtraplatform-')
-            && !file.name.startsWith('xtraplatform-features-gml')
-    ) {
+    if (file.isDirectory() && file.name.startsWith('xtraplatform-')) {
         include file.name
     }  
 }
+
+//includeBuild '../xtraplatform-build'
+//includeBuild '../xtraplatform/xtraplatform-core'
+//includeBuild '../xtraplatform-native'

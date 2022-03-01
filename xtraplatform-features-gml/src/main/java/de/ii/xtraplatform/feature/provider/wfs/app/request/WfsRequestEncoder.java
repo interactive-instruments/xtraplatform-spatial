@@ -10,7 +10,7 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.app.request;
 
-import akka.japi.Pair;
+import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
@@ -69,12 +69,12 @@ public class WfsRequestEncoder {
         }
     }
 
-    public Pair<String,String> getAsUrlAndBody(WfsOperation operation) {
+    public Tuple<String,String> getAsUrlAndBody(WfsOperation operation) {
         try {
             URI uri = findUrl(operation.getOperation(), WFS.METHOD.POST);
             String xml = operation.asXml(new XMLDocumentFactory(nsStore), versions).toString(false);
 
-            return new Pair<>(uri.toString(), xml);
+            return Tuple.of(uri.toString(), xml);
 
         } catch (TransformerException | ParserConfigurationException | SAXException | IOException e) {
             return null;

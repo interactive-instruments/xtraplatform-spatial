@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.app;
 
-import static de.ii.xtraplatform.dropwizard.domain.LambdaWithException.mayThrow;
+import static de.ii.xtraplatform.base.domain.util.LambdaWithException.mayThrow;
 
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;

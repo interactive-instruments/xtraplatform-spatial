@@ -7,9 +7,10 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.app;
 
-import akka.stream.javadsl.Sink;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
@@ -58,7 +59,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.ws.rs.core.MediaType;
 import javax.xml.namespace.QName;
-import org.apache.felix.ipojo.annotations.Requires;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
@@ -78,16 +78,17 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, 
     private final EntityRegistry entityRegistry;
 
     private FeatureQueryTransformerWfs queryTransformer;
-    private FeatureNormalizerWfs featureNormalizer;
     private ExtentReader extentReader;
     private FeatureStorePathParser pathParser;
 
-    public FeatureProviderWfs(@Requires CrsTransformerFactory crsTransformerFactory,
-                              @Requires ConnectorFactory connectorFactory,
-                              @Requires Reactive reactive,
-                              @Requires EntityRegistry entityRegistry,
-                              @Requires ProviderExtensionRegistry extensionRegistry) {
-        super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry);
+    @AssistedInject
+    public FeatureProviderWfs(CrsTransformerFactory crsTransformerFactory,
+                              ConnectorFactory connectorFactory,
+                              Reactive reactive,
+                              EntityRegistry entityRegistry,
+                              ProviderExtensionRegistry extensionRegistry,
+                              @Assisted FeatureProviderWfsData data) {
+        super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry, data);
 
         this.crsTransformerFactory = crsTransformerFactory;
         this.entityRegistry = entityRegistry;
@@ -97,25 +98,14 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, 
     protected boolean onStartup() throws InterruptedException {
         this.pathParser = createPathParser(getData().getConnectionInfo());
 
-
         boolean success = super.onStartup();
 
         if (!success) {
             return false;
         }
 
-        //TODO: remove FeatureSchemaToTypeVisitor
-        /*Map<String, FeatureType> types = getData().getTypes()
-            .entrySet()
-            .stream()
-            .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue()
-                .accept(new FeatureSchemaToTypeVisitor(entry.getKey()))))
-            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));*/
-
         this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), getData().getTypes(),
             getData().getConnectionInfo(), getData().getNativeCrs().orElse(OgcCrs.CRS84));
-        this.featureNormalizer = new FeatureNormalizerWfs(getData().getTypes(), getData().getConnectionInfo()
-            .getNamespaces());
         this.extentReader = new ExtentReaderWfs(this, crsTransformerFactory, getData().getNativeCrs().orElse(OgcCrs.CRS84));
 
         return true;
@@ -236,9 +226,10 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, 
         return MEDIA_TYPE;
     }
 
+    //TODO: pass-through, use FeatureStreamImpl
     @Override
     public FeatureSourceStream<byte[]> getFeatureSourceStream(FeatureQuery query) {
-        return new FeatureSourceStream<>() {
+        return null;/*new FeatureSourceStream<>() {
             @Override
             public CompletionStage<ResultOld> runWith(FeatureConsumer consumer) {
                 Optional<FeatureStoreTypeInfo> typeInfo = Optional
@@ -275,6 +266,6 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, 
                 Sink<byte[], CompletionStage<ResultOld>> consumer) {
                 return null;
             }
-        };
+        };*/
     }
 }

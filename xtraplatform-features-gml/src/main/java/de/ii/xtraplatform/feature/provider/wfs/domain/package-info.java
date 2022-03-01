@@ -5,11 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.codelists.domain;
+@AutoModule(single = true, encapsulate = true)
+package de.ii.xtraplatform.feature.provider.wfs.domain;
 
-
-//TODO
-public interface CodelistImporter /*extends EntityDataGenerator<CodelistData>*/ {
-
-    CodelistData.IMPORT_TYPE getSourceType();
-}
+import com.github.azahnen.dagger.annotations.AutoModule;

@@ -7,10 +7,10 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.app.request;
 
-import com.vividsolutions.jts.geom.Envelope;
+//import com.vividsolutions.jts.geom.Envelope;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.FES;
-import de.ii.xtraplatform.ogc.api.WFS;
+import de.ii.xtraplatform.ogc.api.WFS;/*
 import org.eclipse.xsd.XSDElementDeclaration;
 import org.eclipse.xsd.XSDFactory;
 import org.eclipse.xsd.XSDParticle;
@@ -31,7 +31,7 @@ import org.opengis.filter.spatial.BBOX;
 import org.opengis.geometry.BoundingBox;
 import org.opengis.temporal.Instant;
 import org.opengis.temporal.Period;
-import org.picocontainer.MutablePicoContainer;
+import org.picocontainer.MutablePicoContainer;*/
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
@@ -46,14 +46,14 @@ import java.util.List;
  * @author zahnen
  */
 public class FilterEncoder {
-    private final Encoder encoder;
+    //private final Encoder encoder;
     private final WFS.VERSION version;
-    private final Configuration configuration;;
+    //private final Configuration configuration;;
 
     // TODO: bugfixes for 1.0 and 1.1
     public FilterEncoder(WFS.VERSION version) {
         this.version = version;
-
+/*
         switch (version) {
             case _1_0_0:
                 configuration = new org.geotools.filter.v1_0.OGCConfiguration();
@@ -82,19 +82,19 @@ public class FilterEncoder {
         }
 
         this.encoder = new Encoder(configuration);
-
+*/
 
     }
 
-    public Element encode(Filter filter) throws TransformerException, IOException, SAXException {
-        return new Encoder(configuration).encodeAsDOM(filter, new QName(FES.getNS(version.getFilterVersion()), FES.getWord(version.getFilterVersion(), FES.VOCABULARY.FILTER), FES.getPR(version.getFilterVersion())))
-                      .getDocumentElement();
+    public Element encode(Object filter) throws TransformerException, IOException, SAXException {
+        return null;//new Encoder(configuration).encodeAsDOM(filter, new QName(FES.getNS(version.getFilterVersion()), FES.getWord(version.getFilterVersion(), FES.VOCABULARY.FILTER), FES.getPR(version.getFilterVersion())))
+                      //.getDocumentElement();
     }
 
-    public String encodeAsString(Filter filter) throws IOException {
-        return new Encoder(configuration).encodeAsString(filter, new QName(FES.getNS(version.getFilterVersion()), FES.getWord(version.getFilterVersion(), FES.VOCABULARY.FILTER), FES.getPR(version.getFilterVersion())));
+    public String encodeAsString(Object filter) throws IOException {
+        return null;//new Encoder(configuration).encodeAsString(filter, new QName(FES.getNS(version.getFilterVersion()), FES.getWord(version.getFilterVersion(), FES.VOCABULARY.FILTER), FES.getPR(version.getFilterVersion())));
     }
-
+/*
     public static class MyBBOXTypeBinding extends BBOXTypeBinding {
         public MyBBOXTypeBinding() {
             super();
@@ -263,5 +263,5 @@ public class FilterEncoder {
         public String getCrs() {
             return crs;
         }
-    }
+    }*/
 }

@@ -7,15 +7,13 @@
  */
 package de.ii.xtraplatform.feature.provider.wfs.infra;
 
-import akka.util.ByteString;
-import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.dropwizard.domain.Dropwizard;
+import dagger.assisted.Assisted;
+import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.feature.provider.wfs.FeatureProviderDataWfsFromMetadata;
 import de.ii.xtraplatform.feature.provider.wfs.WFSCapabilitiesParser;
-import de.ii.xtraplatform.feature.provider.wfs.app.FeatureProviderWfs;
 import de.ii.xtraplatform.feature.provider.wfs.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.feature.provider.wfs.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.feature.provider.wfs.domain.WfsConnector;
@@ -24,19 +22,13 @@ import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.feature.provider.wfs.app.request.GetCapabilities;
 import de.ii.xtraplatform.feature.provider.wfs.app.request.WfsOperation;
 import de.ii.xtraplatform.feature.provider.wfs.app.request.WfsRequestEncoder;
-import de.ii.xtraplatform.streams.domain.Http;
-import de.ii.xtraplatform.streams.domain.HttpClient;
+import de.ii.xtraplatform.web.domain.Http;
+import de.ii.xtraplatform.web.domain.HttpClient;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Invalidate;
-import org.apache.felix.ipojo.annotations.Property;
-import org.apache.felix.ipojo.annotations.Provides;
-import org.apache.felix.ipojo.annotations.Requires;
-import org.apache.felix.ipojo.annotations.StaticServiceProperty;
 import org.codehaus.staxmate.SMInputFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,11 +36,12 @@ import org.slf4j.LoggerFactory;
 /**
  * @author zahnen
  */
+/*
 @Component
 @Provides(properties = {
         @StaticServiceProperty(name = "providerType", type = "java.lang.String", value = FeatureProviderWfs.PROVIDER_TYPE),
         @StaticServiceProperty(name = "connectorType", type = "java.lang.String", value = WfsConnectorHttp.CONNECTOR_TYPE)
-})
+})*/
 public class WfsConnectorHttp implements WfsConnector {
 
     public static final String CONNECTOR_TYPE = "HTTP";
@@ -56,7 +49,7 @@ public class WfsConnectorHttp implements WfsConnector {
     private static final Logger LOGGER = LoggerFactory.getLogger(WfsConnectorHttp.class);
     private static SMInputFactory staxFactory = new SMInputFactory(new InputFactoryImpl());
 
-    private final MetricRegistry metricRegistry;
+    //private final MetricRegistry metricRegistry;
     private final HttpClient httpClient;
     private final WfsRequestEncoder wfsRequestEncoder;
     private final boolean useHttpPost;
@@ -64,13 +57,11 @@ public class WfsConnectorHttp implements WfsConnector {
     private Optional<Throwable> connectionError;
     private final String providerId;
 
-    WfsConnectorHttp(@Property(name = ".data") FeatureProviderWfsData data, @Requires Dropwizard dropwizard,
-                     @Requires Http http) {
+    @AssistedInject
+    WfsConnectorHttp(Http http, @Assisted FeatureProviderWfsData data) {
         ConnectionInfoWfsHttp connectionInfo = data.getConnectionInfo();
 
         this.useHttpPost = connectionInfo.getMethod() == ConnectionInfoWfsHttp.METHOD.POST;
-        this.metricRegistry = dropwizard.getEnvironment()
-                                        .metrics();
 
         Map<String, Map<WFS.METHOD, URI>> urls = ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri())));
 
@@ -93,7 +84,7 @@ public class WfsConnectorHttp implements WfsConnector {
     }
 
     WfsConnectorHttp() {
-        metricRegistry = null;
+        //metricRegistry = null;
         httpClient = null;
         wfsRequestEncoder = null;
         useHttpPost = false;
@@ -101,11 +92,20 @@ public class WfsConnectorHttp implements WfsConnector {
         providerId = null;
     }
 
-    @Invalidate
-    private void onStop() {
-        //TODO: cleanup httpClient
+    @Override
+    public String getType() {
+        return null;
     }
 
+    @Override
+    public void start() {
+
+    }
+
+    @Override
+    public void stop() {
+
+    }
 
     private Optional<Metadata> crawlMetadata() {
         try {
@@ -147,12 +147,12 @@ public class WfsConnectorHttp implements WfsConnector {
 
   @Override
     public Reactive.Source<byte[]> getSourceStream(String query) {
-        return Reactive.Source.akka(httpClient.get(query).map(ByteString::toArray));
+        return httpClient.get(query);
     }
 
     @Override
     public Reactive.Source<byte[]> getSourceStream(String query, QueryOptions options) {
-        return Reactive.Source.akka(httpClient.get(query).map(ByteString::toArray));
+        return httpClient.get(query);
     }
 
     @Override

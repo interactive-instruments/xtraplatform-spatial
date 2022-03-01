@@ -24,6 +24,11 @@ import java.util.Map;
 @Singleton
 @AutoBind
 public class FeatureProviderRegisterWfs implements JacksonSubTypeIds {
+
+    @Inject
+    public FeatureProviderRegisterWfs() {
+    }
+
     @Override
     public Map<Class<?>, String> getMapping() {
         return new ImmutableMap.Builder<Class<?>, String>()

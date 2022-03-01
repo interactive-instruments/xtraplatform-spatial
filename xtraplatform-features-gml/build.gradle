@@ -12,20 +12,22 @@ ext {
         exclude module: 'checker-qual'
         exclude module: 'j2objc-annotations'
         exclude module: 'jsr305'
+        exclude module: 'jsr-275'
     }
 }
 
 dependencies {
-    provided project(':xtraplatform-geometries')
+    provided project(':xtraplatform-codelists')
+    provided project(':xtraplatform-cql')
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-feature-transformer-api')
+    provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-ogc-wfs-api')
 
-    testCompile project(':xtraplatform-ogc-wfs-api')
-    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.6.15'
+    testImplementation project(':xtraplatform-ogc-wfs-api')
 
-
+/*
     embedded (group: 'org.geotools', name: 'gt-cql', version: geotoolsVersion) {
         delegate.with excludes
     }
@@ -40,7 +42,7 @@ dependencies {
     }
     embedded (group: 'org.geotools', name: 'gt-epsg-extension', version: geotoolsVersion) {
         delegate.with excludes
-    }
+    }*/
 
     embedded (group: 'com.sun.xsom', name: 'xsom', version: '20140925') {
         delegate.with excludes
@@ -50,19 +52,5 @@ dependencies {
     }
     embedded (group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.2.1') {
         delegate.with excludes
-    }
-}
-
-jar {
-    manifest {
-        instructionFirst 'Import-Package', '!com.sun.medialib.codec.*'
-        instructionFirst 'Import-Package', '!com.sun.image.codec.*'
-        instructionFirst 'Import-Package', '!org.eclipse.core.*'
-        instructionFirst 'Import-Package', '!org.jaxen.*'
-        instructionFirst 'Import-Package', '!junit.framework'
-        instructionFirst 'Import-Package', '!org.jdom.*'
-        instructionFirst 'Import-Package', '!org.apache.commons.beanutils'
-        instructionFirst 'Import-Package', '!javax.media.*'
-        instructionFirst 'Import-Package', '!javax.servlet.*'
     }
 }
