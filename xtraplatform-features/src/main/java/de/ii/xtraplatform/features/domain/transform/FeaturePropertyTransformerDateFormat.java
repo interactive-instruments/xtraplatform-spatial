@@ -56,6 +56,8 @@ public interface FeaturePropertyTransformerDateFormat extends FeaturePropertyVal
                 ta = ((OffsetDateTime)ta).atZoneSameInstant(UTC);
             } else if (ta instanceof LocalDateTime) {
                 ta = ((LocalDateTime)ta).atZone(getDefaultTimeZone().orElse(UTC)).withZoneSameInstant(UTC);
+            } else if (ta instanceof LocalDate && isDateTimeFormat(getParameter())) {
+                ta = ((LocalDate)ta).atStartOfDay(getDefaultTimeZone().orElse(UTC)).withZoneSameInstant(UTC);
             }
 
             return formatter.format(ta);
@@ -64,5 +66,11 @@ public interface FeaturePropertyTransformerDateFormat extends FeaturePropertyVal
         }
 
         return input;
+    }
+
+    static boolean isDateTimeFormat(String format) {
+        return ImmutableList.of("H", "h", "M", "m", "S", "s")
+            .stream()
+            .anyMatch(format::contains);
     }
 }

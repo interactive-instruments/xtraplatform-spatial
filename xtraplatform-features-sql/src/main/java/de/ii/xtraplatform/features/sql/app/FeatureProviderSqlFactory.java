@@ -18,6 +18,7 @@ import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
@@ -93,6 +94,11 @@ public class FeatureProviderSqlFactory
   @Override
   public EntityDataBuilder<FeatureProviderDataV2> dataBuilder() {
     return new ImmutableFeatureProviderSqlData.Builder();
+  }
+
+  @Override
+  public EntityDataBuilder<? extends EntityData> superDataBuilder() {
+    return new ImmutableFeatureProviderCommonData.Builder();
   }
 
   @Override

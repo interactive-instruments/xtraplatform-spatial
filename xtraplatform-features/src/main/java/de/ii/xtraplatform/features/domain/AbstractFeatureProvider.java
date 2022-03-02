@@ -28,8 +28,11 @@ import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.BasicStream;
 import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkReducedTransformed;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.io.IOException;
 import java.util.AbstractMap;
@@ -307,9 +310,10 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
                 }
               });
 
-      FeatureTokenSource tokenSource = doTransform
-          ? getFeatureTokenSourceTransformed(propertyTransformations, virtualTables)
-          : getFeatureTokenSource(virtualTables);
+      FeatureTokenSource tokenSource =
+          doTransform
+              ? getFeatureTokenSourceTransformed(propertyTransformations, virtualTables)
+              : getFeatureTokenSource(virtualTables);
 
       RunnableStream<W> runnableStream = stream.apply(tokenSource).on(streamRunner);
 
@@ -334,15 +338,20 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
         Reactive.Sink<Object> sink, Optional<PropertyTransformations> propertyTransformations) {
 
       Function<FeatureTokenSource, Stream<Result>> stream =
-          tokenSource ->
-              tokenSource
-                  .to(sink)
-                  .withResult(ImmutableResult.builder().isEmpty(true))
-                  .handleError(ImmutableResult.Builder::error)
-                  .handleItem(
-                      (builder, x) ->
-                          builder.isEmpty(x instanceof byte[] ? ((byte[]) x).length > 0 : false))
-                  .handleEnd(Result.Builder::build);
+          tokenSource -> {
+            BasicStream<?, Void> basicStream =
+                sink instanceof SinkTransformed
+                    ? tokenSource.to((SinkTransformed<Object, ?>) sink)
+                    : tokenSource.to(sink);
+
+            return basicStream
+                .withResult(ImmutableResult.builder().isEmpty(true))
+                .handleError(ImmutableResult.Builder::error)
+                .handleItem(
+                    (builder, x) ->
+                        builder.isEmpty(x instanceof byte[] ? ((byte[]) x).length > 0 : false))
+                .handleEnd(Result.Builder::build);
+          };
 
       return run(stream, propertyTransformations);
     }
@@ -352,13 +361,18 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
         SinkReduced<Object, X> sink, Optional<PropertyTransformations> propertyTransformations) {
 
       Function<FeatureTokenSource, Stream<ResultReduced<X>>> stream =
-          tokenSource ->
-              tokenSource
-                  .to(sink)
-                  .withResult(ImmutableResultReduced.<X>builder().isEmpty(true))
-                  .handleError(ImmutableResultReduced.Builder::error)
-                  .handleItem((builder, x) -> builder.reduced((X) x).isEmpty(false))
-                  .handleEnd(ResultReduced.Builder::build);
+          tokenSource -> {
+            BasicStream<?, X> basicStream =
+                sink instanceof SinkReducedTransformed
+                    ? tokenSource.to((SinkReducedTransformed<Object, ?, X>) sink)
+                    : tokenSource.to(sink);
+
+            return basicStream
+                .withResult(ImmutableResultReduced.<X>builder().isEmpty(true))
+                .handleError(ImmutableResultReduced.Builder::error)
+                .handleItem((builder, x) -> builder.reduced((X) x).isEmpty(false))
+                .handleEnd(ResultReduced.Builder::build);
+          };
 
       return run(stream, propertyTransformations);
     }

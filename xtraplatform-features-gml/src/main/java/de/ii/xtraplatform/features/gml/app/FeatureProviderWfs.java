@@ -83,7 +83,7 @@ public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, 
                               Reactive reactive,
                               EntityRegistry entityRegistry,
                               ProviderExtensionRegistry extensionRegistry,
-                              @Assisted FeatureProviderWfsData data) {
+                              @Assisted FeatureProviderDataV2 data) {
         super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry, data);
 
         this.crsTransformerFactory = crsTransformerFactory;
