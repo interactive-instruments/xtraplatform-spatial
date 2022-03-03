@@ -43,7 +43,6 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
         .add("interior")
         .add("outerBoundaryIs")
         .add("innerBoundaryIs")
-        .add("LineString")
         .add("pointMember")
         .build();
     static final List<String> GEOMETRY_COORDINATES = new ImmutableList.Builder<String>()
@@ -68,7 +67,6 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
     private ModifiableContext<FeatureSchema, SchemaMapping> context;
     private FeatureSchema currentGeometrySchema;
     private SimpleFeatureGeometry currentGeometryType;
-    private boolean inCoordinates;
 
     public FeatureTokenDecoderGml(Map<String, String> namespaces,
         List<QName> featureTypes,
@@ -206,9 +204,11 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
                         context.setIndexes(multiplicityTracker.getMultiplicitiesForPath(context.pathTracker().asList()));
 
                         if (context.schema().filter(FeatureSchema::isSpatial).isPresent()) {
-                            this.currentGeometrySchema = context.schema().get();
-                        } else if (Objects.nonNull(currentGeometrySchema)) {
-                            onGeometryPart(parser.getLocalName());
+                            if (Objects.isNull(currentGeometrySchema)) {
+                                this.currentGeometrySchema = context.schema().get();
+                                context.setInGeometry(true);
+                            }
+                            onGeometryPart(parser.getLocalName(), depth - featureDepth == 2);
                         }
                     }
                     depth += 1;
@@ -233,18 +233,17 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
                         multiplicityTracker.reset();
                     } else if (inFeature) {
                         if (context.schema().filter(FeatureSchema::isSpatial).isPresent()) {
-                            if (currentGeometryType == SimpleFeatureGeometry.MULTI_POLYGON) {
-                                getDownstream().onArrayEnd(context);
-                            }
-                            this.currentGeometrySchema = null;
-                            this.currentGeometryType = SimpleFeatureGeometry.NONE;
-                            context.setInGeometry(false);
-                            context.setGeometryType(Optional.empty());
-                            context.setGeometryDimension(OptionalInt.empty());
+                            if (Objects.nonNull(currentGeometrySchema) && (depth-featureDepth) > 1) {
+                                onGeometryPartEnd(parser.getLocalName(), depth - featureDepth == 2);
+                              } else {
+                                this.currentGeometrySchema = null;
+                                this.currentGeometryType = SimpleFeatureGeometry.NONE;
+                                context.setInGeometry(false);
+                                context.setGeometryType(Optional.empty());
+                                context.setGeometryDimension(OptionalInt.empty());
 
-                            getDownstream().onObjectEnd(context);
-                        } else if (Objects.nonNull(currentGeometrySchema) && (depth-featureDepth) > 2) {
-                            onGeometryPartEnd(parser.getLocalName());
+                                getDownstream().onObjectEnd(context);
+                            }
                         }
                     }
 
@@ -294,7 +293,7 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
                            .orElse(null);
     }
 
-    private void onGeometryPart(final String localName) throws Exception {
+    private void onGeometryPart(final String localName, boolean startOfGeometry) throws Exception {
         if (Objects.isNull(currentGeometrySchema)) return;
 
         if (currentGeometryType == SimpleFeatureGeometry.NONE) {
@@ -324,27 +323,18 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
 
 
                 context.pathTracker().track(path.get(path.size()-1));
-
-                if (currentGeometryType == SimpleFeatureGeometry.MULTI_POLYGON) {
-                    getDownstream().onArrayStart(context);
-                }
             }
-        } else {
-            if (GEOMETRY_PARTS.contains(localName)) {
-                getDownstream().onArrayStart(context);
-            } else if (GEOMETRY_COORDINATES.contains(localName)) {
-                inCoordinates = true;
-            }
+        }
+        if (GEOMETRY_PARTS.contains(localName) || (startOfGeometry && currentGeometryType == SimpleFeatureGeometry.MULTI_POLYGON)) {
+            getDownstream().onArrayStart(context);
         }
     }
 
-    private void onGeometryPartEnd(final String localName) throws Exception {
+    private void onGeometryPartEnd(final String localName, boolean endOfGeometry) throws Exception {
         if (Objects.isNull(currentGeometrySchema)) return;
 
-        if (GEOMETRY_PARTS.contains(localName)) {
+        if (GEOMETRY_PARTS.contains(localName) || (endOfGeometry && currentGeometryType == SimpleFeatureGeometry.MULTI_POLYGON)) {
             getDownstream().onArrayEnd(context);
-        } else if (GEOMETRY_COORDINATES.contains(localName)) {
-            inCoordinates = false;
         }
     }
 }
