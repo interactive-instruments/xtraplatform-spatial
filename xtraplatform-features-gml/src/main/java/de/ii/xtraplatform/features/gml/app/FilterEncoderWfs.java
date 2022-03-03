@@ -11,14 +11,20 @@ import com.google.common.base.Splitter;
 import com.google.common.primitives.Doubles;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.ScalarLiteral;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.ogc.api.FES;
+import de.ii.xtraplatform.ogc.api.WFS;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterExpression;
+import de.ii.xtraplatform.ogc.api.filter.OGCResourceIdExpression;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +50,18 @@ public class FilterEncoderWfs {
         this.coordinatesTransformer = this::transformCoordinatesIfNecessary;
     }
 
-    public CqlFilter encode(CqlFilter cqlFilter, FeatureSchema schema) {
-        return cqlFilter;//cqlFilter.accept(new CqlToSql(schema));
+    public OGCFilterExpression encode(CqlFilter filter, FeatureSchema schema) {
+        if (filter.getInOperator().isPresent()) {
+            String ids = filter.getInOperator().get().getList()
+                .stream()
+                .filter(scalar -> scalar instanceof ScalarLiteral
+                    && ((ScalarLiteral) scalar).getType() == String.class)
+                .map(scalar -> (String)((ScalarLiteral)scalar).getValue())
+                .collect(Collectors.joining(","));
+
+            return new OGCResourceIdExpression(ids);
+        }
+        return null;//cqlFilter.accept(new CqlToSql(schema));
     }
 
     private List<Double> transformCoordinatesIfNecessary(List<Double> coordinates, Optional<EpsgCrs> sourceCrs) {

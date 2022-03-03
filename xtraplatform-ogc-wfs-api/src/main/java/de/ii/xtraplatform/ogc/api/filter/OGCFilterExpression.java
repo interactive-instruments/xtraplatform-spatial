@@ -7,9 +7,11 @@
  */
 package de.ii.xtraplatform.ogc.api.filter;
 
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.xml.domain.XMLDocument;
 import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
+import java.util.Map;
 import org.w3c.dom.Element;
 
 /**
@@ -21,4 +23,8 @@ public abstract class OGCFilterExpression {
     protected XMLNamespaceNormalizer NSstore;
 
     public abstract void toXML(FES.VERSION version, Element e, XMLDocument doc);
+
+    public Map<String, String> toKVP(FES.VERSION version) {
+        return ImmutableMap.of();
+    }
 }

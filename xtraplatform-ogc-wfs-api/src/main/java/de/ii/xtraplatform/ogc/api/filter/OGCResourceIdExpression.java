@@ -10,6 +10,8 @@
  */
 package de.ii.xtraplatform.ogc.api.filter;
 
+
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.xml.domain.XMLDocument;
 
@@ -38,6 +40,11 @@ public class OGCResourceIdExpression extends OGCFilterExpression {
             ex.setAttribute(FES.getWord(version, FES.VOCABULARY.RESOURCEID_ATTR), id);
         }
         e.appendChild(ex);
+    }
+
+    @Override
+    public Map<String, String> toKVP(FES.VERSION version) {
+        return ImmutableMap.of(FES.getWord(version, FES.VOCABULARY.RESOURCEID_KVP).toUpperCase(), id);
     }
 
     public void toKVP(FES.VERSION version, Map<String, String> params) {

@@ -12,6 +12,7 @@ import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 //import org.opengis.filter.Filter;
 
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterExpression;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -19,7 +20,7 @@ import java.util.Optional;
 
 public class WfsQueryBuilder {
     private final List<String> typeNames;
-    private List<CqlFilter> filter;
+    private List<OGCFilterExpression> filter;
     private EpsgCrs crs;
 
     public WfsQueryBuilder() {
@@ -34,7 +35,7 @@ public class WfsQueryBuilder {
         return this;
     }
 
-    public WfsQueryBuilder filter(Optional<CqlFilter> filter) {
+    public WfsQueryBuilder filter(Optional<OGCFilterExpression> filter) {
         if (filter.isPresent()) {
             this.filter.add(filter.get());
         }

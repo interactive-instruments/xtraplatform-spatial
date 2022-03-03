@@ -18,6 +18,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
+import de.ii.xtraplatform.ogc.api.filter.OGCFilterExpression;
 import de.ii.xtraplatform.xml.domain.XMLDocument;/*
 import org.geotools.filter.FidFilterImpl;
 import org.opengis.filter.Filter;*/
@@ -49,10 +50,10 @@ public class WfsQuery {
     );
 
     private final List<String> typeNames;
-    private final List<CqlFilter> filter;
+    private final List<OGCFilterExpression> filter;
     private final EpsgCrs crs;
 
-    WfsQuery(List<String> typeNames, List<CqlFilter> filter, EpsgCrs crs) {
+    WfsQuery(List<String> typeNames, List<OGCFilterExpression> filter, EpsgCrs crs) {
         this.typeNames = typeNames;
         this.filter = filter;
         this.crs = crs;
@@ -88,21 +89,11 @@ public class WfsQuery {
                            .toUpperCase(), getCrs(versions.getWfsVersion()));
         }
 
-        // check if the first level expression is BBOX
-        // check if the first level expression is ResourceId
+        filter.forEach(ogcFilterExpression -> {
+            builder.putAll(ogcFilterExpression.toKVP(versions.getWfsVersion().getFilterVersion()));
+        });
 
-        if (!filter.isEmpty()) {
-            if (filter.get(0).getInOperator().isPresent()) {
-                String ids = filter.get(0).getInOperator().get().getList()
-                    .stream()
-                    .filter(scalar -> scalar instanceof ScalarLiteral && ((ScalarLiteral) scalar).getType() == String.class)
-                    .map(scalar -> (String)((ScalarLiteral)scalar).getValue())
-                    .collect(Collectors.joining(","));
-
-                builder.put(WFS.getWord(versions.getWfsVersion()
-                                                .getFilterVersion(), FES.VOCABULARY.RESOURCEID)
-                               .toUpperCase(), ids);
-            } /*else {
+             /*else {
                 final Node node = document.adoptDocument(FILTER_ENCODERS.get(versions.getWfsVersion()).encode(filter.get(0)));
                 document.appendChild(node);
                 document.done();
@@ -112,7 +103,6 @@ public class WfsQuery {
                                                 .getFilterVersion(), FES.VOCABULARY.FILTER)
                                .toUpperCase(), filterString);
             }*/
-        }
 
 
         return builder.build();
