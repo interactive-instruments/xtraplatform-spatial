@@ -26,11 +26,12 @@ import de.ii.xtraplatform.features.domain.FeatureExtents;
 import de.ii.xtraplatform.features.domain.FeatureMetadata;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector.QueryOptions;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQueriesPassThrough;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
-import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
+import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureSourceStream;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
@@ -39,7 +40,6 @@ import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
-import de.ii.xtraplatform.features.gml.FeatureTokenDecoderGml;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.features.gml.domain.WfsConnector;
@@ -76,7 +76,7 @@ public class FeatureProviderWfs
   private final EntityRegistry entityRegistry;
   private final Cql cql;
 
-  private FeatureQueryTransformerWfs queryTransformer;
+  private FeatureQueryEncoderWfs queryTransformer;
   private ExtentReader extentReader;
   private FeatureStorePathParser pathParser;
 
@@ -107,7 +107,7 @@ public class FeatureProviderWfs
     }
 
     this.queryTransformer =
-        new FeatureQueryTransformerWfs(
+        new FeatureQueryEncoderWfs(
             getTypeInfos(),
             getData().getTypes(),
             getData().getConnectionInfo(),
@@ -142,7 +142,7 @@ public class FeatureProviderWfs
   }
 
   @Override
-  protected FeatureQueryTransformer<String, FeatureProviderConnector.QueryOptions>
+  protected FeatureQueryEncoder<String, QueryOptions>
       getQueryTransformer() {
     return queryTransformer;
   }

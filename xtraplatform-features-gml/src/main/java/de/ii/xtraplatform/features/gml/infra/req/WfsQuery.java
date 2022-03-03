@@ -8,26 +8,20 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.features.gml.app.request;
+package de.ii.xtraplatform.features.gml.infra.req;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.ogc.api.filter.OGCFilterExpression;
 import de.ii.xtraplatform.xml.domain.XMLDocument;/*
 import org.geotools.filter.FidFilterImpl;
 import org.opengis.filter.Filter;*/
-import java.util.ArrayList;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 import javax.xml.transform.TransformerException;
@@ -43,11 +37,11 @@ public class WfsQuery {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WfsQuery.class);
 
-    private static final Map<WFS.VERSION, FilterEncoder> FILTER_ENCODERS = ImmutableMap.of(
+    /*private static final Map<WFS.VERSION, FilterEncoder> FILTER_ENCODERS = ImmutableMap.of(
             WFS.VERSION._2_0_0, new FilterEncoder(WFS.VERSION._2_0_0),
             WFS.VERSION._1_1_0, new FilterEncoder(WFS.VERSION._1_1_0),
             WFS.VERSION._1_0_0, new FilterEncoder(WFS.VERSION._1_0_0)
-    );
+    );*/
 
     private final List<String> typeNames;
     private final List<OGCFilterExpression> filter;
@@ -65,8 +59,9 @@ public class WfsQuery {
         final Element query = document.createElementNS(WFS.getNS(versions.getWfsVersion()), WFS.getWord(versions.getWfsVersion(), WFS.VOCABULARY.QUERY));
 
         if (!filter.isEmpty()) {
-            final Node node = document.adoptDocument(FILTER_ENCODERS.get(versions.getWfsVersion()).encode(filter.get(0)));
-            query.appendChild(node);
+            //final Node node = document.adoptDocument(FILTER_ENCODERS.get(versions.getWfsVersion()).encode(filter.get(0)));
+            //query.appendChild(node);
+            filter.get(0).toXML(versions.getWfsVersion().getFilterVersion(), query, document);
         }
 
         query.setAttribute(WFS.getWord(versions.getWfsVersion(), WFS.VOCABULARY.TYPENAMES), getTypeNames());

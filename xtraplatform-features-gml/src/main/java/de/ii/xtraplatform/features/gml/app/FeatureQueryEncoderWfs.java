@@ -5,18 +5,28 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.gml;
+package de.ii.xtraplatform.features.gml.app;
 
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
-import de.ii.xtraplatform.feature.transformer.api.FeatureTypeMapping;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector.QueryOptions;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
-import de.ii.xtraplatform.features.gml.app.request.GetFeatureBuilder;
-import de.ii.xtraplatform.features.gml.app.request.GetFeature;
-import de.ii.xtraplatform.features.gml.app.request.WfsQuery;
-import de.ii.xtraplatform.features.gml.app.request.WfsQueryBuilder;
-import de.ii.xtraplatform.features.gml.app.request.WfsRequestEncoder;
-import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;/*
+import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
+import de.ii.xtraplatform.features.gml.infra.req.GetFeatureBuilder;
+import de.ii.xtraplatform.features.gml.infra.WfsConnectorHttp;
+import de.ii.xtraplatform.ogc.api.WFS;
+import de.ii.xtraplatform.features.gml.infra.req.GetFeature;
+import de.ii.xtraplatform.features.gml.infra.req.WfsQuery;
+import de.ii.xtraplatform.features.gml.infra.req.WfsQueryBuilder;
+import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
+import java.net.URI;
+import java.util.Map;
+import javax.xml.namespace.QName;/*
 import org.geotools.filter.FilterFactoryImpl;
 import org.geotools.filter.spatial.BBOXImpl;
 import org.geotools.filter.text.cql2.CQLException;
@@ -48,65 +58,67 @@ import org.opengis.temporal.TemporalPrimitive;*/
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.namespace.QName;
-import java.util.Map;
-
-/**
- * @author zahnen
- */
-public class FeatureQueryEncoderWfs {
+public class FeatureQueryEncoderWfs implements FeatureQueryEncoder<String, QueryOptions> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderWfs.class);
-/*
-    static {
-        LOGGER.debug("warming up GeoTools Filter ...");
 
-        try {
-            Filter filter = (Filter) ECQL.toFilter("'foo' = 'bar' AND BBOX(geometry, 366703.806, 5807220.953, 367087.571, 5807603.808, 'EPSG:25833')")
-                                         .accept(new ResolvePropertyNamesFilterVisitor(new ImmutableFeatureTypeMapping.Builder().build(), new XMLNamespaceNormalizer()), null);
-
-            Element encode = new FilterEncoder(WFS.VERSION._2_0_0).encode(filter);
-            LOGGER.trace("{}", encode);
-        } catch (Throwable ex) {
-            //ignore
-        }
-
-        LOGGER.debug("done");
-    }
-*/
-    private final Map<String, QName> featureTypes;
-    private final Map<String, FeatureTypeMapping> featureTypeMappings;
+    private final Map<String, FeatureStoreTypeInfo> typeInfos;
+    private final Map<String, FeatureSchema> featureSchemas;
     private final XMLNamespaceNormalizer namespaceNormalizer;
     private final WfsRequestEncoder wfsRequestEncoder;
+    private final EpsgCrs nativeCrs;
+    private final FilterEncoderWfs filterEncoder;
 
-    FeatureQueryEncoderWfs(Map<String, QName> featureTypes, Map<String, FeatureTypeMapping> featureTypeMappings, XMLNamespaceNormalizer namespaceNormalizer, WfsRequestEncoder wfsRequestEncoder) {
-        this.featureTypes = featureTypes;
-        this.featureTypeMappings = featureTypeMappings;
-        this.namespaceNormalizer = namespaceNormalizer;
-        this.wfsRequestEncoder = wfsRequestEncoder;
+    public FeatureQueryEncoderWfs(Map<String, FeatureStoreTypeInfo> typeInfos,
+        Map<String, FeatureSchema> featureSchemas, ConnectionInfoWfsHttp connectionInfo,
+        EpsgCrs nativeCrs, FilterEncoderWfs filterEncoder) {
+        this.typeInfos = typeInfos;
+        this.featureSchemas = featureSchemas;
+        this.namespaceNormalizer = new XMLNamespaceNormalizer(connectionInfo.getNamespaces());
+
+        Map<String, Map<WFS.METHOD, URI>> urls = ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, WfsConnectorHttp.parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, WfsConnectorHttp.parseAndCleanWfsUrl(connectionInfo.getUri())));
+
+        this.wfsRequestEncoder = new WfsRequestEncoder(connectionInfo.getVersion(), connectionInfo.getGmlVersion(), connectionInfo.getNamespaces(), urls);
+        this.nativeCrs = nativeCrs;
+        this.filterEncoder = filterEncoder;
+    }
+
+    //TODO
+    @Override
+    public String encode(FeatureQuery featureQuery, Map<String, String> additionalQueryParameters) {
+
+        return encodeFeatureQuery(featureQuery, additionalQueryParameters);
+    }
+
+    @Override
+    public QueryOptions getOptions(FeatureQuery featureQuery) {
+        return new QueryOptions() {};
     }
 
     public boolean isValid(final FeatureQuery query) {
-        return featureTypes.containsKey(query.getType());
+        return typeInfos.containsKey(query.getType());
     }
 
     public QName getFeatureTypeName(final FeatureQuery query) {
-        return featureTypes.get(query.getType());
+        FeatureSchema featureSchema = featureSchemas.get(query.getType());
+        String name = featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
+
+        return new QName(namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)), namespaceNormalizer.getLocalName(name));
     }
 
     public String encodeFeatureQuery(FeatureQuery query, Map<String, String> additionalQueryParameters) {
-        return wfsRequestEncoder.getAsUrl(encode(query, additionalQueryParameters));
+        return wfsRequestEncoder.getAsUrl(encodeGetFeature(query, additionalQueryParameters));
     }
 
     public Tuple<String, String> encodeFeatureQueryPost(FeatureQuery query, Map<String, String> additionalQueryParameters) {
-        return wfsRequestEncoder.getAsUrlAndBody(encode(query, additionalQueryParameters));
+        return wfsRequestEncoder.getAsUrlAndBody(encodeGetFeature(query, additionalQueryParameters));
     }
 
-    GetFeature encode(final FeatureQuery query, Map<String, String> additionalQueryParameters) {
+    GetFeature encodeGetFeature(final FeatureQuery query, Map<String, String> additionalQueryParameters) {
         try {
             final QName featureTypeName = getFeatureTypeName(query);
 
-            return encode(query, featureTypeName, featureTypeMappings.get(query.getType()), additionalQueryParameters);
+            return encodeGetFeature(query, featureTypeName, featureSchemas.get(query.getType()), additionalQueryParameters);
         } catch (CqlParseException e) {
             throw new IllegalArgumentException("Filter is invalid", e.getCause());
         }
@@ -116,12 +128,12 @@ public class FeatureQueryEncoderWfs {
         return wfsRequestEncoder;
     }
 
-    private GetFeature encode(FeatureQuery query, QName featureType, FeatureTypeMapping featureTypeMapping, Map<String, String> additionalQueryParameters) throws CqlParseException {
-        final String featureTypeName = namespaceNormalizer.getQualifiedName(featureType.getNamespaceURI(), featureType.getLocalPart());
+    private GetFeature encodeGetFeature(FeatureQuery query, QName featureTypeName, FeatureSchema featureSchema, Map<String, String> additionalQueryParameters) throws CqlParseException {
+        final String featureTypeNameFull = namespaceNormalizer.getQualifiedName(featureTypeName.getNamespaceURI(), featureTypeName.getLocalPart());
 
-        final WfsQuery wfsQuery = new WfsQueryBuilder().typeName(featureTypeName)
-                                                       .crs(query.getCrs().get())
-                                                       //.filter(encodeFilter(query.getFilter(), featureTypeMapping))
+        final WfsQuery wfsQuery = new WfsQueryBuilder().typeName(featureTypeNameFull)
+                                                       .crs(nativeCrs)
+                                                       .filter(query.getFilter().map(cqlFilter -> filterEncoder.encode(cqlFilter, featureSchema)))
                                                        .build();
         final GetFeatureBuilder getFeature = new GetFeatureBuilder();
 
@@ -144,26 +156,26 @@ public class FeatureQueryEncoderWfs {
         return getFeature.build();
     }
 /*
-    private Filter encodeFilter(final Optional<CqlFilter> filter, final FeatureTypeMapping featureTypeMapping) throws CQLException {
-        if (!filter.isPresent() || Objects.isNull(featureTypeMapping)) {
+    private Filter encodeFilter(final Optional<CqlFilter> filter, final FeatureSchema featureSchema) throws CQLException {
+        if (!filter.isPresent() || Objects.isNull(featureSchema)) {
             return null;
         }
 
         return (Filter) ECQL.toFilter(filter.get().accept(new CqlToText()))
-                            .accept(new ResolvePropertyNamesFilterVisitor(featureTypeMapping, namespaceNormalizer), null);
+                            .accept(new FeatureQueryTransformerWfs.ResolvePropertyNamesFilterVisitor(featureSchema, namespaceNormalizer), null);
     }
 
     private static class ResolvePropertyNamesFilterVisitor extends DuplicatingFilterVisitor {
         final FilterFactory2 filterFactory = new FilterFactoryImpl();
         final NamespaceSupport namespaceSupport;
-        final FeatureTypeMapping featureTypeMapping;
+        final FeatureSchema featureSchema;
         final XMLNamespaceNormalizer namespaceNormalizer;
 
-        private ResolvePropertyNamesFilterVisitor(final FeatureTypeMapping featureTypeMapping, final XMLNamespaceNormalizer namespaceNormalizer) {
+        private ResolvePropertyNamesFilterVisitor(final FeatureSchema featureSchema, final XMLNamespaceNormalizer namespaceNormalizer) {
             namespaceSupport = new NamespaceSupport();
             namespaceNormalizer.getNamespaces()
                                .forEach(namespaceSupport::declarePrefix);
-            this.featureTypeMapping = featureTypeMapping;
+            this.featureSchema = featureSchema;
             this.namespaceNormalizer = namespaceNormalizer;
         }
 
@@ -343,17 +355,15 @@ public class FeatureQueryEncoderWfs {
         }
 
         private Optional<String> getPrefixedPropertyName(String property) {
-            return featureTypeMapping
-                    .findMappings(TargetMapping.BASE_TYPE)
-                    .entrySet()
+            return featureSchema.getProperties()
                     .stream()
-                    .filter(targetMappings -> Objects.nonNull(targetMappings.getValue()
-                                                                            .getName()) && Objects.equals(targetMappings.getValue()
-                                                                                                                        .getName()
+                              //TODO: why lower case???
+                    .filter(featureProperty -> Objects.nonNull(featureProperty.getName()) && Objects.equals(featureProperty.getName()
                                                                                                                         .toLowerCase(), property.replaceAll(ID_PLACEHOLDER, "id").toLowerCase()))
-                    .map(Map.Entry::getKey)
+                    .map(FeatureSchema::getFullPathAsString)
+                    .map(path -> path.substring(path.indexOf("/", 1)+1))
                     .findFirst()
-                    .map(namespaceNormalizer::getPrefixedPath)
+                    //.map(namespaceNormalizer::getPrefixedPath)
                     .map(prefixedPath -> {
                         if (prefixedPath.contains("@")) {
                             return "@" + prefixedPath.replaceAll("@", "");
@@ -380,4 +390,5 @@ public class FeatureQueryEncoderWfs {
             }
         }
     }*/
+
 }

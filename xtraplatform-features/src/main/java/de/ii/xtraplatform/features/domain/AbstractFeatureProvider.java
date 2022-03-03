@@ -223,7 +223,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
 
   protected abstract FeatureStorePathParser getPathParser();
 
-  protected abstract FeatureQueryTransformer<U, V> getQueryTransformer();
+  protected abstract FeatureQueryEncoder<U, V> getQueryTransformer();
 
   protected FeatureProviderConnector<T, U, V> getConnector() {
     return Objects.requireNonNull(connector);
@@ -386,7 +386,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
       }
 
       // TODO: encapsulate in FeatureQueryRunnerSql
-      U transformedQuery = getQueryTransformer().transformQuery(query, virtualTables);
+      U transformedQuery = getQueryTransformer().encode(query, virtualTables);
       V options = getQueryTransformer().getOptions(query);
       Reactive.Source<T> source = getConnector().getSourceStream(transformedQuery, options);
 

@@ -8,7 +8,7 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.features.gml;
+package de.ii.xtraplatform.features.gml.infra;
 
 import com.sun.xml.xsom.XSAttributeUse;
 import com.sun.xml.xsom.XSComplexType;

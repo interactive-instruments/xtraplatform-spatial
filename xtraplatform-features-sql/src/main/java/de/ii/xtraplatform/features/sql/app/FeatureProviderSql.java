@@ -30,7 +30,7 @@ import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
-import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
+import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
@@ -93,7 +93,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   private final Cql cql;
   private final EntityRegistry entityRegistry;
 
-  private FeatureQueryTransformerSql queryTransformer;
+  private FeatureQueryEncoderSql queryTransformer;
   private ExtentReader extentReader;
   private FeatureMutationsSql featureMutationsSql;
   private FeatureSchemaSwapperSql schemaSwapperSql;
@@ -205,7 +205,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                                 .accept(queryTemplatesDeriver))))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
-    this.queryTransformer = new FeatureQueryTransformerSql(schemas, getTypeInfos());
+    this.queryTransformer = new FeatureQueryEncoderSql(schemas, getTypeInfos());
 
     this.extentReader =
         new ExtentReaderSql(
@@ -387,7 +387,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   }
 
   @Override
-  protected FeatureQueryTransformer<SqlQueries, SqlQueryOptions> getQueryTransformer() {
+  protected FeatureQueryEncoder<SqlQueries, SqlQueryOptions> getQueryTransformer() {
     return queryTransformer;
   }
 

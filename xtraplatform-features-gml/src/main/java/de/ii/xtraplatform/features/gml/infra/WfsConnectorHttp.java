@@ -12,24 +12,24 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
-import de.ii.xtraplatform.features.gml.FeatureProviderDataWfsFromMetadata;
-import de.ii.xtraplatform.features.gml.WFSCapabilitiesParser;
 import de.ii.xtraplatform.features.gml.app.FeatureProviderWfs;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.features.gml.domain.WfsConnector;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.ogc.api.WFS;
-import de.ii.xtraplatform.features.gml.app.request.GetCapabilities;
-import de.ii.xtraplatform.features.gml.app.request.WfsOperation;
-import de.ii.xtraplatform.features.gml.app.request.WfsRequestEncoder;
+import de.ii.xtraplatform.features.gml.infra.req.GetCapabilities;
+import de.ii.xtraplatform.features.gml.infra.req.WfsOperation;
+import de.ii.xtraplatform.features.gml.app.WfsRequestEncoder;
 import de.ii.xtraplatform.web.domain.Http;
 import de.ii.xtraplatform.web.domain.HttpClient;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.http.client.utils.URIBuilder;
 import org.codehaus.staxmate.SMInputFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,7 @@ public class WfsConnectorHttp implements WfsConnector {
 
         this.useHttpPost = connectionInfo.getMethod() == ConnectionInfoWfsHttp.METHOD.POST;
 
-        Map<String, Map<WFS.METHOD, URI>> urls = ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri())));
+        Map<String, Map<WFS.METHOD, URI>> urls = ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, parseAndCleanWfsUrl(connectionInfo.getUri())));
 
         this.wfsRequestEncoder = new WfsRequestEncoder(connectionInfo.getVersion(), connectionInfo.getGmlVersion(), connectionInfo.getNamespaces(), urls);
 
@@ -85,7 +85,28 @@ public class WfsConnectorHttp implements WfsConnector {
         providerId = null;
     }
 
-    @Override
+  public static URI parseAndCleanWfsUrl(URI inUri) {
+      URIBuilder outUri = new URIBuilder(inUri).removeQuery();
+
+      if (inUri.getQuery() != null && !inUri.getQuery()
+                                            .isEmpty()) {
+          for (String inParam : inUri.getQuery()
+                                     .split("&")) {
+              String[] param = inParam.split("=");
+              if (!WFS.hasKVPKey(param[0].toUpperCase())) {
+                  outUri.addParameter(param[0], param[1]);
+              }
+          }
+      }
+
+      try {
+          return outUri.build();
+      } catch (URISyntaxException e) {
+          return inUri;
+      }
+  }
+
+  @Override
     public String getType() {
         return String.format("%s/%s", FeatureProviderWfs.PROVIDER_TYPE, CONNECTOR_TYPE);
     }

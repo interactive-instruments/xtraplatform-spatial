@@ -9,16 +9,14 @@ package de.ii.xtraplatform.features.gml.infra
 
 import com.fasterxml.aalto.stax.InputFactoryImpl
 import com.google.common.collect.ImmutableMap
-import de.ii.xtraplatform.features.gml.app.request.GetCapabilities
-import de.ii.xtraplatform.features.gml.app.request.WfsOperation
-import de.ii.xtraplatform.features.gml.app.request.WfsRequestEncoder
+import de.ii.xtraplatform.features.gml.infra.req.GetCapabilities
+import de.ii.xtraplatform.features.gml.infra.req.WfsOperation
+import de.ii.xtraplatform.features.gml.app.WfsRequestEncoder
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp
 import de.ii.xtraplatform.features.gml.domain.ImmutableConnectionInfoWfsHttp
 import de.ii.xtraplatform.features.gml.domain.WfsConnector
 import de.ii.xtraplatform.features.domain.Metadata
 import de.ii.xtraplatform.features.domain.SchemaBase
-import de.ii.xtraplatform.features.gml.FeatureProviderDataWfsFromMetadata
-import de.ii.xtraplatform.features.gml.WFSCapabilitiesParser
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 import de.ii.xtraplatform.ogc.api.WFS
 import org.codehaus.staxmate.SMInputFactory
@@ -26,7 +24,7 @@ import spock.lang.Ignore
 import spock.lang.Specification
 
 //TODO: use file based MockWfsConnectorHttp
-class WfsSchemaCrawlerPlayground extends Specification {
+class WfsSchemaCrawlerSpec extends Specification {
 
     @Ignore
     def 'parse schema'() {
@@ -114,7 +112,7 @@ class WfsSchemaCrawlerPlayground extends Specification {
 
 
         MockWfsConnectorHttp(ConnectionInfoWfsHttp connectionInfo) {
-            Map<String, Map<WFS.METHOD, URI>> urls = ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, FeatureProviderDataWfsFromMetadata.parseAndCleanWfsUrl(connectionInfo.getUri())));
+            Map<String, Map<WFS.METHOD, URI>> urls = ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, parseAndCleanWfsUrl(connectionInfo.getUri())));
             this.connectionInfo = connectionInfo
             this.wfsRequestEncoder = new WfsRequestEncoder(connectionInfo.getVersion(), connectionInfo.getGmlVersion(), connectionInfo.getNamespaces(), urls)
         }

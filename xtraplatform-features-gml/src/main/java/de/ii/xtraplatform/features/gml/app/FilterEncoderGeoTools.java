@@ -5,11 +5,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.gml.app.request;
+package de.ii.xtraplatform.features.gml.app;
 
 //import com.vividsolutions.jts.geom.Envelope;
-import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.WFS;/*
 import org.eclipse.xsd.XSDElementDeclaration;
 import org.eclipse.xsd.XSDFactory;
@@ -32,26 +30,22 @@ import org.opengis.geometry.BoundingBox;
 import org.opengis.temporal.Instant;
 import org.opengis.temporal.Period;
 import org.picocontainer.MutablePicoContainer;*/
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 
-import javax.xml.namespace.QName;
 import javax.xml.transform.TransformerException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author zahnen
  */
-public class FilterEncoder {
+public class FilterEncoderGeoTools {
     //private final Encoder encoder;
     private final WFS.VERSION version;
     //private final Configuration configuration;;
 
     // TODO: bugfixes for 1.0 and 1.1
-    public FilterEncoder(WFS.VERSION version) {
+    public FilterEncoderGeoTools(WFS.VERSION version) {
         this.version = version;
 /*
         switch (version) {

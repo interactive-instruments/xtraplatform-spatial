@@ -9,11 +9,11 @@ package de.ii.xtraplatform.features.domain;
 
 import java.util.Map;
 
-public interface FeatureQueryTransformer<T,V extends FeatureProviderConnector.QueryOptions> {
+public interface FeatureQueryEncoder<T,V extends FeatureProviderConnector.QueryOptions> {
 
     String PROPERTY_NOT_AVAILABLE = "PROPERTY_NOT_AVAILABLE";
 
-    T transformQuery(FeatureQuery featureQuery,
+    T encode(FeatureQuery featureQuery,
                      Map<String, String> additionalQueryParameters);
 
     V getOptions(FeatureQuery featureQuery);

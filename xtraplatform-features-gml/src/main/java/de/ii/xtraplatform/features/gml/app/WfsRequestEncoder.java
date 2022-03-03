@@ -8,9 +8,10 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.features.gml.app.request;
+package de.ii.xtraplatform.features.gml.app;
 
 import de.ii.xtraplatform.base.domain.util.Tuple;
+import de.ii.xtraplatform.features.gml.infra.req.WfsOperation;
 import de.ii.xtraplatform.ogc.api.GML;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
@@ -33,6 +34,7 @@ import java.util.Optional;
  *
  * @author zahnen
  */
+//TODO: merge into FeatureQueryEncoderWfs
 public class WfsRequestEncoder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WfsRequestEncoder.class);

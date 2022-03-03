@@ -15,7 +15,7 @@ import de.ii.xtraplatform.features.sql.domain.SqlQueries;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRowMeta;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
-import de.ii.xtraplatform.features.domain.FeatureQueryTransformer;
+import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
@@ -33,14 +33,14 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class FeatureQueryTransformerSql implements FeatureQueryTransformer<SqlQueries, SqlQueryOptions> {
+class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueries, SqlQueryOptions> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryTransformerSql.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderSql.class);
 
   private final Map<String, List<SqlQueryTemplates>> allQueryTemplates;
   private final Map<String, FeatureStoreTypeInfo> typeInfos;
 
-  FeatureQueryTransformerSql(
+  FeatureQueryEncoderSql(
       Map<String, List<SqlQueryTemplates>> allQueryTemplates,
       Map<String, FeatureStoreTypeInfo> typeInfos) {
     this.allQueryTemplates = allQueryTemplates;
@@ -50,7 +50,7 @@ class FeatureQueryTransformerSql implements FeatureQueryTransformer<SqlQueries, 
   //TODO: rest of code in this class, so mainly the query multiplexing, goes to SqlConnector
   //TODO: should merge QueryTransformer with QueryGenerator
   @Override
-  public SqlQueries transformQuery(FeatureQuery featureQuery,
+  public SqlQueries encode(FeatureQuery featureQuery,
       Map<String, String> additionalQueryParameters) {
     //TODO: either pass as parameter, or check for null here
     FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());

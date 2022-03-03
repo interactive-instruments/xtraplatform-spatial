@@ -10,7 +10,7 @@
 /**
  * bla
  */
-package de.ii.xtraplatform.features.gml.app.request;
+package de.ii.xtraplatform.features.gml.infra.req;
 
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.ogc.api.GML;
