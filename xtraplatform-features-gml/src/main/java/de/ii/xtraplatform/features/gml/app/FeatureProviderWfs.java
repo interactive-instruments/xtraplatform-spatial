@@ -1,9 +1,8 @@
 /**
  * Copyright 2022 interactive instruments GmbH
  *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy
+ * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.features.gml.app;
 
@@ -12,15 +11,12 @@ import com.google.common.collect.ImmutableMap;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.codelists.domain.Codelist;
+import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.features.gml.FeatureTokenDecoderGml;
-import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
-import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
-import de.ii.xtraplatform.features.gml.domain.WfsConnector;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.ExtentReader;
@@ -43,9 +39,11 @@ import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
-import de.ii.xtraplatform.store.domain.entities.EntityComponent;
+import de.ii.xtraplatform.features.gml.FeatureTokenDecoderGml;
+import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
+import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
+import de.ii.xtraplatform.features.gml.domain.WfsConnector;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
-import de.ii.xtraplatform.store.domain.entities.handler.Entity;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
@@ -59,209 +57,241 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
-@EntityComponent
-@Entity(type = FeatureProvider2.ENTITY_TYPE, subType = FeatureProviderWfs.ENTITY_SUB_TYPE, dataClass = FeatureProviderDataV2.class, dataSubClass = FeatureProviderWfsData.class)
-public class FeatureProviderWfs extends AbstractFeatureProvider<byte[], String, FeatureProviderConnector.QueryOptions> implements FeatureProvider2, FeatureQueries, FeatureCrs, FeatureExtents, FeatureMetadata,
-    FeatureQueriesPassThrough<byte[]> {
+public class FeatureProviderWfs
+    extends AbstractFeatureProvider<byte[], String, FeatureProviderConnector.QueryOptions>
+    implements FeatureProvider2,
+        FeatureQueries,
+        FeatureCrs,
+        FeatureExtents,
+        FeatureMetadata,
+        FeatureQueriesPassThrough<byte[]> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
 
-    static final String ENTITY_SUB_TYPE = "feature/wfs";
-    public static final String PROVIDER_TYPE = "WFS";
-    private static final MediaType MEDIA_TYPE = new MediaType("application", "gml+xml");
+  static final String ENTITY_SUB_TYPE = "feature/wfs";
+  public static final String PROVIDER_TYPE = "WFS";
+  private static final MediaType MEDIA_TYPE = new MediaType("application", "gml+xml");
 
-    private final CrsTransformerFactory crsTransformerFactory;
-    private final EntityRegistry entityRegistry;
+  private final CrsTransformerFactory crsTransformerFactory;
+  private final EntityRegistry entityRegistry;
+  private final Cql cql;
 
-    private FeatureQueryTransformerWfs queryTransformer;
-    private ExtentReader extentReader;
-    private FeatureStorePathParser pathParser;
+  private FeatureQueryTransformerWfs queryTransformer;
+  private ExtentReader extentReader;
+  private FeatureStorePathParser pathParser;
 
-    @AssistedInject
-    public FeatureProviderWfs(CrsTransformerFactory crsTransformerFactory,
-                              ConnectorFactory connectorFactory,
-                              Reactive reactive,
-                              EntityRegistry entityRegistry,
-                              ProviderExtensionRegistry extensionRegistry,
-                              @Assisted FeatureProviderDataV2 data) {
-        super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry, data);
+  @AssistedInject
+  public FeatureProviderWfs(
+      CrsTransformerFactory crsTransformerFactory,
+      ConnectorFactory connectorFactory,
+      Reactive reactive,
+      EntityRegistry entityRegistry,
+      Cql cql,
+      ProviderExtensionRegistry extensionRegistry,
+      @Assisted FeatureProviderDataV2 data) {
+    super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry, data);
 
-        this.crsTransformerFactory = crsTransformerFactory;
-        this.entityRegistry = entityRegistry;
+    this.crsTransformerFactory = crsTransformerFactory;
+    this.entityRegistry = entityRegistry;
+    this.cql = cql;
+  }
+
+  @Override
+  protected boolean onStartup() throws InterruptedException {
+    this.pathParser = createPathParser(getData().getConnectionInfo());
+
+    boolean success = super.onStartup();
+
+    if (!success) {
+      return false;
     }
 
-    @Override
-    protected boolean onStartup() throws InterruptedException {
-        this.pathParser = createPathParser(getData().getConnectionInfo());
+    this.queryTransformer =
+        new FeatureQueryTransformerWfs(
+            getTypeInfos(),
+            getData().getTypes(),
+            getData().getConnectionInfo(),
+            getData().getNativeCrs().orElse(OgcCrs.CRS84),
+            new FilterEncoderWfs(
+                getData().getNativeCrs().orElse(OgcCrs.CRS84), crsTransformerFactory, cql));
+    this.extentReader =
+        new ExtentReaderWfs(
+            this, crsTransformerFactory, getData().getNativeCrs().orElse(OgcCrs.CRS84));
 
-        boolean success = super.onStartup();
+    return true;
+  }
 
-        if (!success) {
-            return false;
-        }
+  private static FeatureStorePathParser createPathParser(
+      ConnectionInfoWfsHttp connectionInfoWfsHttp) {
+    return new FeatureStorePathParserWfs(connectionInfoWfsHttp.getNamespaces());
+  }
 
-        this.queryTransformer = new FeatureQueryTransformerWfs(getTypeInfos(), getData().getTypes(),
-            getData().getConnectionInfo(), getData().getNativeCrs().orElse(OgcCrs.CRS84));
-        this.extentReader = new ExtentReaderWfs(this, crsTransformerFactory, getData().getNativeCrs().orElse(OgcCrs.CRS84));
+  @Override
+  public FeatureProviderWfsData getData() {
+    return (FeatureProviderWfsData) super.getData();
+  }
 
-        return true;
+  @Override
+  protected WfsConnector getConnector() {
+    return (WfsConnector) super.getConnector();
+  }
+
+  @Override
+  protected FeatureStorePathParser getPathParser() {
+    return pathParser;
+  }
+
+  @Override
+  protected FeatureQueryTransformer<String, FeatureProviderConnector.QueryOptions>
+      getQueryTransformer() {
+    return queryTransformer;
+  }
+
+  @Override
+  protected FeatureTokenDecoder<
+          byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
+      getDecoder(FeatureQuery query) {
+    Map<String, String> namespaces = getData().getConnectionInfo().getNamespaces();
+    XMLNamespaceNormalizer namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
+    FeatureSchema featureSchema = getData().getTypes().get(query.getType());
+    String name =
+        featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
+    QName qualifiedName =
+        new QName(
+            namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)),
+            namespaceNormalizer.getLocalName(name));
+    return new FeatureTokenDecoderGml(
+        namespaces, ImmutableList.of(qualifiedName), featureSchema, query);
+  }
+
+  @Override
+  protected Map<String, Codelist> getCodelists() {
+    // TODO
+    getData().getCodelists();
+
+    return entityRegistry.getEntitiesForType(Codelist.class).stream()
+        .map(codelist -> new SimpleImmutableEntry<>(codelist.getId(), codelist))
+        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  @Override
+  public boolean supportsCrs() {
+    return super.supportsCrs() && getData().getNativeCrs().isPresent();
+  }
+
+  @Override
+  public EpsgCrs getNativeCrs() {
+    return getData().getNativeCrs().get();
+  }
+
+  @Override
+  public boolean isCrsSupported(EpsgCrs crs) {
+    return Objects.equals(getNativeCrs(), crs) || crsTransformerFactory.isSupported(crs);
+  }
+
+  @Override
+  public Optional<BoundingBox> getSpatialExtent(String typeName) {
+    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
+
+    if (!typeInfo.isPresent()) {
+      return Optional.empty();
     }
 
-    private static FeatureStorePathParser createPathParser(ConnectionInfoWfsHttp connectionInfoWfsHttp) {
-        return new FeatureStorePathParserWfs(connectionInfoWfsHttp.getNamespaces());
+    try {
+      Stream<Optional<BoundingBox>> extentGraph = extentReader.getExtent(typeInfo.get());
+
+      return extentGraph
+          .on(getStreamRunner())
+          .run()
+          .exceptionally(throwable -> Optional.empty())
+          .toCompletableFuture()
+          .join();
+    } catch (Throwable e) {
+      // continue
+      boolean br = true;
     }
 
-    @Override
-    public FeatureProviderWfsData getData() {
-        return (FeatureProviderWfsData) super.getData();
-    }
+    return Optional.empty();
+  }
 
-    @Override
-    protected WfsConnector getConnector() {
-        return (WfsConnector) super.getConnector();
-    }
+  @Override
+  public Optional<BoundingBox> getSpatialExtent(String typeName, EpsgCrs crs) {
+    return getSpatialExtent(typeName)
+        .flatMap(
+            boundingBox ->
+                crsTransformerFactory
+                    .getTransformer(getNativeCrs(), crs, true)
+                    .flatMap(
+                        crsTransformer -> {
+                          try {
+                            return Optional.of(crsTransformer.transformBoundingBox(boundingBox));
+                          } catch (CrsTransformationException e) {
+                            return Optional.empty();
+                          }
+                        }));
+  }
 
-    @Override
-    protected FeatureStorePathParser getPathParser() {
-        return pathParser;
-    }
+  @Override
+  public Optional<Interval> getTemporalExtent(String typeName, String property) {
+    return Optional.empty();
+  }
 
-    @Override
-    protected FeatureQueryTransformer<String, FeatureProviderConnector.QueryOptions> getQueryTransformer() {
-        return queryTransformer;
-    }
+  @Override
+  public Optional<Interval> getTemporalExtent(
+      String typeName, String startProperty, String endProperty) {
+    return Optional.empty();
+  }
 
-    @Override
-    protected FeatureTokenDecoder<byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> getDecoder(FeatureQuery query) {
-        Map<String, String> namespaces = getData().getConnectionInfo()
-            .getNamespaces();
-        XMLNamespaceNormalizer namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
-        FeatureSchema featureSchema = getData().getTypes().get(query.getType());
-        String name = featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
-        QName qualifiedName = new QName(namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)), namespaceNormalizer.getLocalName(name));
-        return new FeatureTokenDecoderGml(namespaces, ImmutableList.of(qualifiedName), featureSchema, query);
-    }
+  @Override
+  public Optional<Metadata> getMetadata() {
+    return getConnector().getMetadata();
+  }
 
-    @Override
-    protected Map<String, Codelist> getCodelists() {
-        //TODO
-        getData().getCodelists();
+  @Override
+  public MediaType getMediaType() {
+    return MEDIA_TYPE;
+  }
 
-        return entityRegistry.getEntitiesForType(Codelist.class).stream().map(codelist -> new SimpleImmutableEntry<>(codelist.getId(), codelist)).collect(
-            ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
+  // TODO: pass-through, use FeatureStreamImpl
+  @Override
+  public FeatureSourceStream<byte[]> getFeatureSourceStream(FeatureQuery query) {
+    return null; /*new FeatureSourceStream<>() {
+                     @Override
+                     public CompletionStage<ResultOld> runWith(FeatureConsumer consumer) {
+                         Optional<FeatureStoreTypeInfo> typeInfo = Optional
+                             .ofNullable(getTypeInfos().get(query.getType()));
 
+                         if (!typeInfo.isPresent()) {
+                             //TODO: put error message into Result, complete successfully
+                             CompletableFuture<ResultOld> promise = new CompletableFuture<>();
+                             promise.completeExceptionally(
+                                 new IllegalStateException("No features available for type"));
+                             return promise;
+                         }
 
-    @Override
-    public boolean supportsCrs() {
-        return super.supportsCrs() && getData().getNativeCrs().isPresent();
-    }
+                         String transformedQuery = getQueryTransformer()
+                             .transformQuery(query, ImmutableMap.of());
 
-    @Override
-    public EpsgCrs getNativeCrs() {
-        return getData().getNativeCrs().get();
-    }
+                         FeatureProviderConnector.QueryOptions options = getQueryTransformer()
+                             .getOptions(query);
 
-    @Override
-    public boolean isCrsSupported(EpsgCrs crs) {
-        return Objects.equals(getNativeCrs(), crs) || crsTransformerFactory.isSupported(crs);
-    }
+                         Reactive.Source<byte[]> sourceStream = getConnector()
+                             .getSourceStream(transformedQuery, options);
 
-    @Override
-    public Optional<BoundingBox> getSpatialExtent(String typeName) {
-        Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
+                         Sink<byte[], CompletionStage<ResultOld>> sink = featureNormalizer
+                             .normalizeAndConsume(consumer, query);
 
-        if (!typeInfo.isPresent()) {
-            return Optional.empty();
-        }
+                         return sourceStream
+                             .to(Reactive.Sink.akka(sink))
+                             .on(getStreamRunner())
+                             .run();
+                     }
 
-        try {
-            Stream<Optional<BoundingBox>> extentGraph = extentReader.getExtent(typeInfo.get());
-
-            return extentGraph.on(getStreamRunner()).run()
-                                    .exceptionally(throwable -> Optional.empty())
-                                    .toCompletableFuture()
-                                    .join();
-        } catch (Throwable e) {
-            //continue
-            boolean br = true;
-        }
-
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<BoundingBox> getSpatialExtent(String typeName, EpsgCrs crs) {
-        return getSpatialExtent(typeName).flatMap(boundingBox -> crsTransformerFactory.getTransformer(getNativeCrs(), crs, true)
-                                                                                      .flatMap(crsTransformer -> {
-                                                                                          try {
-                                                                                              return Optional.of(crsTransformer.transformBoundingBox(boundingBox));
-                                                                                          } catch (CrsTransformationException e) {
-                                                                                              return Optional.empty();
-                                                                                          }
-                                                                                      }));
-    }
-
-    @Override
-    public Optional<Interval> getTemporalExtent(String typeName, String property) {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<Interval> getTemporalExtent(String typeName, String startProperty, String endProperty) {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<Metadata> getMetadata() {
-        return getConnector().getMetadata();
-    }
-
-    @Override
-    public MediaType getMediaType() {
-        return MEDIA_TYPE;
-    }
-
-    //TODO: pass-through, use FeatureStreamImpl
-    @Override
-    public FeatureSourceStream<byte[]> getFeatureSourceStream(FeatureQuery query) {
-        return null;/*new FeatureSourceStream<>() {
-            @Override
-            public CompletionStage<ResultOld> runWith(FeatureConsumer consumer) {
-                Optional<FeatureStoreTypeInfo> typeInfo = Optional
-                    .ofNullable(getTypeInfos().get(query.getType()));
-
-                if (!typeInfo.isPresent()) {
-                    //TODO: put error message into Result, complete successfully
-                    CompletableFuture<ResultOld> promise = new CompletableFuture<>();
-                    promise.completeExceptionally(
-                        new IllegalStateException("No features available for type"));
-                    return promise;
-                }
-
-                String transformedQuery = getQueryTransformer()
-                    .transformQuery(query, ImmutableMap.of());
-
-                FeatureProviderConnector.QueryOptions options = getQueryTransformer()
-                    .getOptions(query);
-
-                Reactive.Source<byte[]> sourceStream = getConnector()
-                    .getSourceStream(transformedQuery, options);
-
-                Sink<byte[], CompletionStage<ResultOld>> sink = featureNormalizer
-                    .normalizeAndConsume(consumer, query);
-
-                return sourceStream
-                    .to(Reactive.Sink.akka(sink))
-                    .on(getStreamRunner())
-                    .run();
-            }
-
-            @Override
-            public CompletionStage<ResultOld> runWith2(
-                Sink<byte[], CompletionStage<ResultOld>> consumer) {
-                return null;
-            }
-        };*/
-    }
+                     @Override
+                     public CompletionStage<ResultOld> runWith2(
+                         Sink<byte[], CompletionStage<ResultOld>> consumer) {
+                         return null;
+                     }
+                 };*/
+  }
 }

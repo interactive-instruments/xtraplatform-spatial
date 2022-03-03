@@ -349,7 +349,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
                 .handleError(ImmutableResult.Builder::error)
                 .handleItem(
                     (builder, x) ->
-                        builder.isEmpty(x instanceof byte[] ? ((byte[]) x).length > 0 : false))
+                        builder.isEmpty(x instanceof byte[] ? ((byte[]) x).length <= 0 : false))
                 .handleEnd(Result.Builder::build);
           };
 

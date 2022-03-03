@@ -12,13 +12,17 @@ package de.ii.xtraplatform.features.gml.app.request;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.ScalarLiteral;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.ogc.api.FES;
 import de.ii.xtraplatform.ogc.api.Versions;
 import de.ii.xtraplatform.ogc.api.WFS;
 import de.ii.xtraplatform.xml.domain.XMLDocument;/*
 import org.geotools.filter.FidFilterImpl;
 import org.opengis.filter.Filter;*/
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -45,12 +49,12 @@ public class WfsQuery {
     );
 
     private final List<String> typeNames;
-    private final List<Object> filter;
+    private final List<CqlFilter> filter;
     private final EpsgCrs crs;
 
-    WfsQuery(List<String> typeNames, /*List<Filter> filter,*/ EpsgCrs crs) {
+    WfsQuery(List<String> typeNames, List<CqlFilter> filter, EpsgCrs crs) {
         this.typeNames = typeNames;
-        this.filter = new ArrayList<>();
+        this.filter = filter;
         this.crs = crs;
     }
 
@@ -86,13 +90,19 @@ public class WfsQuery {
 
         // check if the first level expression is BBOX
         // check if the first level expression is ResourceId
-/*
+
         if (!filter.isEmpty()) {
-            if (filter.get(0) instanceof FidFilterImpl) {
+            if (filter.get(0).getInOperator().isPresent()) {
+                String ids = filter.get(0).getInOperator().get().getList()
+                    .stream()
+                    .filter(scalar -> scalar instanceof ScalarLiteral && ((ScalarLiteral) scalar).getType() == String.class)
+                    .map(scalar -> (String)((ScalarLiteral)scalar).getValue())
+                    .collect(Collectors.joining(","));
+
                 builder.put(WFS.getWord(versions.getWfsVersion()
                                                 .getFilterVersion(), FES.VOCABULARY.RESOURCEID)
-                               .toUpperCase(), Joiner.on(',').join(((FidFilterImpl) filter.get(0)).getFidsSet()));
-            } else {
+                               .toUpperCase(), ids);
+            } /*else {
                 final Node node = document.adoptDocument(FILTER_ENCODERS.get(versions.getWfsVersion()).encode(filter.get(0)));
                 document.appendChild(node);
                 document.done();
@@ -101,9 +111,9 @@ public class WfsQuery {
                 builder.put(WFS.getWord(versions.getWfsVersion()
                                                 .getFilterVersion(), FES.VOCABULARY.FILTER)
                                .toUpperCase(), filterString);
-            }
+            }*/
         }
-*/
+
 
         return builder.build();
     }

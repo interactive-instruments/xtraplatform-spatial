@@ -8,16 +8,18 @@
 package de.ii.xtraplatform.features.gml.app.request;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 //import org.opengis.filter.Filter;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public class WfsQueryBuilder {
     private final List<String> typeNames;
-    private List<Object> filter;
+    private List<CqlFilter> filter;
     private EpsgCrs crs;
 
     public WfsQueryBuilder() {
@@ -31,14 +33,14 @@ public class WfsQueryBuilder {
         }
         return this;
     }
-/*
-    public WfsQueryBuilder filter(Filter filter) {
-        if (!Objects.isNull(filter)) {
-            this.filter.add(filter);
+
+    public WfsQueryBuilder filter(Optional<CqlFilter> filter) {
+        if (filter.isPresent()) {
+            this.filter.add(filter.get());
         }
         return this;
     }
-*/
+
     public WfsQueryBuilder crs(EpsgCrs crs) {
         this.crs = crs;
         return this;
@@ -46,7 +48,7 @@ public class WfsQueryBuilder {
 
     public WfsQuery build() {
         final List<String> types = ImmutableList.copyOf(typeNames);
-        final WfsQuery query = new WfsQuery(types, /*ImmutableList.copyOf(filter),*/ crs);
+        final WfsQuery query = new WfsQuery(types, ImmutableList.copyOf(filter), crs);
 
         // WFSQuery2 has no getters, so we pass the members to validate
         validate(query, types);

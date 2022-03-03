@@ -85,10 +85,11 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
     private final XMLNamespaceNormalizer namespaceNormalizer;
     private final WfsRequestEncoder wfsRequestEncoder;
     private final EpsgCrs nativeCrs;
+    private final FilterEncoderWfs filterEncoder;
 
     public FeatureQueryTransformerWfs(Map<String, FeatureStoreTypeInfo> typeInfos,
         Map<String, FeatureSchema> featureSchemas, ConnectionInfoWfsHttp connectionInfo,
-        EpsgCrs nativeCrs) {
+        EpsgCrs nativeCrs, FilterEncoderWfs filterEncoder) {
         this.typeInfos = typeInfos;
         this.featureSchemas = featureSchemas;
         this.namespaceNormalizer = new XMLNamespaceNormalizer(connectionInfo.getNamespaces());
@@ -97,6 +98,7 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
 
         this.wfsRequestEncoder = new WfsRequestEncoder(connectionInfo.getVersion(), connectionInfo.getGmlVersion(), connectionInfo.getNamespaces(), urls);
         this.nativeCrs = nativeCrs;
+        this.filterEncoder = filterEncoder;
     }
 
     //TODO
@@ -149,7 +151,7 @@ public class FeatureQueryTransformerWfs implements FeatureQueryTransformer<Strin
 
         final WfsQuery wfsQuery = new WfsQueryBuilder().typeName(featureTypeNameFull)
                                                        .crs(nativeCrs)
-                                                       //.filter(encodeFilter(query.getFilter(), featureSchema))
+                                                       .filter(query.getFilter().map(cqlFilter -> filterEncoder.encode(cqlFilter, featureSchema)))
                                                        .build();
         final GetFeatureBuilder getFeature = new GetFeatureBuilder();
 
