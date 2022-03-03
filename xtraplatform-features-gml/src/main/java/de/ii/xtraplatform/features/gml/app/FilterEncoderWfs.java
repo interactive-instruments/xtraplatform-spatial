@@ -16,10 +16,8 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.ogc.api.FES;
-import de.ii.xtraplatform.ogc.api.WFS;
-import de.ii.xtraplatform.ogc.api.filter.OGCFilterExpression;
-import de.ii.xtraplatform.ogc.api.filter.OGCResourceIdExpression;
+import de.ii.xtraplatform.features.gml.infra.fes.FesExpression;
+import de.ii.xtraplatform.features.gml.infra.fes.FesResourceId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -50,7 +48,7 @@ public class FilterEncoderWfs {
         this.coordinatesTransformer = this::transformCoordinatesIfNecessary;
     }
 
-    public OGCFilterExpression encode(CqlFilter filter, FeatureSchema schema) {
+    public FesExpression encode(CqlFilter filter, FeatureSchema schema) {
         if (filter.getInOperator().isPresent()) {
             String ids = filter.getInOperator().get().getList()
                 .stream()
@@ -59,7 +57,7 @@ public class FilterEncoderWfs {
                 .map(scalar -> (String)((ScalarLiteral)scalar).getValue())
                 .collect(Collectors.joining(","));
 
-            return new OGCResourceIdExpression(ids);
+            return new FesResourceId(ids);
         }
         return null;//cqlFilter.accept(new CqlToSql(schema));
     }

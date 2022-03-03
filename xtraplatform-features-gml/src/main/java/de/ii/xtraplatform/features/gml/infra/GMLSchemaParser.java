@@ -21,18 +21,9 @@ import com.sun.xml.xsom.XSTerm;
 import com.sun.xml.xsom.XSType;
 import com.sun.xml.xsom.parser.XSOMParser;
 import de.ii.xtraplatform.features.domain.FeatureProviderSchemaConsumer;
-import de.ii.xtraplatform.ogc.api.GML;
-import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
+import de.ii.xtraplatform.features.gml.infra.req.GML;
+import de.ii.xtraplatform.features.gml.infra.xml.XMLPathTracker;
 import de.ii.xtraplatform.services.domain.TaskProgress;
-import de.ii.xtraplatform.xml.domain.XMLPathTracker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.ErrorHandler;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
-
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
@@ -40,6 +31,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 /**
  *
@@ -190,8 +188,7 @@ public class GMLSchemaParser {
 
             // File included in schema not found
             if (ex.getCause() != null && ex.getCause().getClass().getName().contains("FileNotFoundException")) {
-                LOGGER.error("The GML application schema provided by the WFS imports schema '{}', but that schema cannot be accessed. A valid GML application schema is required to determine the layers of the proxy service and its characteristics.. Please contact the WFS provider to correct the schema error.", ex.getCause().getMessage());
-                throw new SchemaParseException("The GML application schema provided by the WFS imports schema '{}', but that schema cannot be accessed. A valid GML application schema is required to determine the layers of the proxy service and its characteristics.. Please contact the WFS provider to correct the schema error.", ex.getCause().getMessage());
+                throw new IllegalStateException(String.format("The GML application schema provided by the WFS imports schema '%s', but that schema cannot be accessed. A valid GML application schema is required to determine the layers of the proxy service and its characteristics.. Please contact the WFS provider to correct the schema error.", ex.getCause().getMessage()));
             }
             
             String msg = ex.toString();
@@ -202,12 +199,7 @@ public class GMLSchemaParser {
                 msgex = msg.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
             }
  
-            LOGGER.error("The GML application schema provided by the WFS is invalid. A valid GML application schema is required to determine the layers of the proxy service and its characteristics. Please contact the WFS provider to correct the schema error. {}", msg);
-            SchemaParseException spe = new SchemaParseException("The GML application schema provided by the WFS is invalid. A valid GML application schema is required to determine the layers of the proxy service and its characteristics. Please contact the WFS provider to correct the schema error.");
-
-            spe.addDetail(msgex);
-            
-            throw spe;
+            throw new IllegalStateException("The GML application schema provided by the WFS is invalid. A valid GML application schema is required to determine the layers of the proxy service and its characteristics. Please contact the WFS provider to correct the schema error. \n" + msgex);
         }
     }
 

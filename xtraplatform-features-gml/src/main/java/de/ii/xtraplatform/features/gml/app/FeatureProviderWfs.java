@@ -46,7 +46,7 @@ import de.ii.xtraplatform.features.gml.domain.WfsConnector;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
-import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map;
 import java.util.Objects;

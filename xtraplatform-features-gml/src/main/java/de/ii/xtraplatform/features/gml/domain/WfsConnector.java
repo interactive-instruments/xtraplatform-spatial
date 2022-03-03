@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.gml.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.Metadata;
-import de.ii.xtraplatform.features.gml.app.request.WfsOperation;
+import de.ii.xtraplatform.features.gml.infra.req.WfsOperation;
 
 import java.io.InputStream;
 import java.util.Optional;

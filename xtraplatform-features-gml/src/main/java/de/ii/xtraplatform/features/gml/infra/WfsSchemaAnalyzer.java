@@ -15,9 +15,9 @@ import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase;
-import de.ii.xtraplatform.ogc.api.GML;
-import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
-import de.ii.xtraplatform.xml.domain.XMLPathTracker;
+import de.ii.xtraplatform.features.gml.infra.req.GML;
+import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.features.gml.infra.xml.XMLPathTracker;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;

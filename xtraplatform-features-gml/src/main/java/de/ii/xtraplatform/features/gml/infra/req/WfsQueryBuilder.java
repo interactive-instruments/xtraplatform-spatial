@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 //import org.opengis.filter.Filter;
 
-import de.ii.xtraplatform.ogc.api.filter.OGCFilterExpression;
+import de.ii.xtraplatform.features.gml.infra.fes.FesExpression;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -19,7 +19,7 @@ import java.util.Optional;
 
 public class WfsQueryBuilder {
     private final List<String> typeNames;
-    private List<OGCFilterExpression> filter;
+    private List<FesExpression> filter;
     private EpsgCrs crs;
 
     public WfsQueryBuilder() {
@@ -34,7 +34,7 @@ public class WfsQueryBuilder {
         return this;
     }
 
-    public WfsQueryBuilder filter(Optional<OGCFilterExpression> filter) {
+    public WfsQueryBuilder filter(Optional<FesExpression> filter) {
         if (filter.isPresent()) {
             this.filter.add(filter.get());
         }

@@ -13,10 +13,8 @@ package de.ii.xtraplatform.features.gml.infra.req;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.ogc.api.Versions;
-import de.ii.xtraplatform.ogc.api.WFS;
-import de.ii.xtraplatform.ogc.api.filter.OGCFilterExpression;
-import de.ii.xtraplatform.xml.domain.XMLDocument;/*
+import de.ii.xtraplatform.features.gml.infra.fes.FesExpression;
+import de.ii.xtraplatform.features.gml.infra.xml.XMLDocument;/*
 import org.geotools.filter.FidFilterImpl;
 import org.opengis.filter.Filter;*/
 import org.slf4j.Logger;
@@ -44,10 +42,10 @@ public class WfsQuery {
     );*/
 
     private final List<String> typeNames;
-    private final List<OGCFilterExpression> filter;
+    private final List<FesExpression> filter;
     private final EpsgCrs crs;
 
-    WfsQuery(List<String> typeNames, List<OGCFilterExpression> filter, EpsgCrs crs) {
+    WfsQuery(List<String> typeNames, List<FesExpression> filter, EpsgCrs crs) {
         this.typeNames = typeNames;
         this.filter = filter;
         this.crs = crs;

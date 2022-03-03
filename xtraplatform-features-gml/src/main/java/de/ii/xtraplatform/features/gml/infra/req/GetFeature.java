@@ -8,11 +8,8 @@
 package de.ii.xtraplatform.features.gml.infra.req;
 
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.ogc.api.GML;
-import de.ii.xtraplatform.ogc.api.Versions;
-import de.ii.xtraplatform.ogc.api.WFS;
-import de.ii.xtraplatform.xml.domain.XMLDocument;
-import de.ii.xtraplatform.xml.domain.XMLDocumentFactory;
+import de.ii.xtraplatform.features.gml.infra.xml.XMLDocument;
+import de.ii.xtraplatform.features.gml.infra.xml.XMLDocumentFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;

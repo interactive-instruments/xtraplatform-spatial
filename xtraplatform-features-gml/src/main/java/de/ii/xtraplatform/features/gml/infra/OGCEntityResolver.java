@@ -9,7 +9,14 @@ package de.ii.xtraplatform.features.gml.infra;
 
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
-import de.ii.xtraplatform.ogc.api.exceptions.SchemaParseException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -21,15 +28,6 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  *
@@ -77,8 +75,7 @@ public class OGCEntityResolver implements EntityResolver {
 
             } catch (IOException ex) {
                 ex.printStackTrace();
-                LOGGER.error("Error parsing application schema. {}", ex);
-                throw new SchemaParseException("Error parsing application schema. {}", ex.getMessage());
+                throw new IllegalStateException("Error parsing application schema. " + ex.getMessage());
             } finally {
                 if (response != null) {
                     EntityUtils.consumeQuietly(response.getEntity());

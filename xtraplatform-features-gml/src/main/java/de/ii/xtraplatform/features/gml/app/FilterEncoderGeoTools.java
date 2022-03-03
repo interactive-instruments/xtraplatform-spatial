@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.features.gml.app;
 
 //import com.vividsolutions.jts.geom.Envelope;
-import de.ii.xtraplatform.ogc.api.WFS;/*
+import de.ii.xtraplatform.features.gml.infra.req.WFS;/*
 import org.eclipse.xsd.XSDElementDeclaration;
 import org.eclipse.xsd.XSDFactory;
 import org.eclipse.xsd.XSDParticle;

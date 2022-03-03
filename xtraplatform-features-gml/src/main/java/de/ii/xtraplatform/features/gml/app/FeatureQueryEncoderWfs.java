@@ -19,11 +19,11 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.gml.infra.req.GetFeatureBuilder;
 import de.ii.xtraplatform.features.gml.infra.WfsConnectorHttp;
-import de.ii.xtraplatform.ogc.api.WFS;
+import de.ii.xtraplatform.features.gml.infra.req.WFS;
 import de.ii.xtraplatform.features.gml.infra.req.GetFeature;
 import de.ii.xtraplatform.features.gml.infra.req.WfsQuery;
 import de.ii.xtraplatform.features.gml.infra.req.WfsQueryBuilder;
-import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
 import java.net.URI;
 import java.util.Map;
 import javax.xml.namespace.QName;/*

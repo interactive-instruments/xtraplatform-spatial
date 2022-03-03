@@ -17,7 +17,7 @@ import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.features.gml.domain.WfsConnector;
 import de.ii.xtraplatform.features.domain.Metadata;
-import de.ii.xtraplatform.ogc.api.WFS;
+import de.ii.xtraplatform.features.gml.infra.req.WFS;
 import de.ii.xtraplatform.features.gml.infra.req.GetCapabilities;
 import de.ii.xtraplatform.features.gml.infra.req.WfsOperation;
 import de.ii.xtraplatform.features.gml.app.WfsRequestEncoder;

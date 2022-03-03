@@ -12,11 +12,11 @@ package de.ii.xtraplatform.features.gml.app;
 
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.features.gml.infra.req.WfsOperation;
-import de.ii.xtraplatform.ogc.api.GML;
-import de.ii.xtraplatform.ogc.api.Versions;
-import de.ii.xtraplatform.ogc.api.WFS;
-import de.ii.xtraplatform.xml.domain.XMLDocumentFactory;
-import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.features.gml.infra.req.GML;
+import de.ii.xtraplatform.features.gml.infra.req.Versions;
+import de.ii.xtraplatform.features.gml.infra.req.WFS;
+import de.ii.xtraplatform.features.gml.infra.xml.XMLDocumentFactory;
+import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

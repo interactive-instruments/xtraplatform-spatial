@@ -13,11 +13,10 @@ import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProviderMetadataConsumer;
 import de.ii.xtraplatform.features.domain.ImmutableMetadata;
 import de.ii.xtraplatform.features.domain.Metadata;
-import de.ii.xtraplatform.xml.domain.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.xml.namespace.QName;
 import java.util.Objects;
 
 public class WfsCapabilitiesAnalyzer extends AbstractFeatureProviderMetadataConsumer {

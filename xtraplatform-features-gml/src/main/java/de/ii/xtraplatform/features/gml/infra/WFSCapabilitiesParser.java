@@ -11,8 +11,8 @@
 package de.ii.xtraplatform.features.gml.infra;
 
 import de.ii.xtraplatform.features.domain.FeatureProviderMetadataConsumer;
-import de.ii.xtraplatform.ogc.api.OWS;
-import de.ii.xtraplatform.ogc.api.XLINK;
+import de.ii.xtraplatform.features.gml.infra.req.OWS;
+import de.ii.xtraplatform.features.gml.infra.req.XLINK;
 import org.codehaus.staxmate.SMInputFactory;
 import org.codehaus.staxmate.in.SMEvent;
 import org.codehaus.staxmate.in.SMInputCursor;

@@ -18,7 +18,7 @@ import de.ii.xtraplatform.features.gml.domain.WfsConnector
 import de.ii.xtraplatform.features.domain.Metadata
 import de.ii.xtraplatform.features.domain.SchemaBase
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
-import de.ii.xtraplatform.ogc.api.WFS
+import de.ii.xtraplatform.features.gml.infra.req.WFS
 import org.codehaus.staxmate.SMInputFactory
 import spock.lang.Ignore
 import spock.lang.Specification
