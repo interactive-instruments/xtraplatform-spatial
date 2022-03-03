@@ -20,6 +20,8 @@ import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.sql.domain.SqlRelation;
+
+import java.time.format.DateTimeFormatter;
 import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -289,12 +291,21 @@ public class FilterEncoderSql {
                 Operand arg1 = function.getArguments().get(0);
                 Operand arg2 = function.getArguments().get(1);
                 if (arg1 instanceof Property && arg2 instanceof Property) {
-                    String endColumn = end.substring(end.indexOf("%1$s") + 4, end.indexOf("%2$s"));
-                    return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
+                    String startColumn = reduceToColumn(start);
+                    String endColumn = reduceToColumn(end);
+                    if (startColumn.equals(endColumn))
+                        return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
+                    startColumn = String.format("COALESCE(%s,%s)", startColumn, sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin()));
+                    endColumn = String.format("COALESCE(%s,%s)", endColumn, sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax()));
+                    return start.substring(0, start.indexOf("%1$s")) + "%1$s(" + startColumn + ", " + endColumn + ")%2$s)";
                 } else if (arg1 instanceof Property && arg2 instanceof TemporalLiteral) {
-                    return String.format(start, "%1$s(", ", " + end + ")%2$s");
+                    String startColumn = reduceToColumn(start);
+                    startColumn = String.format("COALESCE(%s,%s)", startColumn, sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin()));
+                    return start.substring(0, start.indexOf("%1$s")) + "%1$s(" + startColumn + ", " + end + ")%2$s)";
                 } else if (arg1 instanceof TemporalLiteral && arg2 instanceof Property) {
-                    return String.format(end, "%1$s("+ start + ", ", ")%2$s");
+                    String endColumn = reduceToColumn(end);
+                    endColumn = String.format("COALESCE(%s,%s)", endColumn, sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax()));
+                    return end.substring(0, end.indexOf("%1$s")) + "%1$s(" + start + ", " + endColumn + ")%2$s)";
                 }
                 throw new IllegalStateException("unsupported interval function: " + function);
             } else if (function.isPosition()) {
@@ -333,6 +344,10 @@ public class FilterEncoderSql {
             }
 
             return super.visit(function, children);
+        }
+
+        private String reduceToColumn(String expression) {
+            return expression.substring(expression.indexOf("%1$s") + 4, expression.indexOf("%2$s"));
         }
 
         private String reduceSelectToColumn(String expression) {
@@ -547,11 +562,11 @@ public class FilterEncoderSql {
             return String.format("(%s,%s)", getStartAsString(literal), getEndExclusiveAsString(literal));
         }
 
-        private Instant getStart(TemporalLiteral literal) {
+        private Object getStart(TemporalLiteral literal) {
             if (literal.getType() == Interval.class) {
                 return ((Interval) literal.getValue()).getStart();
             } else if (literal.getType() == Instant.class) {
-                return ((Instant) literal.getValue());
+                return literal.getValue();
             } else if (literal.getType() == TemporalLiteral.OPEN.class) {
                 return Instant.MIN;
             } else if (literal.getType() == Function.class) {
@@ -560,22 +575,26 @@ public class FilterEncoderSql {
                 assert function.getArguments().get(0) instanceof TemporalLiteral;
                 return getStart((TemporalLiteral) function.getArguments().get(0));
             } else {
-                return ((LocalDate) literal.getValue()).atStartOfDay(ZoneOffset.UTC).toInstant();
+                // we have a local date
+                return literal.getValue();
             }
         }
 
         private String getStartAsString(TemporalLiteral literal) {
-            Instant instant = getStart(literal);
-            if (instant==Instant.MIN)
+            Object start = getStart(literal);
+            if (start instanceof Instant && start==Instant.MIN)
                 return sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin());
-            return sqlDialect.applyToDatetimeLiteral(instant.toString());
+            else if (start instanceof LocalDate)
+                return sqlDialect.applyToDateLiteral(DateTimeFormatter.ISO_DATE.format((LocalDate) start));
+            return sqlDialect.applyToDatetimeLiteral(start.toString());
         }
 
-        private Instant getEndExclusive(TemporalLiteral literal) {
+        private Object getEndExclusive(TemporalLiteral literal) {
             if (literal.getType() == Interval.class) {
+                // Interval values are always created half-open when parsing the filter
                 return ((Interval) literal.getValue()).getEnd();
             } else if (literal.getType() == Instant.class) {
-                return ((Instant) literal.getValue());
+                return ((Instant) literal.getValue()).plusSeconds(1);
             } else if (literal.getType() == TemporalLiteral.OPEN.class) {
                 return Instant.MAX;
             } else if (literal.getType() == Function.class) {
@@ -584,15 +603,17 @@ public class FilterEncoderSql {
                 assert function.getArguments().get(1) instanceof TemporalLiteral;
                 return getEndExclusive((TemporalLiteral) function.getArguments().get(1));
             } else {
-                return ((LocalDate) literal.getValue()).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+                return ((LocalDate) literal.getValue()).plusDays(1);
             }
         }
 
         private String getEndExclusiveAsString(TemporalLiteral literal) {
-            Instant instant = getEndExclusive(literal);
-            if (instant==Instant.MAX)
+            Object end = getEndExclusive(literal);
+            if (end instanceof Instant && end==Instant.MAX)
                 return sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax());
-            return sqlDialect.applyToDatetimeLiteral(instant.toString());
+            else if (end instanceof LocalDate)
+                return sqlDialect.applyToDateLiteral(DateTimeFormatter.ISO_DATE.format((LocalDate) end));
+            return sqlDialect.applyToDatetimeLiteral(end.toString());
         }
 
         @Override

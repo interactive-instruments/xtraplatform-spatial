@@ -58,14 +58,31 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'temporal operation, instant'() {
+    def 'temporal operation, timestamp'() {
 
         given:
-        def instanceContainer = QuerySchemaFixtures.SIMPLE_INSTANT
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_TIMESTAMP
         def filter = CqlFilterExamples.EXAMPLE_12
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.built::timestamp(0) < TIMESTAMP '2012-06-05T00:00:00Z')"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'temporal operation, date'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_DATE
+        def filter = CqlFilterExamples.EXAMPLE_12_date
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.built::date < DATE '2012-06-05')"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
