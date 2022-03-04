@@ -10,8 +10,10 @@
  */
 package de.ii.xtraplatform.features.gml.infra.fes;
 
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.features.gml.infra.req.FES;
+import de.ii.xtraplatform.features.gml.infra.req.FES.VERSION;
 import de.ii.xtraplatform.features.gml.infra.req.GML;
 import de.ii.xtraplatform.features.gml.infra.xml.XMLDocument;
 import org.w3c.dom.Element;
@@ -73,7 +75,17 @@ public class FesBBox extends FesExpression {
         upper.setTextContent(max);
         envelope.appendChild(upper);
     }
-    
+
+    @Override
+    public Map<String, String> toKVP(VERSION version) {
+        String min = env.getXmin() + "," + env.getYmin();
+        String max = env.getXmax() + "," + env.getYmax();
+        String bbox = min+","+max;
+        bbox += ","+env.getEpsgCrs().toSimpleString();
+
+        return ImmutableMap.of(FES.getWord(version, FES.VOCABULARY.BBOX).toUpperCase(), bbox);
+    }
+
     public void toKVP(FES.VERSION version, Map<String, String> params) {
               
         String min = env.getXmin() + "," + env.getYmin();

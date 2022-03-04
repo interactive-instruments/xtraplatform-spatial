@@ -36,6 +36,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureSourceStream;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
+import de.ii.xtraplatform.features.domain.FeatureStream;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
@@ -64,7 +65,7 @@ public class FeatureProviderWfs
         FeatureCrs,
         FeatureExtents,
         FeatureMetadata,
-        FeatureQueriesPassThrough<byte[]> {
+        FeatureQueriesPassThrough {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
 
@@ -143,7 +144,7 @@ public class FeatureProviderWfs
 
   @Override
   protected FeatureQueryEncoder<String, QueryOptions>
-      getQueryTransformer() {
+  getQueryEncoder() {
     return queryTransformer;
   }
 
@@ -151,6 +152,18 @@ public class FeatureProviderWfs
   protected FeatureTokenDecoder<
           byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
       getDecoder(FeatureQuery query) {
+    return getDecoder(query, false);
+  }
+
+  @Override
+  protected FeatureTokenDecoder<byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> getDecoderPassThrough(
+      FeatureQuery query) {
+    return getDecoder(query, true);
+  }
+
+  private FeatureTokenDecoder<
+      byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
+  getDecoder(FeatureQuery query, boolean passThrough) {
     Map<String, String> namespaces = getData().getConnectionInfo().getNamespaces();
     XMLNamespaceNormalizer namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
     FeatureSchema featureSchema = getData().getTypes().get(query.getType());
@@ -161,7 +174,7 @@ public class FeatureProviderWfs
             namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)),
             namespaceNormalizer.getLocalName(name));
     return new FeatureTokenDecoderGml(
-        namespaces, ImmutableList.of(qualifiedName), featureSchema, query);
+        namespaces, ImmutableList.of(qualifiedName), featureSchema, query, passThrough);
   }
 
   @Override
@@ -252,46 +265,8 @@ public class FeatureProviderWfs
     return MEDIA_TYPE;
   }
 
-  // TODO: pass-through, use FeatureStreamImpl
   @Override
-  public FeatureSourceStream<byte[]> getFeatureSourceStream(FeatureQuery query) {
-    return null; /*new FeatureSourceStream<>() {
-                     @Override
-                     public CompletionStage<ResultOld> runWith(FeatureConsumer consumer) {
-                         Optional<FeatureStoreTypeInfo> typeInfo = Optional
-                             .ofNullable(getTypeInfos().get(query.getType()));
-
-                         if (!typeInfo.isPresent()) {
-                             //TODO: put error message into Result, complete successfully
-                             CompletableFuture<ResultOld> promise = new CompletableFuture<>();
-                             promise.completeExceptionally(
-                                 new IllegalStateException("No features available for type"));
-                             return promise;
-                         }
-
-                         String transformedQuery = getQueryTransformer()
-                             .transformQuery(query, ImmutableMap.of());
-
-                         FeatureProviderConnector.QueryOptions options = getQueryTransformer()
-                             .getOptions(query);
-
-                         Reactive.Source<byte[]> sourceStream = getConnector()
-                             .getSourceStream(transformedQuery, options);
-
-                         Sink<byte[], CompletionStage<ResultOld>> sink = featureNormalizer
-                             .normalizeAndConsume(consumer, query);
-
-                         return sourceStream
-                             .to(Reactive.Sink.akka(sink))
-                             .on(getStreamRunner())
-                             .run();
-                     }
-
-                     @Override
-                     public CompletionStage<ResultOld> runWith2(
-                         Sink<byte[], CompletionStage<ResultOld>> consumer) {
-                         return null;
-                     }
-                 };*/
+  public FeatureStream getFeatureStreamPassThrough(FeatureQuery query) {
+    return new FeatureStreamImpl(query, false);
   }
 }

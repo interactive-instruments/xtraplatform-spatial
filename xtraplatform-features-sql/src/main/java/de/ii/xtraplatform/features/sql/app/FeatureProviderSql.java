@@ -387,7 +387,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   }
 
   @Override
-  protected FeatureQueryEncoder<SqlQueries, SqlQueryOptions> getQueryTransformer() {
+  protected FeatureQueryEncoder<SqlQueries, SqlQueryOptions> getQueryEncoder() {
     return queryTransformer;
   }
 

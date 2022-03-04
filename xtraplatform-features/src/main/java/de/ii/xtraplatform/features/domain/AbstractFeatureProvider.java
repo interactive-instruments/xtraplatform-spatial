@@ -223,7 +223,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
 
   protected abstract FeatureStorePathParser getPathParser();
 
-  protected abstract FeatureQueryEncoder<U, V> getQueryTransformer();
+  protected abstract FeatureQueryEncoder<U, V> getQueryEncoder();
 
   protected FeatureProviderConnector<T, U, V> getConnector() {
     return Objects.requireNonNull(connector);
@@ -248,6 +248,12 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
   protected abstract FeatureTokenDecoder<
           T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
       getDecoder(FeatureQuery query);
+
+  protected FeatureTokenDecoder<
+      T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
+  getDecoderPassThrough(FeatureQuery query) {
+    return getDecoder(query);
+  }
 
   protected abstract Map<String, Codelist> getCodelists();
 
@@ -280,7 +286,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
     return 0;
   }
 
-  private class FeatureStreamImpl implements FeatureStream {
+  protected class FeatureStreamImpl implements FeatureStream {
 
     private final FeatureQuery query;
     private final boolean doTransform;
@@ -386,13 +392,13 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
       }
 
       // TODO: encapsulate in FeatureQueryRunnerSql
-      U transformedQuery = getQueryTransformer().encode(query, virtualTables);
-      V options = getQueryTransformer().getOptions(query);
+      U transformedQuery = getQueryEncoder().encode(query, virtualTables);
+      V options = getQueryEncoder().getOptions(query);
       Reactive.Source<T> source = getConnector().getSourceStream(transformedQuery, options);
 
       FeatureTokenDecoder<
               T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-          decoder = getDecoder(query);
+          decoder = doTransform ? getDecoder(query) : getDecoderPassThrough(query);
 
       return source.via(decoder);
     }

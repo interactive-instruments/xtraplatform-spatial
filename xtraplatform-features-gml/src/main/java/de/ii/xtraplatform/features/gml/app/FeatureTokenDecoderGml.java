@@ -58,8 +58,9 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
     private final List<QName> featureTypes;
     private final StringBuilder buffer;
     private final GmlMultiplicityTracker multiplicityTracker;
-    private boolean isBuffering;
+    private final boolean passThrough;
 
+    private boolean isBuffering;
     private int depth = 0;
     private int featureDepth = 0;
     private boolean inFeature = false;
@@ -69,7 +70,7 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
 
     public FeatureTokenDecoderGml(Map<String, String> namespaces,
         List<QName> featureTypes,
-        FeatureSchema featureSchema, FeatureQuery query) {
+        FeatureSchema featureSchema, FeatureQuery query, boolean passThrough) {
         this.namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
         this.featureSchema = featureSchema;
         this.featureQuery = query;
@@ -78,6 +79,7 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
         this.multiplicityTracker = new GmlMultiplicityTracker();
         this.currentGeometrySchema = null;
         this.currentGeometryType = SimpleFeatureGeometry.NONE;
+        this.passThrough = passThrough;
 
         try {
             this.parser = new InputFactoryImpl().createAsyncFor(new byte[0]);
@@ -185,7 +187,7 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
 
                         getDownstream().onFeatureStart(context);
 
-                        if (context.additionalInfo().containsKey("gml:id")) {
+                        if (context.additionalInfo().containsKey("gml:id") && !passThrough) {
                             context.pathTracker().track("gml:@id");
                             context.setValue(context.additionalInfo().get("gml:id"));
                             context.setValueType(Type.STRING);
@@ -208,6 +210,8 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
                                 context.setInGeometry(true);
                             }
                             onGeometryPart(parser.getLocalName(), depth - featureDepth == 2);
+                        } else if (passThrough) {
+                            getDownstream().onObjectStart(context);
                         }
                     }
                     depth += 1;
@@ -243,6 +247,8 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
 
                                 getDownstream().onObjectEnd(context);
                             }
+                        } else if (passThrough) {
+                            getDownstream().onObjectEnd(context);
                         }
                     }
 
@@ -318,14 +324,17 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
 
                 context.pathTracker().track(path.size() - 1);
 
-                getDownstream().onObjectStart(context);
-
+                if (!passThrough) {
+                    getDownstream().onObjectStart(context);
+                }
 
                 context.pathTracker().track(path.get(path.size()-1));
             }
         }
         if (GEOMETRY_PARTS.contains(localName) || (startOfGeometry && currentGeometryType == SimpleFeatureGeometry.MULTI_POLYGON)) {
             getDownstream().onArrayStart(context);
+        } else if (passThrough) {
+            getDownstream().onObjectStart(context);
         }
     }
 
@@ -334,6 +343,8 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
 
         if (GEOMETRY_PARTS.contains(localName) || (endOfGeometry && currentGeometryType == SimpleFeatureGeometry.MULTI_POLYGON)) {
             getDownstream().onArrayEnd(context);
+        } else if (passThrough) {
+            getDownstream().onObjectEnd(context);
         }
     }
 }
