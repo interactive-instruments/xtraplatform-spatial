@@ -41,6 +41,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.davidmoten.rx.jdbc.ConnectionProvider;
@@ -155,7 +156,11 @@ public class SqlConnectorRx implements SqlConnector {
       hikariConfig.setHealthCheckRegistry(healthCheckRegistry);
 
       this.dataSource = new HikariDataSource(hikariConfig);
-      this.session = Database.fromBlocking(new ConnectionProviderHikari(dataSource));
+      this.session = Database.nonBlocking()
+          .connectionProvider(dataSource)
+          .maxPoolSize(maxConnections)
+          .maxIdleTime(60, TimeUnit.SECONDS) //TODO: subtract from pool.idleTimeout?
+          .build();
       this.sqlClient = new SqlClientRx(session, connectionInfo.getDialect());
 
     } catch (Throwable e) {
@@ -274,32 +279,6 @@ public class SqlConnectorRx implements SqlConnector {
   @Override
   public SqlClient getSqlClient() {
     return sqlClient;
-  }
-
-  private static class ConnectionProviderHikari implements ConnectionProvider {
-    private final HikariDataSource pool;
-    private final AtomicBoolean isOpen;
-
-    ConnectionProviderHikari(HikariDataSource pool) {
-      this.isOpen = new AtomicBoolean(true);
-      this.pool = pool;
-    }
-
-    @Override
-    public Connection get() {
-      try {
-        return this.pool.getConnection();
-      } catch (SQLException var2) {
-        throw new SQLRuntimeException(var2);
-      }
-    }
-
-    @Override
-    public void close() {
-      if (this.isOpen.getAndSet(false)) {
-        this.pool.close();
-      }
-    }
   }
 
   private static HikariConfig createHikariConfig(

@@ -15,6 +15,7 @@ import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 public interface FeatureStream {
@@ -35,6 +36,7 @@ public interface FeatureStream {
       public abstract Builder<T> reduced(T bytes);
     }
 
+    @Nullable
     T reduced();
   }
 
