@@ -213,6 +213,8 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     } catch (Throwable e) {
       if (logError) {
         LogContext.error(LOGGER, e, "PROJ");
+      } else {
+        LogContext.errorAsDebug(LOGGER, e, "PROJ");
       }
       return Optional.empty();
     }
