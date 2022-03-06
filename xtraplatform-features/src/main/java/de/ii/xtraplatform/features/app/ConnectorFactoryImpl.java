@@ -50,7 +50,7 @@ public class ConnectorFactoryImpl implements ConnectorFactory {
 
     @Override
     public synchronized FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV2 featureProviderData) {
-        final String instanceId = "connectors/" + featureProviderData.getId();
+        final String instanceId = featureProviderData.getId();
         final String providerType = featureProviderData.getFeatureProviderType();
         ConnectionInfo connectionInfo = ((WithConnectionInfo<?>) featureProviderData)
             .getConnectionInfo();

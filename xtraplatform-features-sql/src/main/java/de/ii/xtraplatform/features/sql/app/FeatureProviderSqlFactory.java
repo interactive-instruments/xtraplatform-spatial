@@ -37,6 +37,7 @@ import de.ii.xtraplatform.store.domain.entities.EntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
 import de.ii.xtraplatform.streams.domain.Reactive;
+import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
@@ -142,6 +143,8 @@ public class FeatureProviderSqlFactory
         throw connectionError;
       }
 
+      SchemaGeneratorSql schemaGeneratorSql = null;
+
       try {
         ConnectionInfoSql connectionInfo = data.getConnectionInfo();
 
@@ -152,7 +155,7 @@ public class FeatureProviderSqlFactory
                     : ImmutableList.of("public")
                 : connectionInfo.getSchemas();
 
-        SchemaGeneratorSql schemaGeneratorSql =
+        schemaGeneratorSql =
             new SchemaGeneratorSql(
                 connector.getSqlClient(),
                 schemas,
@@ -221,7 +224,13 @@ public class FeatureProviderSqlFactory
 
         return builder.build();
       } finally {
-        connectorFactory.disposeConnector(connector);
+        if (Objects.nonNull(schemaGeneratorSql)) {
+          try {
+            schemaGeneratorSql.close();
+          } catch (Throwable e) {
+            //ignore
+          }
+        }
       }
     }
 
