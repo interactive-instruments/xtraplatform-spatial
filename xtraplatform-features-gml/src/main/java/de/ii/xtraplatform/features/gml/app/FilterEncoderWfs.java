@@ -114,7 +114,7 @@ public class FilterEncoderWfs {
     return coordinates;
   }
 
-  // TODO: reverse FeatureSchema? (wfs-nrw mappings are flat, test topographie with auto mode)
+  // TODO: reverse FeatureSchema for nested mappings?
   private Optional<String> getPrefixedPropertyName(FeatureSchema schema, String property) {
     return schema.getProperties().stream()
         // TODO: why lower case???
@@ -127,9 +127,7 @@ public class FilterEncoderWfs {
         .map(FeatureSchema::getSourcePath)
         .filter(Optional::isPresent)
         .map(Optional::get)
-        // .map(path -> path.substring(path.indexOf("/", 1)+1))
         .findFirst()
-        // .map(namespaceNormalizer::getPrefixedPath)
         .map(
             prefixedPath -> {
               if (prefixedPath.contains("@")) {
