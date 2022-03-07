@@ -74,7 +74,7 @@ public class GML extends VersionedVocabulary {
 
         ENVELOPE, SRSNAME, LOWER_CORNER, UPPER_CORNER, ABSTRACT_OBJECT, 
         OUTPUTFORMAT_VALUE, POLYGON, EXTERIOR, LINEAR_RING, POS_LIST, SRSDIMENSION,
-        GMLID;
+        GMLID, TIME_PERIOD, BEGIN_POSITION, END_POSITION, TIME_INSTANT, TIME_POSITION;
     }
 
     static {
@@ -103,8 +103,13 @@ public class GML extends VersionedVocabulary {
         addWord(VERSION._2_1_1, VOCABULARY.LINEAR_RING, "LinearRing");
         addWord(VERSION._2_1_1, VOCABULARY.POS_LIST, "posList");
         addWord(VERSION._2_1_1, VOCABULARY.SRSDIMENSION, "srsDimension");
-        addWord(VERSION._2_1_1, VOCABULARY.GMLID, "gml:id");                        
-        
+        addWord(VERSION._2_1_1, VOCABULARY.GMLID, "gml:id");
+        addWord(VERSION._2_1_1, VOCABULARY.TIME_PERIOD, "TimePeriod");
+        addWord(VERSION._2_1_1, VOCABULARY.BEGIN_POSITION, "beginPosition");
+        addWord(VERSION._2_1_1, VOCABULARY.END_POSITION, "endPosition");
+        addWord(VERSION._2_1_1, VOCABULARY.TIME_INSTANT, "TimeInstant");
+        addWord(VERSION._2_1_1, VOCABULARY.TIME_POSITION, "timePosition");
+
         addWord(VERSION._3_1_1, VOCABULARY.OUTPUTFORMAT_VALUE, "text/xml; subtype=gml/3.1.1");
         
         addWord(VERSION._3_2_1_OLD, VOCABULARY.ABSTRACT_OBJECT, "AbstractObject");

@@ -7,15 +7,16 @@
 package de.ii.xtraplatform.features.gml.infra.fes;
 
 import de.ii.xtraplatform.features.gml.infra.req.FES;
+import de.ii.xtraplatform.features.gml.infra.req.FES.VOCABULARY;
 import de.ii.xtraplatform.features.gml.infra.xml.XMLDocument;
 import org.w3c.dom.Element;
 
-public class FesPropertyIsEqualTo extends FesExpression {
+public class FesDuring extends FesExpression {
 
-  private final FesLiteral left;
-  private final FesLiteral right;
+  private final FesValueReference left;
+  private final FesTemporalLiteral right;
 
-  public FesPropertyIsEqualTo(FesLiteral left, FesLiteral right) {
+  public FesDuring(FesValueReference left, FesTemporalLiteral right) {
     this.left = left;
     this.right = right;
   }
@@ -23,8 +24,7 @@ public class FesPropertyIsEqualTo extends FesExpression {
   @Override
   public void toXML(FES.VERSION version, Element e, XMLDocument doc) {
     doc.addNamespace(FES.getNS(version), FES.getPR(version));
-    Element ex =
-        doc.createElementNS(FES.getNS(version), FES.getWord(version, FES.VOCABULARY.EQUAL));
+    Element ex = doc.createElementNS(FES.getNS(version), FES.getWord(version, VOCABULARY.DURING));
     e.appendChild(ex);
     left.toXML(version, ex, doc);
     right.toXML(version, ex, doc);

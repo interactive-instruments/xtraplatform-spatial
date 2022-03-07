@@ -14,17 +14,11 @@ import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
 import java.util.Map;
 import org.w3c.dom.Element;
 
-/**
- *
- * @author fischer
- */
 public abstract class FesExpression {
-    
-    protected XMLNamespaceNormalizer NSstore;
 
     public abstract void toXML(FES.VERSION version, Element e, XMLDocument doc);
 
-    public Map<String, String> toKVP(FES.VERSION version) {
+    public Map<String, String> toKVP(FES.VERSION version, XMLNamespaceNormalizer nsStore) {
         return ImmutableMap.of();
     }
 }

@@ -75,7 +75,6 @@ public class FeatureProviderWfs
 
   private final CrsTransformerFactory crsTransformerFactory;
   private final EntityRegistry entityRegistry;
-  private final Cql cql;
 
   private FeatureQueryEncoderWfs queryTransformer;
   private ExtentReader extentReader;
@@ -87,14 +86,12 @@ public class FeatureProviderWfs
       ConnectorFactory connectorFactory,
       Reactive reactive,
       EntityRegistry entityRegistry,
-      Cql cql,
       ProviderExtensionRegistry extensionRegistry,
       @Assisted FeatureProviderDataV2 data) {
     super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry, data);
 
     this.crsTransformerFactory = crsTransformerFactory;
     this.entityRegistry = entityRegistry;
-    this.cql = cql;
   }
 
   @Override
@@ -113,8 +110,7 @@ public class FeatureProviderWfs
             getData().getTypes(),
             getData().getConnectionInfo(),
             getData().getNativeCrs().orElse(OgcCrs.CRS84),
-            new FilterEncoderWfs(
-                getData().getNativeCrs().orElse(OgcCrs.CRS84), crsTransformerFactory, cql));
+            crsTransformerFactory);
     this.extentReader =
         new ExtentReaderWfs(
             this, crsTransformerFactory, getData().getNativeCrs().orElse(OgcCrs.CRS84));
