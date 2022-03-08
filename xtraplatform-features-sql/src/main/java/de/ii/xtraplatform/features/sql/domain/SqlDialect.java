@@ -28,6 +28,8 @@ public interface SqlDialect {
 
   String applyToExtent(String column);
 
+  String applyToString(String string);
+
   String applyToDate(String column);
 
   String applyToDatetime(String column);

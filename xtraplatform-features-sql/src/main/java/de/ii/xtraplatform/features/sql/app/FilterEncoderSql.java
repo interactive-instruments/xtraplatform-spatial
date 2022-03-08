@@ -453,10 +453,11 @@ public class FilterEncoderSql {
             // we may need to change the second expression
             String secondExpression = expressions.get(1);
 
-            String functionStart = "";
-            String functionEnd = "";
+            String string = sqlDialect.applyToString("DUMMY");
+            String functionStart = string.substring(0, string.indexOf("DUMMY"));
+            String functionEnd = string.substring(string.indexOf("DUMMY")+5);
 
-            String operation = String.format("::varchar%s %s %s", functionEnd, operator, secondExpression);
+            String operation = String.format("%s %s %s", functionEnd, operator, secondExpression);
             return String.format(expressions.get(0), functionStart, operation);
         }
 

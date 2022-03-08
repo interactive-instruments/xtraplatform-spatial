@@ -69,6 +69,11 @@ public class SqlDialectGpkg implements SqlDialect {
   }
 
   @Override
+  public String applyToString(String string) {
+    return String.format("cast(%s as text)", string);
+  }
+
+  @Override
   public String applyToDate(String column) {
     return String.format("date(%s)", column);
   }

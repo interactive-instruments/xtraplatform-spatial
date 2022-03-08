@@ -86,6 +86,11 @@ public class SqlDialectPostGis implements SqlDialect {
   }
 
   @Override
+  public String applyToString(String string) {
+    return String.format("%s::varchar", string);
+  }
+
+  @Override
   public String applyToDate(String column) {
     return String.format("%s::date", column);
   }
