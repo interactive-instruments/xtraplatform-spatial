@@ -159,7 +159,7 @@ public class SqlConnectorRx implements SqlConnector {
       this.session = Database.nonBlocking()
           .connectionProvider(dataSource)
           .maxPoolSize(maxConnections)
-          .maxIdleTime(60, TimeUnit.SECONDS) //TODO: subtract from pool.idleTimeout?
+          .maxIdleTime(300, TimeUnit.SECONDS) //TODO: subtract from pool.idleTimeout?
           .build();
       this.sqlClient = new SqlClientRx(session, connectionInfo.getDialect());
 

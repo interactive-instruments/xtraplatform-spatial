@@ -193,7 +193,7 @@ public interface SqlConnector extends
             })
             .orElseGet(e::getMessage);
 
-        return new PSQLException("Unexpected SQL query error: " + message, PSQLState.UNKNOWN_STATE);
+        return new PSQLException("Unexpected SQL query error: " + message, PSQLState.UNKNOWN_STATE, throwable);
       }
       return throwable;
   };
