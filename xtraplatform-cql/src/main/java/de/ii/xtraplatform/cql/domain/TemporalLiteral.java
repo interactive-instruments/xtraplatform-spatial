@@ -141,7 +141,8 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
                 } else if (DATE_PATTERN.test(instantLiteral.toUpperCase())) {
                     // a date only instant
                     return LocalDate.parse(instantLiteral);
-                } else if (instantLiteral.equalsIgnoreCase("NOW()")) {
+                } else if (instantLiteral.equalsIgnoreCase("NOW")
+                    || instantLiteral.equalsIgnoreCase("NOW()")) {
                     // now
                     return Instant.now();
                 } else if (instantLiteral.equals("..")) {
