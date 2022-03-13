@@ -272,7 +272,7 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
                     //advanceParser(in);
             }
         } catch (Exception e) {
-            throw new IllegalArgumentException("Could not parse GML: " + e.getMessage());
+            throw new IllegalArgumentException("Could not parse GML: " + e.getMessage(), e);
         }
         return feedMeMore;
     }
