@@ -74,6 +74,7 @@ public class FeatureProviderWfs
   private static final MediaType MEDIA_TYPE = new MediaType("application", "gml+xml");
 
   private final CrsTransformerFactory crsTransformerFactory;
+  private final Cql cql;
   private final EntityRegistry entityRegistry;
 
   private FeatureQueryEncoderWfs queryTransformer;
@@ -83,6 +84,7 @@ public class FeatureProviderWfs
   @AssistedInject
   public FeatureProviderWfs(
       CrsTransformerFactory crsTransformerFactory,
+      Cql cql,
       ConnectorFactory connectorFactory,
       Reactive reactive,
       EntityRegistry entityRegistry,
@@ -91,6 +93,7 @@ public class FeatureProviderWfs
     super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry, data);
 
     this.crsTransformerFactory = crsTransformerFactory;
+    this.cql = cql;
     this.entityRegistry = entityRegistry;
   }
 
@@ -110,7 +113,8 @@ public class FeatureProviderWfs
             getData().getTypes(),
             getData().getConnectionInfo(),
             getData().getNativeCrs().orElse(OgcCrs.CRS84),
-            crsTransformerFactory);
+            crsTransformerFactory,
+            cql);
     this.extentReader =
         new ExtentReaderWfs(
             this, crsTransformerFactory, getData().getNativeCrs().orElse(OgcCrs.CRS84));

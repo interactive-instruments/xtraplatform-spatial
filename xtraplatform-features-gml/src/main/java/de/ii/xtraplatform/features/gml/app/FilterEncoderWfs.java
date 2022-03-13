@@ -8,17 +8,10 @@ package de.ii.xtraplatform.features.gml.app;
 
 import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Doubles;
-import de.ii.xtraplatform.cql.domain.ArrayLiteral;
-import de.ii.xtraplatform.cql.domain.ArrayOperation;
-import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlNode;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
-import de.ii.xtraplatform.cql.domain.CqlVisitor;
-import de.ii.xtraplatform.cql.domain.Eq;
-import de.ii.xtraplatform.cql.domain.Function;
+import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
 import de.ii.xtraplatform.cql.domain.Geometry.Envelope;
 import de.ii.xtraplatform.cql.domain.Geometry.LineString;
@@ -27,19 +20,6 @@ import de.ii.xtraplatform.cql.domain.Geometry.MultiPoint;
 import de.ii.xtraplatform.cql.domain.Geometry.MultiPolygon;
 import de.ii.xtraplatform.cql.domain.Geometry.Point;
 import de.ii.xtraplatform.cql.domain.Geometry.Polygon;
-import de.ii.xtraplatform.cql.domain.In;
-import de.ii.xtraplatform.cql.domain.IsNull;
-import de.ii.xtraplatform.cql.domain.Like;
-import de.ii.xtraplatform.cql.domain.LogicalOperation;
-import de.ii.xtraplatform.cql.domain.Not;
-import de.ii.xtraplatform.cql.domain.Or;
-import de.ii.xtraplatform.cql.domain.Property;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.SpatialOperator;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -56,11 +36,15 @@ import de.ii.xtraplatform.features.gml.infra.fes.FesLiteral;
 import de.ii.xtraplatform.features.gml.infra.fes.FesNot;
 import de.ii.xtraplatform.features.gml.infra.fes.FesOr;
 import de.ii.xtraplatform.features.gml.infra.fes.FesPropertyIsEqualTo;
+import de.ii.xtraplatform.features.gml.infra.fes.FesPropertyIsGreaterThan;
+import de.ii.xtraplatform.features.gml.infra.fes.FesPropertyIsLessThan;
 import de.ii.xtraplatform.features.gml.infra.fes.FesPropertyIsLike;
+import de.ii.xtraplatform.features.gml.infra.fes.FesPropertyIsNull;
 import de.ii.xtraplatform.features.gml.infra.fes.FesResourceId;
 import de.ii.xtraplatform.features.gml.infra.fes.FesTemporalLiteral;
 import de.ii.xtraplatform.features.gml.infra.fes.FesValueReference;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
@@ -74,6 +58,7 @@ public class FilterEncoderWfs {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FilterEncoderWfs.class);
 
+  private final Cql cql;
   private final EpsgCrs nativeCrs;
   private final CrsTransformerFactory crsTransformerFactory;
   private final XMLNamespaceNormalizer namespaceNormalizer;
@@ -82,15 +67,18 @@ public class FilterEncoderWfs {
   public FilterEncoderWfs(
       EpsgCrs nativeCrs,
       CrsTransformerFactory crsTransformerFactory,
+      Cql cql,
       XMLNamespaceNormalizer namespaceNormalizer) {
     this.nativeCrs = nativeCrs;
     this.crsTransformerFactory = crsTransformerFactory;
+    this.cql = cql;
     this.namespaceNormalizer = namespaceNormalizer;
     this.coordinatesTransformer = this::transformCoordinatesIfNecessary;
   }
 
   public FesFilter encode(CqlFilter filter, FeatureSchema schema) {
-    return (FesFilter) filter.accept(new CqlToFes(schema));
+    return (FesFilter) cql.mapTemporalOperators(filter, ImmutableSet.of())
+        .accept(new CqlToFes(schema));
   }
 
   private List<Double> transformCoordinatesIfNecessary(
@@ -117,7 +105,6 @@ public class FilterEncoderWfs {
   // TODO: reverse FeatureSchema for nested mappings?
   private Optional<String> getPrefixedPropertyName(FeatureSchema schema, String property) {
     return schema.getProperties().stream()
-        // TODO: why lower case???
         .filter(
             featureProperty ->
                 Objects.nonNull(featureProperty.getName())
@@ -173,13 +160,25 @@ public class FilterEncoderWfs {
         BinaryScalarOperation scalarOperation, List<FesExpression> children) {
       if (scalarOperation instanceof Eq) {
         return new FesPropertyIsEqualTo((FesLiteral) children.get(0), (FesLiteral) children.get(1));
+      } else if (children.size() == 2
+          && children.get(0) instanceof FesValueReference
+          && children.get(1) instanceof FesTemporalLiteral) {
+        if (scalarOperation instanceof Lt) {
+          return new FesAnd(ImmutableList.of(
+              new FesPropertyIsLessThan((FesLiteral) children.get(0), ((FesTemporalLiteral) children.get(1)).toInstantLiteral()),
+              new FesNot(ImmutableList.of(new FesPropertyIsNull((FesLiteral) children.get(0))))));
+        } else if (scalarOperation instanceof Gt) {
+          return new FesAnd(ImmutableList.of(
+              new FesPropertyIsGreaterThan((FesLiteral) children.get(0), ((FesTemporalLiteral) children.get(1)).toInstantLiteral()),
+              new FesNot(ImmutableList.of(new FesPropertyIsNull((FesLiteral) children.get(0))))));
+        }
       }
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException(String.format("Scalar operation '%s' is not supported for WFS feature providers.", scalarOperation.getClass().getSimpleName()));
     }
 
     @Override
     public FesExpression visit(Between between, List<FesExpression> children) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("BETWEEN predicates are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
@@ -191,14 +190,14 @@ public class FilterEncoderWfs {
     @Override
     public FesExpression visit(In in, List<FesExpression> children) {
       if (children.size() != 2 || !(children.get(1) instanceof FesLiteral)) {
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException("IN predicates are not supported in filter expressions for WFS feature providers.");
       }
       return new FesResourceId(((FesLiteral) children.get(1)).getValue());
     }
 
     @Override
     public FesExpression visit(IsNull isNull, List<FesExpression> children) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("IS NULL predicates are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
@@ -217,7 +216,7 @@ public class FilterEncoderWfs {
             (FesValueReference) children.get(0), (FesTemporalLiteral) children.get(1));
       }
 
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException(String.format("Temporal operation '%s' is not supported for WFS feature providers.", temporalOperation.getClass().getSimpleName()));
     }
 
     @Override
@@ -230,19 +229,19 @@ public class FilterEncoderWfs {
             ((FesEnvelope) children.get(1)).getBoundingBox(),
             ((FesValueReference) children.get(0)).getValue());
       }
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException(String.format("Spatial operation '%s' is not supported for WFS feature providers.", spatialOperation.getClass().getSimpleName()));
     }
 
     @Override
     public FesExpression visit(ArrayOperation arrayOperation, List<FesExpression> children) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("Array operations are not supported for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(Property property, List<FesExpression> children) {
       String propertyPath =
           getPrefixedPropertyName(schema, property.getName())
-              .orElseThrow(IllegalArgumentException::new);
+              .orElseThrow(() -> new IllegalArgumentException(String.format("Property '%s' was not found.", property.getName())));
 
       return new FesValueReference(propertyPath);
     }
@@ -264,14 +263,18 @@ public class FilterEncoderWfs {
         String end = DateTimeFormatter.ISO_INSTANT.format(interval.getEnd().minusSeconds(1));
 
         return new FesTemporalLiteral(start, end);
+      } else if (temporalLiteral.getType() == LocalDate.class) {
+        return new FesTemporalLiteral(((LocalDate) temporalLiteral.getValue()).toString());
       }
 
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException(
+          String.format("Unsupported temporal literal type: %s", temporalLiteral.getType().getSimpleName())
+      );
     }
 
     @Override
     public FesExpression visit(ArrayLiteral arrayLiteral, List<FesExpression> children) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("Array expressions are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
@@ -281,37 +284,37 @@ public class FilterEncoderWfs {
 
     @Override
     public FesExpression visit(Coordinate coordinate, List<FesExpression> children) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("Coordinates are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(Point point, List<FesExpression> children) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("Point geometries are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(LineString lineString, List<FesExpression> children) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("LineString geometries are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(Polygon polygon, List<FesExpression> children) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("Polygon geometries are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(MultiPoint multiPoint, List<FesExpression> children) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("MultiPoint geometries are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(MultiLineString multiLineString, List<FesExpression> children) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("MultiLineString geometries are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(MultiPolygon multiPolygon, List<FesExpression> children) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException("MultiPolygon geometries are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
@@ -330,7 +333,8 @@ public class FilterEncoderWfs {
 
     @Override
     public FesExpression visit(Function function, List<FesExpression> children) {
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException(
+          String.format("Functions are not supported in filter expressions for WFS feature providers. Found: %s", function.getName()));
     }
   }
 }

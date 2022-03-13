@@ -8,6 +8,7 @@ package de.ii.xtraplatform.features.gml.app;
 
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.base.domain.util.Tuple;
+import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -46,7 +47,8 @@ public class FeatureQueryEncoderWfs implements FeatureQueryEncoder<String, Query
       Map<String, FeatureSchema> featureSchemas,
       ConnectionInfoWfsHttp connectionInfo,
       EpsgCrs nativeCrs,
-      CrsTransformerFactory crsTransformerFactory) {
+      CrsTransformerFactory crsTransformerFactory,
+      Cql cql) {
     this.typeInfos = typeInfos;
     this.featureSchemas = featureSchemas;
     this.namespaceNormalizer = new XMLNamespaceNormalizer(connectionInfo.getNamespaces());
@@ -68,7 +70,7 @@ public class FeatureQueryEncoderWfs implements FeatureQueryEncoder<String, Query
             urls);
     this.nativeCrs = nativeCrs;
     this.filterEncoder =
-        new FilterEncoderWfs(nativeCrs, crsTransformerFactory, namespaceNormalizer);
+        new FilterEncoderWfs(nativeCrs, crsTransformerFactory, cql, namespaceNormalizer);
   }
 
   @Override

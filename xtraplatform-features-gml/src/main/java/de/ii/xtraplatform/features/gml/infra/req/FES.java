@@ -111,8 +111,7 @@ public class FES extends VersionedVocabulary {
         addWord(VERSION._1_0_0, VOCABULARY.ESCAPE_CHAR, "escapeChar");
         addWord(VERSION._1_0_0, VOCABULARY.FILTER, "Filter");
         addWord(VERSION._1_0_0, VOCABULARY.INTERSECTS, "Intersects");
-        addWord(VERSION._1_0_0, VOCABULARY.DURING, "During");
-                
+
         addWord(VERSION._1_1_0, VOCABULARY.RESOURCEID, "GmlObjectId");
         addWord(VERSION._1_1_0, VOCABULARY.RESOURCEID_ATTR, "id");
         
@@ -120,5 +119,6 @@ public class FES extends VersionedVocabulary {
         addWord(VERSION._2_0_0, VOCABULARY.RESOURCEID, "ResourceId");
         addWord(VERSION._2_0_0, VOCABULARY.RESOURCEID_KVP, "RESOURCEID");
         addWord(VERSION._2_0_0, VOCABULARY.RESOURCEID_ATTR, "rid");
+        addWord(VERSION._2_0_0, VOCABULARY.DURING, "During");
     }
 }
