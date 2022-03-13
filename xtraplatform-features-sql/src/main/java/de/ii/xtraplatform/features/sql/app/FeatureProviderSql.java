@@ -705,4 +705,9 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
       return getData().getQueryGeneration().getAccentiCollation().isPresent();
     return false;
   }
+
+  @Override
+  public boolean supportsCql2() {
+    return true;
+  }
 }
