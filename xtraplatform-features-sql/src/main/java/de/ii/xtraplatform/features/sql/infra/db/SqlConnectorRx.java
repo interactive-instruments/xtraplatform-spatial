@@ -31,8 +31,6 @@ import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
@@ -42,11 +40,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import org.davidmoten.rx.jdbc.ConnectionProvider;
 import org.davidmoten.rx.jdbc.Database;
-import org.davidmoten.rx.jdbc.exceptions.SQLRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,7 +154,7 @@ public class SqlConnectorRx implements SqlConnector {
       this.session = Database.nonBlocking()
           .connectionProvider(dataSource)
           .maxPoolSize(maxConnections)
-          .maxIdleTime(300, TimeUnit.SECONDS) //TODO: subtract from pool.idleTimeout?
+          .maxIdleTime(minConnections == maxConnections ? 0 : 600, TimeUnit.SECONDS) //TODO: workaround for bug in rxjava2-jdbc, remove when fixed
           .build();
       this.sqlClient = new SqlClientRx(session, connectionInfo.getDialect());
 
