@@ -7,21 +7,14 @@
  */
 package de.ii.xtraplatform.features.json.app
 
-import akka.actor.ActorSystem
-import akka.stream.javadsl.Source
-import akka.testkit.javadsl.TestKit
-import akka.util.ByteString
-import com.typesafe.config.Config
 import de.ii.xtraplatform.features.domain.FeatureEventHandler
 import de.ii.xtraplatform.features.domain.FeatureSchema
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder
 import de.ii.xtraplatform.features.domain.FeatureTokenFixtures
 import de.ii.xtraplatform.features.domain.SchemaMapping
 import de.ii.xtraplatform.features.json.domain.FeatureTokenDecoderGeoJson
-import de.ii.xtraplatform.streams.app.ReactiveAkka
-import de.ii.xtraplatform.streams.domain.ActorSystemProvider
+import de.ii.xtraplatform.streams.app.ReactiveRx
 import de.ii.xtraplatform.streams.domain.Reactive
-import org.osgi.framework.BundleContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import spock.lang.Ignore
@@ -36,8 +29,6 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
     static final Logger LOGGER = LoggerFactory.getLogger(FeatureTokenDecoderGeoJsonSpec2.class)
 
     @Shared
-    ActorSystem system
-    @Shared
     Reactive reactive
     @Shared
     Reactive.Runner runner
@@ -45,30 +36,12 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
     FeatureTokenDecoder<byte[], FeatureSchema, SchemaMapping, FeatureEventHandler.ModifiableContext<FeatureSchema, SchemaMapping>> decoder
 
     def setupSpec() {
-        reactive = new ReactiveAkka(null, new ActorSystemProvider() {
-            @Override
-            ActorSystem getActorSystem(BundleContext context) {
-                return null
-            }
-
-            @Override
-            ActorSystem getActorSystem(BundleContext context, Config config) {
-                return null
-            }
-
-            @Override
-            ActorSystem getActorSystem(BundleContext context, Config config, String name) {
-                system = ActorSystem.create(name, config)
-                return system
-            }
-        })
+        reactive = new ReactiveRx()
         runner = reactive.runner("test")
     }
 
     def cleanupSpec() {
         runner.close()
-        TestKit.shutdownActorSystem(system)
-        system = null
     }
 
     def setup() {
@@ -82,7 +55,7 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
     }
 
     static Reactive.Source<byte[]> FileSource(String path) {
-        Reactive.Source.akka(Source.from([ByteString.fromString(new File(path).text).toArray()]))
+        Reactive.Source.inputStream(new File(path).newInputStream())
     }
 
     static Reactive.SinkReduced<Object, List<Object>> ListSink() {

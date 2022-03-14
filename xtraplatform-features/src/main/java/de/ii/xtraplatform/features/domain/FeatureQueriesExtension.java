@@ -7,8 +7,10 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import com.github.azahnen.dagger.annotations.AutoMultiBind;
 import java.util.function.BiConsumer;
 
+@AutoMultiBind
 public interface FeatureQueriesExtension {
 
   enum LIFECYCLE_HOOK {STARTED}

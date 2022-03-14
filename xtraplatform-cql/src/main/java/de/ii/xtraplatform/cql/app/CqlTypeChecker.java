@@ -9,6 +9,7 @@ package de.ii.xtraplatform.cql.app;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes;
 
@@ -16,6 +17,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CqlTypeChecker extends CqlVisitorBase<Type> {
@@ -26,7 +28,8 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
     private static final List<Type> BOOLEAN = ImmutableList.of(Type.Boolean);
     private static final List<Type> TEMPORAL = ImmutableList.of(Type.LocalDate, Type.Instant, Type.Interval);
     private static final List<Type> INSTANT = ImmutableList.of(Type.LocalDate, Type.Instant);
-    private static final List<Type> INSTANT_IN_INTERVAL = ImmutableList.of(Type.LocalDate, Type.Instant, Type.OPEN);
+    private static final List<Type> TIMESTAMP_IN_INTERVAL = ImmutableList.of(Type.Instant, Type.OPEN);
+    private static final List<Type> DATE_IN_INTERVAL = ImmutableList.of(Type.LocalDate, Type.OPEN);
     private static final List<Type> SPATIAL = ImmutableList.of(Type.Geometry);
     private static final List<Type> ARRAY = ImmutableList.of(Type.List);
     private static final List<List<Type>> SCALAR = ImmutableList.of(NUMBER, TEXT, BOOLEAN, INSTANT);
@@ -48,14 +51,14 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
             .put(ImmutableArrayOperation.class, ImmutableList.of(ARRAY))
             .build();
 
-    private static final Map<String,List<Type>> COMPATIBILITY_FUNCTION =
-        new ImmutableMap.Builder<String,List<Type>>()
-            .put("INTERVAL", INSTANT_IN_INTERVAL)
-            .put("CASEI", TEXT)
-            .put("ACCENTI", TEXT)
-            .put("UPPER", TEXT)
-            .put("LOWER", TEXT)
-            .put("POSITION", INTEGER)
+    private static final Map<String, Set<List<Type>>> COMPATIBILITY_FUNCTION =
+        new ImmutableMap.Builder<String,Set<List<Type>>>()
+            .put("INTERVAL", ImmutableSet.of(TIMESTAMP_IN_INTERVAL, DATE_IN_INTERVAL))
+            .put("CASEI", ImmutableSet.of(TEXT))
+            .put("ACCENTI", ImmutableSet.of(TEXT))
+            .put("UPPER", ImmutableSet.of(TEXT))
+            .put("LOWER", ImmutableSet.of(TEXT))
+            .put("POSITION", ImmutableSet.of(INTEGER))
             .build();
 
     private final Map<String, String> propertyTypes;
@@ -226,18 +229,26 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
     }
 
     private void checkFunction(Function function, List<Type> types) {
-        final List<Type> expectedTypes = Objects.requireNonNullElse(COMPATIBILITY_FUNCTION.get(function.getName()),
-                                                                      ImmutableList.of());
-        types.stream()
-            .filter(type -> !expectedTypes.contains(type) && !type.equals(Type.UNKNOWN))
-            .findFirst()
-            .ifPresent(type -> {
-                throw new CqlIncompatibleTypes(getText(function), asSchemaTypes(types), asSchemaTypes(expectedTypes));
-            });
+        final Set<List<Type>> expectedTypes = Objects.requireNonNullElse(COMPATIBILITY_FUNCTION.get(function.getName()),
+                                                                         ImmutableSet.of());
+        if (expectedTypes.stream()
+            .noneMatch(typeList -> types.stream()
+                .allMatch(type -> typeList.contains(type) || type.equals(Type.UNKNOWN)))) {
+            throw new CqlIncompatibleTypes(getText(function), asSchemaTypes(types), asSchemaTypes(expectedTypes));
+        }
     }
 
     private List<String> asSchemaTypes(List<Type> types) {
         return types.stream().map(Type::schemaType).distinct().collect(Collectors.toUnmodifiableList());
+    }
+
+    private Set<List<String>> asSchemaTypes(Set<List<Type>> types) {
+        return types.stream()
+            .map(typeList -> typeList.stream()
+                .map(Type::schemaType)
+                .distinct()
+                .collect(Collectors.toUnmodifiableList()))
+            .collect(Collectors.toUnmodifiableSet());
     }
 
     private void check(List<Type> types, List<Type> expectedTypes, CqlNode node) {

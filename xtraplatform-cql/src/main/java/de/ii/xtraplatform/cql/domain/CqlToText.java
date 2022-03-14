@@ -297,13 +297,12 @@ public class CqlToText implements CqlVisitor<String> {
             return String.format("DATE('%s')", DateTimeFormatter.ISO_DATE.format((LocalDate) temporalLiteral.getValue()));
         } else if (temporalLiteral.getType() == Function.class) {
             Function function = (Function) temporalLiteral.getValue();
-            return String.format("%s(%s)", function.getName(), function.getArguments()
-                .stream()
+            return function.getArguments().stream()
                 .map(arg -> arg.accept(this)
                     .replace("DATE(","")
                     .replace("TIMESTAMP(","")
                     .replace(")",""))
-                .collect(Collectors.joining(",")));
+                .collect(Collectors.joining(",", function.getName()+"(", ")"));
         }
 
         throw new IllegalStateException("unsupported temporal literal type: " + temporalLiteral.getType().getSimpleName());
@@ -349,10 +348,17 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(Function function, List<String> children) {
+        if (function.isInterval())
+            // DATE() and TIMESTAMP() are not used in interval
+            return function.getName() +
+                children.stream()
+                    .map(argument -> argument.replace("DATE(","")
+                             .replace("TIMESTAMP(","")
+                             .replace(")",""))
+                    .collect(Collectors.joining(",", "(", ")"));
+
         return function.getName() +
-                function.getArguments()
-                        .stream()
-                        .map(argument -> argument.accept(this))
+                children.stream()
                         .collect(Collectors.joining(",", "(", ")"));
     }
 

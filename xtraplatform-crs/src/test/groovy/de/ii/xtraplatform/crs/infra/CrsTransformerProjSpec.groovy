@@ -10,7 +10,7 @@ package de.ii.xtraplatform.crs.infra
 import de.ii.xtraplatform.crs.domain.CoordinateTuple
 import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
-import de.ii.xtraplatform.nativ.proj.api.ProjLoaderImpl
+import de.ii.xtraplatform.proj.domain.ProjLoaderImpl
 import org.kortforsyningen.proj.Units
 import org.opengis.referencing.cs.AxisDirection
 import spock.lang.Ignore

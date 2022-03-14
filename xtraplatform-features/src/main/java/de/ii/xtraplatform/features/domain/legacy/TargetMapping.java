@@ -13,7 +13,7 @@ package de.ii.xtraplatform.features.domain.legacy;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import de.ii.xtraplatform.dropwizard.domain.JacksonProvider;
+import de.ii.xtraplatform.base.domain.JacksonProvider;
 import org.immutables.value.Value;
 
 import javax.annotation.Nullable;

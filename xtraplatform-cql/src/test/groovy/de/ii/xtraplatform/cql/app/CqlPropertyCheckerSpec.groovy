@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.cql.app
 
-import com.google.common.collect.ImmutableList
 import de.ii.xtraplatform.cql.domain.Cql
 import spock.lang.Shared
 import spock.lang.Specification
@@ -24,7 +23,7 @@ class CqlPropertyCheckerSpec extends Specification {
     def 'Test the property-checking visitor'() {
         given:
         // run the test on 2 different queries to make sure that old properties are removed
-        def allowedProperties = ImmutableList.of("doors", "floors")
+        def allowedProperties = ["doors", "floors"]
         CqlPropertyChecker visitor = new CqlPropertyChecker(allowedProperties)
 
         when:

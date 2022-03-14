@@ -99,5 +99,17 @@ class CqlTypeCheckerSpec extends Specification {
         noExceptionThrown()
     }
 
+    def 'interval of date and timestamp'() {
+        given:
+        String cqlText = "T_INTERSECTS(TIMESTAMP('2011-12-26T20:55:27Z'), INTERVAL('2011-01-01','2011-12-31T23:59:59Z')) OR " +
+                "T_INTERSECTS(INTERVAL('..','2011-12-31'), INTERVAL(begin,end)) OR " +
+                "T_BEFORE(event,DATE('2000-01-01'))"
+
+        when: 'reading text'
+        def test = cql.read(cqlText, Cql.Format.TEXT).accept(visitor)
+
+        then:
+        thrown CqlIncompatibleTypes
+    }
 
 }

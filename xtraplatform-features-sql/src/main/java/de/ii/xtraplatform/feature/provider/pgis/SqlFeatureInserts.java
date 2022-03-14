@@ -7,13 +7,13 @@
  */
 package de.ii.xtraplatform.feature.provider.pgis;
 
-import akka.japi.Pair;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ListMultimap;
-import de.ii.xtraplatform.feature.provider.sql.SQL_PATH_TYPE_DEPRECATED;
+import de.ii.xtraplatform.base.domain.util.Tuple;
+import de.ii.xtraplatform.features.sql.SQL_PATH_TYPE_DEPRECATED;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public abstract class SqlFeatureInserts {
         return false;
     }
 
-    public List<Function<NestedSqlInsertRow, Pair<String, Optional<Consumer<String>>>>> getQueries(Map<String, List<Integer>> rows) {
+    public List<Function<NestedSqlInsertRow, Tuple<String, Optional<Consumer<String>>>>> getQueries(Map<String, List<Integer>> rows) {
         return toSql2(null, getSqlPaths(), null, rows, ImmutableList.of(0));
     }
 
@@ -72,7 +72,7 @@ public abstract class SqlFeatureInserts {
         return new NestedSqlInsertRow(nestedPath.getPath(), rows);
     }
 
-    public List<Function<NestedSqlInsertRow, Pair<String, Optional<Consumer<String>>>>> toSql(SqlPathTree parentPath, SqlPathTree mainPath, SqlPathTree nestedPath, List<Integer> parentRows) {
+    public List<Function<NestedSqlInsertRow, Tuple<String, Optional<Consumer<String>>>>> toSql(SqlPathTree parentPath, SqlPathTree mainPath, SqlPathTree nestedPath, List<Integer> parentRows) {
 
         List<String> columns3 = nestedPath.getColumns()
                                           .stream()
@@ -104,7 +104,7 @@ public abstract class SqlFeatureInserts {
                                       .get(1));
         }
 
-        ImmutableList.Builder<Function<NestedSqlInsertRow, Pair<String, Optional<Consumer<String>>>>> queries = ImmutableList.builder();
+        ImmutableList.Builder<Function<NestedSqlInsertRow, Tuple<String, Optional<Consumer<String>>>>> queries = ImmutableList.builder();
 
         //int rowCount = type == TYPE.ID_M_N || type == TYPE.ID_1_N ? rows.get(path) != null ? rows.get(path) : 0 : 1;
 
@@ -121,7 +121,7 @@ public abstract class SqlFeatureInserts {
         String returningId = nestedPath.getType() != SQL_PATH_TYPE_DEPRECATED.ID_1_N ? " RETURNING id" : " RETURNING null";
         Optional<String> returningName = nestedPath.getType() != SQL_PATH_TYPE_DEPRECATED.ID_1_N ? Optional.of(tableName + ".id") : Optional.empty();
 
-        Function<NestedSqlInsertRow, Pair<String, Optional<Consumer<String>>>> mainQuery = nestedRow -> {
+        Function<NestedSqlInsertRow, Tuple<String, Optional<Consumer<String>>>> mainQuery = nestedRow -> {
             NestedSqlInsertRow currentRow = nestedRow.getNested(nestedPath.getTrail(), parentRows);
             Map<String, String> ids = ImmutableMap.<String, String>builder()
                     .putAll(nestedRow.getNested(mainPath.getTrail(), ImmutableList.of()).ids)
@@ -135,7 +135,7 @@ public abstract class SqlFeatureInserts {
             }
 
             String query = String.format("INSERT INTO %s %s %s%s;", tableName, finalColumnNames, values, returningId);
-            return new Pair<>(query, returningName.map(name -> id -> currentRow.ids.put(name, id)));
+            return Tuple.of(query, returningName.map(name -> id -> currentRow.ids.put(name, id)));
         };
 
         if (nestedPath.getType() != SQL_PATH_TYPE_DEPRECATED.REF)
@@ -156,7 +156,7 @@ public abstract class SqlFeatureInserts {
     // --> shorten to last two for now --> (1,1), (2,1), (2,2)
     // --> iterate lists and elements --> increase first --> add new elem --> increase last --> elem = last
     // --> 1 - (1) --> 1 - (1) --> 2 - (1,1) --> 1 - (1,1) --> 2 - (1,1) --> 2 - (1,2)
-    public List<Function<NestedSqlInsertRow, Pair<String, Optional<Consumer<String>>>>> toSql2(SqlPathTree parentParentPath, SqlPathTree parentPath, SqlPathTree mainPath, Map<String, List<Integer>> rows, List<Integer> parentRows) {
+    public List<Function<NestedSqlInsertRow, Tuple<String, Optional<Consumer<String>>>>> toSql2(SqlPathTree parentParentPath, SqlPathTree parentPath, SqlPathTree mainPath, Map<String, List<Integer>> rows, List<Integer> parentRows) {
         //Stream<NestedSqlInsert> stream = type == TYPE.MERGED ? Stream.concat(nestedPaths.stream(), Stream.of(this)) : Stream.concat(Stream.of(this), nestedPaths.stream());
         Stream<SqlPathTree> stream = parentPath.getType() == SQL_PATH_TYPE_DEPRECATED.MERGED ? Stream.concat(parentPath.getChildren()
                                                                                                                        .stream(), Stream.of(parentPath)) : Stream.concat(Stream.of(parentPath), parentPath.getChildren()
@@ -173,7 +173,7 @@ public abstract class SqlFeatureInserts {
                 .flatMap(nestedPath -> {
                     //TODO
                     //int parentRow = 0;
-                    ImmutableList.Builder<Function<NestedSqlInsertRow, Pair<String, Optional<Consumer<String>>>>> builder = ImmutableList.builder();
+                    ImmutableList.Builder<Function<NestedSqlInsertRow, Tuple<String, Optional<Consumer<String>>>>> builder = ImmutableList.builder();
 
                     if (nestedPath.equals(parentPath)) {
                         builder.addAll(toSql(parentParentPath, main, nestedPath, parentRows));
@@ -207,9 +207,9 @@ public abstract class SqlFeatureInserts {
                 .collect(Collectors.toList());
     }
 
-    public List<Function<NestedSqlInsertRow, Pair<String, Optional<Consumer<String>>>>> toSqlRefs(SqlPathTree parentPath, SqlPathTree nestedPath, List<Integer> parentRows) {
+    public List<Function<NestedSqlInsertRow, Tuple<String, Optional<Consumer<String>>>>> toSqlRefs(SqlPathTree parentPath, SqlPathTree nestedPath, List<Integer> parentRows) {
 
-        Map<String, Pair<String, String>> refs = new LinkedHashMap<>();
+        Map<String, Tuple<String, String>> refs = new LinkedHashMap<>();
         String[] lastRef = new String[2];
 
         nestedPath.getJoinPathElements()
@@ -218,7 +218,7 @@ public abstract class SqlFeatureInserts {
                                                     .get();
                       if (lastRef[1] != null && pathElem.second()
                                                         .isPresent()) {
-                          refs.put(lastRef[0], new Pair<>(lastRef[1], fields.get(0)));
+                          refs.put(lastRef[0], Tuple.of(lastRef[1], fields.get(0)));
                       }
                       if (fields.size() == 2) {
                           lastRef[0] = pathElem.first();
@@ -226,11 +226,11 @@ public abstract class SqlFeatureInserts {
                       }
                   });
 
-        ImmutableList.Builder<Function<NestedSqlInsertRow, Pair<String, Optional<Consumer<String>>>>> queries = ImmutableList.builder();
+        ImmutableList.Builder<Function<NestedSqlInsertRow, Tuple<String, Optional<Consumer<String>>>>> queries = ImmutableList.builder();
         String table = nestedPath.getJoinPathElements()
                                  .get(0)
                                  .first();
-        Pair<String, String> ref = refs.get(table);
+        Tuple<String, String> ref = refs.get(table);
 
         String columnNames = String.format("%s,%s", ref.first(), ref.second());
 
@@ -248,13 +248,13 @@ public abstract class SqlFeatureInserts {
             }*/
             String columnValues = String.format("%s,%s", parentIds.get(sourceIdColumn), ids.get(targetIdColumn));
 
-            return new Pair<>(String.format("INSERT INTO %s (%s) VALUES (%s) RETURNING null;", table, columnNames, columnValues), Optional.empty());
+            return Tuple.of(String.format("INSERT INTO %s (%s) VALUES (%s) RETURNING null;", table, columnNames, columnValues), Optional.empty());
         });
 
         return queries.build();
     }
 
-    public List<Function<NestedSqlInsertRow, Pair<String, Optional<Consumer<String>>>>> toSqlRef(SqlPathTree parentPath, SqlPathTree nestedPath, List<Integer> parentRows) {
+    public List<Function<NestedSqlInsertRow, Tuple<String, Optional<Consumer<String>>>>> toSqlRef(SqlPathTree parentPath, SqlPathTree nestedPath, List<Integer> parentRows) {
 
         String table = parentPath.getTableName();
         String column = nestedPath.getJoinPathElements()
@@ -274,7 +274,7 @@ public abstract class SqlFeatureInserts {
                 throw new IllegalStateException(String.format("No values found for row %s of %s", row, path));
             }*/
 
-            return new Pair<>(String.format("UPDATE %s SET %s=%s WHERE id=%s RETURNING null;", table, column, ids.get(columnKey), parentIds.get(refKey)), Optional.empty());
+            return Tuple.of(String.format("UPDATE %s SET %s=%s WHERE id=%s RETURNING null;", table, column, ids.get(columnKey), parentIds.get(refKey)), Optional.empty());
         });
     }
 

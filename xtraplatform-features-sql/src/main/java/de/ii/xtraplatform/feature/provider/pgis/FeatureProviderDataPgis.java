@@ -8,9 +8,8 @@
 package de.ii.xtraplatform.feature.provider.pgis;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.feature.provider.sql.domain.FeatureActionTrigger;
-import de.ii.xtraplatform.feature.provider.sql.infra.db.SqlConnectorSlick;
+import de.ii.xtraplatform.features.sql.domain.FeatureActionTrigger;
+import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorRx;
 import de.ii.xtraplatform.feature.transformer.api.FeatureProviderDataTransformer;
 import de.ii.xtraplatform.features.domain.ImmutableMappingStatus;
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
@@ -23,12 +22,10 @@ import java.util.Optional;
  * @author zahnen
  */
 //TODO: still needed for migration???
-@Value.Immutable
-@Value.Modifiable
-//@JsonDeserialize(as = ModifiableFeatureProviderDataPgis.class)
-@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
-//@Value.Style(deepImmutablesDetection = true)
-@JsonDeserialize(builder = ImmutableFeatureProviderDataPgis.Builder.class)
+//@Value.Immutable
+//@Value.Modifiable
+//@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
+//@JsonDeserialize(builder = ImmutableFeatureProviderDataPgis.Builder.class)
 public abstract class FeatureProviderDataPgis extends FeatureProviderDataTransformer {
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
@@ -42,7 +39,7 @@ public abstract class FeatureProviderDataPgis extends FeatureProviderDataTransfo
     @Value.Default
     @Override
     public String getConnectorType() {
-        return SqlConnectorSlick.CONNECTOR_TYPE;
+        return SqlConnectorRx.CONNECTOR_TYPE;
     }
 
     //public abstract ConnectionInfo getConnectionInfo();

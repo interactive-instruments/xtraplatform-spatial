@@ -1,0 +1,163 @@
+/**
+ * Copyright 2022 interactive instruments GmbH
+ *
+ * <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy
+ * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+package de.ii.xtraplatform.features.gml.app;
+
+import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.base.domain.util.Tuple;
+import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.cql.domain.CqlParseException;
+import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.features.domain.FeatureProviderConnector.QueryOptions;
+import de.ii.xtraplatform.features.domain.FeatureQuery;
+import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
+import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
+import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.features.gml.infra.WfsConnectorHttp;
+import de.ii.xtraplatform.features.gml.infra.req.GetFeature;
+import de.ii.xtraplatform.features.gml.infra.req.GetFeatureBuilder;
+import de.ii.xtraplatform.features.gml.infra.req.WFS;
+import de.ii.xtraplatform.features.gml.infra.req.WfsQuery;
+import de.ii.xtraplatform.features.gml.infra.req.WfsQueryBuilder;
+import java.net.URI;
+import java.util.Map;
+import javax.xml.namespace.QName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class FeatureQueryEncoderWfs implements FeatureQueryEncoder<String, QueryOptions> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderWfs.class);
+
+  private final Map<String, FeatureStoreTypeInfo> typeInfos;
+  private final Map<String, FeatureSchema> featureSchemas;
+  private final XMLNamespaceNormalizer namespaceNormalizer;
+  private final WfsRequestEncoder wfsRequestEncoder;
+  private final EpsgCrs nativeCrs;
+  private final FilterEncoderWfs filterEncoder;
+
+  public FeatureQueryEncoderWfs(
+      Map<String, FeatureStoreTypeInfo> typeInfos,
+      Map<String, FeatureSchema> featureSchemas,
+      ConnectionInfoWfsHttp connectionInfo,
+      EpsgCrs nativeCrs,
+      CrsTransformerFactory crsTransformerFactory,
+      Cql cql) {
+    this.typeInfos = typeInfos;
+    this.featureSchemas = featureSchemas;
+    this.namespaceNormalizer = new XMLNamespaceNormalizer(connectionInfo.getNamespaces());
+
+    Map<String, Map<WFS.METHOD, URI>> urls =
+        ImmutableMap.of(
+            "default",
+            ImmutableMap.of(
+                WFS.METHOD.GET,
+                WfsConnectorHttp.parseAndCleanWfsUrl(connectionInfo.getUri()),
+                WFS.METHOD.POST,
+                WfsConnectorHttp.parseAndCleanWfsUrl(connectionInfo.getUri())));
+
+    this.wfsRequestEncoder =
+        new WfsRequestEncoder(
+            connectionInfo.getVersion(),
+            connectionInfo.getGmlVersion(),
+            connectionInfo.getNamespaces(),
+            urls);
+    this.nativeCrs = nativeCrs;
+    this.filterEncoder =
+        new FilterEncoderWfs(nativeCrs, crsTransformerFactory, cql, namespaceNormalizer);
+  }
+
+  @Override
+  public String encode(FeatureQuery featureQuery, Map<String, String> additionalQueryParameters) {
+    return encodeFeatureQuery(featureQuery, additionalQueryParameters);
+  }
+
+  @Override
+  public QueryOptions getOptions(FeatureQuery featureQuery) {
+    return new QueryOptions() {};
+  }
+
+  public boolean isValid(final FeatureQuery query) {
+    return typeInfos.containsKey(query.getType());
+  }
+
+  public QName getFeatureTypeName(final FeatureQuery query) {
+    FeatureSchema featureSchema = featureSchemas.get(query.getType());
+    String name =
+        featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
+
+    return new QName(
+        namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)),
+        namespaceNormalizer.getLocalName(name));
+  }
+
+  public String encodeFeatureQuery(
+      FeatureQuery query, Map<String, String> additionalQueryParameters) {
+    return wfsRequestEncoder.getAsUrl(encodeGetFeature(query, additionalQueryParameters));
+  }
+
+  public Tuple<String, String> encodeFeatureQueryPost(
+      FeatureQuery query, Map<String, String> additionalQueryParameters) {
+    return wfsRequestEncoder.getAsUrlAndBody(encodeGetFeature(query, additionalQueryParameters));
+  }
+
+  GetFeature encodeGetFeature(
+      final FeatureQuery query, Map<String, String> additionalQueryParameters) {
+    try {
+      final QName featureTypeName = getFeatureTypeName(query);
+
+      return encodeGetFeature(
+          query, featureTypeName, featureSchemas.get(query.getType()), additionalQueryParameters);
+    } catch (CqlParseException e) {
+      throw new IllegalArgumentException("Filter is invalid", e.getCause());
+    }
+  }
+
+  public WfsRequestEncoder getWfsRequestEncoder() {
+    return wfsRequestEncoder;
+  }
+
+  private GetFeature encodeGetFeature(
+      FeatureQuery query,
+      QName featureTypeName,
+      FeatureSchema featureSchema,
+      Map<String, String> additionalQueryParameters)
+      throws CqlParseException {
+    final String featureTypeNameFull =
+        namespaceNormalizer.getQualifiedName(
+            featureTypeName.getNamespaceURI(), featureTypeName.getLocalPart());
+
+    final WfsQuery wfsQuery =
+        new WfsQueryBuilder()
+            .typeName(featureTypeNameFull)
+            .crs(nativeCrs)
+            .filter(
+                query.getFilter().map(cqlFilter -> filterEncoder.encode(cqlFilter, featureSchema)))
+            .build();
+    final GetFeatureBuilder getFeature = new GetFeatureBuilder();
+
+    getFeature.query(wfsQuery);
+
+    if (query.getLimit() > 0) {
+      getFeature.count(query.getLimit());
+    }
+    if (query.getOffset() > 0) {
+      getFeature.startIndex(query.getOffset());
+    }
+    if (query.hitsOnly()) {
+      getFeature.hitsOnly();
+    }
+
+    if (!additionalQueryParameters.isEmpty()) {
+      getFeature.additionalOperationParameters(additionalQueryParameters);
+    }
+
+    return getFeature.build();
+  }
+}

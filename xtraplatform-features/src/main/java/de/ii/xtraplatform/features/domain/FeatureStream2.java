@@ -7,8 +7,6 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import akka.Done;
-import akka.stream.javadsl.Sink;
 import org.immutables.value.Value;
 
 import java.util.Optional;

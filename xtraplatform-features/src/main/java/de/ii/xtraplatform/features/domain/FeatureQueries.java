@@ -11,6 +11,10 @@ public interface FeatureQueries {
 
   long getFeatureCount(FeatureQuery featureQuery);
 
+  default boolean supportsCql2() {
+    return false;
+  }
+
   default boolean supportsAccenti() {
     return false;
   }

@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import de.ii.xtraplatform.stringtemplates.domain.StringTemplateFilters;
+import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
 import java.util.Objects;
 import java.util.function.Function;
 import org.immutables.value.Value;

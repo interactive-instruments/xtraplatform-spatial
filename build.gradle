@@ -1,6 +1,6 @@
 plugins {
-    id 'de.interactive_instruments.xtraplatform-feature' version '3.5.2'
-    id 'com.github.hierynomus.license-report' version '0.15.0' apply false
+    id 'de.interactive_instruments.xtraplatform-feature' version '4.0.0'
+    id 'com.github.hierynomus.license-report' version '0.16.1' apply false
 }
 
 allprojects {
@@ -11,11 +11,11 @@ ext {
     versionSuffix = (project.hasProperty('branch') && project.getProperty('branch') != 'master' ? ('-' + project.getProperty('branch')) : '') + (project.findProperty('snapshot') == 'true' ? '-SNAPSHOT' : '')
 }
 
-version = '5.1.0' + versionSuffix
+version = '6.0.0' + versionSuffix
 
 dependencies {
-    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '4.3.0-SNAPSHOT'
-    feature group: 'de.interactive_instruments', name: 'xtraplatform-native', version: '1.0.0-SNAPSHOT'
+    feature group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '5.0.0'
+    feature group: 'de.interactive_instruments', name: 'xtraplatform-native', version: '2.0.0'
 
     bundle subprojects
 }
@@ -31,24 +31,12 @@ subprojects {
             url "https://maven.ecc.no/releases"
         }
     }
-
-    //TODO: workaround for bug in version 2.1
-    dependencies {
-        testImplementation('com.athaydes:spock-reports') {
-            version {
-                strictly '2.0-groovy-3.0'
-            }
-        }
+    tasks.withType(GenerateModuleMetadata).configureEach {
+        suppressedValidationErrors.add('enforced-platform')
     }
 }
 
-apply from: 'immutables.gradle'
+//apply from: 'license-headers.gradle'
 
-//apply from: 'unit-tests.gradle'
-
-//apply from: 'integration-tests.gradle'
-
-apply from: 'license-headers.gradle'
-
-apply from: 'license-report.gradle'
+//apply from: 'license-report.gradle'
 

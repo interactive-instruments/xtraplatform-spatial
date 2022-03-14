@@ -7,13 +7,13 @@
  */
 package de.ii.xtraplatform.feature.provider.pgis;
 
-import akka.japi.Pair;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+import de.ii.xtraplatform.base.domain.util.Tuple;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -206,7 +206,7 @@ abstract class NestedSql<T extends NestedSql> {
     void determineType(T mainPath, List<T> mergedPaths) {
         this.mainPath = mainPath;
 
-        List<Pair<String, Optional<List<String>>>> joinPathElements = getJoinPathElements();
+        List<Tuple<String, Optional<List<String>>>> joinPathElements = getJoinPathElements();
 
         if (mainPath.equals(this) && columns.contains("id")) {
             this.type = TYPE.MAIN;
@@ -245,7 +245,7 @@ abstract class NestedSql<T extends NestedSql> {
                        .splitToList(path);
     }
 
-    List<Pair<String, Optional<List<String>>>> getJoinPathElements() {
+    List<Tuple<String, Optional<List<String>>>> getJoinPathElements() {
         List<String> pathElements = getPathElements();
 
         String[] lastTable = {pathElements.get(0)};
@@ -257,12 +257,12 @@ abstract class NestedSql<T extends NestedSql> {
                            .collect(Collectors.toList());
     }
 
-    Pair<String, Optional<List<String>>> getTableAndJoinCondition(String pathElement) {
+    Tuple<String, Optional<List<String>>> getTableAndJoinCondition(String pathElement) {
         Optional<List<String>> joinCondition = pathElement.contains("]") ? Optional.of(Splitter.on('=')
                                                                                                .omitEmptyStrings()
                                                                                                .splitToList(pathElement.substring(1, pathElement.indexOf("]")))) : Optional.empty();
         String table = joinCondition.isPresent() ? pathElement.substring(pathElement.indexOf("]") + 1) : pathElement;
-        return new Pair<>(table, joinCondition);
+        return Tuple.of(table, joinCondition);
     }
 
     String getTableName() {

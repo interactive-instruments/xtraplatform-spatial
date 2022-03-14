@@ -19,5 +19,6 @@ rootDir.listFiles().each { file ->
     }  
 }
 
-//includeBuild '../xtraplatform/xtraplatform-gradle-plugins'
+//includeBuild '../xtraplatform-build'
 //includeBuild '../xtraplatform/xtraplatform-core'
+//includeBuild '../xtraplatform-native'

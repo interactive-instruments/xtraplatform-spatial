@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.crs.infra;
 
+import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -16,26 +17,28 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.nativ.proj.api.ProjLoader;
-import de.ii.xtraplatform.runtime.domain.LogContext;
+import de.ii.xtraplatform.proj.domain.ProjLoader;
+import de.ii.xtraplatform.base.domain.LogContext;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import com.github.azahnen.dagger.annotations.AutoBind;
 import javax.measure.Unit;
-import org.apache.felix.ipojo.annotations.Component;
-import org.apache.felix.ipojo.annotations.Instantiate;
-import org.apache.felix.ipojo.annotations.Provides;
-import org.apache.felix.ipojo.annotations.Requires;
 import org.kortforsyningen.proj.CoordinateOperationContext;
 import org.kortforsyningen.proj.GridAvailabilityUse;
 import org.kortforsyningen.proj.Proj;
 import org.kortforsyningen.proj.SpatialCriterion;
 import org.kortforsyningen.proj.spi.EPSG;
+import org.opengis.referencing.ReferenceIdentifier;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
 import org.opengis.referencing.crs.CRSFactory;
 import org.opengis.referencing.crs.CompoundCRS;
@@ -45,6 +48,7 @@ import org.opengis.referencing.crs.SingleCRS;
 import org.opengis.referencing.cs.AxisDirection;
 import org.opengis.referencing.cs.RangeMeaning;
 import org.opengis.referencing.operation.CoordinateOperation;
+import org.opengis.util.GenericName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,20 +56,22 @@ import org.slf4j.LoggerFactory;
  *
  * @author zahnen
  */
-@Component
-@Provides
-@Instantiate
+@Singleton
+@AutoBind
 public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CrsTransformerFactoryProj.class);
 
   private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
   private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
+  private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCacheForce2d;
   private final boolean useCaches = true;
 
-  public CrsTransformerFactoryProj(@Requires ProjLoader projLoader) {
+  @Inject
+  public CrsTransformerFactoryProj(ProjLoader projLoader) {
     this.crsCache = new ConcurrentHashMap<>();
     this.transformerCache = new ConcurrentHashMap<>();
+    this.transformerCacheForce2d = new ConcurrentHashMap<>();
 
     try {
       projLoader.load();
@@ -158,7 +164,7 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     CoordinateReferenceSystem finalSourceProjCrs = sourceProjCrs;
     CoordinateReferenceSystem finalTargetProjCrs = targetProjCrs;
     CrsTransformer transformer = useCaches
-        ? getCacheForSource(sourceCrs).computeIfAbsent(targetCrs, ignore -> createCrsTransformer(sourceCrs, targetCrs,
+        ? getCacheForSource(sourceCrs, force2d).computeIfAbsent(targetCrs, ignore -> createCrsTransformer(sourceCrs, targetCrs,
                                                                                                  finalSourceProjCrs, finalTargetProjCrs))
         : createCrsTransformer(sourceCrs, targetCrs, sourceProjCrs, targetProjCrs);
 
@@ -207,6 +213,8 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     } catch (Throwable e) {
       if (logError) {
         LogContext.error(LOGGER, e, "PROJ");
+      } else {
+        LogContext.errorAsDebug(LOGGER, e, "PROJ");
       }
       return Optional.empty();
     }
@@ -282,8 +290,10 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     return crs;
   }
 
-  private Map<EpsgCrs, CrsTransformer> getCacheForSource(EpsgCrs crs) {
-    return transformerCache.computeIfAbsent(crs, ignore -> new ConcurrentHashMap<>());
+  private Map<EpsgCrs, CrsTransformer> getCacheForSource(EpsgCrs crs, boolean force2d) {
+    return force2d
+        ? transformerCacheForce2d.computeIfAbsent(crs, ignore -> new ConcurrentHashMap<>())
+        : transformerCache.computeIfAbsent(crs, ignore -> new ConcurrentHashMap<>());
   }
 
   private synchronized CrsTransformer createCrsTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs,
@@ -304,10 +314,17 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
       checkForMissingGridFiles(coordinateOperation);
 
+      LOGGER.debug("Chosen operation for {} -> {}: {}{}", sourceCrs.toHumanReadableString(), targetCrs.toHumanReadableString(), coordinateOperation.getName().getCode(), getGridFile(coordinateOperation).orElse(""));
+
       CoordinateOperation horizontalCoordinateOperation = null;
       if (sourceDimension == 3) {
         horizontalCoordinateOperation = Proj.createCoordinateOperation(getHorizontalCrs(sourceProjCrs),
             getHorizontalCrs(targetProjCrs), coordinateOperationContext);
+        LOGGER.debug("Chosen operation for '{}' -> '{}': {}{}",
+            getHorizontalCrs(sourceProjCrs).getName().getCode(),
+            getHorizontalCrs(targetProjCrs).getName().getCode(),
+            coordinateOperation.getName().getCode(),
+            getGridFile(horizontalCoordinateOperation).orElse(""));
       }
 
       return new CrsTransformerProj(sourceProjCrs, targetProjCrs,
@@ -337,5 +354,17 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     } catch (Throwable e) {
       //ignore
     }
+  }
+
+  private Optional<String> getGridFile(CoordinateOperation coordinateOperation) {
+
+      Pattern pattern = Pattern.compile("PARAMETERFILE\\[\"(.*?)\",\"(.*?)\"\\]");
+      Matcher matcher = pattern.matcher(coordinateOperation.toWKT());
+      if (matcher.find()) {
+        return Optional.of(
+            String.format(" with parameter file '%s' (%s)", matcher.group(2),
+                matcher.group(1)));
+      }
+      return Optional.empty();
   }
 }

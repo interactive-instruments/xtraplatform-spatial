@@ -121,4 +121,11 @@ public interface EpsgCrs {
         }
         return String.format("http://www.opengis.net/def/crs/EPSG/0/%d", getCode());
     }
+
+    @Value.Lazy
+    default String toHumanReadableString() {
+        String lonlat = getForceAxisOrder() == Force.LON_LAT ? String.format(" (%s)", Force.LON_LAT) : "";
+        String vertical = getVerticalCode().isPresent() ? String.format(" + EPSG:%d", getVerticalCode().getAsInt()) : "";
+        return toSimpleString() + lonlat + vertical;
+    }
 }

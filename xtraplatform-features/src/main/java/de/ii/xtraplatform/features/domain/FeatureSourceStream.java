@@ -7,15 +7,11 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import akka.stream.javadsl.Sink;
-
 import de.ii.xtraplatform.features.domain.FeatureStream2.ResultOld;
 import java.util.concurrent.CompletionStage;
 
 public interface FeatureSourceStream<T> {
 
     CompletionStage<ResultOld> runWith(FeatureConsumer consumer);
-
-    CompletionStage<ResultOld> runWith2(Sink<T, CompletionStage<ResultOld>> consumer);
 
 }

@@ -7,12 +7,12 @@
  */
 package de.ii.xtraplatform.feature.provider.pgis;
 
-import akka.japi.Pair;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import de.ii.xtraplatform.feature.provider.sql.SQL_PATH_TYPE_DEPRECATED;
+import de.ii.xtraplatform.base.domain.util.Tuple;
+import de.ii.xtraplatform.features.sql.SQL_PATH_TYPE_DEPRECATED;
 import org.immutables.value.Value;
 
 import java.util.ArrayDeque;
@@ -69,13 +69,13 @@ public abstract class SqlPathTree {
 
     @Value.Derived
     String getTableName() {
-        List<Pair<String, Optional<List<String>>>> joinPathElements = getJoinPathElements();
+        List<Tuple<String, Optional<List<String>>>> joinPathElements = getJoinPathElements();
         return joinPathElements.get(joinPathElements.size() - 1)
                                .first();
     }
 
     @Value.Derived
-    List<Pair<String, Optional<List<String>>>> getJoinPathElements() {
+    List<Tuple<String, Optional<List<String>>>> getJoinPathElements() {
         return Builder.getJoinPathElements(getPath());
     }
 
@@ -174,7 +174,7 @@ public abstract class SqlPathTree {
                                                                                                                       .startsWith("/[id=id]") && !node.getPath().contains("_2_")) {
                 type = SQL_PATH_TYPE_DEPRECATED.MERGED;
             } else {
-                List<Pair<String, Optional<List<String>>>> joinPathElements = getJoinPathElements(node.getPath());
+                List<Tuple<String, Optional<List<String>>>> joinPathElements = getJoinPathElements(node.getPath());
 
                 if (joinPathElements.stream().anyMatch(stringOptionalPair -> stringOptionalPair.first().contains("_2_"))) {
                     if (joinPathElements.size() == 1) {
@@ -307,7 +307,7 @@ public abstract class SqlPathTree {
                            .splitToList(path);
         }
 
-        private static List<Pair<String, Optional<List<String>>>> getJoinPathElements(String path) {
+        private static List<Tuple<String, Optional<List<String>>>> getJoinPathElements(String path) {
             List<String> pathElements = getPathElements(path);
 
             return pathElements.stream()
@@ -315,12 +315,12 @@ public abstract class SqlPathTree {
                                .collect(Collectors.toList());
         }
 
-        private static Pair<String, Optional<List<String>>> getTableAndJoinCondition(String pathElement) {
+        private static Tuple<String, Optional<List<String>>> getTableAndJoinCondition(String pathElement) {
             Optional<List<String>> joinCondition = pathElement.contains("]") ? Optional.of(Splitter.on('=')
                                                                                                    .omitEmptyStrings()
                                                                                                    .splitToList(pathElement.substring(1, pathElement.indexOf("]")))) : Optional.empty();
             String table = joinCondition.isPresent() ? pathElement.substring(pathElement.indexOf("]") + 1) : pathElement;
-            return new Pair<>(table, joinCondition);
+            return Tuple.of(table, joinCondition);
         }
     }
 
@@ -348,7 +348,7 @@ public abstract class SqlPathTree {
 
         SqlPathTree last = null;
         //int branch = 0;
-        Map<String,Pair<AtomicInteger,AtomicInteger>> branchs = new LinkedHashMap<>();
+        Map<String,Tuple<AtomicInteger,AtomicInteger>> branchs = new LinkedHashMap<>();
         for (SqlPathTree next: depthFirst(this)) {
             if (matcher.test(next.getPath())) {
                 trail.add(next);
@@ -360,7 +360,7 @@ public abstract class SqlPathTree {
             // branch
             if (next.getChildren().size() > 0) {
                 trail.add(next);
-                branchs.put(next.getPath(), new Pair<>(new AtomicInteger(next.getChildren().size()), new AtomicInteger(0)));
+                branchs.put(next.getPath(), Tuple.of(new AtomicInteger(next.getChildren().size()), new AtomicInteger(0)));
                 //branch++;
             } /*else if (!next.getChildren().isEmpty()) {
                 trail.add(next);
@@ -368,7 +368,7 @@ public abstract class SqlPathTree {
             }*/
             // dead end, rewind
             else {
-                Pair<AtomicInteger, AtomicInteger> branch = branchs.get(trail.get(trail.size() - 1)
+                Tuple<AtomicInteger, AtomicInteger> branch = branchs.get(trail.get(trail.size() - 1)
                                                                                                      .getPath());
 
                 while (branch != null) {

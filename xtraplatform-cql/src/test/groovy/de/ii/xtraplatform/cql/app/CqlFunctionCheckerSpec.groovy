@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.cql.app
 
-import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.cql.domain.Cql
 import spock.lang.Shared
 import spock.lang.Specification
@@ -24,7 +23,7 @@ class CqlFunctionCheckerSpec extends Specification {
     def 'Test the function-checking visitor'() {
         given:
         // run the test on 2 different queries to make sure that old function names are removed
-        def allowedFunctions = ImmutableMap.of("indexOf", 2, "pos", 1)
+        def allowedFunctions = ["indexOf": 2, "pos": 1]
         CqlFunctionChecker visitor = new CqlFunctionChecker(allowedFunctions)
 
         when:

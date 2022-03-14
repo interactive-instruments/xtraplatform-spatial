@@ -1,52 +1,32 @@
-apply plugin: 'scala'
 
 sourceSets {
     String sharedTestDir = project(':xtraplatform-feature-transformer-api').file("src/test/java")
     test {
         java.srcDir sharedTestDir
     }
-    main {
-        scala {
-            outputDir = file("$buildDir/classes/scala/main")
-        }
-        java {
-            outputDir = file("$buildDir/classes/java/main")
-        }
-    }
-    /*main {
-        scala {
-            srcDirs = ['src/main/scala', 'src/main/java']
-        }
-        java {
-            srcDirs = []
-        }
-    }*/
 }
 
-tasks.compileJava.dependsOn compileScala
-tasks.compileScala.dependsOn.remove("compileJava")
-
 dependencies {
-    compile files("$sourceSets.main.scala.outputDir")
-
     provided project(':xtraplatform-geometries')
+    provided project(':xtraplatform-codelists')
+    provided project(':xtraplatform-cql')
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-feature-transformer-api')
 
-    //TODO: upgrade
-    embedded (group: 'com.lightbend.akka', name: 'akka-stream-alpakka-slick_2.12', version: '2.0.1') {
-        exclude  group: 'com.typesafe.akka', module: 'akka-stream_2.12'
-        exclude  group: 'org.scala-lang', module: 'scala-library'
-        exclude  group: 'com.typesafe', module: 'config'
-        exclude  group: 'org.reactivestreams', module: 'reactive-streams'
-        exclude  group: 'org.slf4j', module: 'slf4j-api'
+    embedded (group: 'com.github.davidmoten', name: 'rxjava2-jdbc', version: '0.2.9') {
+        exclude module: 'reactive-streams'
+        exclude module: 'commons-io'
+        exclude module: 'slf4j-api'
+        exclude group: 'com.google.code.findbugs'
     }
+    //embeddedFlat group: 'io.reactivex.rxjava3', name: 'rxjava', version: '3.1.3'
+    embeddedFlat group: 'com.github.akarnokd', name: 'rxjava3-bridge', version: '3.0.2'
+    embeddedFlat group: 'com.zaxxer', name: 'HikariCP', version: '5.0.1'
 
-    embedded group: 'org.postgresql', name: 'postgresql', version: '42.2.18'
+    embeddedFlat group: 'org.postgresql', name: 'postgresql', version: '42.3.3'
 
-    embedded group: 'org.xerial', name: 'sqlite-jdbc', version: '3.34.0'
-    embedded group: 'de.interactive_instruments', name: 'xtraplatform-spatialite', version: '5.0.1-2'
+    embeddedExport group: 'org.xerial', name: 'sqlite-jdbc', version: '3.36.0.3'
 
     embedded group: 'us.fatehi', name: 'schemacrawler-api', version: '16.11.6'
     embedded group: 'us.fatehi', name: 'schemacrawler-tools', version: '16.11.6'
@@ -55,38 +35,17 @@ dependencies {
 
     embeddedFlat group: 'com.github.jsqlparser', name: 'jsqlparser', version: '3.2'
 
-    testCompile project(':xtraplatform-feature-transformer-api')
-    testCompile group: 'com.typesafe.akka', name: 'akka-testkit_2.12', version: '2.6.15'
-
-    //TODO: gradle 6 fixtures
-    testImplementation(project(":xtraplatform-cql"))
-    //testImplementation(testFixtures(project(":xtraplatform-cql")))
+    testImplementation(testFixtures(project(":xtraplatform-cql")))
 }
 
-jar {
-    manifest {
-        instructionFirst 'Import-Package', "!waffle.windows.auth"
-        instructionFirst 'Import-Package', "!waffle.windows.auth.impl"
-        instructionFirst 'Import-Package', "!org.hibernate"
-        instructionFirst 'Import-Package', "!org.hibernate.service"
-        instructionFirst 'Import-Package', "!org.hibernate.service.spi"
-        instructionFirst 'Import-Package', "!org.hibernate.engine.jdbc.connections.spi"
-        instructionFirst 'Import-Package', "!com.sun.jna"
-        instructionFirst 'Import-Package', "!com.sun.jna.win32"
-        instructionFirst 'Import-Package', "!com.sun.jna.platform.win32"
-        instructionFirst 'Import-Package', "!io.prometheus.client"
-        instructionFirst 'Import-Package', "!com.sun.jna.ptr"
-        instructionFirst 'Import-Package', "!org.osgi.service.jdbc"
-        instructionFirst 'Import-Package', "!io.micrometer.core.instrument"
-    }
-}
-
-// workaround for known issue when using java-library plugin with groovy/scala: https://docs.gradle.org/5.2.1/userguide/java_library_plugin.html#sec:java_library_known_issues
-configurations {
-    apiElements {
-        outgoing.variants.getByName('classes').artifact(
-                file: compileScala.destinationDir,
-                type: ArtifactTypeDefinition.JVM_CLASS_DIRECTORY,
-                builtBy: compileScala)
-    }
+moduleInfo {
+    requires = [
+            'java.management',
+            'java.naming',
+            'java.sql',
+            'java.security.sasl', //TODO: who needs this? removing it breaks the build
+    ]
+    uses = [
+            'schemacrawler.tools.databaseconnector.DatabaseConnector'
+    ]
 }

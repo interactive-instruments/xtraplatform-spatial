@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.codelists.domain.CodelistData;
-import de.ii.xtraplatform.stringtemplates.domain.StringTemplateFilters;
+import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
