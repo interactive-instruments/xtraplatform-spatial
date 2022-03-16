@@ -25,6 +25,7 @@ import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.app.FeatureProviderSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
+import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
@@ -42,6 +43,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.davidmoten.rx.jdbc.Database;
+import org.davidmoten.rx.jdbc.pool.DatabaseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,20 +146,10 @@ public class SqlConnectorRx implements SqlConnector {
   @Override
   public void start() {
     try {
-      HikariConfig hikariConfig =
-          createHikariConfig(
-              connectionInfo, poolName, maxConnections, minConnections, dataDir, applicationName);
-      hikariConfig.setMetricRegistry(metricRegistry);
-      hikariConfig.setHealthCheckRegistry(healthCheckRegistry);
-
+      HikariConfig hikariConfig = createHikariConfig();
       this.dataSource = new HikariDataSource(hikariConfig);
-      this.session = Database.nonBlocking()
-          .connectionProvider(dataSource)
-          .maxPoolSize(maxConnections)
-          .maxIdleTime(minConnections == maxConnections ? 0 : 600, TimeUnit.SECONDS) //TODO: workaround for bug in rxjava2-jdbc, remove when fixed
-          .build();
+      this.session = createSession(dataSource);
       this.sqlClient = new SqlClientRx(session, connectionInfo.getDialect());
-
     } catch (Throwable e) {
       // TODO: handle properly, service start should fail with error message, show in manager
       // LOGGER.error("CONNECTING TO DB FAILED", e);
@@ -285,13 +277,7 @@ public class SqlConnectorRx implements SqlConnector {
     return sqlClient;
   }
 
-  private static HikariConfig createHikariConfig(
-      ConnectionInfoSql connectionInfo,
-      String poolName,
-      int maxConnections,
-      int minConnections,
-      Path dataDir,
-      String applicationName) {
+  private HikariConfig createHikariConfig() {
     HikariConfig config = new HikariConfig();
 
     config.setUsername(connectionInfo.getUser().orElse(""));
@@ -302,12 +288,33 @@ public class SqlConnectorRx implements SqlConnector {
     config.setInitializationFailTimeout(getInitFailTimeout(connectionInfo));
     config.setIdleTimeout(parseMs(connectionInfo.getPool().getIdleTimeout()));
     config.setPoolName(poolName);
+    config.setKeepaliveTime(300000);
 
     getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
 
     config.setDataSourceProperties(getDriverOptions(connectionInfo, dataDir, applicationName));
 
+    config.setMetricRegistry(metricRegistry);
+    config.setHealthCheckRegistry(healthCheckRegistry);
+
     return config;
+  }
+
+  private Database createSession(HikariDataSource dataSource) {
+    int maxIdleTime = minConnections == maxConnections ? 0 : 600;
+    DatabaseType healthCheck = connectionInfo.getDialect() == Dialect.GPKG ? DatabaseType.SQLITE : DatabaseType.POSTGRES;
+    int idleTimeBeforeHealthCheck = 60;
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("rxjava2-jdbc - maxIdleTime: {}, healthCheck: {},  idleTimeBeforeHealthCheck: {}", maxIdleTime, healthCheck, idleTimeBeforeHealthCheck);
+    }
+
+    return Database.nonBlocking()
+        .connectionProvider(dataSource)
+        .maxPoolSize(maxConnections)
+        .maxIdleTime(maxIdleTime, TimeUnit.SECONDS) //TODO: workaround for bug in rxjava2-jdbc, remove when fixed
+        .healthCheck(healthCheck)
+        .idleTimeBeforeHealthCheck(idleTimeBeforeHealthCheck, TimeUnit.SECONDS)
+        .build();
   }
 
   private static long getInitFailTimeout(ConnectionInfoSql connectionInfo) {
