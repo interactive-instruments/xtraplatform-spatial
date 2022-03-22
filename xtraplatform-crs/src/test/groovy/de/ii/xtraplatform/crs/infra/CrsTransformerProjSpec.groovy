@@ -147,20 +147,22 @@ class CrsTransformerProjSpec extends Specification {
         transformerFactory.getAxisAbbreviations(crs) == axisAbbreviations
         transformerFactory.getAxisUnits(crs) == axisUnits
         transformerFactory.getAxisDirections(crs) == axisDirections
-        transformerFactory.getAxisRangeMeanings(crs) == axisRangeMeanings
+        transformerFactory.getAxisWithWraparound(crs) == axisWithWraparound
+        transformerFactory.getAxisMinimums(crs) == axisMinimums
+        transformerFactory.getAxisMaximums(crs) == axisMaximums
 
         where:
-        crs               | axisAbbreviations   | axisUnits                                 | axisDirections                                              | axisRangeMeanings
-        EpsgCrs.of(5555)  | ["E", "N", "H"]     | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | [Optional.empty(), Optional.empty(), Optional.empty()]
-        EpsgCrs.of(5556)  | ["E", "N", "H"]     | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | [Optional.empty(), Optional.empty(), Optional.empty()]
-        EpsgCrs.of(4979)  | ["Lat", "Lon", "h"] | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.NORTH, AxisDirection.EAST, AxisDirection.UP] | [Optional.empty(), Optional.empty(), Optional.empty()]
-        EpsgCrs.of(25832) | ["E", "N"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | [Optional.empty(), Optional.empty()]
-        EpsgCrs.of(4326)  | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | [Optional.empty(), Optional.empty()]
-        EpsgCrs.of(3857)  | ["X", "Y"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | [Optional.empty(), Optional.empty()]
-        EpsgCrs.of(4269)  | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | [Optional.empty(), Optional.empty()]
-        OgcCrs.CRS84      | ["Lon", "Lat"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.EAST, AxisDirection.NORTH]                   | [Optional.empty(), Optional.empty()]
-        OgcCrs.CRS84h     | ["Lon", "Lat", "h"] | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | [Optional.empty(), Optional.empty(), Optional.empty()]
-
+        crs               | axisAbbreviations   | axisUnits                                 | axisDirections                                              | axisWithWraparound  | axisMinimums                                                                                                          | axisMaximums
+        EpsgCrs.of(5555)  | ["E", "N", "H"]     | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
+        EpsgCrs.of(5556)  | ["E", "N", "H"]     | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
+        EpsgCrs.of(4979)  | ["Lat", "Lon", "h"] | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.NORTH, AxisDirection.EAST, AxisDirection.UP] | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
+        EpsgCrs.of(25832) | ["E", "N"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
+        EpsgCrs.of(4326)  | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
+        EpsgCrs.of(3857)  | ["X", "Y"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
+        EpsgCrs.of(4269)  | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
+        OgcCrs.CRS84      | ["Lon", "Lat"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.of(0)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
+        OgcCrs.CRS84h     | ["Lon", "Lat", "h"] | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | OptionalInt.of(0)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
+        
     }
 
     def 'Compound CRS test'() {
