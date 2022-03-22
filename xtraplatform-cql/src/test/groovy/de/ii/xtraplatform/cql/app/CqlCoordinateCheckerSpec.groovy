@@ -85,7 +85,7 @@ class CqlCoordinateCheckerSpec extends Specification {
         //
 
         when:
-        CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "bbox", SpatialLiteral.of(Geometry.Envelope.of(6,100,12, 110,OgcCrs.CRS84)))).accept(visitor1)
+        CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "bbox", SpatialLiteral.of(Geometry.Envelope.of(6,10,12, 100,OgcCrs.CRS84)))).accept(visitor1)
 
         then:
         thrown IllegalArgumentException
@@ -93,7 +93,7 @@ class CqlCoordinateCheckerSpec extends Specification {
         and:
 
         when:
-        CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "bbox", SpatialLiteral.of(Geometry.Envelope.of(6,100,12, 110,OgcCrs.CRS84)))).accept(visitor2)
+        CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "bbox", SpatialLiteral.of(Geometry.Envelope.of(6,10,12, 100,OgcCrs.CRS84)))).accept(visitor2)
 
         then:
         thrown IllegalArgumentException
@@ -123,7 +123,7 @@ class CqlCoordinateCheckerSpec extends Specification {
         String cqlText = "S_INTERSECTS(bbox,POLYGON((6.841676292954137 51.530481422116154,6.910590039820299 51.48142884149749,6.920492602491171 51.47642346300475,6.92048790793338 51.48838138815214,6.920711061968184 51.49719648216943,6.9155177499026191 51.49619902382169,6.915465875139691 51.51941060843487,6.909367346948651 51.52980833786589,6.906686188338441 51.536126767037025,6.841676292954131 51.530481422116154)))"
 
         when:
-        def test = cql.read(cqlText, Cql.Format.TEXT).accept(visitor)
+        def test = cql.read(cqlText, Cql.Format.TEXT).accept(visitor1)
 
         then:
         noExceptionThrown()
