@@ -24,12 +24,16 @@ import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.CqlToText;
 import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.cql.infra.CqlTextParser;
+import de.ii.xtraplatform.crs.domain.CrsInfo;
+import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import io.dropwizard.jackson.Jackson;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import com.github.azahnen.dagger.annotations.AutoBind;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
 import java.io.IOException;
@@ -43,6 +47,8 @@ import java.util.Set;
 @Singleton
 @AutoBind
 public class CqlImpl implements Cql {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(CqlImpl.class);
 
     private final CqlTextParser cqlTextParser;
     private final ObjectMapper cqlJsonMapper;
@@ -113,6 +119,15 @@ public class CqlImpl implements Cql {
         CqlTypeChecker visitor = new CqlTypeChecker(propertyTypes, this);
 
         cqlPredicate.accept(visitor);
+    }
+
+    @Override
+    public void checkCoordinates(CqlPredicate cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs) {
+        long start = System.currentTimeMillis();
+        CqlCoordinateChecker visitor = new CqlCoordinateChecker(crsTransformerFactory, crsInfo, filterCrs, nativeCrs);
+
+        cqlPredicate.accept(visitor);
+        LOGGER.debug("Coordinate validation took {}ms.", System.currentTimeMillis() - start);
     }
 
     @Override
