@@ -1,0 +1,6 @@
+
+dependencies {
+    provided project(':xtraplatform-crs')
+    provided project(':xtraplatform-features')
+    provided project(':xtraplatform-features-sql')
+}

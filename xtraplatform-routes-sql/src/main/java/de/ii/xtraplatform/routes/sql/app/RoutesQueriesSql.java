@@ -15,6 +15,7 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
@@ -56,9 +57,9 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
   }
 
   @Override
-  public void on(LIFECYCLE_HOOK hook, FeatureProviderDataV2 data,
+  public void on(LIFECYCLE_HOOK hook, FeatureProvider2 provider,
       FeatureProviderConnector<?, ?, ?> connector) {
-    Optional<RoutesConfiguration> routesConfiguration = getRoutesConfiguration(data);
+    Optional<RoutesConfiguration> routesConfiguration = getRoutesConfiguration(provider.getData());
 
     if (routesConfiguration.isPresent()) {
       SqlClient sqlClient = ((SqlConnector) connector).getSqlClient();
@@ -66,13 +67,13 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
       switch (hook) {
         case STARTED:
           if (routesConfiguration.get().shouldWarmup()) {
-            LOGGER.debug("Warming up routes queries for {}", data.getId());
+            LOGGER.debug("Warming up routes queries for {}", provider.getId());
             List<String> queries = getWarmupSelects(routesConfiguration.get());
             AtomicInteger completed = new AtomicInteger();
             queries.forEach(query -> sqlClient.run(query, SqlQueryOptions.ignoreResults()).whenComplete((r,t) -> {
               completed.getAndIncrement();
               if (completed.get()==queries.size())
-                LOGGER.debug("Routes queries for {} are warmed up", data.getId());
+                LOGGER.debug("Routes queries for {} are warmed up", provider.getId());
             }));
           }
           break;

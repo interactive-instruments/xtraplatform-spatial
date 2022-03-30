@@ -185,7 +185,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
         .forEach(
             extension -> {
               if (extension.isSupported(getConnector())) {
-                extension.on(LIFECYCLE_HOOK.STARTED, getData(), getConnector());
+                extension.on(LIFECYCLE_HOOK.STARTED, this, getConnector());
               }
             });
   }

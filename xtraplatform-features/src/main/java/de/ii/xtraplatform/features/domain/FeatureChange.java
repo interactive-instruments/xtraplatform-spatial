@@ -14,7 +14,16 @@ public interface FeatureChange {
   enum Action {
     CREATE,
     UPDATE,
-    DELETE
+    DELETE,
+    UNKNOWN;
+
+    public static Action fromString(String action) {
+      return action.equalsIgnoreCase("create") || action.equalsIgnoreCase("insert")
+          ? CREATE
+          : action.equalsIgnoreCase("update")
+              ? UPDATE
+              : action.equalsIgnoreCase("delete") ? DELETE : UNKNOWN;
+    }
   }
 
   Action getAction();
