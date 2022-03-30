@@ -17,6 +17,7 @@ import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.features.app.FeatureChangeHandlerImpl;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.LIFECYCLE_HOOK;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.QUERY_HOOK;
@@ -58,6 +59,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
   private final Reactive reactive;
   private final CrsTransformerFactory crsTransformerFactory;
   private final ProviderExtensionRegistry extensionRegistry;
+  private final FeatureChangeHandler changeHandler;
   private Reactive.Runner streamRunner;
   private Map<String, FeatureStoreTypeInfo> typeInfos;
   private FeatureProviderConnector<T, U, V> connector;
@@ -73,6 +75,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
     this.reactive = reactive;
     this.crsTransformerFactory = crsTransformerFactory;
     this.extensionRegistry = extensionRegistry;
+    this.changeHandler = new FeatureChangeHandlerImpl();
   }
 
   private void onConnectorDispose() {
@@ -470,5 +473,10 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
           .via(cleaner);
       // .via(logger);
     }
+  }
+
+  @Override
+  public FeatureChangeHandler getFeatureChangeHandler() {
+    return changeHandler;
   }
 }

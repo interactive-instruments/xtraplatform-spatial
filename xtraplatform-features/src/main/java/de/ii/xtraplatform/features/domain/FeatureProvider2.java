@@ -34,7 +34,7 @@ public interface FeatureProvider2 extends PersistentEntity {
     }
 */
 
-
+    FeatureChangeHandler getFeatureChangeHandler();
 
     default boolean supportsQueries() {
         return this instanceof FeatureQueries;
