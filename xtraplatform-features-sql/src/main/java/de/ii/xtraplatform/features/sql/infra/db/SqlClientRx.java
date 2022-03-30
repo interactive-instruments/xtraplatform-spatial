@@ -23,6 +23,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.Tx;
+import org.postgresql.PGConnection;
+import org.postgresql.PGNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -270,5 +273,19 @@ public class SqlClientRx implements SqlClient {
     }
 
     return ImmutableMap.of();
+  }
+
+  @Override
+  public List<String> getNotifications(Connection connection) {
+    if (connection instanceof PGConnection) {
+      try {
+        return Arrays.stream(((PGConnection) connection).getNotifications())
+            .map(PGNotification::getParameter)
+            .collect(Collectors.toList());
+      } catch (SQLException e) {
+        // ignore
+      }
+    }
+    return ImmutableList.of();
   }
 }

@@ -42,12 +42,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.postgresql.PGConnection;
-import org.postgresql.PGNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
@@ -61,7 +60,9 @@ public class FeatureChangeListenerSql implements FeatureQueriesExtension {
   private final ScheduledExecutorService executorService;
   private final Map<
           String,
-          Map<Tuple<String, String>, Triple<Connection, PGConnection, Supplier<Connection>>>>
+          Map<
+              Tuple<String, String>,
+              Triple<Connection, Function<Connection, List<String>>, Supplier<Connection>>>>
       subscriptions;
 
   @Inject
@@ -86,7 +87,8 @@ public class FeatureChangeListenerSql implements FeatureQueriesExtension {
 
       switch (hook) {
         case STARTED:
-          subscribe(provider, configuration.get(), sqlClient::getConnection);
+          subscribe(
+              provider, configuration.get(), sqlClient::getConnection, sqlClient::getNotifications);
           break;
       }
     }
@@ -111,30 +113,34 @@ public class FeatureChangeListenerSql implements FeatureQueriesExtension {
   private void subscribe(
       FeatureProvider2 provider,
       FeatureChangesConfiguration configuration,
-      Supplier<Connection> connectionSupplier) {
+      Supplier<Connection> connectionSupplier,
+      Function<Connection, List<String>> notificationPoller) {
     subscriptions.put(provider.getId(), new ConcurrentHashMap<>());
 
     getChannels(provider.getData().getTypes(), configuration.getSubscribeToCollections())
-        .forEach(channel -> subscribe(provider.getId(), channel, connectionSupplier));
+        .forEach(
+            channel ->
+                subscribe(provider.getId(), channel, connectionSupplier, notificationPoller));
 
     executorService.scheduleWithFixedDelay(
         () -> poll(provider.getId(), provider.getFeatureChangeHandler()), 15, 5, TimeUnit.SECONDS);
   }
 
   private void subscribe(
-      String provider, Tuple<String, String> channel, Supplier<Connection> connectionSupplier) {
+      String provider,
+      Tuple<String, String> channel,
+      Supplier<Connection> connectionSupplier,
+      Function<Connection, List<String>> notificationPoller) {
     try {
       Connection connection = connectionSupplier.get();
-      if (connection instanceof PGConnection) {
-        Statement stmt = connection.createStatement();
-        stmt.execute("LISTEN " + String.format("%s_%s", channel.first(), channel.second()));
-        stmt.close();
-        subscriptions
-            .get(provider)
-            .put(channel, Triple.of(connection, (PGConnection) connection, connectionSupplier));
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Subscribed to feature changes for {}", channel);
-        }
+      Statement stmt = connection.createStatement();
+      stmt.execute("LISTEN " + String.format("%s_%s", channel.first(), channel.second()));
+      stmt.close();
+      subscriptions
+          .get(provider)
+          .put(channel, Triple.of(connection, notificationPoller, connectionSupplier));
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("Subscribed to feature changes for {}", channel);
       }
     } catch (SQLException e) {
       LogContext.error(LOGGER, e, "Could not subscribe to feature changes for {}", channel);
@@ -163,7 +169,7 @@ public class FeatureChangeListenerSql implements FeatureQueriesExtension {
       FeatureChangeHandler featureChangeHandler,
       Tuple<String, String> channel,
       Connection connection,
-      PGConnection pgConnection,
+      Function<Connection, List<String>> notificationPoller,
       Supplier<Connection> connectionSupplier) {
     try {
       // need to poll the notification queue using a dummy query
@@ -172,18 +178,12 @@ public class FeatureChangeListenerSql implements FeatureQueriesExtension {
       rs.close();
       stmt.close();
 
-      PGNotification[] notifications = pgConnection.getNotifications();
-      if (Objects.nonNull(notifications)) {
-        for (int i = 0; i < notifications.length; i++) {
-          if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace(
-                "Feature change notification received: "
-                    + notifications[i].getName()
-                    + "; "
-                    + notifications[i].getParameter());
-          }
-          onFeatureChange(channel.first(), featureChangeHandler, notifications[i]);
+      List<String> notifications = notificationPoller.apply(connection);
+      for (String notification : notifications) {
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("Feature change notification received: " + notification);
         }
+        onFeatureChange(channel.first(), featureChangeHandler, notification);
       }
     } catch (SQLException e) {
       try {
@@ -201,12 +201,12 @@ public class FeatureChangeListenerSql implements FeatureQueriesExtension {
       LogContext.errorAsDebug(
           LOGGER, e, "Lost connection to retrieve feature changes for {}", channel);
       subscriptions.get(provider).remove(channel);
-      subscribe(provider, channel, connectionSupplier);
+      subscribe(provider, channel, connectionSupplier, notificationPoller);
     }
   }
 
   private void onFeatureChange(
-      String featureType, FeatureChangeHandler featureChangeHandler, PGNotification notification) {
+      String featureType, FeatureChangeHandler featureChangeHandler, String notification) {
     try {
       FeatureChange featureChange = parseFeatureChange(featureType, notification);
       featureChangeHandler.handle(featureChange);
@@ -231,8 +231,8 @@ public class FeatureChangeListenerSql implements FeatureQueriesExtension {
 
   private static final Splitter SPLITTER = Splitter.on(",").trimResults();
 
-  private FeatureChange parseFeatureChange(String featureType, PGNotification notification) {
-    List<String> parameters = SPLITTER.splitToList(notification.getParameter());
+  private FeatureChange parseFeatureChange(String featureType, String notification) {
+    List<String> parameters = SPLITTER.splitToList(notification);
 
     if (parameters.size() < 9) {
       throw new IllegalArgumentException("incomplete parameters - " + notification);
