@@ -14,7 +14,7 @@ import de.ii.xtraplatform.base.domain.util.Triple;
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.feature.changes.sql.domain.FeatureChangesConfiguration;
+import de.ii.xtraplatform.feature.changes.sql.domain.FeatureChangesPgConfiguration;
 import de.ii.xtraplatform.features.domain.FeatureChange;
 import de.ii.xtraplatform.features.domain.FeatureChange.Action;
 import de.ii.xtraplatform.features.domain.FeatureChangeHandler;
@@ -53,9 +53,9 @@ import org.threeten.extra.Interval;
 
 @Singleton
 @AutoBind
-public class FeatureChangeListenerSql implements FeatureQueriesExtension {
+public class FeatureChangesPgListener implements FeatureQueriesExtension {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(FeatureChangeListenerSql.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FeatureChangesPgListener.class);
 
   private final ScheduledExecutorService executorService;
   private final Map<
@@ -66,7 +66,7 @@ public class FeatureChangeListenerSql implements FeatureQueriesExtension {
       subscriptions;
 
   @Inject
-  public FeatureChangeListenerSql() {
+  public FeatureChangesPgListener() {
     this.executorService = new ScheduledThreadPoolExecutor(1);
     this.subscriptions = new ConcurrentHashMap<>();
   }
@@ -80,7 +80,7 @@ public class FeatureChangeListenerSql implements FeatureQueriesExtension {
   @Override
   public void on(
       LIFECYCLE_HOOK hook, FeatureProvider2 provider, FeatureProviderConnector<?, ?, ?> connector) {
-    Optional<FeatureChangesConfiguration> configuration = getConfiguration(provider.getData());
+    Optional<FeatureChangesPgConfiguration> configuration = getConfiguration(provider.getData());
 
     if (configuration.isPresent()) {
       SqlClient sqlClient = ((SqlConnector) connector).getSqlClient();
@@ -102,22 +102,22 @@ public class FeatureChangeListenerSql implements FeatureQueriesExtension {
       FeatureQuery query,
       BiConsumer<String, String> aliasResolver) {}
 
-  private Optional<FeatureChangesConfiguration> getConfiguration(FeatureProviderDataV2 data) {
+  private Optional<FeatureChangesPgConfiguration> getConfiguration(FeatureProviderDataV2 data) {
     return data.getExtensions().stream()
         .filter(
-            extension -> extension.isEnabled() && extension instanceof FeatureChangesConfiguration)
-        .map(extension -> (FeatureChangesConfiguration) extension)
+            extension -> extension.isEnabled() && extension instanceof FeatureChangesPgConfiguration)
+        .map(extension -> (FeatureChangesPgConfiguration) extension)
         .findFirst();
   }
 
   private void subscribe(
       FeatureProvider2 provider,
-      FeatureChangesConfiguration configuration,
+      FeatureChangesPgConfiguration configuration,
       Supplier<Connection> connectionSupplier,
       Function<Connection, List<String>> notificationPoller) {
     subscriptions.put(provider.getId(), new ConcurrentHashMap<>());
 
-    getChannels(provider.getData().getTypes(), configuration.getSubscribeToCollections())
+    getChannels(provider.getData().getTypes(), configuration.getListenForTypes())
         .forEach(
             channel ->
                 subscribe(provider.getId(), channel, connectionSupplier, notificationPoller));

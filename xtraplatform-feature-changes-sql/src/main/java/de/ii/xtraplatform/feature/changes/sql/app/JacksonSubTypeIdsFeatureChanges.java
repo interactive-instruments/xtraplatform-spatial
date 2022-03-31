@@ -10,7 +10,7 @@ package de.ii.xtraplatform.feature.changes.sql.app;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.base.domain.JacksonSubTypeIds;
-import de.ii.xtraplatform.feature.changes.sql.domain.FeatureChangesConfiguration;
+import de.ii.xtraplatform.feature.changes.sql.domain.FeatureChangesPgConfiguration;
 import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
 import java.util.Map;
 import javax.inject.Inject;
@@ -27,8 +27,8 @@ public class JacksonSubTypeIdsFeatureChanges implements JacksonSubTypeIds {
     @Override
     public Map<Class<?>, String> getMapping() {
         return new ImmutableMap.Builder<Class<?>, String>()
-                .put(FeatureChangesConfiguration.class, ExtensionConfiguration.getIdentifier(
-                    FeatureChangesConfiguration.class))
+                .put(FeatureChangesPgConfiguration.class, ExtensionConfiguration.getIdentifier(
+                    FeatureChangesPgConfiguration.class))
                 .build();
     }
 }

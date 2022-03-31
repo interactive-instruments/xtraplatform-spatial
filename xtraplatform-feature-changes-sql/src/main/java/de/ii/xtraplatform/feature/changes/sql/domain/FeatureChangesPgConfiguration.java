@@ -14,16 +14,16 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(builder = "new")
-@JsonDeserialize(builder = ImmutableFeatureChangesConfiguration.Builder.class)
-public interface FeatureChangesConfiguration extends ExtensionConfiguration {
+@JsonDeserialize(builder = ImmutableFeatureChangesPgConfiguration.Builder.class)
+public interface FeatureChangesPgConfiguration extends ExtensionConfiguration {
 
-  List<String> getSubscribeToCollections();
+  List<String> getListenForTypes();
 
   abstract class Builder extends ExtensionConfiguration.Builder {
   }
 
   @Override
   default Builder getBuilder() {
-    return new ImmutableFeatureChangesConfiguration.Builder();
+    return new ImmutableFeatureChangesPgConfiguration.Builder();
   }
 }
