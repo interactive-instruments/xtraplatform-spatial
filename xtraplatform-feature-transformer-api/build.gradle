@@ -1,4 +1,6 @@
 
+maturity = 'EXPERIMENTAL'
+
 dependencies {
     provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-crs')

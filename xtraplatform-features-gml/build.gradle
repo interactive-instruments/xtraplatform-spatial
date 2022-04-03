@@ -1,4 +1,6 @@
 
+maturity = 'EXPERIMENTAL'
+
 dependencies {
     provided project(':xtraplatform-codelists')
     provided project(':xtraplatform-cql')

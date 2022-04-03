@@ -3,6 +3,8 @@ plugins {
     id 'antlr'
 }
 
+maturity = 'EXPERIMENTAL'
+
 dependencies {
     provided project(":xtraplatform-crs")
 

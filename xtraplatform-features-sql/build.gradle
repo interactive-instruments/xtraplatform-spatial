@@ -1,4 +1,6 @@
 
+maturity = 'EXPERIMENTAL'
+
 sourceSets {
     String sharedTestDir = project(':xtraplatform-feature-transformer-api').file("src/test/java")
     test {

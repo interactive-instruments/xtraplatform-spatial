@@ -1,4 +1,6 @@
 
+maturity = 'EXPERIMENTAL'
+
 dependencies {
     provided project(':xtraplatform-cql')
     provided project(':xtraplatform-crs')
