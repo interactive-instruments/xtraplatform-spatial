@@ -14,7 +14,7 @@ ext {
 version = '6.1.0' + versionSuffix
 
 dependencies {
-    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '5.1.0-SNAPSHOT'
+    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '5.1.0-cleanup-and-code-quality-SNAPSHOT'
     layers group: 'de.interactive_instruments', name: 'xtraplatform-native', version: '2.1.0-SNAPSHOT'
 
     modules subprojects
