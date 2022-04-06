@@ -9,7 +9,13 @@ package de.ii.xtraplatform.crs.domain;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import javax.measure.Unit;
+
+import dagger.Binds;
+import dagger.Provides;
+import de.ii.xtraplatform.crs.infra.CrsTransformerFactoryProj;
+import de.ii.xtraplatform.proj.domain.ProjLoader;
 import org.opengis.referencing.cs.AxisDirection;
 import org.opengis.referencing.cs.RangeMeaning;
 
@@ -25,8 +31,14 @@ public interface CrsInfo {
 
   List<Unit<?>> getAxisUnits(EpsgCrs crs);
 
-  List<Optional<RangeMeaning>> getAxisRangeMeanings(EpsgCrs crs);
+  List<Optional<Double>> getAxisMinimums(EpsgCrs crs);
+
+  List<Optional<Double>> getAxisMaximums(EpsgCrs crs);
+
+  OptionalInt getAxisWithWraparound(EpsgCrs crs);
 
   List<AxisDirection> getAxisDirections(EpsgCrs crs);
+
+  Optional<BoundingBox> getDomainOfValidity(EpsgCrs crs);
 
 }

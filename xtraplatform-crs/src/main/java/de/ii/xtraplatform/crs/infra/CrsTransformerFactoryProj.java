@@ -10,35 +10,24 @@ package de.ii.xtraplatform.crs.infra;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import dagger.Binds;
+import dagger.Provides;
+import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
-import de.ii.xtraplatform.crs.domain.ImmutableEpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.proj.domain.ProjLoader;
-import de.ii.xtraplatform.base.domain.LogContext;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.IntStream;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import com.github.azahnen.dagger.annotations.AutoBind;
-import javax.measure.Unit;
 import org.kortforsyningen.proj.CoordinateOperationContext;
 import org.kortforsyningen.proj.GridAvailabilityUse;
 import org.kortforsyningen.proj.Proj;
 import org.kortforsyningen.proj.SpatialCriterion;
 import org.kortforsyningen.proj.spi.EPSG;
-import org.opengis.referencing.ReferenceIdentifier;
+import org.opengis.metadata.extent.Extent;
+import org.opengis.metadata.extent.GeographicBoundingBox;
+import org.opengis.metadata.extent.GeographicExtent;
 import org.opengis.referencing.crs.CRSAuthorityFactory;
 import org.opengis.referencing.crs.CRSFactory;
 import org.opengis.referencing.crs.CompoundCRS;
@@ -46,11 +35,27 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.crs.GeographicCRS;
 import org.opengis.referencing.crs.SingleCRS;
 import org.opengis.referencing.cs.AxisDirection;
+import org.opengis.referencing.cs.CoordinateSystem;
+import org.opengis.referencing.cs.EllipsoidalCS;
 import org.opengis.referencing.cs.RangeMeaning;
 import org.opengis.referencing.operation.CoordinateOperation;
-import org.opengis.util.GenericName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.measure.Unit;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  *
@@ -124,15 +129,52 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
         .collect(ImmutableList.toImmutableList());
   }
 
-  //TODO: it seems that PROJ always returns null for axis range meaning requests
   @Override
-  public List<Optional<RangeMeaning>> getAxisRangeMeanings(EpsgCrs crs) {
+  public List<Optional<Double>> getAxisMinimums(EpsgCrs crs) {
     CoordinateReferenceSystem projCrs = getCrsOrThrow(crs);
 
     return IntStream.range(0, is3d(crs) ? 3 : 2)
-        .mapToObj(i -> projCrs.getCoordinateSystem().getAxis(i).getRangeMeaning())
+        .mapToObj(i -> projCrs.getCoordinateSystem().getAxis(i).getMinimumValue())
         .map(Optional::ofNullable)
         .collect(ImmutableList.toImmutableList());
+  }
+
+  @Override
+  public List<Optional<Double>> getAxisMaximums(EpsgCrs crs) {
+    CoordinateReferenceSystem projCrs = getCrsOrThrow(crs);
+
+    return IntStream.range(0, is3d(crs) ? 3 : 2)
+        .mapToObj(i -> projCrs.getCoordinateSystem().getAxis(i).getMaximumValue())
+        .map(Optional::ofNullable)
+        .collect(ImmutableList.toImmutableList());
+  }
+
+  @Override
+  public OptionalInt getAxisWithWraparound(EpsgCrs crs) {
+    CoordinateReferenceSystem projCrs = getCrsOrThrow(crs);
+
+    // first check, if the range meaning is provided (typically this is not the case)
+    CoordinateSystem cs = projCrs.getCoordinateSystem();
+    for (int i=0; i<cs.getDimension(); i++)
+      if (RangeMeaning.WRAPAROUND.equals(cs.getAxis(i).getRangeMeaning()))
+        return OptionalInt.of(i);
+
+    // otherwise we analyse the CRS definition
+
+    // if we have a compound CRS, we analyse the coordinate system of the first CRS, which includes the horizontal axes
+    if (projCrs instanceof CompoundCRS)
+      cs = ((CompoundCRS) projCrs).getComponents().get(0).getCoordinateSystem();
+
+    // wraparound only occurs in ellipsoidal coordinate systems
+    if (!(cs instanceof EllipsoidalCS))
+      return OptionalInt.empty();
+
+    // find the longitude axis
+    for (int i=0; i<cs.getDimension(); i++)
+      if (AxisDirection.EAST.equals(cs.getAxis(i).getDirection()) || AxisDirection.WEST.equals(cs.getAxis(i).getDirection()))
+        return OptionalInt.of(i);
+
+    return OptionalInt.empty();
   }
 
   @Override
@@ -143,6 +185,52 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
         .mapToObj(i -> projCrs.getCoordinateSystem().getAxis(i).getDirection())
         .collect(ImmutableList.toImmutableList());
   }
+
+  @Override
+  public Optional<BoundingBox> getDomainOfValidity(EpsgCrs crs) {
+    CoordinateReferenceSystem projCrs = getCrsOrThrow(crs);
+
+    Extent extent = projCrs.getDomainOfValidity();
+    if (Objects.isNull(extent))
+      return Optional.empty();
+
+    Collection<? extends GeographicExtent> geographicElements = extent.getGeographicElements();
+    if (Objects.isNull(geographicElements) || geographicElements.isEmpty())
+      return Optional.empty();
+
+    List<BoundingBox> bboxs = geographicElements.stream()
+        .map(geographicExtent -> {
+          if (geographicExtent instanceof GeographicBoundingBox) {
+            GeographicBoundingBox geoBbox = (GeographicBoundingBox) geographicExtent;
+            return BoundingBox.of(geoBbox.getWestBoundLongitude(), geoBbox.getSouthBoundLatitude(),
+                                  geoBbox.getEastBoundLongitude(), geoBbox.getNorthBoundLatitude(),
+                                  OgcCrs.CRS84);
+          }
+          // TODO support also bounding polygons?
+          return null;
+        })
+        .filter(Objects::nonNull)
+        .collect(Collectors.toUnmodifiableList());
+    if (bboxs.isEmpty())
+      return Optional.empty();
+    else if (bboxs.size()==1)
+      return Optional.of(bboxs.get(0));
+
+    // we have multiple bboxes, construct the bbox that includes them all;
+    // also take care of bounding boxes that cross the antimeridian and normalize
+    // the longitude values for the compuation so that west < east also for those
+    // bounding boxes
+    return bboxs.stream()
+        .map(bbox -> bbox.getXmin() > bbox.getXmax() ? BoundingBox.of(bbox.getXmin()-180, bbox.getYmin(), bbox.getXmax(), bbox.getYmax(), OgcCrs.CRS84) : bbox)
+        .map(BoundingBox::toArray)
+        .reduce((doubles, doubles2) -> new double[]{
+            Math.min(doubles[0], doubles2[0]),
+            Math.min(doubles[1], doubles2[1]),
+            Math.max(doubles[2], doubles2[2]),
+            Math.max(doubles[3], doubles2[3])})
+        .map(doubles -> BoundingBox.of(doubles[0] < -180 ? doubles[0]+180 : doubles[0], doubles[1], doubles[2], doubles[3], OgcCrs.CRS84));
+  }
+
   @Override
   public Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs) {
     return getTransformer(sourceCrs, targetCrs, false);
@@ -227,12 +315,11 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
   private EpsgCrs applyWorkarounds(EpsgCrs crs) {
     // ArcGIS still uses code 102100 instead of 3857, but proj does not support it anymore
     if (crs.getCode() == 102100) {
-      return new ImmutableEpsgCrs.Builder().from(crs).code(3857).build();
+      return EpsgCrs.of(3857);
     }
-    // FME uses code 900914 instead of 4979, but proj does not support this
+    // FME uses code 900914 instead of 4979/CRS84h, but proj does not support this
     if (crs.getCode() == 900914) {
-      return new ImmutableEpsgCrs.Builder().from(crs).code(4979).forceAxisOrder(Force.LON_LAT)
-          .build();
+      return OgcCrs.CRS84h;
     }
     return crs;
   }

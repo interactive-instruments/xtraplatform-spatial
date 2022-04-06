@@ -88,6 +88,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   public static final String PROVIDER_TYPE = "SQL";
 
   private final CrsTransformerFactory crsTransformerFactory;
+  private final CrsInfo crsInfo;
   private final Cql cql;
   private final EntityRegistry entityRegistry;
 
@@ -104,6 +105,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   @AssistedInject
   public FeatureProviderSql(
       CrsTransformerFactory crsTransformerFactory,
+      CrsInfo crsInfo,
       Cql cql,
       ConnectorFactory connectorFactory,
       Reactive reactive,
@@ -113,6 +115,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry, data);
 
     this.crsTransformerFactory = crsTransformerFactory;
+    this.crsInfo = crsInfo;
     this.cql = cql;
     this.entityRegistry = entityRegistry;
   }
@@ -167,6 +170,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
             getData().getNativeCrs().orElse(OgcCrs.CRS84),
             sqlDialect,
             crsTransformerFactory,
+            crsInfo,
             cql,
             accentiCollation);
     FeatureStoreQueryGeneratorSql queryGeneratorSql =

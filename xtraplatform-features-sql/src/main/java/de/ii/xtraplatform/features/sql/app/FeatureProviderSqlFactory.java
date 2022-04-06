@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableMap;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
@@ -67,6 +68,7 @@ public class FeatureProviderSqlFactory
   public FeatureProviderSqlFactory(
       // TODO: needed because dagger-auto does not parse FeatureProviderSql
       CrsTransformerFactory crsTransformerFactory,
+      CrsInfo crsInfo,
       Cql cql,
       ConnectorFactory connectorFactory,
       Reactive reactive,
