@@ -22,7 +22,7 @@ import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
-import de.ii.xtraplatform.features.domain.ExtentReader;
+import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
@@ -94,7 +94,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   private final EntityRegistry entityRegistry;
 
   private FeatureQueryEncoderSql queryTransformer;
-  private ExtentReader extentReader;
+  private AggregateStatsReader aggregateStatsReader;
   private FeatureMutationsSql featureMutationsSql;
   private FeatureSchemaSwapperSql schemaSwapperSql;
   private FeatureStorePathParser pathParser;
@@ -207,8 +207,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     this.queryTransformer = new FeatureQueryEncoderSql(schemas, getTypeInfos());
 
-    this.extentReader =
-        new ExtentReaderSql(
+    this.aggregateStatsReader =
+        new AggregateStatsReaderSql(
             this::getSqlClient,
             queryGeneratorSql,
             sqlDialect,
@@ -421,6 +421,31 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   }
 
   @Override
+  public long getFeatureCount(String typeName) {
+    Optional<FeatureStoreTypeInfo> typeInfo =
+        Optional.ofNullable(getTypeInfos().get(typeName));
+
+    if (!typeInfo.isPresent()) {
+      return -1;
+    }
+
+    try {
+      Stream<Long> countGraph = aggregateStatsReader.getCount(typeInfo.get());
+
+      return countGraph
+          .on(getStreamRunner())
+          .run()
+          .exceptionally(throwable -> -1L)
+          .toCompletableFuture()
+          .join();
+    } catch (Throwable e) {
+      // continue
+    }
+
+    return -1;
+  }
+
+  @Override
   public Optional<BoundingBox> getSpatialExtent(String typeName) {
     return spatialExtentCache.computeIfAbsent(
         typeName,
@@ -445,7 +470,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                           "Computing spatial extent for '{}.{}'", typeName, spatialProperty));
 
           try {
-            Stream<Optional<BoundingBox>> extentGraph = extentReader.getExtent(typeInfo.get());
+            Stream<Optional<BoundingBox>> extentGraph = aggregateStatsReader.getSpatialExtent(typeInfo.get());
 
             return extentGraph
                 .on(getStreamRunner())
@@ -498,7 +523,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
           try {
             Stream<Optional<Interval>> extentGraph =
-                extentReader.getTemporalExtent(typeInfo.get(), property);
+                aggregateStatsReader.getTemporalExtent(typeInfo.get(), property);
 
             return computeTemporalExtent(extentGraph);
           } catch (Throwable e) {
@@ -531,7 +556,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
           try {
             Stream<Optional<Interval>> extentGraph =
-                extentReader.getTemporalExtent(typeInfo.get(), startProperty, endProperty);
+                aggregateStatsReader.getTemporalExtent(typeInfo.get(), startProperty, endProperty);
 
             return computeTemporalExtent(extentGraph);
           } catch (Throwable e) {

@@ -283,12 +283,6 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
     return new FeatureStreamImpl(query);
   }
 
-  // TODO
-  @Override
-  public long getFeatureCount(FeatureQuery featureQuery) {
-    return 0;
-  }
-
   protected class FeatureStreamImpl implements FeatureStream {
 
     private final FeatureQuery query;

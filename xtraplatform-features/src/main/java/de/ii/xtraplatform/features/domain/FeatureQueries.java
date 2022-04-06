@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 public interface FeatureQueries {
 
-  long getFeatureCount(FeatureQuery featureQuery);
+  long getFeatureCount(String typeName);
 
   default boolean supportsCql2() {
     return false;
