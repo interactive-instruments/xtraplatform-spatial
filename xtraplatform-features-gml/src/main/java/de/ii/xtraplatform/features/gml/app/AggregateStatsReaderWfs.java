@@ -14,7 +14,7 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.features.domain.ExtentReader;
+import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.FeatureMetadata;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.Metadata;
@@ -23,18 +23,25 @@ import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.util.Optional;
 import org.threeten.extra.Interval;
 
-public class ExtentReaderWfs implements ExtentReader {
+public class AggregateStatsReaderWfs implements AggregateStatsReader {
 
     private final FeatureMetadata featureMetadata;
     private final Optional<CrsTransformer> crsTransformer;
 
-    public ExtentReaderWfs(FeatureMetadata featureMetadata, CrsTransformerFactory crsTransformerFactory, EpsgCrs nativeCrs) {
+    public AggregateStatsReaderWfs(FeatureMetadata featureMetadata, CrsTransformerFactory crsTransformerFactory, EpsgCrs nativeCrs) {
         this.featureMetadata = featureMetadata;
         this.crsTransformer = crsTransformerFactory.getTransformer(OgcCrs.CRS84, nativeCrs, true);
     }
 
     @Override
-    public Stream<Optional<BoundingBox>> getExtent(FeatureStoreTypeInfo typeInfo) {
+    public Stream<Long> getCount(FeatureStoreTypeInfo typeInfo) {
+        //TODO: hits query
+        return Reactive.Source.single(-1L)
+            .to(Reactive.Sink.head());
+    }
+
+    @Override
+    public Stream<Optional<BoundingBox>> getSpatialExtent(FeatureStoreTypeInfo typeInfo) {
 
         Optional<BoundingBox> boundingBox = featureMetadata.getMetadata()
                                                       .map(Metadata::getFeatureTypesBoundingBox)

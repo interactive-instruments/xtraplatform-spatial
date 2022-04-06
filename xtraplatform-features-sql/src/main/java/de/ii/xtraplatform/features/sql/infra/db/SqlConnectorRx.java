@@ -144,6 +144,11 @@ public class SqlConnectorRx implements SqlConnector {
   }
 
   @Override
+  public Dialect getDialect() {
+    return connectionInfo.getDialect();
+  }
+
+  @Override
   public void start() {
     try {
       HikariConfig hikariConfig = createHikariConfig();
