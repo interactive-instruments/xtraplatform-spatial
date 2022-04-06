@@ -33,4 +33,6 @@ public interface Cql {
     void checkCoordinates(CqlPredicate cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs);
 
     CqlNode mapTemporalOperators(CqlFilter cqlFilter, Set<TemporalOperator> supportedOperators);
+
+    CqlNode mapEnvelopes(CqlFilter cqlFilter, CrsInfo crsInfo);
 }

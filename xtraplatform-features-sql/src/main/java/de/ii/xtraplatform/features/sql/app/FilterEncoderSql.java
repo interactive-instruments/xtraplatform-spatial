@@ -82,18 +82,22 @@ public class FilterEncoderSql {
     }
 
     public String encode(CqlFilter cqlFilter, SchemaSql schema) {
-        return cql.mapTemporalOperators(cqlFilter, sqlDialect.getTemporalOperators())
+        return prepareExpression(cqlFilter)
             .accept(new CqlToSql(schema));
     }
 
     public String encode(String cqlFilter, SchemaSql schema) {
-        return cql.mapTemporalOperators(cql.read(cqlFilter, Format.TEXT), sqlDialect.getTemporalOperators())
+        return prepareExpression(cql.read(cqlFilter, Format.TEXT))
             .accept(new CqlToSql(schema));
     }
 
     private String encodeNested(CqlFilter cqlFilter, SchemaSql schema, boolean isUserFilter) {
-        return cql.mapTemporalOperators(cqlFilter, sqlDialect.getTemporalOperators())
+        return prepareExpression(cqlFilter)
             .accept(new CqlToSqlNested(schema, isUserFilter));
+    }
+
+    private CqlNode prepareExpression(CqlFilter cqlFilter) {
+        return cql.mapTemporalOperators(CqlFilter.of(cql.mapEnvelopes(cqlFilter, crsInfo)), sqlDialect.getTemporalOperators());
     }
 
     private List<Double> transformCoordinatesIfNecessary(List<Double> coordinates, Optional<EpsgCrs> sourceCrs) {
@@ -701,49 +705,6 @@ public class FilterEncoderSql {
         public String visit(Geometry.Envelope envelope, List<String> children) {
             List<Double> c = envelope.getCoordinates();
 
-            // if the bbox crosses the antimeridian, we create a MultiPolygon with a polygon
-            // on each side of the antimeridian
-            EpsgCrs crs = envelope.getCrs().orElse(OgcCrs.CRS84);
-            if (Objects.nonNull(crsInfo)) {
-                int axisWithWraparaound = crsInfo.getAxisWithWraparound(crs).orElse(-1);
-                if (axisWithWraparaound==0 && c.get(0)>c.get(2)) {
-                    // x axis is longitude
-                    List<Coordinate> coordinates1 = ImmutableList.of(
-                        Coordinate.of(c.get(0), c.get(1)),
-                        Coordinate.of(180.0, c.get(1)),
-                        Coordinate.of(180.0, c.get(3)),
-                        Coordinate.of(c.get(0), c.get(3)),
-                        Coordinate.of(c.get(0), c.get(1))
-                    );
-                    List<Coordinate> coordinates2 = ImmutableList.of(
-                        Coordinate.of(-180, c.get(1)),
-                        Coordinate.of(c.get(2), c.get(1)),
-                        Coordinate.of(c.get(2), c.get(3)),
-                        Coordinate.of(-180, c.get(3)),
-                        Coordinate.of(-180, c.get(1))
-                    );
-                    return visitMultiPolygon(coordinates1, coordinates2, crs);
-                } else if (axisWithWraparaound==1 && c.get(1)>c.get(3)) {
-                    // y axis is longitude
-                    List<Coordinate> coordinates1 = ImmutableList.of(
-                        Coordinate.of(c.get(0), c.get(1)),
-                        Coordinate.of(c.get(2), c.get(1)),
-                        Coordinate.of(c.get(2), 180),
-                        Coordinate.of(c.get(0), 180),
-                        Coordinate.of(c.get(0), c.get(1))
-                    );
-                    List<Coordinate> coordinates2 = ImmutableList.of(
-                        Coordinate.of(c.get(0), -180),
-                        Coordinate.of(c.get(2), -180),
-                        Coordinate.of(c.get(2), c.get(3)),
-                        Coordinate.of(c.get(0), c.get(3)),
-                        Coordinate.of(c.get(0), -180)
-                    );
-                    return visitMultiPolygon(coordinates1, coordinates2, crs);
-                }
-            }
-
-            // standard case
             List<Coordinate> coordinates = ImmutableList.of(
                     Coordinate.of(c.get(0), c.get(1)),
                     Coordinate.of(c.get(2), c.get(1)),
@@ -752,22 +713,9 @@ public class FilterEncoderSql {
                     Coordinate.of(c.get(0), c.get(1))
             );
             Geometry.Polygon polygon = new ImmutablePolygon.Builder().addCoordinates(coordinates)
-                                                                     .crs(crs)
+                                                                     .crs(envelope.getCrs())
                                                                      .build();
             return visit(polygon, ImmutableList.of());
-        }
-
-        private String visitMultiPolygon(List<Coordinate> coordinates1, List<Coordinate> coordinates2, EpsgCrs crs) {
-            Geometry.Polygon polygon1 = new ImmutablePolygon.Builder().addCoordinates(coordinates1)
-                .crs(crs)
-                .build();
-            Geometry.Polygon polygon2 = new ImmutablePolygon.Builder().addCoordinates(coordinates2)
-                .crs(crs)
-                .build();
-            Geometry.MultiPolygon twoEnvelopes = new ImmutableMultiPolygon.Builder().addCoordinates(polygon1, polygon2)
-                .crs(crs)
-                .build();
-            return visit(twoEnvelopes, ImmutableList.of());
         }
 
         @Override
