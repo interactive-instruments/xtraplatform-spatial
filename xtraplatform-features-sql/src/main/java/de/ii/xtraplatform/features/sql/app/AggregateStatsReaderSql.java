@@ -12,7 +12,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
-import de.ii.xtraplatform.features.domain.ExtentReader;
+import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
@@ -22,14 +22,14 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.threeten.extra.Interval;
 
-class ExtentReaderSql implements ExtentReader {
+class AggregateStatsReaderSql implements AggregateStatsReader {
 
     private final Supplier<SqlClient> sqlClient;
     private final FeatureStoreQueryGeneratorSql queryGenerator;
     private final SqlDialect sqlDialect;
     private final EpsgCrs crs;
 
-    ExtentReaderSql(Supplier<SqlClient> sqlClient, FeatureStoreQueryGeneratorSql queryGenerator,
+    AggregateStatsReaderSql(Supplier<SqlClient> sqlClient, FeatureStoreQueryGeneratorSql queryGenerator,
                     SqlDialect sqlDialect, EpsgCrs crs) {
         this.sqlClient = sqlClient;
         this.queryGenerator = queryGenerator;
@@ -37,9 +37,20 @@ class ExtentReaderSql implements ExtentReader {
         this.crs = crs;
     }
 
+    @Override
+    public Stream<Long> getCount(FeatureStoreTypeInfo typeInfo) {
+        //TODO: multiple main tables
+        FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
+            .get(0);
+        String query = queryGenerator.getCountQuery(instanceContainer);
+
+        return sqlClient.get().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class))
+            .via(Reactive.Transformer.map(sqlRow -> Long.parseLong((String)sqlRow.getValues().get(0))))
+            .to(Reactive.Sink.head());
+    }
 
     @Override
-    public Stream<Optional<BoundingBox>> getExtent(FeatureStoreTypeInfo typeInfo) {
+    public Stream<Optional<BoundingBox>> getSpatialExtent(FeatureStoreTypeInfo typeInfo) {
         //TODO: multiple main tables
         FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
                                                                   .get(0);

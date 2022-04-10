@@ -200,7 +200,7 @@ public interface Geometry<T> extends CqlNode {
             return new Coordinate(x, y);
         }
 
-        static Coordinate of(double x, double y, double z) {
+        public static Coordinate of(double x, double y, double z) {
             return new Coordinate(x, y, z);
         }
 

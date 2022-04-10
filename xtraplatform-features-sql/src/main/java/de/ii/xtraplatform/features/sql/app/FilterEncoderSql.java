@@ -13,6 +13,7 @@ import com.google.common.primitives.Doubles;
 import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
+import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -35,6 +36,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -59,37 +61,43 @@ public class FilterEncoderSql {
     private final EpsgCrs nativeCrs;
     private final SqlDialect sqlDialect;
     private final CrsTransformerFactory crsTransformerFactory;
+    private final CrsInfo crsInfo;
     private final Cql cql;
     private final String accentiCollation;
     BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>> coordinatesTransformer;
 
     public FilterEncoderSql(
             EpsgCrs nativeCrs, SqlDialect sqlDialect,
-            CrsTransformerFactory crsTransformerFactory, Cql cql,
-            String accentiCollation) {
+            CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, 
+            Cql cql, String accentiCollation) {
         this.aliasGenerator = new AliasGenerator();
         this.joinGenerator = new JoinGenerator();
         this.nativeCrs = nativeCrs;
         this.sqlDialect = sqlDialect;
         this.crsTransformerFactory = crsTransformerFactory;
+        this.crsInfo = crsInfo;
         this.cql = cql;
         this.accentiCollation = accentiCollation;
         this.coordinatesTransformer = this::transformCoordinatesIfNecessary;
     }
 
     public String encode(CqlFilter cqlFilter, SchemaSql schema) {
-        return cql.mapTemporalOperators(cqlFilter, sqlDialect.getTemporalOperators())
+        return prepareExpression(cqlFilter)
             .accept(new CqlToSql(schema));
     }
 
     public String encode(String cqlFilter, SchemaSql schema) {
-        return cql.mapTemporalOperators(cql.read(cqlFilter, Format.TEXT), sqlDialect.getTemporalOperators())
+        return prepareExpression(cql.read(cqlFilter, Format.TEXT))
             .accept(new CqlToSql(schema));
     }
 
     private String encodeNested(CqlFilter cqlFilter, SchemaSql schema, boolean isUserFilter) {
-        return cql.mapTemporalOperators(cqlFilter, sqlDialect.getTemporalOperators())
+        return prepareExpression(cqlFilter)
             .accept(new CqlToSqlNested(schema, isUserFilter));
+    }
+
+    private CqlNode prepareExpression(CqlFilter cqlFilter) {
+        return cql.mapTemporalOperators(CqlFilter.of(cql.mapEnvelopes(cqlFilter, crsInfo)), sqlDialect.getTemporalOperators());
     }
 
     private List<Double> transformCoordinatesIfNecessary(List<Double> coordinates, Optional<EpsgCrs> sourceCrs) {
@@ -697,40 +705,6 @@ public class FilterEncoderSql {
         public String visit(Geometry.Envelope envelope, List<String> children) {
             List<Double> c = envelope.getCoordinates();
 
-            // TODO we should get this information from the CRS
-            EpsgCrs crs = envelope.getCrs().orElse(OgcCrs.CRS84);
-            int epsgCode = crs.getCode();
-            boolean hasDiscontinuityAt180DegreeLongitude = ImmutableList.of(4326, 4979, 4259, 4269).contains(epsgCode);
-
-            if (c.get(0)>c.get(2) && hasDiscontinuityAt180DegreeLongitude) {
-                // special case, the bbox crosses the antimeridian, we create convert this to a MultiPolygon
-                List<Coordinate> coordinates1 = ImmutableList.of(
-                        Coordinate.of(c.get(0), c.get(1)),
-                        Coordinate.of(180.0, c.get(1)),
-                        Coordinate.of(180.0, c.get(3)),
-                        Coordinate.of(c.get(0), c.get(3)),
-                        Coordinate.of(c.get(0), c.get(1))
-                );
-                List<Coordinate> coordinates2 = ImmutableList.of(
-                        Coordinate.of(-180, c.get(1)),
-                        Coordinate.of(c.get(2), c.get(1)),
-                        Coordinate.of(c.get(2), c.get(3)),
-                        Coordinate.of(-180, c.get(3)),
-                        Coordinate.of(-180, c.get(1))
-                );
-                Geometry.Polygon polygon1 = new ImmutablePolygon.Builder().addCoordinates(coordinates1)
-                                                                          .crs(crs)
-                                                                          .build();
-                Geometry.Polygon polygon2 = new ImmutablePolygon.Builder().addCoordinates(coordinates2)
-                                                                          .crs(crs)
-                                                                          .build();
-                Geometry.MultiPolygon twoEnvelopes = new ImmutableMultiPolygon.Builder().addCoordinates(polygon1, polygon2)
-                                                                                        .crs(crs)
-                                                                                        .build();
-                return visit(twoEnvelopes, ImmutableList.of());
-            }
-
-            // standard case
             List<Coordinate> coordinates = ImmutableList.of(
                     Coordinate.of(c.get(0), c.get(1)),
                     Coordinate.of(c.get(2), c.get(1)),
@@ -739,9 +713,8 @@ public class FilterEncoderSql {
                     Coordinate.of(c.get(0), c.get(1))
             );
             Geometry.Polygon polygon = new ImmutablePolygon.Builder().addCoordinates(coordinates)
-                                                                     .crs(crs)
+                                                                     .crs(envelope.getCrs())
                                                                      .build();
-
             return visit(polygon, ImmutableList.of());
         }
 

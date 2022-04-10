@@ -19,7 +19,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
-import de.ii.xtraplatform.features.domain.ExtentReader;
+import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
@@ -33,7 +33,6 @@ import de.ii.xtraplatform.features.domain.FeatureQueriesPassThrough;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureSourceStream;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureStream;
@@ -78,7 +77,7 @@ public class FeatureProviderWfs
   private final EntityRegistry entityRegistry;
 
   private FeatureQueryEncoderWfs queryTransformer;
-  private ExtentReader extentReader;
+  private AggregateStatsReader aggregateStatsReader;
   private FeatureStorePathParser pathParser;
 
   @AssistedInject
@@ -115,8 +114,8 @@ public class FeatureProviderWfs
             getData().getNativeCrs().orElse(OgcCrs.CRS84),
             crsTransformerFactory,
             cql);
-    this.extentReader =
-        new ExtentReaderWfs(
+    this.aggregateStatsReader =
+        new AggregateStatsReaderWfs(
             this, crsTransformerFactory, getData().getNativeCrs().orElse(OgcCrs.CRS84));
 
     return true;
@@ -203,6 +202,31 @@ public class FeatureProviderWfs
   }
 
   @Override
+  public long getFeatureCount(String typeName) {
+    Optional<FeatureStoreTypeInfo> typeInfo =
+        Optional.ofNullable(getTypeInfos().get(typeName));
+
+    if (!typeInfo.isPresent()) {
+      return -1;
+    }
+
+    try {
+      Stream<Long> countGraph = aggregateStatsReader.getCount(typeInfo.get());
+
+      return countGraph
+          .on(getStreamRunner())
+          .run()
+          .exceptionally(throwable -> -1L)
+          .toCompletableFuture()
+          .join();
+    } catch (Throwable e) {
+      // continue
+    }
+
+    return -1;
+  }
+
+  @Override
   public Optional<BoundingBox> getSpatialExtent(String typeName) {
     Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
@@ -211,7 +235,7 @@ public class FeatureProviderWfs
     }
 
     try {
-      Stream<Optional<BoundingBox>> extentGraph = extentReader.getExtent(typeInfo.get());
+      Stream<Optional<BoundingBox>> extentGraph = aggregateStatsReader.getSpatialExtent(typeInfo.get());
 
       return extentGraph
           .on(getStreamRunner())

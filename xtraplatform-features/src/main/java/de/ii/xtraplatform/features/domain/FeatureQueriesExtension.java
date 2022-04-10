@@ -19,7 +19,7 @@ public interface FeatureQueriesExtension {
 
   boolean isSupported(FeatureProviderConnector<?,?,?> connector);
 
-  void on(LIFECYCLE_HOOK hook, FeatureProviderDataV2 data, FeatureProviderConnector<?, ?, ?> connector);
+  void on(LIFECYCLE_HOOK hook, FeatureProvider2 provider, FeatureProviderConnector<?, ?, ?> connector);
 
   void on(QUERY_HOOK hook, FeatureProviderDataV2 data, FeatureProviderConnector<?, ?, ?> connector,
       FeatureQuery query,

@@ -21,7 +21,7 @@ import de.ii.xtraplatform.features.domain.Tuple;
 class SqlQueryTemplatesDeriverSpec extends Specification {
 
     @Shared
-    FilterEncoderSql filterEncoder = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), null, new CqlImpl(), null)
+    FilterEncoderSql filterEncoder = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), null, null, new CqlImpl(), null)
     @Shared
     SqlQueryTemplatesDeriver td = new SqlQueryTemplatesDeriver(filterEncoder, new SqlDialectPostGis(), true)
     @Shared

@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import de.ii.xtraplatform.crs.domain.CrsInfo;
+import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 
 import java.util.Collection;
@@ -28,5 +30,9 @@ public interface Cql {
 
     void checkTypes(CqlPredicate cqlPredicate, Map<String, String> propertyTypes);
 
+    void checkCoordinates(CqlPredicate cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs);
+
     CqlNode mapTemporalOperators(CqlFilter cqlFilter, Set<TemporalOperator> supportedOperators);
+
+    CqlNode mapEnvelopes(CqlFilter cqlFilter, CrsInfo crsInfo);
 }

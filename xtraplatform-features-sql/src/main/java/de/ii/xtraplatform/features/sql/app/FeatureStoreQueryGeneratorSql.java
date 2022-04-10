@@ -68,6 +68,20 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         .format("SELECT %s FROM %s%s%s%s", column, mainTable, join.isEmpty() ? "" : " ", join, where);
   }
 
+  public String getCountQuery(FeatureStoreInstanceContainer instanceContainer) {
+
+    List<String> aliases = getAliases(instanceContainer);
+
+    String mainTable = String
+        .format("%s %s", instanceContainer.getName(), aliases.get(0));
+
+    Optional<String> filter = getFilter(instanceContainer);
+    String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
+
+    return String
+        .format("SELECT COUNT(*) FROM %s%s", mainTable, where);
+  }
+
   public String getTemporalExtentQuery(FeatureStoreInstanceContainer instanceContainer, FeatureStoreAttributesContainer attributesContainer,
       String property) {
     List<String> aliases = getAliases(attributesContainer);
