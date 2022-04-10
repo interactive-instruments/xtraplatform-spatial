@@ -1,5 +1,5 @@
 plugins {
-    id 'de.interactive_instruments.xtraplatform-layer' version '4.1.0-SNAPSHOT'
+    id 'de.interactive_instruments.xtraplatform-layer' version '4.1.1'
     id 'com.github.hierynomus.license-report' version '0.16.1' apply false
 }
 
@@ -14,7 +14,7 @@ ext {
 version = '6.1.0' + versionSuffix
 
 dependencies {
-    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '5.1.0-cleanup-and-code-quality-SNAPSHOT'
+    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '5.1.0-SNAPSHOT'
     layers group: 'de.interactive_instruments', name: 'xtraplatform-native', version: '2.1.0-SNAPSHOT'
 
     modules subprojects

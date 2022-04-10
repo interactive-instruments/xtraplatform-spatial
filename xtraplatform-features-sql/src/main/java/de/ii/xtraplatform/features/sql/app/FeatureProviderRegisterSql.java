@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.feature.provider.pgis;
+package de.ii.xtraplatform.features.sql.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableMap;
@@ -22,10 +22,10 @@ import java.util.Map;
  */
 @Singleton
 @AutoBind
-public class FeatureProviderRegisterPgis implements JacksonSubTypeIds {
+public class FeatureProviderRegisterSql implements JacksonSubTypeIds {
 
     @Inject
-    public FeatureProviderRegisterPgis() {
+    public FeatureProviderRegisterSql() {
     }
 
     @Override

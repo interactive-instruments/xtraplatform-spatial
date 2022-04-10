@@ -10,8 +10,9 @@ package de.ii.xtraplatform.features.gml.infra;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.features.gml.domain.GmlGeometryType;
+import de.ii.xtraplatform.features.gml.domain.GmlType;
 import de.ii.xtraplatform.features.domain.FeatureProviderSchemaConsumer;
-import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase;
@@ -156,7 +157,7 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
                         .sourcePath(getSourcePath(currentPath.asList()))
                         .type(propertyType.get());
                 if (propertyType.get() == FeatureSchema.Type.GEOMETRY) {
-                    property.geometryType(TargetMappingProviderFromGml.GML_GEOMETRY_TYPE.fromString(type).toSimpleFeatureGeometry());
+                    property.geometryType(GmlGeometryType.fromString(type).toSimpleFeatureGeometry());
                     if (crsMap.containsKey(currentQualifiedName)) {
                         String crs = String
                             .valueOf(EpsgCrs.fromString(crsMap.get(currentQualifiedName)).getCode());
@@ -167,7 +168,7 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
                     mappedPaths.add(path);
                 }
                 if (propertyType.get() == SchemaBase.Type.VALUE_ARRAY) {
-                    property.valueType(getFeatureSchemaType(TargetMappingProviderFromGml.GML_TYPE.fromString(type)));
+                    property.valueType(getFeatureSchemaType(GmlType.fromString(type)));
                 }
                 if (isComplexType(propertyType.get())) {
                     if (!fieldNameGml.equals(currentParentProperty)) {
@@ -203,16 +204,16 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
         if (isParentMultiple && isComplex && isObject) {
             return Optional.of(FeatureSchema.Type.OBJECT_ARRAY);
         }
-        if (isParentMultiple && TargetMappingProviderFromGml.GML_TYPE.fromString(type).isValid()) {
+        if (isParentMultiple && GmlType.fromString(type).isValid()) {
             return Optional.of(FeatureSchema.Type.VALUE_ARRAY);
         }
         if (isComplex && isObject) {
             return Optional.of(FeatureSchema.Type.OBJECT);
         }
-        if (TargetMappingProviderFromGml.GML_TYPE.fromString(type).isValid()) {
-            return Optional.of(getFeatureSchemaType(TargetMappingProviderFromGml.GML_TYPE.fromString(type)));
+        if (GmlType.fromString(type).isValid()) {
+            return Optional.of(getFeatureSchemaType(GmlType.fromString(type)));
         }
-        if (TargetMappingProviderFromGml.GML_GEOMETRY_TYPE.fromString(type).isValid()) {
+        if (GmlGeometryType.fromString(type).isValid()) {
             return Optional.of(FeatureSchema.Type.GEOMETRY);
         }
         return Optional.empty();
@@ -263,7 +264,7 @@ class WfsSchemaAnalyzer implements FeatureProviderSchemaConsumer {
         }
     }
 
-    private FeatureSchema.Type getFeatureSchemaType(TargetMappingProviderFromGml.GML_TYPE dataType) {
+    private FeatureSchema.Type getFeatureSchemaType(GmlType dataType) {
 
         switch (dataType) {
             case BOOLEAN:

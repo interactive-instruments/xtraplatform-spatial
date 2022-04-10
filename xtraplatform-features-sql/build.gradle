@@ -1,12 +1,6 @@
 
 maturity = 'EXPERIMENTAL'
 
-sourceSets {
-    String sharedTestDir = project(':xtraplatform-feature-transformer-api').file("src/test/java")
-    test {
-        java.srcDir sharedTestDir
-    }
-}
 
 dependencies {
     provided project(':xtraplatform-geometries')
@@ -14,7 +8,6 @@ dependencies {
     provided project(':xtraplatform-cql')
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-features')
-    provided project(':xtraplatform-feature-transformer-api')
 
     embedded (group: 'com.github.davidmoten', name: 'rxjava2-jdbc', version: '0.2.9') {
         exclude module: 'reactive-streams'
