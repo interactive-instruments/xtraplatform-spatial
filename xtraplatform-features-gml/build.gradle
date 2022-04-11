@@ -1,10 +1,11 @@
 
+maturity = 'EXPERIMENTAL'
+
 dependencies {
     provided project(':xtraplatform-codelists')
     provided project(':xtraplatform-cql')
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-features')
-    provided project(':xtraplatform-feature-transformer-api')
     provided project(':xtraplatform-geometries')
 
     embedded group: 'com.sun.xsom', name: 'xsom', version: '20140925'

@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.json.app;
 import com.google.common.base.Preconditions;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.features.json.domain.GeoJsonGeometryType;
 import org.immutables.value.Value;
 
 import java.util.ArrayList;

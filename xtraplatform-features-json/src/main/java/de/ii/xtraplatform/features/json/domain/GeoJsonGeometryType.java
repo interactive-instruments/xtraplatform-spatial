@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.json.app;
+package de.ii.xtraplatform.features.json.domain;
 
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 
@@ -42,6 +42,17 @@ public enum GeoJsonGeometryType {
         for (GeoJsonGeometryType geoJsonType : GeoJsonGeometryType.values()) {
             if (geoJsonType.toString()
                            .equals(type)) {
+                return geoJsonType;
+            }
+        }
+
+        return NONE;
+    }
+
+    public static GeoJsonGeometryType forSimpleFeatureType(SimpleFeatureGeometry type) {
+        for (GeoJsonGeometryType geoJsonType : GeoJsonGeometryType.values()) {
+            if (geoJsonType.sfType
+                .equals(type)) {
                 return geoJsonType;
             }
         }

@@ -11,7 +11,7 @@ import com.fasterxml.aalto.AsyncByteArrayFeeder;
 import com.fasterxml.aalto.AsyncXMLStreamReader;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.feature.transformer.api.TargetMappingProviderFromGml.GML_GEOMETRY_TYPE;
+import de.ii.xtraplatform.features.gml.domain.GmlGeometryType;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -302,7 +302,7 @@ public class FeatureTokenDecoderGml extends FeatureTokenDecoder<byte[], FeatureS
         if (Objects.isNull(currentGeometrySchema)) return;
 
         if (currentGeometryType == SimpleFeatureGeometry.NONE) {
-            final SimpleFeatureGeometry geometryType = GML_GEOMETRY_TYPE.fromString(localName)
+            final SimpleFeatureGeometry geometryType = GmlGeometryType.fromString(localName)
                 .toSimpleFeatureGeometry();
             if (geometryType.isValid()) {
                 this.currentGeometryType = geometryType;
