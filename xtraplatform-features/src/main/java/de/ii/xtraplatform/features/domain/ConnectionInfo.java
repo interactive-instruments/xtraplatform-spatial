@@ -12,6 +12,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Optional;
 import org.immutables.value.Value;
 
+/**
+ * @en
+ * @de
+ * @default
+ */
 public interface ConnectionInfo {
 
     Optional<String> getConnectionUri();

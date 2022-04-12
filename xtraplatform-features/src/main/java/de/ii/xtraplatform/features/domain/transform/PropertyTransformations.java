@@ -1,9 +1,8 @@
 /**
  * Copyright 2022 interactive instruments GmbH
  *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy
+ * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.features.domain.transform;
 
@@ -31,6 +30,42 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @title Property transformations
+ * @en
+ *
+ * <a name="transformations"></a>
+ *
+ * Modules related to feature encoding ([Core](features-core.md), [GeoJSON](geojson.md), [HTML](features-html.md),
+ * [Vector Tiles](tiles.md)) support transforming feature properties for all or only for specific encodings.
+ *
+ * Transformations do not affect data sources, they are applied on-the-fly as part of the encoding.
+ *
+ * Filter expressions do not take transformations into account, they have to be based on the source values.
+ * That means queryable properties (see `queryables` in [Features Core](features-core.md)) should not use
+ * transformations in most cases. The exception to the rule is the HTML encoding, where readability might
+ * be more important than filter support.
+ *
+ * See [Transformations](../../providers/transformations.md) for supported transformations.
+ * @de
+ * <a name="transformations"></a>
+ *
+ * In den API-Modulen, die Features verarbeiten ([Core](features-core.md), [GeoJSON](geojson.md),
+ * [JSON-FG](json-fg.md), [HTML](features-html.md), [Tiles](tiles.md) mit dem Features-Tile-Provider),
+ * können die Feature-Eigenschaften über Transformationen an die Anforderungen der Ausgabe angepasst werden.
+ *
+ * Die Transformation der Werte erfolgt bei der Aufbereitung der Daten für die Rückgabe über die API.
+ * Die Datenhaltung selbst bleibt unverändert.
+ *
+ * Alle Filterausdrücke (siehe `queryables` im [Modul "Features Core"](features-core.md)) wirken unabhängig
+ * von etwaigen Transformationen bei der Ausgabe und müssen auf der Basis der Werte in der Datenhaltung formuliert
+ * sein - die Transformationen sind i.A. nicht umkehrbar und eine Berücksichtigung der inversen Transformationen bei
+ * Filterausdrücken wäre kompliziert und nur unvollständig möglich. Insofern sollten Eigenschaften, die queryable
+ * sein sollen, möglichst bereits in der Datenquelle transformiert sein. Eine Ausnahme sind typischerweise
+ * Transformationen in der HTML-Ausgabe, wo direkte Lesbarkeit i.d.R. wichtiger ist als die Filtermöglichkeit.
+ *
+ * Siehe [Transformations](../../providers/transformations.md) für unterstützte Transformationen.
+ */
 public interface PropertyTransformations {
 
   Logger LOGGER = LoggerFactory.getLogger(PropertyTransformations.class);

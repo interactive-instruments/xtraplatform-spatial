@@ -26,6 +26,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.immutables.value.Value;
 
+/**
+ * @en Optional transformations for the property, see [transformations](transformations.md).
+ * @de Optionale Transformationen für die Eigenschaft, siehe [Transformationen](transformations.md).
+ * @default `{}`
+ */
 @Value.Immutable
 @Value.Style(builder = "new")
 @JsonDeserialize(builder = ImmutablePropertyTransformation.Builder.class)

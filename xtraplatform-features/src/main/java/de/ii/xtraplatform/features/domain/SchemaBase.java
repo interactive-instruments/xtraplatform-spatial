@@ -20,6 +20,25 @@ import org.immutables.value.Value;
 
 public interface SchemaBase<T extends SchemaBase<T>> {
 
+
+  /**
+   * @en `ID` has to be set for the property that should be used as the unique feature id. As a rule that
+   * should be the first property ion the  `properties` object. Property names cannot contain spaces (" ")
+   * or slashes ("/"). Set `TYPE` for a property that specifies the type name of the object.
+   * @de Kennzeichnet besondere Bedeutungen der Eigenschaft.<ul><li><code>ID</code> ist bei der Eigenschaft eines
+   * Objekts anzugeben, die für die <code>featureId</code> in der API zu verwenden ist. Diese Eigenschaft ist
+   * typischerweise die erste Eigenschaft im <code>properties</code>-Objekt. Erlaubte Zeichen in diesen Eigenschaften
+   * sind alle Zeichen bis auf das Leerzeichen (" ") und der Querstrich ("/").</li><li><code>TYPE</code> ist optional
+   * bei der Eigenschaft eines Objekts anzugeben, die den Namen einer Unterobjektart enthält.</li><li>Hat eine Objektart
+   * mehrere Geometrieeigenschaften, dann ist <code>PRIMARY_GEOMETRY</code> bei der Eigenschaft anzugeben, die für
+   * <code>bbox</code>-Abfragen verwendet werden soll und die in GeoJSON in <code>geometry</code> oder in JSON-FG in
+   * <code>where</code> kodiert werden soll.</li><li>Hat eine Objektart mehrere zeitliche Eigenschaften, dann sollte
+   * <code>PRIMARY_INSTANT</code> bei der Eigenschaft angegeben werden, die für <code>datetime</code>-Abfragen verwendet
+   * werden soll, sofern ein Zeitpunkt die zeitliche Ausdehnung der Features beschreibt.</li><li>Ist die zeitliche
+   * Ausdehnung hingegen ein Zeitintervall, dann sind <code>PRIMARY_INTERVAL_START</code> und <code>PRIMARY_INTERVAL_END</code>
+   * bei den jeweiligen zeitlichen Eigenschaften anzugeben.</li></ul>
+   * @default `null`
+   */
   enum Role {
     ID,
     TYPE,
