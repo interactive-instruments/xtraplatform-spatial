@@ -316,9 +316,11 @@ TimeSecond : [0-5] DIGIT (PERIOD (DIGIT)+)?;
 #=============================================================================#
 */
 
-Identifier : IdentifierStart (COLON | PERIOD | IdentifierPart)* | DOUBLEQUOTE Identifier DOUBLEQUOTE;
+Identifier : IdentifierBare | DOUBLEQUOTE IdentifierBare DOUBLEQUOTE;
 
-//CHANGE: moved UNDERSCORE | OCTOTHORP | DOLLAR from identifierStart to identifierPart
+//CHANGE: moved PERIOD to propertyName
+IdentifierBare : IdentifierStart (COLON | IdentifierPart)*;
+
 IdentifierStart : ALPHA;
 
 IdentifierPart : ALPHA | DIGIT | UNDERSCORE | DOLLAR;

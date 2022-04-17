@@ -45,7 +45,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     public CqlNode visitNestedCqlFilter(CqlParser.NestedCqlFilterContext ctx) {
         return CqlFilter.of(ctx.booleanExpression().accept(this));
     }
-    
+
     @Override
     public CqlNode visitBooleanExpression(CqlParser.BooleanExpressionContext ctx) {
         CqlNode booleanTerm = ctx.booleanTerm()
@@ -334,17 +334,27 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             for (int i = 0; i < ctx.nestedCqlFilter().size(); i++) {
                 CqlFilter nestedFilter = CqlFilter.of(ctx.nestedCqlFilter(i)
                                                .accept(this));
-                CqlVisitorPropertyPrefix prefix = new CqlVisitorPropertyPrefix(ctx.Identifier(i)
-                                                                                                    .getText());
+                CqlVisitorPropertyPrefix prefix = new CqlVisitorPropertyPrefix(stripDoubleQuotes(ctx.Identifier(i).getText()));
                 nestedFilter = (CqlFilter) nestedFilter.accept(prefix);
-                nestedFilters.put(ctx.Identifier(i).getText(), nestedFilter);
+                nestedFilters.put(stripDoubleQuotes(ctx.Identifier(i).getText()), nestedFilter);
             }
             String path = ctx.Identifier().stream()
-                    .map(ParseTree::getText)
-                    .collect(Collectors.joining("."));
+                .map(ParseTree::getText)
+                .map(this::stripDoubleQuotes)
+                .collect(Collectors.joining("."));
             return Property.of(path, nestedFilters);
         }
-        return Property.of(ctx.getText());
+        return Property.of(ctx.Identifier().stream()
+                               .map(ParseTree::getText)
+                               .map(this::stripDoubleQuotes)
+                               .collect(Collectors.joining(".")));
+    }
+
+    private String stripDoubleQuotes(String identifier) {
+        if (identifier.startsWith("\"") && identifier.endsWith("\"")) {
+            return identifier.substring(1, identifier.length()-1);
+        }
+        return identifier;
     }
 
     @Override

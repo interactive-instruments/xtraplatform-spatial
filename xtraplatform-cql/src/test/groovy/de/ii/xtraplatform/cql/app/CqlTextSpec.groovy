@@ -867,6 +867,25 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
+    def 'keyword as property name'() {
+        given:
+        String cqlText = "root.\"date\" > DATE('2022-04-17')"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_KEYWORD
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_KEYWORD, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
     def 'LT with temporal values'() {
         given:
         String cqlText = "built < TIMESTAMP('2012-06-05T00:00:00Z')"

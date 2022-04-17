@@ -212,6 +212,8 @@ public class CqlFilterExamples {
             CqlPredicate.of(ScalarLiteral.of(false)),
             CqlPredicate.of(Not.of(CqlPredicate.of(ScalarLiteral.of(false))))))));
 
+    public static final CqlFilter EXAMPLE_KEYWORD = CqlFilter.of(Gt.of(ImmutableList.of(Property.of("root.date"), TemporalLiteral.of("2022-04-17"))));
+
     public static final CqlFilter EXAMPLE_CASEI = CqlFilter.of(In.ofFunction(
             Function.of("CASEI", ImmutableList.of(Property.of("road_class"))),
             ImmutableList.of(
