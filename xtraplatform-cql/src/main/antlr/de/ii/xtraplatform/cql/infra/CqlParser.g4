@@ -6,13 +6,14 @@ options { tokenVocab=CqlLexer; superClass=CqlTextParser.CqlParserCustom; }
 # A CQL2 filter is a logically connected expression of one or more predicates.
 #=============================================================================#
 */
-cqlFilter : booleanValueExpression EOF;
-nestedCqlFilter: {isNotInsideNestedFilter($ctx)}? booleanValueExpression;
-booleanValueExpression : booleanTerm | booleanValueExpression OR booleanTerm;
+cqlFilter : booleanExpression EOF;
+nestedCqlFilter: {isNotInsideNestedFilter($ctx)}? booleanExpression;
+booleanExpression : booleanTerm | booleanExpression OR booleanTerm;
 booleanTerm : booleanFactor | booleanTerm AND booleanFactor;
 booleanFactor : (NOT)? booleanPrimary;
 booleanPrimary : predicate
-                | LEFTPAREN booleanValueExpression RIGHTPAREN;
+                | booleanLiteral
+                | LEFTPAREN booleanExpression RIGHTPAREN;
 
 /*
 #=============================================================================#
@@ -23,8 +24,7 @@ booleanPrimary : predicate
 predicate : comparisonPredicate
             | spatialPredicate
             | temporalPredicate
-            | arrayPredicate
-            | inPredicate;
+            | arrayPredicate;
 
 /*
 #=============================================================================#
@@ -36,13 +36,14 @@ predicate : comparisonPredicate
 */
 
 comparisonPredicate : binaryComparisonPredicate
-                        | propertyIsLikePredicate
-                        | propertyIsBetweenPredicate
-                        | propertyIsNullPredicate;
+                        | isLikePredicate
+                        | isBetweenPredicate
+                        | isInListPredicate
+                        | isNullPredicate;
 
 binaryComparisonPredicate : scalarExpression ComparisonOperator scalarExpression;
 
-propertyIsLikePredicate :  characterExpression (NOT)? LIKE patternExpression;
+isLikePredicate :  characterExpression (NOT)? LIKE patternExpression;
 
 characterExpression : characterClause
                     | propertyName
@@ -54,14 +55,16 @@ characterClause : characterLiteral
                 | LOWER LEFTPAREN characterExpression RIGHTPAREN
                 | UPPER LEFTPAREN characterExpression RIGHTPAREN;
 
-propertyIsBetweenPredicate : numericExpression (NOT)? BETWEEN numericExpression AND numericExpression;
+isBetweenPredicate : numericExpression (NOT)? BETWEEN numericExpression AND numericExpression;
 
 numericExpression : numericLiteral
                   | propertyName
                   | function
                   /*| arithmeticExpression*/;
 
-propertyIsNullPredicate : scalarExpression IS (NOT)? NULL;
+isInListPredicate : scalarExpression (NOT)? IN LEFTPAREN scalarExpression ( COMMA scalarExpression )* RIGHTPAREN;
+
+isNullPredicate : scalarExpression IS (NOT)? NULL;
 
 /*
 # A scalar expression is the property name, a chracter literal, a numeric
@@ -213,16 +216,6 @@ arrayExpression: propertyName | arrayClause | function;
 arrayClause: LEFTSQUAREBRACKET arrayElement ( COMMA arrayElement )* RIGHTSQUAREBRACKET;
 
 arrayElement: characterClause | numericLiteral | booleanLiteral | temporalClause | propertyName | arrayClause |function;
-
-
-/*
-#=============================================================================#
-# The IN predicate
-#=============================================================================#
-*/
-//CHANGE: optional PropertyName for id filters
-//CHANGE: added missing comma
-inPredicate : scalarExpression (NOT)? IN LEFTPAREN scalarExpression ( COMMA scalarExpression )* RIGHTPAREN;
 
 /*
 #=============================================================================#

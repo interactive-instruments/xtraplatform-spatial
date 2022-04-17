@@ -829,6 +829,44 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
+    def 'true'() {
+        given:
+        String cqlText = "true"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_TRUE
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_TRUE, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
+    def 'true AND (false OR NOT (false))'() {
+        given:
+        String cqlText = "true AND (false OR NOT (false))"
+
+        when: 'reading text'
+        CqlPredicate actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_BOOLEAN_VALUES
+
+        and:
+
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_BOOLEAN_VALUES, Cql.Format.TEXT)
+
+        then:
+        actual2 == cqlText
+    }
+
     def 'LT with temporal values'() {
         given:
         String cqlText = "built < TIMESTAMP('2012-06-05T00:00:00Z')"

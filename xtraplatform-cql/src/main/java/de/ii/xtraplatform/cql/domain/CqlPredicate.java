@@ -19,7 +19,7 @@ import java.util.Optional;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableCqlPredicate.Builder.class)
-public interface CqlPredicate extends LogicalExpression, ScalarExpression, SpatialExpression, TemporalExpression, ArrayExpression, CqlNode {
+public interface CqlPredicate extends LogicalExpression, BooleanValue, ScalarExpression, SpatialExpression, TemporalExpression, ArrayExpression, CqlNode {
 
     static CqlPredicate of(CqlNode node) {
         ImmutableCqlPredicate.Builder builder = new ImmutableCqlPredicate.Builder();
@@ -30,6 +30,8 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
             builder.or((Or) node);
         } else if (node instanceof Not) {
             builder.not((Not) node);
+        } else if (node instanceof ScalarLiteral && ((ScalarLiteral) node).getType().equals(Boolean.class)) {
+            builder.booleanValue((ScalarLiteral) node);
         } else if (node instanceof Eq) {
             builder.eq((Eq) node);
         } else if (node instanceof Neq) {
@@ -76,6 +78,7 @@ public interface CqlPredicate extends LogicalExpression, ScalarExpression, Spati
                 getAnd(),
                 getOr(),
                 getNot(),
+                getBooleanValue(),
                 getEq(),
                 getNeq(),
                 getGt(),

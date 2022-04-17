@@ -35,24 +35,24 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
     @Override
     public CqlNode visitCqlFilter(CqlParser.CqlFilterContext ctx) {
-        CqlNode booleanValueExpression = ctx.booleanValueExpression()
+        CqlNode booleanExpression = ctx.booleanExpression()
                                             .accept(this);
 
-        return CqlFilter.of(booleanValueExpression);
+        return CqlFilter.of(booleanExpression);
     }
 
     @Override
     public CqlNode visitNestedCqlFilter(CqlParser.NestedCqlFilterContext ctx) {
-        return CqlFilter.of(ctx.booleanValueExpression().accept(this));
+        return CqlFilter.of(ctx.booleanExpression().accept(this));
     }
-
+    
     @Override
-    public CqlNode visitBooleanValueExpression(CqlParser.BooleanValueExpressionContext ctx) {
+    public CqlNode visitBooleanExpression(CqlParser.BooleanExpressionContext ctx) {
         CqlNode booleanTerm = ctx.booleanTerm()
                                  .accept(this);
 
         if (Objects.nonNull(ctx.OR())) {
-            CqlPredicate predicate1 = CqlPredicate.of(ctx.booleanValueExpression()
+            CqlPredicate predicate1 = CqlPredicate.of(ctx.booleanExpression()
                                                          .accept(this));
             CqlPredicate predicate2 = CqlPredicate.of(booleanTerm);
 
@@ -113,7 +113,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         if (Objects.nonNull(ctx.booleanPrimary()
                                .LEFTPAREN())) {
             booleanPrimary = ctx.booleanPrimary()
-                                .booleanValueExpression()
+                                .booleanExpression()
                                 .accept(this);
         }
         if (Objects.nonNull(ctx.NOT())) {
@@ -164,7 +164,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     }
 
     @Override
-    public CqlNode visitPropertyIsLikePredicate(CqlParser.PropertyIsLikePredicateContext ctx) {
+    public CqlNode visitIsLikePredicate(CqlParser.IsLikePredicateContext ctx) {
 
         if (Objects.nonNull(ctx.LIKE())) {
 
@@ -187,7 +187,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     }
 
     @Override
-    public CqlNode visitPropertyIsBetweenPredicate(CqlParser.PropertyIsBetweenPredicateContext ctx) {
+    public CqlNode visitIsBetweenPredicate(CqlParser.IsBetweenPredicateContext ctx) {
 
         if (Objects.nonNull(ctx.BETWEEN())) {
 
@@ -214,7 +214,27 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     }
 
     @Override
-    public CqlNode visitPropertyIsNullPredicate(CqlParser.PropertyIsNullPredicateContext ctx) {
+    public CqlNode visitIsInListPredicate(CqlParser.IsInListPredicateContext ctx) {
+        In in;
+        List<Scalar> values = ImmutableList.of(ctx.scalarExpression().subList(1, ctx.scalarExpression().size()))
+            .stream()
+            .flatMap(Collection::stream)
+            .map(v -> (Scalar) v.accept(this))
+            .collect(Collectors.toList());
+
+        // TODO IN currently requires a property on the left side and literals on the right side
+        in = new ImmutableIn.Builder()
+            .value((Scalar) ctx.scalarExpression(0).accept(this))
+            .list(values)
+            .build();
+        if (Objects.nonNull(ctx.NOT())) {
+            return Not.of(in);
+        }
+        return in;
+    }
+
+    @Override
+    public CqlNode visitIsNullPredicate(CqlParser.IsNullPredicateContext ctx) {
 
         if (Objects.nonNull(ctx.IS())) {
             Scalar scalar1 = (Scalar) ctx.scalarExpression()
@@ -305,26 +325,6 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         } catch (CqlParseException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
-    }
-
-    @Override
-    public CqlNode visitInPredicate(CqlParser.InPredicateContext ctx) {
-        In in;
-        List<Scalar> values = ImmutableList.of(ctx.scalarExpression().subList(1, ctx.scalarExpression().size()))
-                                                  .stream()
-                                                  .flatMap(Collection::stream)
-                                                  .map(v -> (Scalar) v.accept(this))
-                                                  .collect(Collectors.toList());
-
-        // TODO IN currently requires a property on the left side and literals on the right side
-        in = new ImmutableIn.Builder()
-                .value((Scalar) ctx.scalarExpression(0).accept(this))
-                .list(values)
-                .build();
-        if (Objects.nonNull(ctx.NOT())) {
-            return Not.of(in);
-        }
-        return in;
     }
 
     @Override
