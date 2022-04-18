@@ -9,12 +9,11 @@ package de.ii.xtraplatform.features.sql.app;
 
 
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
-import de.ii.xtraplatform.feature.transformer.api.SimpleFeatureGeometryFrom;
 
 /**
  * @author zahnen
  */
-public enum SimpleFeatureGeometryFromToWkt implements SimpleFeatureGeometryFrom {
+public enum SimpleFeatureGeometryFromToWkt {
 
     POINT,
     MULTIPOINT,
@@ -61,7 +60,6 @@ public enum SimpleFeatureGeometryFromToWkt implements SimpleFeatureGeometryFrom 
         return NONE;
     }
 
-    @Override
     public SimpleFeatureGeometry toSimpleFeatureGeometry() {
         SimpleFeatureGeometry simpleFeatureGeometry = SimpleFeatureGeometry.NONE;
 
@@ -95,7 +93,6 @@ public enum SimpleFeatureGeometryFromToWkt implements SimpleFeatureGeometryFrom 
         return simpleFeatureGeometry;
     }
 
-    @Override
     public boolean isValid() {
         return this != NONE;
     }

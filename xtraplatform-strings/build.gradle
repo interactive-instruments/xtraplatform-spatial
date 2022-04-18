@@ -1,4 +1,6 @@
 
+maturity = 'EXPERIMENTAL'
+
 dependencies {
 
     embedded group: 'com.atlassian.commonmark', name: 'commonmark', version: '0.11.0'

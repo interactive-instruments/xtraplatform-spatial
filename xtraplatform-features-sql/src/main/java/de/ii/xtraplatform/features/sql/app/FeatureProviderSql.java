@@ -1,9 +1,8 @@
 /**
  * Copyright 2022 interactive instruments GmbH
  *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy
+ * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.features.sql.app;
 
@@ -20,9 +19,9 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
+import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
-import de.ii.xtraplatform.features.domain.ExtentReader;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
@@ -69,7 +68,6 @@ import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,24 +88,24 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   public static final String PROVIDER_TYPE = "SQL";
 
   private final CrsTransformerFactory crsTransformerFactory;
+  private final CrsInfo crsInfo;
   private final Cql cql;
   private final EntityRegistry entityRegistry;
 
   private FeatureQueryEncoderSql queryTransformer;
-  private ExtentReader extentReader;
+  private AggregateStatsReader aggregateStatsReader;
   private FeatureMutationsSql featureMutationsSql;
   private FeatureSchemaSwapperSql schemaSwapperSql;
   private FeatureStorePathParser pathParser;
   private PathParserSql pathParser2;
   private SqlPathParser pathParser3;
   private TypeInfoValidator typeInfoValidator;
-  private Map<String, Optional<BoundingBox>> spatialExtentCache;
-  private Map<String, Optional<Interval>> temporalExtentCache;
   private Map<String, List<SchemaSql>> tableSchemas;
 
   @AssistedInject
   public FeatureProviderSql(
       CrsTransformerFactory crsTransformerFactory,
+      CrsInfo crsInfo,
       Cql cql,
       ConnectorFactory connectorFactory,
       Reactive reactive,
@@ -117,6 +115,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry, data);
 
     this.crsTransformerFactory = crsTransformerFactory;
+    this.crsInfo = crsInfo;
     this.cql = cql;
     this.entityRegistry = entityRegistry;
   }
@@ -171,6 +170,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
             getData().getNativeCrs().orElse(OgcCrs.CRS84),
             sqlDialect,
             crsTransformerFactory,
+            crsInfo,
             cql,
             accentiCollation);
     FeatureStoreQueryGeneratorSql queryGeneratorSql =
@@ -207,8 +207,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     this.queryTransformer = new FeatureQueryEncoderSql(schemas, getTypeInfos());
 
-    this.extentReader =
-        new ExtentReaderSql(
+    this.aggregateStatsReader =
+        new AggregateStatsReaderSql(
             this::getSqlClient,
             queryGeneratorSql,
             sqlDialect,
@@ -222,8 +222,6 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                 getData().getSourcePathDefaults()));
     this.schemaSwapperSql = createSchemaSwapper(getData().getSourcePathDefaults(), cql);
     this.pathParser2 = createPathParser2(getData().getSourcePathDefaults(), cql);
-    this.spatialExtentCache = new HashMap<>();
-    this.temporalExtentCache = new HashMap<>();
 
     return true;
   }
@@ -421,125 +419,130 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   }
 
   @Override
+  public long getFeatureCount(String typeName) {
+    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
+
+    if (!typeInfo.isPresent()) {
+      return -1;
+    }
+
+    try {
+      Stream<Long> countGraph = aggregateStatsReader.getCount(typeInfo.get());
+
+      return countGraph
+          .on(getStreamRunner())
+          .run()
+          .exceptionally(throwable -> -1L)
+          .toCompletableFuture()
+          .join();
+    } catch (Throwable e) {
+      // continue
+    }
+
+    return -1;
+  }
+
+  @Override
   public Optional<BoundingBox> getSpatialExtent(String typeName) {
-    return spatialExtentCache.computeIfAbsent(
-        typeName,
-        ignore -> {
-          Optional<FeatureStoreTypeInfo> typeInfo =
-              Optional.ofNullable(getTypeInfos().get(typeName));
+    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
-          if (!typeInfo.isPresent()) {
-            return Optional.empty();
-          }
+    if (!typeInfo.isPresent()) {
+      return Optional.empty();
+    }
 
-          // TODO do not use the first spatial attribute; if there is a primary one, use that
-          typeInfo
-              .get()
-              .getInstanceContainers()
-              .get(0)
-              .getSpatialAttribute()
-              .map(FeatureStoreAttribute::getName)
-              .ifPresent(
-                  spatialProperty ->
-                      LOGGER.debug(
-                          "Computing spatial extent for '{}.{}'", typeName, spatialProperty));
+    // TODO do not use the first spatial attribute; if there is a primary one, use that
+    typeInfo
+        .get()
+        .getInstanceContainers()
+        .get(0)
+        .getSpatialAttribute()
+        .map(FeatureStoreAttribute::getName)
+        .ifPresent(
+            spatialProperty ->
+                LOGGER.debug("Computing spatial extent for '{}.{}'", typeName, spatialProperty));
 
-          try {
-            Stream<Optional<BoundingBox>> extentGraph = extentReader.getExtent(typeInfo.get());
+    try {
+      Stream<Optional<BoundingBox>> extentGraph =
+          aggregateStatsReader.getSpatialExtent(typeInfo.get());
 
-            return extentGraph
-                .on(getStreamRunner())
-                .run()
-                .exceptionally(throwable -> Optional.empty())
-                .toCompletableFuture()
-                .join();
-          } catch (Throwable e) {
-            // continue
-          }
+      return extentGraph
+          .on(getStreamRunner())
+          .run()
+          .exceptionally(throwable -> Optional.empty())
+          .toCompletableFuture()
+          .join();
+    } catch (Throwable e) {
+      // continue
+    }
 
-          return Optional.empty();
-        });
+    return Optional.empty();
   }
 
   @Override
   public Optional<BoundingBox> getSpatialExtent(String typeName, EpsgCrs crs) {
-    return spatialExtentCache.computeIfAbsent(
-        typeName + crs.toSimpleString(),
-        ignore ->
-            getSpatialExtent(typeName)
-                .flatMap(
-                    boundingBox ->
-                        crsTransformerFactory
-                            .getTransformer(getNativeCrs(), crs, true)
-                            .flatMap(
-                                crsTransformer -> {
-                                  try {
-                                    return Optional.of(
-                                        crsTransformer.transformBoundingBox(boundingBox));
-                                  } catch (Exception e) {
-                                    return Optional.empty();
-                                  }
-                                })));
+    return getSpatialExtent(typeName)
+        .flatMap(
+            boundingBox ->
+                crsTransformerFactory
+                    .getTransformer(getNativeCrs(), crs, true)
+                    .flatMap(
+                        crsTransformer -> {
+                          try {
+                            return Optional.of(crsTransformer.transformBoundingBox(boundingBox));
+                          } catch (Exception e) {
+                            return Optional.empty();
+                          }
+                        }));
   }
 
   @Override
   public Optional<Interval> getTemporalExtent(String typeName, String property) {
-    return temporalExtentCache.computeIfAbsent(
-        typeName + property,
-        ignore -> {
-          Optional<FeatureStoreTypeInfo> typeInfo =
-              Optional.ofNullable(getTypeInfos().get(typeName));
+    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
-          if (!typeInfo.isPresent()) {
-            return Optional.empty();
-          }
+    if (!typeInfo.isPresent()) {
+      return Optional.empty();
+    }
 
-          LOGGER.debug("Computing temporal extent for '{}.{}'", typeName, property);
+    LOGGER.debug("Computing temporal extent for '{}.{}'", typeName, property);
 
-          try {
-            Stream<Optional<Interval>> extentGraph =
-                extentReader.getTemporalExtent(typeInfo.get(), property);
+    try {
+      Stream<Optional<Interval>> extentGraph =
+          aggregateStatsReader.getTemporalExtent(typeInfo.get(), property);
 
-            return computeTemporalExtent(extentGraph);
-          } catch (Throwable e) {
-            // continue
-          }
+      return computeTemporalExtent(extentGraph);
+    } catch (Throwable e) {
+      // continue
+    }
 
-          return Optional.empty();
-        });
+    return Optional.empty();
   }
 
   @Override
   public Optional<Interval> getTemporalExtent(
       String typeName, String startProperty, String endProperty) {
-    return temporalExtentCache.computeIfAbsent(
-        typeName + startProperty + endProperty,
-        ignore -> {
-          Optional<FeatureStoreTypeInfo> typeInfo =
-              Optional.ofNullable(getTypeInfos().get(typeName));
+    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
-          if (!typeInfo.isPresent()) {
-            return Optional.empty();
-          }
+    if (!typeInfo.isPresent()) {
+      return Optional.empty();
+    }
 
-          LOGGER.debug(
-              "Computing temporal extent for '{}.{}' and '{}.{}'",
-              typeName,
-              startProperty,
-              typeName,
-              endProperty);
+    LOGGER.debug(
+        "Computing temporal extent for '{}.{}' and '{}.{}'",
+        typeName,
+        startProperty,
+        typeName,
+        endProperty);
 
-          try {
-            Stream<Optional<Interval>> extentGraph =
-                extentReader.getTemporalExtent(typeInfo.get(), startProperty, endProperty);
+    try {
+      Stream<Optional<Interval>> extentGraph =
+          aggregateStatsReader.getTemporalExtent(typeInfo.get(), startProperty, endProperty);
 
-            return computeTemporalExtent(extentGraph);
-          } catch (Throwable e) {
-            // continue
-          }
+      return computeTemporalExtent(extentGraph);
+    } catch (Throwable e) {
+      // continue
+    }
 
-          return Optional.empty();
-        });
+    return Optional.empty();
   }
 
   private Optional<Interval> computeTemporalExtent(Stream<Optional<Interval>> extentComputation) {

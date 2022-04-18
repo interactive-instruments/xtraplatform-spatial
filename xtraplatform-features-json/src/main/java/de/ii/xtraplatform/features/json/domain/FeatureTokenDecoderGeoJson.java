@@ -16,7 +16,6 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
-import de.ii.xtraplatform.features.json.app.GeoJsonGeometryType;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;

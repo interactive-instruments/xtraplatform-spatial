@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
+import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlRowMeta.Builder;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
@@ -38,6 +39,8 @@ public interface SqlConnector extends
   int getMinConnections();
 
   int getQueueSize();
+
+  Dialect getDialect();
 
   SqlClient getSqlClient();
 

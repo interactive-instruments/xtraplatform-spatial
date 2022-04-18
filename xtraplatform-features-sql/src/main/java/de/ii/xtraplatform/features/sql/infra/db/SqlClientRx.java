@@ -8,7 +8,7 @@ package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.base.domain.LogContext;
+import com.zaxxer.hikari.pool.ProxyConnection;
 import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.app.FeatureSql;
@@ -23,6 +23,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.Tx;
+import org.davidmoten.rx.jdbc.internal.DelegatedConnection;
+import org.postgresql.PGConnection;
+import org.postgresql.PGNotification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -270,5 +274,32 @@ public class SqlClientRx implements SqlClient {
     }
 
     return ImmutableMap.of();
+  }
+
+  @Override
+  public List<String> getNotifications(Connection connection) {
+    Connection actualConnection = connection;
+
+    if (actualConnection instanceof DelegatedConnection) {
+      actualConnection = ((DelegatedConnection) actualConnection).con();
+    }
+    if (actualConnection instanceof ProxyConnection) {
+      try {
+        actualConnection = actualConnection.unwrap(Connection.class);
+      } catch (SQLException e) {
+        //ignore
+      }
+    }
+
+    if (actualConnection instanceof PGConnection) {
+      try {
+        return Arrays.stream(((PGConnection) actualConnection).getNotifications())
+            .map(PGNotification::getParameter)
+            .collect(Collectors.toList());
+      } catch (SQLException e) {
+        // ignore
+      }
+    }
+    return ImmutableList.of();
   }
 }

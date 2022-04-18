@@ -37,4 +37,6 @@ public interface SqlClient {
     Connection getConnection();
 
     Map<String,String> getDbInfo();
+
+    List<String> getNotifications(Connection connection);
 }
