@@ -219,13 +219,13 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
                 List<Operand> arguments = ((Function) ((TemporalLiteral) temporal2).getValue()).getArguments();
                 if (arguments.stream()
                     .anyMatch(arg -> arg instanceof TemporalLiteral && ((TemporalLiteral) arg).getType().equals(LocalDate.class))) {
-                    type1 = LocalDate.class;
+                    type2 = LocalDate.class;
                 } else if (arguments.stream()
                     .anyMatch(arg -> arg instanceof TemporalLiteral && ((TemporalLiteral) arg).getType().equals(Instant.class))) {
-                    type1 = Instant.class;
+                    type2 = Instant.class;
                 }
             } else {
-                type1 = ((TemporalLiteral) temporal2).getType();
+                type2 = ((TemporalLiteral) temporal2).getType();
             }
         }
 
