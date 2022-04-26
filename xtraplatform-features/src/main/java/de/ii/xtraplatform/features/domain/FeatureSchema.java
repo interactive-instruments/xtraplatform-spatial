@@ -37,8 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @en Definition of object types, see [below](#feature-provider-types).
- * @de Ein Objekt mit der Spezifikation zu jeder Objektart. Sehe [unten](#feature-provider-types).
+ * @langEn Definition of object types, see [below](#feature-provider-types).
+ * @langDe Ein Objekt mit der Spezifikation zu jeder Objektart. Sehe [unten](#feature-provider-types).
  * @default `{}`
  */
 @Value.Immutable
@@ -55,7 +55,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     String getName();
 
     /**
-     * @en
+     * @lang_en
      * @de
      * @default
      */
@@ -64,7 +64,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     List<String> getPath();
 
     /**
-     * @en
+     * @lang_en
      * @de
      * @default
      */
@@ -73,9 +73,9 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     List<String> getParentPath();
 
     /**
-     * @en The relative path for this schema object. The syntax depends on the provider types, see
+     * @langEn The relative path for this schema object. The syntax depends on the provider types, see
      * [SQL](sql.md#path-syntax) or [WFS](wfs.md#path-syntax).
-     * @de Der relative Pfad zu diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ unterschiedlich
+     * @langDe Der relative Pfad zu diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ unterschiedlich
      * ([SQL](sql.md#path-syntax) und [WFS](wfs.md#path-syntax)).
      * @default
      */
@@ -84,7 +84,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     Optional<String> getSourcePath();
 
     /**
-     * @en
+     * @lang_en
      * @de
      * @default
      */
@@ -94,11 +94,11 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     List<String> getSourcePaths();
 
     /**
-     * @en Data type of the schema object. Default is `OBJECT` when `properties` is set, otherwise it is `STRING`.
+     * @langEn Data type of the schema object. Default is `OBJECT` when `properties` is set, otherwise it is `STRING`.
      * Possible values:<ul><li>`FLOAT`, `INTEGER`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE` for simple
      * values.</li><li>`GEOMETRY` for geometries.</li><li>`OBJECT` for objects.</li><li>`OBJECT_ARRAY` a list
      * of objects.</li><li>`VALUE_ARRAY` a list of simple values.</li></ul>
-     * @de Der Datentyp des Schemaobjekts. Der Standardwert ist `STRING`, sofern nicht auch die Eigenschaft
+     * @langDe Der Datentyp des Schemaobjekts. Der Standardwert ist `STRING`, sofern nicht auch die Eigenschaft
      * `properties` angegeben ist, dann ist es `OBJECT`. Erlaubt sind:<ul><li>`FLOAT`, `INTEGER`, `STRING`, `BOOLEAN`,
      * `DATETIME`, `DATE` für einen einfachen Wert des entsprechenden Datentyps.</li><li>`GEOMETRY` für eine
      * Geometrie.</li><li>`OBJECT` für ein Objekt.</li><li>`OBJECT_ARRAY` für eine Liste von Objekten.</li><li>`VALUE_ARRAY`
@@ -115,7 +115,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     Optional<Role> getRole();
 
     /**
-     * @en
+     * @lang_en
      * @de
      * @default
      */
@@ -126,9 +126,9 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     Optional<SimpleFeatureGeometry> getGeometryType();
 
     /**
-     * @en Optional name for an object type, used for example in JSON Schema. For properties that
+     * @langEn Optional name for an object type, used for example in JSON Schema. For properties that
      * should be mapped as links according to *RFC 8288*, use `Link`.
-     * @de Optional kann ein Name für den Typ spezifiziert werden. Der Name hat i.d.R. nur informativen
+     * @langDe Optional kann ein Name für den Typ spezifiziert werden. Der Name hat i.d.R. nur informativen
      * Charakter und wird z.B. bei der Erzeugung von JSON-Schemas verwendet. Bei Eigenschaften,
      * die als Web-Links nach RFC 8288 abgebildet werden sollen, ist immer "Link" anzugeben.
      * @default
@@ -136,22 +136,22 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     Optional<String> getObjectType();
 
     /**
-     * @en Label for the schema object, used for example in HTML representations.
-     * @de Eine Bezeichnung des Schemaobjekts, z.B. für die Angabe in der HTML-Ausgabe.
+     * @langEn Label for the schema object, used for example in HTML representations.
+     * @langDe Eine Bezeichnung des Schemaobjekts, z.B. für die Angabe in der HTML-Ausgabe.
      * @default
      */
     Optional<String> getLabel();
 
     /**
-     * @en Description for the schema object, used for example in HTML representations or JSON Schema.
-     * @de Eine Beschreibung des Schemaobjekts, z.B. für die HTML-Ausgabe oder das JSON-Schema.
+     * @langEn Description for the schema object, used for example in HTML representations or JSON Schema.
+     * @langDe Eine Beschreibung des Schemaobjekts, z.B. für die HTML-Ausgabe oder das JSON-Schema.
      * @default
      */
     Optional<String> getDescription();
 
     /**
-     * @en Might be used instead of `sourcePath` to define a property with a constant value.
-     * @de Alternativ zu `sourcePath` kann diese Eigenschaft verwendet werden, um im Feature-Provider eine Eigenschaft
+     * @langEn Might be used instead of `sourcePath` to define a property with a constant value.
+     * @langDe Alternativ zu `sourcePath` kann diese Eigenschaft verwendet werden, um im Feature-Provider eine Eigenschaft
      * mit einem festen Wert zu belegen.
      * @default `null`
      */
@@ -163,15 +163,15 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     Optional<SchemaConstraints> getConstraints();
 
     /**
-     * @en Option to disable enforcement of counter-clockwise orientation for exterior rings and a clockwise orientation for interior rings (only for SQL).
-     * @de Option zum Erzwingen der Orientierung von Polygonen, gegen den Uhrzeigersinn für äußere Ringe und mit dem Uhrzeigersinn für innere Ringe (nur für SQL).
+     * @langEn Option to disable enforcement of counter-clockwise orientation for exterior rings and a clockwise orientation for interior rings (only for SQL).
+     * @langDe Option zum Erzwingen der Orientierung von Polygonen, gegen den Uhrzeigersinn für äußere Ringe und mit dem Uhrzeigersinn für innere Ringe (nur für SQL).
      * @default `true`
      */
     @Override
     Optional<Boolean> getForcePolygonCCW();
 
     /**
-     * @en
+     * @lang_en
      * @de
      * @default
      */
@@ -214,8 +214,8 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     Map<String, String> getAdditionalInfo();
 
     /**
-     * @en Only for `OBJECT` and `OBJECT_ARRAY`. Object with the property names as keys and schema objects as values.
-     * @de Nur bei `OBJECT` und `OBJECT_ARRAY`. Ein Objekt mit einer Eigenschaft pro Objekteigenschaft.
+     * @langEn Only for `OBJECT` and `OBJECT_ARRAY`. Object with the property names as keys and schema objects as values.
+     * @langDe Nur bei `OBJECT` und `OBJECT_ARRAY`. Ein Objekt mit einer Eigenschaft pro Objekteigenschaft.
      * Der Schüssel ist der Name der Objekteigenschaft, der Wert das Schema-Objekt zu der Objekteigenschaft.
      * @default
      */

@@ -18,8 +18,8 @@ import java.util.Optional;
 public interface WfsInfo {
 
     /**
-     * @en The WFS version to use.
-     * @de Die zu verwendende WFS-Version.
+     * @langEn The WFS version to use.
+     * @langDe Die zu verwendende WFS-Version.
      * @default 2.0.0
      */
     @Value.Default
@@ -28,15 +28,15 @@ public interface WfsInfo {
     }
 
     /**
-     * @en The GML version to use.
-     * @de Die zu verwendende GML-Version.
+     * @langEn The GML version to use.
+     * @langDe Die zu verwendende GML-Version.
      * @default
      */
     Optional<String> getGmlVersion();
 
     /**
-     * @en A map of namespace prefixes and URIs used in the mapping paths.
-     * @de Eine Map von zu verwendenden Namespace-Prefixen und der zugehörigen Namespace-URI.
+     * @langEn A map of namespace prefixes and URIs used in the mapping paths.
+     * @langDe Eine Map von zu verwendenden Namespace-Prefixen und der zugehörigen Namespace-URI.
      * @default
      */
     Map<String,String> getNamespaces();

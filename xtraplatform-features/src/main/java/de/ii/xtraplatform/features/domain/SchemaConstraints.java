@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * @en Optional description of schema constraints, especially for JSON schema generation. See [Constraints](constraints.md).
- * @de Optionale Beschreibung von Schema-Einschränkungen, vor allem für die Erzeugung von JSON-Schemas. Siehe [Constraints](constraints.md).
+ * @langEn Optional description of schema constraints, especially for JSON schema generation. See [Constraints](constraints.md).
+ * @langDe Optionale Beschreibung von Schema-Einschränkungen, vor allem für die Erzeugung von JSON-Schemas. Siehe [Constraints](constraints.md).
  * @default `{}`
  */
 @Value.Immutable

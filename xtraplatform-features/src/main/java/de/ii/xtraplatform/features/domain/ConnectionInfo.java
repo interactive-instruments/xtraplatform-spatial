@@ -13,7 +13,7 @@ import java.util.Optional;
 import org.immutables.value.Value;
 
 /**
- * @en
+ * @lang_en
  * @de
  * @default
  */

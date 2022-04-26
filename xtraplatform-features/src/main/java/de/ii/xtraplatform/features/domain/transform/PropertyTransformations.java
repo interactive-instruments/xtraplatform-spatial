@@ -31,8 +31,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @title Property transformations
- * @en
+ * # Property transformations
+ * @lang_en
  *
  * <a name="transformations"></a>
  *

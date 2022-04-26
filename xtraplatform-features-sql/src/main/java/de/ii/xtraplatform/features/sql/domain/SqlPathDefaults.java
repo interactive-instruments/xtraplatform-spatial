@@ -13,17 +13,17 @@ import java.util.Optional;
 import org.immutables.value.Value;
 
 /**
- * @title Source Path Defaults
- * @en Defaults for the path expressions in `sourcePath`, also see [Source Path Syntax](#path-syntax).
- * @de Defaults für die Pfad-Ausdrücke in `sourcePath`, siehe auch [SQL-Pfad-Syntax](#path-syntax).
+ * # Source Path Defaults
+ * @langEn Defaults for the path expressions in `sourcePath`, also see [Source Path Syntax](#path-syntax).
+ * @langDe Defaults für die Pfad-Ausdrücke in `sourcePath`, siehe auch [SQL-Pfad-Syntax](#path-syntax).
  */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableSqlPathDefaults.Builder.class)
 public interface SqlPathDefaults {
 
   /**
-   * @en The default column that is used for join analysis if no differing primary key is set in the [sourcePath](#path-syntax).
-   * @de Die Standard-Spalte die zur Analyse von Joins verwendet wird, wenn keine abweichende Spalte in `sourcePath` gesetzt wird.
+   * @langEn The default column that is used for join analysis if no differing primary key is set in the [sourcePath](#path-syntax).
+   * @langDe Die Standard-Spalte die zur Analyse von Joins verwendet wird, wenn keine abweichende Spalte in `sourcePath` gesetzt wird.
    * @default `id`
    */
   @JsonAlias("defaultPrimaryKey")
@@ -33,8 +33,8 @@ public interface SqlPathDefaults {
   }
 
   /**
-   * @en The default column that is used to sort rows if no differing sort key is set in the [sourcePath](#path-syntax).
-   * @de Die Standard-Spalte die zur Sortierung von Reihen verwendet wird, wenn keine abweichende Spalte in
+   * @langEn The default column that is used to sort rows if no differing sort key is set in the [sourcePath](#path-syntax).
+   * @langDe Die Standard-Spalte die zur Sortierung von Reihen verwendet wird, wenn keine abweichende Spalte in
    * `sourcePath` gesetzt wird. Es wird empfohlen, dass als Datentyp eine Ganzzahl verwendet wird.
    * @default `id`
    */

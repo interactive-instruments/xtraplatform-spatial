@@ -22,10 +22,10 @@ public interface SchemaBase<T extends SchemaBase<T>> {
 
 
   /**
-   * @en `ID` has to be set for the property that should be used as the unique feature id. As a rule that
+   * @langEn `ID` has to be set for the property that should be used as the unique feature id. As a rule that
    * should be the first property ion the  `properties` object. Property names cannot contain spaces (" ")
    * or slashes ("/"). Set `TYPE` for a property that specifies the type name of the object.
-   * @de Kennzeichnet besondere Bedeutungen der Eigenschaft.<ul><li><code>ID</code> ist bei der Eigenschaft eines
+   * @langDe Kennzeichnet besondere Bedeutungen der Eigenschaft.<ul><li><code>ID</code> ist bei der Eigenschaft eines
    * Objekts anzugeben, die für die <code>featureId</code> in der API zu verwenden ist. Diese Eigenschaft ist
    * typischerweise die erste Eigenschaft im <code>properties</code>-Objekt. Erlaubte Zeichen in diesen Eigenschaften
    * sind alle Zeichen bis auf das Leerzeichen (" ") und der Querstrich ("/").</li><li><code>TYPE</code> ist optional

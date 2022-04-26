@@ -24,9 +24,9 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
- * @title WFS Feature Provider
- * @en he specifics of the WFS feature provider.
- * @de Hier werden die Besonderheiten des WFS-Feature-Providers beschrieben.
+ * # WFS Feature Provider
+ * @langEn he specifics of the WFS feature provider.
+ * @langDe Hier werden die Besonderheiten des WFS-Feature-Providers beschrieben.
  */
 @Value.Immutable
 @Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
