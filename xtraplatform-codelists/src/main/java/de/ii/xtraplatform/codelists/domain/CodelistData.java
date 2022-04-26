@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.codelists.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import org.immutables.value.Value;
@@ -16,40 +17,32 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * @author zahnen
- */
-
-/**
- * @title Codelists
- * @en Codelists allow to map property values to a different value. This is
+ * # Codelists
+ * @langEn Codelists allow to map property values to a different value. This is
  * useful especially for HTML representations.
- * @de Codelisten können zum Übersetzen von Eigenschaftswerten in einen anderen
+ * @langDe Codelisten können zum Übersetzen von Eigenschaftswerten in einen anderen
  * Wert genutzt werden, meist für die HTML-Ausgabe.
- * @see EntityData
- */
-
-/**
- * @title Konfiguration
- * @en The following table describes the structure of the code list files.
+ * @see de.ii.xtraplatform.store.domain.entities.EntityData
+ *
+ * ## Konfiguration
+ * @langEn The following table describes the structure of the code list files.
  *
  * For the target values in `entries` and for `fallback` also [`stringFormat` transformations]
  * (../providers/transformations.md) can be used. If the transformed value is intended for HTML
  * output, then Markdown markup can also be used, this will be formatted in the HTML output.
- * @de Die nachfolgende Tabelle beschreibt die Struktur der Codelisten-Dateien.
+ * @langDe Die nachfolgende Tabelle beschreibt die Struktur der Codelisten-Dateien.
  *
  * Bei den Zielwerten in `entries` und bei `fallback` können auch [`stringFormat`-Transformationen]
  * (../providers/transformations.md) genutzt werden. Ist der transformierte Wert für die HTML-Ausgabe
  * gedacht, dann kann auch Markdown-Markup verwendet werden, dieser wird bei der HTML-Ausgabe
  * aufbereitet.
- */
-
-/**
- * @en Based on the INSPIRE codelist [EnvironmentalDomain](https://inspire.ec.europa.eu/codeList/EnvironmentalDomain),
+ *
+ * @langEn Based on the INSPIRE codelist [EnvironmentalDomain](https://inspire.ec.europa.eu/codeList/EnvironmentalDomain),
  * maps values like `soil` to the German label of the entry in the INSPIRE codelist registry.
- * @de Basierend auf der INSPIRE-Codelist
+ * @langDe Basierend auf der INSPIRE-Codelist
  * [EnvironmentalDomain](https://inspire.ec.europa.eu/codeList/EnvironmentalDomain)
  * werden Werte wie "soil" auf das deutschsprachige Label in der INSPIRE-Codelist-Registry abgebildet:
- * @example <code>
+ * <code>
  * ```yaml
  * ---
  * id: environmental-domain
@@ -69,15 +62,14 @@ import java.util.Optional;
  *   water: Wasser
  * ```
  * </code>
- */
-
-/**
- * @title Storage
- * @en Codelists reside under the relative path `store/entities/codelists/{codelistId}.yml` in the
+ *
+ * ## Storage
+ * @langEn Codelists reside under the relative path `store/entities/codelists/{codelistId}.yml` in the
  * data directory.
- * @de Die Codelisten liegen als YAML-Dateien im ldproxy-Datenverzeichnis unter dem relativen
+ * @langDe Die Codelisten liegen als YAML-Dateien im ldproxy-Datenverzeichnis unter dem relativen
  * Pfad `store/entities/codelists/{codelistId}.yml`.
  */
+@DocFile(path = "configuration/codelists/README.md")
 @Value.Immutable
 @Value.Style(builder = "new")
 @JsonDeserialize(builder = ImmutableCodelistData.Builder.class)
@@ -93,23 +85,23 @@ public interface CodelistData extends EntityData {
     }
 
     /**
-     * @en Human readable label.
-     * @de Eine lesbare Bezeichnung der Codelist, die im Manager angezeigt wird.
+     * @langEn Human readable label.
+     * @langDe Eine lesbare Bezeichnung der Codelist, die im Manager angezeigt wird.
      * @default
      */
     String getLabel();
 
     /**
-     * @en Map with the original value as key and the new value as value. Values
+     * @langEn Map with the original value as key and the new value as value. Values
      * might use [`stringFormat` transformations](../providers/transformations.md).
-     * @de Jeder Eintrag bildet einen Wert auf den neuen Wert ab.
+     * @langDe Jeder Eintrag bildet einen Wert auf den neuen Wert ab.
      * @default `{}`
      */
     Map<String, String> getEntries();
 
     /**
-     * @en Always `TEMPLATES`.
-     * @de `TEMPLATES` für alle manuell erstellte Codelisten.
+     * @langEn Always `TEMPLATES`.
+     * @langDe `TEMPLATES` für alle manuell erstellte Codelisten.
      * @default
      */
     IMPORT_TYPE getSourceType();
@@ -117,8 +109,8 @@ public interface CodelistData extends EntityData {
     Optional<String> getSourceUrl();
 
     /**
-     * @en Optional default value. Might use [`stringFormat` transformations](../providers/transformations.md).
-     * @de Optional kann ein Defaultwert angegeben werden. Dabei können auch [`stringFormat`-Transformationen]
+     * @langEn Optional default value. Might use [`stringFormat` transformations](../providers/transformations.md).
+     * @langDe Optional kann ein Defaultwert angegeben werden. Dabei können auch [`stringFormat`-Transformationen]
      * (../providers/transformations.md) genutzt werden.
      * @default the value
      */
