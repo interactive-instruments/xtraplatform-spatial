@@ -69,7 +69,7 @@ import java.util.Optional;
  * @langDe Die Codelisten liegen als YAML-Dateien im ldproxy-Datenverzeichnis unter dem relativen
  * Pfad `store/entities/codelists/{codelistId}.yml`.
  */
-@DocFile(path = "configuration/codelists/README.md")
+@DocFile(path = "configuration/codelists", name = "README.md")
 @Value.Immutable
 @Value.Style(builder = "new")
 @JsonDeserialize(builder = ImmutableCodelistData.Builder.class)

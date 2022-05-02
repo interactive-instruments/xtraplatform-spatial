@@ -11,9 +11,15 @@ import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.docs.DocColumn;
 import de.ii.xtraplatform.docs.DocFile;
-import de.ii.xtraplatform.docs.DocFileTemplate;
-import de.ii.xtraplatform.docs.DocTemplate;
+import de.ii.xtraplatform.docs.DocFilesTemplate;
+import de.ii.xtraplatform.docs.DocFilesTemplate.ForEach;
+import de.ii.xtraplatform.docs.DocI18n;
+import de.ii.xtraplatform.docs.DocStep;
+import de.ii.xtraplatform.docs.DocStep.Step;
+import de.ii.xtraplatform.docs.DocTable;
+import de.ii.xtraplatform.docs.DocTable.ColumnSet;
 import de.ii.xtraplatform.store.domain.entities.AutoEntity;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
@@ -31,13 +37,18 @@ import org.immutables.value.Value;
  * A feature provider is defined in a configuration file by an object with the following properties.
  * Properties without default are mandatory.
  * <p>
- * {@propertyTable}
+ * {@docTable:properties}
+ * <p>
+ * ## Types
+ * <p>
+ * {@docTable:types}
+ * <p>
  * @langDe # Übersicht
  * <p>
  * Jeder Feature-Provider wird in einer Konfigurationsdatei in einem Objekt mit den folgenden
  * Eigenschaften beschrieben. Werte ohne Defaultwert sind in diesem Fall Pflichtangaben.
  * <p>
- * {@propertyTable}
+ * {@docTable:properties}
  * @langEn ## Connection Info
  * <p>
  * For data source specifics, see [SQL](sql.md#connection-info) and [WFS](wfs.md#connection-info).
@@ -57,14 +68,37 @@ import org.immutables.value.Value;
  * die[Provider-Konfiguration](https://github.com/interactive-instruments/ldproxy/blob/master/demo/vineyards/store/entities/providers/vineyards.yml)
  * der API [Weinlagen in Rheinland-Pfalz](https://demo.ldproxy.net/vineyards).
  * @propertyTable {@link de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData}
+ * @propertyTable:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
  */
-@DocFile(path = "configuration/providers/README.md")
-@DocFileTemplate(
+@DocFile(
+    path = "configuration/providers",
+    name = "README.md",
+    tables = {
+        @DocTable(
+            name = "types",
+            rows = {
+                @DocStep(type = Step.TAG_REFS, params = "{@propertyTable:types}"),
+                @DocStep(type = Step.JSON_PROPERTIES)
+            },
+            columnSet = ColumnSet.JSON_PROPERTIES
+        ),
+        @DocTable(
+            name = "properties",
+            rows = {
+                @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
+                @DocStep(type = Step.JSON_PROPERTIES)
+            },
+            columnSet = ColumnSet.JSON_PROPERTIES
+        )
+    }
+)
+@DocFilesTemplate(
+    files = ForEach.IMPLEMENTATION,
     path = "configuration/providers",
     stripPrefix = "FeatureProviderData",
     template = {
-        @DocTemplate(language = "en", template = "{@body}"),
-        @DocTemplate(language = "de", template = "{@body}")
+        @DocI18n(language = "en", value = "{@body}"),
+        @DocI18n(language = "de", value = "{@body}")
     }
 )
 @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
@@ -79,7 +113,6 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
   /**
    * @langEn Always `FEATURE`.
    * @langDe Stets `FEATURE`.
-   * @default
    */
   String getProviderType();
 
@@ -87,10 +120,10 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
    * @langEn `SQL` for SQL DBMS as data source, `WFS` for *OGC Web Feature Service* as data source.
    * @langDe `SQL` für ein SQL-DBMS als Datenquelle, `WFS` für einen OGC Web Feature Service als
    * Datenquelle.
-   * @default
    */
   String getFeatureProviderType();
 
+  @JsonIgnore
   @Value.Derived
   @Override
   default Optional<String> getEntitySubType() {
@@ -113,7 +146,7 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
    * und Breite/Nordwert als zweiten Wert, `LAT_LON` entsprechend umgekehrt. Beispiel: Das
    * Default-Koordinatenreferenzsystem `CRS84` entspricht `code: 4326` und `forceAxisOrder:
    * LON_LAT`.
-   * @default
+   * @default CRS84
    */
   Optional<EpsgCrs> getNativeCrs();
 
@@ -123,15 +156,15 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
    * in the dataset.
    * @langDe Eine Zeitzonen-ID, z.B. `Europe/Berlin`. Wird auf temporale Werte ohne Zeitzone im
    * Datensatz angewendet.
-   * @default `UTC`
+   * @default UTC
    */
   @JsonDeserialize(converter = ZoneIdFromString.class)
   Optional<ZoneId> getNativeTimeZone();
 
 
   /**
-   * @lang_en
-   * @de
+   * @langEn
+   * @langDe
    * @default
    */
   Optional<String> getDefaultLanguage();
@@ -147,16 +180,18 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
   List<ExtensionConfiguration> getExtensions();
 
 
-  //behaves exactly like Map<String, FeatureSchema>, but supports mergeable builder deserialization
-  // (immutables attributeBuilder does not work with maps yet)
+  /**
+   * @langEn Definition of feature types, see [below](#types).
+   * @langDe Definition of object types, see [below](#types).
+   */
   @JsonMerge
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
 
 
   /**
-   * @lang_en
-   * @de
-   * @default
+   * @langEn
+   * @langDe
+   * @default {}
    */
   Map<String, Map<String, String>> getCodelists();
 
@@ -166,7 +201,7 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
    * Currently only works for [SQL](sql.md).
    * @langDe Liste von Quelltypen, die für die Ableitung der `types` Definitionen im Auto-Modus
    * berücksichtigt werden sollen. Funktioniert aktuell nur für [SQL](sql.md).
-   * @default `[]`
+   * @default []
    */
   List<String> getAutoTypes();
 
