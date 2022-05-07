@@ -43,18 +43,25 @@ public class SqlDialectPostGis implements SqlDialect {
   }
 
   @Override
-  public String applyToExtent(String column) {
-    return String.format("ST_Extent(%s)", column);
+  public String applyToExtent(String column, boolean is3d) {
+    return is3d
+        ? String.format("ST_3DExtent(%s)", column)
+        : String.format("ST_Extent(%s)", column);
   }
 
   @Override
   public Optional<BoundingBox> parseExtent(String extent, EpsgCrs crs) {
     List<String> bbox = BBOX_SPLITTER.splitToList(extent);
 
-    if (bbox.size() > 4) {
+    if (bbox.size() > 6) {
       return Optional.of(BoundingBox
-          .of(Double.parseDouble(bbox.get(1)), Double.parseDouble(bbox.get(2)),
-              Double.parseDouble(bbox.get(3)), Double.parseDouble(bbox.get(4)), crs));
+                             .of(Double.parseDouble(bbox.get(1)), Double.parseDouble(bbox.get(2)),
+                                 Double.parseDouble(bbox.get(3)), Double.parseDouble(bbox.get(4)),
+                                 Double.parseDouble(bbox.get(5)), Double.parseDouble(bbox.get(6)), crs));
+    } else if (bbox.size() > 4) {
+      return Optional.of(BoundingBox
+                             .of(Double.parseDouble(bbox.get(1)), Double.parseDouble(bbox.get(2)),
+                                 Double.parseDouble(bbox.get(3)), Double.parseDouble(bbox.get(4)), crs));
     }
 
     return Optional.empty();

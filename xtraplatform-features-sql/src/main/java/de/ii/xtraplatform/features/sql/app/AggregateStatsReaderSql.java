@@ -50,17 +50,17 @@ class AggregateStatsReaderSql implements AggregateStatsReader {
     }
 
     @Override
-    public Stream<Optional<BoundingBox>> getSpatialExtent(FeatureStoreTypeInfo typeInfo) {
+    public Stream<Optional<BoundingBox>> getSpatialExtent(FeatureStoreTypeInfo typeInfo, boolean is3d) {
         //TODO: multiple main tables
         FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers()
                                                                   .get(0);
         Optional<FeatureStoreAttributesContainer> spatialAttributesContainer = instanceContainer.getSpatialAttributesContainer();
 
-        if (!spatialAttributesContainer.isPresent()) {
+        if (spatialAttributesContainer.isEmpty()) {
             throw new IllegalArgumentException("feature type has no geometry:" + typeInfo.getName());
         }
 
-        String query = queryGenerator.getExtentQuery(instanceContainer, spatialAttributesContainer.get());
+        String query = queryGenerator.getExtentQuery(instanceContainer, spatialAttributesContainer.get(), is3d);
 
         return sqlClient.get().getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class))
             .via(Reactive.Transformer.map(sqlRow -> sqlDialect.parseExtent((String) sqlRow.getValues()

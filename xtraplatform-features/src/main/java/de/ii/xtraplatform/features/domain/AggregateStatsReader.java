@@ -15,7 +15,7 @@ public interface AggregateStatsReader {
 
   Stream<Long> getCount(FeatureStoreTypeInfo typeInfo);
 
-  Stream<Optional<BoundingBox>> getSpatialExtent(FeatureStoreTypeInfo typeInfo);
+  Stream<Optional<BoundingBox>> getSpatialExtent(FeatureStoreTypeInfo typeInfo, boolean is3d);
 
   Stream<Optional<Interval>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String property);
 

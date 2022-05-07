@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
+import java.util.Objects;
+
 @Value.Immutable
 @Value.Style(builder = "new", deepImmutablesDetection = true)
 @JsonDeserialize(builder = ImmutableBoundingBox.Builder.class)
@@ -20,13 +22,23 @@ public interface BoundingBox {
     return new ImmutableBoundingBox.Builder().xmin(xmin).ymin(ymin).xmax(xmax).ymax(ymax).epsgCrs(crs).build();
   }
 
+  static BoundingBox of(double xmin, double ymin, double zmin, double xmax, double ymax, double zmax, EpsgCrs crs) {
+    return new ImmutableBoundingBox.Builder().xmin(xmin).ymin(ymin).zmin(zmin).xmax(xmax).ymax(ymax).zmax(zmax).epsgCrs(crs).build();
+  }
+
   double getXmin();
 
   double getYmin();
 
+  @Value.Default
+  default Double getZmin() { return null; }
+
   double getXmax();
 
   double getYmax();
+
+  @Value.Default
+  default Double getZmax() { return null; }
 
   @Value.Default
   default EpsgCrs getEpsgCrs() {
@@ -36,7 +48,16 @@ public interface BoundingBox {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  default boolean is3d() {
+    return Objects.nonNull(getZmin()) && Objects.nonNull(getZmax());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default double[] toArray() {
-    return new double[]{getXmin(), getYmin(), getXmax(), getYmax()};
+    return is3d()
+        ? new double[]{getXmin(), getYmin(), getZmin(), getXmax(), getYmax(), getZmax()}
+        : new double[]{getXmin(), getYmin(), getXmax(), getYmax()};
   }
 }

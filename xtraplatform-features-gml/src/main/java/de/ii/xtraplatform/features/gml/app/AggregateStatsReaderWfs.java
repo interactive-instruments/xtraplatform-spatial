@@ -41,7 +41,7 @@ public class AggregateStatsReaderWfs implements AggregateStatsReader {
     }
 
     @Override
-    public Stream<Optional<BoundingBox>> getSpatialExtent(FeatureStoreTypeInfo typeInfo) {
+    public Stream<Optional<BoundingBox>> getSpatialExtent(FeatureStoreTypeInfo typeInfo, boolean is3d) {
 
         Optional<BoundingBox> boundingBox = featureMetadata.getMetadata()
                                                       .map(Metadata::getFeatureTypesBoundingBox)
