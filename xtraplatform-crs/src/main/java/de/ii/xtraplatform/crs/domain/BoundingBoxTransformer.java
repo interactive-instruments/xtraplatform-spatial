@@ -59,11 +59,11 @@ public abstract class BoundingBoxTransformer implements CrsTransformer{
         // The corner points of the bounding box are transformed into the system crsOut.
         // Build the bounding box in crsOut from the min/max values.
         final double xmin = min(llb[0], llt[0], ulb[0], ult[0]);
-        final double ymin = min(llb[0], llt[0], lrb[0], lrt[0]);
-        final double zmin = min(llb[0], lrb[0], ulb[0], urb[0]);
+        final double ymin = min(llb[1], llt[1], lrb[1], lrt[1]);
+        final double zmin = min(llb[2], lrb[2], ulb[2], urb[2]);
         final double xmax = max(lrb[0], lrt[0], urb[0], urt[0]);
-        final double ymax = max(ulb[0], ult[0], urb[0], urt[0]);
-        final double zmax = max(llt[0], lrt[0], ult[0], urt[0]);
+        final double ymax = max(ulb[1], ult[1], urb[1], urt[1]);
+        final double zmax = max(llt[2], lrt[2], ult[2], urt[2]);
 
         return BoundingBox.of(xmin, ymin, zmin, xmax, ymax, zmax, getTargetCrs());
     }

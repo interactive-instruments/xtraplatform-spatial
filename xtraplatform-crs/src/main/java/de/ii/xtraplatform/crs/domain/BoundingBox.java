@@ -11,6 +11,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
+import javax.annotation.Nullable;
+import javax.validation.constraints.Null;
 import java.util.Objects;
 
 @Value.Immutable
@@ -30,6 +32,7 @@ public interface BoundingBox {
 
   double getYmin();
 
+  @Nullable
   @Value.Default
   default Double getZmin() { return null; }
 
@@ -37,6 +40,7 @@ public interface BoundingBox {
 
   double getYmax();
 
+  @Nullable
   @Value.Default
   default Double getZmax() { return null; }
 
