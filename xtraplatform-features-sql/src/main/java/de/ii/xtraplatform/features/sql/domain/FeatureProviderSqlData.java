@@ -23,15 +23,30 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
+/**
+ * # SQL Feature Provider
+ * @langEn The specifics of the SQL feature provider.
+ * @langDe Hier werden die Besonderheiten des SQL-Feature-Providers beschrieben.
+ */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableFeatureProviderSqlData.Builder.class)
 public interface FeatureProviderSqlData extends FeatureProviderDataV2,
     WithConnectionInfo<ConnectionInfoSql> {
 
+  /**
+   * @langEn See [Connection Info for SQL databases](#connection-info).
+   * @langDe Siehe [Das Connection-Info-Objekt für SQL-Datenbanken](#connection-info).
+   * @default
+   */
   @Nullable
   @Override
   ConnectionInfoSql getConnectionInfo();
 
+  /**
+   * @langEn Defaults for the path expressions in `sourcePath`, for details see [Source Path Defaults](#source-path-defaults) below.
+   * @langDe Defaults für die Pfad-Ausdrücke in `sourcePath`, für Details siehe [SQL-Pfad-Defaults](#source-path-defaults).
+   * @default siehe below
+   */
   //@JsonProperty(value = "sourcePathDefaults", access = JsonProperty.Access.WRITE_ONLY) // means only read from json
   //@Value.Default
   //can't use interface, bug in immutables when using attributeBuilderDetection and Default
@@ -41,6 +56,11 @@ public interface FeatureProviderSqlData extends FeatureProviderDataV2,
   @Nullable
   SqlPathDefaults getSourcePathDefaults();
 
+  /**
+   * @langEn Options for query generation, for details see [Query Generation](#query-generation) below.
+   * @langDe Einstellungen für die Query-Generierung, für Details siehe [Query-Generierung](#query-generation).
+   * @default see below
+   */
   @JsonProperty(value = "queryGeneration", access = JsonProperty.Access.WRITE_ONLY) // means only read from json
   //@Value.Default
   //can't use interface, bug in immutables when using attributeBuilderDetection and Default
@@ -151,15 +171,33 @@ public interface FeatureProviderSqlData extends FeatureProviderDataV2,
     }
   }
 
+  /**
+   * # Query Generation
+   * @langEn Options for query generation.
+   * @langDe Optionen für die Query-Generierung in `queryGeneration`.
+   */
   @Value.Immutable
   @JsonDeserialize(builder = ImmutableQueryGeneratorSettings.Builder.class)
   interface QueryGeneratorSettings {
 
+    /**
+     * @langEn Option to disable computation of the number of selected features for performance reasons that
+     * are returned in `numberMatched`. As a general rule this should be disabled for big datasets.
+     * @langDe Steuert, ob bei Abfragen die Anzahl der selektierten Features berechnet und in `numberMatched` zurückgegeben
+     * werden soll oder ob dies aus Performancegründen unterbleiben soll. Bei großen Datensätzen empfiehlt es
+     * sich in der Regel, die Option zu deaktivieren.
+     * @default `true`
+     */
     @Value.Default
     default boolean getComputeNumberMatched() {
       return true;
     }
 
+    /**
+     * @lang_en
+     * @de
+     * @default
+     */
     @Value.Default
     default Optional<String> getAccentiCollation() {
       return Optional.empty();

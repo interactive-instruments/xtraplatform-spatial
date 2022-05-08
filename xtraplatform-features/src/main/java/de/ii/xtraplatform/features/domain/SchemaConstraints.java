@@ -16,6 +16,11 @@ import org.immutables.value.Value;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * @langEn Optional description of schema constraints, especially for JSON schema generation. See [Constraints](constraints.md).
+ * @langDe Optionale Beschreibung von Schema-Einschränkungen, vor allem für die Erzeugung von JSON-Schemas. Siehe [Constraints](constraints.md).
+ * @default `{}`
+ */
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 @JsonDeserialize(builder = ImmutableSchemaConstraints.Builder.class)
