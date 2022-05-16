@@ -13,6 +13,7 @@ import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
+import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -202,6 +203,11 @@ public class FeatureProviderWfs
   }
 
   @Override
+  public boolean is3dSupported() {
+    return ((CrsInfo) crsTransformerFactory).is3d(getNativeCrs());
+  }
+
+  @Override
   public long getFeatureCount(String typeName) {
     Optional<FeatureStoreTypeInfo> typeInfo =
         Optional.ofNullable(getTypeInfos().get(typeName));
@@ -230,12 +236,12 @@ public class FeatureProviderWfs
   public Optional<BoundingBox> getSpatialExtent(String typeName) {
     Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
-    if (!typeInfo.isPresent()) {
+    if (typeInfo.isEmpty()) {
       return Optional.empty();
     }
 
     try {
-      Stream<Optional<BoundingBox>> extentGraph = aggregateStatsReader.getSpatialExtent(typeInfo.get());
+      Stream<Optional<BoundingBox>> extentGraph = aggregateStatsReader.getSpatialExtent(typeInfo.get(), is3dSupported());
 
       return extentGraph
           .on(getStreamRunner())
@@ -257,7 +263,7 @@ public class FeatureProviderWfs
         .flatMap(
             boundingBox ->
                 crsTransformerFactory
-                    .getTransformer(getNativeCrs(), crs, true)
+                    .getTransformer(getNativeCrs(), crs, false)
                     .flatMap(
                         crsTransformer -> {
                           try {

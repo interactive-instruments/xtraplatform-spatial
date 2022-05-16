@@ -46,7 +46,9 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
   }
 
   @Override
-  public String getExtentQuery(FeatureStoreInstanceContainer instanceContainer, FeatureStoreAttributesContainer attributesContainer) {
+  public String getExtentQuery(FeatureStoreInstanceContainer instanceContainer,
+                               FeatureStoreAttributesContainer attributesContainer,
+                               boolean is3d) {
 
     List<String> aliases = getAliases(attributesContainer);
     String attributeContainerAlias = aliases.get(aliases.size() - 1);
@@ -55,8 +57,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
         .format("%s %s", attributesContainer.getInstanceContainerName(), aliases.get(0));
 
     String column = attributesContainer.getSpatialAttribute()
-        .map(attribute -> sqlDialect
-            .applyToExtent(getQualifiedColumn(attributeContainerAlias, attribute.getName())))
+        .map(attribute -> sqlDialect.applyToExtent(getQualifiedColumn(attributeContainerAlias, attribute.getName()), is3d))
         .get();
 
     String join = getJoins(attributesContainer, aliases, Optional.empty());

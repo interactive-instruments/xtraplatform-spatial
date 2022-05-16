@@ -26,7 +26,7 @@ public interface SqlDialect {
 
   String applyToWkt(String column, boolean forcePolygonCCW);
 
-  String applyToExtent(String column);
+  String applyToExtent(String column, boolean is3d);
 
   String applyToString(String string);
 

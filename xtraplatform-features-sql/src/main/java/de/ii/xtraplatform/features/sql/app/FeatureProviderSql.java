@@ -422,7 +422,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   public long getFeatureCount(String typeName) {
     Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
-    if (!typeInfo.isPresent()) {
+    if (typeInfo.isEmpty()) {
       return -1;
     }
 
@@ -446,7 +446,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   public Optional<BoundingBox> getSpatialExtent(String typeName) {
     Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
-    if (!typeInfo.isPresent()) {
+    if (typeInfo.isEmpty()) {
       return Optional.empty();
     }
 
@@ -463,7 +463,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     try {
       Stream<Optional<BoundingBox>> extentGraph =
-          aggregateStatsReader.getSpatialExtent(typeInfo.get());
+          aggregateStatsReader.getSpatialExtent(typeInfo.get(), is3dSupported());
 
       return extentGraph
           .on(getStreamRunner())
@@ -484,7 +484,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
         .flatMap(
             boundingBox ->
                 crsTransformerFactory
-                    .getTransformer(getNativeCrs(), crs, true)
+                    .getTransformer(getNativeCrs(), crs, false)
                     .flatMap(
                         crsTransformer -> {
                           try {
@@ -499,7 +499,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   public Optional<Interval> getTemporalExtent(String typeName, String property) {
     Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
-    if (!typeInfo.isPresent()) {
+    if (typeInfo.isEmpty()) {
       return Optional.empty();
     }
 
@@ -522,7 +522,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
       String typeName, String startProperty, String endProperty) {
     Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
-    if (!typeInfo.isPresent()) {
+    if (typeInfo.isEmpty()) {
       return Optional.empty();
     }
 
@@ -583,7 +583,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     Optional<FeatureSchema> schema = Optional.ofNullable(getData().getTypes().get(featureType));
     Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(featureType));
 
-    if (!schema.isPresent() || !typeInfo.isPresent()) {
+    if (schema.isEmpty() || typeInfo.isEmpty()) {
       throw new IllegalArgumentException(
           String.format("Feature type '%s' not found.", featureType));
     }
@@ -634,7 +634,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     Optional<FeatureSchema> schema = Optional.ofNullable(getData().getTypes().get(featureType));
     Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(featureType));
 
-    if (!schema.isPresent() || !typeInfo.isPresent()) {
+    if (schema.isEmpty() || typeInfo.isEmpty()) {
       throw new IllegalArgumentException(
           String.format("Feature type '%s' not found.", featureType));
     }

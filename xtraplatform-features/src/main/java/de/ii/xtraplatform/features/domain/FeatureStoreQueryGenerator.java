@@ -15,5 +15,5 @@ import java.util.stream.Stream;
 
 public interface FeatureStoreQueryGenerator<T> {
 
-    T getExtentQuery(FeatureStoreInstanceContainer instanceContainer, FeatureStoreAttributesContainer attributesContainer);
+    T getExtentQuery(FeatureStoreInstanceContainer instanceContainer, FeatureStoreAttributesContainer attributesContainer, boolean is3d);
 }
