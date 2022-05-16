@@ -33,17 +33,15 @@ public interface BoundingBox {
   double getYmin();
 
   @Nullable
-  @Value.Default
-  default Double getZmin() { return null; }
+  default Double getZmin();
 
   double getXmax();
 
   double getYmax();
 
   @Nullable
-  @Value.Default
-  default Double getZmax() { return null; }
-
+  default Double getZmax();
+  
   @Value.Default
   default EpsgCrs getEpsgCrs() {
     return OgcCrs.CRS84;
