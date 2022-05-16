@@ -204,6 +204,16 @@ public class CqlFilterExamples {
             TemporalLiteral.of("2017-06-10T07:30:00Z"), TemporalLiteral.of("2018-06-10T07:30:00Z"),
             TemporalLiteral.of("2019-06-10T07:30:00Z"), TemporalLiteral.of("2020-06-10T07:30:00Z")));
 
+    public static final CqlFilter EXAMPLE_TRUE = CqlFilter.of(ScalarLiteral.of(true));
+
+    public static final CqlFilter EXAMPLE_BOOLEAN_VALUES = CqlFilter.of(And.of(
+        CqlPredicate.of(ScalarLiteral.of(true)),
+        CqlPredicate.of(Or.of(
+            CqlPredicate.of(ScalarLiteral.of(false)),
+            CqlPredicate.of(Not.of(CqlPredicate.of(ScalarLiteral.of(false))))))));
+
+    public static final CqlFilter EXAMPLE_KEYWORD = CqlFilter.of(Gt.of(ImmutableList.of(Property.of("root.date"), TemporalLiteral.of("2022-04-17"))));
+
     public static final CqlFilter EXAMPLE_CASEI = CqlFilter.of(In.ofFunction(
             Function.of("CASEI", ImmutableList.of(Property.of("road_class"))),
             ImmutableList.of(

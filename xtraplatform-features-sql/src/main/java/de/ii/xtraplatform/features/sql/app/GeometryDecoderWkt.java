@@ -33,6 +33,10 @@ public class GeometryDecoderWkt {
   }
 
   public void decode(String text) throws IOException {
+    // remove whitespace after array delimiters, without this they will be matched as words
+    text = text.replace(") ", ")")
+        .replace("( ", "(")
+        .replace(", ", ",");
     StreamTokenizer tokenizer = new StreamTokenizer(new StringReader(text));
     final int char128 = 128;
     final int skip32 = 32;

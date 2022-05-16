@@ -32,6 +32,8 @@ public interface CqlFilter extends CqlPredicate {
             builder.or((Or) node);
         } else if (node instanceof Not) {
             builder.not((Not) node);
+        } else if (node instanceof ScalarLiteral && ((ScalarLiteral) node).getType().equals(Boolean.class)) {
+            builder.booleanValue((ScalarLiteral) node);
         } else if (node instanceof Eq) {
             builder.eq((Eq) node);
         } else if (node instanceof Neq) {

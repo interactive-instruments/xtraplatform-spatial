@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.threeten.extra.Interval;
 
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,6 +28,10 @@ import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 
 public class CqlToText implements CqlVisitor<String> {
 
+    protected final static Set<String> KEYWORDS = new ImmutableSet.Builder<String>()
+        .add("A_EQUALS", "A_CONTAINS", "A_CONTAINEDBY", "A_OVERLAPS", "ACCENTI", "AND", "BETWEEN", "CASEI", "DATE", "ENVELOPE", "FALSE", "GEOMETRYCOLLECTION", "IN", "LIKE", "LINESTRING", "MULTILINESTRING", "MULTIPOINT", "MULTIPOLYGON", "NOT", "NULL", "OR", "POINT", "POLYGON", "S_INTERSECTS", "S_EQUALS", "S_DISJOINT", "S_TOUCHES", "S_WITHIN", "S_OVERLAPS", "S_CROSSES", "S_CONTAINS", "T_AFTER", "T_BEFORE", "T_CONTAINS", "T_DISJOINT", "T_DURING", "T_EQUALS", "T_FINISHEDBY", "T_FINISHES", "T_INTERSECTS", "T_MEETS", "T_METBY", "T_OVERLAPPEDBY", "T_OVERLAPS", "T_STARTEDBY", "T_STARTS", "TIMESTAMP", "TRUE")
+        .build();
+    
     protected final static Map<Class<?>, String> LOGICAL_OPERATORS = new ImmutableMap.Builder<Class<?>, String>()
             .put(ImmutableAnd.class, "AND")
             .put(ImmutableOr.class, "OR")
@@ -46,13 +52,21 @@ public class CqlToText implements CqlVisitor<String> {
             .build();
 
     private final Optional<java.util.function.BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>>> coordinatesTransformer;
+    private final boolean isNestedFilter;
 
     public CqlToText() {
         this.coordinatesTransformer = Optional.empty();
+        this.isNestedFilter = false;
+    }
+
+    public CqlToText(boolean isNestedFilter) {
+        this.coordinatesTransformer = Optional.empty();
+        this.isNestedFilter = isNestedFilter;
     }
 
     public CqlToText(java.util.function.BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>> coordinatesTransformer) {
         this.coordinatesTransformer = Optional.ofNullable(coordinatesTransformer);
+        this.isNestedFilter = false;
     }
 
     private java.util.function.Function<Geometry.Coordinate, Geometry.Coordinate> transformIfNecessary(Optional<EpsgCrs> sourceCrs) {
@@ -334,16 +348,25 @@ public class CqlToText implements CqlVisitor<String> {
             StringJoiner sj = new StringJoiner(".");
             for (String element : property.getPath()) {
                 if (nestedFilters.containsKey(element)) {
-                    sj.add(String.format("%s[%s]", element, nestedFilters.get(element)
-                                                                         .accept(this)));
+                    sj.add(String.format("%s[%s]", addDoubleQuotes(element), nestedFilters.get(element)
+                        .accept(new CqlToText(true))));
                 } else {
-                    sj.add(element);
+                    sj.add(addDoubleQuotes(element));
                 }
             }
             return sj.toString();
+        } else if (isNestedFilter) {
+            return addDoubleQuotes(property.getPath().get(property.getPath().size() - 1));
         } else {
-            return property.getPath().get(property.getPath().size() - 1);
+            return property.getPath().stream().map(this::addDoubleQuotes).collect(Collectors.joining("."));
         }
+    }
+
+    private String addDoubleQuotes(String identifier) {
+        if (KEYWORDS.contains(identifier.toUpperCase())) {
+            return "\"" + identifier + "\"";
+        }
+        return identifier;
     }
 
     @Override
