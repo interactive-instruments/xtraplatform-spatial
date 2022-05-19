@@ -9,6 +9,13 @@ package de.ii.xtraplatform.features.sql.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.docs.DocFile;
+import de.ii.xtraplatform.docs.DocIgnore;
+import de.ii.xtraplatform.docs.DocMarker;
+import de.ii.xtraplatform.docs.DocStep;
+import de.ii.xtraplatform.docs.DocStep.Step;
+import de.ii.xtraplatform.docs.DocTable;
+import de.ii.xtraplatform.docs.DocTable.ColumnSet;
 import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -24,20 +31,63 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
- * # SQL Feature Provider
+ * # SQL Features
  * @langEn The specifics of the SQL feature provider.
  * @langDe Hier werden die Besonderheiten des SQL-Feature-Providers beschrieben.
+ * @langAll {@docTable:properties}
+ * @langAll ## Connection Info
+ * @langEn The connection info object for SQL databases has the following properties:
+ * @langDe Das Connection-Info-Objekt für SQL-Datenbanken wird wie folgt beschrieben:
+ * @langAll {@docTable:connectionInfo}
+ * @langAll ### Pool
+ * @langEn Settings for the connection pool.
+ * @langDe Einstellungen für den Connection-Pool.
+ * @langAll {@docTable:pool}
+ * @ref:properties {@link de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData}
+ * @ref:connectionInfo {@link de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql}
+ * @ref:pool {@link de.ii.xtraplatform.features.sql.domain.ImmutablePoolSettings}
  */
+@DocFile(
+    path = "providers",
+    name = "sql.md",
+    tables = {
+        @DocTable(
+            name = "properties",
+            rows = {
+                @DocStep(type = Step.TAG_REFS, params = "{@ref:properties}"),
+                @DocStep(type = Step.JSON_PROPERTIES),
+                @DocStep(type = Step.MARKED, params = "specific")
+            },
+            columnSet = ColumnSet.JSON_PROPERTIES
+        ),
+        @DocTable(
+            name = "connectionInfo",
+            rows = {
+                @DocStep(type = Step.TAG_REFS, params = "{@ref:connectionInfo}"),
+                @DocStep(type = Step.JSON_PROPERTIES)
+            },
+            columnSet = ColumnSet.JSON_PROPERTIES
+        ),
+        @DocTable(
+            name = "pool",
+            rows = {
+                @DocStep(type = Step.TAG_REFS, params = "{@ref:pool}"),
+                @DocStep(type = Step.JSON_PROPERTIES)
+            },
+            columnSet = ColumnSet.JSON_PROPERTIES
+        ),
+    }
+)
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableFeatureProviderSqlData.Builder.class)
 public interface FeatureProviderSqlData extends FeatureProviderDataV2,
     WithConnectionInfo<ConnectionInfoSql> {
 
   /**
-   * @langEn See [Connection Info for SQL databases](#connection-info).
-   * @langDe Siehe [Das Connection-Info-Objekt für SQL-Datenbanken](#connection-info).
-   * @default
+   * @langEn See [Connection Info](#connection-info).
+   * @langDe Siehe [Connection-Info](#connection-info).
    */
+  @DocMarker("specific")
   @Nullable
   @Override
   ConnectionInfoSql getConnectionInfo();
@@ -45,7 +95,6 @@ public interface FeatureProviderSqlData extends FeatureProviderDataV2,
   /**
    * @langEn Defaults for the path expressions in `sourcePath`, for details see [Source Path Defaults](#source-path-defaults) below.
    * @langDe Defaults für die Pfad-Ausdrücke in `sourcePath`, für Details siehe [SQL-Pfad-Defaults](#source-path-defaults).
-   * @default siehe below
    */
   //@JsonProperty(value = "sourcePathDefaults", access = JsonProperty.Access.WRITE_ONLY) // means only read from json
   //@Value.Default
@@ -53,14 +102,15 @@ public interface FeatureProviderSqlData extends FeatureProviderDataV2,
   //default SqlPathDefaults getSourcePathDefaults() {
   //    return new ImmutableSqlPathDefaults.Builder().build();
   //}
+  @DocMarker("specific")
   @Nullable
   SqlPathDefaults getSourcePathDefaults();
 
   /**
    * @langEn Options for query generation, for details see [Query Generation](#query-generation) below.
    * @langDe Einstellungen für die Query-Generierung, für Details siehe [Query-Generierung](#query-generation).
-   * @default see below
    */
+  @DocMarker("specific")
   @JsonProperty(value = "queryGeneration", access = JsonProperty.Access.WRITE_ONLY) // means only read from json
   //@Value.Default
   //can't use interface, bug in immutables when using attributeBuilderDetection and Default
@@ -171,11 +221,6 @@ public interface FeatureProviderSqlData extends FeatureProviderDataV2,
     }
   }
 
-  /**
-   * # Query Generation
-   * @langEn Options for query generation.
-   * @langDe Optionen für die Query-Generierung in `queryGeneration`.
-   */
   @Value.Immutable
   @JsonDeserialize(builder = ImmutableQueryGeneratorSettings.Builder.class)
   interface QueryGeneratorSettings {
@@ -186,18 +231,15 @@ public interface FeatureProviderSqlData extends FeatureProviderDataV2,
      * @langDe Steuert, ob bei Abfragen die Anzahl der selektierten Features berechnet und in `numberMatched` zurückgegeben
      * werden soll oder ob dies aus Performancegründen unterbleiben soll. Bei großen Datensätzen empfiehlt es
      * sich in der Regel, die Option zu deaktivieren.
-     * @default `true`
+     * @default true
      */
     @Value.Default
     default boolean getComputeNumberMatched() {
       return true;
     }
 
-    /**
-     * @lang_en
-     * @de
-     * @default
-     */
+    //TODO
+    @DocIgnore
     @Value.Default
     default Optional<String> getAccentiCollation() {
       return Optional.empty();
