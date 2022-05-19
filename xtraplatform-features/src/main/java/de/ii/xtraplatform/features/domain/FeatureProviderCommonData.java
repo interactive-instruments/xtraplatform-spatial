@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
@@ -16,7 +17,7 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
+@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true, passAnnotations = DocIgnore.class)
 @BuildableMapEncodingEnabled
 @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
 public interface FeatureProviderCommonData extends FeatureProviderDataV2, WithConnectionInfo<ConnectionInfo> {

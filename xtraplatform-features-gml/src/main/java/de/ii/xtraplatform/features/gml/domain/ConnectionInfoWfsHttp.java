@@ -40,7 +40,7 @@ import java.util.Optional;
  * </code>
  */
 @Value.Immutable
-@Value.Style(builder = "new")
+@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true, passAnnotations = DocIgnore.class)
 @JsonDeserialize(builder = ImmutableConnectionInfoWfsHttp.Builder.class)
 public interface ConnectionInfoWfsHttp extends ConnectionInfo, WfsInfo {
 

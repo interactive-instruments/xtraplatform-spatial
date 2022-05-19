@@ -100,7 +100,7 @@ import java.util.Optional;
     )
 })
 @Value.Immutable
-@Value.Style(builder = "new")
+@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true, passAnnotations = DocIgnore.class)
 @JsonDeserialize(builder = ImmutableCodelistData.Builder.class)
 public interface CodelistData extends EntityData {
 

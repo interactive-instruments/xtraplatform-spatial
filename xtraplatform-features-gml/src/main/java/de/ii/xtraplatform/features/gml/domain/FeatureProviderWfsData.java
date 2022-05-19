@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.gml.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocFile;
+import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
@@ -70,7 +71,7 @@ import org.immutables.value.Value;
     }
 )
 @Value.Immutable
-@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true)
+@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true, passAnnotations = DocIgnore.class)
 @BuildableMapEncodingEnabled
 @JsonDeserialize(builder = ImmutableFeatureProviderWfsData.Builder.class)
 public interface FeatureProviderWfsData extends FeatureProviderDataV2,

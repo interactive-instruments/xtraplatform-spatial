@@ -32,12 +32,16 @@ import org.immutables.value.Value;
  */
 
 @Value.Immutable
+@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true, passAnnotations = DocIgnore.class)
 @JsonDeserialize(builder = ImmutableConnectionInfoSql.Builder.class)
 @MergeableMapEncodingEnabled
 public interface ConnectionInfoSql extends ConnectionInfo {
 
     enum Dialect {PGIS,GPKG}
-
+    /**
+     * @langEn Always `SLICK`.
+     * @langDe Stets `SLICK`.
+     */
     @Override
     @Value.Derived
     default String getConnectorType() {

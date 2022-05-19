@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Value.Immutable
-@Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
+@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true, passAnnotations = DocIgnore.class)
 @BuildableMapEncodingEnabled
 @JsonDeserialize(builder = ImmutableFeatureSchema.Builder.class)
 @JsonPropertyOrder({"sourcePath", "type", "role", "valueType", "geometryType", "objectType",
@@ -184,14 +184,17 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
   Optional<String> getConstantValue();
 
   /**
-   * @langEn Optional transformations for the property, see [transformations](transformations.md).
-   * @langDe Optionale Transformationen für die Eigenschaft, siehe [Transformationen](transformations.md).
+   * @langEn Optional transformations for the property, see [transformations](details/transformations.md).
+   * @langDe Optionale Transformationen für die Eigenschaft, siehe [Transformationen](details/transformations.md).
    * @default []
    */
   List<PropertyTransformation> getTransformations();
 
-  //TODO
-  @DocIgnore
+  /**
+   * @langEn Optional description of schema constraints, especially for JSON schema generation. See [Constraints](details/constraints.md).
+   * @langDe Optionale Beschreibung von Schema-Einschränkungen, vor allem für die Erzeugung von JSON-Schemas. Siehe [Constraints](details/constraints.md).
+   * @default `{}`
+   */
   @Override
   Optional<SchemaConstraints> getConstraints();
 
