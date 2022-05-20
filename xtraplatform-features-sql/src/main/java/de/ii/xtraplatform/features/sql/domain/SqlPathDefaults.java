@@ -9,10 +9,12 @@ package de.ii.xtraplatform.features.sql.domain;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.docs.DocIgnore;
 import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
+@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true, passAnnotations = DocIgnore.class)
 @JsonDeserialize(builder = ImmutableSqlPathDefaults.Builder.class)
 public interface SqlPathDefaults {
 
@@ -39,5 +41,6 @@ public interface SqlPathDefaults {
     return "id";
   }
 
+  @DocIgnore
   Optional<String> getJunctionTablePattern();
 }
