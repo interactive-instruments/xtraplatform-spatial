@@ -16,6 +16,7 @@ import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.docs.DocFilesTemplate;
 import de.ii.xtraplatform.docs.DocFilesTemplate.ForEach;
 import de.ii.xtraplatform.docs.DocI18n;
+import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
@@ -32,7 +33,7 @@ import java.util.Optional;
 import org.immutables.value.Value;
 
 /**
- * @langEn # Overview
+ * @langEn # Common
  * <p>
  * A feature provider is defined in a configuration file by an object with the following properties.
  * Properties without default are mandatory.
@@ -43,12 +44,17 @@ import org.immutables.value.Value;
  * <p>
  * {@docTable:types}
  * <p>
- * @langDe # Übersicht
+ * @langDe # Allgemein
  * <p>
  * Jeder Feature-Provider wird in einer Konfigurationsdatei in einem Objekt mit den folgenden
  * Eigenschaften beschrieben. Werte ohne Defaultwert sind in diesem Fall Pflichtangaben.
  * <p>
  * {@docTable:properties}
+ * <p>
+ * ## Types
+ * <p>
+ * {@docTable:types}
+ * <p>
  * @langEn ## Connection Info
  * <p>
  * For data source specifics, see [SQL](sql.md#connection-info) and [WFS](wfs.md#connection-info).
@@ -56,7 +62,7 @@ import org.immutables.value.Value;
  * <p>
  * Informationen zu den Datenquellen finden Sie auf separaten Seiten: [SQL](sql.md#connection-info)
  * und [WFS](wfs.md#connection-info).
- * <p> *
+ * <p>
  * @langEn ## Example Configuration (SQL)
  * <p>
  * See the [feature
@@ -65,15 +71,23 @@ import org.immutables.value.Value;
  * @langDe ## Example Configuration (SQL)
  * <p>
  * Als Beispiel siehe
- * die[Provider-Konfiguration](https://github.com/interactive-instruments/ldproxy/blob/master/demo/vineyards/store/entities/providers/vineyards.yml)
+ * die [Provider-Konfiguration](https://github.com/interactive-instruments/ldproxy/blob/master/demo/vineyards/store/entities/providers/vineyards.yml)
  * der API [Weinlagen in Rheinland-Pfalz](https://demo.ldproxy.net/vineyards).
  * @propertyTable {@link de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData}
  * @propertyTable:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
  */
 @DocFile(
-    path = "configuration/providers",
+    path = "providers",
     name = "README.md",
     tables = {
+        @DocTable(
+            name = "properties",
+            rows = {
+                @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
+                @DocStep(type = Step.JSON_PROPERTIES)
+            },
+            columnSet = ColumnSet.JSON_PROPERTIES
+        ),
         @DocTable(
             name = "types",
             rows = {
@@ -82,25 +96,18 @@ import org.immutables.value.Value;
             },
             columnSet = ColumnSet.JSON_PROPERTIES
         ),
-        @DocTable(
-            name = "properties",
-            rows = {
-                @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
-                @DocStep(type = Step.JSON_PROPERTIES)
-            },
-            columnSet = ColumnSet.JSON_PROPERTIES
-        )
     }
 )
-@DocFilesTemplate(
+/*@DocFilesTemplate(
     files = ForEach.IMPLEMENTATION,
-    path = "configuration/providers",
-    stripPrefix = "FeatureProviderData",
+    path = "providers",
+    stripPrefix = "FeatureProvider",
+    stripSuffix = "Data",
     template = {
         @DocI18n(language = "en", value = "{@body}"),
         @DocI18n(language = "de", value = "{@body}")
     }
-)
+)*/
 @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
 public interface FeatureProviderDataV2 extends EntityData, AutoEntity, ExtendableConfiguration {
 
@@ -162,20 +169,21 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
   Optional<ZoneId> getNativeTimeZone();
 
 
-  /**
-   * @langEn
-   * @langDe
-   * @default
-   */
+  @DocIgnore
   Optional<String> getDefaultLanguage();
 
-
+  /**
+   * @langEn Optional type definition validation with regard to the data source (only for SQL). `NONE` means no validation. With `LAX` the validation will fail and the provider will not start, when issues are detected that would definitely lead to runtime errors. Issues that might lead to runtime errors depending on the data will be logged as warning. With `STRICT` the validation will fail for any detected issue. That means the provider will only start if runtime errors with regard to the data source can be ruled out.
+   * @langDe Steuert ob die Spezifikationen der Objektarten daraufhin geprüft werden, ob sie zur Datenquelle passen (nur für SQL). `NONE` heißt keine Prüfung. Bei `LAX` schlägt die Prüfung fehl und der Start des Providers wird verhindert, wenn Probleme festgestellt werden, die in jedem Fall zu Laufzeitfehlern führen würden. Probleme die abhängig von den tatsächlichen Daten zu Laufzeitfehlern führen könnten, werden als Warnung geloggt. Bei `STRICT` führen alle festgestellten Probleme zu einem Fehlstart. Der Provider wird also nur gestartet, wenn keine Risiken für Laufzeitfehler im Zusammenhang mit der Datenquelle identifiziert werden.
+   * @default NONE
+   */
   @Value.Default
   default MODE getTypeValidation() {
     return MODE.NONE;
   }
 
-
+  //TODO: document together with routes
+  @DocIgnore
   @Override
   List<ExtensionConfiguration> getExtensions();
 
@@ -187,14 +195,24 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
   @JsonMerge
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
 
-
-  /**
-   * @langEn
-   * @langDe
-   * @default {}
-   */
+  @DocIgnore
   Map<String, Map<String, String>> getCodelists();
 
+  /**
+   * @langEn Option to derive `types` definitions automatically from the data source. When enabled `types` must not be set.
+   * @langDe Steuert, ob die Informationen zu `types` beim Start automatisch aus der Datenquelle bestimmt werden sollen (Auto-Modus). In diesem Fall sollte `types` nicht angegeben sein.
+   * @default false
+   */
+  @Override
+  Optional<Boolean> getAuto();
+
+  /**
+   * @langEn Option to persist definitions generated with `auto: true` to the configuration file. Will remove `auto` und `autoPersist` from the configuration file. If the configuration file does not reside in `store/entities/providers` (see `additionalLocations`), a new file will be created in `store/entities/providers`. The `store` must not be `READ_ONLY` for this to take effect.
+   * @langDe Steuert, ob die im Auto-Modus (`auto: true`) bestimmten Schemainformationen in die Konfigurationsdatei übernommen werden sollen. In diesem Fall werden `auto` und `autoPersist` beim nächsten Start automatisch aus der Datei entfernt. Liegt die Konfigurationsdatei in einem anderen Verzeichnis als unter `store/entities/providers` (siehe `additionalLocations`), so wird eine neue Datei in `store/entities/providers` erstellt. `autoPersist: true` setzt voraus, dass `store` sich nicht im `READ_ONLY`-Modus befindet.
+   * @default false
+   */
+  @Override
+  Optional<Boolean> getAutoPersist();
 
   /**
    * @langEn List of source types to include in derived `types` definitions when `auto: true`.

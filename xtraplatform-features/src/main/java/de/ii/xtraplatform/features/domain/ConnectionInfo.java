@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.ii.xtraplatform.docs.DocIgnore;
 import java.util.Optional;
 import org.immutables.value.Value;
 
@@ -19,6 +20,7 @@ import org.immutables.value.Value;
  */
 public interface ConnectionInfo {
 
+    @DocIgnore
     Optional<String> getConnectionUri();
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
