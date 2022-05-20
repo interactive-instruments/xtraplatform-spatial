@@ -36,7 +36,7 @@ import java.util.Optional;
  * {@docTable:properties}
  * <p>
  * For the target values in `entries` and for `fallback` also
- * [stringFormat](../providers/transformations.md) transformations can be used. If the transformed
+ * [stringFormat](../providers/details/transformations.md) transformations can be used. If the transformed
  * value is intended for HTML output, then Markdown markup can also be used, this will be formatted
  * in the HTML output.
  * @langDe ## Konfiguration
@@ -46,7 +46,7 @@ import java.util.Optional;
  * {@docTable:properties}
  * <p>
  * Bei den Zielwerten in `entries` und bei `fallback` können auch
- * [stringFormat](../providers/transformations.md)-Transformationen genutzt werden. Ist der
+ * [stringFormat](../providers/details/transformations.md)-Transformationen genutzt werden. Ist der
  * transformierte Wert für die HTML-Ausgabe gedacht, dann kann auch Markdown-Markup verwendet
  * werden, dieser wird bei der HTML-Ausgabe aufbereitet.
  * @langEn ### Example

@@ -67,7 +67,7 @@ import org.immutables.value.Value;
  * `[oid=kita_fk]plaetze`. When a junction table should be used, two such joins are concatenated with "/", e.g. `[id=fka]a_2_b/[fkb=id]tab_b`.
  * <p>
  * Rows for a table can be filtered by adding `{filter=expression}` after the table name, where `expression` is a
- * [CQL Text](http://docs.opengeospatial.org/DRAFTS/19-079.html#cql-text) expression. For details see the module [Filter / CQL](../services/filter.md), which provides the implementation but does not have to be enabled.
+ * [CQL Text](http://docs.opengeospatial.org/DRAFTS/19-079.html#cql-text) expression. For details see the module [Filter / CQL](../services/building-blocks/filter.md), which provides the implementation but does not have to be enabled.
  * <p>
  * To select capacity information only when the value is not NULL and greater than zero in the example above,
  * the filter would look like this: `[oid=kita_fk]plaetze{filter=anzahl IS NOT NULL AND anzahl>0}`
@@ -94,7 +94,7 @@ import org.immutables.value.Value;
  * Auf einer Tabelle (der Haupttabelle eines Features oder einer über Join-angebundenen Tabelle) kann zusätzlich ein
  * einschränkender Filter durch den Zusatz `{filter=ausdruck}` angegeben werden, wobei `ausdruck` das Selektionskriertium
  * in [CQL Text](http://docs.opengeospatial.org/DRAFTS/19-079.html#cql-text) spezifiziert. Für Details siehe das Modul
- * [Filter / CQL](../services/filter.md), welches die Implementierung bereitstellt, aber nicht aktiviert sein muss.
+ * [Filter / CQL](../services/building-blocks/filter.md), welches die Implementierung bereitstellt, aber nicht aktiviert sein muss.
  * <p>
  * Wenn z.B. in dem Beispiel oben nur Angaben zur Belegungskapazität selektiert werden sollen, deren Wert nicht NULL
  * und gleichzeitig größer als Null ist, dann könnte man schreiben: `[oid=kita_fk]plaetze{filter=anzahl IS NOT NULL AND anzahl>0}`.
