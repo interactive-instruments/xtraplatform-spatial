@@ -14,20 +14,34 @@ import org.immutables.value.Value;
 import java.util.List;
 
 @Value.Immutable
-@JsonDeserialize(as = Or.class)
+@JsonDeserialize(builder = ImmutableOr.Builder.class)
 public interface Or extends LogicalOperation, CqlNode {
 
-    static Or of(CqlPredicate... predicates) {
+    String TYPE = "or";
+
+    @Override
+    @Value.Derived
+    default String getOp() {
+        return TYPE;
+    }
+
+    static Or of(Cql2Predicate... predicates) {
         return new ImmutableOr.Builder()
-                .addPredicates(predicates)
+                .addArgs(predicates)
                 .build();
     }
 
-    @JsonCreator
-    static Or of(List<CqlPredicate> predicates) {
+    static Or of(List<Cql2Predicate> predicates) {
         return new ImmutableOr.Builder()
-                .predicates(predicates)
+                .args(predicates)
                 .build();
+    }
+
+    @Deprecated
+    static Or of(CqlPredicate... predicates) {
+        return new ImmutableOr.Builder()
+            .addArgs(Eq.of("", ""), Eq.of("", ""))
+            .build();
     }
 
 }

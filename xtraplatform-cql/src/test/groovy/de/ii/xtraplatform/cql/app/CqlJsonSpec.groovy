@@ -8,16 +8,14 @@
 package de.ii.xtraplatform.cql.app
 
 import de.ii.xtraplatform.cql.domain.Cql
+import de.ii.xtraplatform.cql.domain.Cql2Predicate
 import de.ii.xtraplatform.cql.domain.CqlPredicate
 import org.skyscreamer.jsonassert.JSONAssert
-import spock.lang.Ignore
+import spock.lang.PendingFeature
 import spock.lang.Shared
 import spock.lang.Specification
 
-@Ignore
 class CqlJsonSpec extends Specification {
-
-    // TODO tests and implementation needs to be updated to the revised JSON encoding
 
     @Shared
     Cql cql
@@ -37,7 +35,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_1
@@ -63,7 +61,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_2
@@ -83,12 +81,12 @@ class CqlJsonSpec extends Specification {
         String cqlJson = """
         {
             "op": "like",
-            "args": [ { "property": "owner" }, "%Jones%" ]
+            "args": [ { "property": "owner" }, "% Jones %" ]
         }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_3
@@ -113,7 +111,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_4
@@ -133,12 +131,17 @@ class CqlJsonSpec extends Specification {
         String cqlJson = """
         {
             "op": "not",
-            "args": [ { "op": "like", "args": [ { "property": "owner" }, "%Mike%" ] ]
+            "args": [ 
+                { 
+                    "op": "like", 
+                    "args": [ { "property": "owner" }, "% Mike %" ] 
+                } 
+            ]
         }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_5
@@ -157,13 +160,13 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "op": "eq",
+            "op": "=",
             "args": [ { "property": "swimming_pool" }, true ]
         }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_6
@@ -182,19 +185,22 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
             {
-                "and": [
+                "op": "and",
+                "args": [
                     {
-                        "gt": [ { "property": "floors" }, 5 ]
+                        "op": ">",
+                        "args": [ { "property": "floors" }, 5 ]
                     },
                     {
-                        "eq": [ { "property": "swimming_pool" }, true ]
+                        "op": "=",
+                        "args": [ { "property": "swimming_pool" }, true ]
                     }
                 ]
             }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_7
@@ -214,33 +220,35 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "and": [
-                    {
-                        "eq": [ { "property": "swimming_pool" }, true ]
-                    },
-                    {
-                        "or": [
-                            {
-                                "gt": [ { "property": "floors" }, 5 ]
-                            },
-                            {
-                                "like": {
-                                    "operands": [ { "property": "material" }, "brick%" ]
-                                }
-                            },
-                            {
-                                "like": {
-                                    "operands": [ { "property": "material" }, "%brick" ]
-                                }
-                            }                        
-                        ]
-                    }
+            "op": "and",
+            "args": [
+                {
+                    "op": "=",
+                    "args": [ { "property": "swimming_pool" }, true ]
+                },
+                {
+                    "op": "or",
+                    "args": [
+                        {
+                            "op": ">",
+                            "args": [ { "property": "floors" }, 5 ]
+                        },
+                        {
+                            "op": "like",
+                            "args": [ { "property": "material" }, "brick%" ]
+                        },
+                        {
+                            "op": "like",
+                            "args": [ { "property": "material" }, "%brick" ]
+                        }                        
+                    ]
+                }
             ]
         }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_8
@@ -259,17 +267,21 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "or": [
+            "op": "or",
+            "args": [
                 {
-                    "and": [
+                    "op": "and",
+                    "args": [
                         {
-                            "gt": [
+                            "op": ">",
+                            "args": [
                                 {"property": "floors"},
                                 5
                             ]
                         },
                         {
-                            "eq": [
+                            "op": "=",
+                            "args": [
                                 {"property": "material"},
                                 "brick"
                             ]
@@ -277,7 +289,8 @@ class CqlJsonSpec extends Specification {
                     ]
                 },
                 {
-                    "eq": [
+                    "op": "=",
+                    "args": [
                         { "property": "swimming_pool" },
                         true
                     ]
@@ -287,7 +300,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_9
@@ -306,19 +319,23 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "or": [
+            "op": "or",
+            "args": [
                 {
-                    "not":
+                    "op": "not",
+                    "args": [
                         {
-                            "lt": [
+                            "op": "<",
+                            "args": [
                                 {"property": "floors"},
                                 5
                             ]
-                        }
-                   
+                        }         
+                    ]          
                 },
                 {
-                    "eq": [
+                    "op": "=",
+                    "args": [
                         {"property": "swimming_pool"},
                         true
                     ]
@@ -328,7 +345,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_10
@@ -347,29 +364,30 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "and": [
+            "op": "and",
+            "args": [
                 {
-                    "or": [
+                    "op": "or",
+                    "args": [
                         {
-                            "like": {
-                                "operands": [
-                                    {"property": "owner"},
-                                    "mike%"
-                                ]
-                            }
+                            "op": "like",
+                            "args": [
+                                {"property": "owner"},
+                                "mike%"
+                            ]
                         },
                         {
-                            "like": {
-                                "operands": [
-                                    {"property": "owner"},
-                                    "Mike%"
-                                ]
-                            }
+                            "op": "like",
+                            "args": [
+                                {"property": "owner"},
+                                "Mike%"
+                            ]
                         }
                     ]
                 },
                 {
-                    "lt": [
+                    "op": "<",
+                    "args": [
                         {"property": "floors"},
                         4
                     ]
@@ -379,7 +397,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_11
@@ -393,12 +411,14 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
+    @PendingFeature
     def 'Built before June 5, 2012'() {
 
         given:
         String cqlJson = """
         {
-            "before": [
+            "op": "before",
+            "args": [
                 {"property": "built"},
                 "2012-06-05T00:00:00Z"
             ]
@@ -420,13 +440,14 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-
+    @PendingFeature
     def 'Built after June 5, 2012'() {
 
         given:
         String cqlJson = """
         {
-            "after": [
+            "op": "after",
+            "args": [
                 {"property": "built"},
                 "2012-06-05T00:00:00Z"
             ]
@@ -448,13 +469,14 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-
+    @PendingFeature
     def 'Updated between 7:30am June 10, 2017 and 10:30am June 11, 2017'() {
 
         given:
         String cqlJson = """
             {
-                "during": [
+                "op": "during",
+                "args": [
                     {"property": "updated"},
                     ["2017-06-10T07:30:00Z","2017-06-11T10:30:00Z"]
                 ]
@@ -477,12 +499,14 @@ class CqlJsonSpec extends Specification {
 
     }
 
+    @PendingFeature
     def 'Location in the box between -118,33.8 and -117.9,34 in lat/long (geometry 1)'() {
 
         given:
         String cqlJson = """
         {
-             "within": [
+            "op": "within",
+            "args": [
                 {"property": "location"},
                 { "bbox": [-118,33.8,-117.9,34] }
              ] 
@@ -504,12 +528,14 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
+    @PendingFeature
     def 'Location that intersects with geometry'() {
 
         given:
         String cqlJson = """
             {
-                "intersects": [
+                "op": "intersects",
+                "args": [
                     {"property": "location"},
                     {
                         "type": "Polygon",
@@ -535,20 +561,24 @@ class CqlJsonSpec extends Specification {
 
     }
 
+    @PendingFeature
     def 'More than 5 floors and is within geometry 1 (below)'() {
 
         given:
         String cqlJson = """
         {
-            "and": [
+            "op": "and",
+            "args": [
                 {
-                    "gt": [
+                    "op": ">",
+                    "args": [
                         {"property": "floors"},
                         5
                     ]
                 },
                 {
-                   "within": [
+                   "op": "within",
+                    "args": [
                       {"property": "geometry"},
                       { 
                         "bbox": [-118,33.8,-117.9,34]
@@ -574,16 +604,18 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
+    @PendingFeature
     def 'Number of floors between 4 and 8'() {
 
         given:
         String cqlJson = """
         {
-            "between": {
-                "value": {"property": "floors"},
-                "lower": 4,
-                "upper": 8
-            }
+            "op": "between",
+            "args": [
+                {"property": "floors"},
+                4,
+                8
+            ]
         }
         """
 
@@ -607,15 +639,16 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "in": {
-                "value": {"property": "owner"},
-                "list": [ "Mike", "John", "Tom" ]
-            }
+            "op": "in",
+            "args": [
+                {"property": "owner"},
+                [ "Mike", "John", "Tom" ]
+            ]
         }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_19
@@ -634,14 +667,15 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "isNull": {
-                "property": "owner"
-            }
+            "op": "isNull",
+            "args": [
+                {"property": "owner"}
+            ]
         }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_20
@@ -660,17 +694,20 @@ class CqlJsonSpec extends Specification {
         given:
         String cqlJson = """
         {
-            "not": 
+            "op": "not",
+            "args": [
                 {
-                    "isNull": {
-                        "property": "owner"
-                    }
+                    "op": "isNull",
+                    "args": [
+                        {"property": "owner"}
+                    ]
                 }
+            ]
         }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_21
@@ -684,12 +721,14 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
+    @PendingFeature
     def 'Built before 2015 (only date, no time information)'() {
 
         given:
         String cqlJson = """
         {
-            "before": [
+            "op": "before",
+            "args": [
                 {"property": "built"},
                 "2015-01-01"
             ]
@@ -710,7 +749,8 @@ class CqlJsonSpec extends Specification {
         then:
         String cqlJson2 = """
         {
-            "before": [
+            "op": "before",
+            "args": [
                 {"property": "built"},
                 [ "2015-01-01T00:00:00Z", "2015-01-01T23:59:59Z" ]
             ]
@@ -719,12 +759,14 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson2, actual2, true)
     }
 
+    @PendingFeature
     def 'Updated between June 10, 2017 and June 11, 2017'() {
 
         given:
         String cqlJson = """
             {
-                "during": [
+                "op": "during",
+                "args": [
                     {"property": "updated"},
                     ["2017-06-10","2017-06-11"]
                 ]
@@ -745,7 +787,8 @@ class CqlJsonSpec extends Specification {
         then:
         String cqlJson2 = """
             {
-                "during": [
+                "op": "during",
+                "args": [
                     {"property": "updated"},
                     ["2017-06-10T00:00:00Z","2017-06-11T23:59:59Z"]
                 ]
@@ -755,11 +798,13 @@ class CqlJsonSpec extends Specification {
 
     }
 
+    @PendingFeature
     def 'Updated between 7:30am June 10, 2017 and an open end date'() {
         given:
         String cqlJson = """
             {
-                "during": [
+                "op": "during",
+                "args": [
                     {"property": "updated"},
                     ["2017-06-10T07:30:00Z","9999-12-31T23:59:59Z"]
                 ]
@@ -781,11 +826,13 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
+    @PendingFeature
     def 'Updated between an open start date and 10:30am June 11, 2017'() {
         given:
         String cqlJson = """
             {
-                "during": [
+                "op": "during",
+                "args": [
                     {"property": "updated"},
                     ["0000-01-01T00:00:00Z","2017-06-11T10:30:00Z"]
                ] 
@@ -807,11 +854,13 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
+    @PendingFeature
     def 'Open interval on both ends'() {
         given:
         String cqlJson = """
             {
-                "during": [
+                "op": "during",
+                "args": [
                     {"property": "updated"},
                     ["0000-01-01T00:00:00Z","9999-12-31T23:59:59Z"]
                 ]
@@ -833,11 +882,13 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
+    @PendingFeature
     def 'Function with no arguments'() {
         given:
         String cqlJson = """
             {
-                "eq": [
+                "op": "=",
+                "args": [
                     {"function": {
                         "name": "pos",
                         "arguments": []
@@ -862,11 +913,13 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
+    @PendingFeature
     def 'Function with multiple arguments'() {
         given:
         String cqlJson = """
             {
-                "gte": [
+                "op": ">=",
+                "args": [
                     {"function": {
                         "name": "indexOf",
                         "arguments": [ { "property": "names" }, "Mike" ]
@@ -891,11 +944,13 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
+    @PendingFeature
     def 'Function with a temporal argument'() {
         given:
         String cqlJson = """
             {
-                "eq": [
+                "op": "=",
+                "args": [
                     {"function": {
                         "name": "year",
                         "arguments": ["2012-06-05T00:00:00Z"]

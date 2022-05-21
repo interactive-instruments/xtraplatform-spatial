@@ -17,7 +17,6 @@ import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.sql.domain.SqlRelation;
@@ -30,13 +29,11 @@ import org.threeten.extra.Interval;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -264,7 +261,7 @@ public class FilterEncoderSql {
             CqlNode nestedFilter = userFilter.getExpressions().get(0);
             Operand operand = null;
             if (nestedFilter instanceof BinaryScalarOperation) {
-                operand = ((BinaryScalarOperation) nestedFilter).getOperands().get(0);
+                operand = ((BinaryScalarOperation) nestedFilter).getArgs().get(0);
             } else if (nestedFilter instanceof TemporalOperation) {
                 operand = ((TemporalOperation) nestedFilter).getOperands().get(0);
             } else if (nestedFilter instanceof SpatialOperation) {
@@ -446,7 +443,7 @@ public class FilterEncoderSql {
         public String visit(BinaryScalarOperation scalarOperation, List<String> children) {
             String operator = SCALAR_OPERATORS.get(scalarOperation.getClass());
 
-            List<String> expressions = processBinary(scalarOperation.getOperands(), children);
+            List<String> expressions = processBinary(scalarOperation.getArgs(), children);
 
             String operation = String.format(" %s %s", operator, expressions.get(1));
             return String.format(expressions.get(0), "", operation);

@@ -7,9 +7,14 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 
 public interface CqlVisitor<T> {
+
+    default T postProcess(CqlNode node, T t) {
+        return t;
+    }
 
     default T visit(CqlNode node, List<T> children) {
         if (node instanceof CqlFilter) {

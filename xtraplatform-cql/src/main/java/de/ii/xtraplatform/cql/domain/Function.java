@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -29,7 +28,6 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
 
     List<Operand> getArguments();
 
-    @JsonCreator
     static Function of(String name, List<Operand> arguments) {
         return new ImmutableFunction.Builder()
                 .name(name)

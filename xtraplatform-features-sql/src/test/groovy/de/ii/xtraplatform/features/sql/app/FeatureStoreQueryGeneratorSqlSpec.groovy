@@ -32,8 +32,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'Floors greater than 5'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.FLOORS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_1), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.FLOORS, Optional.of(CqlFilterExamples.EXAMPLE_1), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.FLOORS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_1_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.FLOORS, Optional.of(CqlFilterExamples.EXAMPLE_1_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors > 5) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors > 5) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.floors FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors > 5)) ORDER BY 1"
@@ -41,8 +41,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'Taxes less than or equal to 500'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.TAXES, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_2), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.TAXES, Optional.of(CqlFilterExamples.EXAMPLE_2), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.TAXES, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_2_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.TAXES, Optional.of(CqlFilterExamples.EXAMPLE_2_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.taxes <= 500) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.taxes <= 500) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.taxes FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.taxes <= 500)) ORDER BY 1"
@@ -50,8 +50,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'Owner name contains "Jones"'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.OWNER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_3), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.OWNER, Optional.of(CqlFilterExamples.EXAMPLE_3), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.OWNER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_3_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.OWNER, Optional.of(CqlFilterExamples.EXAMPLE_3_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar LIKE '% Jones %') ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar LIKE '% Jones %') ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.owner FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar LIKE '% Jones %')) ORDER BY 1"
@@ -59,8 +59,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'Owner name starts with "Mike"'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.OWNER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_4), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.OWNER, Optional.of(CqlFilterExamples.EXAMPLE_4), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.OWNER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_4_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.OWNER, Optional.of(CqlFilterExamples.EXAMPLE_4_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar LIKE 'Mike%') ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar LIKE 'Mike%') ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.owner FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar LIKE 'Mike%')) ORDER BY 1"
@@ -68,8 +68,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'Owner name does not contain "Mike"'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.OWNER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_5), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.OWNER, Optional.of(CqlFilterExamples.EXAMPLE_5), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.OWNER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_5_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.OWNER, Optional.of(CqlFilterExamples.EXAMPLE_5_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar NOT LIKE '% Mike %') ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar NOT LIKE '% Mike %') ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.owner FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar NOT LIKE '% Mike %')) ORDER BY 1"
@@ -78,8 +78,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'A swimming pool'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.SWIMMING_POOL, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_6), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.SWIMMING_POOL, Optional.of(CqlFilterExamples.EXAMPLE_6), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.SWIMMING_POOL, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_6_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.SWIMMING_POOL, Optional.of(CqlFilterExamples.EXAMPLE_6_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.swimming_pool FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true)) ORDER BY 1"
@@ -87,8 +87,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'More than 5 floors and a swimming pool'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.SCALAR_OPERATIONS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_7), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.SCALAR_OPERATIONS, Optional.of(CqlFilterExamples.EXAMPLE_7), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.SCALAR_OPERATIONS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_7_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.SCALAR_OPERATIONS, Optional.of(CqlFilterExamples.EXAMPLE_7_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors > 5) AND A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors > 5) AND A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.floors, A.owner, A.swimming_pool, A.material, A.geometry, A.height FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors > 5) AND A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true)) ORDER BY 1"
@@ -96,8 +96,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'A swimming pool and (more than five floors or material is brick)'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.SCALAR_OPERATIONS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_8), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.SCALAR_OPERATIONS, Optional.of(CqlFilterExamples.EXAMPLE_8), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.SCALAR_OPERATIONS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_8_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.SCALAR_OPERATIONS, Optional.of(CqlFilterExamples.EXAMPLE_8_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors > 5) OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.material::varchar LIKE 'brick%') OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.material::varchar LIKE '%brick')) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors > 5) OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.material::varchar LIKE 'brick%') OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.material::varchar LIKE '%brick')) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.floors, A.owner, A.swimming_pool, A.material, A.geometry, A.height FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors > 5) OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.material::varchar LIKE 'brick%') OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.material::varchar LIKE '%brick'))) ORDER BY 1"
@@ -105,8 +105,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def '[More than five floors and material is brick] or swimming pool is true'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.SCALAR_OPERATIONS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_9), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.SCALAR_OPERATIONS, Optional.of(CqlFilterExamples.EXAMPLE_9), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.SCALAR_OPERATIONS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_9_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.SCALAR_OPERATIONS, Optional.of(CqlFilterExamples.EXAMPLE_9_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE (A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors > 5) AND A.id IN (SELECT AA.id FROM container AA  WHERE AA.material = 'brick')) OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE (A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors > 5) AND A.id IN (SELECT AA.id FROM container AA  WHERE AA.material = 'brick')) OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.floors, A.owner, A.swimming_pool, A.material, A.geometry, A.height FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND ((A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors > 5) AND A.id IN (SELECT AA.id FROM container AA  WHERE AA.material = 'brick')) OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true)) ORDER BY 1"
@@ -114,8 +114,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'Not under 5 floors or a swimming pool'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.SCALAR_OPERATIONS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_10), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.SCALAR_OPERATIONS, Optional.of(CqlFilterExamples.EXAMPLE_10), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.SCALAR_OPERATIONS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_10_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.SCALAR_OPERATIONS, Optional.of(CqlFilterExamples.EXAMPLE_10_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE NOT (A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors < 5)) OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE NOT (A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors < 5)) OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.floors, A.owner, A.swimming_pool, A.material, A.geometry, A.height FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (NOT (A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors < 5)) OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.swimming_pool = true)) ORDER BY 1"
@@ -123,8 +123,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'Owner name starts with "mike" or "Mike" and is less than 4 floors'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.SCALAR_OPERATIONS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_11), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.SCALAR_OPERATIONS, Optional.of(CqlFilterExamples.EXAMPLE_11), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.SCALAR_OPERATIONS, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_11_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.SCALAR_OPERATIONS, Optional.of(CqlFilterExamples.EXAMPLE_11_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE (A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar LIKE 'mike%') OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar LIKE 'Mike%')) AND A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors < 4) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE (A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar LIKE 'mike%') OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar LIKE 'Mike%')) AND A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors < 4) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.floors, A.owner, A.swimming_pool, A.material, A.geometry, A.height FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND ((A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar LIKE 'mike%') OR A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner::varchar LIKE 'Mike%')) AND A.id IN (SELECT AA.id FROM container AA  WHERE AA.floors < 4)) ORDER BY 1"
@@ -195,8 +195,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'Owner name is either Mike, John or Tom'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.OWNER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_19), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.OWNER, Optional.of(CqlFilterExamples.EXAMPLE_19), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.OWNER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_19_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.OWNER, Optional.of(CqlFilterExamples.EXAMPLE_19_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner IN ('Mike', 'John', 'Tom')) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner IN ('Mike', 'John', 'Tom')) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.owner FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner IN ('Mike', 'John', 'Tom')) ORDER BY 1"
@@ -204,8 +204,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'owner is null'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.OWNER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_20), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.OWNER, Optional.of(CqlFilterExamples.EXAMPLE_20), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.OWNER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_20_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.OWNER, Optional.of(CqlFilterExamples.EXAMPLE_20_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner IS NULL) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner IS NULL) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.owner FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner IS NULL)) ORDER BY 1"
@@ -213,8 +213,8 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
     def 'owner is not null'() {
         when:
-        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.OWNER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_21), Collections.emptyList(), true)
-        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.OWNER, Optional.of(CqlFilterExamples.EXAMPLE_21), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
+        String metaQuery = queryGeneratorSql.getMetaQuery(FeatureStoreFixtures.OWNER, 10, 0, Optional.of(CqlFilterExamples.EXAMPLE_21_OLD), Collections.emptyList(), true)
+        String instanceQuery = queryGeneratorSql.getInstanceQueries(FeatureStoreFixtures.OWNER, Optional.of(CqlFilterExamples.EXAMPLE_21_OLD), Collections.emptyList(), null, null, Collections.emptyList(), Collections.emptyList()).collect(Collectors.toList()).get(0)
         then:
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner IS NOT NULL) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner IS NOT NULL) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.owner FROM container A WHERE (A.id >= NULL AND A.id <= NULL) AND (A.id IN (SELECT AA.id FROM container AA  WHERE AA.owner IS NOT NULL)) ORDER BY 1"

@@ -10,9 +10,41 @@ package de.ii.xtraplatform.cql.app;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import de.ii.xtraplatform.cql.domain.*;
+import de.ii.xtraplatform.cql.domain.ArrayLiteral;
+import de.ii.xtraplatform.cql.domain.ArrayOperation;
+import de.ii.xtraplatform.cql.domain.Between;
+import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
+import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.cql.domain.Cql2Predicate;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.CqlNode;
+import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.cql.domain.Eq;
+import de.ii.xtraplatform.cql.domain.Function;
+import de.ii.xtraplatform.cql.domain.ImmutableArrayOperation;
+import de.ii.xtraplatform.cql.domain.ImmutableBetween;
+import de.ii.xtraplatform.cql.domain.ImmutableEq;
+import de.ii.xtraplatform.cql.domain.ImmutableGt;
+import de.ii.xtraplatform.cql.domain.ImmutableGte;
+import de.ii.xtraplatform.cql.domain.ImmutableIn;
+import de.ii.xtraplatform.cql.domain.ImmutableLike;
+import de.ii.xtraplatform.cql.domain.ImmutableLt;
+import de.ii.xtraplatform.cql.domain.ImmutableLte;
+import de.ii.xtraplatform.cql.domain.ImmutableNeq;
+import de.ii.xtraplatform.cql.domain.ImmutableSpatialOperation;
+import de.ii.xtraplatform.cql.domain.ImmutableTemporalOperation;
+import de.ii.xtraplatform.cql.domain.In;
+import de.ii.xtraplatform.cql.domain.IsNull;
+import de.ii.xtraplatform.cql.domain.Like;
+import de.ii.xtraplatform.cql.domain.LogicalOperation;
+import de.ii.xtraplatform.cql.domain.Not;
+import de.ii.xtraplatform.cql.domain.Property;
+import de.ii.xtraplatform.cql.domain.ScalarLiteral;
+import de.ii.xtraplatform.cql.domain.SpatialLiteral;
+import de.ii.xtraplatform.cql.domain.SpatialOperation;
+import de.ii.xtraplatform.cql.domain.TemporalLiteral;
+import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -263,9 +295,9 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
 
     private String getText(CqlNode node) {
         if (node instanceof Function) {
-            return cql.write(CqlFilter.of(Eq.of(ImmutableList.of((Function) node, ScalarLiteral.of("DUMMY")))), Cql.Format.TEXT)
+            return cql.write(Eq.of(ImmutableList.of((Function) node, ScalarLiteral.of("DUMMY"))), Cql.Format.TEXT)
                 .replace(" = 'DUMMY'", "");
         }
-        return cql.write(CqlFilter.of(node), Cql.Format.TEXT);
+        return cql.write((Cql2Predicate) node, Cql.Format.TEXT);
     }
 }

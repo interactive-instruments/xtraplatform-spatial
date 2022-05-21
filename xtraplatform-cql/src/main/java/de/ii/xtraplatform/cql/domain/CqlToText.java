@@ -81,6 +81,15 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
+    public String postProcess(CqlNode node, String text) {
+        //remove outer brackets
+        if (node instanceof And || node instanceof Or) {
+            return text.substring(1, text.length() - 1);
+        }
+        return text;
+    }
+
+    @Override
     public String visit(CqlFilter cqlFilter, List<String> children) {
         CqlNode node = cqlFilter.getExpressions()
                                 .get(0);
@@ -114,21 +123,15 @@ public class CqlToText implements CqlVisitor<String> {
 
         String operation = children.get(0);
 
-        if (not.getPredicate()
-               .get()
-               .getLike()
-               .isPresent()) {
-            String like = SCALAR_OPERATORS.get(ImmutableLike.class);
+        if (not.getArgs().get(0) instanceof Like) {
+            String like = Like.TYPE.toUpperCase();
 
             return operation.replace(like, String.format("%s %s", operator, like));
-        } else if (not.getPredicate()
-                      .get()
-                      .getIsNull()
-                      .isPresent()) {
-            String isNull = SCALAR_OPERATORS.get(ImmutableIsNull.class);
+        } else if (not.getArgs().get(0) instanceof IsNull) {
+            String isNull = IsNull.TEXT;
 
             return operation.replace(isNull, "IS NOT NULL");
-        } else if (not.getPredicate()
+        } /*TODO else if (not.getPredicate()
                       .get()
                       .getBetween()
                       .isPresent()) {
@@ -142,7 +145,7 @@ public class CqlToText implements CqlVisitor<String> {
             String in = SCALAR_OPERATORS.get(ImmutableIn.class);
 
             return operation.replace(in, String.format("%s %s", operator, in));
-        }
+        }*/
 
         return String.format("NOT (%s)", operation);
     }

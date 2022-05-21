@@ -12,56 +12,88 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 
-import java.time.Instant;
 import java.util.Objects;
 
 public class CqlFilterExamples {
 
-    public static final CqlFilter EXAMPLE_1 = CqlFilter.of(Gt.of("floors", ScalarLiteral.of(5)));
+    public static final Cql2Predicate EXAMPLE_1 = Gt.of("floors", ScalarLiteral.of(5));
+    public static final CqlFilter EXAMPLE_1_OLD = CqlFilter.of(Gt.of("floors", ScalarLiteral.of(5)));
 
-    public static final CqlFilter EXAMPLE_2 = CqlFilter.of(Lte.of("taxes", ScalarLiteral.of(500)));
+    public static final Cql2Predicate EXAMPLE_2 = Lte.of("taxes", ScalarLiteral.of(500));
+    public static final CqlFilter EXAMPLE_2_OLD = CqlFilter.of(Lte.of("taxes", ScalarLiteral.of(500)));
 
-    public static final CqlFilter EXAMPLE_3 = CqlFilter.of(Like.of("owner", ScalarLiteral.of("% Jones %")));
+    public static final Cql2Predicate EXAMPLE_3 = Like.of("owner", ScalarLiteral.of("% Jones %"));
+    public static final CqlFilter EXAMPLE_3_OLD = CqlFilter.of(Like.of("owner", ScalarLiteral.of("% Jones %")));
 
-    public static final CqlFilter EXAMPLE_4 = CqlFilter.of(Like.of("owner", ScalarLiteral.of("Mike%")));
+    public static final Cql2Predicate EXAMPLE_4 = Like.of("owner", ScalarLiteral.of("Mike%"));
+    public static final CqlFilter EXAMPLE_4_OLD = CqlFilter.of(Like.of("owner", ScalarLiteral.of("Mike%")));
 
-    public static final CqlFilter EXAMPLE_5 = CqlFilter.of(Not.of(Like.of("owner", ScalarLiteral.of("% Mike %"))));
+    public static final Cql2Predicate EXAMPLE_5 = Not.of(Like.of("owner", ScalarLiteral.of("% Mike %")));
+    public static final CqlFilter EXAMPLE_5_OLD = CqlFilter.of(/*Not.of(*/Like.of("owner", ScalarLiteral.of("% Mike %"))/*)*/);
 
-    public static final CqlFilter EXAMPLE_6 = CqlFilter.of(Eq.of("swimming_pool", ScalarLiteral.of(Boolean.TRUE)));
+    public static final Cql2Predicate EXAMPLE_6 = Eq.of("swimming_pool", ScalarLiteral.of(true));
+    public static final CqlFilter EXAMPLE_6_OLD = CqlFilter.of(Eq.of("swimming_pool", ScalarLiteral.of(Boolean.TRUE)));
 
-    public static final CqlFilter EXAMPLE_7 = CqlFilter.of(And.of(
+    public static final Cql2Predicate EXAMPLE_7 = And.of(EXAMPLE_1, EXAMPLE_6);
+    public static final CqlFilter EXAMPLE_7_OLD = CqlFilter.of(And.of(
+        EXAMPLE_1_OLD,
+        CqlPredicate.of(Eq.of("swimming_pool", ScalarLiteral.of(true)))
+    ));
+
+    public static final Cql2Predicate EXAMPLE_8 = And.of(
+        EXAMPLE_6,
+        Or.of(
             EXAMPLE_1,
-            CqlPredicate.of(Eq.of("swimming_pool", ScalarLiteral.of(true)))
+            Like.of("material", ScalarLiteral.of("brick%")),
+            Like.of("material", ScalarLiteral.of("%brick"))
+        )
+    );
+    public static final CqlFilter EXAMPLE_8_OLD = CqlFilter.of(And.of(
+        EXAMPLE_6_OLD,
+        CqlPredicate.of(Or.of(
+            EXAMPLE_1_OLD,
+            CqlPredicate.of(Like.of("material", ScalarLiteral.of("brick%"))),
+            CqlPredicate.of(Like.of("material", ScalarLiteral.of("%brick")))
+        ))
     ));
 
-    public static final CqlFilter EXAMPLE_8 = CqlFilter.of(And.of(
-            EXAMPLE_6,
-            CqlPredicate.of(Or.of(
-                    EXAMPLE_1,
-                    CqlPredicate.of(Like.of("material", ScalarLiteral.of("brick%"))),
-                    CqlPredicate.of(Like.of("material", ScalarLiteral.of("%brick")))
-            ))
+    public static final Cql2Predicate EXAMPLE_9 = Or.of(
+        And.of(
+            EXAMPLE_1,
+            Eq.of("material", ScalarLiteral.of("brick"))
+        ),
+        EXAMPLE_6
+    );
+    public static final CqlFilter EXAMPLE_9_OLD = CqlFilter.of(Or.of(
+        CqlPredicate.of(And.of(
+            EXAMPLE_1_OLD,
+            CqlPredicate.of(Eq.of("material", ScalarLiteral.of("brick")))
+        )),
+        EXAMPLE_6_OLD
     ));
 
-    public static final CqlFilter EXAMPLE_9 = CqlFilter.of(Or.of(
-            CqlPredicate.of(And.of(
-                    EXAMPLE_1,
-                    CqlPredicate.of(Eq.of("material", ScalarLiteral.of("brick")))
-            )),
-            EXAMPLE_6
+    public static final Cql2Predicate EXAMPLE_10 = Or.of(
+        Not.of(Lt.of("floors", ScalarLiteral.of(5))),
+        EXAMPLE_6
+    );
+    public static final CqlFilter EXAMPLE_10_OLD = CqlFilter.of(Or.of(
+        CqlPredicate.of(/*Not.of(*/Lt.of("floors", ScalarLiteral.of(5))/*)*/),
+        EXAMPLE_6_OLD
     ));
 
-    public static final CqlFilter EXAMPLE_10 = CqlFilter.of(Or.of(
-            CqlPredicate.of(Not.of(Lt.of("floors", ScalarLiteral.of(5)))),
-            EXAMPLE_6
-    ));
-
-    public static final CqlFilter EXAMPLE_11 = CqlFilter.of(And.of(
-            CqlPredicate.of(Or.of(
-                    CqlPredicate.of(Like.of("owner", ScalarLiteral.of("mike%"))),
-                    CqlPredicate.of(Like.of("owner", ScalarLiteral.of("Mike%")))
-            )),
-            CqlPredicate.of(Lt.of("floors", ScalarLiteral.of(4)))
+    public static final Cql2Predicate EXAMPLE_11 = And.of(
+        Or.of(
+            Like.of("owner", ScalarLiteral.of("mike%")),
+            Like.of("owner", ScalarLiteral.of("Mike%"))
+        ),
+        Lt.of("floors", ScalarLiteral.of(4))
+    );
+    public static final CqlFilter EXAMPLE_11_OLD = CqlFilter.of(And.of(
+        CqlPredicate.of(Or.of(
+            CqlPredicate.of(Like.of("owner", ScalarLiteral.of("mike%"))),
+            CqlPredicate.of(Like.of("owner", ScalarLiteral.of("Mike%")))
+        )),
+        CqlPredicate.of(Lt.of("floors", ScalarLiteral.of(4)))
     ));
 
     public static final CqlFilter EXAMPLE_12 = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
@@ -90,17 +122,19 @@ public class CqlFilterExamples {
     )))));
 
     public static final CqlFilter EXAMPLE_17 = CqlFilter.of(And.of(
-            EXAMPLE_1,
+        EXAMPLE_1_OLD,
             CqlPredicate.of(SpatialOperation.of(SpatialOperator.S_WITHIN, "geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))))
     ));
 
     public static final CqlFilter EXAMPLE_18 = CqlFilter.of(Between.of("floors", ScalarLiteral.of(4), ScalarLiteral.of(8)));
 
-    public static final CqlFilter EXAMPLE_19 = CqlFilter.of(In.of("owner", ScalarLiteral.of("Mike"), ScalarLiteral.of("John"), ScalarLiteral.of("Tom")));
+    public static final Cql2Predicate EXAMPLE_19 = In.of("owner", ScalarLiteral.of("Mike"), ScalarLiteral.of("John"), ScalarLiteral.of("Tom"));
+    public static final CqlFilter EXAMPLE_19_OLD = CqlFilter.of(In.of("owner", ScalarLiteral.of("Mike"), ScalarLiteral.of("John"), ScalarLiteral.of("Tom")));
+    public static final Cql2Predicate EXAMPLE_20 = IsNull.of("owner");
+    public static final CqlFilter EXAMPLE_20_OLD = CqlFilter.of(IsNull.of("owner"));
 
-    public static final CqlFilter EXAMPLE_20 = CqlFilter.of(IsNull.of("owner"));
-
-    public static final CqlFilter EXAMPLE_21 = CqlFilter.of(Not.of(IsNull.of("owner")));
+    public static final Cql2Predicate EXAMPLE_21 = Not.of(IsNull.of("owner"));
+    public static final CqlFilter EXAMPLE_21_OLD = CqlFilter.of(Not.of(IsNull.of("owner")));
 
     public static final CqlFilter EXAMPLE_24 = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2015-01-01")));
 

@@ -17,11 +17,13 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.cql.domain.Cql2Predicate;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.CqlToText;
+import de.ii.xtraplatform.cql.domain.Operation;
 import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.cql.infra.CqlTextParser;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -68,12 +70,12 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public CqlFilter read(String cql, Format format) throws CqlParseException {
+    public Cql2Predicate read(String cql, Format format) throws CqlParseException {
         return read(cql, format, OgcCrs.CRS84);
     }
 
     @Override
-    public CqlFilter read(String cql, Format format, EpsgCrs crs) throws CqlParseException {
+    public Cql2Predicate read(String cql, Format format, EpsgCrs crs) throws CqlParseException {
         switch (format) {
 
             case TEXT:
@@ -81,7 +83,7 @@ public class CqlImpl implements Cql {
             case JSON:
                 cqlJsonMapper.setInjectableValues(new InjectableValues.Std().addValue("filterCrs", Optional.ofNullable(crs)));
                 try {
-                    return cqlJsonMapper.readValue(cql, CqlFilter.class);
+                    return cqlJsonMapper.readValue(cql, Operation.class);
                 } catch (IOException e) {
                     throw new CqlParseException(e.getMessage());
                 }
@@ -91,11 +93,11 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public String write(CqlFilter cql, Format format) {
+    public String write(Cql2Predicate cql, Format format) {
         switch (format) {
 
             case TEXT:
-                return cql.accept(new CqlToText());
+                return cql.accept(new CqlToText(), true);
             case JSON:
                 try {
                     return cqlJsonMapper.writeValueAsString(cql);

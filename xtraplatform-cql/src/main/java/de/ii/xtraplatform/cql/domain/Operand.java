@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
 
 import java.io.IOException;
@@ -27,7 +28,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @JsonDeserialize(using = Operand.OperandDeserializer.class)
 public interface Operand extends CqlNode {
@@ -40,7 +45,7 @@ public interface Operand extends CqlNode {
                 Arrays.stream(SpatialOperator.values()).map(op -> op.toString().toLowerCase()).collect(Collectors.toUnmodifiableList());
         private static final List<String> TEMPORAL =
                 Arrays.stream(TemporalOperator.values()).map(op -> op.toString().toLowerCase()).collect(Collectors.toUnmodifiableList());
-        private static final List<String> SCALAR = ImmutableList.of("value", "list", "operands", "eq", "neq", "gt", "gte", "lt", "lte", "between", "in", "isnull");
+        private static final List<String> SCALAR = ImmutableList.of("value", "list", "args", "eq", "neq", "gt", "gte", "lt", "lte", "between", "in", "isnull");
 
         protected OperandDeserializer() {
             this(null);
@@ -69,6 +74,8 @@ public interface Operand extends CqlNode {
             if (node.isObject()) {
                 if (Objects.nonNull(node.get("property"))) {
                     return oc.treeToValue(node, Property.class);
+                } else if (Objects.nonNull(node.get("op"))) {
+                    return oc.treeToValue(node, Operation.class);
                 } else if (Objects.nonNull(node.get("function"))) {
                     List<Operand> list = new ArrayList<>();
                     Iterator<JsonNode> iterator = node.get("function").get("arguments").elements();
@@ -84,6 +91,16 @@ public interface Operand extends CqlNode {
                 if (TEMPORAL.contains(parent)) {
                     return oc.treeToValue(node, TemporalLiteral.class);
                 }
+
+                List<Scalar> scalars = StreamSupport.stream(
+                    Spliterators.spliteratorUnknownSize(
+                        ((ArrayNode)node).elements(),
+                        Spliterator.ORDERED)
+                    , false)
+                    .map(this::getScalar)
+                    .collect(Collectors.toList());
+
+                return ArrayLiteral.of(scalars);
             } else if (node.isValueNode()) {
                 if (SCALAR.contains(parent)) {
                     return getScalar(node);

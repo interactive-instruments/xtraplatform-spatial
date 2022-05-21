@@ -29,11 +29,11 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
     public CqlNode visit(LogicalOperation logicalOperation, List<CqlNode> children) {
         if (logicalOperation instanceof And) {
             return And.of(children.stream()
-                                  .map(cqlNode -> (CqlPredicate) cqlNode)
+                                  .map(cqlNode -> (Cql2Predicate) cqlNode)
                                   .collect(Collectors.toList()));
         } else if (logicalOperation instanceof Or) {
             return Or.of(children.stream()
-                                 .map(cqlNode -> (CqlPredicate) cqlNode)
+                                 .map(cqlNode -> (Cql2Predicate) cqlNode)
                                  .collect(Collectors.toList()));
         }
         return null;
@@ -41,7 +41,7 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
 
     @Override
     public CqlNode visit(Not not, List<CqlNode> children) {
-        return Not.of((CqlPredicate) children.get(0));
+        return Not.of((Cql2Predicate) children.get(0));
     }
 
     @Override
@@ -63,7 +63,7 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         }
 
         if (Objects.nonNull(builder)) {
-            return builder.operands(children.stream()
+            return builder.args(children.stream()
                                             .filter(child -> child instanceof Scalar)
                                             .map(child -> (Scalar) child)
                                             .collect(Collectors.toUnmodifiableList())).build();
@@ -96,7 +96,7 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
     @Override
     public CqlNode visit(IsNull isNull, List<CqlNode> children) {
         IsNull.Builder builder = new ImmutableIsNull.Builder();
-        builder.operand((Scalar) children.get(0));
+        builder.addArgs((Scalar) children.get(0));
         return builder.build();
     }
 
@@ -105,7 +105,7 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         Like.Builder builder = new ImmutableLike.Builder();
 
         // modifiers are set separately
-        return builder.operands(children.stream()
+        return builder.args(children.stream()
                                         .filter(child -> child instanceof Scalar)
                                         .map(child -> (Scalar) child)
                                         .collect(Collectors.toUnmodifiableList())).build();
@@ -115,12 +115,12 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
     public CqlNode visit(In in, List<CqlNode> children) {
         ImmutableIn.Builder builder = new ImmutableIn.Builder();
 
-        builder.value((Scalar) children.get(0));
+        builder.addArgs((Scalar) children.get(0));
         ArrayList<Scalar> list = new ArrayList<>();
         for (int i = 1; i < children.size(); i++) {
             list.add((Scalar) children.get(i));
         }
-        builder.list(list);
+        builder.addAllArgs(list);
         return builder.build();
     }
 

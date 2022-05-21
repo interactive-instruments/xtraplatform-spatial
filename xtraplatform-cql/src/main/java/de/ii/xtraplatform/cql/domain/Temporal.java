@@ -7,5 +7,5 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-public interface Temporal extends Operand, CqlNode {
+public interface Temporal extends Scalar, Operand, CqlNode {
 }

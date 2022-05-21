@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.cql.infra;
 
+import de.ii.xtraplatform.cql.domain.Cql2Predicate;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
@@ -37,15 +38,15 @@ public class CqlTextParser {
         return parser.cqlFilter();
     }
 
-    public CqlFilter parse(String cql, EpsgCrs defaultCrs) throws CqlParseException {
+    public Cql2Predicate parse(String cql, EpsgCrs defaultCrs) throws CqlParseException {
         return parse(cql, new CqlTextVisitor(defaultCrs));
     }
 
-    public CqlFilter parse(String cql, CqlTextVisitor visitor) throws CqlParseException {
+    public Cql2Predicate parse(String cql, CqlTextVisitor visitor) throws CqlParseException {
         try {
             CqlParser.CqlFilterContext cqlFilterContext = parseToTree(cql);
 
-            return (CqlFilter) visitor.visit(cqlFilterContext);
+            return (Cql2Predicate) visitor.visit(cqlFilterContext);
         } catch (ParseCancellationException e) {
             throw new CqlParseException(e.getMessage());
         }

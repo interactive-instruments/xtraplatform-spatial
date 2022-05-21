@@ -25,7 +25,6 @@ public interface SpatialOperation extends BinaryOperation<SpatialLiteral>, CqlNo
     @JsonValue
     SpatialOperator getOperator();
 
-    @JsonCreator
     static SpatialOperation of(SpatialOperator operator, List<Operand> operands) {
         return new ImmutableSpatialOperation.Builder()
             .operator(operator)

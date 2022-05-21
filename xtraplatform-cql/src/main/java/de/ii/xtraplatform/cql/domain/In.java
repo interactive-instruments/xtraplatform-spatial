@@ -7,86 +7,62 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import org.immutables.value.Value;
-
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableIn.Builder.class)
-public interface In extends CqlNode, NonBinaryScalarOperation {
+public interface In extends BinaryOperation2<Scalar>, CqlNode {
 
+    String TYPE = "in";
     String ID_PLACEHOLDER = "_ID_";
 
+    @Override
+    @Value.Derived
+    default String getOp() {
+        return TYPE;
+    }
+
+
     static In of(String property, List<Scalar> values) {
-        return new ImmutableIn.Builder().value(Property.of(property))
-                                        .list(values)
+        return new ImmutableIn.Builder().addArgs(Property.of(property))
+                                        .addArgs(ArrayLiteral.of(values))
                                         .build();
     }
 
     static In of(String property, Scalar... values) {
-        return new ImmutableIn.Builder().value(Property.of(property))
-                                        .list(Arrays.asList(values))
+        return new ImmutableIn.Builder().addArgs(Property.of(property))
+                                        .addArgs(ArrayLiteral.of(Arrays.asList(values)))
                                         .build();
     }
 
     static In of(String property, TemporalLiteral... values) {
-        return new ImmutableIn.Builder().value(Property.of(property))
-                .list(Arrays.asList(values))
+        return new ImmutableIn.Builder().addArgs(Property.of(property))
+                .addArgs(ArrayLiteral.of(Arrays.asList(values)))
                 .build();
     }
 
     static In of(Scalar... values) {
-        return new ImmutableIn.Builder().value(Property.of(ID_PLACEHOLDER))
-                                        .addList(values)
+        return new ImmutableIn.Builder().addArgs(Property.of(ID_PLACEHOLDER))
+                                        .addArgs(ArrayLiteral.of(Arrays.asList(values)))
                                         .build();
     }
 
     static In of(List<Scalar> values) {
-        return new ImmutableIn.Builder().value(Property.of(ID_PLACEHOLDER))
-                                        .list(values)
+        return new ImmutableIn.Builder().addArgs(Property.of(ID_PLACEHOLDER))
+                                        .addArgs(ArrayLiteral.of(values))
                                         .build();
     }
     static In ofFunction(Function function, List<Scalar> values) {
         return new ImmutableIn.Builder()
-                .value(function)
-                .list(values)
+                .addArgs(function)
+                .addArgs(ArrayLiteral.of(values))
                 .build();
     }
 
-    @Value.Check
-    default void check() {
-        int count = getList().size();
-        Preconditions.checkState(count > 0, "an IN operation must have at least one value, found %s", count);
-        Preconditions.checkState(getValue().isPresent(), "an IN operation must have exactly one operand, found 0");
-    }
+    abstract class Builder extends BinaryOperation2.Builder<Scalar, In> {
 
-    abstract class Builder {
-
-        public abstract In build();
-
-        public abstract In.Builder value(Scalar property);
-    }
-
-    Optional<Scalar> getValue();
-
-    List<Scalar> getList();
-
-    @Override
-    default <T> T accept(CqlVisitor<T> visitor) {
-        List<T> children = Stream.concat(Stream.of(getValue().get()), getList().stream())
-                                 .map(value -> value.accept(visitor))
-                                 .collect(Collectors.toList());
-
-        return visitor.visit(this, children);
     }
 }

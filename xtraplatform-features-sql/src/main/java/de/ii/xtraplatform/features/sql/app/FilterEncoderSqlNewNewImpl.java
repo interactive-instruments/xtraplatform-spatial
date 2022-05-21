@@ -244,7 +244,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             CqlNode nestedFilter = userFilter.getExpressions().get(0);
             Operand operand = null;
             if (nestedFilter instanceof BinaryScalarOperation) {
-                operand = ((BinaryScalarOperation) nestedFilter).getOperands().get(0);
+                operand = ((BinaryScalarOperation) nestedFilter).getArgs().get(0);
             } else if (nestedFilter instanceof TemporalOperation) {
                 operand = ((TemporalOperation) nestedFilter).getOperands().get(0);
             } else if (nestedFilter instanceof SpatialOperation) {
@@ -377,7 +377,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(BinaryScalarOperation scalarOperation, List<String> children) {
             String operator = SCALAR_OPERATORS.get(scalarOperation.getClass());
 
-            List<String> expressions = processBinary(scalarOperation.getOperands(), children);
+            List<String> expressions = processBinary(scalarOperation.getArgs(), children);
 
             String operation = String.format(" %s %s", operator, expressions.get(1));
             return String.format(expressions.get(0), "", operation);

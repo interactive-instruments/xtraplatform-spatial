@@ -7,17 +7,13 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.immutables.value.Value;
 import org.threeten.extra.Interval;
-
-import java.util.List;
 
 @Value.Immutable
 @JsonDeserialize(as = TemporalOperation.class)
@@ -26,7 +22,6 @@ public interface TemporalOperation extends BinaryOperation<TemporalLiteral>, Cql
     @JsonValue
     TemporalOperator getOperator();
 
-    @JsonCreator
     static TemporalOperation of(TemporalOperator operator, List<Operand> operands) {
         return new ImmutableTemporalOperation.Builder()
             .operator(operator)

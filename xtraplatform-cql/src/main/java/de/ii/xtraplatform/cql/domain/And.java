@@ -1,32 +1,43 @@
 /**
  * Copyright 2022 interactive instruments GmbH
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * <p>
+ * This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
+ * the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.List;
 import org.immutables.value.Value;
 
-import java.util.List;
-
 @Value.Immutable
-@JsonDeserialize(as = And.class)
+@JsonDeserialize(builder = ImmutableAnd.Builder.class)
 public interface And extends LogicalOperation, CqlNode {
 
-    static And of(CqlPredicate... predicates) {
-        return new ImmutableAnd.Builder()
-                .addPredicates(predicates)
-                .build();
-    }
+  String TYPE = "and";
 
-    @JsonCreator
-    static And of(List<CqlPredicate> predicates) {
-        return new ImmutableAnd.Builder().predicates(predicates)
-                                         .build();
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
+
+  static And of(Cql2Predicate... predicates) {
+    return new ImmutableAnd.Builder()
+        .addArgs(predicates)
+        .build();
+  }
+
+  static And of(List<Cql2Predicate> predicates) {
+    return new ImmutableAnd.Builder().args(predicates)
+        .build();
+  }
+
+  @Deprecated
+  static And of(CqlPredicate... predicates) {
+    return new ImmutableAnd.Builder()
+        .addArgs(Eq.of("", ""), Eq.of("", ""))
+        .build();
+  }
 
 }

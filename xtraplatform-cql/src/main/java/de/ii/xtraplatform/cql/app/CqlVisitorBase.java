@@ -22,7 +22,7 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
         return null;
     }
 
-    @Override
+  @Override
     public T visit(LogicalOperation logicalOperation, List<T> children) {
         return null;
     }
