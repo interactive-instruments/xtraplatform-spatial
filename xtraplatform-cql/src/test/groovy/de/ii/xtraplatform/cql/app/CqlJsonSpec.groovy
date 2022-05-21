@@ -9,10 +9,7 @@ package de.ii.xtraplatform.cql.app
 
 import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.Cql2Predicate
-import de.ii.xtraplatform.cql.domain.CqlPredicate
 import org.skyscreamer.jsonassert.JSONAssert
-import spock.lang.IgnoreRest
-import spock.lang.PendingFeature
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -497,13 +494,12 @@ class CqlJsonSpec extends Specification {
 
     }
 
-    @PendingFeature
     def 'Location in the box between -118,33.8 and -117.9,34 in lat/long (geometry 1)'() {
 
         given:
         String cqlJson = """
         {
-            "op": "within",
+            "op": "s_within",
             "args": [
                 {"property": "location"},
                 { "bbox": [-118,33.8,-117.9,34] }
@@ -512,7 +508,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_15
@@ -526,13 +522,12 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    @PendingFeature
     def 'Location that intersects with geometry'() {
 
         given:
         String cqlJson = """
             {
-                "op": "intersects",
+                "op": "s_intersects",
                 "args": [
                     {"property": "location"},
                     {
@@ -544,7 +539,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_16
@@ -559,7 +554,6 @@ class CqlJsonSpec extends Specification {
 
     }
 
-    @PendingFeature
     def 'More than 5 floors and is within geometry 1 (below)'() {
 
         given:
@@ -575,7 +569,7 @@ class CqlJsonSpec extends Specification {
                     ]
                 },
                 {
-                   "op": "within",
+                   "op": "s_within",
                     "args": [
                       {"property": "geometry"},
                       { 
@@ -588,7 +582,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_17
@@ -602,7 +596,6 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    @PendingFeature
     def 'Number of floors between 4 and 8'() {
 
         given:
@@ -618,7 +611,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_18
@@ -857,7 +850,6 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    @PendingFeature
     def 'Function with no arguments'() {
         given:
         String cqlJson = """
@@ -874,7 +866,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_29
@@ -888,7 +880,6 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    @PendingFeature
     def 'Function with multiple arguments'() {
         given:
         String cqlJson = """
@@ -905,7 +896,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_30
@@ -919,7 +910,6 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    @PendingFeature
     def 'Function with a temporal argument'() {
         given:
         String cqlJson = """
@@ -928,7 +918,7 @@ class CqlJsonSpec extends Specification {
                 "args": [
                     {"function": {
                         "name": "year",
-                        "arguments": ["2012-06-05T00:00:00Z"]
+                        "arguments": [{"timestamp": "2012-06-05T00:00:00Z"}]
                     }},
                     2012
                 ]
@@ -936,7 +926,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_31
@@ -945,6 +935,66 @@ class CqlJsonSpec extends Specification {
 
         when: 'writing json'
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_31, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'Case insensitive string comparison function CASEI'() {
+        given:
+        String cqlJson = """
+            {
+              "op": "in",
+              "args": [
+                { "casei": { "property": "road_class" } },
+                [
+                  { "casei": "Οδος" },
+                  { "casei": "Straße" }
+                ]
+              ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_CASEI
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_CASEI, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'Accent insensitive string comparison function ACCENTI'() {
+        given:
+        String cqlJson = """
+            {
+              "op": "in",
+              "args": [
+                { "accenti": { "property": "road_class" } },
+                [
+                  { "accenti": "Οδος" },
+                  { "accenti": "Straße" }
+                ]
+              ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_ACCENTI
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_ACCENTI, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)

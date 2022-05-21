@@ -11,9 +11,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.cql.domain.ArrayLiteral;
-import de.ii.xtraplatform.cql.domain.ArrayOperation;
 import de.ii.xtraplatform.cql.domain.Between;
+import de.ii.xtraplatform.cql.domain.BinaryArrayOperation;
 import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
+import de.ii.xtraplatform.cql.domain.BinarySpatialOperation;
 import de.ii.xtraplatform.cql.domain.BinaryTemporalOperation;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql2Predicate;
@@ -42,7 +43,6 @@ import de.ii.xtraplatform.cql.domain.Not;
 import de.ii.xtraplatform.cql.domain.Property;
 import de.ii.xtraplatform.cql.domain.ScalarLiteral;
 import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperation;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes;
 import java.util.Collection;
@@ -159,13 +159,13 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
     }
 
     @Override
-    public Type visit(SpatialOperation spatialOperation, List<Type> children) {
+    public Type visit(BinarySpatialOperation spatialOperation, List<Type> children) {
         checkOperation(spatialOperation, children);
         return Type.Boolean;
     }
 
     @Override
-    public Type visit(ArrayOperation arrayOperation, List<Type> children) {
+    public Type visit(BinaryArrayOperation arrayOperation, List<Type> children) {
         checkOperation(arrayOperation, children);
         return Type.Boolean;
     }

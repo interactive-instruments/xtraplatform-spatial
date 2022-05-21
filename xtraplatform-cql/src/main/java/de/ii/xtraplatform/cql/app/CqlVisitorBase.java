@@ -9,6 +9,7 @@ package de.ii.xtraplatform.cql.app;
 
 import de.ii.xtraplatform.cql.domain.*;
 
+import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import java.util.List;
 
 public class CqlVisitorBase<T> implements CqlVisitor<T> {
@@ -53,12 +54,12 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
     }
 
     @Override
-    public T visit(SpatialOperation spatialOperation, List<T> children) {
+    public T visit(BinarySpatialOperation spatialOperation, List<T> children) {
         return null;
     }
 
     @Override
-    public T visit(ArrayOperation arrayOperation, List<T> children) {
+    public T visit(BinaryArrayOperation arrayOperation, List<T> children) {
         return null;
     }
 
@@ -131,5 +132,10 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
     public T visit(Function function, List<T> children) {
         return null;
     }
+
+  @Override
+  public T visit(BooleanValue2 booleanValue, List<T> children) {
+    return null;
+  }
 
 }

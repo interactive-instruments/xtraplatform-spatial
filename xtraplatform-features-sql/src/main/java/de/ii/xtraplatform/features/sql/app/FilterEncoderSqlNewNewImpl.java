@@ -18,9 +18,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Doubles;
 import de.ii.xtraplatform.cql.domain.ArrayLiteral;
-import de.ii.xtraplatform.cql.domain.ArrayOperation;
 import de.ii.xtraplatform.cql.domain.Between;
+import de.ii.xtraplatform.cql.domain.BinaryArrayOperation;
 import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
+import de.ii.xtraplatform.cql.domain.BinarySpatialOperation;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.CqlToText;
@@ -500,7 +501,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         }
 
         @Override
-        public String visit(SpatialOperation spatialOperation, List<String> children) {
+        public String visit(BinarySpatialOperation spatialOperation, List<String> children) {
             String operator = SPATIAL_OPERATORS.get(spatialOperation.getClass());
 
             List<String> expressions = processBinary(spatialOperation.getOperands(), children);
@@ -602,7 +603,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         }
 
         @Override
-        public String visit(ArrayOperation arrayOperation, List<String> children) {
+        public String visit(BinaryArrayOperation arrayOperation, List<String> children) {
             // The two operands may be either a property reference or a literal.
             // If there is at least one property reference, that fragment will
             // be used as the basis (mainExpression). If the other operand is

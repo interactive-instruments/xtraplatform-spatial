@@ -30,7 +30,8 @@ public interface CqlPredicate extends LogicalExpression, BooleanValue, ScalarExp
             builder.or((Or) node);
         } else if (node instanceof Not) {
             builder.not((Not) node);
-        } else if (node instanceof ScalarLiteral && ((ScalarLiteral) node).getType().equals(Boolean.class)) {
+        } else if (node instanceof ScalarLiteral && ((ScalarLiteral) node).getType().equals(
+            BooleanValue2.class)) {
             builder.booleanValue((ScalarLiteral) node);
         } else if (node instanceof Eq) {
             builder.eq((Eq) node);

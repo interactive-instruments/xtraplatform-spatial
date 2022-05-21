@@ -106,6 +106,19 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
 
         @Override
         public void serialize(Function value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            if (value.isCasei() || value.isAccenti()) {
+                gen.writeStartObject();
+                gen.writeFieldName(value.getName().toLowerCase());
+                Operand operand = value.getArguments().get(0);
+                if (operand instanceof ScalarLiteral) {
+                    gen.writeString(String.format("%s", ((ScalarLiteral) operand).getValue().toString()));
+                } else {
+                    gen.writeObject(operand);
+                }
+                gen.writeEndObject();
+                return;
+            }
+
             gen.writeStartObject();
             gen.writeFieldName("function");
             gen.writeStartObject();

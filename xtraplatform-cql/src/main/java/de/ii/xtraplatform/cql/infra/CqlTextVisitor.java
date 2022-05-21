@@ -10,13 +10,11 @@ package de.ii.xtraplatform.cql.infra;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.app.CqlVisitorPropertyPrefix;
 import de.ii.xtraplatform.cql.domain.*;
+import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.threeten.extra.Interval;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
@@ -188,9 +186,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                          .accept(this);
 
             Between between = new ImmutableBetween.Builder()
-                    .value(scalar)
-                    .lower(numeric1)
-                    .upper(numeric2)
+                    .addArgs(scalar, numeric1, numeric2)
                     .build();
 
             if (Objects.nonNull(ctx.NOT())) {
@@ -277,10 +273,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             .get(1)
             .accept(this);
 
-        return new ImmutableSpatialOperation.Builder()
-            .operator(spatialOperator)
-            .operands(ImmutableList.of(spatial1,spatial2))
-            .build();
+        return BinarySpatialOperation.of(spatialOperator, spatial1, spatial2);
     }
 
     @Override
@@ -296,10 +289,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         Vector vector1 = (Vector) ctx.arrayExpression().get(0).accept(this);
         Vector vector2 = (Vector) ctx.arrayExpression().get(1).accept(this);
 
-        return new ImmutableArrayOperation.Builder()
-            .operator(arrayOperator)
-            .operands(ImmutableList.of(vector1, vector2))
-            .build();
+        return BinaryArrayOperation.of(arrayOperator, vector1, vector2);
     }
 
     @Override
@@ -318,12 +308,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitPropertyName(CqlParser.PropertyNameContext ctx) {
         if (!ctx.nestedCqlFilter().isEmpty()) {
-            Map<String, CqlFilter> nestedFilters = new HashMap<>();
+            Map<String, Cql2Predicate> nestedFilters = new HashMap<>();
             for (int i = 0; i < ctx.nestedCqlFilter().size(); i++) {
-                CqlFilter nestedFilter = CqlFilter.of(ctx.nestedCqlFilter(i)
-                                               .accept(this));
+                Cql2Predicate nestedFilter = (Cql2Predicate) ctx.nestedCqlFilter(i)
+                                               .accept(this);
                 CqlVisitorPropertyPrefix prefix = new CqlVisitorPropertyPrefix(stripDoubleQuotes(ctx.Identifier(i).getText()));
-                nestedFilter = (CqlFilter) nestedFilter.accept(prefix);
+                nestedFilter = (Cql2Predicate) nestedFilter.accept(prefix);
                 nestedFilters.put(stripDoubleQuotes(ctx.Identifier(i).getText()), nestedFilter);
             }
             String path = ctx.Identifier().stream()
@@ -352,6 +342,10 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
     @Override
     public CqlNode visitBooleanLiteral(CqlParser.BooleanLiteralContext ctx) {
+        if (ctx.parent instanceof CqlParser.BooleanPrimaryContext) {
+            return BooleanValue2.of(java.lang.Boolean.valueOf(ctx.getText()));
+        }
+
         return ScalarLiteral.of(ctx.getText(), true);
     }
 

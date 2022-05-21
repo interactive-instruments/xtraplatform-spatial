@@ -25,19 +25,18 @@ public interface Property extends Scalar, Spatial, Temporal, Operand, Vector, Cq
                 .name(name)
                 .build();
     }
-
-    static Property of(String name, Map<String, CqlFilter> nestedFilters) {
+    static Property of(String name, Map<String, Cql2Predicate> nestedFilters) {
         return ImmutableProperty.builder()
-                .name(name)
-                .nestedFilters(nestedFilters)
-                .build();
+            .name(name)
+            .nestedFilters(nestedFilters)
+            .build();
     }
 
     @JsonProperty("property")
     String getName();
 
     @JsonIgnore
-    Map<String, CqlFilter> getNestedFilters();
+    Map<String, Cql2Predicate> getNestedFilters();
 
     Splitter PATH_SPLITTER = Splitter.on('.')
                                      .omitEmptyStrings();

@@ -36,10 +36,10 @@ public interface CqlVisitor<T> {
             return visit((BinaryScalarOperation) node, children);
         } else if (node instanceof BinaryTemporalOperation) {
             return visit((BinaryTemporalOperation) node, children);
-        } else if (node instanceof SpatialOperation) {
-            return visit((SpatialOperation) node, children);
-        } else if (node instanceof ArrayOperation) {
-            return visit((ArrayOperation) node, children);
+        } else if (node instanceof BinarySpatialOperation) {
+            return visit((BinarySpatialOperation) node, children);
+        } else if (node instanceof BinaryArrayOperation) {
+            return visit((BinaryArrayOperation) node, children);
         } else if (node instanceof Property) {
             return visit((Property) node, children);
         } else if (node instanceof ScalarLiteral) {
@@ -68,6 +68,8 @@ public interface CqlVisitor<T> {
             return visit((SpatialLiteral) node, children);
         } else if (node instanceof Function) {
             return visit((Function) node, children);
+        } else if (node instanceof BooleanValue2) {
+            return visit((BooleanValue2) node, children);
         }
 
         throw new IllegalStateException();
@@ -93,9 +95,9 @@ public interface CqlVisitor<T> {
 
     T visit(BinaryTemporalOperation temporalOperation, List<T> children);
 
-    T visit(SpatialOperation spatialOperation, List<T> children);
+    T visit(BinarySpatialOperation spatialOperation, List<T> children);
 
-    T visit(ArrayOperation arrayOperation, List<T> children);
+    T visit(BinaryArrayOperation arrayOperation, List<T> children);
 
     T visit(Property property, List<T> children);
 
@@ -124,4 +126,6 @@ public interface CqlVisitor<T> {
     T visit(Geometry.Envelope envelope, List<T> children);
 
     T visit(Function function, List<T> children);
+
+    T visit(BooleanValue2 booleanValue, List<T> children);
 }

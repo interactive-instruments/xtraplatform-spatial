@@ -310,7 +310,6 @@ class CqlTextSpec extends Specification {
 
     }
 
-    @PendingFeature
     def 'Location in the box between -118,33.8 and -117.9,34 in long/lat (geometry 1)'() {
 
         given:
@@ -331,7 +330,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Location that intersects with geometry'() {
 
         given:
@@ -353,7 +351,6 @@ class CqlTextSpec extends Specification {
 
     }
 
-    @PendingFeature
     def 'More than 5 floors and is within geometry 1 (below)'() {
 
         given:
@@ -374,7 +371,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Number of floors between 4 and 8'() {
         given:
         String cqlText = "floors BETWEEN 4 AND 8"
@@ -394,10 +390,9 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Owner name is either Mike, John or Tom'() {
         given:
-        String cqlText = "owner IN ('Mike', 'John', 'Tom')"
+        String cqlText = "owner IN ('Mike','John','Tom')"
 
         when: 'reading text'
         Cql2Predicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -566,7 +561,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Function with no arguments'() {
         given:
         String cqlText = "pos() = 1"
@@ -586,7 +580,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Function with multiple arguments'() {
         given:
         String cqlText = "indexOf(names,'Mike') >= 5"
@@ -606,7 +599,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Function with a temporal argument'() {
         given:
         String cqlText = "year(TIMESTAMP('2012-06-05T00:00:00Z')) = 2012"
@@ -626,7 +618,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Property with a nested filter'() {
         given:
         String cqlText = "filterValues[property = 'd30'].measure > 0.1"
@@ -646,7 +637,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Property with two nested filters'() {
         given:
         String cqlText = "filterValues1[property1 = 'd30'].filterValues2[property2 <= 100].measure > 0.1"
@@ -666,7 +656,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Find the Landsat scene with identifier "LC82030282019133LGN00"'() {
 
         given:
@@ -687,7 +676,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Evaluate if the value of an array property contains the specified subset of values'() {
 
         given:
@@ -708,7 +696,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Both operands are property references'() {
 
         given:
@@ -729,7 +716,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Number of floors NOT between 4 and 8'() {
         given:
         String cqlText = "floors NOT BETWEEN 4 AND 8"
@@ -749,10 +735,9 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Owner name is NOT Mike, John, Tom'() {
         given:
-        String cqlText = "owner NOT IN ('Mike', 'John', 'Tom')"
+        String cqlText = "owner NOT IN ('Mike','John','Tom')"
 
         when: 'reading text'
         Cql2Predicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -769,7 +754,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Nested regular filter'() {
         given:
         String cqlText = "filterValues[property = 'd30'].measure > 0.1"
@@ -789,10 +773,9 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Nested filter with a function'() {
         given:
-        String cqlText = "filterValues[position() IN (1, 3)].measure BETWEEN 1 AND 5"
+        String cqlText = "filterValues[position() IN (1,3)].measure BETWEEN 1 AND 5"
 
         when: 'reading text'
         Cql2Predicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -809,7 +792,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Array predicate with nested filter'() {
         given:
         String cqlText = "A_CONTAINS(theme[scheme = 'profile'].concept, ['DLKM','Basis-DLM','DLM50'])"
@@ -829,10 +811,9 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'IN predicate with a function'() {
         given:
-        String cqlText = "position() IN (1, 3)"
+        String cqlText = "position() IN (1,3)"
 
         when: 'reading text'
         Cql2Predicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -849,7 +830,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'true'() {
         given:
         String cqlText = "true"
@@ -869,7 +849,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'true AND (false OR NOT (false))'() {
         given:
         String cqlText = "true AND (false OR NOT (false))"
@@ -889,7 +868,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'keyword as property name'() {
         given:
         String cqlText = "root.\"date\" > DATE('2022-04-17')"
@@ -909,7 +887,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'LT with temporal values'() {
         given:
         String cqlText = "built < TIMESTAMP('2012-06-05T00:00:00Z')"
@@ -929,7 +906,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'LTEQ with temporal values'() {
         given:
         String cqlText = "built <= TIMESTAMP('2012-06-05T00:00:00Z')"
@@ -949,7 +925,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'GT with temporal values'() {
         given:
         String cqlText = "built > TIMESTAMP('2012-06-05T00:00:00Z')"
@@ -969,7 +944,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'GTEQ with temporal values'() {
         given:
         String cqlText = "built >= TIMESTAMP('2012-06-05T00:00:00Z')"
@@ -989,7 +963,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'EQ with temporal values'() {
         given:
         String cqlText = "built = TIMESTAMP('2012-06-05T00:00:00Z')"
@@ -1009,7 +982,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'NEQ with temporal values'() {
         given:
         String cqlText = "built <> TIMESTAMP('2012-06-05T00:00:00Z')"
@@ -1029,8 +1001,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    // CQL2: between has been restricted to numeric values
-    @Ignore
     def 'BETWEEN with temporal arguments'() {
         given:
         String cqlText = "updated BETWEEN TIMESTAMP('2017-06-10T07:30:00Z') AND TIMESTAMP('2017-06-11T10:30:00Z')"
@@ -1039,21 +1009,12 @@ class CqlTextSpec extends Specification {
         Cql2Predicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_14_OLD
-
-        and:
-
-        when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_14_OLD, Cql.Format.TEXT)
-
-        then:
-        actual2 == cqlText
+        thrown(CqlParseException)
     }
 
-    @PendingFeature
     def 'IN with temporal arguments'() {
         given:
-        String cqlText = "updated IN (TIMESTAMP('2017-06-10T07:30:00Z'), TIMESTAMP('2018-06-10T07:30:00Z'), TIMESTAMP('2019-06-10T07:30:00Z'), TIMESTAMP('2020-06-10T07:30:00Z'))"
+        String cqlText = "updated IN (TIMESTAMP('2017-06-10T07:30:00Z'),TIMESTAMP('2018-06-10T07:30:00Z'),TIMESTAMP('2019-06-10T07:30:00Z'),TIMESTAMP('2020-06-10T07:30:00Z'))"
 
         when: 'reading text'
         Cql2Predicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -1094,7 +1055,7 @@ class CqlTextSpec extends Specification {
 
     def 'IN with temporal arguments -- intervals'() {
         given:
-        String cqlText = "updated IN (INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), INTERVAL('2018-06-10T07:30:00Z','2018-06-11T10:30:00Z'))"
+        String cqlText = "updated IN (INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'),INTERVAL('2018-06-10T07:30:00Z','2018-06-11T10:30:00Z'))"
 
         when: 'reading text'
         cql.read(cqlText, Cql.Format.TEXT)
@@ -1103,10 +1064,9 @@ class CqlTextSpec extends Specification {
         thrown(CqlParseException)
     }
 
-    @PendingFeature
     def 'Case insensitive string comparison function CASEI'() {
         given:
-        String cqlText = "CASEI(road_class) IN (CASEI('Οδος'), CASEI('Straße'))"
+        String cqlText = "CASEI(road_class) IN (CASEI('Οδος'),CASEI('Straße'))"
 
         when: 'reading text'
         Cql2Predicate actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -1123,10 +1083,9 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Accent insensitive string comparison function ACCENTI'() {
         given:
-        String cqlText = "ACCENTI(road_class) IN (ACCENTI('Οδος'), ACCENTI('Straße'))"
+        String cqlText = "ACCENTI(road_class) IN (ACCENTI('Οδος'),ACCENTI('Straße'))"
 
         when: 'reading text'
         Cql2Predicate actual = cql.read(cqlText, Cql.Format.TEXT)

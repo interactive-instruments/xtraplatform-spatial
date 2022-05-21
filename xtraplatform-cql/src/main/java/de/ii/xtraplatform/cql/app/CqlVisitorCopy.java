@@ -9,6 +9,7 @@ package de.ii.xtraplatform.cql.app;
 
 import de.ii.xtraplatform.cql.domain.*;
 
+import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -80,13 +81,9 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
         for (CqlNode cqlNode : children) {
             switch (i++) {
                 case 0:
-                    builder.value((Scalar) cqlNode);
-                    break;
                 case 1:
-                    builder.lower((Scalar) cqlNode);
-                    break;
                 case 2:
-                    builder.upper((Scalar) cqlNode);
+                    builder.addArgs((Scalar) cqlNode);
                     break;
             }
         }
@@ -135,21 +132,23 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
     }
 
     @Override
-    public CqlNode visit(SpatialOperation spatialOperation, List<CqlNode> children) {
-        return SpatialOperation.of(spatialOperation.getOperator(),
-                                   children.stream()
-                                       .filter(child -> child instanceof Spatial)
-                                       .map(child -> (Spatial) child)
-                                       .collect(Collectors.toUnmodifiableList()));
+    public CqlNode visit(BinarySpatialOperation spatialOperation, List<CqlNode> children) {
+        List<Spatial> spatials = children.stream()
+            .filter(child -> child instanceof Spatial)
+            .map(child -> (Spatial) child)
+            .collect(Collectors.toUnmodifiableList());
+        return BinarySpatialOperation.of(spatialOperation.getSpatialOperator(),
+                                   spatials.get(0), spatials.get(1));
     }
 
     @Override
-    public CqlNode visit(ArrayOperation arrayOperation, List<CqlNode> children) {
-        return ArrayOperation.of(arrayOperation.getOperator(),
-                                 children.stream()
-                                     .filter(child -> child instanceof Vector)
-                                     .map(child -> (Vector) child)
-                                     .collect(Collectors.toUnmodifiableList()));
+    public CqlNode visit(BinaryArrayOperation arrayOperation, List<CqlNode> children) {
+        List<Vector> vectors = children.stream()
+            .filter(child -> child instanceof Vector)
+            .map(child -> (Vector) child)
+            .collect(Collectors.toUnmodifiableList());
+        return BinaryArrayOperation.of(arrayOperation.getArrayOperator(),
+            vectors.get(0), vectors.get(1));
     }
 
     @Override
@@ -220,6 +219,11 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
     @Override
     public CqlNode visit(Function function, List<CqlNode> children) {
         return function;
+    }
+
+    @Override
+    public CqlNode visit(BooleanValue2 booleanValue, List<CqlNode> children) {
+        return booleanValue;
     }
 
 }

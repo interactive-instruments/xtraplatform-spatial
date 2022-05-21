@@ -623,7 +623,7 @@ public class FilterEncoderSql {
         }
 
         @Override
-        public String visit(SpatialOperation spatialOperation, List<String> children) {
+        public String visit(BinarySpatialOperation spatialOperation, List<String> children) {
             String operator = sqlDialect.getSpatialOperator(spatialOperation);
 
             List<String> expressions = processBinary(spatialOperation.getOperands(), children);
@@ -716,7 +716,7 @@ public class FilterEncoderSql {
         }
 
         @Override
-        public String visit(ArrayOperation arrayOperation, List<String> children) {
+        public String visit(BinaryArrayOperation arrayOperation, List<String> children) {
             // The two operands may be either a property reference or a literal.
             // If there is at least one property reference, that fragment will
             // be used as the basis (mainExpression). If the other operand is

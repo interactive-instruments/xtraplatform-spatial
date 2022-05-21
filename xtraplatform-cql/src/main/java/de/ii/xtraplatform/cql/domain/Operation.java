@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
     @Type(value = Or.class, name = Or.TYPE),
     @Type(value = IsNull.class, name = IsNull.TYPE),
     @Type(value = In.class, name = In.TYPE),
+    @Type(value = Between.class, name = Between.TYPE),
     @Type(value = TAfter.class, name = TAfter.TYPE),
     @Type(value = TBefore.class, name = TBefore.TYPE),
     @Type(value = TContains.class, name = TContains.TYPE),
@@ -36,7 +37,19 @@ import java.util.stream.Collectors;
     @Type(value = TOverlappedBy.class, name = TOverlappedBy.TYPE),
     @Type(value = TOverlaps.class, name = TOverlaps.TYPE),
     @Type(value = TStartedBy.class, name = TStartedBy.TYPE),
-    @Type(value = TStarts.class, name = TStarts.TYPE)
+    @Type(value = TStarts.class, name = TStarts.TYPE),
+    @Type(value = SContains.class, name = SContains.TYPE),
+    @Type(value = SCrosses.class, name = SCrosses.TYPE),
+    @Type(value = SDisjoint.class, name = SDisjoint.TYPE),
+    @Type(value = SEquals.class, name = SEquals.TYPE),
+    @Type(value = SIntersects.class, name = SIntersects.TYPE),
+    @Type(value = SOverlaps.class, name = SOverlaps.TYPE),
+    @Type(value = STouches.class, name = STouches.TYPE),
+    @Type(value = SWithin.class, name = SWithin.TYPE),
+    @Type(value = AContainedBy.class, name = AContainedBy.TYPE),
+    @Type(value = AContains.class, name = AContains.TYPE),
+    @Type(value = AEquals.class, name = AEquals.TYPE),
+    @Type(value = AOverlaps.class, name = AOverlaps.TYPE)
 })
 public interface Operation<T extends Operand> extends Cql2Predicate, CqlNode {
 

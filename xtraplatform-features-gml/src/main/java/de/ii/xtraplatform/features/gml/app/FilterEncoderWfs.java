@@ -220,7 +220,7 @@ public class FilterEncoderWfs {
     }
 
     @Override
-    public FesExpression visit(SpatialOperation spatialOperation, List<FesExpression> children) {
+    public FesExpression visit(BinarySpatialOperation spatialOperation, List<FesExpression> children) {
       if (spatialOperation.getOperator() == SpatialOperator.S_INTERSECTS
           && children.size() == 2
           && children.get(0) instanceof FesValueReference
@@ -233,7 +233,7 @@ public class FilterEncoderWfs {
     }
 
     @Override
-    public FesExpression visit(ArrayOperation arrayOperation, List<FesExpression> children) {
+    public FesExpression visit(BinaryArrayOperation arrayOperation, List<FesExpression> children) {
       throw new IllegalArgumentException("Array operations are not supported for WFS feature providers.");
     }
 

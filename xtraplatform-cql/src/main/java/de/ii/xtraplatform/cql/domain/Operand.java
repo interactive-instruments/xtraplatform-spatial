@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
 
+import de.ii.xtraplatform.base.domain.util.LambdaWithException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -83,6 +84,14 @@ public interface Operand extends CqlNode {
                         return TemporalLiteral.interval(op1, op2);
                     }
                     throw new JsonParseException(parser, "Interval has to be an array.");
+                } else if (Objects.nonNull(node.get("bbox"))) {
+                    return SpatialLiteral.of(oc.treeToValue(node, Geometry.Envelope.class));
+                } else if (Objects.nonNull(node.get("type"))) {
+                    return SpatialLiteral.of(oc.treeToValue(node, Geometry.class));
+                } else if (Objects.nonNull(node.get("casei"))) {
+                    return Function.of("CASEI", ImmutableList.of(getOperand(parser, node.get("casei"), parent)));
+                } else if (Objects.nonNull(node.get("accenti"))) {
+                    return Function.of("ACCENTI", ImmutableList.of(getOperand(parser, node.get("accenti"), parent)));
                 } else if (Objects.nonNull(node.get("op"))) {
                     return oc.treeToValue(node, Operation.class);
                 } else if (Objects.nonNull(node.get("function"))) {
@@ -106,7 +115,7 @@ public interface Operand extends CqlNode {
                         ((ArrayNode)node).elements(),
                         Spliterator.ORDERED)
                     , false)
-                    .map(this::getScalar)
+                    .map(LambdaWithException.mayThrow(jsonNode -> (Scalar)getOperand(parser, jsonNode, parent)))
                     .collect(Collectors.toList());
 
                 return ArrayLiteral.of(scalars);

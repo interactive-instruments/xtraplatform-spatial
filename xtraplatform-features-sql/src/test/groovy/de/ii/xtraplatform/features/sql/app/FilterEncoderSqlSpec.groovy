@@ -28,7 +28,7 @@ class FilterEncoderSqlSpec extends Specification {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
-        def filter = CqlFilterExamples.EXAMPLE_15
+        def filter = CqlFilterExamples.EXAMPLE_15_OLD
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_Within(AA.location, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326)))"
@@ -45,7 +45,7 @@ class FilterEncoderSqlSpec extends Specification {
 
         given:
         def instanceContainer = QuerySchemaFixtures.JOINED_GEOMETRY
-        def filter = CqlFilterExamples.EXAMPLE_16
+        def filter = CqlFilterExamples.EXAMPLE_16_OLD
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA JOIN geometry AB ON (AA.id=AB.id) WHERE ST_Intersects(AB.location, ST_GeomFromText('POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0))',4326)))"

@@ -7,19 +7,20 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(as = ArrayOperation.class)
-public interface ArrayOperation extends BinaryOperation<ArrayLiteral>, CqlNode {
+@JsonDeserialize(builder = ImmutableBooleanValue2.Builder.class)
+public interface BooleanValue2 extends Cql2Predicate, Literal, CqlNode {
 
-    @JsonValue
-    ArrayOperator getOperator();
+    @Value.Derived
+    @Override
+    default Class<?> getType() {
+        return java.lang.Boolean.class;
+    }
 
-    abstract class Builder extends BinaryOperation.Builder<ArrayLiteral, ArrayOperation> {}
-
+    static BooleanValue2 of(java.lang.Boolean literal) {
+        return new ImmutableBooleanValue2.Builder().value(literal).build();
+    }
 }

@@ -131,21 +131,15 @@ public class CqlToText implements CqlVisitor<String> {
             String isNull = IsNull.TEXT;
 
             return operation.replace(isNull, "IS NOT NULL");
-        } /*TODO else if (not.getPredicate()
-                      .get()
-                      .getBetween()
-                      .isPresent()) {
-            String between = SCALAR_OPERATORS.get(ImmutableBetween.class);
+        } else if (not.getArgs().get(0) instanceof Between) {
+            String between = Between.TYPE.toUpperCase();
 
             return operation.replace(between, String.format("%s %s", operator, between));
-        } else if (not.getPredicate()
-                      .get()
-                      .getInOperator()
-                      .isPresent()) {
-            String in = SCALAR_OPERATORS.get(ImmutableIn.class);
+        } else if (not.getArgs().get(0) instanceof In) {
+            String in = In.TYPE.toUpperCase();
 
             return operation.replace(in, String.format("%s %s", operator, in));
-        }*/
+        }
 
         return String.format("NOT (%s)", operation);
     }
@@ -174,7 +168,8 @@ public class CqlToText implements CqlVisitor<String> {
     public String visit(In in, List<String> children) {
         String operator = SCALAR_OPERATORS.get(in.getClass());
         String property = Objects.equals(children.get(0), ID_PLACEHOLDER) ? "" : children.get(0);
-        return String.format("%s %s (%s)", property, operator, String.join(", ", children.subList(1, children.size())));
+        String args = String.join(", ", children.subList(1, children.size()));
+        return String.format("%s %s (%s)", property, operator, args.substring(1, args.length()-1));
     }
 
     @Override
@@ -191,15 +186,15 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(SpatialOperation spatialOperation, List<String> children) {
-        String operator = spatialOperation.getOperator().toString();
+    public String visit(BinarySpatialOperation spatialOperation, List<String> children) {
+        String operator = spatialOperation.getOp().toUpperCase();
 
         return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
     }
 
     @Override
-    public String visit(ArrayOperation arrayOperation, List<String> children) {
-        String operator = arrayOperation.getOperator().toString();
+    public String visit(BinaryArrayOperation arrayOperation, List<String> children) {
+        String operator = arrayOperation.getOp().toUpperCase();
 
         return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
     }
@@ -347,7 +342,7 @@ public class CqlToText implements CqlVisitor<String> {
     public String visit(Property property, List<String> children) {
         if (!property.getNestedFilters()
                      .isEmpty()) {
-            Map<String, CqlFilter> nestedFilters = property.getNestedFilters();
+            Map<String, Cql2Predicate> nestedFilters = property.getNestedFilters();
             StringJoiner sj = new StringJoiner(".");
             for (String element : property.getPath()) {
                 if (nestedFilters.containsKey(element)) {
@@ -386,6 +381,11 @@ public class CqlToText implements CqlVisitor<String> {
         return function.getName() +
                 children.stream()
                         .collect(Collectors.joining(",", "(", ")"));
+    }
+
+    @Override
+    public String visit(BooleanValue2 booleanValue, List<String> children) {
+        return booleanValue.getValue().toString();
     }
 
 }
