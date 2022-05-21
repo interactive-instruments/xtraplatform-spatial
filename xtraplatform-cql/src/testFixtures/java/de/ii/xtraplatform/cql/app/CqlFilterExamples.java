@@ -96,13 +96,15 @@ public class CqlFilterExamples {
         CqlPredicate.of(Lt.of("floors", ScalarLiteral.of(4)))
     ));
 
-    public static final CqlFilter EXAMPLE_12 = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
+    public static final Cql2Predicate EXAMPLE_12 = TBefore.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z"));
+    public static final CqlFilter EXAMPLE_12_OLD = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
     public static final CqlFilter EXAMPLE_12_date = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2012-06-05")));
 
     public static final CqlFilter EXAMPLE_12_alt = CqlFilter.of(Lt.of(ImmutableList.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z"))));
     public static final CqlFilter EXAMPLE_12eq_alt = CqlFilter.of(Lte.of(ImmutableList.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z"))));
 
-    public static final CqlFilter EXAMPLE_13 = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_AFTER, "built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
+    public static final Cql2Predicate EXAMPLE_13 = TAfter.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z"));
+    public static final CqlFilter EXAMPLE_13_OLD = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_AFTER, "built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
 
     public static final CqlFilter EXAMPLE_13_alt = CqlFilter.of(Gt.of(ImmutableList.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z"))));
     public static final CqlFilter EXAMPLE_13eq_alt = CqlFilter.of(Gte.of(ImmutableList.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z"))));
@@ -110,7 +112,8 @@ public class CqlFilterExamples {
     public static final CqlFilter EXAMPLE_13A_alt = CqlFilter.of(Eq.of(ImmutableList.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z"))));
     public static final CqlFilter EXAMPLE_13Aneq_alt = CqlFilter.of(Neq.of(ImmutableList.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z"))));
 
-    public static final CqlFilter EXAMPLE_14 = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated", TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z"))));
+    public static final Cql2Predicate EXAMPLE_14 = TDuring.of(Property.of("updated"), TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")));
+    public static final CqlFilter EXAMPLE_14_OLD = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated", TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z"))));
 
     public static final CqlFilter EXAMPLE_15 = CqlFilter.of(SpatialOperation.of(SpatialOperator.S_WITHIN, "location", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))));
 
@@ -136,18 +139,27 @@ public class CqlFilterExamples {
     public static final Cql2Predicate EXAMPLE_21 = Not.of(IsNull.of("owner"));
     public static final CqlFilter EXAMPLE_21_OLD = CqlFilter.of(Not.of(IsNull.of("owner")));
 
-    public static final CqlFilter EXAMPLE_24 = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2015-01-01")));
+    public static final Cql2Predicate EXAMPLE_24 = TBefore.of(Property.of("built"), TemporalLiteral.of("2015-01-01"));
+    public static final CqlFilter EXAMPLE_24_OLD = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2015-01-01")));
 
-    public static final CqlFilter EXAMPLE_25 = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated",
-                                                                       Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "2017-06-11"))));
+    public static final Cql2Predicate EXAMPLE_25 = TDuring.of(Property.of("updated"), Objects.requireNonNull(TemporalLiteral.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")));
+    public static final Cql2Predicate EXAMPLE_25b = TDuring.of(Property.of("updated"), Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "2017-06-11")));
+    public static final CqlFilter EXAMPLE_25_OLD = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated",
+        Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "2017-06-11"))));
 
-    public static final CqlFilter EXAMPLE_26 = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated",
-                                                                       Objects.requireNonNull(TemporalLiteral.of("2017-06-10T07:30:00Z", ".."))));
+    public static final Cql2Predicate EXAMPLE_26 = TDuring.of(Property.of("updated"),
+                                                                       Objects.requireNonNull(TemporalLiteral.of("2017-06-10T07:30:00Z", "..")));
+    public static final CqlFilter EXAMPLE_26_OLD = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated",
+        Objects.requireNonNull(TemporalLiteral.of("2017-06-10T07:30:00Z", ".."))));
 
-    public static final CqlFilter EXAMPLE_27 = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated",
-                                                                       Objects.requireNonNull(TemporalLiteral.of("..", "2017-06-11T10:30:00Z"))));
+    public static final Cql2Predicate EXAMPLE_27 = TDuring.of(Property.of("updated"),
+                                                                       Objects.requireNonNull(TemporalLiteral.of("..", "2017-06-11T10:30:00Z")));
+    public static final CqlFilter EXAMPLE_27_OLD = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated",
+        Objects.requireNonNull(TemporalLiteral.of("..", "2017-06-11T10:30:00Z"))));
 
-    public static final CqlFilter EXAMPLE_28 = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated",
+    public static final Cql2Predicate EXAMPLE_28 = TDuring.of(Property.of("updated"),
+        Objects.requireNonNull(TemporalLiteral.of("..", "..")));
+    public static final CqlFilter EXAMPLE_28_OLD = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated",
                                                                        Objects.requireNonNull(TemporalLiteral.of("..", ".."))));
 
     public static final CqlFilter EXAMPLE_29 = CqlFilter.of(Eq.ofFunction(
@@ -196,7 +208,7 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_TDISJOINT = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DISJOINT,"event_date", TemporalLiteral.of("1969-07-16T05:32:00Z","1969-07-24T16:50:35Z")));
 
-    public static final CqlFilter EXAMPLE_TINTERSECTS = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_INTERSECTS,ImmutableList.of(Property.of("event_date"), Function.of("INTERVAL", ImmutableList.of(Property.of("startDate"), Property.of("endDate"))))));
+    public static final Cql2Predicate EXAMPLE_TINTERSECTS = TIntersects.of(Property.of("event_date"), Function.of("INTERVAL", ImmutableList.of(Property.of("startDate"), Property.of("endDate"))));
 
     public static final CqlFilter EXAMPLE_SDISJOINT = CqlFilter.of(SpatialOperation.of(SpatialOperator.S_DISJOINT, "geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 

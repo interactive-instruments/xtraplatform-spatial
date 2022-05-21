@@ -184,8 +184,8 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(TemporalOperation temporalOperation, List<String> children) {
-        String operator = temporalOperation.getOperator().toString();
+    public String visit(BinaryTemporalOperation temporalOperation, List<String> children) {
+        String operator = temporalOperation.getOp().toUpperCase();
 
         return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
     }
@@ -303,7 +303,7 @@ public class CqlToText implements CqlVisitor<String> {
                 : DateTimeFormatter.ISO_INSTANT.format(interval.getStart());
             end = interval.getEnd().equals(Instant.MAX)
                 ? ".."
-                : DateTimeFormatter.ISO_INSTANT.format(interval.getEnd().minusSeconds(1));
+                : DateTimeFormatter.ISO_INSTANT.format(interval.getEnd());
             return String.format("INTERVAL('%s','%s')", start, end);
         } else if (temporalLiteral.getType() == Instant.class) {
             Instant instant = (Instant) temporalLiteral.getValue();

@@ -7,12 +7,10 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -31,7 +29,6 @@ import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 @JsonDeserialize(using = Operand.OperandDeserializer.class)
@@ -74,6 +71,18 @@ public interface Operand extends CqlNode {
             if (node.isObject()) {
                 if (Objects.nonNull(node.get("property"))) {
                     return oc.treeToValue(node, Property.class);
+                } else if (Objects.nonNull(node.get("date"))) {
+                    return oc.treeToValue(node.get("date"), TemporalLiteral.class);
+                } else if (Objects.nonNull(node.get("timestamp"))) {
+                    return oc.treeToValue(node.get("timestamp"), TemporalLiteral.class);
+                } else if (Objects.nonNull(node.get("interval"))) {
+                    if (node.get("interval").isArray()) {
+                        Temporal op1 = (Temporal) getOperand(parser, node.get("interval").get(0), parent);
+                        Temporal op2 = (Temporal) getOperand(parser, node.get("interval").get(1), parent);
+
+                        return TemporalLiteral.interval(op1, op2);
+                    }
+                    throw new JsonParseException(parser, "Interval has to be an array.");
                 } else if (Objects.nonNull(node.get("op"))) {
                     return oc.treeToValue(node, Operation.class);
                 } else if (Objects.nonNull(node.get("function"))) {
@@ -102,18 +111,18 @@ public interface Operand extends CqlNode {
 
                 return ArrayLiteral.of(scalars);
             } else if (node.isValueNode()) {
-                if (SCALAR.contains(parent)) {
+                /*if (SCALAR.contains(parent)) {
                     return getScalar(node);
                 } else if (TEMPORAL.contains(parent)) {
                     return oc.treeToValue(node, TemporalLiteral.class);
-                } else {
+                } else {*/
                     // we have to guess, try temporal first
                     try {
                         return oc.treeToValue(node, TemporalLiteral.class);
                     } catch (JsonProcessingException e) {
                         return getScalar(node);
                     }
-                }
+                //}
             }
 
             throw new JsonParseException(parser, String.format("Unexpected operand of type %s in member %s.", node.getNodeType(), parent));
@@ -126,13 +135,14 @@ public interface Operand extends CqlNode {
             // Parse "object" node into Jackson's tree model
             JsonNode node = parser.getCodec().readTree(parser);
 
+            JsonStreamContext parent = parser.getParsingContext()
+                .getParent();
+
             // Get name of the parent key
-            String parent = parser.getParsingContext()
-                                  .getParent()
-                                  .getCurrentName()
+            String parentName = parent.getCurrentName()
                                   .toLowerCase();
 
-            return getOperand(parser, node, parent);
+            return getOperand(parser, node, parentName);
         }
 
     }

@@ -62,7 +62,7 @@ class FilterEncoderSqlSpec extends Specification {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_TIMESTAMP
-        def filter = CqlFilterExamples.EXAMPLE_12
+        def filter = CqlFilterExamples.EXAMPLE_12_OLD
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.built::timestamp(0) < TIMESTAMP '2012-06-05T00:00:00Z')"
@@ -96,7 +96,7 @@ class FilterEncoderSqlSpec extends Specification {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
-        def filter = CqlFilterExamples.EXAMPLE_14
+        def filter = CqlFilterExamples.EXAMPLE_14_OLD
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) > TIMESTAMP '2017-06-10T07:30:00Z') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) < TIMESTAMP '2017-06-11T10:30:00Z')"

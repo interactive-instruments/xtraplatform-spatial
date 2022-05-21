@@ -18,10 +18,7 @@ import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql2Predicate;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.CqlToText;
 import de.ii.xtraplatform.cql.domain.Operation;
 import de.ii.xtraplatform.cql.domain.TemporalOperator;
@@ -31,13 +28,6 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import io.dropwizard.jackson.Jackson;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.threeten.extra.Interval;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
@@ -45,6 +35,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.threeten.extra.Interval;
 
 @Singleton
 @AutoBind
@@ -66,6 +61,7 @@ public class CqlImpl implements Cql {
         this.cqlJsonMapper = Jackson.newObjectMapper()
                                     .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
                                     .enable(SerializationFeature.INDENT_OUTPUT)
+                                    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                                     .registerModule(module);
     }
 
@@ -110,21 +106,21 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public List<String> findInvalidProperties(CqlPredicate cqlPredicate, Collection<String> validProperties) {
+    public List<String> findInvalidProperties(Cql2Predicate cqlPredicate, Collection<String> validProperties) {
         CqlPropertyChecker visitor = new CqlPropertyChecker(validProperties);
 
         return cqlPredicate.accept(visitor);
     }
 
     @Override
-    public void checkTypes(CqlPredicate cqlPredicate, Map<String, String> propertyTypes) {
+    public void checkTypes(Cql2Predicate cqlPredicate, Map<String, String> propertyTypes) {
         CqlTypeChecker visitor = new CqlTypeChecker(propertyTypes, this);
 
         cqlPredicate.accept(visitor);
     }
 
     @Override
-    public void checkCoordinates(CqlPredicate cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs) {
+    public void checkCoordinates(Cql2Predicate cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs) {
         long start = System.currentTimeMillis();
         CqlCoordinateChecker visitor = new CqlCoordinateChecker(crsTransformerFactory, crsInfo, filterCrs, nativeCrs);
 
@@ -133,27 +129,30 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public CqlNode mapTemporalOperators(CqlFilter cqlFilter, Set<TemporalOperator> supportedOperators) {
+    public Cql2Predicate mapTemporalOperators(Cql2Predicate cqlFilter, Set<TemporalOperator> supportedOperators) {
         CqlVisitorMapTemporalOperators visitor = new CqlVisitorMapTemporalOperators(supportedOperators);
 
-        return cqlFilter.accept(visitor);
+        return (Cql2Predicate) cqlFilter.accept(visitor);
     }
 
     @Override
-    public CqlNode mapEnvelopes(CqlFilter cqlFilter, CrsInfo crsInfo) {
+    public Cql2Predicate mapEnvelopes(Cql2Predicate cqlFilter, CrsInfo crsInfo) {
         CqlVisitorMapEnvelopes visitor = new CqlVisitorMapEnvelopes(crsInfo);
 
-        return cqlFilter.accept(visitor);
+        return (Cql2Predicate) cqlFilter.accept(visitor);
     }
 
     static class IntervalConverter extends StdConverter<Interval, List<String>> {
 
         @Override
         public List<String> convert(Interval value) {
-
             return ImmutableList.of(
-                    value.getStart().toString(),
-                    value.getEnd().toString()
+                    value.getStart() == Instant.MIN
+                        ? ".."
+                        : value.getStart().toString(),
+                    value.getEnd() == Instant.MAX
+                        ? ".."
+                        : value.getEnd().toString()
             );
         }
     }

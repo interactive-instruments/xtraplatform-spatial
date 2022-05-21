@@ -11,7 +11,6 @@ package de.ii.xtraplatform.cql.app
 import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.Cql2Predicate
 import de.ii.xtraplatform.cql.domain.CqlParseException
-import de.ii.xtraplatform.cql.domain.CqlPredicate
 import spock.lang.Ignore
 import spock.lang.PendingFeature
 import spock.lang.Shared
@@ -250,7 +249,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Built before 2015'() {
 
         given:
@@ -271,7 +269,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Built after June 5, 2012'() {
 
         given:
@@ -292,7 +289,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Updated between 7:30am June 10, 2017 and 10:30am June 11, 2017'() {
 
         given:
@@ -456,7 +452,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Built before 2015 (only date, no time information)'() {
         given:
         String cqlText = "T_BEFORE(built, DATE('2015-01-01'))"
@@ -476,7 +471,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Updated between June 10, 2017 and June 11, 2017'() {
         given:
         String cqlText = "T_DURING(updated, INTERVAL('2017-06-10','2017-06-11'))"
@@ -485,18 +479,17 @@ class CqlTextSpec extends Specification {
         Cql2Predicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_25
+        actual == CqlFilterExamples.EXAMPLE_25b
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_25, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_25b, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Updated between 7:30am June 10, 2017 and open end date'() {
         given:
         String cqlText = "T_DURING(updated, INTERVAL('2017-06-10T07:30:00Z','..'))"
@@ -516,7 +509,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Updated between open start date and 10:30am June 11, 2017'() {
         given:
         String cqlText = "T_DURING(updated, INTERVAL('..','2017-06-11T10:30:00Z'))"
@@ -536,7 +528,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Open interval on both ends'() {
         given:
         String cqlText = "T_DURING(updated, INTERVAL('..','..'))"
@@ -556,7 +547,6 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    @PendingFeature
     def 'Interval with properties on both ends'() {
         given:
         String cqlText = "T_INTERSECTS(event_date, INTERVAL(startDate,endDate))"
@@ -1049,12 +1039,12 @@ class CqlTextSpec extends Specification {
         Cql2Predicate actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_14
+        actual == CqlFilterExamples.EXAMPLE_14_OLD
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_14, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_14_OLD, Cql.Format.TEXT)
 
         then:
         actual2 == cqlText

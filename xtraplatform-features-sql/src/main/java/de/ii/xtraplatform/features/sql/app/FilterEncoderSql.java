@@ -522,7 +522,7 @@ public class FilterEncoderSql {
         }
 
         @Override
-        public String visit(TemporalOperation temporalOperation, List<String> children) {
+        public String visit(BinaryTemporalOperation temporalOperation, List<String> children) {
             String operator = sqlDialect.getTemporalOperator(temporalOperation);
             if (Objects.isNull(operator))
                 throw new IllegalStateException(String.format("unexpected temporal operator: %s", temporalOperation.getClass()));

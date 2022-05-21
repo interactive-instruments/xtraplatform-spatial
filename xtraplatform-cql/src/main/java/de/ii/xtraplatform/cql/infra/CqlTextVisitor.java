@@ -257,7 +257,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         Temporal temporal2 = (Temporal) ctx.temporalExpression(1)
             .accept(this);
 
-        return TemporalOperation.of(temporalOperator, temporal1, temporal2);
+        return BinaryTemporalOperation.of(temporalOperator, temporal1, temporal2);
     }
 
     @Override
@@ -374,15 +374,8 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         CqlNode arg2 = ctx.intervalParameter(1)
             .accept(this);
 
-        // if at least one parameter is a property, we create a function, otherwise a fixed interval
-        if (arg1 instanceof Property && arg2 instanceof Property) {
-            return Function.of("INTERVAL", ImmutableList.of((Property) arg1, (Property) arg2));
-        } else if (arg1 instanceof Property &&  arg2 instanceof TemporalLiteral) {
-            return Function.of("INTERVAL", ImmutableList.of((Property) arg1, (TemporalLiteral) arg2));
-        } else if (arg1 instanceof TemporalLiteral &&  arg2 instanceof Property) {
-            return Function.of("INTERVAL", ImmutableList.of((TemporalLiteral) arg1, (Property) arg2));
-        } else if (arg1 instanceof TemporalLiteral &&  arg2 instanceof TemporalLiteral) {
-            return TemporalLiteral.of((TemporalLiteral) arg1, (TemporalLiteral) arg2);
+        if (arg1 instanceof Temporal && arg2 instanceof Temporal) {
+            return TemporalLiteral.interval((Temporal) arg1, (Temporal) arg2);
         }
 
         throw new IllegalStateException("unsupported interval value: " + ctx.getText());

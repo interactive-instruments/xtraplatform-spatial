@@ -28,12 +28,12 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
     }
 
     @Override
-    public CqlNode visit(TemporalOperation temporalOperation, List<CqlNode> children) {
+    public CqlNode visit(BinaryTemporalOperation temporalOperation, List<CqlNode> children) {
 
         Temporal temporal1 = (Temporal) children.get(0);
         Temporal temporal2 = (Temporal) children.get(1);
 
-        TemporalOperator temporalOperator = temporalOperation.getOperator();
+        TemporalOperator temporalOperator = TemporalOperator.valueOf(temporalOperation.getOp().toUpperCase());
 
         // if the next visitor supports a temporal operator, we keep it
         if (supportedOperators.contains(temporalOperator)) {

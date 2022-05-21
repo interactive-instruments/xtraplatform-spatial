@@ -11,6 +11,7 @@ import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.Cql2Predicate
 import de.ii.xtraplatform.cql.domain.CqlPredicate
 import org.skyscreamer.jsonassert.JSONAssert
+import spock.lang.IgnoreRest
 import spock.lang.PendingFeature
 import spock.lang.Shared
 import spock.lang.Specification
@@ -411,22 +412,21 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    @PendingFeature
     def 'Built before June 5, 2012'() {
 
         given:
         String cqlJson = """
         {
-            "op": "before",
+            "op": "t_before",
             "args": [
                 {"property": "built"},
-                "2012-06-05T00:00:00Z"
+                {"timestamp": "2012-06-05T00:00:00Z"}
             ]
         }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_12
@@ -440,22 +440,21 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    @PendingFeature
     def 'Built after June 5, 2012'() {
 
         given:
         String cqlJson = """
         {
-            "op": "after",
+            "op": "t_after",
             "args": [
                 {"property": "built"},
-                "2012-06-05T00:00:00Z"
+                {"timestamp": "2012-06-05T00:00:00Z"}
             ]
         }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_13
@@ -469,22 +468,21 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    @PendingFeature
     def 'Updated between 7:30am June 10, 2017 and 10:30am June 11, 2017'() {
 
         given:
         String cqlJson = """
             {
-                "op": "during",
+                "op": "t_during",
                 "args": [
                     {"property": "updated"},
-                    ["2017-06-10T07:30:00Z","2017-06-11T10:30:00Z"]
+                    {"interval": ["2017-06-10T07:30:00Z","2017-06-11T10:30:00Z"]}
                 ]
             }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_14
@@ -721,22 +719,21 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    @PendingFeature
     def 'Built before 2015 (only date, no time information)'() {
 
         given:
         String cqlJson = """
         {
-            "op": "before",
+            "op": "t_before",
             "args": [
                 {"property": "built"},
-                "2015-01-01"
+                {"date": "2015-01-01"}
             ]
         }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_24
@@ -747,34 +744,24 @@ class CqlJsonSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_24, Cql.Format.JSON)
 
         then:
-        String cqlJson2 = """
-        {
-            "op": "before",
-            "args": [
-                {"property": "built"},
-                [ "2015-01-01T00:00:00Z", "2015-01-01T23:59:59Z" ]
-            ]
-        }
-        """
-        JSONAssert.assertEquals(cqlJson2, actual2, true)
+        JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    @PendingFeature
     def 'Updated between June 10, 2017 and June 11, 2017'() {
 
         given:
         String cqlJson = """
             {
-                "op": "during",
+                "op": "t_during",
                 "args": [
                     {"property": "updated"},
-                    ["2017-06-10","2017-06-11"]
+                    {"interval": ["2017-06-10T07:30:00Z","2017-06-11T10:30:00Z"]}
                 ]
             }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_25
@@ -785,34 +772,24 @@ class CqlJsonSpec extends Specification {
         String actual2 = cql.write(CqlFilterExamples.EXAMPLE_25, Cql.Format.JSON)
 
         then:
-        String cqlJson2 = """
-            {
-                "op": "during",
-                "args": [
-                    {"property": "updated"},
-                    ["2017-06-10T00:00:00Z","2017-06-11T23:59:59Z"]
-                ]
-            }
-        """
-        JSONAssert.assertEquals(cqlJson2, actual2, true)
+        JSONAssert.assertEquals(cqlJson, actual2, true)
 
     }
 
-    @PendingFeature
-    def 'Updated between 7:30am June 10, 2017 and an open end date'() {
+   def 'Updated between 7:30am June 10, 2017 and an open end date'() {
         given:
         String cqlJson = """
             {
-                "op": "during",
+                "op": "t_during",
                 "args": [
                     {"property": "updated"},
-                    ["2017-06-10T07:30:00Z","9999-12-31T23:59:59Z"]
+                    {"interval": ["2017-06-10T07:30:00Z",".."]}
                 ]
             }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_26
@@ -826,21 +803,20 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    @PendingFeature
     def 'Updated between an open start date and 10:30am June 11, 2017'() {
         given:
         String cqlJson = """
             {
-                "op": "during",
+                "op": "t_during",
                 "args": [
                     {"property": "updated"},
-                    ["0000-01-01T00:00:00Z","2017-06-11T10:30:00Z"]
+                    {"interval": ["..","2017-06-11T10:30:00Z"]}
                ] 
             }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_27
@@ -854,21 +830,20 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    @PendingFeature
     def 'Open interval on both ends'() {
         given:
         String cqlJson = """
             {
-                "op": "during",
+                "op": "t_during",
                 "args": [
                     {"property": "updated"},
-                    ["0000-01-01T00:00:00Z","9999-12-31T23:59:59Z"]
+                    {"interval": ["..",".."]}
                 ]
             }
         """
 
         when: 'reading json'
-        CqlPredicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_28

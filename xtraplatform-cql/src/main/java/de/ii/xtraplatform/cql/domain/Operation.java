@@ -21,7 +21,22 @@ import java.util.stream.Collectors;
     @Type(value = And.class, name = And.TYPE),
     @Type(value = Or.class, name = Or.TYPE),
     @Type(value = IsNull.class, name = IsNull.TYPE),
-    @Type(value = In.class, name = In.TYPE)
+    @Type(value = In.class, name = In.TYPE),
+    @Type(value = TAfter.class, name = TAfter.TYPE),
+    @Type(value = TBefore.class, name = TBefore.TYPE),
+    @Type(value = TContains.class, name = TContains.TYPE),
+    @Type(value = TDisjoint.class, name = TDisjoint.TYPE),
+    @Type(value = TDuring.class, name = TDuring.TYPE),
+    @Type(value = TEquals.class, name = TEquals.TYPE),
+    @Type(value = TFinishedBy.class, name = TFinishedBy.TYPE),
+    @Type(value = TFinishes.class, name = TFinishes.TYPE),
+    @Type(value = TIntersects.class, name = TIntersects.TYPE),
+    @Type(value = TMeets.class, name = TMeets.TYPE),
+    @Type(value = TMetBy.class, name = TMetBy.TYPE),
+    @Type(value = TOverlappedBy.class, name = TOverlappedBy.TYPE),
+    @Type(value = TOverlaps.class, name = TOverlaps.TYPE),
+    @Type(value = TStartedBy.class, name = TStartedBy.TYPE),
+    @Type(value = TStarts.class, name = TStarts.TYPE)
 })
 public interface Operation<T extends Operand> extends Cql2Predicate, CqlNode {
 

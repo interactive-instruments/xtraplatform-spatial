@@ -201,7 +201,7 @@ public class FilterEncoderWfs {
     }
 
     @Override
-    public FesExpression visit(TemporalOperation temporalOperation, List<FesExpression> children) {
+    public FesExpression visit(BinaryTemporalOperation temporalOperation, List<FesExpression> children) {
 
       if (children.size() == 2
           && children.get(0) instanceof FesValueReference

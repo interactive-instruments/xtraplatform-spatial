@@ -14,6 +14,7 @@ import de.ii.xtraplatform.cql.domain.ArrayLiteral;
 import de.ii.xtraplatform.cql.domain.ArrayOperation;
 import de.ii.xtraplatform.cql.domain.Between;
 import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
+import de.ii.xtraplatform.cql.domain.BinaryTemporalOperation;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql2Predicate;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
@@ -43,7 +44,6 @@ import de.ii.xtraplatform.cql.domain.ScalarLiteral;
 import de.ii.xtraplatform.cql.domain.SpatialLiteral;
 import de.ii.xtraplatform.cql.domain.SpatialOperation;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes;
 import java.util.Collection;
 import java.util.List;
@@ -153,7 +153,7 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
     }
 
     @Override
-    public Type visit(TemporalOperation temporalOperation, List<Type> children) {
+    public Type visit(BinaryTemporalOperation temporalOperation, List<Type> children) {
         checkOperation(temporalOperation, children);
         return Type.Boolean;
     }

@@ -125,12 +125,13 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
     }
 
     @Override
-    public CqlNode visit(TemporalOperation temporalOperation, List<CqlNode> children) {
-        return TemporalOperation.of(temporalOperation.getOperator(),
-                                    children.stream()
-                                        .filter(child -> child instanceof Temporal)
-                                        .map(child -> (Temporal) child)
-                                        .collect(Collectors.toUnmodifiableList()));
+    public CqlNode visit(BinaryTemporalOperation temporalOperation, List<CqlNode> children) {
+        List<Temporal> temporals = children.stream()
+            .filter(child -> child instanceof Temporal)
+            .map(child -> (Temporal) child)
+            .collect(Collectors.toUnmodifiableList());
+        return BinaryTemporalOperation.of(temporalOperation.getTemporalOperator(),
+                                    temporals.get(0), temporals.get(1));
     }
 
     @Override

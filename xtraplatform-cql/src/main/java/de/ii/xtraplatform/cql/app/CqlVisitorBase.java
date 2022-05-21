@@ -48,7 +48,7 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
     public T visit(IsNull isNull, List<T> children) { return null; }
 
     @Override
-    public T visit(TemporalOperation temporalOperation, List<T> children) {
+    public T visit(BinaryTemporalOperation temporalOperation, List<T> children) {
         return null;
     }
 

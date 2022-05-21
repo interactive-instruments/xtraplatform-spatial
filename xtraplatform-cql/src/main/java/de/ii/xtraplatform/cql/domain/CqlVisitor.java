@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
 
 public interface CqlVisitor<T> {
@@ -35,8 +34,8 @@ public interface CqlVisitor<T> {
             return visit((IsNull) node, children);
         } else if (node instanceof BinaryScalarOperation) {
             return visit((BinaryScalarOperation) node, children);
-        } else if (node instanceof TemporalOperation) {
-            return visit((TemporalOperation) node, children);
+        } else if (node instanceof BinaryTemporalOperation) {
+            return visit((BinaryTemporalOperation) node, children);
         } else if (node instanceof SpatialOperation) {
             return visit((SpatialOperation) node, children);
         } else if (node instanceof ArrayOperation) {
@@ -92,7 +91,7 @@ public interface CqlVisitor<T> {
 
     T visit(IsNull isNull, List<T> children);
 
-    T visit(TemporalOperation temporalOperation, List<T> children);
+    T visit(BinaryTemporalOperation temporalOperation, List<T> children);
 
     T visit(SpatialOperation spatialOperation, List<T> children);
 

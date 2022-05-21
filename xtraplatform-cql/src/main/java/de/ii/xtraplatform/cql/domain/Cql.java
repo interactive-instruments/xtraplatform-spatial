@@ -24,15 +24,15 @@ public interface Cql {
 
     Cql2Predicate read(String cql, Format format, EpsgCrs crs) throws CqlParseException;
 
-  String write(Cql2Predicate cql, Format format);
+    String write(Cql2Predicate cql, Format format);
 
-  List<String> findInvalidProperties(CqlPredicate cqlPredicate, Collection<String> validProperties);
+    List<String> findInvalidProperties(Cql2Predicate cqlPredicate, Collection<String> validProperties);
 
-    void checkTypes(CqlPredicate cqlPredicate, Map<String, String> propertyTypes);
+    void checkTypes(Cql2Predicate cqlPredicate, Map<String, String> propertyTypes);
 
-    void checkCoordinates(CqlPredicate cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs);
+    void checkCoordinates(Cql2Predicate cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs);
 
-    CqlNode mapTemporalOperators(CqlFilter cqlFilter, Set<TemporalOperator> supportedOperators);
+    Cql2Predicate mapTemporalOperators(Cql2Predicate cqlFilter, Set<TemporalOperator> supportedOperators);
 
-    CqlNode mapEnvelopes(CqlFilter cqlFilter, CrsInfo crsInfo);
+    Cql2Predicate mapEnvelopes(Cql2Predicate cqlFilter, CrsInfo crsInfo);
 }
