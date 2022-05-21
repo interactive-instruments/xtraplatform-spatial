@@ -12,7 +12,7 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableNot.Builder.class)
-public interface Not extends UnaryOperation<Cql2Predicate>, CqlNode {
+public interface Not extends UnaryOperation<Cql2Expression>, CqlNode {
 
     String TYPE = "not";
 
@@ -22,7 +22,7 @@ public interface Not extends UnaryOperation<Cql2Predicate>, CqlNode {
         return TYPE;
     }
 
-    static Not of(Cql2Predicate predicate) {
+    static Not of(Cql2Expression predicate) {
         return new ImmutableNot.Builder()
                 .addArgs(predicate)
                 .build();

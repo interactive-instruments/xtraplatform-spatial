@@ -10,7 +10,7 @@ package de.ii.xtraplatform.features.sql.app;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.Cql;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.features.sql.SqlFeatureTypeParser;
 import de.ii.xtraplatform.features.sql.SqlPath;
 import de.ii.xtraplatform.features.sql.SqlPathSyntax;
@@ -242,7 +242,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                             .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
                         //TODO: needed for SqlConnectorSlick
-                        Map<String, CqlFilter> filters = Objects.isNull(cql) ? ImmutableMap.of() : stringFilters.entrySet().stream()
+                        Map<String, Cql2Expression> filters = Objects.isNull(cql) ? ImmutableMap.of() : stringFilters.entrySet().stream()
                                                                     .map(entry2 -> new AbstractMap.SimpleImmutableEntry<>(entry2.getKey(), cql.read(entry2.getValue(), Cql.Format.TEXT)))
                                                                     .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
@@ -263,7 +263,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
                             ImmutableFeatureStoreInstanceContainer.Builder instanceContainerBuilder = instanceContainerBuilders.get(instanceContainerName);
 
                             //TODO: if multiple it should be different instance containers
-                            Optional<CqlFilter> filter = Optional.ofNullable(filters.get(instanceContainerName));
+                            Optional<Cql2Expression> filter = Optional.ofNullable(filters.get(instanceContainerName));
 
                             String sortKey = sortKeys.getOrDefault(instanceContainerName, syntax.getOptions().getSortKey());
 
@@ -312,7 +312,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
     }
 
     private List<FeatureStoreRelation> toRelations(List<String> path,
-        Map<String, CqlFilter> filters,
+        Map<String, Cql2Expression> filters,
         Map<String, String> stringFilters,
         Map<String, String> sortKeys) {
 
@@ -334,7 +334,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
     private Stream<FeatureStoreRelation> toRelations(String source, String link, String target,
         boolean isLast,
-        Map<String, CqlFilter> filters,
+        Map<String, Cql2Expression> filters,
         Map<String, String> stringFilters,
         Map<String, String> sortKeys) {
         if (syntax.isJunctionTable(source)) {
@@ -358,7 +358,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
 
     //TODO: support sortKey flag on table instead of getDefaultPrimaryKey
     private FeatureStoreRelation toRelation(String source, String target,
-        Map<String, CqlFilter> filters,
+        Map<String, Cql2Expression> filters,
         Map<String, String> stringFilters,
         Map<String, String> sortKeys) {
         Matcher sourceMatcher = syntax.getTablePattern()
@@ -377,7 +377,7 @@ public class FeatureStorePathParserSql implements FeatureStorePathParser {
             //TODO: shouldn't this be targetContainer?
             Optional<String> sourceFilter = Optional.ofNullable(stringFilters.get(sourceContainer)).map(f -> String.format("{filter=%s}", f));
             Optional<String> targetFilter = Optional.ofNullable(stringFilters.get(targetContainer)).map(f -> String.format("{filter=%s}", f));
-            Optional<CqlFilter> targetFilter2 = Optional.ofNullable(filters.get(targetContainer));
+            Optional<Cql2Expression> targetFilter2 = Optional.ofNullable(filters.get(targetContainer));
 
             String sortKey = sortKeys.getOrDefault(sourceContainer, syntax.getOptions().getSortKey());
 

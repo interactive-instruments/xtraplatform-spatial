@@ -22,7 +22,7 @@ import de.ii.xtraplatform.cql.domain.Between;
 import de.ii.xtraplatform.cql.domain.BinaryArrayOperation;
 import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
 import de.ii.xtraplatform.cql.domain.BinarySpatialOperation;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.CqlToText;
 import de.ii.xtraplatform.cql.domain.Geometry;
@@ -89,7 +89,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         .build();
 
     private final Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator;
-    private final BiFunction<FeatureStoreAttributesContainer, List<String>, BiFunction<FeatureStoreAttributesContainer, Optional<CqlFilter>, Function<Optional<String>, String>>> joinsGenerator;
+    private final BiFunction<FeatureStoreAttributesContainer, List<String>, BiFunction<FeatureStoreAttributesContainer, Optional<Cql2Expression>, Function<Optional<String>, String>>> joinsGenerator;
     private final EpsgCrs nativeCrs;
     private final SqlDialect sqlDialect;
     private final CrsTransformerFactory crsTransformerFactory;
@@ -97,7 +97,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
     public FilterEncoderSqlNewNewImpl(
             Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator,
-            BiFunction<FeatureStoreAttributesContainer, List<String>, BiFunction<FeatureStoreAttributesContainer, Optional<CqlFilter>, Function<Optional<String>, String>>> joinsGenerator,
+            BiFunction<FeatureStoreAttributesContainer, List<String>, BiFunction<FeatureStoreAttributesContainer, Optional<Cql2Expression>, Function<Optional<String>, String>>> joinsGenerator,
             EpsgCrs nativeCrs, SqlDialect sqlDialect,
             CrsTransformerFactory crsTransformerFactory) {
         this.aliasesGenerator = aliasesGenerator;
@@ -123,12 +123,12 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
     }
 
     @Override
-    public String encode(CqlFilter cqlFilter, FeatureStoreInstanceContainer typeInfo) {
+    public String encode(Cql2Expression cqlFilter, FeatureStoreInstanceContainer typeInfo) {
         return cqlFilter.accept(new CqlToSql(typeInfo));
     }
 
     @Override
-    public String encodeNested(CqlFilter cqlFilter, FeatureStoreAttributesContainer typeInfo, boolean isUserFilter) {
+    public String encodeNested(Cql2Expression cqlFilter, FeatureStoreAttributesContainer typeInfo, boolean isUserFilter) {
         return cqlFilter.accept(new CqlToSqlJoin(typeInfo, isUserFilter));
     }
 
@@ -210,7 +210,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                 LOGGER.trace("PROP {} {}", table.getName(), column);
             }
 
-            Optional<CqlFilter> userFilter;
+            Optional<Cql2Expression> userFilter;
             FeatureStoreAttributesContainer userFilterTable = null;
             Optional<String> instanceFilter = Optional.empty();
             if (!property.getNestedFilters()
@@ -241,8 +241,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             return String.format("A.%3$s IN (SELECT %2$s.%3$s FROM %1$s %2$s %4$s WHERE %%1$s%5$s%%2$s)", instanceContainer.getName(), aliases.get(0), instanceContainer.getSortKey(), join, qualifiedColumn);
         }
 
-        private String getUserFilterPropertyName(CqlFilter userFilter) {
-            CqlNode nestedFilter = userFilter.getExpressions().get(0);
+        private String getUserFilterPropertyName(Cql2Expression userFilter) {
+            CqlNode nestedFilter = userFilter;
             Operand operand = null;
             if (nestedFilter instanceof BinaryScalarOperation) {
                 operand = ((BinaryScalarOperation) nestedFilter).getArgs().get(0);
@@ -251,9 +251,9 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             } else if (nestedFilter instanceof SpatialOperation) {
                 operand = ((SpatialOperation) nestedFilter).getOperands().get(0);
             } else if (nestedFilter instanceof Like) {
-                operand = ((Like) nestedFilter).getOperands().get(0);
+                operand = ((Like) nestedFilter).getArgs().get(0);
             } else if (nestedFilter instanceof In) {
-                operand = ((In) nestedFilter).getValue().get();
+                operand = ((In) nestedFilter).getArgs().get(0);
             } else if (nestedFilter instanceof Between) {
                 operand = ((Between) nestedFilter).getValue().get();
             }
@@ -308,7 +308,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             return Arrays.stream(classes).anyMatch(clazz -> clazz.isInstance(operand));
         }
 
-        private List<String> processBinary(List<Operand> operands, List<String> children) {
+        private List<String> processBinary(List<? extends Operand> operands, List<String> children) {
             // The two operands may be either a property reference or a literal.
             // If there is at least one property reference, that fragment will
             // be used as the basis (mainExpression). If the other operand is
@@ -388,7 +388,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(Like like, List<String> children) {
             String operator = SCALAR_OPERATORS.get(like.getClass());
 
-            List<String> expressions = processBinary(like.getOperands(), children);
+            List<String> expressions = processBinary(like.getArgs(), children);
 
             // we may need to change the second expression
             String secondExpression = expressions.get(1);
@@ -405,7 +405,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String operator = SCALAR_OPERATORS.get(in.getClass());
 
             String mainExpression = "";
-            Scalar op1 = in.getValue().get();
+            Scalar op1 = in.getArgs().get(0);
             if (op1 instanceof Property) {
                 mainExpression = children.get(0);
             } else if (op1 instanceof de.ii.xtraplatform.cql.domain.Function) {
@@ -427,7 +427,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String operator = SCALAR_OPERATORS.get(isNull.getClass());
 
             String mainExpression = "";
-            Operand op1 = isNull.getOperand().get();
+            Operand op1 = isNull.getArgs().get(0);
             if (op1 instanceof Property) {
                 mainExpression = children.get(0);
             } else if (op1 instanceof ScalarLiteral) {
@@ -504,7 +504,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
         public String visit(BinarySpatialOperation spatialOperation, List<String> children) {
             String operator = SPATIAL_OPERATORS.get(spatialOperation.getClass());
 
-            List<String> expressions = processBinary(spatialOperation.getOperands(), children);
+            List<String> expressions = processBinary(spatialOperation.getArgs(), children);
 
             return String.format(expressions.get(0), String.format("%s(", operator), String.format(", %s)", expressions.get(1)));
         }
@@ -611,8 +611,8 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             // fragment will be reduced to qualified column name (second expression).
             String mainExpression = children.get(0);
             String secondExpression = children.get(1);
-            boolean op1hasSelect = operandIsOfType(arrayOperation.getOperands().get(0), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
-            boolean op2hasSelect = operandIsOfType(arrayOperation.getOperands().get(1), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
+            boolean op1hasSelect = operandIsOfType(arrayOperation.getArgs().get(0), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
+            boolean op2hasSelect = operandIsOfType(arrayOperation.getArgs().get(1), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
             boolean notInverse = true;
             if (op1hasSelect) {
                 if (op2hasSelect) {
@@ -631,7 +631,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                     // literal op literal, we can decide here
                     List<String> firstOp = ARRAY_SPLITTER.splitToList(mainExpression.replaceAll("\\[|\\]", ""));
                     List<String> secondOp = ARRAY_SPLITTER.splitToList(secondExpression.replaceAll("\\[|\\]", ""));
-                    switch (arrayOperation.getOperator()) {
+                    switch (arrayOperation.getArrayOperator()) {
                         case A_CONTAINS:
                             // each item of the second array must be in the first array
                             return secondOp.stream().allMatch(item -> firstOp.stream().anyMatch(item::equals)) ? "1=1" : "1=0";
@@ -647,7 +647,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
                             // each item of the first array must be in the second array
                             return firstOp.stream().allMatch(item -> secondOp.stream().anyMatch(item::equals)) ? "1=1" : "1=0";
                     }
-                    throw new IllegalArgumentException("unsupported array operator: " + arrayOperation.getOperator());
+                    throw new IllegalArgumentException("unsupported array operator: " + arrayOperation.getArrayOperator());
                 }
             }
 
@@ -661,24 +661,24 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
             int elementCount = secondExpression.split(",").length;
 
-            String propertyName = ((Property) arrayOperation.getOperands().get(notInverse ? 0 : 1)).getName();
+            String propertyName = ((Property) arrayOperation.getArgs().get(notInverse ? 0 : 1)).getName();
             Predicate<FeatureStoreAttribute> propertyMatches = attribute -> Objects.equals(propertyName, attribute.getQueryable()) || (Objects.equals(propertyName, ID_PLACEHOLDER) && attribute.isId());
             FeatureStoreAttributesContainer table = getTable(propertyMatches, propertyName);
             String column = getColumn(table, propertyMatches, propertyName);
             List<String> aliases = getAliases(table);
             String qualifiedColumn = String.format("%s.%s", aliases.get(aliases.size() - 1), column);
 
-            if (notInverse ? arrayOperation.getOperator()==A_CONTAINS : arrayOperation.getOperator()==A_CONTAINEDBY) {
+            if (notInverse ? arrayOperation.getArrayOperator()==A_CONTAINS : arrayOperation.getArrayOperator()==A_CONTAINEDBY) {
                 String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s", secondExpression, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (arrayOperation.getOperator()==A_EQUALS) {
+            } else if (arrayOperation.getArrayOperator()==A_EQUALS) {
                 String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s AND count(case when %4$s not in %1$s then %4$s else null end) = 0",
                                                   secondExpression, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn, elementCount);
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (arrayOperation.getOperator()==A_OVERLAPS) {
+            } else if (arrayOperation.getArrayOperator()==A_OVERLAPS) {
                 String arrayQuery = String.format(" IN %1$s GROUP BY %2$s.%3$s", secondExpression, aliases.get(0), instanceContainer.getSortKey());
                 return String.format(mainExpression, "", arrayQuery);
-            } else if (notInverse ? arrayOperation.getOperator()==A_CONTAINEDBY : arrayOperation.getOperator()==A_CONTAINS) {
+            } else if (notInverse ? arrayOperation.getArrayOperator()==A_CONTAINEDBY : arrayOperation.getArrayOperator()==A_CONTAINS) {
                 String arrayQuery = String.format(" IS NOT NULL GROUP BY %2$s.%3$s HAVING count(case when %4$s not in %1$s then %4$s else null end) = 0",
                                                   secondExpression, aliases.get(0), instanceContainer.getSortKey(), qualifiedColumn);
                 return String.format(mainExpression, "", arrayQuery);
@@ -711,10 +711,7 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             String operator = LOGICAL_OPERATORS.get(not.getClass());
 
             String operation = children.get(0);
-            if (not.getPredicate()
-                                .get()
-                                .getInOperator()
-                                .isPresent()) {
+            if (not.getArgs().get(0) instanceof In) {
                 // replace last IN with NOT IN
                 int pos = operation.lastIndexOf(" IN ");
                 int length = operation.length();

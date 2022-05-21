@@ -11,7 +11,21 @@ import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Doubles;
-import de.ii.xtraplatform.cql.domain.*;
+import de.ii.xtraplatform.cql.domain.ArrayLiteral;
+import de.ii.xtraplatform.cql.domain.Between;
+import de.ii.xtraplatform.cql.domain.BinaryArrayOperation;
+import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
+import de.ii.xtraplatform.cql.domain.BinarySpatialOperation;
+import de.ii.xtraplatform.cql.domain.BinaryTemporalOperation;
+import de.ii.xtraplatform.cql.domain.BooleanValue2;
+import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
+import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.CqlNode;
+import de.ii.xtraplatform.cql.domain.CqlPredicate;
+import de.ii.xtraplatform.cql.domain.CqlVisitor;
+import de.ii.xtraplatform.cql.domain.Eq;
+import de.ii.xtraplatform.cql.domain.Function;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
 import de.ii.xtraplatform.cql.domain.Geometry.Envelope;
 import de.ii.xtraplatform.cql.domain.Geometry.LineString;
@@ -20,6 +34,19 @@ import de.ii.xtraplatform.cql.domain.Geometry.MultiPoint;
 import de.ii.xtraplatform.cql.domain.Geometry.MultiPolygon;
 import de.ii.xtraplatform.cql.domain.Geometry.Point;
 import de.ii.xtraplatform.cql.domain.Geometry.Polygon;
+import de.ii.xtraplatform.cql.domain.Gt;
+import de.ii.xtraplatform.cql.domain.In;
+import de.ii.xtraplatform.cql.domain.IsNull;
+import de.ii.xtraplatform.cql.domain.Like;
+import de.ii.xtraplatform.cql.domain.LogicalOperation;
+import de.ii.xtraplatform.cql.domain.Lt;
+import de.ii.xtraplatform.cql.domain.Not;
+import de.ii.xtraplatform.cql.domain.Or;
+import de.ii.xtraplatform.cql.domain.Property;
+import de.ii.xtraplatform.cql.domain.ScalarLiteral;
+import de.ii.xtraplatform.cql.domain.SpatialLiteral;
+import de.ii.xtraplatform.cql.domain.SpatialOperator;
+import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -76,7 +103,7 @@ public class FilterEncoderWfs {
     this.coordinatesTransformer = this::transformCoordinatesIfNecessary;
   }
 
-  public FesFilter encode(CqlFilter filter, FeatureSchema schema) {
+  public FesFilter encode(Cql2Expression filter, FeatureSchema schema) {
     return (FesFilter) cql.mapTemporalOperators(filter, ImmutableSet.of())
         .accept(new CqlToFes(schema));
   }
@@ -221,7 +248,7 @@ public class FilterEncoderWfs {
 
     @Override
     public FesExpression visit(BinarySpatialOperation spatialOperation, List<FesExpression> children) {
-      if (spatialOperation.getOperator() == SpatialOperator.S_INTERSECTS
+      if (spatialOperation.getSpatialOperator() == SpatialOperator.S_INTERSECTS
           && children.size() == 2
           && children.get(0) instanceof FesValueReference
           && children.get(1) instanceof FesEnvelope) {
@@ -335,6 +362,12 @@ public class FilterEncoderWfs {
     public FesExpression visit(Function function, List<FesExpression> children) {
       throw new IllegalArgumentException(
           String.format("Functions are not supported in filter expressions for WFS feature providers. Found: %s", function.getName()));
+    }
+
+    @Override
+    public FesExpression visit(BooleanValue2 booleanValue, List<FesExpression> children) {
+      throw new IllegalArgumentException(
+          String.format("Booleans are not supported in filter expressions for WFS feature providers. Found: %s", booleanValue));
     }
   }
 }

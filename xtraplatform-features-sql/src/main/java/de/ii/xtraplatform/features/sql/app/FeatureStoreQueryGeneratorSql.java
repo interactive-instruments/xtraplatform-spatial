@@ -9,8 +9,7 @@ package de.ii.xtraplatform.features.sql.app;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.And;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.ImmutableCqlPredicate;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.sql.domain.FilterEncoderSqlNewNew;
@@ -189,7 +188,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
   }
 
   private String getJoins(FeatureStoreAttributesContainer attributeContainer, List<String> aliases,
-      Optional<CqlFilter> userFilter) {
+      Optional<Cql2Expression> userFilter) {
 
     if (!(attributeContainer instanceof FeatureStoreRelatedContainer)) {
       return "";
@@ -207,7 +206,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
 
   private String getJoins(FeatureStoreAttributesContainer attributeContainer,
       FeatureStoreAttributesContainer userFilterAttributeContainer, List<String> aliases,
-      Optional<CqlFilter> userFilter, Optional<String> instanceFilter) {
+      Optional<Cql2Expression> userFilter, Optional<String> instanceFilter) {
 
     if (!(attributeContainer instanceof FeatureStoreRelatedContainer)) {
       return "";
@@ -285,7 +284,7 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
   }
 
   private Optional<String> getFilter(FeatureStoreAttributesContainer attributesContainer,
-      FeatureStoreRelation relation, Optional<CqlFilter> cqlFilter) {
+      FeatureStoreRelation relation, Optional<Cql2Expression> cqlFilter) {
     if (relation.getFilter().isEmpty() && cqlFilter.isEmpty()) {
       return Optional.empty();
     }
@@ -297,11 +296,10 @@ public class FeatureStoreQueryGeneratorSql implements FeatureStoreQueryGenerator
       return Optional.of(filterEncoder.encodeNested(cqlFilter.get(), attributesContainer, true));
     }
 
-    CqlFilter mergedFilter = CqlFilter.of(And.of(
-        ImmutableCqlPredicate.copyOf(relation.getFilter()
-            .get()),
-        ImmutableCqlPredicate.copyOf(cqlFilter.get())
-    ));
+    Cql2Expression mergedFilter = And.of(
+        relation.getFilter().get(),
+        cqlFilter.get()
+    );
 
     return Optional.of(filterEncoder.encodeNested(mergedFilter, attributesContainer, true));
   }

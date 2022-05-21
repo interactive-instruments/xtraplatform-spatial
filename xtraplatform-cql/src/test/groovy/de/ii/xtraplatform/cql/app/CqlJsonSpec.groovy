@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.cql.app
 
 import de.ii.xtraplatform.cql.domain.Cql
-import de.ii.xtraplatform.cql.domain.Cql2Predicate
+import de.ii.xtraplatform.cql.domain.Cql2Expression
 import org.skyscreamer.jsonassert.JSONAssert
 import spock.lang.Shared
 import spock.lang.Specification
@@ -33,7 +33,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_1
@@ -59,7 +59,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_2
@@ -84,7 +84,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_3
@@ -109,7 +109,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_4
@@ -139,7 +139,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_5
@@ -164,7 +164,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_6
@@ -198,7 +198,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_7
@@ -246,7 +246,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_8
@@ -298,7 +298,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_9
@@ -343,7 +343,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_10
@@ -395,7 +395,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_11
@@ -423,7 +423,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_12
@@ -451,7 +451,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_13
@@ -479,7 +479,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_14
@@ -508,7 +508,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_15
@@ -539,7 +539,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_16
@@ -582,7 +582,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_17
@@ -611,7 +611,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_18
@@ -639,7 +639,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_19
@@ -666,7 +666,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_20
@@ -698,7 +698,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_21
@@ -726,7 +726,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_24
@@ -754,7 +754,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_25
@@ -782,7 +782,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_26
@@ -809,7 +809,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_27
@@ -836,7 +836,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_28
@@ -866,7 +866,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_29
@@ -896,7 +896,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_30
@@ -926,7 +926,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_31
@@ -956,7 +956,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_CASEI
@@ -986,7 +986,7 @@ class CqlJsonSpec extends Specification {
         """
 
         when: 'reading json'
-        Cql2Predicate actual = cql.read(cqlJson, Cql.Format.JSON)
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
         actual == CqlFilterExamples.EXAMPLE_ACCENTI

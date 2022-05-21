@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.sql.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import java.util.List;
 import java.util.ListIterator;
@@ -30,7 +30,7 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
 
   List<String> getParentSortKeys();
 
-  Optional<CqlFilter> getFilter();
+  Optional<Cql2Expression> getFilter();
 
   Optional<String> getFilterString();
 

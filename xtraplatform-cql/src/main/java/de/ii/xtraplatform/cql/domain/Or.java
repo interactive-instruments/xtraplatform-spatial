@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
@@ -25,13 +24,13 @@ public interface Or extends LogicalOperation, CqlNode {
         return TYPE;
     }
 
-    static Or of(Cql2Predicate... predicates) {
+    static Or of(Cql2Expression... predicates) {
         return new ImmutableOr.Builder()
                 .addArgs(predicates)
                 .build();
     }
 
-    static Or of(List<Cql2Predicate> predicates) {
+    static Or of(List<Cql2Expression> predicates) {
         return new ImmutableOr.Builder()
                 .args(predicates)
                 .build();

@@ -22,13 +22,13 @@ public interface And extends LogicalOperation, CqlNode {
     return TYPE;
   }
 
-  static And of(Cql2Predicate... predicates) {
+  static And of(Cql2Expression... predicates) {
     return new ImmutableAnd.Builder()
         .addArgs(predicates)
         .build();
   }
 
-  static And of(List<Cql2Predicate> predicates) {
+  static And of(List<Cql2Expression> predicates) {
     return new ImmutableAnd.Builder().args(predicates)
         .build();
   }

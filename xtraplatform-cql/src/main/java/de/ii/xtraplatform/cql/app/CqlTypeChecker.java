@@ -17,7 +17,7 @@ import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
 import de.ii.xtraplatform.cql.domain.BinarySpatialOperation;
 import de.ii.xtraplatform.cql.domain.BinaryTemporalOperation;
 import de.ii.xtraplatform.cql.domain.Cql;
-import de.ii.xtraplatform.cql.domain.Cql2Predicate;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
@@ -298,6 +298,6 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
             return cql.write(Eq.of(ImmutableList.of((Function) node, ScalarLiteral.of("DUMMY"))), Cql.Format.TEXT)
                 .replace(" = 'DUMMY'", "");
         }
-        return cql.write((Cql2Predicate) node, Cql.Format.TEXT);
+        return cql.write((Cql2Expression) node, Cql.Format.TEXT);
     }
 }

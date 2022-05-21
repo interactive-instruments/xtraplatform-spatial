@@ -342,7 +342,7 @@ public class CqlToText implements CqlVisitor<String> {
     public String visit(Property property, List<String> children) {
         if (!property.getNestedFilters()
                      .isEmpty()) {
-            Map<String, Cql2Predicate> nestedFilters = property.getNestedFilters();
+            Map<String, Cql2Expression> nestedFilters = property.getNestedFilters();
             StringJoiner sj = new StringJoiner(".");
             for (String element : property.getPath()) {
                 if (nestedFilters.containsKey(element)) {

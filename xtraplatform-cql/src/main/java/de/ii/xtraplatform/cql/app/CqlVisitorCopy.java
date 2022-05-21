@@ -30,11 +30,11 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
     public CqlNode visit(LogicalOperation logicalOperation, List<CqlNode> children) {
         if (logicalOperation instanceof And) {
             return And.of(children.stream()
-                                  .map(cqlNode -> (Cql2Predicate) cqlNode)
+                                  .map(cqlNode -> (Cql2Expression) cqlNode)
                                   .collect(Collectors.toList()));
         } else if (logicalOperation instanceof Or) {
             return Or.of(children.stream()
-                                 .map(cqlNode -> (Cql2Predicate) cqlNode)
+                                 .map(cqlNode -> (Cql2Expression) cqlNode)
                                  .collect(Collectors.toList()));
         }
         return null;
@@ -42,7 +42,7 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
 
     @Override
     public CqlNode visit(Not not, List<CqlNode> children) {
-        return Not.of((Cql2Predicate) children.get(0));
+        return Not.of((Cql2Expression) children.get(0));
     }
 
     @Override

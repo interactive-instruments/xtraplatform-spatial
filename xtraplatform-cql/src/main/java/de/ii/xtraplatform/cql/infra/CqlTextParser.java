@@ -7,10 +7,8 @@
  */
 package de.ii.xtraplatform.cql.infra;
 
-import de.ii.xtraplatform.cql.domain.Cql2Predicate;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.CharStreams;
@@ -38,15 +36,15 @@ public class CqlTextParser {
         return parser.cqlFilter();
     }
 
-    public Cql2Predicate parse(String cql, EpsgCrs defaultCrs) throws CqlParseException {
+    public Cql2Expression parse(String cql, EpsgCrs defaultCrs) throws CqlParseException {
         return parse(cql, new CqlTextVisitor(defaultCrs));
     }
 
-    public Cql2Predicate parse(String cql, CqlTextVisitor visitor) throws CqlParseException {
+    public Cql2Expression parse(String cql, CqlTextVisitor visitor) throws CqlParseException {
         try {
             CqlParser.CqlFilterContext cqlFilterContext = parseToTree(cql);
 
-            return (Cql2Predicate) visitor.visit(cqlFilterContext);
+            return (Cql2Expression) visitor.visit(cqlFilterContext);
         } catch (ParseCancellationException e) {
             throw new CqlParseException(e.getMessage());
         }

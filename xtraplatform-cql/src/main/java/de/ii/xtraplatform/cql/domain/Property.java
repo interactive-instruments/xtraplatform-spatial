@@ -25,7 +25,7 @@ public interface Property extends Scalar, Spatial, Temporal, Operand, Vector, Cq
                 .name(name)
                 .build();
     }
-    static Property of(String name, Map<String, Cql2Predicate> nestedFilters) {
+    static Property of(String name, Map<String, Cql2Expression> nestedFilters) {
         return ImmutableProperty.builder()
             .name(name)
             .nestedFilters(nestedFilters)
@@ -36,7 +36,7 @@ public interface Property extends Scalar, Spatial, Temporal, Operand, Vector, Cq
     String getName();
 
     @JsonIgnore
-    Map<String, Cql2Predicate> getNestedFilters();
+    Map<String, Cql2Expression> getNestedFilters();
 
     Splitter PATH_SPLITTER = Splitter.on('.')
                                      .omitEmptyStrings();

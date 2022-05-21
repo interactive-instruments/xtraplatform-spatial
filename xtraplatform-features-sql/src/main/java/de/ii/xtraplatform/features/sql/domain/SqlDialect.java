@@ -52,11 +52,11 @@ public interface SqlDialect {
 
   List<String> getSystemTables();
 
-  default String getSpatialOperator(SpatialOperation spatialOperation) {
-   return SPATIAL_OPERATORS.get(spatialOperation.getOperator());
+  default String getSpatialOperator(SpatialOperator spatialOperator) {
+   return SPATIAL_OPERATORS.get(spatialOperator);
  }
 
-  default String getTemporalOperator(TemporalOperation temporalOperation) {
+  default String getTemporalOperator(TemporalOperator temporalOperator) {
     // this is implementation specific
     return null;
   }

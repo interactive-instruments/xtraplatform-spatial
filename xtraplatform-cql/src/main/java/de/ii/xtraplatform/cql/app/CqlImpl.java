@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql;
-import de.ii.xtraplatform.cql.domain.Cql2Predicate;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.domain.CqlToText;
 import de.ii.xtraplatform.cql.domain.Operation;
@@ -66,12 +66,12 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public Cql2Predicate read(String cql, Format format) throws CqlParseException {
+    public Cql2Expression read(String cql, Format format) throws CqlParseException {
         return read(cql, format, OgcCrs.CRS84);
     }
 
     @Override
-    public Cql2Predicate read(String cql, Format format, EpsgCrs crs) throws CqlParseException {
+    public Cql2Expression read(String cql, Format format, EpsgCrs crs) throws CqlParseException {
         switch (format) {
 
             case TEXT:
@@ -89,7 +89,7 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public String write(Cql2Predicate cql, Format format) {
+    public String write(Cql2Expression cql, Format format) {
         switch (format) {
 
             case TEXT:
@@ -106,21 +106,21 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public List<String> findInvalidProperties(Cql2Predicate cqlPredicate, Collection<String> validProperties) {
+    public List<String> findInvalidProperties(Cql2Expression cqlPredicate, Collection<String> validProperties) {
         CqlPropertyChecker visitor = new CqlPropertyChecker(validProperties);
 
         return cqlPredicate.accept(visitor);
     }
 
     @Override
-    public void checkTypes(Cql2Predicate cqlPredicate, Map<String, String> propertyTypes) {
+    public void checkTypes(Cql2Expression cqlPredicate, Map<String, String> propertyTypes) {
         CqlTypeChecker visitor = new CqlTypeChecker(propertyTypes, this);
 
         cqlPredicate.accept(visitor);
     }
 
     @Override
-    public void checkCoordinates(Cql2Predicate cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs) {
+    public void checkCoordinates(Cql2Expression cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs) {
         long start = System.currentTimeMillis();
         CqlCoordinateChecker visitor = new CqlCoordinateChecker(crsTransformerFactory, crsInfo, filterCrs, nativeCrs);
 
@@ -129,17 +129,17 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public Cql2Predicate mapTemporalOperators(Cql2Predicate cqlFilter, Set<TemporalOperator> supportedOperators) {
+    public Cql2Expression mapTemporalOperators(Cql2Expression cqlFilter, Set<TemporalOperator> supportedOperators) {
         CqlVisitorMapTemporalOperators visitor = new CqlVisitorMapTemporalOperators(supportedOperators);
 
-        return (Cql2Predicate) cqlFilter.accept(visitor);
+        return (Cql2Expression) cqlFilter.accept(visitor);
     }
 
     @Override
-    public Cql2Predicate mapEnvelopes(Cql2Predicate cqlFilter, CrsInfo crsInfo) {
+    public Cql2Expression mapEnvelopes(Cql2Expression cqlFilter, CrsInfo crsInfo) {
         CqlVisitorMapEnvelopes visitor = new CqlVisitorMapEnvelopes(crsInfo);
 
-        return (Cql2Predicate) cqlFilter.accept(visitor);
+        return (Cql2Expression) cqlFilter.accept(visitor);
     }
 
     static class IntervalConverter extends StdConverter<Interval, List<String>> {

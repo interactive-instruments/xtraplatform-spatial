@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
     @Type(value = AEquals.class, name = AEquals.TYPE),
     @Type(value = AOverlaps.class, name = AOverlaps.TYPE)
 })
-public interface Operation<T extends Operand> extends Cql2Predicate, CqlNode {
+public interface Operation<T extends Operand> extends Cql2Expression, CqlNode {
 
   String getOp();
 
