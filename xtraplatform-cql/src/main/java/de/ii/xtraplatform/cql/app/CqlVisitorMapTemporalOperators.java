@@ -37,10 +37,7 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
 
         // if the next visitor supports a temporal operator, we keep it
         if (supportedOperators.contains(temporalOperator)) {
-            return new ImmutableTemporalOperation.Builder()
-                .operator(temporalOperator)
-                .operands(ImmutableList.of(temporal1,temporal2))
-                .build();
+            return BinaryTemporalOperation.of(temporalOperator, temporal1, temporal2);
         }
 
         Optional<Class<?>> granularity = getGranularity(temporal1, temporal2);
