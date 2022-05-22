@@ -20,7 +20,6 @@ import de.ii.xtraplatform.cql.domain.BinaryTemporalOperation;
 import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.CqlVisitor;
@@ -160,13 +159,8 @@ public class FilterEncoderWfs {
     }
 
     @Override
-    public FesExpression visit(CqlFilter cqlFilter, List<FesExpression> children) {
-      return new FesFilter(children);
-    }
-
-    @Override
-    public FesExpression visit(CqlPredicate cqlPredicate, List<FesExpression> children) {
-      return cqlPredicate.getExpressions().get(0).accept(this);
+    public FesExpression postProcess(CqlNode node, FesExpression fesExpression) {
+      return new FesFilter(List.of(fesExpression));
     }
 
     @Override

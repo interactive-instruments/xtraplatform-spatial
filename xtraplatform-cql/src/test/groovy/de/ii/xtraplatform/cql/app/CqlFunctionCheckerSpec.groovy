@@ -27,7 +27,7 @@ class CqlFunctionCheckerSpec extends Specification {
         CqlFunctionChecker visitor = new CqlFunctionChecker(allowedFunctions)
 
         when:
-        def invalidFunctions = CqlFilterExamples.EXAMPLE_31_OLD.accept(visitor)
+        def invalidFunctions = CqlFilterExamples.EXAMPLE_31.accept(visitor, true)
 
         then:
         invalidFunctions.size() == 1
@@ -36,7 +36,7 @@ class CqlFunctionCheckerSpec extends Specification {
         and:
 
         when:
-        def invalidFunctions2 = CqlFilterExamples.EXAMPLE_29_OLD.accept(visitor)
+        def invalidFunctions2 = CqlFilterExamples.EXAMPLE_29.accept(visitor, true)
 
         then:
         invalidFunctions2.size() == 1

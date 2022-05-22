@@ -28,7 +28,7 @@ class FilterEncoderSqlSpec extends Specification {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
-        def filter = CqlFilterExamples.EXAMPLE_15_OLD
+        def filter = CqlFilterExamples.EXAMPLE_15
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_Within(AA.location, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326)))"
@@ -45,7 +45,7 @@ class FilterEncoderSqlSpec extends Specification {
 
         given:
         def instanceContainer = QuerySchemaFixtures.JOINED_GEOMETRY
-        def filter = CqlFilterExamples.EXAMPLE_16_OLD
+        def filter = CqlFilterExamples.EXAMPLE_16
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA JOIN geometry AB ON (AA.id=AB.id) WHERE ST_Intersects(AB.location, ST_GeomFromText('POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0))',4326)))"
@@ -62,7 +62,7 @@ class FilterEncoderSqlSpec extends Specification {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_TIMESTAMP
-        def filter = CqlFilterExamples.EXAMPLE_12_OLD
+        def filter = CqlFilterExamples.EXAMPLE_12
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.built::timestamp(0) < TIMESTAMP '2012-06-05T00:00:00Z')"
@@ -96,10 +96,10 @@ class FilterEncoderSqlSpec extends Specification {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
-        def filter = CqlFilterExamples.EXAMPLE_14_OLD
+        def filter = CqlFilterExamples.EXAMPLE_14
 
         when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) > TIMESTAMP '2017-06-10T07:30:00Z') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) < TIMESTAMP '2017-06-11T10:30:00Z')"
+        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) > TIMESTAMP '2017-06-10T07:30:00Z') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) < TIMESTAMP '2017-06-11T10:30:00Z'))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 

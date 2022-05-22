@@ -9,7 +9,9 @@ package de.ii.xtraplatform.cql.app;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.Function;
 
 import java.util.LinkedHashMap;
@@ -27,7 +29,7 @@ public class CqlFunctionChecker extends CqlVisitorBase<Map<String, Integer>> {
     }
 
     @Override
-    public Map<String, Integer> visit(CqlFilter cqlFilter, List<Map<String, Integer>> children) {
+    public Map<String, Integer> postProcess(CqlNode node, Map<String, Integer> children) {
         ImmutableMap<String, Integer> result = ImmutableMap.copyOf(invalidFunctions);
         invalidFunctions.clear();
         return result;

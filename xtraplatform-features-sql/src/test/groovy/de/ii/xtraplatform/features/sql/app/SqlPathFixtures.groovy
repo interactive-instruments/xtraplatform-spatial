@@ -71,7 +71,7 @@ class SqlPathFixtures {
     static CUSTOM_FILTER = baseTable()
             .name("externalprovider_externalprovidername")
             .join(ImmutableTuple.of("id", "externalprovider_fk"))
-            .filter(CqlFilter.of(Eq.of("category", ScalarLiteral.of(1))))
+            .filter(Eq.of("category", ScalarLiteral.of(1)))
             .filterString("category=1")
             .build()
 
@@ -80,7 +80,7 @@ class SqlPathFixtures {
             .join(ImmutableTuple.of("id", "externalprovider_fk"))
             .sortKey("oid")
             .primaryKey("oid")
-            .filter(CqlFilter.of(Eq.of("category", ScalarLiteral.of(1))))
+            .filter(Eq.of("category", ScalarLiteral.of(1)))
             .filterString("category=1")
             .build()
 }

@@ -90,26 +90,6 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(CqlFilter cqlFilter, List<String> children) {
-        CqlNode node = cqlFilter.getExpressions()
-                                .get(0);
-        String text = node.accept(this);
-
-        //remove outer brackets
-        if (node instanceof And || node instanceof Or) {
-            return text.substring(1, text.length() - 1);
-        }
-        return text;
-    }
-
-    @Override
-    public String visit(CqlPredicate cqlPredicate, List<String> children) {
-        return cqlPredicate.getExpressions()
-                           .get(0)
-                           .accept(this);
-    }
-
-    @Override
     public String visit(LogicalOperation logicalOperation, List<String> children) {
         String operator = LOGICAL_OPERATORS.get(logicalOperation.getClass());
 

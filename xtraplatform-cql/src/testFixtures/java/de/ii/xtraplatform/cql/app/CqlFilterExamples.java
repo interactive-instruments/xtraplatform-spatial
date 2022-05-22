@@ -99,7 +99,7 @@ public class CqlFilterExamples {
 
     public static final Cql2Expression EXAMPLE_12 = TBefore.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z"));
     public static final CqlFilter EXAMPLE_12_OLD = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
-    public static final CqlFilter EXAMPLE_12_date = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2012-06-05")));
+    public static final Cql2Expression EXAMPLE_12_date = TBefore.of(Property.of("built"), TemporalLiteral.of("2012-06-05"));
 
     public static final Cql2Expression EXAMPLE_12_alt = Lt.of(ImmutableList.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z")));
     public static final Cql2Expression EXAMPLE_12eq_alt = Lte.of(ImmutableList.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z")));

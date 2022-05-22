@@ -16,15 +16,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
-    @Override
-    public CqlNode visit(CqlFilter cqlFilter, List<CqlNode> children) {
-        return CqlFilter.of(children.get(0));
-    }
-
-    @Override
-    public CqlNode visit(CqlPredicate cqlPredicate, List<CqlNode> children) {
-        return CqlPredicate.of(children.get(0));
-    }
 
     @Override
     public CqlNode visit(LogicalOperation logicalOperation, List<CqlNode> children) {

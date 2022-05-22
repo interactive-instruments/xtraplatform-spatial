@@ -14,6 +14,7 @@ import de.ii.xtraplatform.cql.domain.CqlPredicate
 import de.ii.xtraplatform.cql.domain.Or
 import de.ii.xtraplatform.cql.domain.Lt
 import de.ii.xtraplatform.cql.domain.Gt
+import de.ii.xtraplatform.cql.domain.Property
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes
 import spock.lang.Shared
@@ -44,12 +45,11 @@ class CqlTypeCheckerSpec extends Specification {
         // run the test on 2 different queries to make sure that old reports are removed
 
         when:
-        CqlFilter.of(
                 Or.of(
-                        CqlPredicate.of(Lt.of("length", ScalarLiteral.of(1))),
-                        CqlPredicate.of(Lt.of("length", "count")),
-                        CqlPredicate.of(Gt.of("road_class", ScalarLiteral.of(1)))
-                )).accept(visitor)
+                        Lt.of(Property.of("length"), ScalarLiteral.of(1)),
+                        Lt.of(Property.of("length"), Property.of("count")),
+                        Gt.of(Property.of("road_class"), ScalarLiteral.of(1))
+                ).accept(visitor)
 
         then:
         thrown CqlIncompatibleTypes
@@ -57,7 +57,7 @@ class CqlTypeCheckerSpec extends Specification {
         and:
 
         when:
-        CqlFilter.of(Gt.of("road_class", ScalarLiteral.of("1"))).accept(visitor)
+        Gt.of(Property.of("road_class"), ScalarLiteral.of("1")).accept(visitor)
 
         then:
         noExceptionThrown()

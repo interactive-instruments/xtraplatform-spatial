@@ -109,14 +109,14 @@ public class CqlImpl implements Cql {
     public List<String> findInvalidProperties(Cql2Expression cqlPredicate, Collection<String> validProperties) {
         CqlPropertyChecker visitor = new CqlPropertyChecker(validProperties);
 
-        return cqlPredicate.accept(visitor);
+        return cqlPredicate.accept(visitor, true);
     }
 
     @Override
     public void checkTypes(Cql2Expression cqlPredicate, Map<String, String> propertyTypes) {
         CqlTypeChecker visitor = new CqlTypeChecker(propertyTypes, this);
 
-        cqlPredicate.accept(visitor);
+        cqlPredicate.accept(visitor, true);
     }
 
     @Override
@@ -124,7 +124,7 @@ public class CqlImpl implements Cql {
         long start = System.currentTimeMillis();
         CqlCoordinateChecker visitor = new CqlCoordinateChecker(crsTransformerFactory, crsInfo, filterCrs, nativeCrs);
 
-        cqlPredicate.accept(visitor);
+        cqlPredicate.accept(visitor, true);
         LOGGER.debug("Coordinate validation took {}ms.", System.currentTimeMillis() - start);
     }
 
@@ -132,14 +132,14 @@ public class CqlImpl implements Cql {
     public Cql2Expression mapTemporalOperators(Cql2Expression cqlFilter, Set<TemporalOperator> supportedOperators) {
         CqlVisitorMapTemporalOperators visitor = new CqlVisitorMapTemporalOperators(supportedOperators);
 
-        return (Cql2Expression) cqlFilter.accept(visitor);
+        return (Cql2Expression) cqlFilter.accept(visitor, true);
     }
 
     @Override
     public Cql2Expression mapEnvelopes(Cql2Expression cqlFilter, CrsInfo crsInfo) {
         CqlVisitorMapEnvelopes visitor = new CqlVisitorMapEnvelopes(crsInfo);
 
-        return (Cql2Expression) cqlFilter.accept(visitor);
+        return (Cql2Expression) cqlFilter.accept(visitor, true);
     }
 
     static class IntervalConverter extends StdConverter<Interval, List<String>> {

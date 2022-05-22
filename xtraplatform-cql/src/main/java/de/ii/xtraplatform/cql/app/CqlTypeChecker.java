@@ -18,12 +18,10 @@ import de.ii.xtraplatform.cql.domain.BinarySpatialOperation;
 import de.ii.xtraplatform.cql.domain.BinaryTemporalOperation;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.Eq;
 import de.ii.xtraplatform.cql.domain.Function;
-import de.ii.xtraplatform.cql.domain.ImmutableArrayOperation;
 import de.ii.xtraplatform.cql.domain.ImmutableBetween;
 import de.ii.xtraplatform.cql.domain.ImmutableEq;
 import de.ii.xtraplatform.cql.domain.ImmutableGt;
@@ -33,8 +31,6 @@ import de.ii.xtraplatform.cql.domain.ImmutableLike;
 import de.ii.xtraplatform.cql.domain.ImmutableLt;
 import de.ii.xtraplatform.cql.domain.ImmutableLte;
 import de.ii.xtraplatform.cql.domain.ImmutableNeq;
-import de.ii.xtraplatform.cql.domain.ImmutableSpatialOperation;
-import de.ii.xtraplatform.cql.domain.ImmutableTemporalOperation;
 import de.ii.xtraplatform.cql.domain.In;
 import de.ii.xtraplatform.cql.domain.IsNull;
 import de.ii.xtraplatform.cql.domain.Like;
@@ -78,9 +74,9 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
             .put(ImmutableIn.class, SCALAR)
             .put(ImmutableLike.class, ImmutableList.of(TEXT))
             .put(ImmutableBetween.class, ImmutableList.of(NUMBER))
-            .put(ImmutableTemporalOperation.class, ImmutableList.of(TEMPORAL))
-            .put(ImmutableSpatialOperation.class, ImmutableList.of(SPATIAL))
-            .put(ImmutableArrayOperation.class, ImmutableList.of(ARRAY))
+            .put(BinaryTemporalOperation.class, ImmutableList.of(TEMPORAL))
+            .put(BinarySpatialOperation.class, ImmutableList.of(SPATIAL))
+            .put(BinaryArrayOperation.class, ImmutableList.of(ARRAY))
             .build();
 
     private static final Map<String, Set<List<Type>>> COMPATIBILITY_FUNCTION =
@@ -99,16 +95,6 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
     public CqlTypeChecker(Map<String, String> propertyTypes, Cql cql) {
         this.propertyTypes = propertyTypes;
         this.cql = cql;
-    }
-
-    @Override
-    public Type visit(CqlFilter cqlFilter, List<Type> children) {
-        return children.get(0);
-    }
-
-    @Override
-    public Type visit(CqlPredicate cqlPredicate, List<Type> children) {
-        return children.get(0);
     }
 
     @Override
@@ -231,8 +217,8 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
             return;
         final List<Type> otherTypes = types.subList(1, types.size());
 
-        List<List<Type>> compatibilityLists = COMPATIBILITY_PREDICATES.get(node.getClass());
-        if (Objects.isNull(compatibilityLists))
+        List<List<Type>> compatibilityLists = getCompatibilityLists(node.getClass());
+        if (compatibilityLists.isEmpty())
             throw new CqlIncompatibleTypes(getText(node), firstType.schemaType(), ImmutableList.of());
         if (compatibilityLists.stream().noneMatch(list -> list.contains(firstType)))
             throw new CqlIncompatibleTypes(getText(node),
@@ -241,8 +227,7 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
                                                              .flatMap(Collection::stream)
                                                              .collect(Collectors.toUnmodifiableList())));
 
-        final List<Type> compatibleTypes = Objects.requireNonNullElse(COMPATIBILITY_PREDICATES.get(node.getClass()),
-                                                                      ImmutableList.of(ImmutableList.<Type>of()))
+        final List<Type> compatibleTypes = getCompatibilityLists(node.getClass())
             .stream()
             .filter(list -> list.contains(firstType))
             .flatMap(Collection::stream)
@@ -299,5 +284,18 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
                 .replace(" = 'DUMMY'", "");
         }
         return cql.write((Cql2Expression) node, Cql.Format.TEXT);
+    }
+
+    List<List<Type>> getCompatibilityLists(Class<?> clazz) {
+        if (COMPATIBILITY_PREDICATES.containsKey(clazz)) {
+            return COMPATIBILITY_PREDICATES.get(clazz);
+        }
+
+        return COMPATIBILITY_PREDICATES.entrySet()
+            .stream()
+            .filter(entry -> entry.getKey().isAssignableFrom(clazz))
+            .map(Map.Entry::getValue)
+            .findFirst()
+            .orElse(ImmutableList.of());
     }
 }

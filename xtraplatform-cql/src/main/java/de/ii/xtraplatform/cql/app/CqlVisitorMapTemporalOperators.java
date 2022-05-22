@@ -276,9 +276,7 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
         } else if (temporal instanceof TemporalLiteral) {
             if (((TemporalLiteral) temporal).getType() == Interval.class) {
                 Instant end = ((Interval) ((TemporalLiteral) temporal).getValue()).getEnd();
-                if (end==Instant.MAX)
-                    return TemporalLiteral.of(Instant.MAX);
-                return TemporalLiteral.of(end.minusSeconds(1));
+                return TemporalLiteral.of(end);
             } else if (((TemporalLiteral) temporal).getType() == TemporalLiteral.OPEN.class) {
                 return TemporalLiteral.of(Instant.MAX);
             } else if (((TemporalLiteral) temporal).getType() == Function.class) {

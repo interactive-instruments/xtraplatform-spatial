@@ -14,16 +14,6 @@ import java.util.List;
 
 public class CqlVisitorBase<T> implements CqlVisitor<T> {
     @Override
-    public T visit(CqlFilter cqlFilter, List<T> children) {
-        return null;
-    }
-
-    @Override
-    public T visit(CqlPredicate cqlPredicate, List<T> children) {
-        return null;
-    }
-
-  @Override
     public T visit(LogicalOperation logicalOperation, List<T> children) {
         return null;
     }

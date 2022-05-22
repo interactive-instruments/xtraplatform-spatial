@@ -9,7 +9,8 @@ package de.ii.xtraplatform.cql.app;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
+import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.Property;
 
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ public class CqlPropertyChecker extends CqlVisitorBase<List<String>> {
     }
 
     @Override
-    public List<String> visit(CqlFilter cqlFilter, List<List<String>> children) {
+    public List<String> postProcess(CqlNode node, List<String> strings) {
         ImmutableList<String> result = ImmutableList.copyOf(invalidProperties);
         invalidProperties.clear();
         return result;

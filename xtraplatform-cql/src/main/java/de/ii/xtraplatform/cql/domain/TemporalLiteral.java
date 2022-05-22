@@ -150,7 +150,6 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
             type(castedLiteral.getClass());
         }
 
-        //TODO: exclusive to sql?
         public Builder(TemporalLiteral startInclusive, TemporalLiteral endInclusive) throws CqlParseException {
             super();
             if ((startInclusive.getType()==Instant.class || startInclusive.getType()==OPEN.class)
@@ -171,13 +170,12 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
             return (Instant) instant;
         }
 
-        //TODO: exclusive to sql?
         private Instant getEndExclusive(Object instant) {
             if (instant instanceof OPEN)
                 return Instant.MAX;
             else if (instant instanceof LocalDate)
                 return ((LocalDate) instant).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
-            return ((Instant) instant);//.plusSeconds(1);
+            return ((Instant) instant);
         }
 
         private Object castToType(String instantLiteral) throws CqlParseException {

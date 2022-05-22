@@ -8,8 +8,10 @@
 package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlImpl
+import de.ii.xtraplatform.cql.domain.Cql2Expression
 import de.ii.xtraplatform.cql.domain.CqlFilter
 import de.ii.xtraplatform.cql.domain.Eq
+import de.ii.xtraplatform.cql.domain.Property
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis
@@ -27,7 +29,7 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
     @Shared
     SqlQueryTemplatesDeriver tdNoNm = new SqlQueryTemplatesDeriver(filterEncoder, new SqlDialectPostGis(), false)
 
-    static Optional<CqlFilter> noFilter = Optional.empty()
+    static Optional<Cql2Expression> noFilter = Optional.empty()
 
     def 'meta query templates: #casename'() {
 
@@ -74,18 +76,18 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
         "object without sourcePath"          | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || SqlQueryTemplatesFixtures.OBJECT_WITHOUT_SOURCE_PATH
         "paging"                             | td      | 10    | 10     | []                      | null                                                       | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_PAGING
         "sortBy"                             | td      | 0     | 0      | [SortKey.of("created")] | null                                                       | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY
-        "sortBy + filter"                    | td      | 0     | 0      | [SortKey.of("created")] | CqlFilter.of(Eq.of("task.title", ScalarLiteral.of("foo"))) | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_FILTER
+        "sortBy + filter"                    | td      | 0     | 0      | [SortKey.of("created")] | Eq.of(Property.of("task.title"), ScalarLiteral.of("foo")) | QuerySchemaFixtures.OBJECT_ARRAY || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_FILTER
         "sortBy + paging"                    | td      | 10    | 10     | [SortKey.of("created")] | null                                                       | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING
-        "sortBy + paging + filter"           | td      | 10    | 10     | [SortKey.of("created")] | CqlFilter.of(Eq.of("task.title", ScalarLiteral.of("foo"))) | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING_FILTER
+        "sortBy + paging + filter"           | td      | 10    | 10     | [SortKey.of("created")] | Eq.of(Property.of("task.title"), ScalarLiteral.of("foo")) | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING_FILTER
         "property with multiple sourcePaths" | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || SqlQueryTemplatesFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
         "nested joins"                       | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.NESTED_JOINS                        || SqlQueryTemplatesFixtures.NESTED_JOINS
     }
 
-    static String meta(SqlQueryTemplates templates, List<SortKey> sortBy, Optional<CqlFilter> userFilter) {
+    static String meta(SqlQueryTemplates templates, List<SortKey> sortBy, Optional<Cql2Expression> userFilter) {
         return templates.getMetaQueryTemplate().generateMetaQuery(10, 10, sortBy, userFilter, com.google.common.collect.ImmutableMap.of())
     }
 
-    static List<String> values(SqlQueryTemplates templates, int limit, int offset, List<SortKey> sortBy, CqlFilter filter) {
+    static List<String> values(SqlQueryTemplates templates, int limit, int offset, List<SortKey> sortBy, Cql2Expression filter) {
         return templates.getValueQueryTemplates().collect { it.generateValueQuery(limit, offset, sortBy, Optional.ofNullable(filter), limit == 0 ? Optional.<Tuple<Object, Object>> empty() : Optional.of(Tuple.of(offset, offset + limit - 1)), com.google.common.collect.ImmutableMap.of()) }
     }
 
