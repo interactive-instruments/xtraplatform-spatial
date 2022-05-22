@@ -62,6 +62,13 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
     private static final List<Type> ARRAY = ImmutableList.of(Type.List);
     private static final List<List<Type>> SCALAR = ImmutableList.of(NUMBER, TEXT, BOOLEAN, INSTANT);
     private static final List<List<Type>> SCALAR_ORDERED = ImmutableList.of(NUMBER, TEXT, INSTANT);
+    private static final List<List<Type>> SCALAR_ARRAY = ImmutableList.of(ImmutableList.<Type>builder()
+        .addAll(NUMBER)
+        .addAll(TEXT)
+        .addAll(BOOLEAN)
+        .addAll(INSTANT)
+        .addAll(ARRAY)
+        .build());
 
     private static final Map<Class<?>,List<List<Type>>> COMPATIBILITY_PREDICATES =
         new ImmutableMap.Builder<Class<?>,List<List<Type>>>()
@@ -71,7 +78,7 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
             .put(ImmutableLte.class, SCALAR_ORDERED)
             .put(ImmutableGt.class, SCALAR_ORDERED)
             .put(ImmutableGte.class, SCALAR_ORDERED)
-            .put(ImmutableIn.class, SCALAR)
+            .put(ImmutableIn.class, SCALAR_ARRAY)
             .put(ImmutableLike.class, ImmutableList.of(TEXT))
             .put(ImmutableBetween.class, ImmutableList.of(NUMBER))
             .put(BinaryTemporalOperation.class, ImmutableList.of(TEMPORAL))

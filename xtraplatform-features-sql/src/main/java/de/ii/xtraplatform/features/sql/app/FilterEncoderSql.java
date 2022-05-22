@@ -484,7 +484,7 @@ public class FilterEncoderSql {
             }
 
             // mainExpression is either a literal value or a SELECT expression
-            String operation = String.format(" %s (%s)", operator, String.join(", ", children.subList(1, children.size())));
+            String operation = String.format(" %s %s", operator, String.join(", ", children.subList(1, children.size())));
             return String.format(mainExpression, "", operation);
         }
 
