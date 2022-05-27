@@ -21,6 +21,7 @@ import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.domain.CqlToText;
 import de.ii.xtraplatform.cql.domain.Operation;
+import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.cql.infra.CqlTextParser;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -57,6 +58,7 @@ public class CqlImpl implements Cql {
         SimpleModule module = new SimpleModule();
         module.addSerializer(Interval.class, new StdDelegatingSerializer(new IntervalConverter()));
         module.addSerializer(Instant.class, new StdDelegatingSerializer(new InstantConverter()));
+        module.setSerializerModifier(new TemporalLiteral.TemporalLiteralSerializerModifier());
 
         this.cqlJsonMapper = Jackson.newObjectMapper()
                                     .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)

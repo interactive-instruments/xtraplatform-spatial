@@ -10,28 +10,27 @@ package de.ii.xtraplatform.cql.domain;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializationConfig;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.util.StdConverter;
-import com.google.common.base.Joiner;
+import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.util.Map;
-import java.util.Optional;
 import org.immutables.value.Value;
 import org.threeten.extra.Interval;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -65,7 +64,12 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
             : Optional.empty();
     }
 
-    enum OPEN { OPEN }
+    enum OPEN { OPEN;
+        @Override
+        public String toString() {
+            return "..";
+        }
+    }
 
     String DATE_REGEX = "(?:[0-9]+)-(?:0[1-9]|1[012])-(?:0[1-9]|[12][0-9]|3[01])";
     String TIMESTAMP_REGEX = DATE_REGEX + "T(?:[01][0-9]|2[0-3]):(?:[0-5][0-9]):(?:[0-5][0-9]|60)(?:\\.[0-9]+)?Z";
@@ -203,6 +207,52 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
             }
 
             throw new CqlParseException("not a valid instant literal: " + instantLiteral);
+        }
+    }
+
+    class TemporalLiteralSerializer extends StdSerializer<TemporalLiteral> {
+
+        private final JsonSerializer<TemporalLiteral> defaultSerializer;
+
+        protected TemporalLiteralSerializer(Class<TemporalLiteral> t, JsonSerializer<TemporalLiteral> defaultSerializer) {
+            super(t);
+            this.defaultSerializer = defaultSerializer;
+        }
+
+        @Override
+        public void serialize(TemporalLiteral value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            if (value.getType().equals(Function.class)) {
+                Function f = (Function) value.getValue();
+                if (f.isInterval()) {
+                    gen.writeStartObject();
+                    gen.writeFieldName(f.getName().toLowerCase());
+                    gen.writeStartArray();
+                    for (Operand operand : f.getArgs()) {
+                        if (operand instanceof TemporalLiteral) {
+                            gen.writeString(String.format("%s", ((TemporalLiteral) operand).getValue().toString()));
+                        } else {
+                            gen.writeObject(operand);
+                        }
+                    }
+                    gen.writeEndArray();
+                    gen.writeEndObject();
+                    return;
+                }
+            }
+
+            // use default serializer
+            defaultSerializer.serialize(value, gen, serializers);
+        }
+    }
+
+    class TemporalLiteralSerializerModifier extends BeanSerializerModifier {
+        @Override
+        public JsonSerializer<?> modifySerializer(SerializationConfig config, BeanDescription beanDesc, JsonSerializer<?> serializer) {
+            if (beanDesc.getBeanClass() == ImmutableTemporalLiteral.class) {
+                //noinspection unchecked
+                return new TemporalLiteralSerializer(null, (JsonSerializer<TemporalLiteral>) serializer);
+            }
+            return serializer;
         }
     }
 }

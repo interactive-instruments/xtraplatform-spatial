@@ -157,6 +157,9 @@ public class CqlFilterExamples {
 
     public static final Cql2Expression EXAMPLE_25 = TDuring.of(Property.of("updated"), Objects.requireNonNull(TemporalLiteral.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")));
     public static final Cql2Expression EXAMPLE_25b = TDuring.of(Property.of("updated"), Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "2017-06-11")));
+    public static final Cql2Expression EXAMPLE_25x = TIntersects.of(Function.of("INTERVAL",ImmutableList.of(Property.of("start"),Property.of("end"))), Objects.requireNonNull(TemporalLiteral.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")));
+    public static final Cql2Expression EXAMPLE_25y = TIntersects.of(Function.of("INTERVAL",ImmutableList.of(Property.of("start"),Property.of("end"))), Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "2017-06-11")));
+    public static final Cql2Expression EXAMPLE_25z = TIntersects.of(Function.of("INTERVAL",ImmutableList.of(Property.of("start"),TemporalLiteral.of(".."))), Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "..")));
     public static final CqlFilter EXAMPLE_25_OLD = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated",
         Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "2017-06-11"))));
 

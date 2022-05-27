@@ -740,6 +740,93 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
+    def 'Happens between 7:30am June 10, 2017 and 10:30am June 11, 2017'() {
+
+        given:
+        String cqlJson = """
+            {
+                "op": "t_intersects",
+                "args": [
+                    {"interval": [{"property": "start"},{"property": "end"}]},
+                    {"interval": ["2017-06-10T07:30:00Z","2017-06-11T10:30:00Z"]}
+                ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_25x
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_25x, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+
+    }
+
+    def 'Happens between June 10, 2017 and June 11, 2017'() {
+
+        given:
+        String cqlJson = """
+            {
+                "op": "t_intersects",
+                "args": [
+                    {"interval": [{"property": "start"},{"property": "end"}]},
+                    {"interval": ["2017-06-10","2017-06-11"]}
+                ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_25y
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_25y, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+
+    }
+
+    def 'Happens June 10, 2017 or later'() {
+
+        given:
+        String cqlJson = """
+            {
+                "op": "t_intersects",
+                "args": [
+                    {"interval": [{"property": "start"},".."]},
+                    {"interval": ["2017-06-10",".."]}
+                ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_25z
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_25z, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+
+    }
+
     def 'Updated between June 10, 2017 and June 11, 2017'() {
 
         given:
@@ -858,7 +945,7 @@ class CqlJsonSpec extends Specification {
                 "args": [
                     {"function": {
                         "name": "pos",
-                        "arguments": []
+                        "args": []
                     }},
                     1
                 ]
@@ -888,7 +975,7 @@ class CqlJsonSpec extends Specification {
                 "args": [
                     {"function": {
                         "name": "indexOf",
-                        "arguments": [ { "property": "names" }, "Mike" ]
+                        "args": [ { "property": "names" }, "Mike" ]
                     }},
                     5
                 ]
@@ -918,7 +1005,7 @@ class CqlJsonSpec extends Specification {
                 "args": [
                     {"function": {
                         "name": "year",
-                        "arguments": [{"timestamp": "2012-06-05T00:00:00Z"}]
+                        "args": [{"timestamp": "2012-06-05T00:00:00Z"}]
                     }},
                     2012
                 ]
