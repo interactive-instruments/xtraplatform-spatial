@@ -221,7 +221,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     public CqlNode visitIsNullPredicate(CqlParser.IsNullPredicateContext ctx) {
 
         if (Objects.nonNull(ctx.IS())) {
-            Scalar scalar1 = (Scalar) ctx.scalarExpression()
+            Scalar scalar1 = (Scalar) ctx.isNullOperand()
                                          .accept(this);
 
             IsNull isNull = new ImmutableIsNull.Builder()

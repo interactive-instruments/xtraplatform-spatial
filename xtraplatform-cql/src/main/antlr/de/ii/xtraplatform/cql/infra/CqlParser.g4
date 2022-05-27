@@ -3,17 +3,29 @@ options { tokenVocab=CqlLexer; superClass=CqlTextParser.CqlParserCustom; }
 
 /*
 #=============================================================================#
-# A CQL2 filter is a logically connected expression of one or more predicates.
+# A CQL2 filter is a logically connected boolean expression of one or more
+# predicates.
+# These rules differ from the CQL2 BNF to clarify the predecence of AND, OR,
+# NOT, etc. and reliably parse an CQL2 expression into an abstract
+# representation.
 #=============================================================================#
 */
+
 cqlFilter : booleanExpression EOF;
-nestedCqlFilter: {isNotInsideNestedFilter($ctx)}? booleanExpression;
 booleanExpression : booleanTerm | booleanExpression OR booleanTerm;
 booleanTerm : booleanFactor | booleanTerm AND booleanFactor;
 booleanFactor : (NOT)? booleanPrimary;
 booleanPrimary : predicate
                 | booleanLiteral
                 | LEFTPAREN booleanExpression RIGHTPAREN;
+
+/*
+#=============================================================================#
+# Nested filters are an extension to CQL2
+#=============================================================================#
+*/
+
+nestedCqlFilter: {isNotInsideNestedFilter($ctx)}? booleanExpression;
 
 /*
 #=============================================================================#
@@ -49,6 +61,13 @@ characterExpression : characterClause
                     | propertyName
                     | function;
 
+patternExpression : characterClause;
+
+/*
+#=============================================================================#
+# UPPER() and LOWER() are extensions to CQL2
+#=============================================================================#
+*/
 characterClause : characterLiteral
                 | CASEI LEFTPAREN characterExpression RIGHTPAREN
                 | ACCENTI LEFTPAREN characterExpression RIGHTPAREN
@@ -60,21 +79,42 @@ isBetweenPredicate : numericExpression (NOT)? BETWEEN numericExpression AND nume
 numericExpression : numericLiteral
                   | propertyName
                   | function
-                  /*| arithmeticExpression*/;
+                  /*
+                  | arithmeticExpression*/;
 
 isInListPredicate : scalarExpression (NOT)? IN LEFTPAREN scalarExpression ( COMMA scalarExpression )* RIGHTPAREN;
 
-isNullPredicate : scalarExpression IS (NOT)? NULL;
+/*
+#=============================================================================#
+# This differs from the CQL2 BNF. See scalarExpression for the reasons.
+#=============================================================================#
+*/
+
+isNullPredicate : isNullOperand IS (NOT)? NULL;
+
+isNullOperand : characterClause
+              | numericLiteral
+              | booleanLiteral
+              | instantLiteral
+              | geomLiteral
+              | propertyName
+              | function;
 
 /*
-# A scalar expression is the property name, a chracter literal, a numeric
-# literal or a function/method invocation that returns a scalar value.
+#=============================================================================#
+# A scalar expression is the property name, a character literal, a numeric
+# literal, a boolean literal, an instant literal, a function invocation that
+# returns a scalar value, or an arithmetic expression.
+# This differs from the CQL2 rule. The use of booleanExpression is problematic,
+# because everything is a booleanExpression. In addition, the CQL2 rule
+# includes propertyName and function in every expression).
+#=============================================================================#
 */
-scalarExpression : characterClause
+scalarExpression : propertyName
+                 | characterClause
                  | numericLiteral
                  | booleanLiteral
                  | instantLiteral
-                 | propertyName
                  | function
                  /*
                  | arithmeticExpression*/;
@@ -88,13 +128,6 @@ characterLiteral : CharacterStringLiteral;
 numericLiteral : NumericLiteral;
 
 booleanLiteral : BooleanLiteral;
-
-/*
-# NOTE: This is just a place holder for a regular expression
-#       We want to be able to say stuff like "<prop> LIKE 'Toronto%'" where
-#       the '%' character means "match zero or more characters".
-*/
-patternExpression : characterClause;
 
 /*
 #=============================================================================#
@@ -181,8 +214,8 @@ maxElev : NumericLiteral;
 */
 temporalPredicate : TemporalOperator LEFTPAREN temporalExpression COMMA temporalExpression RIGHTPAREN;
 
-temporalExpression : propertyName
-                   | temporalClause
+temporalExpression : temporalClause
+                   | propertyName
                    | function;
 
 temporalClause: instantLiteral | interval;
@@ -213,9 +246,24 @@ arrayPredicate: ArrayOperator LEFTPAREN arrayExpression COMMA arrayExpression RI
 
 arrayExpression: propertyName | arrayClause | function;
 
-arrayClause: LEFTSQUAREBRACKET arrayElement ( COMMA arrayElement )* RIGHTSQUAREBRACKET;
+arrayClause: LEFTSQUAREBRACKET RIGHTSQUAREBRACKET
+           | LEFTSQUAREBRACKET arrayElement ( COMMA arrayElement )* RIGHTSQUAREBRACKET;
 
-arrayElement: characterClause | numericLiteral | booleanLiteral | temporalClause | propertyName | arrayClause |function;
+/*
+#=============================================================================#
+# This differs from the CQL2 BNF. See scalarExpression for the reasons.
+#=============================================================================#
+*/
+
+arrayElement: characterClause
+            | numericLiteral
+            | booleanLiteral
+            | temporalClause
+            | arrayClause
+            | propertyName
+            | function
+            /*
+            | arithmeticExpression*/;
 
 /*
 #=============================================================================#
@@ -234,10 +282,11 @@ argument : characterClause
          | booleanLiteral
          | geomLiteral
          | temporalClause
+         | arrayClause
          | propertyName
          | function
-         | arrayExpression
-         /*| arithmeticExpression*/;
+         /*
+         | arithmeticExpression*/;
 
 /*
 #=============================================================================#
@@ -247,11 +296,17 @@ argument : characterClause
 #=============================================================================#
 */
 /* IGNORE FOR NOW
-arithmeticExpression : arithmeticOperand arithmeticOperator arithmeticOperand;
-
-arithmeticOperator : plusSign | minusSign | asterisk | solidus;
-
-arithemticOperator : propertyName
-                   | numericLiteral
-                   | function;
+arithmeticExpression : arithmeticExpression PLUS arithmeticTerm
+                     | arithmeticExpression MINUS arithmeticTerm
+                     | arithmeticTerm;
+arithmeticTerm : arithmeticTerm ASTERISK powerTerm
+               | arithmeticTerm SOLIDUS powerTerm
+               | powerTerm;
+powerTerm : arithmeticFactor CARET powerTerm
+          | arithmeticFactor;
+arithmeticFactor : LEFTPAREN arithmeticExpression RIGHTPAREN
+                 | arithmeticOperand;
+arithmeticOperand : numericLiteral
+                  | propertyName
+                  | function;
 */
