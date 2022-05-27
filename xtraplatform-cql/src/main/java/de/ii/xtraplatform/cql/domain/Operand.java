@@ -68,7 +68,6 @@ public interface Operand extends CqlNode {
 
         private Operand getOperand(JsonParser parser, JsonNode node, String parent) throws JsonProcessingException {
             ObjectCodec oc = parser.getCodec();
-            // TODO support ArrayLiteral
             if (node.isObject()) {
                 if (Objects.nonNull(node.get("property"))) {
                     return oc.treeToValue(node, Property.class);
@@ -96,10 +95,10 @@ public interface Operand extends CqlNode {
                     return oc.treeToValue(node, Operation.class);
                 } else if (Objects.nonNull(node.get("function"))) {
                     List<Operand> list = new ArrayList<>();
-                    Iterator<JsonNode> iterator = node.get("function").get("arguments").elements();
+                    Iterator<JsonNode> iterator = node.get("function").get("args").elements();
                     while (iterator.hasNext()) {
                         JsonNode listNode = iterator.next();
-                        list.add(getOperand(parser, listNode, "arguments"));
+                        list.add(getOperand(parser, listNode, "args"));
                     }
                     return Function.of(node.get("function").get("name").textValue(), list);
                 } else if (SPATIAL.contains(parent)) {
@@ -120,18 +119,12 @@ public interface Operand extends CqlNode {
 
                 return ArrayLiteral.of(scalars);
             } else if (node.isValueNode()) {
-                /*if (SCALAR.contains(parent)) {
-                    return getScalar(node);
-                } else if (TEMPORAL.contains(parent)) {
+                // we have to guess, try temporal first
+                try {
                     return oc.treeToValue(node, TemporalLiteral.class);
-                } else {*/
-                    // we have to guess, try temporal first
-                    try {
-                        return oc.treeToValue(node, TemporalLiteral.class);
-                    } catch (JsonProcessingException e) {
-                        return getScalar(node);
-                    }
-                //}
+                } catch (JsonProcessingException e) {
+                    return getScalar(node);
+                }
             }
 
             throw new JsonParseException(parser, String.format("Unexpected operand of type %s in member %s.", node.getNodeType(), parent));

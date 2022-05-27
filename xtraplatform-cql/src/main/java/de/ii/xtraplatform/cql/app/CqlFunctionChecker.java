@@ -9,8 +9,6 @@ package de.ii.xtraplatform.cql.app;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import de.ii.xtraplatform.cql.domain.Cql2Expression;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
 import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.Function;
 
@@ -39,8 +37,8 @@ public class CqlFunctionChecker extends CqlVisitorBase<Map<String, Integer>> {
     public Map<String, Integer> visit(Function function, List<Map<String, Integer>> children) {
         String functionName = function.getName();
         if (!(allowedFunctions.containsKey(functionName) &&
-                allowedFunctions.get(functionName).equals(function.getArguments().size()))) {
-            invalidFunctions.put(functionName, function.getArguments().size());
+                allowedFunctions.get(functionName).equals(function.getArgs().size()))) {
+            invalidFunctions.put(functionName, function.getArgs().size());
         }
         return Maps.newHashMap();
     }

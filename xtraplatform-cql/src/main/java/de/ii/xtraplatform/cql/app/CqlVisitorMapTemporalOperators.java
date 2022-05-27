@@ -197,7 +197,7 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
         Class<?> type1 = null;
         if (temporal1 instanceof TemporalLiteral) {
             if (((TemporalLiteral) temporal1).getType().equals(Function.class)) {
-                List<Operand> arguments = ((Function) ((TemporalLiteral) temporal1).getValue()).getArguments();
+                List<Operand> arguments = ((Function) ((TemporalLiteral) temporal1).getValue()).getArgs();
                 if (arguments.stream()
                     .anyMatch(arg -> arg instanceof TemporalLiteral && ((TemporalLiteral) arg).getType().equals(LocalDate.class))) {
                     type1 = LocalDate.class;
@@ -213,7 +213,7 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
         Class<?> type2 = null;
         if (temporal2 instanceof TemporalLiteral) {
             if (((TemporalLiteral) temporal2).getType().equals(Function.class)) {
-                List<Operand> arguments = ((Function) ((TemporalLiteral) temporal2).getValue()).getArguments();
+                List<Operand> arguments = ((Function) ((TemporalLiteral) temporal2).getValue()).getArgs();
                 if (arguments.stream()
                     .anyMatch(arg -> arg instanceof TemporalLiteral && ((TemporalLiteral) arg).getType().equals(LocalDate.class))) {
                     type2 = LocalDate.class;
@@ -253,11 +253,11 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
                 return TemporalLiteral.of(Instant.MIN);
             } else if (((TemporalLiteral) temporal).getType() == Function.class) {
                 Function function = (Function) ((TemporalLiteral) temporal).getValue();
-                return getStart((Temporal) function.getArguments().get(0), granularity);
+                return getStart((Temporal) function.getArgs().get(0), granularity);
             }
             return temporal;
         } else if (temporal instanceof Function) {
-            Temporal start = (Temporal) ((Function) temporal).getArguments().get(0);
+            Temporal start = (Temporal) ((Function) temporal).getArgs().get(0);
             if (start instanceof TemporalLiteral && ((TemporalLiteral) start).getType() == TemporalLiteral.OPEN.class) {
                 return TemporalLiteral.of(Instant.MIN);
             }
@@ -278,7 +278,7 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
                 return TemporalLiteral.of(Instant.MAX);
             } else if (((TemporalLiteral) temporal).getType() == Function.class) {
                 Function function = (Function) ((TemporalLiteral) temporal).getValue();
-                return getEnd((Temporal) function.getArguments().get(1), granularity);
+                return getEnd((Temporal) function.getArgs().get(1), granularity);
             } else if (((TemporalLiteral) temporal).getType() == LocalDate.class) {
                 // if we know that the temporal granularity is "day", we return the value
                 if (granularity.isPresent() && LocalDate.class.equals(granularity.get())) {
@@ -294,7 +294,7 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
             }
             return temporal;
         } else if (temporal instanceof Function) {
-            Temporal end = (Temporal) ((Function) temporal).getArguments().get(1);
+            Temporal end = (Temporal) ((Function) temporal).getArgs().get(1);
             if (end instanceof TemporalLiteral && ((TemporalLiteral) end).getType() == TemporalLiteral.OPEN.class) {
                 return TemporalLiteral.of(Instant.MAX);
             }

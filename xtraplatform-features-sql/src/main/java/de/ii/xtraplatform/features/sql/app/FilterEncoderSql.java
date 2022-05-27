@@ -293,8 +293,8 @@ public class FilterEncoderSql {
                 if (end.equals("'..'"))
                     end = sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax());
 
-                Operand arg1 = function.getArguments().get(0);
-                Operand arg2 = function.getArguments().get(1);
+                Operand arg1 = function.getArgs().get(0);
+                Operand arg2 = function.getArgs().get(1);
                 if (arg1 instanceof Property && arg2 instanceof Property) {
                     String startColumn = reduceToColumn(start);
                     String endColumn = reduceToColumn(end);
@@ -316,31 +316,31 @@ public class FilterEncoderSql {
             } else if (function.isPosition()) {
                 return "%1$s" + ROW_NUMBER + "%2$s";
             } else if (function.isUpper()) {
-                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                if (function.getArgs().get(0) instanceof ScalarLiteral) {
                     return children.get(0).toLowerCase();
-                } else if (function.getArguments().get(0) instanceof Property || function.getArguments().get(0) instanceof Function) {
+                } else if (function.getArgs().get(0) instanceof Property || function.getArgs().get(0) instanceof Function) {
                     return String.format(children.get(0), "%1$sUPPER(", ")%2$s");
-                } else if (function.getArguments().get(0) instanceof Function) {
+                } else if (function.getArgs().get(0) instanceof Function) {
                     if (children.get(0).contains("%1$s") && children.get(0).contains("%2$s"))
                         return String.format(children.get(0), "%1$sUPPER(", ")%2$s");
                     return String.format("UPPER(%s)", children.get(0));
                 }
             } else if (function.isCasei() || function.isLower()) {
-                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                if (function.getArgs().get(0) instanceof ScalarLiteral) {
                     return children.get(0).toLowerCase();
-                } else if (function.getArguments().get(0) instanceof Property) {
+                } else if (function.getArgs().get(0) instanceof Property) {
                     return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
-                } else if (function.getArguments().get(0) instanceof Function) {
+                } else if (function.getArgs().get(0) instanceof Function) {
                     if (children.get(0).contains("%1$s") && children.get(0).contains("%2$s"))
                         return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
                     return String.format("LOWER(%s)", children.get(0));
                 }
             } else if (function.isAccenti()) {
-                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                if (function.getArgs().get(0) instanceof ScalarLiteral) {
                     if (Objects.nonNull(accentiCollation))
                         return String.format("%s COLLATE \"%s\"", children.get(0), accentiCollation);
                     throw new IllegalArgumentException("ACCENTI() is not supported by this API.");
-                } else if (function.getArguments().get(0) instanceof Property) {
+                } else if (function.getArgs().get(0) instanceof Property) {
                     if (Objects.nonNull(accentiCollation))
                         return children.get(0).replace("%2$s", " COLLATE \""+accentiCollation+"\"%2$s");
                     throw new IllegalArgumentException("ACCENTI() is not supported by this API.");
@@ -578,8 +578,8 @@ public class FilterEncoderSql {
             } else if (literal.getType() == Function.class) {
                 Function function = (Function) literal.getValue();
                 assert function.isInterval();
-                assert function.getArguments().get(0) instanceof TemporalLiteral;
-                return getStart((TemporalLiteral) function.getArguments().get(0));
+                assert function.getArgs().get(0) instanceof TemporalLiteral;
+                return getStart((TemporalLiteral) function.getArgs().get(0));
             } else {
                 // we have a local date
                 return literal.getValue();
@@ -606,8 +606,8 @@ public class FilterEncoderSql {
             } else if (literal.getType() == Function.class) {
                 Function function = (Function) literal.getValue();
                 assert function.isInterval();
-                assert function.getArguments().get(1) instanceof TemporalLiteral;
-                return getEndExclusive((TemporalLiteral) function.getArguments().get(1));
+                assert function.getArgs().get(1) instanceof TemporalLiteral;
+                return getEndExclusive((TemporalLiteral) function.getArgs().get(1));
             } else {
                 return ((LocalDate) literal.getValue()).plusDays(1);
             }
@@ -651,9 +651,9 @@ public class FilterEncoderSql {
                 // an INTERVAL() with dates
                 Function function = (Function) temporalLiteral.getValue();
                 assert function.isInterval();
-                Operand arg1 = function.getArguments().get(0);
+                Operand arg1 = function.getArgs().get(0);
                 assert arg1 instanceof TemporalLiteral;
-                Operand arg2 = function.getArguments().get(1);
+                Operand arg2 = function.getArgs().get(1);
                 assert arg2 instanceof TemporalLiteral;
                 return String.format("(%s,%s)", getStartAsString((TemporalLiteral) arg1), getEndExclusiveAsString((TemporalLiteral) arg2));
             } else if (temporalLiteral.getType() == LocalDate.class) {

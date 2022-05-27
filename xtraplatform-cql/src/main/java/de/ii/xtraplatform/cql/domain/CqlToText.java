@@ -289,7 +289,7 @@ public class CqlToText implements CqlVisitor<String> {
             return String.format("DATE('%s')", DateTimeFormatter.ISO_DATE.format((LocalDate) temporalLiteral.getValue()));
         } else if (temporalLiteral.getType() == Function.class) {
             Function function = (Function) temporalLiteral.getValue();
-            return function.getArguments().stream()
+            return function.getArgs().stream()
                 .map(arg -> arg.accept(this)
                     .replace("DATE(","")
                     .replace("TIMESTAMP(","")

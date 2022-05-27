@@ -276,15 +276,15 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
             } else if (Objects.equals(function.getName(), "position")) {
                 return "%1$srow_number%2$s";
             } else if (Objects.equals(function.getName().toUpperCase(), "CASEI")) {
-                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                if (function.getArgs().get(0) instanceof ScalarLiteral) {
                     return children.get(0).toLowerCase();
-                } else if (function.getArguments().get(0) instanceof Property) {
+                } else if (function.getArgs().get(0) instanceof Property) {
                     return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
                 }
             } else if (Objects.equals(function.getName().toUpperCase(), "ACCENTI")) {
-                if (function.getArguments().get(0) instanceof ScalarLiteral) {
+                if (function.getArgs().get(0) instanceof ScalarLiteral) {
                     return String.format("%s %s", children.get(0), "COLLATE \"de-DE-x-icu\"");
-                } else if (function.getArguments().get(0) instanceof Property) {
+                } else if (function.getArgs().get(0) instanceof Property) {
                     return children.get(0).replace("%2$s", " COLLATE \"de-DE-x-icu\"%2$s");
                 }
             }
