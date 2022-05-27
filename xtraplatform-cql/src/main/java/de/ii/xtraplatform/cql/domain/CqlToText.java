@@ -81,23 +81,12 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(CqlFilter cqlFilter, List<String> children) {
-        CqlNode node = cqlFilter.getExpressions()
-                                .get(0);
-        String text = node.accept(this);
-
+    public String postProcess(CqlNode node, String text) {
         //remove outer brackets
         if (node instanceof And || node instanceof Or) {
             return text.substring(1, text.length() - 1);
         }
         return text;
-    }
-
-    @Override
-    public String visit(CqlPredicate cqlPredicate, List<String> children) {
-        return cqlPredicate.getExpressions()
-                           .get(0)
-                           .accept(this);
     }
 
     @Override
@@ -114,32 +103,20 @@ public class CqlToText implements CqlVisitor<String> {
 
         String operation = children.get(0);
 
-        if (not.getPredicate()
-               .get()
-               .getLike()
-               .isPresent()) {
-            String like = SCALAR_OPERATORS.get(ImmutableLike.class);
+        if (not.getArgs().get(0) instanceof Like) {
+            String like = Like.TYPE.toUpperCase();
 
             return operation.replace(like, String.format("%s %s", operator, like));
-        } else if (not.getPredicate()
-                      .get()
-                      .getIsNull()
-                      .isPresent()) {
-            String isNull = SCALAR_OPERATORS.get(ImmutableIsNull.class);
+        } else if (not.getArgs().get(0) instanceof IsNull) {
+            String isNull = IsNull.TEXT;
 
             return operation.replace(isNull, "IS NOT NULL");
-        } else if (not.getPredicate()
-                      .get()
-                      .getBetween()
-                      .isPresent()) {
-            String between = SCALAR_OPERATORS.get(ImmutableBetween.class);
+        } else if (not.getArgs().get(0) instanceof Between) {
+            String between = Between.TYPE.toUpperCase();
 
             return operation.replace(between, String.format("%s %s", operator, between));
-        } else if (not.getPredicate()
-                      .get()
-                      .getInOperator()
-                      .isPresent()) {
-            String in = SCALAR_OPERATORS.get(ImmutableIn.class);
+        } else if (not.getArgs().get(0) instanceof In) {
+            String in = In.TYPE.toUpperCase();
 
             return operation.replace(in, String.format("%s %s", operator, in));
         }
@@ -171,7 +148,8 @@ public class CqlToText implements CqlVisitor<String> {
     public String visit(In in, List<String> children) {
         String operator = SCALAR_OPERATORS.get(in.getClass());
         String property = Objects.equals(children.get(0), ID_PLACEHOLDER) ? "" : children.get(0);
-        return String.format("%s %s (%s)", property, operator, String.join(", ", children.subList(1, children.size())));
+        String args = String.join(", ", children.subList(1, children.size()));
+        return String.format("%s %s (%s)", property, operator, args.substring(1, args.length()-1));
     }
 
     @Override
@@ -181,22 +159,22 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
-    public String visit(TemporalOperation temporalOperation, List<String> children) {
-        String operator = temporalOperation.getOperator().toString();
+    public String visit(BinaryTemporalOperation temporalOperation, List<String> children) {
+        String operator = temporalOperation.getOp().toUpperCase();
 
         return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
     }
 
     @Override
-    public String visit(SpatialOperation spatialOperation, List<String> children) {
-        String operator = spatialOperation.getOperator().toString();
+    public String visit(BinarySpatialOperation spatialOperation, List<String> children) {
+        String operator = spatialOperation.getOp().toUpperCase();
 
         return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
     }
 
     @Override
-    public String visit(ArrayOperation arrayOperation, List<String> children) {
-        String operator = arrayOperation.getOperator().toString();
+    public String visit(BinaryArrayOperation arrayOperation, List<String> children) {
+        String operator = arrayOperation.getOp().toUpperCase();
 
         return String.format("%s(%s, %s)", operator, children.get(0), children.get(1));
     }
@@ -300,7 +278,7 @@ public class CqlToText implements CqlVisitor<String> {
                 : DateTimeFormatter.ISO_INSTANT.format(interval.getStart());
             end = interval.getEnd().equals(Instant.MAX)
                 ? ".."
-                : DateTimeFormatter.ISO_INSTANT.format(interval.getEnd().minusSeconds(1));
+                : DateTimeFormatter.ISO_INSTANT.format(interval.getEnd());
             return String.format("INTERVAL('%s','%s')", start, end);
         } else if (temporalLiteral.getType() == Instant.class) {
             Instant instant = (Instant) temporalLiteral.getValue();
@@ -311,7 +289,7 @@ public class CqlToText implements CqlVisitor<String> {
             return String.format("DATE('%s')", DateTimeFormatter.ISO_DATE.format((LocalDate) temporalLiteral.getValue()));
         } else if (temporalLiteral.getType() == Function.class) {
             Function function = (Function) temporalLiteral.getValue();
-            return function.getArguments().stream()
+            return function.getArgs().stream()
                 .map(arg -> arg.accept(this)
                     .replace("DATE(","")
                     .replace("TIMESTAMP(","")
@@ -344,7 +322,7 @@ public class CqlToText implements CqlVisitor<String> {
     public String visit(Property property, List<String> children) {
         if (!property.getNestedFilters()
                      .isEmpty()) {
-            Map<String, CqlFilter> nestedFilters = property.getNestedFilters();
+            Map<String, Cql2Expression> nestedFilters = property.getNestedFilters();
             StringJoiner sj = new StringJoiner(".");
             for (String element : property.getPath()) {
                 if (nestedFilters.containsKey(element)) {
@@ -383,6 +361,11 @@ public class CqlToText implements CqlVisitor<String> {
         return function.getName() +
                 children.stream()
                         .collect(Collectors.joining(",", "(", ")"));
+    }
+
+    @Override
+    public String visit(BooleanValue2 booleanValue, List<String> children) {
+        return booleanValue.getValue().toString();
     }
 
 }

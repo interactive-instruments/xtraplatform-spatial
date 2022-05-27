@@ -7,10 +7,10 @@
  */
 package de.ii.xtraplatform.features.sql.app;
 
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.features.sql.domain.SchemaSql;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.Tuple;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,13 +28,13 @@ public interface SqlQueryTemplates {
   @FunctionalInterface
   interface MetaQueryTemplate {
     String generateMetaQuery(long limit, long offset, List<SortKey> additionalSortKeys,
-        Optional<CqlFilter> filter, Map<String, String> virtualTables);
+        Optional<Cql2Expression> filter, Map<String, String> virtualTables);
   }
 
   @FunctionalInterface
   interface ValueQueryTemplate {
     String generateValueQuery(long limit, long offset, List<SortKey> additionalSortKeys,
-        Optional<CqlFilter> filter, Optional<Tuple<Object, Object>> minMaxKeys,
+        Optional<Cql2Expression> filter, Optional<Tuple<Object, Object>> minMaxKeys,
         Map<String, String> virtualTables);
   }
 }

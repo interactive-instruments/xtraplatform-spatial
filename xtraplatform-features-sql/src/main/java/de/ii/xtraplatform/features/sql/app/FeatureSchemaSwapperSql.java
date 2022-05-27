@@ -10,7 +10,7 @@ package de.ii.xtraplatform.features.sql.app;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.Cql;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.features.sql.ImmutableSqlPath;
 import de.ii.xtraplatform.features.sql.SqlFeatureTypeParser2;
 import de.ii.xtraplatform.features.sql.SqlPath;
@@ -357,7 +357,7 @@ public class FeatureSchemaSwapperSql {
                             instanceContainerBuilders.put(instanceContainerName, ImmutableFeatureStoreInstanceContainer.builder());
                         }
 
-                        Map<String, CqlFilter> filters = columnPaths.stream()
+                        Map<String, Cql2Expression> filters = columnPaths.stream()
                                                                     .flatMap(sqlPath -> sqlPath.getTableFlags()
                                                                                                .entrySet()
                                                                                                .stream())
@@ -373,7 +373,7 @@ public class FeatureSchemaSwapperSql {
                             ImmutableFeatureStoreInstanceContainer.Builder instanceContainerBuilder = instanceContainerBuilders.get(instanceContainerName);
 
                             //TODO: if multiple it should be different instance containers
-                            Optional<CqlFilter> filter = columnPaths.stream()
+                            Optional<Cql2Expression> filter = columnPaths.stream()
                                                                     .flatMap(sqlPath -> sqlPath.getTableFlags()
                                                                                                .values()
                                                                                                .stream())
@@ -428,7 +428,7 @@ public class FeatureSchemaSwapperSql {
     }
 
     private List<FeatureStoreRelation> toRelations(List<String> path,
-                                                   Map<String, CqlFilter> filters) {
+                                                   Map<String, Cql2Expression> filters) {
 
         if (path.size() < 2) {
             throw new IllegalArgumentException(String.format("not a valid relation path: %s", path));
@@ -447,7 +447,7 @@ public class FeatureSchemaSwapperSql {
     }
 
     private Stream<FeatureStoreRelation> toRelations(String source, String link, String target, boolean isLast,
-                                                     Map<String, CqlFilter> filters) {
+                                                     Map<String, Cql2Expression> filters) {
         if (syntax.isJunctionTable(source)) {
             if (isLast) {
                 return Stream.of(toRelation(link, target, filters));
@@ -468,7 +468,7 @@ public class FeatureSchemaSwapperSql {
 
     //TODO: support sortKey flag on table instead of getDefaultPrimaryKey
     private FeatureStoreRelation toRelation(String source, String target,
-                                            Map<String, CqlFilter> filters) {
+                                            Map<String, Cql2Expression> filters) {
         Matcher sourceMatcher = syntax.getTablePattern()
                                       .matcher(source);
         Matcher targetMatcher = syntax.getJoinedTablePattern()
@@ -479,7 +479,7 @@ public class FeatureSchemaSwapperSql {
             boolean isOne2One = Objects.equals(targetField, syntax.getOptions()
                                                                   .getPrimaryKey());
 
-            Optional<CqlFilter> filter = Optional.ofNullable(filters.get(target));
+            Optional<Cql2Expression> filter = Optional.ofNullable(filters.get(target));
 
             return ImmutableFeatureStoreRelation.builder()
                                                 .cardinality(isOne2One ? CARDINALITY.ONE_2_ONE : CARDINALITY.ONE_2_N)

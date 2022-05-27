@@ -10,13 +10,11 @@ package de.ii.xtraplatform.cql.infra;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.app.CqlVisitorPropertyPrefix;
 import de.ii.xtraplatform.cql.domain.*;
+import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.threeten.extra.Interval;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,15 +33,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
     @Override
     public CqlNode visitCqlFilter(CqlParser.CqlFilterContext ctx) {
-        CqlNode booleanExpression = ctx.booleanExpression()
-                                            .accept(this);
-
-        return CqlFilter.of(booleanExpression);
+        return ctx.booleanExpression().accept(this);
     }
 
     @Override
     public CqlNode visitNestedCqlFilter(CqlParser.NestedCqlFilterContext ctx) {
-        return CqlFilter.of(ctx.booleanExpression().accept(this));
+        return ctx.booleanExpression().accept(this);
     }
 
     @Override
@@ -52,24 +47,20 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                  .accept(this);
 
         if (Objects.nonNull(ctx.OR())) {
-            CqlPredicate predicate1 = CqlPredicate.of(ctx.booleanExpression()
-                                                         .accept(this));
-            CqlPredicate predicate2 = CqlPredicate.of(booleanTerm);
+            Cql2Expression predicate1 = (Cql2Expression) ctx.booleanExpression()
+                .accept(this);
+            Cql2Expression predicate2 = (Cql2Expression) booleanTerm;
 
-            Or result;
-            if (predicate1.getOr()
-                          .isPresent()) {
-                List<CqlPredicate> predicates = predicate1.getOr()
-                                                          .get()
-                                                          .getPredicates();
-                result = Or.of(new ImmutableList.Builder<CqlPredicate>()
+            if (predicate1 instanceof Or) {
+                List<Cql2Expression> predicates = ((Or) predicate1).getArgs();
+
+                return Or.of(new ImmutableList.Builder<Cql2Expression>()
                         .addAll(predicates)
                         .add(predicate2)
                         .build());
-            } else {
-                result = Or.of(ImmutableList.of(predicate1, predicate2));
             }
-            return result;
+
+            return Or.of(ImmutableList.of(predicate1, predicate2));
         }
 
         return booleanTerm;
@@ -82,25 +73,20 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         // create And
         if (Objects.nonNull(ctx.AND())) {
-            CqlPredicate predicate1 = CqlPredicate.of(ctx.booleanTerm()
-                                                         .accept(this));
-            CqlPredicate predicate2 = CqlPredicate.of(booleanFactor);
+            Cql2Expression predicate1 = (Cql2Expression) ctx.booleanTerm()
+                                                         .accept(this);
+            Cql2Expression predicate2 = (Cql2Expression) booleanFactor;
 
-            And result;
-            if (predicate1.getAnd()
-                          .isPresent()) {
-                List<CqlPredicate> predicates = predicate1.getAnd()
-                                                          .get()
-                                                          .getPredicates();
-                result = And.of(new ImmutableList.Builder<CqlPredicate>()
+            if (predicate1 instanceof And) {
+                List<Cql2Expression> predicates = ((And) predicate1).getArgs();
+
+                return And.of(new ImmutableList.Builder<Cql2Expression>()
                         .addAll(predicates)
                         .add(predicate2)
                         .build());
-            } else {
-                result = And.of(ImmutableList.of(predicate1, predicate2));
             }
 
-            return result;
+            return And.of(ImmutableList.of(predicate1, predicate2));
         }
 
         return booleanFactor;
@@ -117,7 +103,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                 .accept(this);
         }
         if (Objects.nonNull(ctx.NOT())) {
-            return Not.of(CqlPredicate.of(booleanPrimary));
+            return Not.of((Cql2Expression) booleanPrimary);
         }
 
         return booleanPrimary;
@@ -159,7 +145,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                 throw new IllegalStateException("unknown comparison operator: " + comparisonOperator);
         }
 
-        return builder.operands(ImmutableList.of(scalar1,scalar2))
+        return builder.args(ImmutableList.of(scalar1,scalar2))
                       .build();
     }
 
@@ -174,7 +160,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                          .accept(this);
 
             Like like = new ImmutableLike.Builder()
-                    .operands(ImmutableList.of(scalar1,scalar2))
+                    .args(ImmutableList.of(scalar1,scalar2))
                     .build();
 
             if (Objects.nonNull(ctx.NOT())) {
@@ -200,9 +186,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
                                          .accept(this);
 
             Between between = new ImmutableBetween.Builder()
-                    .value(scalar)
-                    .lower(numeric1)
-                    .upper(numeric2)
+                    .addArgs(scalar, numeric1, numeric2)
                     .build();
 
             if (Objects.nonNull(ctx.NOT())) {
@@ -224,8 +208,8 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
         // TODO IN currently requires a property on the left side and literals on the right side
         in = new ImmutableIn.Builder()
-            .value((Scalar) ctx.scalarExpression(0).accept(this))
-            .list(values)
+            .addArgs((Scalar) ctx.scalarExpression(0).accept(this))
+            .addArgs(ArrayLiteral.of(values))
             .build();
         if (Objects.nonNull(ctx.NOT())) {
             return Not.of(in);
@@ -237,14 +221,14 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     public CqlNode visitIsNullPredicate(CqlParser.IsNullPredicateContext ctx) {
 
         if (Objects.nonNull(ctx.IS())) {
-            Scalar scalar1 = (Scalar) ctx.scalarExpression()
+            Scalar scalar1 = (Scalar) ctx.isNullOperand()
                                          .accept(this);
 
             IsNull isNull = new ImmutableIsNull.Builder()
-                    .operand(scalar1)
+                    .addArgs(scalar1)
                     .build();
             if (Objects.nonNull(ctx.NOT())) {
-                return Not.of(CqlPredicate.of(isNull));
+                return Not.of(isNull);
             }
 
             return isNull;
@@ -269,7 +253,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         Temporal temporal2 = (Temporal) ctx.temporalExpression(1)
             .accept(this);
 
-        return TemporalOperation.of(temporalOperator, temporal1, temporal2);
+        return BinaryTemporalOperation.of(temporalOperator, temporal1, temporal2);
     }
 
     @Override
@@ -289,10 +273,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             .get(1)
             .accept(this);
 
-        return new ImmutableSpatialOperation.Builder()
-            .operator(spatialOperator)
-            .operands(ImmutableList.of(spatial1,spatial2))
-            .build();
+        return BinarySpatialOperation.of(spatialOperator, spatial1, spatial2);
     }
 
     @Override
@@ -308,10 +289,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         Vector vector1 = (Vector) ctx.arrayExpression().get(0).accept(this);
         Vector vector2 = (Vector) ctx.arrayExpression().get(1).accept(this);
 
-        return new ImmutableArrayOperation.Builder()
-            .operator(arrayOperator)
-            .operands(ImmutableList.of(vector1, vector2))
-            .build();
+        return BinaryArrayOperation.of(arrayOperator, vector1, vector2);
     }
 
     @Override
@@ -330,12 +308,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
     @Override
     public CqlNode visitPropertyName(CqlParser.PropertyNameContext ctx) {
         if (!ctx.nestedCqlFilter().isEmpty()) {
-            Map<String, CqlFilter> nestedFilters = new HashMap<>();
+            Map<String, Cql2Expression> nestedFilters = new HashMap<>();
             for (int i = 0; i < ctx.nestedCqlFilter().size(); i++) {
-                CqlFilter nestedFilter = CqlFilter.of(ctx.nestedCqlFilter(i)
-                                               .accept(this));
+                Cql2Expression nestedFilter = (Cql2Expression) ctx.nestedCqlFilter(i)
+                                               .accept(this);
                 CqlVisitorPropertyPrefix prefix = new CqlVisitorPropertyPrefix(stripDoubleQuotes(ctx.Identifier(i).getText()));
-                nestedFilter = (CqlFilter) nestedFilter.accept(prefix);
+                nestedFilter = (Cql2Expression) nestedFilter.accept(prefix);
                 nestedFilters.put(stripDoubleQuotes(ctx.Identifier(i).getText()), nestedFilter);
             }
             String path = ctx.Identifier().stream()
@@ -364,6 +342,10 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
 
     @Override
     public CqlNode visitBooleanLiteral(CqlParser.BooleanLiteralContext ctx) {
+        if (ctx.parent instanceof CqlParser.BooleanPrimaryContext) {
+            return BooleanValue2.of(java.lang.Boolean.valueOf(ctx.getText()));
+        }
+
         return ScalarLiteral.of(ctx.getText(), true);
     }
 
@@ -386,15 +368,8 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
         CqlNode arg2 = ctx.intervalParameter(1)
             .accept(this);
 
-        // if at least one parameter is a property, we create a function, otherwise a fixed interval
-        if (arg1 instanceof Property && arg2 instanceof Property) {
-            return Function.of("INTERVAL", ImmutableList.of((Property) arg1, (Property) arg2));
-        } else if (arg1 instanceof Property &&  arg2 instanceof TemporalLiteral) {
-            return Function.of("INTERVAL", ImmutableList.of((Property) arg1, (TemporalLiteral) arg2));
-        } else if (arg1 instanceof TemporalLiteral &&  arg2 instanceof Property) {
-            return Function.of("INTERVAL", ImmutableList.of((TemporalLiteral) arg1, (Property) arg2));
-        } else if (arg1 instanceof TemporalLiteral &&  arg2 instanceof TemporalLiteral) {
-            return TemporalLiteral.of((TemporalLiteral) arg1, (TemporalLiteral) arg2);
+        if (arg1 instanceof Temporal && arg2 instanceof Temporal) {
+            return TemporalLiteral.interval((Temporal) arg1, (Temporal) arg2);
         }
 
         throw new IllegalStateException("unsupported interval value: " + ctx.getText());

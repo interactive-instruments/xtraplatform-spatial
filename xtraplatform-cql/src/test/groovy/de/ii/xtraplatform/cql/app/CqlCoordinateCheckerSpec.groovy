@@ -47,7 +47,7 @@ class CqlCoordinateCheckerSpec extends Specification {
         //
 
         when:
-        CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "bbox", SpatialLiteral.of(Geometry.Envelope.of(6,48,12, 52,OgcCrs.CRS84)))).accept(visitor1)
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Envelope.of(6,48,12, 52,OgcCrs.CRS84))).accept(visitor1)
 
         then:
         noExceptionThrown()
@@ -55,7 +55,7 @@ class CqlCoordinateCheckerSpec extends Specification {
         and:
 
         when:
-        CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "bbox", SpatialLiteral.of(Geometry.Envelope.of(6,48,12, 52,OgcCrs.CRS84)))).accept(visitor2)
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Envelope.of(6,48,12, 52,OgcCrs.CRS84))).accept(visitor2)
 
         then:
         noExceptionThrown()
@@ -66,7 +66,7 @@ class CqlCoordinateCheckerSpec extends Specification {
         //
 
         when:
-        CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "bbox", SpatialLiteral.of(Geometry.Envelope.of(6,53,12, 52,OgcCrs.CRS84)))).accept(visitor1)
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Envelope.of(6,53,12, 52,OgcCrs.CRS84))).accept(visitor1)
 
         then:
         thrown IllegalArgumentException
@@ -74,7 +74,7 @@ class CqlCoordinateCheckerSpec extends Specification {
         and:
 
         when:
-        CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "bbox", SpatialLiteral.of(Geometry.Envelope.of(6,53,12, 52,OgcCrs.CRS84)))).accept(visitor2)
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Envelope.of(6,53,12, 52,OgcCrs.CRS84))).accept(visitor2)
 
         then:
         thrown IllegalArgumentException
@@ -85,7 +85,7 @@ class CqlCoordinateCheckerSpec extends Specification {
         //
 
         when:
-        CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "bbox", SpatialLiteral.of(Geometry.Envelope.of(6,10,12, 100,OgcCrs.CRS84)))).accept(visitor1)
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Envelope.of(6,10,12, 100,OgcCrs.CRS84))).accept(visitor1)
 
         then:
         thrown IllegalArgumentException
@@ -93,7 +93,7 @@ class CqlCoordinateCheckerSpec extends Specification {
         and:
 
         when:
-        CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "bbox", SpatialLiteral.of(Geometry.Envelope.of(6,10,12, 100,OgcCrs.CRS84)))).accept(visitor2)
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Envelope.of(6,10,12, 100,OgcCrs.CRS84))).accept(visitor2)
 
         then:
         thrown IllegalArgumentException
@@ -104,7 +104,7 @@ class CqlCoordinateCheckerSpec extends Specification {
         //
 
         when:
-        CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "bbox", SpatialLiteral.of(Geometry.Envelope.of(160,-30,-160, 10,OgcCrs.CRS84)))).accept(visitor1)
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Envelope.of(160,-30,-160, 10,OgcCrs.CRS84))).accept(visitor1)
 
         then:
         thrown IllegalArgumentException
@@ -112,7 +112,7 @@ class CqlCoordinateCheckerSpec extends Specification {
         and:
 
         when:
-        CqlFilter.of(SpatialOperation.of(SpatialOperator.S_INTERSECTS, "bbox", SpatialLiteral.of(Geometry.Envelope.of(160,-30,-160, 10,OgcCrs.CRS84)))).accept(visitor2)
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Envelope.of(160,-30,-160, 10,OgcCrs.CRS84))).accept(visitor2)
 
         then:
         noExceptionThrown()

@@ -25,39 +25,10 @@ public interface SpatialOperation extends BinaryOperation<SpatialLiteral>, CqlNo
     @JsonValue
     SpatialOperator getOperator();
 
-    @JsonCreator
-    static SpatialOperation of(SpatialOperator operator, List<Operand> operands) {
-        return new ImmutableSpatialOperation.Builder()
-            .operator(operator)
-            .operands(operands)
-            .build();
-    }
-
-    static SpatialOperation of(SpatialOperator operator, Spatial temporal1, Spatial temporal2) {
-        return new ImmutableSpatialOperation.Builder()
-            .operator(operator)
-            .operands(ImmutableList.of(temporal1, temporal2))
-            .build();
-    }
-
     static SpatialOperation of(SpatialOperator operator, String property, SpatialLiteral temporalLiteral) {
         return new ImmutableSpatialOperation.Builder()
             .operator(operator)
             .operands(ImmutableList.of(Property.of(property),temporalLiteral))
-            .build();
-    }
-
-    static SpatialOperation of(SpatialOperator operator, String property, String property2) {
-        return new ImmutableSpatialOperation.Builder()
-            .operator(operator)
-            .operands(ImmutableList.of(Property.of(property), Property.of(property2)))
-            .build();
-    }
-
-    static SpatialOperation of(SpatialOperator operator, String property, BoundingBox boundingBox) {
-        return new ImmutableSpatialOperation.Builder()
-            .operator(operator)
-            .operands(ImmutableList.of(Property.of(property),SpatialLiteral.of(Geometry.Envelope.of(boundingBox))))
             .build();
     }
 

@@ -8,23 +8,29 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializationConfig;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.base.Joiner;
+import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 import org.threeten.extra.Interval;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -32,7 +38,38 @@ import java.util.regex.Pattern;
 @JsonDeserialize(builder = TemporalLiteral.Builder.class)
 public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
 
-    enum OPEN { OPEN }
+    @JsonIgnore
+    @JsonValue(false)
+    @Override
+    Object getValue();
+
+    @Value.Derived
+    default Optional<LocalDate> getDate() {
+        return getType() == LocalDate.class
+            ? Optional.ofNullable((LocalDate) getValue())
+            : Optional.empty();
+    }
+
+    @Value.Derived
+    default Optional<Instant> getTimestamp() {
+        return getType() == Instant.class
+            ? Optional.ofNullable((Instant) getValue())
+            : Optional.empty();
+    }
+
+    @Value.Derived
+    default Optional<Interval> getInterval() {
+        return getType() == Interval.class
+            ? Optional.ofNullable((Interval) getValue())
+            : Optional.empty();
+    }
+
+    enum OPEN { OPEN;
+        @Override
+        public String toString() {
+            return "..";
+        }
+    }
 
     String DATE_REGEX = "(?:[0-9]+)-(?:0[1-9]|1[012])-(?:0[1-9]|[12][0-9]|3[01])";
     String TIMESTAMP_REGEX = DATE_REGEX + "T(?:[01][0-9]|2[0-3]):(?:[0-5][0-9]):(?:[0-5][0-9]|60)(?:\\.[0-9]+)?Z";
@@ -64,6 +101,22 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
 
     static TemporalLiteral of(String instantLiteral) throws CqlParseException {
         return new Builder(instantLiteral).build();
+    }
+
+    static Temporal interval(Temporal op1, Temporal op2) {
+        // if at least one parameter is a property, we create a function, otherwise a fixed interval
+        if (op1 instanceof Property && op2 instanceof Property) {
+            return Function.of("INTERVAL", ImmutableList.of((Property) op1, (Property) op2));
+        } else if (op1 instanceof Property &&  op2 instanceof TemporalLiteral) {
+            return Function.of("INTERVAL", ImmutableList.of((Property) op1, (TemporalLiteral) op2));
+        } else if (op1 instanceof TemporalLiteral &&  op2 instanceof Property) {
+            return Function.of("INTERVAL", ImmutableList.of((TemporalLiteral) op1, (Property) op2));
+        } else if (op1 instanceof TemporalLiteral &&  op2 instanceof TemporalLiteral) {
+            return TemporalLiteral.of((TemporalLiteral) op1, (TemporalLiteral) op2);
+        }
+
+        throw new IllegalStateException(
+            String.format("unsupported interval operands: %s, %s", op1.getClass(), op2.getClass()));
     }
 
     static Instant now() {
@@ -126,7 +179,7 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
                 return Instant.MAX;
             else if (instant instanceof LocalDate)
                 return ((LocalDate) instant).plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
-            return ((Instant) instant).plusSeconds(1);
+            return ((Instant) instant);
         }
 
         private Object castToType(String instantLiteral) throws CqlParseException {
@@ -154,6 +207,52 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
             }
 
             throw new CqlParseException("not a valid instant literal: " + instantLiteral);
+        }
+    }
+
+    class TemporalLiteralSerializer extends StdSerializer<TemporalLiteral> {
+
+        private final JsonSerializer<TemporalLiteral> defaultSerializer;
+
+        protected TemporalLiteralSerializer(Class<TemporalLiteral> t, JsonSerializer<TemporalLiteral> defaultSerializer) {
+            super(t);
+            this.defaultSerializer = defaultSerializer;
+        }
+
+        @Override
+        public void serialize(TemporalLiteral value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            if (value.getType().equals(Function.class)) {
+                Function f = (Function) value.getValue();
+                if (f.isInterval()) {
+                    gen.writeStartObject();
+                    gen.writeFieldName(f.getName().toLowerCase());
+                    gen.writeStartArray();
+                    for (Operand operand : f.getArgs()) {
+                        if (operand instanceof TemporalLiteral) {
+                            gen.writeString(String.format("%s", ((TemporalLiteral) operand).getValue().toString()));
+                        } else {
+                            gen.writeObject(operand);
+                        }
+                    }
+                    gen.writeEndArray();
+                    gen.writeEndObject();
+                    return;
+                }
+            }
+
+            // use default serializer
+            defaultSerializer.serialize(value, gen, serializers);
+        }
+    }
+
+    class TemporalLiteralSerializerModifier extends BeanSerializerModifier {
+        @Override
+        public JsonSerializer<?> modifySerializer(SerializationConfig config, BeanDescription beanDesc, JsonSerializer<?> serializer) {
+            if (beanDesc.getBeanClass() == ImmutableTemporalLiteral.class) {
+                //noinspection unchecked
+                return new TemporalLiteralSerializer(null, (JsonSerializer<TemporalLiteral>) serializer);
+            }
+            return serializer;
         }
     }
 }

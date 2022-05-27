@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.sql.app;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.features.sql.SqlPath;
 import de.ii.xtraplatform.features.sql.SqlPathSyntax;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
@@ -100,7 +100,7 @@ public class PathParserSql {
     return Optional.empty();
   }
 
-  public List<FeatureStoreRelation> toRelations(List<String> path, Map<String, CqlFilter> filters) {
+  public List<FeatureStoreRelation> toRelations(List<String> path, Map<String, Cql2Expression> filters) {
 
     if (path.size() < 2) {
       throw new IllegalArgumentException(String.format("not a valid relation path: %s", path));
@@ -122,7 +122,7 @@ public class PathParserSql {
   }
 
   private Stream<FeatureStoreRelation> toRelations(
-      String source, String link, String target, boolean isLast, Map<String, CqlFilter> filters) {
+      String source, String link, String target, boolean isLast, Map<String, Cql2Expression> filters) {
     if (syntax.isJunctionTable(source)) {
       if (isLast) {
         return Stream.of(toRelation(link, target, filters));
@@ -143,7 +143,7 @@ public class PathParserSql {
 
   // TODO: support sortKey flag on table instead of getDefaultPrimaryKey
   private FeatureStoreRelation toRelation(
-      String source, String target, Map<String, CqlFilter> filters) {
+      String source, String target, Map<String, Cql2Expression> filters) {
     Matcher sourceMatcher = syntax.getTablePattern().matcher(source);
     Matcher targetMatcher = syntax.getJoinedTablePattern().matcher(target);
     if (sourceMatcher.find() && targetMatcher.find()) {
@@ -151,7 +151,7 @@ public class PathParserSql {
       String targetField = targetMatcher.group(SqlPathSyntax.MatcherGroups.TARGET_FIELD);
       boolean isOne2One = Objects.equals(targetField, syntax.getOptions().getPrimaryKey());
 
-      Optional<CqlFilter> filter = Optional.ofNullable(filters.get(target));
+      Optional<Cql2Expression> filter = Optional.ofNullable(filters.get(target));
 
       return ImmutableFeatureStoreRelation.builder()
           .cardinality(

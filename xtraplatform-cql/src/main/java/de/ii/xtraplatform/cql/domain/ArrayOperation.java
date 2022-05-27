@@ -7,13 +7,11 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
-import org.immutables.value.Value;
-
 import java.util.List;
+import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(as = ArrayOperation.class)
@@ -21,35 +19,6 @@ public interface ArrayOperation extends BinaryOperation<ArrayLiteral>, CqlNode {
 
     @JsonValue
     ArrayOperator getOperator();
-
-    @JsonCreator
-    static ArrayOperation of(ArrayOperator operator, List<Operand> operands) {
-        return new ImmutableArrayOperation.Builder()
-            .operator(operator)
-            .operands(operands)
-            .build();
-    }
-
-    static ArrayOperation of(ArrayOperator operator, String property, ArrayLiteral arrayLiteral) {
-        return new ImmutableArrayOperation.Builder()
-            .operator(operator)
-            .operands(ImmutableList.of(Property.of(property), arrayLiteral))
-            .build();
-    }
-
-    static ArrayOperation of(ArrayOperator operator, Property property, ArrayLiteral arrayLiteral) {
-        return new ImmutableArrayOperation.Builder()
-            .operator(operator)
-            .operands(ImmutableList.of(property,arrayLiteral))
-            .build();
-    }
-
-    static ArrayOperation of(ArrayOperator operator, String property, String property2) {
-        return new ImmutableArrayOperation.Builder()
-            .operator(operator)
-            .operands(ImmutableList.of(Property.of(property),Property.of(property2)))
-            .build();
-    }
 
     abstract class Builder extends BinaryOperation.Builder<ArrayLiteral, ArrayOperation> {}
 

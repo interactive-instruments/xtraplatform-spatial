@@ -8,8 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.ScalarExpression;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +34,7 @@ public abstract class FeatureQuery {
         return 0;
     }
 
-    public abstract Optional<CqlFilter> getFilter();
+    public abstract Optional<Cql2Expression> getFilter();
 
     public abstract List<SortKey> getSortKeys();
 

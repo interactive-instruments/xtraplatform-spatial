@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -18,6 +17,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.immutables.value.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
 @Value.Immutable
@@ -27,20 +28,19 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
 
     String getName();
 
-    List<Operand> getArguments();
+    List<Operand> getArgs();
 
-    @JsonCreator
     static Function of(String name, List<Operand> arguments) {
         return new ImmutableFunction.Builder()
                 .name(name)
-                .arguments(arguments)
+                .args(arguments)
                 .build();
     }
 
     @Override
     default <U> U accept(CqlVisitor<U> visitor) {
 
-        List<U> arguments = getArguments()
+        List<U> arguments = getArgs()
                 .stream()
                 .map(argument -> argument.accept(visitor))
                 .collect(Collectors.toList());
@@ -108,13 +108,40 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
 
         @Override
         public void serialize(Function value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            if (value.isCasei() || value.isAccenti()) {
+                gen.writeStartObject();
+                gen.writeFieldName(value.getName().toLowerCase());
+                Operand operand = value.getArgs().get(0);
+                if (operand instanceof ScalarLiteral) {
+                    gen.writeString(String.format("%s", ((ScalarLiteral) operand).getValue().toString()));
+                } else {
+                    gen.writeObject(operand);
+                }
+                gen.writeEndObject();
+                return;
+            } else if (value.isInterval()) {
+                gen.writeStartObject();
+                gen.writeFieldName(value.getName().toLowerCase());
+                gen.writeStartArray();
+                for (Operand operand : value.getArgs()) {
+                    if (operand instanceof TemporalLiteral) {
+                        gen.writeString(String.format("%s", ((TemporalLiteral) operand).getValue().toString()));
+                    } else {
+                        gen.writeObject(operand);
+                    }
+                }
+                gen.writeEndArray();
+                gen.writeEndObject();
+                return;
+            }
+
             gen.writeStartObject();
             gen.writeFieldName("function");
             gen.writeStartObject();
             gen.writeStringField("name", value.getName());
-            gen.writeFieldName("arguments");
+            gen.writeFieldName("args");
             gen.writeStartArray();
-            for (Operand operand : value.getArguments()) {
+            for (Operand operand : value.getArgs()) {
                 if (operand instanceof ScalarLiteral) {
                     gen.writeString(String.format("%s", ((ScalarLiteral) operand).getValue().toString()));
                 } else {

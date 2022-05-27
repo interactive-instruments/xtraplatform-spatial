@@ -7,41 +7,36 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Splitter;
-import org.immutables.value.Value;
-
 import java.util.List;
 import java.util.Map;
+import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(of = "new")
 @JsonDeserialize(builder = ImmutableProperty.Builder.class)
 public interface Property extends Scalar, Spatial, Temporal, Operand, Vector, CqlNode {
 
-    @JsonCreator
     static Property of(String name) {
         return ImmutableProperty.builder()
                 .name(name)
                 .build();
     }
-
-    static Property of(String name, Map<String, CqlFilter> nestedFilters) {
+    static Property of(String name, Map<String, Cql2Expression> nestedFilters) {
         return ImmutableProperty.builder()
-                .name(name)
-                .nestedFilters(nestedFilters)
-                .build();
+            .name(name)
+            .nestedFilters(nestedFilters)
+            .build();
     }
 
     @JsonProperty("property")
     String getName();
 
     @JsonIgnore
-    Map<String, CqlFilter> getNestedFilters();
+    Map<String, Cql2Expression> getNestedFilters();
 
     Splitter PATH_SPLITTER = Splitter.on('.')
                                      .omitEmptyStrings();

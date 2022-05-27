@@ -7,60 +7,38 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import org.immutables.value.Value;
-
-import java.util.List;
-import java.util.Optional;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableLike.Builder.class)
-public interface Like extends NonBinaryScalarOperation, CqlNode {
+public interface Like extends BinaryScalarOperation, CqlNode {
+
+    String TYPE = "like";
+
+    @Override
+    @Value.Derived
+    default String getOp() {
+        return TYPE;
+    }
 
     static Like of(String property, ScalarLiteral scalarLiteral) {
-        return new ImmutableLike.Builder().operands(ImmutableList.of(Property.of(property),scalarLiteral))
+        return new ImmutableLike.Builder().args(ImmutableList.of(Property.of(property),scalarLiteral))
                                           .build();
     }
 
     static Like of(String property, String property2) {
-        return new ImmutableLike.Builder().operands(ImmutableList.of(Property.of(property),Property.of(property2)))
+        return new ImmutableLike.Builder().args(ImmutableList.of(Property.of(property),Property.of(property2)))
                                           .build();
     }
 
     static Like ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableLike.Builder().operands(ImmutableList.of(function, scalarLiteral))
+        return new ImmutableLike.Builder().args(ImmutableList.of(function, scalarLiteral))
                                           .build();
     }
 
-    List<Operand> getOperands();
+    abstract class Builder extends BinaryScalarOperation.Builder<Like> {
 
-    @Value.Check
-    default void check() {
-        int count = getOperands().size();
-        Preconditions.checkState(count == 2, "a LIKE operation must have exactly two operands, found %s", count);
-    }
-
-    abstract class Builder {
-
-        public abstract Like build();
-
-        public abstract Like.Builder operands(Iterable<? extends Operand> operands);
-
-    }
-
-    @Override
-    default <U> U accept(CqlVisitor<U> visitor) {
-        U operand1 = getOperands().get(0)
-                                  .accept(visitor);
-        U operand2 = getOperands().get(1)
-                                  .accept(visitor);
-
-        return visitor.visit(this, Lists.newArrayList(operand1, operand2));
     }
 }

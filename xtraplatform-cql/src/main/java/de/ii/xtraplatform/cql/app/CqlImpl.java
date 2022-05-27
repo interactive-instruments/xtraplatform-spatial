@@ -17,11 +17,11 @@ import com.fasterxml.jackson.databind.util.StdConverter;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlNode;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.CqlToText;
+import de.ii.xtraplatform.cql.domain.Operation;
+import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.cql.infra.CqlTextParser;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -29,13 +29,6 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import io.dropwizard.jackson.Jackson;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.threeten.extra.Interval;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
@@ -43,6 +36,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.threeten.extra.Interval;
 
 @Singleton
 @AutoBind
@@ -60,20 +58,22 @@ public class CqlImpl implements Cql {
         SimpleModule module = new SimpleModule();
         module.addSerializer(Interval.class, new StdDelegatingSerializer(new IntervalConverter()));
         module.addSerializer(Instant.class, new StdDelegatingSerializer(new InstantConverter()));
+        module.setSerializerModifier(new TemporalLiteral.TemporalLiteralSerializerModifier());
 
         this.cqlJsonMapper = Jackson.newObjectMapper()
                                     .setSerializationInclusion(JsonInclude.Include.NON_ABSENT)
                                     .enable(SerializationFeature.INDENT_OUTPUT)
+                                    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                                     .registerModule(module);
     }
 
     @Override
-    public CqlFilter read(String cql, Format format) throws CqlParseException {
+    public Cql2Expression read(String cql, Format format) throws CqlParseException {
         return read(cql, format, OgcCrs.CRS84);
     }
 
     @Override
-    public CqlFilter read(String cql, Format format, EpsgCrs crs) throws CqlParseException {
+    public Cql2Expression read(String cql, Format format, EpsgCrs crs) throws CqlParseException {
         switch (format) {
 
             case TEXT:
@@ -81,7 +81,7 @@ public class CqlImpl implements Cql {
             case JSON:
                 cqlJsonMapper.setInjectableValues(new InjectableValues.Std().addValue("filterCrs", Optional.ofNullable(crs)));
                 try {
-                    return cqlJsonMapper.readValue(cql, CqlFilter.class);
+                    return cqlJsonMapper.readValue(cql, Operation.class);
                 } catch (IOException e) {
                     throw new CqlParseException(e.getMessage());
                 }
@@ -91,11 +91,11 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public String write(CqlFilter cql, Format format) {
+    public String write(Cql2Expression cql, Format format) {
         switch (format) {
 
             case TEXT:
-                return cql.accept(new CqlToText());
+                return cql.accept(new CqlToText(), true);
             case JSON:
                 try {
                     return cqlJsonMapper.writeValueAsString(cql);
@@ -108,50 +108,53 @@ public class CqlImpl implements Cql {
     }
 
     @Override
-    public List<String> findInvalidProperties(CqlPredicate cqlPredicate, Collection<String> validProperties) {
+    public List<String> findInvalidProperties(Cql2Expression cqlPredicate, Collection<String> validProperties) {
         CqlPropertyChecker visitor = new CqlPropertyChecker(validProperties);
 
-        return cqlPredicate.accept(visitor);
+        return cqlPredicate.accept(visitor, true);
     }
 
     @Override
-    public void checkTypes(CqlPredicate cqlPredicate, Map<String, String> propertyTypes) {
+    public void checkTypes(Cql2Expression cqlPredicate, Map<String, String> propertyTypes) {
         CqlTypeChecker visitor = new CqlTypeChecker(propertyTypes, this);
 
-        cqlPredicate.accept(visitor);
+        cqlPredicate.accept(visitor, true);
     }
 
     @Override
-    public void checkCoordinates(CqlPredicate cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs) {
+    public void checkCoordinates(Cql2Expression cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs) {
         long start = System.currentTimeMillis();
         CqlCoordinateChecker visitor = new CqlCoordinateChecker(crsTransformerFactory, crsInfo, filterCrs, nativeCrs);
 
-        cqlPredicate.accept(visitor);
+        cqlPredicate.accept(visitor, true);
         LOGGER.debug("Coordinate validation took {}ms.", System.currentTimeMillis() - start);
     }
 
     @Override
-    public CqlNode mapTemporalOperators(CqlFilter cqlFilter, Set<TemporalOperator> supportedOperators) {
+    public Cql2Expression mapTemporalOperators(Cql2Expression cqlFilter, Set<TemporalOperator> supportedOperators) {
         CqlVisitorMapTemporalOperators visitor = new CqlVisitorMapTemporalOperators(supportedOperators);
 
-        return cqlFilter.accept(visitor);
+        return (Cql2Expression) cqlFilter.accept(visitor, true);
     }
 
     @Override
-    public CqlNode mapEnvelopes(CqlFilter cqlFilter, CrsInfo crsInfo) {
+    public Cql2Expression mapEnvelopes(Cql2Expression cqlFilter, CrsInfo crsInfo) {
         CqlVisitorMapEnvelopes visitor = new CqlVisitorMapEnvelopes(crsInfo);
 
-        return cqlFilter.accept(visitor);
+        return (Cql2Expression) cqlFilter.accept(visitor, true);
     }
 
     static class IntervalConverter extends StdConverter<Interval, List<String>> {
 
         @Override
         public List<String> convert(Interval value) {
-
             return ImmutableList.of(
-                    value.getStart().toString(),
-                    value.getEnd().toString()
+                    value.getStart() == Instant.MIN
+                        ? ".."
+                        : value.getStart().toString(),
+                    value.getEnd() == Instant.MAX
+                        ? ".."
+                        : value.getEnd().toString()
             );
         }
     }

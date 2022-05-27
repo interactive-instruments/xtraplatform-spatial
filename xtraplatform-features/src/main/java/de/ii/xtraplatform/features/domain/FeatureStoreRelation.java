@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import org.immutables.value.Value;
 
 import java.util.List;
@@ -71,7 +71,7 @@ public interface FeatureStoreRelation {
         return getCardinality() == CARDINALITY.M_2_N;
     }
 
-    Optional<CqlFilter> getFilter();
+    Optional<Cql2Expression> getFilter();
 
     @Value.Derived
     default List<String> asPath() {

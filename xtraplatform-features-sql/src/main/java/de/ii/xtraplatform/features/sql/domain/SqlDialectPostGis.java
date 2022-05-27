@@ -83,8 +83,8 @@ public class SqlDialectPostGis implements SqlDialect {
   }
 
   @Override
-  public String getTemporalOperator(TemporalOperation temporalOperation) {
-    return TEMPORAL_OPERATORS.get(temporalOperation.getOperator());
+  public String getTemporalOperator(TemporalOperator temporalOperator) {
+    return TEMPORAL_OPERATORS.get(temporalOperator);
   }
 
   @Override

@@ -27,7 +27,7 @@ public interface ScalarLiteral extends Scalar, Literal, CqlNode {
         return new Builder(literal).build();
     }
 
-    static ScalarLiteral of(Boolean literal) {
+    static ScalarLiteral of(java.lang.Boolean literal) {
         return new Builder(literal).build();
     }
 
@@ -66,10 +66,10 @@ public interface ScalarLiteral extends Scalar, Literal, CqlNode {
         }
 
         @JsonCreator
-        public Builder(Boolean literal) {
+        public Builder(java.lang.Boolean literal) {
             super();
             value(literal);
-            type(Boolean.class);
+            type(java.lang.Boolean.class);
         }
 
         @JsonCreator
@@ -100,7 +100,7 @@ public interface ScalarLiteral extends Scalar, Literal, CqlNode {
                         return Double.valueOf(literal);
                     } catch (NumberFormatException e3) {
                         if (literal.equalsIgnoreCase("true") || literal.equalsIgnoreCase("false")) {
-                            return Boolean.valueOf(literal);
+                            return java.lang.Boolean.valueOf(literal);
                         }
                     }
                 }

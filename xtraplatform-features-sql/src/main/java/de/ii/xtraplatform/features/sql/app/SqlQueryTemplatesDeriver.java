@@ -8,8 +8,8 @@
 package de.ii.xtraplatform.features.sql.app;
 
 import de.ii.xtraplatform.cql.domain.And;
-import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.ImmutableCqlPredicate;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
+import de.ii.xtraplatform.cql.domain.In;
 import de.ii.xtraplatform.features.sql.app.SqlQueryTemplates.MetaQueryTemplate;
 import de.ii.xtraplatform.features.sql.app.SqlQueryTemplates.ValueQueryTemplate;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
@@ -117,7 +117,7 @@ public class SqlQueryTemplatesDeriver implements
 
   ValueQueryTemplate createValueQueryTemplate(SchemaSql schema, List<SchemaSql> parents) {
     return (limit, offset, additionalSortKeys, filter, minMaxKeys, virtualTables) -> {
-      boolean isIdFilter = filter.flatMap(CqlFilter::getInOperator).isPresent();
+      boolean isIdFilter = filter.filter(cql2Predicate -> cql2Predicate instanceof In).isPresent();
       List<String> aliases = aliasGenerator.getAliases(schema);
 
       SchemaSql rootSchema = parents.isEmpty() ? schema : parents.get(0);
@@ -324,7 +324,7 @@ public class SqlQueryTemplatesDeriver implements
   }
 
   private Optional<String> getFilter(SchemaSql schema,
-      Optional<CqlFilter> userFilter) {
+      Optional<Cql2Expression> userFilter) {
     if (schema.getFilter().isEmpty() && userFilter.isEmpty()) {
       return Optional.empty();
     }
@@ -337,12 +337,12 @@ public class SqlQueryTemplatesDeriver implements
     }
     if (schema.getFilter().isPresent() && schema.getRelation().isEmpty() && userFilter
         .isPresent()) {
-      CqlFilter mergedFilter = CqlFilter.of(
+      Cql2Expression mergedFilter =
           And.of(
-              ImmutableCqlPredicate.copyOf(schema.getFilter().get()),
-              ImmutableCqlPredicate.copyOf(userFilter.get())
+              schema.getFilter().get(),
+              userFilter.get()
           )
-      );
+      ;
 
       return Optional.of(filterEncoder.encode(mergedFilter, schema));
     }

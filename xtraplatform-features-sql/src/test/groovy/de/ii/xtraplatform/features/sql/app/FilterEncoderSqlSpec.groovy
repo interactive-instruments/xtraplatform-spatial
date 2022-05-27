@@ -99,7 +99,7 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_14
 
         when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) > TIMESTAMP '2017-06-10T07:30:00Z') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) < TIMESTAMP '2017-06-11T10:30:00Z')"
+        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) > TIMESTAMP '2017-06-10T07:30:00Z') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) < TIMESTAMP '2017-06-11T10:30:00Z'))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 

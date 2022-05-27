@@ -11,12 +11,12 @@ import java.util.List;
 
 public interface CqlVisitor<T> {
 
+    default T postProcess(CqlNode node, T t) {
+        return t;
+    }
+
     default T visit(CqlNode node, List<T> children) {
-        if (node instanceof CqlFilter) {
-            return visit((CqlFilter) node, children);
-        } else if (node instanceof CqlPredicate) {
-            return visit((CqlPredicate) node, children);
-        } else if (node instanceof Not) {
+        if (node instanceof Not) {
             return visit((Not) node, children);
         } else if (node instanceof LogicalOperation) {
             return visit((LogicalOperation) node, children);
@@ -30,12 +30,12 @@ public interface CqlVisitor<T> {
             return visit((IsNull) node, children);
         } else if (node instanceof BinaryScalarOperation) {
             return visit((BinaryScalarOperation) node, children);
-        } else if (node instanceof TemporalOperation) {
-            return visit((TemporalOperation) node, children);
-        } else if (node instanceof SpatialOperation) {
-            return visit((SpatialOperation) node, children);
-        } else if (node instanceof ArrayOperation) {
-            return visit((ArrayOperation) node, children);
+        } else if (node instanceof BinaryTemporalOperation) {
+            return visit((BinaryTemporalOperation) node, children);
+        } else if (node instanceof BinarySpatialOperation) {
+            return visit((BinarySpatialOperation) node, children);
+        } else if (node instanceof BinaryArrayOperation) {
+            return visit((BinaryArrayOperation) node, children);
         } else if (node instanceof Property) {
             return visit((Property) node, children);
         } else if (node instanceof ScalarLiteral) {
@@ -64,14 +64,12 @@ public interface CqlVisitor<T> {
             return visit((SpatialLiteral) node, children);
         } else if (node instanceof Function) {
             return visit((Function) node, children);
+        } else if (node instanceof BooleanValue2) {
+            return visit((BooleanValue2) node, children);
         }
 
         throw new IllegalStateException();
     }
-
-    T visit(CqlFilter cqlFilter, List<T> children);
-
-    T visit(CqlPredicate cqlPredicate, List<T> children);
 
     T visit(Not not, List<T> children);
 
@@ -87,11 +85,11 @@ public interface CqlVisitor<T> {
 
     T visit(IsNull isNull, List<T> children);
 
-    T visit(TemporalOperation temporalOperation, List<T> children);
+    T visit(BinaryTemporalOperation temporalOperation, List<T> children);
 
-    T visit(SpatialOperation spatialOperation, List<T> children);
+    T visit(BinarySpatialOperation spatialOperation, List<T> children);
 
-    T visit(ArrayOperation arrayOperation, List<T> children);
+    T visit(BinaryArrayOperation arrayOperation, List<T> children);
 
     T visit(Property property, List<T> children);
 
@@ -120,4 +118,6 @@ public interface CqlVisitor<T> {
     T visit(Geometry.Envelope envelope, List<T> children);
 
     T visit(Function function, List<T> children);
+
+    T visit(BooleanValue2 booleanValue, List<T> children);
 }

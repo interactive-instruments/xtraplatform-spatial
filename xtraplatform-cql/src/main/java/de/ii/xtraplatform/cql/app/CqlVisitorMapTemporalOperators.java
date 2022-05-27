@@ -28,19 +28,16 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
     }
 
     @Override
-    public CqlNode visit(TemporalOperation temporalOperation, List<CqlNode> children) {
+    public CqlNode visit(BinaryTemporalOperation temporalOperation, List<CqlNode> children) {
 
         Temporal temporal1 = (Temporal) children.get(0);
         Temporal temporal2 = (Temporal) children.get(1);
 
-        TemporalOperator temporalOperator = temporalOperation.getOperator();
+        TemporalOperator temporalOperator = TemporalOperator.valueOf(temporalOperation.getOp().toUpperCase());
 
         // if the next visitor supports a temporal operator, we keep it
         if (supportedOperators.contains(temporalOperator)) {
-            return new ImmutableTemporalOperation.Builder()
-                .operator(temporalOperator)
-                .operands(ImmutableList.of(temporal1,temporal2))
-                .build();
+            return BinaryTemporalOperation.of(temporalOperator, temporal1, temporal2);
         }
 
         Optional<Class<?>> granularity = getGranularity(temporal1, temporal2);
@@ -66,8 +63,8 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
             case T_DURING:
                 // start1 > start2 AND end1 < end2
                 return And.of(
-                    CqlPredicate.of(Gt.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity)))),
-                    CqlPredicate.of(Lt.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity)))));
+                    Gt.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity))),
+                    Lt.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity))));
             case T_EQUALS:
                 // this operator accepts not only intervals, but also instants
                 if (instantsOfSameGranularity(temporal1, temporal2)) {
@@ -76,23 +73,23 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
                 }
                 // start1 = start2 AND end1 = end2
                 return And.of(
-                    CqlPredicate.of(Eq.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity)))),
-                    CqlPredicate.of(Eq.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity)))));
+                    Eq.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity))),
+                    Eq.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity))));
             case T_STARTS:
                 // start1 = start2 AND end1 < end2
                 return And.of(
-                    CqlPredicate.of(Eq.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity)))),
-                    CqlPredicate.of(Lt.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity)))));
+                    Eq.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity))),
+                    Lt.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity))));
             case T_STARTEDBY:
                 // start1 = start2 AND end1 > end2
                 return And.of(
-                    CqlPredicate.of(Eq.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity)))),
-                    CqlPredicate.of(Gt.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity)))));
+                    Eq.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity))),
+                    Gt.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity))));
             case T_CONTAINS:
                 // start1 < start2 AND end1 > end2
                 return And.of(
-                    CqlPredicate.of(Lt.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity)))),
-                    CqlPredicate.of(Gt.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity)))));
+                    Lt.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity))),
+                    Gt.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity))));
             case T_DISJOINT:
                 // this operator accepts not only intervals, but also instants
                 if (instantsOfSameGranularity(temporal1, temporal2)) {
@@ -101,8 +98,8 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
                 }
                 // end1 < start2 OR start1 > end2
                 return Or.of(
-                    CqlPredicate.of(Lt.of(ImmutableList.of(getEnd(temporal1, granularity), getStart(temporal2, granularity)))),
-                    CqlPredicate.of(Gt.of(ImmutableList.of(getStart(temporal1, granularity), getEnd(temporal2, granularity)))));
+                    Lt.of(ImmutableList.of(getEnd(temporal1, granularity), getStart(temporal2, granularity))),
+                    Gt.of(ImmutableList.of(getStart(temporal1, granularity), getEnd(temporal2, granularity))));
             case T_INTERSECTS:
                 // this operator accepts not only intervals, but also instants
                 if (instantsOfSameGranularity(temporal1, temporal2)) {
@@ -113,40 +110,40 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
                 // to avoid issues with properties that are null evaluate as (using De Morgan's laws)
                 // end1 >= start2 AND start1 <= end2
                 return And.of(
-                    CqlPredicate.of(Gte.of(ImmutableList.of(getEnd(temporal1, granularity), getStart(temporal2, granularity)))),
-                    CqlPredicate.of(Lte.of(ImmutableList.of(getStart(temporal1, granularity), getEnd(temporal2, granularity)))));
+                    Gte.of(ImmutableList.of(getEnd(temporal1, granularity), getStart(temporal2, granularity))),
+                    Lte.of(ImmutableList.of(getStart(temporal1, granularity), getEnd(temporal2, granularity))));
             case T_FINISHES:
                 // start1 > start2 AND end1 = end2
                 return And.of(
-                    CqlPredicate.of(Gt.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity)))),
-                    CqlPredicate.of(Eq.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity)))));
+                    Gt.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity))),
+                    Eq.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity))));
             case T_FINISHEDBY:
                 // start1 < start2 AND end1 = end2
                 return And.of(
-                    CqlPredicate.of(Lt.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity)))),
-                    CqlPredicate.of(Eq.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity)))));
+                    Lt.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity))),
+                    Eq.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity))));
             case T_MEETS:
                 // end1 = start2
                 return new ImmutableEq.Builder()
-                    .addOperands(getEnd(temporal1, granularity), getStart(temporal2, granularity))
+                    .addArgs(getEnd(temporal1, granularity), getStart(temporal2, granularity))
                     .build();
             case T_METBY:
                 // start1 = end2
                 return new ImmutableEq.Builder()
-                    .addOperands(getStart(temporal1, granularity), getEnd(temporal2, granularity))
+                    .addArgs(getStart(temporal1, granularity), getEnd(temporal2, granularity))
                     .build();
             case T_OVERLAPS:
                 // start1 < start2 AND end1 > start2 AND end1 < end2
                 return And.of(
-                    CqlPredicate.of(Lt.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity)))),
-                    CqlPredicate.of(Gt.of(ImmutableList.of(getEnd(temporal1, granularity), getStart(temporal2, granularity)))),
-                    CqlPredicate.of(Lt.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity)))));
+                    Lt.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity))),
+                    Gt.of(ImmutableList.of(getEnd(temporal1, granularity), getStart(temporal2, granularity))),
+                    Lt.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity))));
             case T_OVERLAPPEDBY:
                 // start1 > start2 AND start1 < end2 AND end1 > end2
                 return And.of(
-                    CqlPredicate.of(Gt.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity)))),
-                    CqlPredicate.of(Lt.of(ImmutableList.of(getStart(temporal1, granularity), getEnd(temporal2, granularity)))),
-                    CqlPredicate.of(Gt.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity)))));
+                    Gt.of(ImmutableList.of(getStart(temporal1, granularity), getStart(temporal2, granularity))),
+                    Lt.of(ImmutableList.of(getStart(temporal1, granularity), getEnd(temporal2, granularity))),
+                    Gt.of(ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity))));
         }
 
         throw new IllegalStateException("unknown temporal operator: " + temporalOperator);
@@ -200,7 +197,7 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
         Class<?> type1 = null;
         if (temporal1 instanceof TemporalLiteral) {
             if (((TemporalLiteral) temporal1).getType().equals(Function.class)) {
-                List<Operand> arguments = ((Function) ((TemporalLiteral) temporal1).getValue()).getArguments();
+                List<Operand> arguments = ((Function) ((TemporalLiteral) temporal1).getValue()).getArgs();
                 if (arguments.stream()
                     .anyMatch(arg -> arg instanceof TemporalLiteral && ((TemporalLiteral) arg).getType().equals(LocalDate.class))) {
                     type1 = LocalDate.class;
@@ -216,7 +213,7 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
         Class<?> type2 = null;
         if (temporal2 instanceof TemporalLiteral) {
             if (((TemporalLiteral) temporal2).getType().equals(Function.class)) {
-                List<Operand> arguments = ((Function) ((TemporalLiteral) temporal2).getValue()).getArguments();
+                List<Operand> arguments = ((Function) ((TemporalLiteral) temporal2).getValue()).getArgs();
                 if (arguments.stream()
                     .anyMatch(arg -> arg instanceof TemporalLiteral && ((TemporalLiteral) arg).getType().equals(LocalDate.class))) {
                     type2 = LocalDate.class;
@@ -256,11 +253,11 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
                 return TemporalLiteral.of(Instant.MIN);
             } else if (((TemporalLiteral) temporal).getType() == Function.class) {
                 Function function = (Function) ((TemporalLiteral) temporal).getValue();
-                return getStart((Temporal) function.getArguments().get(0), granularity);
+                return getStart((Temporal) function.getArgs().get(0), granularity);
             }
             return temporal;
         } else if (temporal instanceof Function) {
-            Temporal start = (Temporal) ((Function) temporal).getArguments().get(0);
+            Temporal start = (Temporal) ((Function) temporal).getArgs().get(0);
             if (start instanceof TemporalLiteral && ((TemporalLiteral) start).getType() == TemporalLiteral.OPEN.class) {
                 return TemporalLiteral.of(Instant.MIN);
             }
@@ -276,14 +273,12 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
         } else if (temporal instanceof TemporalLiteral) {
             if (((TemporalLiteral) temporal).getType() == Interval.class) {
                 Instant end = ((Interval) ((TemporalLiteral) temporal).getValue()).getEnd();
-                if (end==Instant.MAX)
-                    return TemporalLiteral.of(Instant.MAX);
-                return TemporalLiteral.of(end.minusSeconds(1));
+                return TemporalLiteral.of(end);
             } else if (((TemporalLiteral) temporal).getType() == TemporalLiteral.OPEN.class) {
                 return TemporalLiteral.of(Instant.MAX);
             } else if (((TemporalLiteral) temporal).getType() == Function.class) {
                 Function function = (Function) ((TemporalLiteral) temporal).getValue();
-                return getEnd((Temporal) function.getArguments().get(1), granularity);
+                return getEnd((Temporal) function.getArgs().get(1), granularity);
             } else if (((TemporalLiteral) temporal).getType() == LocalDate.class) {
                 // if we know that the temporal granularity is "day", we return the value
                 if (granularity.isPresent() && LocalDate.class.equals(granularity.get())) {
@@ -299,7 +294,7 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
             }
             return temporal;
         } else if (temporal instanceof Function) {
-            Temporal end = (Temporal) ((Function) temporal).getArguments().get(1);
+            Temporal end = (Temporal) ((Function) temporal).getArgs().get(1);
             if (end instanceof TemporalLiteral && ((TemporalLiteral) end).getType() == TemporalLiteral.OPEN.class) {
                 return TemporalLiteral.of(Instant.MAX);
             }

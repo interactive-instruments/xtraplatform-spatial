@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
-import de.ii.xtraplatform.cql.domain.CqlFilter;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.List;
 import java.util.Optional;
@@ -30,7 +30,7 @@ public interface SqlPath {
 
   String getPrimaryKey();
 
-  Optional<CqlFilter> getFilter();
+  Optional<Cql2Expression> getFilter();
 
   Optional<String> getFilterString();
 

@@ -7,27 +7,30 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
 
+import de.ii.xtraplatform.base.domain.util.LambdaWithException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @JsonDeserialize(using = Operand.OperandDeserializer.class)
 public interface Operand extends CqlNode {
@@ -40,7 +43,7 @@ public interface Operand extends CqlNode {
                 Arrays.stream(SpatialOperator.values()).map(op -> op.toString().toLowerCase()).collect(Collectors.toUnmodifiableList());
         private static final List<String> TEMPORAL =
                 Arrays.stream(TemporalOperator.values()).map(op -> op.toString().toLowerCase()).collect(Collectors.toUnmodifiableList());
-        private static final List<String> SCALAR = ImmutableList.of("value", "list", "operands", "eq", "neq", "gt", "gte", "lt", "lte", "between", "in", "isnull");
+        private static final List<String> SCALAR = ImmutableList.of("value", "list", "args", "eq", "neq", "gt", "gte", "lt", "lte", "between", "in", "isnull");
 
         protected OperandDeserializer() {
             this(null);
@@ -65,16 +68,37 @@ public interface Operand extends CqlNode {
 
         private Operand getOperand(JsonParser parser, JsonNode node, String parent) throws JsonProcessingException {
             ObjectCodec oc = parser.getCodec();
-            // TODO support ArrayLiteral
             if (node.isObject()) {
                 if (Objects.nonNull(node.get("property"))) {
                     return oc.treeToValue(node, Property.class);
+                } else if (Objects.nonNull(node.get("date"))) {
+                    return oc.treeToValue(node.get("date"), TemporalLiteral.class);
+                } else if (Objects.nonNull(node.get("timestamp"))) {
+                    return oc.treeToValue(node.get("timestamp"), TemporalLiteral.class);
+                } else if (Objects.nonNull(node.get("interval"))) {
+                    if (node.get("interval").isArray()) {
+                        Temporal op1 = (Temporal) getOperand(parser, node.get("interval").get(0), parent);
+                        Temporal op2 = (Temporal) getOperand(parser, node.get("interval").get(1), parent);
+
+                        return TemporalLiteral.interval(op1, op2);
+                    }
+                    throw new JsonParseException(parser, "Interval has to be an array.");
+                } else if (Objects.nonNull(node.get("bbox"))) {
+                    return SpatialLiteral.of(oc.treeToValue(node, Geometry.Envelope.class));
+                } else if (Objects.nonNull(node.get("type"))) {
+                    return SpatialLiteral.of(oc.treeToValue(node, Geometry.class));
+                } else if (Objects.nonNull(node.get("casei"))) {
+                    return Function.of("CASEI", ImmutableList.of(getOperand(parser, node.get("casei"), parent)));
+                } else if (Objects.nonNull(node.get("accenti"))) {
+                    return Function.of("ACCENTI", ImmutableList.of(getOperand(parser, node.get("accenti"), parent)));
+                } else if (Objects.nonNull(node.get("op"))) {
+                    return oc.treeToValue(node, Operation.class);
                 } else if (Objects.nonNull(node.get("function"))) {
                     List<Operand> list = new ArrayList<>();
-                    Iterator<JsonNode> iterator = node.get("function").get("arguments").elements();
+                    Iterator<JsonNode> iterator = node.get("function").get("args").elements();
                     while (iterator.hasNext()) {
                         JsonNode listNode = iterator.next();
-                        list.add(getOperand(parser, listNode, "arguments"));
+                        list.add(getOperand(parser, listNode, "args"));
                     }
                     return Function.of(node.get("function").get("name").textValue(), list);
                 } else if (SPATIAL.contains(parent)) {
@@ -84,18 +108,22 @@ public interface Operand extends CqlNode {
                 if (TEMPORAL.contains(parent)) {
                     return oc.treeToValue(node, TemporalLiteral.class);
                 }
+
+                List<Scalar> scalars = StreamSupport.stream(
+                    Spliterators.spliteratorUnknownSize(
+                        ((ArrayNode)node).elements(),
+                        Spliterator.ORDERED)
+                    , false)
+                    .map(LambdaWithException.mayThrow(jsonNode -> (Scalar)getOperand(parser, jsonNode, parent)))
+                    .collect(Collectors.toList());
+
+                return ArrayLiteral.of(scalars);
             } else if (node.isValueNode()) {
-                if (SCALAR.contains(parent)) {
-                    return getScalar(node);
-                } else if (TEMPORAL.contains(parent)) {
+                // we have to guess, try temporal first
+                try {
                     return oc.treeToValue(node, TemporalLiteral.class);
-                } else {
-                    // we have to guess, try temporal first
-                    try {
-                        return oc.treeToValue(node, TemporalLiteral.class);
-                    } catch (JsonProcessingException e) {
-                        return getScalar(node);
-                    }
+                } catch (JsonProcessingException e) {
+                    return getScalar(node);
                 }
             }
 
@@ -109,13 +137,14 @@ public interface Operand extends CqlNode {
             // Parse "object" node into Jackson's tree model
             JsonNode node = parser.getCodec().readTree(parser);
 
+            JsonStreamContext parent = parser.getParsingContext()
+                .getParent();
+
             // Get name of the parent key
-            String parent = parser.getParsingContext()
-                                  .getParent()
-                                  .getCurrentName()
+            String parentName = parent.getCurrentName()
                                   .toLowerCase();
 
-            return getOperand(parser, node, parent);
+            return getOperand(parser, node, parentName);
         }
 
     }

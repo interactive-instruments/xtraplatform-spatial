@@ -9,86 +9,62 @@ package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import org.immutables.value.Value;
-
-import java.util.List;
 import java.util.Optional;
+import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableBetween.Builder.class)
-public interface Between extends NonBinaryScalarOperation, CqlNode {
+public interface Between extends TernaryOperation<Scalar>, CqlNode {
+
+    String TYPE = "between";
+
+    @Override
+    @Value.Derived
+    default String getOp() {
+        return TYPE;
+    }
 
     static Between of(String property, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
-        return new ImmutableBetween.Builder().value(Property.of(property))
-                                             .lower(scalarLiteral1)
-                                             .upper(scalarLiteral2)
+        return new ImmutableBetween.Builder().addArgs(Property.of(property))
+                                             .addArgs(scalarLiteral1)
+                                             .addArgs(scalarLiteral2)
                                              .build();
     }
 
     static Between of(Property property, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
-        return new ImmutableBetween.Builder().value(property)
-                .lower(scalarLiteral1)
-                .upper(scalarLiteral2)
+        return new ImmutableBetween.Builder().addArgs(property)
+                .addArgs(scalarLiteral1)
+                .addArgs(scalarLiteral2)
                 .build();
     }
 
     static Between ofFunction(Function function, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
-        return new ImmutableBetween.Builder().value(function)
-                                             .lower(scalarLiteral1)
-                                             .upper(scalarLiteral2)
+        return new ImmutableBetween.Builder().addArgs(function)
+                                             .addArgs(scalarLiteral1)
+                                             .addArgs(scalarLiteral2)
                                              .build();
-    }
-
-    Optional<Scalar> getValue();
-
-    Optional<Scalar> getLower();
-
-    Optional<Scalar> getUpper();
-
-    @Value.Check
-    default void check() {
-        int count = getOperands().size();
-        Preconditions.checkState(count == 3, "a BETWEEN operation must have exactly three operands, found %s", count);
     }
 
     @JsonIgnore
     @Value.Derived
-    @Value.Auxiliary
-    default List<Operand> getOperands() {
-        return ImmutableList.of(
-                getValue(),
-                getLower(),
-                getUpper()
-        )
-                            .stream()
-                            .filter(Optional::isPresent)
-                            .map(Optional::get)
-                            .collect(ImmutableList.toImmutableList());
+    default Optional<Scalar> getValue() {
+        return Optional.ofNullable(getArgs().get(0));
     }
 
-    abstract class Builder {
-
-        public abstract Between build();
-
-        public abstract Between.Builder value(Scalar operand);
-
-        public abstract Between.Builder lower(Scalar lower);
-
-        public abstract Between.Builder upper(Scalar upper);
+    @JsonIgnore
+    @Value.Derived
+    default Optional<Scalar> getLower() {
+        return Optional.ofNullable(getArgs().get(1));
     }
 
-    @Override
-    default <U> U accept(CqlVisitor<U> visitor) {
-        U operand = getValue().get()
-                                  .accept(visitor);
-        U lower = getLower().get()
-                            .accept(visitor);
-        U upper = getUpper().get()
-                            .accept(visitor);
+    @JsonIgnore
+    @Value.Derived
+    default Optional<Scalar> getUpper() {
+        return Optional.ofNullable(getArgs().get(2));
+    }
 
-        return visitor.visit(this, Lists.newArrayList(operand, lower, upper));
+
+    abstract class Builder extends TernaryOperation.Builder<Scalar, Between> {
+
     }
 }

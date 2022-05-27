@@ -20,19 +20,19 @@ public interface Cql {
 
     enum Format {TEXT, JSON}
 
-    CqlFilter read(String cql, Format format) throws CqlParseException;
+    Cql2Expression read(String cql, Format format) throws CqlParseException;
 
-    CqlFilter read(String cql, Format format, EpsgCrs crs) throws CqlParseException;
+    Cql2Expression read(String cql, Format format, EpsgCrs crs) throws CqlParseException;
 
-    String write(CqlFilter cql, Format format);
+    String write(Cql2Expression cql, Format format);
 
-    List<String> findInvalidProperties(CqlPredicate cqlPredicate, Collection<String> validProperties);
+    List<String> findInvalidProperties(Cql2Expression cqlPredicate, Collection<String> validProperties);
 
-    void checkTypes(CqlPredicate cqlPredicate, Map<String, String> propertyTypes);
+    void checkTypes(Cql2Expression cqlPredicate, Map<String, String> propertyTypes);
 
-    void checkCoordinates(CqlPredicate cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs);
+    void checkCoordinates(Cql2Expression cqlPredicate, CrsTransformerFactory crsTransformerFactory, CrsInfo crsInfo, EpsgCrs filterCrs, EpsgCrs nativeCrs);
 
-    CqlNode mapTemporalOperators(CqlFilter cqlFilter, Set<TemporalOperator> supportedOperators);
+    Cql2Expression mapTemporalOperators(Cql2Expression cqlFilter, Set<TemporalOperator> supportedOperators);
 
-    CqlNode mapEnvelopes(CqlFilter cqlFilter, CrsInfo crsInfo);
+    Cql2Expression mapEnvelopes(Cql2Expression cqlFilter, CrsInfo crsInfo);
 }

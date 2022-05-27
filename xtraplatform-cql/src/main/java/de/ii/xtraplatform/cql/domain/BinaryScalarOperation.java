@@ -10,16 +10,8 @@ package de.ii.xtraplatform.cql.domain;
 import com.google.common.base.Preconditions;
 import org.immutables.value.Value;
 
-public interface BinaryScalarOperation extends BinaryOperation<ScalarLiteral>, CqlNode {
+public interface BinaryScalarOperation extends BinaryOperation2<Scalar>, CqlNode {
 
-    @Value.Check
-    @Override
-    default void check() {
-        BinaryOperation.super.check();
-        getOperands().stream()
-                     .forEach(operand -> Preconditions.checkState(operand instanceof Scalar, "a scalar operation must have scalar operands, found %s", operand.getClass().getSimpleName()));
-    }
-
-    abstract class Builder<T extends BinaryScalarOperation> extends BinaryOperation.Builder<ScalarLiteral, T> {}
+    abstract class Builder<T extends BinaryScalarOperation> extends Operation.Builder<Scalar, T> {}
 
 }
