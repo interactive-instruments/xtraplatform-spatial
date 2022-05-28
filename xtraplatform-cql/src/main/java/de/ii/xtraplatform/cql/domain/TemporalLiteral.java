@@ -106,11 +106,11 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
     static Temporal interval(Temporal op1, Temporal op2) {
         // if at least one parameter is a property, we create a function, otherwise a fixed interval
         if (op1 instanceof Property && op2 instanceof Property) {
-            return Function.of("INTERVAL", ImmutableList.of((Property) op1, (Property) op2));
+            return de.ii.xtraplatform.cql.domain.Interval.of(ImmutableList.of((Property) op1, (Property) op2));
         } else if (op1 instanceof Property &&  op2 instanceof TemporalLiteral) {
-            return Function.of("INTERVAL", ImmutableList.of((Property) op1, (TemporalLiteral) op2));
+            return de.ii.xtraplatform.cql.domain.Interval.of(ImmutableList.of((Property) op1, (TemporalLiteral) op2));
         } else if (op1 instanceof TemporalLiteral &&  op2 instanceof Property) {
-            return Function.of("INTERVAL", ImmutableList.of((TemporalLiteral) op1, (Property) op2));
+            return de.ii.xtraplatform.cql.domain.Interval.of(ImmutableList.of((TemporalLiteral) op1, (Property) op2));
         } else if (op1 instanceof TemporalLiteral &&  op2 instanceof TemporalLiteral) {
             return TemporalLiteral.of((TemporalLiteral) op1, (TemporalLiteral) op2);
         }
@@ -161,8 +161,8 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
                 value(Interval.of(getStartInclusive(startInclusive.getValue()), getEndExclusive(endInclusive.getValue())));
                 type(Interval.class);
             } else {
-                value(Function.of("INTERVAL", ImmutableList.of(startInclusive, endInclusive)));
-                type(Function.class);
+                value(de.ii.xtraplatform.cql.domain.Interval.of(ImmutableList.of(startInclusive, endInclusive)));
+                type(de.ii.xtraplatform.cql.domain.Interval.class);
             }
         }
 
@@ -221,23 +221,21 @@ public interface TemporalLiteral extends Temporal, Scalar, Literal, CqlNode {
 
         @Override
         public void serialize(TemporalLiteral value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            if (value.getType().equals(Function.class)) {
-                Function f = (Function) value.getValue();
-                if (f.isInterval()) {
-                    gen.writeStartObject();
-                    gen.writeFieldName(f.getName().toLowerCase());
-                    gen.writeStartArray();
-                    for (Operand operand : f.getArgs()) {
-                        if (operand instanceof TemporalLiteral) {
-                            gen.writeString(String.format("%s", ((TemporalLiteral) operand).getValue().toString()));
-                        } else {
-                            gen.writeObject(operand);
-                        }
+            if (value.getType().equals(de.ii.xtraplatform.cql.domain.Interval.class)) {
+                de.ii.xtraplatform.cql.domain.Interval interval = (de.ii.xtraplatform.cql.domain.Interval) value.getValue();
+                gen.writeStartObject();
+                gen.writeFieldName("interval");
+                gen.writeStartArray();
+                for (Operand operand : interval.getArgs()) {
+                    if (operand instanceof TemporalLiteral) {
+                        gen.writeString(String.format("%s", ((TemporalLiteral) operand).getValue().toString()));
+                    } else {
+                        gen.writeObject(operand);
                     }
-                    gen.writeEndArray();
-                    gen.writeEndObject();
-                    return;
                 }
+                gen.writeEndArray();
+                gen.writeEndObject();
+                return;
             }
 
             // use default serializer

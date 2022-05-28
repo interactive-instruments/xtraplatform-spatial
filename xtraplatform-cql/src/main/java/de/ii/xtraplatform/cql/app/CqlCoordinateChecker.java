@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 
 public class CqlCoordinateChecker extends CqlVisitorBase<Object> {
 
-    private static List<String> AXES = ImmutableList.of("first", "second", "third");
+    private static final List<String> AXES = ImmutableList.of("first", "second", "third");
 
     private final CrsInfo crsInfo;
     private final EpsgCrs filterCrs;

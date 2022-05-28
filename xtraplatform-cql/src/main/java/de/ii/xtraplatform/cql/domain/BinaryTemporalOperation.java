@@ -78,14 +78,12 @@ public interface BinaryTemporalOperation extends BinaryOperation2<Temporal>, Cql
         BinaryOperation2.super.check();
         getArgs().forEach(operand -> {
             Preconditions.checkState(operand != null, "a temporal operation must have temporal operands, found null");
-            if (operand instanceof Function)
-                Preconditions.checkState(((Function) operand).isInterval(), "The arguments of %s must be an INTERVAL(). Found: a function '%s' of type '%s'.", getTemporalOperator().toString(), ((Function) operand).getName(), ((Function) operand).getType());
             if (INTERVAL_ONLY.contains(getTemporalOperator())) {
                 if (operand instanceof Property)
                     Preconditions.checkState(true, "The arguments of %s must be an INTERVAL(). Found: a property ('%s').", getTemporalOperator().toString(), ((Property) operand).getName());
                 if (operand instanceof TemporalLiteral)
-                    Preconditions.checkState( ((TemporalLiteral) operand).getType() == Interval.class ||
-                        (((TemporalLiteral) operand).getType() == Function.class && ((Function)((TemporalLiteral) operand).getValue()).isInterval()), "The arguments of %s must be an INTERVAL(). Found: a temporal literal '%s' of type '%s'.", getTemporalOperator().toString(), ((TemporalLiteral) operand).getValue(), ((TemporalLiteral) operand).getType());
+                    Preconditions.checkState(((TemporalLiteral) operand).getType() == Interval.class ||
+                        (((TemporalLiteral) operand).getType() == de.ii.xtraplatform.cql.domain.Interval.class), "The arguments of %s must be an INTERVAL(). Found: a temporal literal '%s' of type '%s'.", getTemporalOperator().toString(), ((TemporalLiteral) operand).getValue(), ((TemporalLiteral) operand).getType());
             }
         });
     }

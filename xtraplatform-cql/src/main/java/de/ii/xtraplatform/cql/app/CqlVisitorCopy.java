@@ -89,6 +89,29 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
     }
 
     @Override
+    public CqlNode visit(Casei casei, List<CqlNode> children) {
+        ImmutableCasei.Builder builder = new ImmutableCasei.Builder();
+        builder.value((Scalar) children.get(0));
+        return builder.build();
+    }
+
+    @Override
+    public CqlNode visit(Accenti accenti, List<CqlNode> children) {
+        ImmutableAccenti.Builder builder = new ImmutableAccenti.Builder();
+        builder.value((Scalar) children.get(0));
+        return builder.build();
+    }
+
+    @Override
+    public CqlNode visit(Interval interval, List<CqlNode> children) {
+        ImmutableInterval.Builder builder = new ImmutableInterval.Builder();
+        return builder.args(children.stream()
+                                .map(child -> (Operand) child)
+                                .collect(Collectors.toUnmodifiableList()))
+            .build();
+    }
+
+    @Override
     public CqlNode visit(Like like, List<CqlNode> children) {
         Like.Builder builder = new ImmutableLike.Builder();
 

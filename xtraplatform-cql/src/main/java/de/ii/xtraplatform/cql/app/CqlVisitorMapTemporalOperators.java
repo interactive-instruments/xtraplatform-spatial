@@ -156,20 +156,12 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
 
         Class<?> type1 = null;
         if (temporal1 instanceof TemporalLiteral) {
-            if (((TemporalLiteral) temporal1).getType().equals(Function.class)) {
-                return false;
-            } else {
-                type1 = ((TemporalLiteral) temporal1).getType();
-            }
+            type1 = ((TemporalLiteral) temporal1).getType();
         }
 
         Class<?> type2 = null;
         if (temporal2 instanceof TemporalLiteral) {
-            if (((TemporalLiteral) temporal2).getType().equals(Function.class)) {
-                return false;
-            } else {
-                type2 = ((TemporalLiteral) temporal2).getType();
-            }
+            type2 = ((TemporalLiteral) temporal2).getType();
         }
 
         // if one is a property and the other a literal, we assume that both are of the same type
@@ -182,6 +174,12 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
                 type2 = type1;
             }
         }
+
+        // fold intervals
+        if (de.ii.xtraplatform.cql.domain.Interval.class.equals(type1))
+            type1 = Interval.class;
+        if (de.ii.xtraplatform.cql.domain.Interval.class.equals(type2))
+            type2 = Interval.class;
 
         return Objects.nonNull(type1)
             && Objects.nonNull(type2)
@@ -196,8 +194,8 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
 
         Class<?> type1 = null;
         if (temporal1 instanceof TemporalLiteral) {
-            if (((TemporalLiteral) temporal1).getType().equals(Function.class)) {
-                List<Operand> arguments = ((Function) ((TemporalLiteral) temporal1).getValue()).getArgs();
+            if (((TemporalLiteral) temporal1).getType().equals(de.ii.xtraplatform.cql.domain.Interval.class)) {
+                List<Operand> arguments = ((de.ii.xtraplatform.cql.domain.Interval) ((TemporalLiteral) temporal1).getValue()).getArgs();
                 if (arguments.stream()
                     .anyMatch(arg -> arg instanceof TemporalLiteral && ((TemporalLiteral) arg).getType().equals(LocalDate.class))) {
                     type1 = LocalDate.class;
@@ -212,8 +210,8 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
 
         Class<?> type2 = null;
         if (temporal2 instanceof TemporalLiteral) {
-            if (((TemporalLiteral) temporal2).getType().equals(Function.class)) {
-                List<Operand> arguments = ((Function) ((TemporalLiteral) temporal2).getValue()).getArgs();
+            if (((TemporalLiteral) temporal2).getType().equals(de.ii.xtraplatform.cql.domain.Interval.class)) {
+                List<Operand> arguments = ((de.ii.xtraplatform.cql.domain.Interval) ((TemporalLiteral) temporal2).getValue()).getArgs();
                 if (arguments.stream()
                     .anyMatch(arg -> arg instanceof TemporalLiteral && ((TemporalLiteral) arg).getType().equals(LocalDate.class))) {
                     type2 = LocalDate.class;
@@ -251,11 +249,14 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
                 return TemporalLiteral.of(((Interval) ((TemporalLiteral) temporal).getValue()).getStart());
             } else if (((TemporalLiteral) temporal).getType() == TemporalLiteral.OPEN.class) {
                 return TemporalLiteral.of(Instant.MIN);
-            } else if (((TemporalLiteral) temporal).getType() == Function.class) {
-                Function function = (Function) ((TemporalLiteral) temporal).getValue();
-                return getStart((Temporal) function.getArgs().get(0), granularity);
+            } else if (((TemporalLiteral) temporal).getType() == de.ii.xtraplatform.cql.domain.Interval.class) {
+                de.ii.xtraplatform.cql.domain.Interval interval = (de.ii.xtraplatform.cql.domain.Interval) ((TemporalLiteral) temporal).getValue();
+                return getStart((Temporal) interval.getArgs().get(0), granularity);
             }
             return temporal;
+        } else if (temporal instanceof de.ii.xtraplatform.cql.domain.Interval) {
+            de.ii.xtraplatform.cql.domain.Interval interval = ((de.ii.xtraplatform.cql.domain.Interval) temporal);
+            return getStart((Temporal) interval.getArgs().get(0), granularity);
         } else if (temporal instanceof Function) {
             Temporal start = (Temporal) ((Function) temporal).getArgs().get(0);
             if (start instanceof TemporalLiteral && ((TemporalLiteral) start).getType() == TemporalLiteral.OPEN.class) {
@@ -276,9 +277,9 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
                 return TemporalLiteral.of(end);
             } else if (((TemporalLiteral) temporal).getType() == TemporalLiteral.OPEN.class) {
                 return TemporalLiteral.of(Instant.MAX);
-            } else if (((TemporalLiteral) temporal).getType() == Function.class) {
-                Function function = (Function) ((TemporalLiteral) temporal).getValue();
-                return getEnd((Temporal) function.getArgs().get(1), granularity);
+            } else if (((TemporalLiteral) temporal).getType() == de.ii.xtraplatform.cql.domain.Interval.class) {
+                de.ii.xtraplatform.cql.domain.Interval interval = (de.ii.xtraplatform.cql.domain.Interval) ((TemporalLiteral) temporal).getValue();
+                return getEnd((Temporal) interval.getArgs().get(1), granularity);
             } else if (((TemporalLiteral) temporal).getType() == LocalDate.class) {
                 // if we know that the temporal granularity is "day", we return the value
                 if (granularity.isPresent() && LocalDate.class.equals(granularity.get())) {
@@ -293,6 +294,9 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
                                               .toInstant());
             }
             return temporal;
+        } else if (temporal instanceof de.ii.xtraplatform.cql.domain.Interval) {
+            de.ii.xtraplatform.cql.domain.Interval interval = ((de.ii.xtraplatform.cql.domain.Interval) temporal);
+            return getEnd((Temporal) interval.getArgs().get(1), granularity);
         } else if (temporal instanceof Function) {
             Temporal end = (Temporal) ((Function) temporal).getArgs().get(1);
             if (end instanceof TemporalLiteral && ((TemporalLiteral) end).getType() == TemporalLiteral.OPEN.class) {

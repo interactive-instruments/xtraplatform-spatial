@@ -28,6 +28,12 @@ public interface CqlVisitor<T> {
             return visit((In) node, children);
         } else if (node instanceof IsNull) {
             return visit((IsNull) node, children);
+        } else if (node instanceof Casei) {
+            return visit((Casei) node, children);
+        } else if (node instanceof Accenti) {
+            return visit((Accenti) node, children);
+        } else if (node instanceof Interval) {
+            return visit((Interval) node, children);
         } else if (node instanceof BinaryScalarOperation) {
             return visit((BinaryScalarOperation) node, children);
         } else if (node instanceof BinaryTemporalOperation) {
@@ -84,6 +90,12 @@ public interface CqlVisitor<T> {
     T visit(In in, List<T> children);
 
     T visit(IsNull isNull, List<T> children);
+
+    T visit(Casei casei, List<T> children);
+
+    T visit(Accenti accenti, List<T> children);
+
+    T visit(Interval interval, List<T> children);
 
     T visit(BinaryTemporalOperation temporalOperation, List<T> children);
 

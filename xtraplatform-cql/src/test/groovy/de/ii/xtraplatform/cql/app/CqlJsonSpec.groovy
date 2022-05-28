@@ -1087,4 +1087,57 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
+    def 'UPPER'() {
+        given:
+        String cqlJson = """
+            {
+              "op": "in",
+              "args": [
+                { "function": { "name": "upper", "args": [ { "property": "road_class" } ] } },
+                [ "A", "B", "L", "K" ]
+              ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_UPPER
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_UPPER, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
+
+    def 'LOWER'() {
+        given:
+        String cqlJson = """
+            {
+              "op": "in",
+              "args": [
+                { "function": { "name": "lower", "args": [ { "property": "road_class" } ] } },
+                [ "a", "b", "l", "k" ]
+              ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_LOWER
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_LOWER, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+    }
 }
