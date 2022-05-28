@@ -11,20 +11,7 @@ import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Doubles;
-import de.ii.xtraplatform.cql.domain.ArrayLiteral;
-import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.BinaryArrayOperation;
-import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
-import de.ii.xtraplatform.cql.domain.BinarySpatialOperation;
-import de.ii.xtraplatform.cql.domain.BinaryTemporalOperation;
-import de.ii.xtraplatform.cql.domain.BooleanValue2;
-import de.ii.xtraplatform.cql.domain.Cql;
-import de.ii.xtraplatform.cql.domain.Cql2Expression;
-import de.ii.xtraplatform.cql.domain.CqlNode;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
-import de.ii.xtraplatform.cql.domain.CqlVisitor;
-import de.ii.xtraplatform.cql.domain.Eq;
-import de.ii.xtraplatform.cql.domain.Function;
+import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
 import de.ii.xtraplatform.cql.domain.Geometry.Envelope;
 import de.ii.xtraplatform.cql.domain.Geometry.LineString;
@@ -33,19 +20,6 @@ import de.ii.xtraplatform.cql.domain.Geometry.MultiPoint;
 import de.ii.xtraplatform.cql.domain.Geometry.MultiPolygon;
 import de.ii.xtraplatform.cql.domain.Geometry.Point;
 import de.ii.xtraplatform.cql.domain.Geometry.Polygon;
-import de.ii.xtraplatform.cql.domain.Gt;
-import de.ii.xtraplatform.cql.domain.In;
-import de.ii.xtraplatform.cql.domain.IsNull;
-import de.ii.xtraplatform.cql.domain.Like;
-import de.ii.xtraplatform.cql.domain.LogicalOperation;
-import de.ii.xtraplatform.cql.domain.Lt;
-import de.ii.xtraplatform.cql.domain.Not;
-import de.ii.xtraplatform.cql.domain.Or;
-import de.ii.xtraplatform.cql.domain.Property;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperator;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -219,6 +193,24 @@ public class FilterEncoderWfs {
     @Override
     public FesExpression visit(IsNull isNull, List<FesExpression> children) {
       throw new IllegalArgumentException("IS NULL predicates are not supported in filter expressions for WFS feature providers.");
+    }
+
+    @Override
+    public FesExpression visit(Casei casei, List<FesExpression> children) {
+      throw new IllegalArgumentException(
+          "Casei() is not supported in filter expressions for WFS feature providers.");
+    }
+
+    @Override
+    public FesExpression visit(Accenti accenti, List<FesExpression> children) {
+      throw new IllegalArgumentException(
+          "Accenti() is not supported in filter expressions for WFS feature providers.");
+    }
+
+    @Override
+    public FesExpression visit(de.ii.xtraplatform.cql.domain.Interval interval, List<FesExpression> children) {
+      throw new IllegalArgumentException(
+          "Non-trivial intervals are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override

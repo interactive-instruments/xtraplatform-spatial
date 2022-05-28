@@ -159,6 +159,27 @@ public class CqlToText implements CqlVisitor<String> {
     }
 
     @Override
+    public String visit(Casei casei, List<String> children) {
+        return String.format("CASEI(%s)", children.get(0));
+    }
+
+    @Override
+    public String visit(Accenti accenti, List<String> children) {
+        return String.format("ACCENTI(%s)", children.get(0));
+    }
+
+    @Override
+    public String visit(de.ii.xtraplatform.cql.domain.Interval interval, List<String> children) {
+        // DATE() and TIMESTAMP() are not used in interval
+        return "INTERVAL" +
+            children.stream()
+                .map(argument -> argument.replace("DATE(","")
+                    .replace("TIMESTAMP(","")
+                    .replace(")",""))
+                .collect(Collectors.joining(",", "(", ")"));
+    }
+
+    @Override
     public String visit(BinaryTemporalOperation temporalOperation, List<String> children) {
         String operator = temporalOperation.getOp().toUpperCase();
 
@@ -287,14 +308,16 @@ public class CqlToText implements CqlVisitor<String> {
             return String.format("TIMESTAMP('%s')", DateTimeFormatter.ISO_INSTANT.format(instant));
         } else if (temporalLiteral.getType() == LocalDate.class) {
             return String.format("DATE('%s')", DateTimeFormatter.ISO_DATE.format((LocalDate) temporalLiteral.getValue()));
-        } else if (temporalLiteral.getType() == Function.class) {
-            Function function = (Function) temporalLiteral.getValue();
-            return function.getArgs().stream()
+        } else if (temporalLiteral.getType() == de.ii.xtraplatform.cql.domain.Interval.class) {
+            de.ii.xtraplatform.cql.domain.Interval interval = (de.ii.xtraplatform.cql.domain.Interval) temporalLiteral.getValue();
+            return interval.getArgs().stream()
                 .map(arg -> arg.accept(this)
                     .replace("DATE(","")
                     .replace("TIMESTAMP(","")
                     .replace(")",""))
-                .collect(Collectors.joining(",", function.getName()+"(", ")"));
+                .collect(Collectors.joining(",", "INTERVAL(", ")"));
+        } else if (temporalLiteral.getType() == TemporalLiteral.OPEN.class) {
+            return "'..'";
         }
 
         throw new IllegalStateException("unsupported temporal literal type: " + temporalLiteral.getType().getSimpleName());
@@ -349,15 +372,6 @@ public class CqlToText implements CqlVisitor<String> {
 
     @Override
     public String visit(Function function, List<String> children) {
-        if (function.isInterval())
-            // DATE() and TIMESTAMP() are not used in interval
-            return function.getName() +
-                children.stream()
-                    .map(argument -> argument.replace("DATE(","")
-                             .replace("TIMESTAMP(","")
-                             .replace(")",""))
-                    .collect(Collectors.joining(",", "(", ")"));
-
         return function.getName() +
                 children.stream()
                         .collect(Collectors.joining(",", "(", ")"));

@@ -282,70 +282,85 @@ public class FilterEncoderSql {
         }
 
         @Override
-        public String visit(de.ii.xtraplatform.cql.domain.Function function, List<String> children) {
-            if (function.isInterval()) {
-                String start = children.get(0);
-                String end = children.get(1);
+        public String visit(de.ii.xtraplatform.cql.domain.Interval interval, List<String> children) {
+            String start = children.get(0);
+            String end = children.get(1);
 
-                // process special values for a half-bounded interval
-                if (start.equals("'..'"))
-                    start = sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin());
-                if (end.equals("'..'"))
-                    end = sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax());
+            // process special values for a half-bounded interval
+            if (start.equals("'..'"))
+                start = sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin());
+            if (end.equals("'..'"))
+                end = sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax());
 
-                Operand arg1 = function.getArgs().get(0);
-                Operand arg2 = function.getArgs().get(1);
-                if (arg1 instanceof Property && arg2 instanceof Property) {
-                    String startColumn = reduceToColumn(start);
-                    String endColumn = reduceToColumn(end);
-                    if (startColumn.equals(endColumn))
-                        return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
-                    startColumn = String.format("COALESCE(%s,%s)", startColumn, sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin()));
-                    endColumn = String.format("COALESCE(%s,%s)", endColumn, sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax()));
-                    return start.substring(0, start.indexOf("%1$s")) + "%1$s(" + startColumn + ", " + endColumn + ")%2$s)";
-                } else if (arg1 instanceof Property && arg2 instanceof TemporalLiteral) {
-                    String startColumn = reduceToColumn(start);
-                    startColumn = String.format("COALESCE(%s,%s)", startColumn, sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin()));
-                    return start.substring(0, start.indexOf("%1$s")) + "%1$s(" + startColumn + ", " + end + ")%2$s)";
-                } else if (arg1 instanceof TemporalLiteral && arg2 instanceof Property) {
-                    String endColumn = reduceToColumn(end);
-                    endColumn = String.format("COALESCE(%s,%s)", endColumn, sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax()));
-                    return end.substring(0, end.indexOf("%1$s")) + "%1$s(" + start + ", " + endColumn + ")%2$s)";
+            Operand arg1 = interval.getArgs().get(0);
+            Operand arg2 = interval.getArgs().get(1);
+            if (arg1 instanceof Property && arg2 instanceof Property) {
+                String startColumn = reduceToColumn(start);
+                String endColumn = reduceToColumn(end);
+                if (startColumn.equals(endColumn))
+                    return String.format(start, "%1$s(", ", " + endColumn + ")%2$s");
+                startColumn = String.format("COALESCE(%s,%s)", startColumn, sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin()));
+                endColumn = String.format("COALESCE(%s,%s)", endColumn, sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax()));
+                return start.substring(0, start.indexOf("%1$s")) + "%1$s(" + startColumn + ", " + endColumn + ")%2$s)";
+            } else if (arg1 instanceof Property && arg2 instanceof TemporalLiteral) {
+                String startColumn = reduceToColumn(start);
+                startColumn = String.format("COALESCE(%s,%s)", startColumn, sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMin()));
+                return start.substring(0, start.indexOf("%1$s")) + "%1$s(" + startColumn + ", " + end + ")%2$s)";
+            } else if (arg1 instanceof TemporalLiteral && arg2 instanceof Property) {
+                String endColumn = reduceToColumn(end);
+                endColumn = String.format("COALESCE(%s,%s)", endColumn, sqlDialect.applyToDatetimeLiteral(sqlDialect.applyToInstantMax()));
+                return end.substring(0, end.indexOf("%1$s")) + "%1$s(" + start + ", " + endColumn + ")%2$s)";
+            }
+            throw new IllegalStateException("unsupported interval: " + interval);
+        }
+
+        @Override
+        public String visit(de.ii.xtraplatform.cql.domain.Casei casei, List<String> children) {
+            if (casei.getValue() instanceof ScalarLiteral) {
+                return children.get(0).toLowerCase();
+            }
+            if (children.get(0).contains("%1$s") && children.get(0).contains("%2$s")) {
+                return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
+            }
+            return String.format("LOWER(%s)", children.get(0));
+        }
+
+        @Override
+        public String visit(de.ii.xtraplatform.cql.domain.Accenti accenti, List<String> children) {
+            if (accenti.getValue() instanceof ScalarLiteral) {
+                if (Objects.nonNull(accentiCollation))
+                    return String.format("%s COLLATE \"%s\"", children.get(0), accentiCollation);
+                throw new IllegalArgumentException("ACCENTI() is not supported by this API.");
+            }
+            if (Objects.nonNull(accentiCollation)) {
+                if (children.get(0).contains("%1$s") && children.get(0).contains("%2$s")) {
+                    return children.get(0).replace("%2$s", " COLLATE \"" + accentiCollation + "\"%2$s");
                 }
-                throw new IllegalStateException("unsupported interval function: " + function);
-            } else if (function.isPosition()) {
+                return String.format("%s COLLATE \"%s\"", children.get(0), accentiCollation);
+            }
+            throw new IllegalArgumentException("ACCENTI() is not supported by this API.");
+        }
+
+        @Override
+        public String visit(de.ii.xtraplatform.cql.domain.Function function, List<String> children) {
+            if (function.isPosition()) {
                 return "%1$s" + ROW_NUMBER + "%2$s";
             } else if (function.isUpper()) {
                 if (function.getArgs().get(0) instanceof ScalarLiteral) {
                     return children.get(0).toLowerCase();
-                } else if (function.getArgs().get(0) instanceof Property || function.getArgs().get(0) instanceof Function) {
-                    return String.format(children.get(0), "%1$sUPPER(", ")%2$s");
-                } else if (function.getArgs().get(0) instanceof Function) {
-                    if (children.get(0).contains("%1$s") && children.get(0).contains("%2$s"))
-                        return String.format(children.get(0), "%1$sUPPER(", ")%2$s");
-                    return String.format("UPPER(%s)", children.get(0));
                 }
-            } else if (function.isCasei() || function.isLower()) {
+                if (children.get(0).contains("%1$s") && children.get(0).contains("%2$s")) {
+                    return String.format(children.get(0), "%1$sUPPER(", ")%2$s");
+                }
+                return String.format("UPPER(%s)", children.get(0));
+            } else if (function.isLower()) {
                 if (function.getArgs().get(0) instanceof ScalarLiteral) {
                     return children.get(0).toLowerCase();
-                } else if (function.getArgs().get(0) instanceof Property) {
+                }
+                if (children.get(0).contains("%1$s") && children.get(0).contains("%2$s")) {
                     return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
-                } else if (function.getArgs().get(0) instanceof Function) {
-                    if (children.get(0).contains("%1$s") && children.get(0).contains("%2$s"))
-                        return String.format(children.get(0), "%1$sLOWER(", ")%2$s");
-                    return String.format("LOWER(%s)", children.get(0));
                 }
-            } else if (function.isAccenti()) {
-                if (function.getArgs().get(0) instanceof ScalarLiteral) {
-                    if (Objects.nonNull(accentiCollation))
-                        return String.format("%s COLLATE \"%s\"", children.get(0), accentiCollation);
-                    throw new IllegalArgumentException("ACCENTI() is not supported by this API.");
-                } else if (function.getArgs().get(0) instanceof Property) {
-                    if (Objects.nonNull(accentiCollation))
-                        return children.get(0).replace("%2$s", " COLLATE \""+accentiCollation+"\"%2$s");
-                    throw new IllegalArgumentException("ACCENTI() is not supported by this API.");
-                }
-                return children.get(0);
+                return String.format("LOWER(%s)", children.get(0));
             }
 
             return super.visit(function, children);
@@ -369,8 +384,8 @@ public class FilterEncoderSql {
             return expression.replace(String.format("%%1$s%1$s%%2$s",column),String.format("%%1$s(%1$s,%1$s)%%2$s",column));
         }
 
-        private boolean operandIsOfType(Operand operand, Class... classes) {
-            return Arrays.stream(classes).anyMatch(clazz -> clazz.isInstance(operand));
+        private boolean operandHasSelect(String expression) {
+            return expression.contains("%1$s");
         }
 
         private List<String> processBinary(List<? extends Operand> operands, List<String> children) {
@@ -381,8 +396,8 @@ public class FilterEncoderSql {
             // fragment will be reduced to qualified column name (second expression).
             String mainExpression = children.get(0);
             String secondExpression = children.get(1);
-            boolean op1hasSelect = operandIsOfType(operands.get(0), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
-            boolean op2hasSelect = operandIsOfType(operands.get(1), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
+            boolean op1hasSelect = operandHasSelect(mainExpression);
+            boolean op2hasSelect = operandHasSelect(secondExpression);
             if (op1hasSelect) {
                 if (op2hasSelect) {
                     secondExpression = reduceSelectToColumn(children.get(1));
@@ -410,9 +425,9 @@ public class FilterEncoderSql {
             String mainExpression = children.get(0);
             String secondExpression = children.get(1);
             String thirdExpression = children.get(2);
-            boolean op1hasSelect = operandIsOfType(operands.get(0), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
-            boolean op2hasSelect = operandIsOfType(operands.get(1), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
-            boolean op3hasSelect = operandIsOfType(operands.get(2), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
+            boolean op1hasSelect = operandHasSelect(mainExpression);
+            boolean op2hasSelect = operandHasSelect(secondExpression);
+            boolean op3hasSelect = operandHasSelect(thirdExpression);
             if (op1hasSelect) {
                 if (op2hasSelect)
                     secondExpression = reduceSelectToColumn(children.get(1));
@@ -470,17 +485,10 @@ public class FilterEncoderSql {
         public String visit(In in, List<String> children) {
             String operator = SCALAR_OPERATORS.get(in.getClass());
 
-            String mainExpression = "";
-            Scalar op1 = in.getArgs().get(0);
-            if (op1 instanceof Property) {
-                mainExpression = children.get(0);
-            } else if (op1 instanceof de.ii.xtraplatform.cql.domain.Function) {
-                mainExpression = children.get(0);
-            } else if (op1 instanceof ScalarLiteral) {
+            String mainExpression = children.get(0);
+            if (!operandHasSelect(mainExpression)) {
                 // special case of a literal, we need to build the SQL expression
-                mainExpression = String.format("%%1$s%1$s%%2$s", children.get(0));
-            } else {
-                throw new IllegalArgumentException(String.format("In: Cannot process operand of type %s with value %s.", op1.getClass().getSimpleName(), mainExpression));
+                mainExpression = String.format("%%1$s%1$s%%2$s", mainExpression);
             }
 
             // mainExpression is either a literal value or a SELECT expression
@@ -492,15 +500,10 @@ public class FilterEncoderSql {
         public String visit(IsNull isNull, List<String> children) {
             String operator = SCALAR_OPERATORS.get(isNull.getClass());
 
-            String mainExpression = "";
-            Operand op1 = isNull.getArgs().get(0);
-            if (op1 instanceof Property) {
-                mainExpression = children.get(0);
-            } else if (op1 instanceof ScalarLiteral) {
-                // special case of a literal (which will never be NULL), we need to build the SQL expression
-                mainExpression = String.format("%%1$s%1$s%%2$s", children.get(0));
-            } else {
-                throw new IllegalArgumentException(String.format("IsNull: Cannot process operand of type %s with value %s.", op1.getClass().getSimpleName(), mainExpression));
+            String mainExpression = children.get(0);
+            if (!operandHasSelect(mainExpression)) {
+                // special case of a literal, we need to build the SQL expression
+                mainExpression = String.format("%%1$s%1$s%%2$s", mainExpression);
             }
 
             // mainExpression is either a literal value or a SELECT expression
@@ -575,11 +578,10 @@ public class FilterEncoderSql {
                 return literal.getValue();
             } else if (literal.getType() == TemporalLiteral.OPEN.class) {
                 return Instant.MIN;
-            } else if (literal.getType() == Function.class) {
-                Function function = (Function) literal.getValue();
-                assert function.isInterval();
-                assert function.getArgs().get(0) instanceof TemporalLiteral;
-                return getStart((TemporalLiteral) function.getArgs().get(0));
+            } else if (literal.getType() == de.ii.xtraplatform.cql.domain.Interval.class) {
+                de.ii.xtraplatform.cql.domain.Interval interval = (de.ii.xtraplatform.cql.domain.Interval) literal.getValue();
+                assert interval.getArgs().get(0) instanceof TemporalLiteral;
+                return getStart((TemporalLiteral) interval.getArgs().get(0));
             } else {
                 // we have a local date
                 return literal.getValue();
@@ -603,11 +605,10 @@ public class FilterEncoderSql {
                 return ((Instant) literal.getValue()).plusSeconds(1);
             } else if (literal.getType() == TemporalLiteral.OPEN.class) {
                 return Instant.MAX;
-            } else if (literal.getType() == Function.class) {
-                Function function = (Function) literal.getValue();
-                assert function.isInterval();
-                assert function.getArgs().get(1) instanceof TemporalLiteral;
-                return getEndExclusive((TemporalLiteral) function.getArgs().get(1));
+            } else if (literal.getType() == de.ii.xtraplatform.cql.domain.Interval.class) {
+                de.ii.xtraplatform.cql.domain.Interval interval = (de.ii.xtraplatform.cql.domain.Interval) literal.getValue();
+                assert interval.getArgs().get(1) instanceof TemporalLiteral;
+                return getEndExclusive((TemporalLiteral) interval.getArgs().get(1));
             } else {
                 return ((LocalDate) literal.getValue()).plusDays(1);
             }
@@ -646,14 +647,13 @@ public class FilterEncoderSql {
             } else if (temporalLiteral.getType() == Interval.class) {
                 // this can only occur in the T_INTERSECTS() operator
                 return getInterval(temporalLiteral);
-            } else if (temporalLiteral.getType() == Function.class) {
+            } else if (temporalLiteral.getType() == de.ii.xtraplatform.cql.domain.Interval.class) {
                 // this can only occur in the T_INTERSECTS() operator
                 // an INTERVAL() with dates
-                Function function = (Function) temporalLiteral.getValue();
-                assert function.isInterval();
-                Operand arg1 = function.getArgs().get(0);
+                de.ii.xtraplatform.cql.domain.Interval interval = (de.ii.xtraplatform.cql.domain.Interval) temporalLiteral.getValue();
+                Operand arg1 = interval.getArgs().get(0);
                 assert arg1 instanceof TemporalLiteral;
-                Operand arg2 = function.getArgs().get(1);
+                Operand arg2 = interval.getArgs().get(1);
                 assert arg2 instanceof TemporalLiteral;
                 return String.format("(%s,%s)", getStartAsString((TemporalLiteral) arg1), getEndExclusiveAsString((TemporalLiteral) arg2));
             } else if (temporalLiteral.getType() == LocalDate.class) {
@@ -724,8 +724,8 @@ public class FilterEncoderSql {
             // fragment will be reduced to qualified column name (second expression).
             String mainExpression = children.get(0);
             String secondExpression = children.get(1);
-            boolean op1hasSelect = operandIsOfType(arrayOperation.getArgs().get(0), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
-            boolean op2hasSelect = operandIsOfType(arrayOperation.getArgs().get(1), Property.class, de.ii.xtraplatform.cql.domain.Function.class);
+            boolean op1hasSelect = operandHasSelect(mainExpression);
+            boolean op2hasSelect = operandHasSelect(secondExpression);
             boolean notInverse = true;
             if (op1hasSelect) {
                 if (op2hasSelect) {

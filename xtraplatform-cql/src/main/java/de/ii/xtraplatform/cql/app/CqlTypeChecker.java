@@ -10,39 +10,13 @@ package de.ii.xtraplatform.cql.app;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import de.ii.xtraplatform.cql.domain.ArrayLiteral;
-import de.ii.xtraplatform.cql.domain.Between;
-import de.ii.xtraplatform.cql.domain.BinaryArrayOperation;
-import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
-import de.ii.xtraplatform.cql.domain.BinarySpatialOperation;
-import de.ii.xtraplatform.cql.domain.BinaryTemporalOperation;
-import de.ii.xtraplatform.cql.domain.Cql;
-import de.ii.xtraplatform.cql.domain.Cql2Expression;
-import de.ii.xtraplatform.cql.domain.CqlNode;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
-import de.ii.xtraplatform.cql.domain.Eq;
-import de.ii.xtraplatform.cql.domain.Function;
-import de.ii.xtraplatform.cql.domain.ImmutableBetween;
-import de.ii.xtraplatform.cql.domain.ImmutableEq;
-import de.ii.xtraplatform.cql.domain.ImmutableGt;
-import de.ii.xtraplatform.cql.domain.ImmutableGte;
-import de.ii.xtraplatform.cql.domain.ImmutableIn;
-import de.ii.xtraplatform.cql.domain.ImmutableLike;
-import de.ii.xtraplatform.cql.domain.ImmutableLt;
-import de.ii.xtraplatform.cql.domain.ImmutableLte;
-import de.ii.xtraplatform.cql.domain.ImmutableNeq;
-import de.ii.xtraplatform.cql.domain.In;
-import de.ii.xtraplatform.cql.domain.IsNull;
-import de.ii.xtraplatform.cql.domain.Like;
-import de.ii.xtraplatform.cql.domain.LogicalOperation;
-import de.ii.xtraplatform.cql.domain.Not;
-import de.ii.xtraplatform.cql.domain.Property;
-import de.ii.xtraplatform.cql.domain.ScalarLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalLiteral;
+import de.ii.xtraplatform.cql.domain.*;
 import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes;
+
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -86,11 +60,15 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
             .put(BinaryArrayOperation.class, ImmutableList.of(ARRAY))
             .build();
 
-    private static final Map<String, Set<List<Type>>> COMPATIBILITY_FUNCTION =
+    private static final Map<String, Set<List<Type>>> COMPATIBILITY_OTHER =
         new ImmutableMap.Builder<String,Set<List<Type>>>()
             .put("INTERVAL", ImmutableSet.of(TIMESTAMP_IN_INTERVAL, DATE_IN_INTERVAL))
             .put("CASEI", ImmutableSet.of(TEXT))
             .put("ACCENTI", ImmutableSet.of(TEXT))
+            .build();
+
+    private static final Map<String, Set<List<Type>>> COMPATIBILITY_FUNCTION =
+        new ImmutableMap.Builder<String,Set<List<Type>>>()
             .put("UPPER", ImmutableSet.of(TEXT))
             .put("LOWER", ImmutableSet.of(TEXT))
             .put("POSITION", ImmutableSet.of(INTEGER))
@@ -164,6 +142,24 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
     }
 
     @Override
+    public Type visit(Casei casei, List<Type> children) {
+        checkString(casei, children);
+        return Type.String;
+    }
+
+    @Override
+    public Type visit(Accenti accenti, List<Type> children) {
+        checkString(accenti, children);
+        return Type.String;
+    }
+
+    @Override
+    public Type visit(Interval interval, List<Type> children) {
+        checkInterval(interval, children);
+        return Type.Interval;
+    }
+
+    @Override
     public Type visit(Function function, List<Type> children) {
         checkFunction(function, children);
         return Type.valueOf(function.getType().getSimpleName());
@@ -202,8 +198,8 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
 
     @Override
     public Type visit(TemporalLiteral temporalLiteral, List<Type> children) {
-        if (temporalLiteral.getType()==Function.class)
-            return ((Function)temporalLiteral.getValue()).accept(this);
+        if (temporalLiteral.getType()==Interval.class)
+            return ((Interval)temporalLiteral.getValue()).accept(this);
         return Type.valueOf(temporalLiteral.getType().getSimpleName());
 
     }
@@ -262,6 +258,26 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
         }
     }
 
+    private void checkString(CqlNode node, List<Type> types) {
+        final Set<List<Type>> expectedTypes = Objects.requireNonNullElse(COMPATIBILITY_OTHER.get(node.getClass().getSimpleName().replace("Immutable","").toUpperCase(Locale.ROOT)),
+                                                                         ImmutableSet.of());
+        if (expectedTypes.stream()
+            .noneMatch(typeList -> types.stream()
+                .allMatch(type -> typeList.contains(type) || type.equals(Type.UNKNOWN)))) {
+            throw new CqlIncompatibleTypes(getText(node), asSchemaTypes(types), asSchemaTypes(expectedTypes));
+        }
+    }
+
+    private void checkInterval(CqlNode node, List<Type> types) {
+        final Set<List<Type>> expectedTypes = Objects.requireNonNullElse(COMPATIBILITY_OTHER.get(node.getClass().getSimpleName().replace("Immutable","").toUpperCase(Locale.ROOT)),
+                                                                         ImmutableSet.of());
+        if (expectedTypes.stream()
+            .noneMatch(typeList -> types.stream()
+                .allMatch(type -> typeList.contains(type) || type.equals(Type.UNKNOWN)))) {
+            throw new CqlIncompatibleTypes(getText(node), asSchemaTypes(types), asSchemaTypes(expectedTypes));
+        }
+    }
+
     private List<String> asSchemaTypes(List<Type> types) {
         return types.stream().map(Type::schemaType).distinct().collect(Collectors.toUnmodifiableList());
     }
@@ -286,9 +302,12 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
     }
 
     private String getText(CqlNode node) {
-        if (node instanceof Function) {
-            return cql.write(Eq.of(ImmutableList.of((Function) node, ScalarLiteral.of("DUMMY"))), Cql.Format.TEXT)
+        if (node instanceof Function || node instanceof Casei || node instanceof Accenti) {
+            return cql.write(Eq.of(ImmutableList.of((Scalar) node, ScalarLiteral.of("DUMMY"))), Cql.Format.TEXT)
                 .replace(" = 'DUMMY'", "");
+        } else if (node instanceof Interval) {
+            String tmp = cql.write(TEquals.of(TemporalLiteral.of(Instant.EPOCH), (Interval) node), Cql.Format.TEXT);
+            return tmp.substring(0,tmp.indexOf(",")+1).replace(")", "");
         }
         return cql.write((Cql2Expression) node, Cql.Format.TEXT);
     }

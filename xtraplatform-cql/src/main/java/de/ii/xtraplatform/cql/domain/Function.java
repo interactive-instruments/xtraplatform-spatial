@@ -23,7 +23,7 @@ import org.threeten.extra.Interval;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableFunction.Builder.class)
-@JsonSerialize(using = Function.FunctionSerializer.class)
+@JsonSerialize(using = Function.Serializer.class)
 public interface Function extends CqlNode, Scalar, Temporal, Operand {
 
     String getName();
@@ -51,15 +51,14 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
     @JsonIgnore
     @Value.Lazy
     default Class<?> getType() {
-        if (isAccenti() || isCasei() || isLower() || isUpper())
+        if (isLower() || isUpper())
             return String.class;
-        else if (isInterval())
-            return Interval.class;
         else if (isPosition())
             return Integer.class;
         return Object.class;
     }
 
+    /*
     @JsonIgnore
     @Value.Lazy
     default boolean isCasei() {
@@ -71,6 +70,13 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
     default boolean isAccenti() {
         return "accenti".equalsIgnoreCase(getName());
     }
+
+    @JsonIgnore
+    @Value.Lazy
+    default boolean isInterval() {
+        return "interval".equalsIgnoreCase(getName());
+    }
+     */
 
     @JsonIgnore
     @Value.Lazy
@@ -90,24 +96,19 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
         return "position".equalsIgnoreCase(getName());
     }
 
-    @JsonIgnore
-    @Value.Lazy
-    default boolean isInterval() {
-        return "interval".equalsIgnoreCase(getName());
-    }
+    class Serializer extends StdSerializer<Function> {
 
-    class FunctionSerializer extends StdSerializer<Function> {
-
-        protected FunctionSerializer() {
+        protected Serializer() {
             this(null);
         }
 
-        protected FunctionSerializer(Class<Function> t) {
+        protected Serializer(Class<Function> t) {
             super(t);
         }
 
         @Override
         public void serialize(Function value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+            /*
             if (value.isCasei() || value.isAccenti()) {
                 gen.writeStartObject();
                 gen.writeFieldName(value.getName().toLowerCase());
@@ -134,6 +135,7 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
                 gen.writeEndObject();
                 return;
             }
+             */
 
             gen.writeStartObject();
             gen.writeFieldName("function");

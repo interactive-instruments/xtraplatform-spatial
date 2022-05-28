@@ -88,9 +88,9 @@ public interface Operand extends CqlNode {
                 } else if (Objects.nonNull(node.get("type"))) {
                     return SpatialLiteral.of(oc.treeToValue(node, Geometry.class));
                 } else if (Objects.nonNull(node.get("casei"))) {
-                    return Function.of("CASEI", ImmutableList.of(getOperand(parser, node.get("casei"), parent)));
+                    return Casei.of(getOperand(parser, node.get("casei"), parent));
                 } else if (Objects.nonNull(node.get("accenti"))) {
-                    return Function.of("ACCENTI", ImmutableList.of(getOperand(parser, node.get("accenti"), parent)));
+                    return Accenti.of(getOperand(parser, node.get("accenti"), parent));
                 } else if (Objects.nonNull(node.get("op"))) {
                     return oc.treeToValue(node, Operation.class);
                 } else if (Objects.nonNull(node.get("function"))) {

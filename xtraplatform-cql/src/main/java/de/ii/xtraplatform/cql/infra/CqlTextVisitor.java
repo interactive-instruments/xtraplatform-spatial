@@ -409,12 +409,12 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode> implements Cql
             Scalar scalar = (Scalar) ctx.characterExpression()
                 .accept(this);
 
-            return Function.of("CASEI", ImmutableList.of(scalar));
+            return Casei.of(scalar);
         } else if (Objects.nonNull(ctx.ACCENTI())) {
             Scalar scalar = (Scalar) ctx.characterExpression()
                 .accept(this);
 
-            return Function.of("ACCENTI", ImmutableList.of(scalar));
+            return Accenti.of(scalar);
         } else if (Objects.nonNull(ctx.LOWER())) {
             Scalar scalar = (Scalar) ctx.characterExpression()
                 .accept(this);

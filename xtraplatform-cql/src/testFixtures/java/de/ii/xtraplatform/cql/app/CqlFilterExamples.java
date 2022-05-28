@@ -157,9 +157,9 @@ public class CqlFilterExamples {
 
     public static final Cql2Expression EXAMPLE_25 = TDuring.of(Property.of("updated"), Objects.requireNonNull(TemporalLiteral.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")));
     public static final Cql2Expression EXAMPLE_25b = TDuring.of(Property.of("updated"), Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "2017-06-11")));
-    public static final Cql2Expression EXAMPLE_25x = TIntersects.of(Function.of("INTERVAL",ImmutableList.of(Property.of("start"),Property.of("end"))), Objects.requireNonNull(TemporalLiteral.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")));
-    public static final Cql2Expression EXAMPLE_25y = TIntersects.of(Function.of("INTERVAL",ImmutableList.of(Property.of("start"),Property.of("end"))), Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "2017-06-11")));
-    public static final Cql2Expression EXAMPLE_25z = TIntersects.of(Function.of("INTERVAL",ImmutableList.of(Property.of("start"),TemporalLiteral.of(".."))), Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "..")));
+    public static final Cql2Expression EXAMPLE_25x = TIntersects.of(Interval.of(ImmutableList.of(Property.of("start"),Property.of("end"))), Objects.requireNonNull(TemporalLiteral.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")));
+    public static final Cql2Expression EXAMPLE_25y = TIntersects.of(Interval.of(ImmutableList.of(Property.of("start"),Property.of("end"))), Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "2017-06-11")));
+    public static final Cql2Expression EXAMPLE_25z = TIntersects.of(Interval.of(ImmutableList.of(Property.of("start"),TemporalLiteral.of(".."))), Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "..")));
     public static final CqlFilter EXAMPLE_25_OLD = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DURING, "updated",
         Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "2017-06-11"))));
 
@@ -241,7 +241,7 @@ public class CqlFilterExamples {
 
     public static final CqlFilter EXAMPLE_TDISJOINT = CqlFilter.of(TemporalOperation.of(TemporalOperator.T_DISJOINT,"event_date", TemporalLiteral.of("1969-07-16T05:32:00Z","1969-07-24T16:50:35Z")));
 
-    public static final Cql2Expression EXAMPLE_TINTERSECTS = TIntersects.of(Property.of("event_date"), Function.of("INTERVAL", ImmutableList.of(Property.of("startDate"), Property.of("endDate"))));
+    public static final Cql2Expression EXAMPLE_TINTERSECTS = TIntersects.of(Property.of("event_date"), Interval.of(ImmutableList.of(Property.of("startDate"), Property.of("endDate"))));
 
     public static final CqlFilter EXAMPLE_SDISJOINT = CqlFilter.of(SpatialOperation.of(SpatialOperator.S_DISJOINT, "geometry", SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
 
@@ -300,29 +300,37 @@ public class CqlFilterExamples {
 
     public static final Cql2Expression EXAMPLE_KEYWORD = Gt.of(ImmutableList.of(Property.of("root.date"), TemporalLiteral.of("2022-04-17")));
 
-    public static final Cql2Expression EXAMPLE_CASEI = In.ofFunction(
-            Function.of("CASEI", ImmutableList.of(Property.of("road_class"))),
+    public static final Cql2Expression EXAMPLE_CASEI = In.of(
+            Casei.of(Property.of("road_class")),
             ImmutableList.of(
-                    Function.of("CASEI", ImmutableList.of(ScalarLiteral.of("Οδος"))),
-                    Function.of("CASEI", ImmutableList.of(ScalarLiteral.of("Straße")))
+                    Casei.of(ScalarLiteral.of("Οδος")),
+                    Casei.of(ScalarLiteral.of("Straße"))
     ));
-    public static final CqlFilter EXAMPLE_CASEI_OLD = CqlFilter.of(In.ofFunction(
-        Function.of("CASEI", ImmutableList.of(Property.of("road_class"))),
+    public static final CqlFilter EXAMPLE_CASEI_OLD = CqlFilter.of(In.of(
+        Casei.of(Property.of("road_class")),
         ImmutableList.of(
-            Function.of("CASEI", ImmutableList.of(ScalarLiteral.of("Οδος"))),
-            Function.of("CASEI", ImmutableList.of(ScalarLiteral.of("Straße"))))
-    ));
+            Casei.of(ScalarLiteral.of("Οδος")),
+            Casei.of(ScalarLiteral.of("Straße"))
+    )));
 
-    public static final Cql2Expression EXAMPLE_ACCENTI = In.ofFunction(
-            Function.of("ACCENTI", ImmutableList.of(Property.of("road_class"))),
+    public static final Cql2Expression EXAMPLE_ACCENTI = In.of(
+            Accenti.of(Property.of("road_class")),
             ImmutableList.of(
-                    Function.of("ACCENTI", ImmutableList.of(ScalarLiteral.of("Οδος"))),
-                    Function.of("ACCENTI", ImmutableList.of(ScalarLiteral.of("Straße")))
+                Accenti.of(ScalarLiteral.of("Οδος")),
+                Accenti.of(ScalarLiteral.of("Straße"))
     ));
-    public static final CqlFilter EXAMPLE_ACCENTI_OLD = CqlFilter.of(In.ofFunction(
-        Function.of("ACCENTI", ImmutableList.of(Property.of("road_class"))),
+    public static final CqlFilter EXAMPLE_ACCENTI_OLD = CqlFilter.of(In.of(
+        Accenti.of(Property.of("road_class")),
         ImmutableList.of(
-            Function.of("ACCENTI", ImmutableList.of(ScalarLiteral.of("Οδος"))),
-            Function.of("ACCENTI", ImmutableList.of(ScalarLiteral.of("Straße"))))
-    ));
+            Accenti.of(ScalarLiteral.of("Οδος")),
+            Accenti.of(ScalarLiteral.of("Straße"))
+    )));
+
+    public static final Cql2Expression EXAMPLE_UPPER = In.ofFunction(
+        Function.of("upper", ImmutableList.of(Property.of("road_class"))),
+        ImmutableList.of(ScalarLiteral.of("A"), ScalarLiteral.of("B"), ScalarLiteral.of("L"), ScalarLiteral.of("K")));
+    public static final Cql2Expression EXAMPLE_LOWER = In.ofFunction(
+        Function.of("lower", ImmutableList.of(Property.of("road_class"))),
+        ImmutableList.of(ScalarLiteral.of("a"), ScalarLiteral.of("b"), ScalarLiteral.of("l"), ScalarLiteral.of("k")));
+
 }

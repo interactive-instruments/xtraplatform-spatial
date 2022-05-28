@@ -35,6 +35,5 @@ public interface IsNull extends UnaryOperation<Scalar>, CqlNode {
   }
 
   abstract class Builder extends Operation.Builder<Scalar, IsNull> {
-
   }
 }

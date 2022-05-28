@@ -39,6 +39,15 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
     public T visit(IsNull isNull, List<T> children) { return null; }
 
     @Override
+    public T visit(Casei casei, List<T> children) { return null; }
+
+    @Override
+    public T visit(Accenti accenti, List<T> children) { return null; }
+
+    @Override
+    public T visit(Interval interval, List<T> children) { return null; }
+
+    @Override
     public T visit(BinaryTemporalOperation temporalOperation, List<T> children) {
         return null;
     }

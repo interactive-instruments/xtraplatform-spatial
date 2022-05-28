@@ -55,6 +55,14 @@ public interface In extends BinaryOperation2<Scalar>, CqlNode {
                                         .addArgs(ArrayLiteral.of(values))
                                         .build();
     }
+
+    static In of(Scalar leftOperand, List<Scalar> values) {
+        return new ImmutableIn.Builder()
+            .addArgs(leftOperand)
+            .addArgs(ArrayLiteral.of(values))
+            .build();
+    }
+
     static In ofFunction(Function function, List<Scalar> values) {
         return new ImmutableIn.Builder()
                 .addArgs(function)
