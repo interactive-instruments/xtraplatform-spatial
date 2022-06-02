@@ -82,6 +82,10 @@ public class ValueTransformerChain implements
       for (FeaturePropertyValueTransformer valueTransformer : valueTransformations.get(
           keyPath)) {
         transformed = valueTransformer.transform(propertyPath, transformed);
+        // abort chain, if the value has been transformed to null
+        if (Objects.isNull(transformed)) {
+          return null;
+        }
       }
     }
 
