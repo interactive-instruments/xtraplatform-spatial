@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.crs.infra
 
+import de.ii.xtraplatform.crs.domain.BoundingBox
 import de.ii.xtraplatform.crs.domain.CoordinateTuple
 import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
@@ -219,6 +220,22 @@ class CrsTransformerProjSpec extends Specification {
         EpsgCrs.of(25832, 7837) | EpsgCrs.of(5555)        | [420735.071, 5392914.343] | [420735.071, 5392914.343]
         EpsgCrs.of(25832, 7837) | EpsgCrs.of(4979)        | [420735.071, 5392914.343] | [48.68423644912392, 7.923077973066287]
         EpsgCrs.of(25832, 7837) | OgcCrs.CRS84h           | [420735.071, 5392914.343] | [7.923077973066287, 48.68423644912392]
+    }
+
+    def 'CRS transformBoundingBox'() {
+        when:
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceBbox.getEpsgCrs(), targetBbox.getEpsgCrs()).get()
+        BoundingBox result = gct.transformBoundingBox(bboxSource)
+
+        then:
+        result == targetBbox.equals(targetBbox)
+
+        where:
+        sourceBbox                                                                                         | targetBbox
+        BoundingBox.of(420735.071, 5392914.343, 430735.071, 5492914.343,  EpsgCrs.of(5555))                |  BoundingBox.of(420735.071, 5392914.343, 430735.071, 5492914.343,  EpsgCrs.of(25832))
+        //3D example from "CRS transformer test 3D"
+        BoundingBox.of(420735.071, 5392914.343, 131.96, 430735.071, 5492914.343, 141.96,  EpsgCrs.of(5555)) |  BoundingBox.of(48.68423644912392, 7.923077973066287, 131.96, 49.68423644912392, 8.923077973066287, 141.96, EpsgCrs.of(4979))
+
     }
 
 }
