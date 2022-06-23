@@ -228,7 +228,7 @@ class CrsTransformerProjSpec extends Specification {
         BoundingBox result = gct.transformBoundingBox(bboxSource)
 
         then:
-        result == targetBbox.equals(targetBbox)
+        result == targetBbox
 
         where:
         sourceBbox                                                                                         | targetBbox
