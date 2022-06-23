@@ -225,7 +225,7 @@ class CrsTransformerProjSpec extends Specification {
     def 'CRS transformBoundingBox'() {
         when:
         CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceBbox.getEpsgCrs(), targetBbox.getEpsgCrs()).get()
-        BoundingBox result = gct.transformBoundingBox(bboxSource)
+        BoundingBox result = gct.transformBoundingBox(sourceBbox)
 
         then:
         result == targetBbox
@@ -234,7 +234,7 @@ class CrsTransformerProjSpec extends Specification {
         sourceBbox                                                                                         | targetBbox
         BoundingBox.of(420735.071, 5392914.343, 430735.071, 5492914.343,  EpsgCrs.of(5555))                |  BoundingBox.of(420735.071, 5392914.343, 430735.071, 5492914.343,  EpsgCrs.of(25832))
         //3D example from "CRS transformer test 3D"
-        BoundingBox.of(420735.071, 5392914.343, 131.96, 430735.071, 5492914.343, 141.96,  EpsgCrs.of(5555)) |  BoundingBox.of(48.68423644912392, 7.923077973066287, 131.96, 49.68423644912392, 8.923077973066287, 141.96, EpsgCrs.of(4979))
+        BoundingBox.of(420735.071, 5392914.343, 131.96, 430735.071, 5492914.343, 141.96,  EpsgCrs.of(5555)) |  BoundingBox.of(48.68423644912392, 7.923077973066287, 131.96, 49.58484311245754, 8.041737428193695, 141.96, EpsgCrs.of(4979))
 
     }
 
