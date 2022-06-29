@@ -1,8 +1,6 @@
 package de.ii.xtraplatform.codelists.app
 
-import com.google.common.collect.ImmutableMap
-import dagger.internal.MapBuilder
-import de.ii.xtraplatform.codelists.domain.Codelist
+
 import de.ii.xtraplatform.codelists.domain.CodelistData
 import de.ii.xtraplatform.codelists.domain.ImmutableCodelistData
 import spock.lang.Shared
@@ -27,7 +25,7 @@ class CodelistEntitySpec extends Specification{
     def "Test onStarted"(){
         when:
         CodelistEntity codeListEntity =  codelistFactory.createInstance( new ImmutableCodelistData.Builder().id("cab").
-                label("Cable Type").sourceType(CodelistData.IMPORT_TYPE.GML_DICTIONARY).build()).get()
+                label("Cable Type").sourceType(CodelistData.ImportType.GML_DICTIONARY).build()).get()
 
         then:
 
@@ -38,7 +36,7 @@ class CodelistEntitySpec extends Specification{
         when:
 
         CodelistEntity codeListEntity =  codelistFactory.createInstance( new ImmutableCodelistData.Builder().id("cab").
-                label("Cable Type").sourceType(CodelistData.IMPORT_TYPE.GML_DICTIONARY).build()).get()
+                label("Cable Type").sourceType(CodelistData.ImportType.GML_DICTIONARY).build()).get()
 
         then:
         codeListEntity.onReloaded()
@@ -51,7 +49,7 @@ class CodelistEntitySpec extends Specification{
         entries.put(key, value)
 
         CodelistEntity codeListEntity =  codelistFactory.createInstance( new ImmutableCodelistData.Builder().id("cab").
-                label("Cable Type").putAllEntries(entries).sourceType(CodelistData.IMPORT_TYPE.GML_DICTIONARY).build()).get()
+                label("Cable Type").putAllEntries(entries).sourceType(CodelistData.ImportType.GML_DICTIONARY).build()).get()
 
         then:
 
@@ -83,7 +81,7 @@ class CodelistEntitySpec extends Specification{
         entries.put("19", "Cableway")
 
         CodelistEntity codeListEntity = codelistFactory.createInstance(new ImmutableCodelistData.Builder().id("cab").
-                label("Cable Type").putAllEntries(entries).sourceType(CodelistData.IMPORT_TYPE.GML_DICTIONARY).build()).get()
+                label("Cable Type").putAllEntries(entries).sourceType(CodelistData.ImportType.GML_DICTIONARY).build()).get()
 
         then:
 
@@ -102,7 +100,7 @@ class CodelistEntitySpec extends Specification{
         when:
 
         CodelistEntity codeListEntity =  codelistFactory.createInstance( new ImmutableCodelistData.Builder().id("cab").
-                label("Cable Type").sourceType(CodelistData.IMPORT_TYPE.GML_DICTIONARY).build()).get()
+                label("Cable Type").sourceType(CodelistData.ImportType.GML_DICTIONARY).build()).get()
 
         then:
 
