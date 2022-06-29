@@ -41,7 +41,6 @@ class CodelistEntitySpec extends Specification{
                 label("Cable Type").sourceType(CodelistData.IMPORT_TYPE.GML_DICTIONARY).build()).get()
 
         then:
-
         codeListEntity.onReloaded()
     }
 
@@ -73,6 +72,7 @@ class CodelistEntitySpec extends Specification{
     def "Test Test getData"() {
 
         when:
+
         Map<String, String> entries = new HashMap<>()
         entries.put("-999999", "No Information")
         entries.put("10", "No Tethering")
@@ -81,7 +81,6 @@ class CodelistEntitySpec extends Specification{
         entries.put("13", "Barrier")
         entries.put("15", "Towing")
         entries.put("19", "Cableway")
-
 
         CodelistEntity codeListEntity = codelistFactory.createInstance(new ImmutableCodelistData.Builder().id("cab").
                 label("Cable Type").putAllEntries(entries).sourceType(CodelistData.IMPORT_TYPE.GML_DICTIONARY).build()).get()
@@ -94,6 +93,20 @@ class CodelistEntitySpec extends Specification{
         "Cable Type" == cl.getLabel()
         cl.getEntries().containsKey("19")
         cl.getEntries().containsValue("Cableway")
+
+
+    }
+
+    def "Test getType"(){
+
+        when:
+
+        CodelistEntity codeListEntity =  codelistFactory.createInstance( new ImmutableCodelistData.Builder().id("cab").
+                label("Cable Type").sourceType(CodelistData.IMPORT_TYPE.GML_DICTIONARY).build()).get()
+
+        then:
+
+        "codelists" == codeListEntity.getType()
 
 
     }
