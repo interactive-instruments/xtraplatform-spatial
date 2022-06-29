@@ -11,12 +11,23 @@ pluginManagement {
     }
 }
 
+plugins {
+    id "org.danilopianini.gradle-pre-commit-git-hooks" version "1.0.12"
+}
+
 rootProject.name = 'xtraplatform-spatial'
 
 rootDir.listFiles().each { file ->
     if (file.isDirectory() && file.name.startsWith('xtraplatform-')) {
         include file.name
     }  
+}
+
+extensions.gitHooks.with {
+    preCommit { ctx ->
+        ctx.tasks('check', [].toArray(), true)
+    }
+    createHooks(false)
 }
 
 //includeBuild '../xtraplatform-build'
