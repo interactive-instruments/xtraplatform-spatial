@@ -7,15 +7,10 @@
  */
 package de.ii.xtraplatform.crs.infra
 
-import de.ii.xtraplatform.crs.domain.BoundingBox
-import de.ii.xtraplatform.crs.domain.CoordinateTuple
-import de.ii.xtraplatform.crs.domain.EpsgCrs
-import de.ii.xtraplatform.crs.domain.OgcCrs
+import de.ii.xtraplatform.crs.domain.*
 import de.ii.xtraplatform.proj.domain.ProjLoaderImpl
 import org.kortforsyningen.proj.Units
 import org.opengis.referencing.cs.AxisDirection
-import spock.lang.Ignore
-import spock.lang.IgnoreRest
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -142,28 +137,53 @@ class CrsTransformerProjSpec extends Specification {
 
     }
 
-    def 'CRS info test'() {
+    def 'CRS transformer - dimension mismatch'() {
+        when:
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(EpsgCrs.of(25832), EpsgCrs.of(5555)).get()
+        double[] result = gct.transform([420735.071, 5392914.343, 131.96] as double[], 1, 3)
 
+        then:
+        thrown(IllegalStateException)
+    }
+
+    def 'CRS transformer - methods'() {
+        when:
+        def transformer = transformerFactory.getTransformer(EpsgCrs.of(5555), EpsgCrs.of(25832)).get()
+
+        then:
+        transformer.getSourceCrs() == EpsgCrs.of(5555)
+        transformer.getSourceDimension() == 3
+        transformer.getSourceUnitEquivalentInMeters() == 1.0
+        transformer.getTargetCrs() == EpsgCrs.of(25832)
+        transformer.getTargetDimension() == 2
+        transformer.getTargetUnitEquivalentInMeters() == 1.0
+
+    }
+
+    def 'CRS info test'() {
         expect:
+        transformerFactory.isSupported(crs) == true
+        transformerFactory.getUnit(crs) == unit
         transformerFactory.getAxisAbbreviations(crs) == axisAbbreviations
         transformerFactory.getAxisUnits(crs) == axisUnits
         transformerFactory.getAxisDirections(crs) == axisDirections
         transformerFactory.getAxisWithWraparound(crs) == axisWithWraparound
         transformerFactory.getAxisMinimums(crs) == axisMinimums
         transformerFactory.getAxisMaximums(crs) == axisMaximums
+        transformerFactory.getDomainOfValidity(crs) == domainOfValidity
 
         where:
-        crs               | axisAbbreviations   | axisUnits                                 | axisDirections                                              | axisWithWraparound  | axisMinimums                                                                                                          | axisMaximums
-        EpsgCrs.of(5555)  | ["E", "N", "H"]     | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
-        EpsgCrs.of(5556)  | ["E", "N", "H"]     | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
-        EpsgCrs.of(4979)  | ["Lat", "Lon", "h"] | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.NORTH, AxisDirection.EAST, AxisDirection.UP] | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
-        EpsgCrs.of(25832) | ["E", "N"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
-        EpsgCrs.of(4326)  | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
-        EpsgCrs.of(3857)  | ["X", "Y"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
-        EpsgCrs.of(4269)  | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
-        OgcCrs.CRS84      | ["Lon", "Lat"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.of(0)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
-        OgcCrs.CRS84h     | ["Lon", "Lat", "h"] | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | OptionalInt.of(0)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]
-        
+        crs               | unit | axisAbbreviations   | axisUnits                                 | axisDirections                                              | axisWithWraparound  | axisMinimums                                                                                                          | axisMaximums                                                                                                          | domainOfValidity
+        EpsgCrs.of(5555)  | Units.METRE | ["E", "N", "H"]     | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)] | Optional.of(BoundingBox.of(6.0, 47.27, 12.0, 55.09, OgcCrs.CRS84))
+        EpsgCrs.of(5556)  | Units.METRE | ["E", "N", "H"]     | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)] | Optional.of(BoundingBox.of(12.0, 47.46, 15.04, 54.74, OgcCrs.CRS84))
+        EpsgCrs.of(4979)  | Units.DEGREE | ["Lat", "Lon", "h"] | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.NORTH, AxisDirection.EAST, AxisDirection.UP] | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)] | Optional.of(BoundingBox.of(-180.0, -90.0, 180.0, 90.0, OgcCrs.CRS84))
+        EpsgCrs.of(25832) | Units.METRE | ["E", "N"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]                                        | Optional.of(BoundingBox.of(6.0, 38.76, 12.0, 84.33, OgcCrs.CRS84))
+        EpsgCrs.of(4326)  | Units.DEGREE | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]                                        | Optional.of(BoundingBox.of(-180.0, -90.0, 180.0, 90.0, OgcCrs.CRS84))
+        EpsgCrs.of(3857)  | Units.METRE | ["X", "Y"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]                                        | Optional.of(BoundingBox.of(-180.0, -85.06, 180.0, 85.06, OgcCrs.CRS84))
+        EpsgCrs.of(4269)  | Units.DEGREE | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]                                        | Optional.of(BoundingBox.of(167.65, 14.92, -47.74, 86.46, OgcCrs.CRS84))
+        OgcCrs.CRS84      | Units.DEGREE | ["Lon", "Lat"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.of(0)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]                                        | Optional.of(BoundingBox.of(-180.0, -90.0, 180.0, 90.0, OgcCrs.CRS84))
+        OgcCrs.CRS84h     | Units.DEGREE | ["Lon", "Lat", "h"] | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | OptionalInt.of(0)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)] | Optional.of(BoundingBox.of(-180.0, -90.0, 180.0, 90.0, OgcCrs.CRS84))
+
     }
 
     def 'Compound CRS test'() {
@@ -197,21 +217,21 @@ class CrsTransformerProjSpec extends Specification {
         result == target as double[]
 
         where:
-        sourceCrs        | targetCrs         | source                            | target
-        EpsgCrs.of(5555) | EpsgCrs.of(25832) | [420735.071, 5392914.343] | [420735.071, 5392914.343]
-        EpsgCrs.of(5555) | EpsgCrs.of(4326)  | [420735.071, 5392914.343] | [48.68423644912392, 7.923077973066287]
-        EpsgCrs.of(5555) | EpsgCrs.of(3857)  | [420735.071, 5392914.343] | [881993.0054771411, 6221451.78116173]
-        EpsgCrs.of(5555) | OgcCrs.CRS84      | [420735.071, 5392914.343] | [7.923077973066287, 48.68423644912392]
+        sourceCrs               | targetCrs               | source                    | target
+        EpsgCrs.of(5555)        | EpsgCrs.of(25832)       | [420735.071, 5392914.343] | [420735.071, 5392914.343]
+        EpsgCrs.of(5555)        | EpsgCrs.of(4326)        | [420735.071, 5392914.343] | [48.68423644912392, 7.923077973066287]
+        EpsgCrs.of(5555)        | EpsgCrs.of(3857)        | [420735.071, 5392914.343] | [881993.0054771411, 6221451.78116173]
+        EpsgCrs.of(5555)        | OgcCrs.CRS84            | [420735.071, 5392914.343] | [7.923077973066287, 48.68423644912392]
 
-        EpsgCrs.of(4979) | EpsgCrs.of(25832) | [48.684, 7.923]           | [420728.9609056481, 5392888.1411416]
-        EpsgCrs.of(4979) | EpsgCrs.of(4326)  | [48.684, 7.923]           | [48.684, 7.923]
-        EpsgCrs.of(4979) | EpsgCrs.of(3857)  | [48.684, 7.923]           | [881984.3255551065, 6221411.912936983]
-        EpsgCrs.of(4979) | OgcCrs.CRS84      | [48.684, 7.923]           | [7.923, 48.684]
+        EpsgCrs.of(4979)        | EpsgCrs.of(25832)       | [48.684, 7.923]           | [420728.9609056481, 5392888.1411416]
+        EpsgCrs.of(4979)        | EpsgCrs.of(4326)        | [48.684, 7.923]           | [48.684, 7.923]
+        EpsgCrs.of(4979)        | EpsgCrs.of(3857)        | [48.684, 7.923]           | [881984.3255551065, 6221411.912936983]
+        EpsgCrs.of(4979)        | OgcCrs.CRS84            | [48.684, 7.923]           | [7.923, 48.684]
 
-        OgcCrs.CRS84h    | EpsgCrs.of(25832) | [7.923, 48.684]           | [420728.9609056481, 5392888.1411416]
-        OgcCrs.CRS84h    | EpsgCrs.of(4326)  | [7.923, 48.684]           | [48.684, 7.923]
-        OgcCrs.CRS84h    | EpsgCrs.of(3857)  | [7.923, 48.684]           | [881984.3255551065, 6221411.912936983]
-        OgcCrs.CRS84h    | OgcCrs.CRS84      | [7.923, 48.684]           | [7.923, 48.684]
+        OgcCrs.CRS84h           | EpsgCrs.of(25832)       | [7.923, 48.684]           | [420728.9609056481, 5392888.1411416]
+        OgcCrs.CRS84h           | EpsgCrs.of(4326)        | [7.923, 48.684]           | [48.684, 7.923]
+        OgcCrs.CRS84h           | EpsgCrs.of(3857)        | [7.923, 48.684]           | [881984.3255551065, 6221411.912936983]
+        OgcCrs.CRS84h           | OgcCrs.CRS84            | [7.923, 48.684]           | [7.923, 48.684]
 
         EpsgCrs.of(5555)        | EpsgCrs.of(25832, 7837) | [420735.071, 5392914.343] | [420735.071, 5392914.343]
         EpsgCrs.of(4979)        | EpsgCrs.of(25832, 7837) | [48.684, 7.923]           | [420728.9609056481, 5392888.1411416]
@@ -232,9 +252,23 @@ class CrsTransformerProjSpec extends Specification {
 
         where:
         sourceBbox                                                                                         | targetBbox
-        BoundingBox.of(420735.071, 5392914.343, 430735.071, 5492914.343,  EpsgCrs.of(5555))                |  BoundingBox.of(420735.071, 5392914.343, 430735.071, 5492914.343,  EpsgCrs.of(25832))
-        //3D example from "CRS transformer test 3D"
-        BoundingBox.of(420735.071, 5392914.343, 131.96, 430735.071, 5492914.343, 141.96,  EpsgCrs.of(5555)) |  BoundingBox.of(48.68423644912392, 7.923077973066287, 131.96, 49.58484311245754, 8.041737428193695, 141.96, EpsgCrs.of(4979))
+        BoundingBox.of(420735.071, 5392914.343, 430735.071, 5492914.343, EpsgCrs.of(5555))                 | BoundingBox.of(420735.071, 5392914.343, 430735.071, 5492914.343, EpsgCrs.of(25832))
+        BoundingBox.of(420735.071, 5392914.343, 131.96, 430735.071, 5492914.343, 141.96, EpsgCrs.of(5555)) | BoundingBox.of(48.68423644912392, 7.923077973066287, 131.96, 49.58484311245754, 8.041737428193695, 141.96, EpsgCrs.of(4979))
+
+    }
+
+    def 'CRS transformBoundingBox - exception'() {
+        when:
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceBbox.getEpsgCrs(), targetCrs).get()
+        BoundingBox result = gct.transformBoundingBox(sourceBbox)
+
+        then:
+        thrown(CrsTransformationException)
+
+        where:
+        sourceBbox                                                        | targetCrs
+        BoundingBox.of(0, 100, 131.96, -1, 101, 141.96, EpsgCrs.of(4979)) | EpsgCrs.of(25832)
+        BoundingBox.of(0, 100, -1, 101, EpsgCrs.of(4326))                 | EpsgCrs.of(25832)
 
     }
 
