@@ -98,7 +98,7 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableCodelistData.Builder.class)
 public interface CodelistData extends EntityData {
 
-  enum IMPORT_TYPE {
+  enum ImportType {
     TEMPLATES,
     GML_DICTIONARY,
     ONEO_SCHLUESSELLISTE
@@ -125,7 +125,7 @@ public interface CodelistData extends EntityData {
    * @langDe `TEMPLATES` für alle manuell erstellte Codelisten.
    * @default
    */
-  IMPORT_TYPE getSourceType();
+  ImportType getSourceType();
 
   @DocIgnore
   Optional<String> getSourceUrl();

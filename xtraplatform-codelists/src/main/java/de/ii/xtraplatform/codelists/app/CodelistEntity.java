@@ -30,12 +30,16 @@ public class CodelistEntity extends AbstractPersistentEntity<CodelistData> imple
 
   @Override
   protected void onStarted() {
-    LOGGER.info("Codelist with id '{}' loaded successfully.", getId());
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Codelist with id '{}' loaded successfully.", getId());
+    }
   }
 
   @Override
   protected void onReloaded() {
-    LOGGER.info("Codelist with id '{}' reloaded successfully.", getId());
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Codelist with id '{}' reloaded successfully.", getId());
+    }
   }
 
   @Override
@@ -43,10 +47,5 @@ public class CodelistEntity extends AbstractPersistentEntity<CodelistData> imple
 
     return Optional.ofNullable(getData().getEntries().get(key))
         .orElse(getData().getFallback().orElse(key));
-  }
-
-  @Override
-  public CodelistData getData() {
-    return super.getData();
   }
 }
