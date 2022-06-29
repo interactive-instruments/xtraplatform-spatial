@@ -47,12 +47,6 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
     private final CoordinateOperation operation;
     private final Optional<CoordinateOperation> horizontalOperation;
 
-    CrsTransformerProj(CoordinateReferenceSystem sourceProjCrs,
-        CoordinateReferenceSystem targetProjCrs, EpsgCrs sourceCrs, EpsgCrs targetCrs,
-        int sourceDimension, int targetDimension, CoordinateOperation coordinateOperation) {
-        this(sourceProjCrs, targetProjCrs, sourceCrs, targetCrs, sourceDimension, targetDimension, coordinateOperation, Optional.empty());
-    }
-
     CrsTransformerProj(CoordinateReferenceSystem sourceCrs, CoordinateReferenceSystem targetCrs,
         EpsgCrs origSourceCrs, EpsgCrs origTargetCrs, int sourceDimension,
         int targetDimension, CoordinateOperation coordinateOperation,
