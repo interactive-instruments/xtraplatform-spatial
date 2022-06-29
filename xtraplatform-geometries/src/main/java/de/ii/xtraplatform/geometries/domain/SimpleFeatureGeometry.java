@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,25 +12,27 @@ package de.ii.xtraplatform.geometries.domain;
  */
 
 /**
- * @langEn The specific geometry type for properties with `type: GEOMETRY`. Possible values are simple feature
- * geometry types: `POINT`, `MULTI_POINT`, `LINE_STRING`, `MULTI_LINE_STRING`, `POLYGON`, `MULTI_POLYGON`, `GEOMETRY_COLLECTION` and `ANY`
- * @langDe Mit der Angabe kann der Geometrietype spezifiziert werden. Die Angabe ist nur bei Geometrieeigenschaften
- * (`type: GEOMETRY`) relevant. Erlaubt sind die Simple-Feature-Geometrietypen, d.h. `POINT`, `MULTI_POINT`,
- * `LINE_STRING`, `MULTI_LINE_STRING`, `POLYGON`, `MULTI_POLYGON`, `GEOMETRY_COLLECTION` und `ANY`.
+ * @langEn The specific geometry type for properties with `type: GEOMETRY`. Possible values are
+ *     simple feature geometry types: `POINT`, `MULTI_POINT`, `LINE_STRING`, `MULTI_LINE_STRING`,
+ *     `POLYGON`, `MULTI_POLYGON`, `GEOMETRY_COLLECTION` and `ANY`
+ * @langDe Mit der Angabe kann der Geometrietype spezifiziert werden. Die Angabe ist nur bei
+ *     Geometrieeigenschaften (`type: GEOMETRY`) relevant. Erlaubt sind die
+ *     Simple-Feature-Geometrietypen, d.h. `POINT`, `MULTI_POINT`, `LINE_STRING`,
+ *     `MULTI_LINE_STRING`, `POLYGON`, `MULTI_POLYGON`, `GEOMETRY_COLLECTION` und `ANY`.
  * @default
  */
 public enum SimpleFeatureGeometry {
-    POINT,
-    MULTI_POINT,
-    LINE_STRING,
-    MULTI_LINE_STRING,
-    POLYGON,
-    MULTI_POLYGON,
-    GEOMETRY_COLLECTION,
-    ANY,
-    NONE;
+  POINT,
+  MULTI_POINT,
+  LINE_STRING,
+  MULTI_LINE_STRING,
+  POLYGON,
+  MULTI_POLYGON,
+  GEOMETRY_COLLECTION,
+  ANY,
+  NONE;
 
-    public boolean isValid() {
-        return this != NONE;
-    }
+  public boolean isValid() {
+    return this != NONE;
+  }
 }

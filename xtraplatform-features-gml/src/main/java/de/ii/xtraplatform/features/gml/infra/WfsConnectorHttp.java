@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,18 +12,18 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
+import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.features.gml.app.FeatureProviderWfs;
+import de.ii.xtraplatform.features.gml.app.WfsRequestEncoder;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.features.gml.domain.WfsConnector;
-import de.ii.xtraplatform.features.domain.Metadata;
-import de.ii.xtraplatform.features.gml.infra.req.WFS;
 import de.ii.xtraplatform.features.gml.infra.req.GetCapabilities;
+import de.ii.xtraplatform.features.gml.infra.req.WFS;
 import de.ii.xtraplatform.features.gml.infra.req.WfsOperation;
-import de.ii.xtraplatform.features.gml.app.WfsRequestEncoder;
+import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.web.domain.Http;
 import de.ii.xtraplatform.web.domain.HttpClient;
-import de.ii.xtraplatform.streams.domain.Reactive;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -39,138 +39,150 @@ import org.slf4j.LoggerFactory;
  */
 public class WfsConnectorHttp implements WfsConnector {
 
-    public static final String CONNECTOR_TYPE = "HTTP";
+  public static final String CONNECTOR_TYPE = "HTTP";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(WfsConnectorHttp.class);
-    private static final SMInputFactory staxFactory = new SMInputFactory(new InputFactoryImpl());
+  private static final Logger LOGGER = LoggerFactory.getLogger(WfsConnectorHttp.class);
+  private static final SMInputFactory staxFactory = new SMInputFactory(new InputFactoryImpl());
 
-    private final HttpClient httpClient;
-    private final WfsRequestEncoder wfsRequestEncoder;
-    private final boolean useHttpPost;
-    private final Optional<Metadata> metadata;
-    private Optional<Throwable> connectionError;
-    private final String providerId;
+  private final HttpClient httpClient;
+  private final WfsRequestEncoder wfsRequestEncoder;
+  private final boolean useHttpPost;
+  private final Optional<Metadata> metadata;
+  private Optional<Throwable> connectionError;
+  private final String providerId;
 
-    @AssistedInject
-    WfsConnectorHttp(Http http, @Assisted FeatureProviderWfsData data) {
-        ConnectionInfoWfsHttp connectionInfo = data.getConnectionInfo();
+  @AssistedInject
+  WfsConnectorHttp(Http http, @Assisted FeatureProviderWfsData data) {
+    ConnectionInfoWfsHttp connectionInfo = data.getConnectionInfo();
 
-        this.useHttpPost = connectionInfo.getMethod() == ConnectionInfoWfsHttp.METHOD.POST;
+    this.useHttpPost = connectionInfo.getMethod() == ConnectionInfoWfsHttp.METHOD.POST;
 
-        Map<String, Map<WFS.METHOD, URI>> urls = ImmutableMap.of("default", ImmutableMap.of(WFS.METHOD.GET, parseAndCleanWfsUrl(connectionInfo.getUri()), WFS.METHOD.POST, parseAndCleanWfsUrl(connectionInfo.getUri())));
+    Map<String, Map<WFS.METHOD, URI>> urls =
+        ImmutableMap.of(
+            "default",
+            ImmutableMap.of(
+                WFS.METHOD.GET,
+                parseAndCleanWfsUrl(connectionInfo.getUri()),
+                WFS.METHOD.POST,
+                parseAndCleanWfsUrl(connectionInfo.getUri())));
 
-        this.wfsRequestEncoder = new WfsRequestEncoder(connectionInfo.getVersion(), connectionInfo.getGmlVersion(), connectionInfo.getNamespaces(), urls);
+    this.wfsRequestEncoder =
+        new WfsRequestEncoder(
+            connectionInfo.getVersion(),
+            connectionInfo.getGmlVersion(),
+            connectionInfo.getNamespaces(),
+            urls);
 
-        /*
-         workaround for https://github.com/interactive-instruments/ldproxy/issues/225
-         TODO: remove when fixed
-        */
-        Optional.ofNullable(Strings.emptyToNull(connectionInfo.getUri().toString().replace(FeatureProviderWfsData.PLACEHOLDER_URI, "")))
-            .orElseThrow(() -> new IllegalArgumentException("No 'uri' given, required for WFS connection"));
+    /*
+     workaround for https://github.com/interactive-instruments/ldproxy/issues/225
+     TODO: remove when fixed
+    */
+    Optional.ofNullable(
+            Strings.emptyToNull(
+                connectionInfo
+                    .getUri()
+                    .toString()
+                    .replace(FeatureProviderWfsData.PLACEHOLDER_URI, "")))
+        .orElseThrow(
+            () -> new IllegalArgumentException("No 'uri' given, required for WFS connection"));
 
-        URI host = connectionInfo.getUri();
+    URI host = connectionInfo.getUri();
 
-        //TODO: get maxParallelRequests and idleTimeout from connectionInfo
-        this.httpClient = http.getHostClient(host, 16, 30);
+    // TODO: get maxParallelRequests and idleTimeout from connectionInfo
+    this.httpClient = http.getHostClient(host, 16, 30);
 
-        this.metadata = crawlMetadata();
-        this.providerId = data.getId();
-    }
+    this.metadata = crawlMetadata();
+    this.providerId = data.getId();
+  }
 
-    WfsConnectorHttp() {
-        httpClient = null;
-        wfsRequestEncoder = null;
-        useHttpPost = false;
-        metadata = Optional.empty();
-        providerId = null;
-    }
+  WfsConnectorHttp() {
+    httpClient = null;
+    wfsRequestEncoder = null;
+    useHttpPost = false;
+    metadata = Optional.empty();
+    providerId = null;
+  }
 
   public static URI parseAndCleanWfsUrl(URI inUri) {
-      URIBuilder outUri = new URIBuilder(inUri).removeQuery();
+    URIBuilder outUri = new URIBuilder(inUri).removeQuery();
 
-      if (inUri.getQuery() != null && !inUri.getQuery()
-                                            .isEmpty()) {
-          for (String inParam : inUri.getQuery()
-                                     .split("&")) {
-              String[] param = inParam.split("=");
-              if (!WFS.hasKVPKey(param[0].toUpperCase())) {
-                  outUri.addParameter(param[0], param[1]);
-              }
-          }
+    if (inUri.getQuery() != null && !inUri.getQuery().isEmpty()) {
+      for (String inParam : inUri.getQuery().split("&")) {
+        String[] param = inParam.split("=");
+        if (!WFS.hasKVPKey(param[0].toUpperCase())) {
+          outUri.addParameter(param[0], param[1]);
+        }
       }
+    }
 
-      try {
-          return outUri.build();
-      } catch (URISyntaxException e) {
-          return inUri;
-      }
+    try {
+      return outUri.build();
+    } catch (URISyntaxException e) {
+      return inUri;
+    }
   }
 
   @Override
-    public String getType() {
-        return String.format("%s/%s", FeatureProviderWfs.PROVIDER_TYPE, CONNECTOR_TYPE);
-    }
-
-    @Override
-    public void start() {
-
-    }
-
-    @Override
-    public void stop() {
-
-    }
-
-    private Optional<Metadata> crawlMetadata() {
-        try {
-            InputStream inputStream = runWfsOperation(new GetCapabilities());
-            WfsCapabilitiesAnalyzer metadataConsumer = new WfsCapabilitiesAnalyzer();
-            WFSCapabilitiesParser gmlSchemaParser = new WFSCapabilitiesParser(metadataConsumer, staxFactory);
-            gmlSchemaParser.parse(inputStream);
-
-            this.connectionError = Optional.empty();
-
-            return Optional.of(metadataConsumer.getMetadata());
-        } catch (Throwable e) {
-            this.connectionError = Optional.of(e);
-        }
-
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<Metadata> getMetadata() {
-        return metadata;
-    }
-
-    @Override
-    public String getProviderId() {
-        return providerId;
-    }
-
-    @Override
-    public boolean isConnected() {
-        return metadata.isPresent();
-    }
-
-    @Override
-    public Optional<Throwable> getConnectionError() {
-        return connectionError;
-    }
-
+  public String getType() {
+    return String.format("%s/%s", FeatureProviderWfs.PROVIDER_TYPE, CONNECTOR_TYPE);
+  }
 
   @Override
-    public Reactive.Source<byte[]> getSourceStream(String query) {
-        return httpClient.get(query);
+  public void start() {}
+
+  @Override
+  public void stop() {}
+
+  private Optional<Metadata> crawlMetadata() {
+    try {
+      InputStream inputStream = runWfsOperation(new GetCapabilities());
+      WfsCapabilitiesAnalyzer metadataConsumer = new WfsCapabilitiesAnalyzer();
+      WFSCapabilitiesParser gmlSchemaParser =
+          new WFSCapabilitiesParser(metadataConsumer, staxFactory);
+      gmlSchemaParser.parse(inputStream);
+
+      this.connectionError = Optional.empty();
+
+      return Optional.of(metadataConsumer.getMetadata());
+    } catch (Throwable e) {
+      this.connectionError = Optional.of(e);
     }
 
-    @Override
-    public Reactive.Source<byte[]> getSourceStream(String query, QueryOptions options) {
-        return httpClient.get(query);
-    }
+    return Optional.empty();
+  }
 
-    @Override
-    public InputStream runWfsOperation(final WfsOperation operation) {
-        return httpClient.getAsInputStream(wfsRequestEncoder.getAsUrl(operation));
-    }
+  @Override
+  public Optional<Metadata> getMetadata() {
+    return metadata;
+  }
+
+  @Override
+  public String getProviderId() {
+    return providerId;
+  }
+
+  @Override
+  public boolean isConnected() {
+    return metadata.isPresent();
+  }
+
+  @Override
+  public Optional<Throwable> getConnectionError() {
+    return connectionError;
+  }
+
+  @Override
+  public Reactive.Source<byte[]> getSourceStream(String query) {
+    return httpClient.get(query);
+  }
+
+  @Override
+  public Reactive.Source<byte[]> getSourceStream(String query, QueryOptions options) {
+    return httpClient.get(query);
+  }
+
+  @Override
+  public InputStream runWfsOperation(final WfsOperation operation) {
+    return httpClient.getAsInputStream(wfsRequestEncoder.getAsUrl(operation));
+  }
 }

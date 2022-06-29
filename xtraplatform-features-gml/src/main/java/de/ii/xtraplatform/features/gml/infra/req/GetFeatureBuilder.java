@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,50 +10,55 @@ package de.ii.xtraplatform.features.gml.infra.req;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.gml.infra.req.GetFeature.RESULT_TYPE;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class GetFeatureBuilder {
-    private final List<WfsQuery> queries;
-    private Integer count;
-    private Integer startIndex;
-    private boolean hitsOnly;
-    private Map<String, String> additionalOperationParameters;
+  private final List<WfsQuery> queries;
+  private Integer count;
+  private Integer startIndex;
+  private boolean hitsOnly;
+  private Map<String, String> additionalOperationParameters;
 
-    public GetFeatureBuilder() {
-        this.queries = new ArrayList<>();
-        this.additionalOperationParameters = new HashMap<>();
-    }
+  public GetFeatureBuilder() {
+    this.queries = new ArrayList<>();
+    this.additionalOperationParameters = new HashMap<>();
+  }
 
-    public GetFeatureBuilder query(WfsQuery query) {
-        this.queries.add(query);
-        return this;
-    }
+  public GetFeatureBuilder query(WfsQuery query) {
+    this.queries.add(query);
+    return this;
+  }
 
-    public GetFeatureBuilder count(Integer count) {
-        this.count = count;
-        return this;
-    }
+  public GetFeatureBuilder count(Integer count) {
+    this.count = count;
+    return this;
+  }
 
-    public GetFeatureBuilder startIndex(Integer startIndex) {
-        this.startIndex = startIndex;
-        return this;
-    }
+  public GetFeatureBuilder startIndex(Integer startIndex) {
+    this.startIndex = startIndex;
+    return this;
+  }
 
-    public GetFeatureBuilder hitsOnly() {
-        this.hitsOnly = true;
-        return this;
-    }
+  public GetFeatureBuilder hitsOnly() {
+    this.hitsOnly = true;
+    return this;
+  }
 
-    public GetFeatureBuilder additionalOperationParameters(Map<String, String> additionalOperationParameters) {
-        this.additionalOperationParameters.putAll(additionalOperationParameters);
-        return this;
-    }
+  public GetFeatureBuilder additionalOperationParameters(
+      Map<String, String> additionalOperationParameters) {
+    this.additionalOperationParameters.putAll(additionalOperationParameters);
+    return this;
+  }
 
-    public GetFeature build() {
-        return new GetFeature(ImmutableList.copyOf(queries), count, startIndex, hitsOnly ? RESULT_TYPE.HITS : RESULT_TYPE.RESULT, ImmutableMap.copyOf(additionalOperationParameters));
-    }
+  public GetFeature build() {
+    return new GetFeature(
+        ImmutableList.copyOf(queries),
+        count,
+        startIndex,
+        hitsOnly ? RESULT_TYPE.HITS : RESULT_TYPE.RESULT,
+        ImmutableMap.copyOf(additionalOperationParameters));
+  }
 }

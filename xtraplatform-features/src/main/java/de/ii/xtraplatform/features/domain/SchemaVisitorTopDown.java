@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,6 +11,5 @@ import java.util.List;
 
 public interface SchemaVisitorTopDown<T extends SchemaBase<T>, U> {
 
-    U visit(T schema, List<T> parents, List<U> visitedProperties);
-
+  U visit(T schema, List<T> parents, List<U> visitedProperties);
 }

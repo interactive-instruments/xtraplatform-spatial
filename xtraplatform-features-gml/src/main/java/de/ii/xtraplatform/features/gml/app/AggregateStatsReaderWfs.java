@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -25,44 +25,51 @@ import org.threeten.extra.Interval;
 
 public class AggregateStatsReaderWfs implements AggregateStatsReader {
 
-    private final FeatureMetadata featureMetadata;
-    private final Optional<CrsTransformer> crsTransformer;
+  private final FeatureMetadata featureMetadata;
+  private final Optional<CrsTransformer> crsTransformer;
 
-    public AggregateStatsReaderWfs(FeatureMetadata featureMetadata, CrsTransformerFactory crsTransformerFactory, EpsgCrs nativeCrs) {
-        this.featureMetadata = featureMetadata;
-        this.crsTransformer = crsTransformerFactory.getTransformer(OgcCrs.CRS84, nativeCrs, true);
-    }
+  public AggregateStatsReaderWfs(
+      FeatureMetadata featureMetadata,
+      CrsTransformerFactory crsTransformerFactory,
+      EpsgCrs nativeCrs) {
+    this.featureMetadata = featureMetadata;
+    this.crsTransformer = crsTransformerFactory.getTransformer(OgcCrs.CRS84, nativeCrs, true);
+  }
 
-    @Override
-    public Stream<Long> getCount(FeatureStoreTypeInfo typeInfo) {
-        //TODO: hits query
-        return Reactive.Source.single(-1L)
-            .to(Reactive.Sink.head());
-    }
+  @Override
+  public Stream<Long> getCount(FeatureStoreTypeInfo typeInfo) {
+    // TODO: hits query
+    return Reactive.Source.single(-1L).to(Reactive.Sink.head());
+  }
 
-    @Override
-    public Stream<Optional<BoundingBox>> getSpatialExtent(FeatureStoreTypeInfo typeInfo, boolean is3d) {
+  @Override
+  public Stream<Optional<BoundingBox>> getSpatialExtent(
+      FeatureStoreTypeInfo typeInfo, boolean is3d) {
 
-        Optional<BoundingBox> boundingBox = featureMetadata.getMetadata()
-                                                      .map(Metadata::getFeatureTypesBoundingBox)
-                                                      .flatMap(boundingBoxes -> Optional.ofNullable(boundingBoxes.get(typeInfo.getName())))
-                                                      .flatMap(boundingBox1 -> crsTransformer.map(mayThrow(crsTransformer1 -> crsTransformer1.transformBoundingBox(boundingBox1))));
+    Optional<BoundingBox> boundingBox =
+        featureMetadata
+            .getMetadata()
+            .map(Metadata::getFeatureTypesBoundingBox)
+            .flatMap(boundingBoxes -> Optional.ofNullable(boundingBoxes.get(typeInfo.getName())))
+            .flatMap(
+                boundingBox1 ->
+                    crsTransformer.map(
+                        mayThrow(
+                            crsTransformer1 ->
+                                crsTransformer1.transformBoundingBox(boundingBox1))));
 
-        return Reactive.Source.single(boundingBox)
-            .to(Reactive.Sink.head());
-    }
+    return Reactive.Source.single(boundingBox).to(Reactive.Sink.head());
+  }
 
-    @Override
-    public Stream<Optional<Interval>> getTemporalExtent(FeatureStoreTypeInfo typeInfo,
-        String property) {
-        return Reactive.Source.single(Optional.<Interval>empty())
-            .to(Reactive.Sink.head());
-    }
+  @Override
+  public Stream<Optional<Interval>> getTemporalExtent(
+      FeatureStoreTypeInfo typeInfo, String property) {
+    return Reactive.Source.single(Optional.<Interval>empty()).to(Reactive.Sink.head());
+  }
 
-    @Override
-    public Stream<Optional<Interval>> getTemporalExtent(FeatureStoreTypeInfo typeInfo,
-        String startProperty, String endProperty) {
-        return Reactive.Source.single(Optional.<Interval>empty())
-            .to(Reactive.Sink.head());
-    }
+  @Override
+  public Stream<Optional<Interval>> getTemporalExtent(
+      FeatureStoreTypeInfo typeInfo, String startProperty, String endProperty) {
+    return Reactive.Source.single(Optional.<Interval>empty()).to(Reactive.Sink.head());
+  }
 }

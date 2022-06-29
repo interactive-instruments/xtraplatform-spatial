@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,7 +9,6 @@ package de.ii.xtraplatform.features.sql.domain;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import java.time.Instant;
@@ -23,9 +22,8 @@ import org.threeten.extra.Interval;
 
 public class SqlDialectGpkg implements SqlDialect {
 
-  private final static Splitter BBOX_SPLITTER = Splitter.onPattern("[(), ]")
-      .omitEmptyStrings()
-      .trimResults();
+  private static final Splitter BBOX_SPLITTER =
+      Splitter.onPattern("[(), ]").omitEmptyStrings().trimResults();
 
   @Override
   public String applyToWkt(String column, boolean forcePolygonCCW) {
@@ -46,9 +44,13 @@ public class SqlDialectGpkg implements SqlDialect {
     List<String> bbox = BBOX_SPLITTER.splitToList(extent);
 
     if (bbox.size() > 6) {
-      return Optional.of(BoundingBox
-          .of(Double.parseDouble(bbox.get(1)), Double.parseDouble(bbox.get(2)),
-              Double.parseDouble(bbox.get(5)), Double.parseDouble(bbox.get(6)), crs));
+      return Optional.of(
+          BoundingBox.of(
+              Double.parseDouble(bbox.get(1)),
+              Double.parseDouble(bbox.get(2)),
+              Double.parseDouble(bbox.get(5)),
+              Double.parseDouble(bbox.get(6)),
+              crs));
     }
 
     return Optional.empty();
@@ -59,8 +61,9 @@ public class SqlDialectGpkg implements SqlDialect {
     if (Objects.isNull(start)) {
       return Optional.empty();
     }
-    DateTimeFormatter parser = DateTimeFormatter
-        .ofPattern("yyyy-MM-dd[['T'][' ']HH:mm:ss][.SSS][X]").withZone(ZoneOffset.UTC);
+    DateTimeFormatter parser =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd[['T'][' ']HH:mm:ss][.SSS][X]")
+            .withZone(ZoneOffset.UTC);
     Instant parsedStart = parser.parse(start, Instant::from);
     if (Objects.isNull(end)) {
       return Optional.of(Interval.of(parsedStart, Instant.MAX));
@@ -97,12 +100,14 @@ public class SqlDialectGpkg implements SqlDialect {
   @Override
   public String applyToInstantMin() {
     return "0001-01-01T00:00:00Z";
-  };
+  }
+  ;
 
   @Override
   public String applyToInstantMax() {
     return "9999-12-31T23:59:59Z";
-  };
+  }
+  ;
 
   @Override
   public String escapeString(String value) {
@@ -124,10 +129,20 @@ public class SqlDialectGpkg implements SqlDialect {
 
   @Override
   public List<String> getSystemTables() {
-    return ImmutableList
-        .of("gpkg_.*", "sqlite_.*", "rtree_.*", "spatial_ref_sys.*", "geometry_columns.*",
-            "geom_cols.*", "views_geometry_columns.*", "virts_geometry_columns.*",
-            "vector_layers.*", "spatialite_.*", "sql_statements_log", "sqlite_sequence",
-            "ElementaryGeometries", "SpatialIndex");
+    return ImmutableList.of(
+        "gpkg_.*",
+        "sqlite_.*",
+        "rtree_.*",
+        "spatial_ref_sys.*",
+        "geometry_columns.*",
+        "geom_cols.*",
+        "views_geometry_columns.*",
+        "virts_geometry_columns.*",
+        "vector_layers.*",
+        "spatialite_.*",
+        "sql_statements_log",
+        "sqlite_sequence",
+        "ElementaryGeometries",
+        "SpatialIndex");
   }
 }

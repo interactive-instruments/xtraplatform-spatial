@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,7 +9,7 @@ package de.ii.xtraplatform.cql.domain;
 
 public class CqlParseException extends RuntimeException {
 
-    public CqlParseException(String message) {
-        super(message);
-    }
+  public CqlParseException(String message) {
+    super(message);
+  }
 }

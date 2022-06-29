@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,98 +15,98 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableScalarLiteral.Builder.class)
 public interface ScalarLiteral extends Scalar, Literal, CqlNode {
 
-    static ScalarLiteral of(Double literal) {
-        return new Builder(literal).build();
+  static ScalarLiteral of(Double literal) {
+    return new Builder(literal).build();
+  }
+
+  static ScalarLiteral of(Integer literal) {
+    return new Builder(literal).build();
+  }
+
+  static ScalarLiteral of(Long literal) {
+    return new Builder(literal).build();
+  }
+
+  static ScalarLiteral of(java.lang.Boolean literal) {
+    return new Builder(literal).build();
+  }
+
+  static ScalarLiteral of(String literal) {
+    return new Builder(literal).build();
+  }
+
+  static ScalarLiteral of(String literal, boolean determineType) {
+    return new Builder(literal, determineType).build();
+  }
+
+  class Builder extends ImmutableScalarLiteral.Builder {
+    public Builder() {
+      super();
     }
 
-    static ScalarLiteral of(Integer literal) {
-        return new Builder(literal).build();
+    @JsonCreator
+    public Builder(Double literal) {
+      super();
+      value(literal);
+      type(Double.class);
     }
 
-    static ScalarLiteral of(Long literal) {
-        return new Builder(literal).build();
+    @JsonCreator
+    public Builder(Integer literal) {
+      super();
+      value(literal);
+      type(Integer.class);
     }
 
-    static ScalarLiteral of(java.lang.Boolean literal) {
-        return new Builder(literal).build();
+    @JsonCreator
+    public Builder(Long literal) {
+      super();
+      value(literal);
+      type(Long.class);
     }
 
-    static ScalarLiteral of(String literal) {
-        return new Builder(literal).build();
+    @JsonCreator
+    public Builder(java.lang.Boolean literal) {
+      super();
+      value(literal);
+      type(java.lang.Boolean.class);
     }
 
-    static ScalarLiteral of(String literal, boolean determineType) {
-        return new Builder(literal, determineType).build();
+    @JsonCreator
+    public Builder(String literal) {
+      this(literal, false);
     }
 
-    class Builder extends ImmutableScalarLiteral.Builder {
-        public Builder() {
-            super();
-        }
+    public Builder(String literal, boolean determineType) {
+      super();
+      if (determineType) {
+        Object castedLiteral = castToType(literal);
+        value(castedLiteral);
+        type(castedLiteral.getClass());
+      } else {
+        value(literal);
+        type(String.class);
+      }
+    }
 
-        @JsonCreator
-        public Builder(Double literal) {
-            super();
-            value(literal);
-            type(Double.class);
-        }
-
-        @JsonCreator
-        public Builder(Integer literal) {
-            super();
-            value(literal);
-            type(Integer.class);
-        }
-
-        @JsonCreator
-        public Builder(Long literal) {
-            super();
-            value(literal);
-            type(Long.class);
-        }
-
-        @JsonCreator
-        public Builder(java.lang.Boolean literal) {
-            super();
-            value(literal);
-            type(java.lang.Boolean.class);
-        }
-
-        @JsonCreator
-        public Builder(String literal) {
-            this(literal, false);
-        }
-
-        public Builder(String literal, boolean determineType) {
-            super();
-            if (determineType) {
-                Object castedLiteral = castToType(literal);
-                value(castedLiteral);
-                type(castedLiteral.getClass());
-            } else {
-                value(literal);
-                type(String.class);
+    private Object castToType(String literal) {
+      try {
+        return Integer.valueOf(literal);
+      } catch (NumberFormatException e) {
+        try {
+          return Long.valueOf(literal);
+        } catch (NumberFormatException e2) {
+          try {
+            return Double.valueOf(literal);
+          } catch (NumberFormatException e3) {
+            if (literal.equalsIgnoreCase("true") || literal.equalsIgnoreCase("false")) {
+              return java.lang.Boolean.valueOf(literal);
             }
+          }
         }
+      }
 
-        private Object castToType(String literal) {
-            try {
-                return Integer.valueOf(literal);
-            } catch (NumberFormatException e) {
-                try {
-                    return Long.valueOf(literal);
-                } catch (NumberFormatException e2) {
-                    try {
-                        return Double.valueOf(literal);
-                    } catch (NumberFormatException e3) {
-                        if (literal.equalsIgnoreCase("true") || literal.equalsIgnoreCase("false")) {
-                            return java.lang.Boolean.valueOf(literal);
-                        }
-                    }
-                }
-            }
-
-            return literal;
-        }
+      return literal;
     }
+  }
 }

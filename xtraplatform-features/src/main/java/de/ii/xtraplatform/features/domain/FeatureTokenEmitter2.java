@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,7 +10,9 @@ package de.ii.xtraplatform.features.domain;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import java.util.Objects;
 
-public interface FeatureTokenEmitter2<T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>> extends FeatureEventHandler<T, U, V> {
+public interface FeatureTokenEmitter2<
+        T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>>
+    extends FeatureEventHandler<T, U, V> {
 
   void push(Object token);
 

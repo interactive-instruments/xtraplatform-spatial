@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,8 +10,6 @@ package de.ii.xtraplatform.crs.infra;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import dagger.Binds;
-import dagger.Provides;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -20,6 +18,20 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.proj.domain.ProjLoader;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.measure.Unit;
 import org.kortforsyningen.proj.CoordinateOperationContext;
 import org.kortforsyningen.proj.GridAvailabilityUse;
 import org.kortforsyningen.proj.Proj;
@@ -42,23 +54,7 @@ import org.opengis.referencing.operation.CoordinateOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.measure.Unit;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 /**
- *
  * @author zahnen
  */
 @Singleton
@@ -80,12 +76,18 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
     try {
       projLoader.load();
-      //TODO: to projLoader?
-      if (!projLoader.getDataDirectory().toFile().exists() || !projLoader.getDataDirectory().resolve("proj.db").toFile().exists()) {
-        throw new IllegalArgumentException("Not a valid PROJ location: " + projLoader.getDataDirectory());
+      // TODO: to projLoader?
+      if (!projLoader.getDataDirectory().toFile().exists()
+          || !projLoader.getDataDirectory().resolve("proj.db").toFile().exists()) {
+        throw new IllegalArgumentException(
+            "Not a valid PROJ location: " + projLoader.getDataDirectory());
       }
       Proj.setSearchPath(projLoader.getDataDirectory().toString());
-      Proj.version().ifPresent(version -> LOGGER.debug("PROJ version: {}, location: {}", version, projLoader.getDataDirectory()));
+      Proj.version()
+          .ifPresent(
+              version ->
+                  LOGGER.debug(
+                      "PROJ version: {}, location: {}", version, projLoader.getDataDirectory()));
       System.setProperty("org.kortforsyningen.proj.maxThreadsPerInstance", "16");
     } catch (Throwable e) {
       LogContext.error(LOGGER, e, "PROJ");
@@ -105,10 +107,7 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
   @Override
   public Unit<?> getUnit(EpsgCrs crs) {
-    return getHorizontalCrs(getCrsOrThrow(crs))
-        .getCoordinateSystem()
-        .getAxis(0)
-        .getUnit();
+    return getHorizontalCrs(getCrsOrThrow(crs)).getCoordinateSystem().getAxis(0).getUnit();
   }
 
   @Override
@@ -155,24 +154,23 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
     // first check, if the range meaning is provided (typically this is not the case)
     CoordinateSystem cs = projCrs.getCoordinateSystem();
-    for (int i=0; i<cs.getDimension(); i++)
-      if (RangeMeaning.WRAPAROUND.equals(cs.getAxis(i).getRangeMeaning()))
-        return OptionalInt.of(i);
+    for (int i = 0; i < cs.getDimension(); i++)
+      if (RangeMeaning.WRAPAROUND.equals(cs.getAxis(i).getRangeMeaning())) return OptionalInt.of(i);
 
     // otherwise we analyse the CRS definition
 
-    // if we have a compound CRS, we analyse the coordinate system of the first CRS, which includes the horizontal axes
+    // if we have a compound CRS, we analyse the coordinate system of the first CRS, which includes
+    // the horizontal axes
     if (projCrs instanceof CompoundCRS)
       cs = ((CompoundCRS) projCrs).getComponents().get(0).getCoordinateSystem();
 
     // wraparound only occurs in ellipsoidal coordinate systems
-    if (!(cs instanceof EllipsoidalCS))
-      return OptionalInt.empty();
+    if (!(cs instanceof EllipsoidalCS)) return OptionalInt.empty();
 
     // find the longitude axis
-    for (int i=0; i<cs.getDimension(); i++)
-      if (AxisDirection.EAST.equals(cs.getAxis(i).getDirection()) || AxisDirection.WEST.equals(cs.getAxis(i).getDirection()))
-        return OptionalInt.of(i);
+    for (int i = 0; i < cs.getDimension(); i++)
+      if (AxisDirection.EAST.equals(cs.getAxis(i).getDirection())
+          || AxisDirection.WEST.equals(cs.getAxis(i).getDirection())) return OptionalInt.of(i);
 
     return OptionalInt.empty();
   }
@@ -191,44 +189,64 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
     CoordinateReferenceSystem projCrs = getCrsOrThrow(crs);
 
     Extent extent = projCrs.getDomainOfValidity();
-    if (Objects.isNull(extent))
-      return Optional.empty();
+    if (Objects.isNull(extent)) return Optional.empty();
 
     Collection<? extends GeographicExtent> geographicElements = extent.getGeographicElements();
-    if (Objects.isNull(geographicElements) || geographicElements.isEmpty())
-      return Optional.empty();
+    if (Objects.isNull(geographicElements) || geographicElements.isEmpty()) return Optional.empty();
 
-    List<BoundingBox> bboxs = geographicElements.stream()
-        .map(geographicExtent -> {
-          if (geographicExtent instanceof GeographicBoundingBox) {
-            GeographicBoundingBox geoBbox = (GeographicBoundingBox) geographicExtent;
-            return BoundingBox.of(geoBbox.getWestBoundLongitude(), geoBbox.getSouthBoundLatitude(),
-                                  geoBbox.getEastBoundLongitude(), geoBbox.getNorthBoundLatitude(),
-                                  OgcCrs.CRS84);
-          }
-          // TODO support also bounding polygons?
-          return null;
-        })
-        .filter(Objects::nonNull)
-        .collect(Collectors.toUnmodifiableList());
-    if (bboxs.isEmpty())
-      return Optional.empty();
-    else if (bboxs.size()==1)
-      return Optional.of(bboxs.get(0));
+    List<BoundingBox> bboxs =
+        geographicElements.stream()
+            .map(
+                geographicExtent -> {
+                  if (geographicExtent instanceof GeographicBoundingBox) {
+                    GeographicBoundingBox geoBbox = (GeographicBoundingBox) geographicExtent;
+                    return BoundingBox.of(
+                        geoBbox.getWestBoundLongitude(),
+                        geoBbox.getSouthBoundLatitude(),
+                        geoBbox.getEastBoundLongitude(),
+                        geoBbox.getNorthBoundLatitude(),
+                        OgcCrs.CRS84);
+                  }
+                  // TODO support also bounding polygons?
+                  return null;
+                })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toUnmodifiableList());
+    if (bboxs.isEmpty()) return Optional.empty();
+    else if (bboxs.size() == 1) return Optional.of(bboxs.get(0));
 
     // we have multiple bboxes, construct the bbox that includes them all;
     // also take care of bounding boxes that cross the antimeridian and normalize
     // the longitude values for the compuation so that west < east also for those
     // bounding boxes
     return bboxs.stream()
-        .map(bbox -> bbox.getXmin() > bbox.getXmax() ? BoundingBox.of(bbox.getXmin()-180, bbox.getYmin(), bbox.getXmax(), bbox.getYmax(), OgcCrs.CRS84) : bbox)
+        .map(
+            bbox ->
+                bbox.getXmin() > bbox.getXmax()
+                    ? BoundingBox.of(
+                        bbox.getXmin() - 180,
+                        bbox.getYmin(),
+                        bbox.getXmax(),
+                        bbox.getYmax(),
+                        OgcCrs.CRS84)
+                    : bbox)
         .map(BoundingBox::toArray)
-        .reduce((doubles, doubles2) -> new double[]{
-            Math.min(doubles[0], doubles2[0]),
-            Math.min(doubles[1], doubles2[1]),
-            Math.max(doubles[2], doubles2[2]),
-            Math.max(doubles[3], doubles2[3])})
-        .map(doubles -> BoundingBox.of(doubles[0] < -180 ? doubles[0]+180 : doubles[0], doubles[1], doubles[2], doubles[3], OgcCrs.CRS84));
+        .reduce(
+            (doubles, doubles2) ->
+                new double[] {
+                  Math.min(doubles[0], doubles2[0]),
+                  Math.min(doubles[1], doubles2[1]),
+                  Math.max(doubles[2], doubles2[2]),
+                  Math.max(doubles[3], doubles2[3])
+                })
+        .map(
+            doubles ->
+                BoundingBox.of(
+                    doubles[0] < -180 ? doubles[0] + 180 : doubles[0],
+                    doubles[1],
+                    doubles[2],
+                    doubles[3],
+                    OgcCrs.CRS84));
   }
 
   @Override
@@ -237,7 +255,8 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
   }
 
   @Override
-  public Optional<CrsTransformer> getTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs, boolean force2d) {
+  public Optional<CrsTransformer> getTransformer(
+      EpsgCrs sourceCrs, EpsgCrs targetCrs, boolean force2d) {
     if (Objects.equals(sourceCrs, targetCrs)) {
       return Optional.empty();
     }
@@ -251,10 +270,15 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
     CoordinateReferenceSystem finalSourceProjCrs = sourceProjCrs;
     CoordinateReferenceSystem finalTargetProjCrs = targetProjCrs;
-    CrsTransformer transformer = useCaches
-        ? getCacheForSource(sourceCrs, force2d).computeIfAbsent(targetCrs, ignore -> createCrsTransformer(sourceCrs, targetCrs,
-                                                                                                 finalSourceProjCrs, finalTargetProjCrs))
-        : createCrsTransformer(sourceCrs, targetCrs, sourceProjCrs, targetProjCrs);
+    CrsTransformer transformer =
+        useCaches
+            ? getCacheForSource(sourceCrs, force2d)
+                .computeIfAbsent(
+                    targetCrs,
+                    ignore ->
+                        createCrsTransformer(
+                            sourceCrs, targetCrs, finalSourceProjCrs, finalTargetProjCrs))
+            : createCrsTransformer(sourceCrs, targetCrs, sourceProjCrs, targetProjCrs);
 
     return Optional.of(transformer);
   }
@@ -270,30 +294,39 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
   }
 
   private CoordinateReferenceSystem getCrsOrThrow(EpsgCrs crs) {
-    return getCrs(crs).orElseThrow(() -> new IllegalArgumentException(
-        String.format("CRS %s is not supported.",
-            Objects.nonNull(crs) ? crs.toSimpleString() : "null")));
+    return getCrs(crs)
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    String.format(
+                        "CRS %s is not supported.",
+                        Objects.nonNull(crs) ? crs.toSimpleString() : "null")));
   }
 
   private synchronized Optional<CoordinateReferenceSystem> createCrs(EpsgCrs crs) {
     return createCrs(crs, EPSG.provider(), Proj.getFactory(CRSFactory.class), false);
   }
 
-  private synchronized Optional<CoordinateReferenceSystem> createCrs(EpsgCrs crs,
-      CRSAuthorityFactory authorityFactory, CRSFactory crsFactory, boolean logError) {
+  private synchronized Optional<CoordinateReferenceSystem> createCrs(
+      EpsgCrs crs, CRSAuthorityFactory authorityFactory, CRSFactory crsFactory, boolean logError) {
     try {
       String code = String.valueOf(applyWorkarounds(crs).getCode());
-      CoordinateReferenceSystem coordinateReferenceSystem = authorityFactory.createCoordinateReferenceSystem(
-          code);
-      coordinateReferenceSystem = applyAxisOrder(coordinateReferenceSystem,
-          crs.getForceAxisOrder());
+      CoordinateReferenceSystem coordinateReferenceSystem =
+          authorityFactory.createCoordinateReferenceSystem(code);
+      coordinateReferenceSystem =
+          applyAxisOrder(coordinateReferenceSystem, crs.getForceAxisOrder());
 
       if (crs.getVerticalCode().isPresent()) {
         String verticalCode = String.valueOf(crs.getVerticalCode().getAsInt());
         CoordinateReferenceSystem verticalCrs = authorityFactory.createVerticalCRS(verticalCode);
-        CoordinateReferenceSystem compoundCrs = crsFactory.createCompoundCRS(ImmutableMap.of("name",
-                String.format("%s + %s", coordinateReferenceSystem.getName(), verticalCrs.getName())),
-            coordinateReferenceSystem, verticalCrs);
+        CoordinateReferenceSystem compoundCrs =
+            crsFactory.createCompoundCRS(
+                ImmutableMap.of(
+                    "name",
+                    String.format(
+                        "%s + %s", coordinateReferenceSystem.getName(), verticalCrs.getName())),
+                coordinateReferenceSystem,
+                verticalCrs);
 
         return Optional.of(compoundCrs);
       }
@@ -368,8 +401,8 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
         : (SingleCRS) crs;
   }
 
-  private CoordinateReferenceSystem applyAxisOrder(CoordinateReferenceSystem crs,
-      EpsgCrs.Force axisOrder) {
+  private CoordinateReferenceSystem applyAxisOrder(
+      CoordinateReferenceSystem crs, EpsgCrs.Force axisOrder) {
     if (axisOrder == EpsgCrs.Force.LON_LAT) {
       return Proj.normalizeForVisualization(crs);
     }
@@ -383,7 +416,9 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
         : transformerCache.computeIfAbsent(crs, ignore -> new ConcurrentHashMap<>());
   }
 
-  private synchronized CrsTransformer createCrsTransformer(EpsgCrs sourceCrs, EpsgCrs targetCrs,
+  private synchronized CrsTransformer createCrsTransformer(
+      EpsgCrs sourceCrs,
+      EpsgCrs targetCrs,
       CoordinateReferenceSystem sourceProjCrs,
       CoordinateReferenceSystem targetProjCrs) {
 
@@ -395,31 +430,46 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
       CoordinateOperationContext coordinateOperationContext = new CoordinateOperationContext();
       coordinateOperationContext.setAuthority("EPSG");
       coordinateOperationContext.setSpatialCriterion(SpatialCriterion.PARTIAL_INTERSECTION);
-      coordinateOperationContext.setGridAvailabilityUse(GridAvailabilityUse.DISCARD_OPERATION_IF_MISSING_GRID);
-      CoordinateOperation coordinateOperation = Proj.createCoordinateOperation(sourceProjCrs,
-          targetProjCrs, coordinateOperationContext);
+      coordinateOperationContext.setGridAvailabilityUse(
+          GridAvailabilityUse.DISCARD_OPERATION_IF_MISSING_GRID);
+      CoordinateOperation coordinateOperation =
+          Proj.createCoordinateOperation(sourceProjCrs, targetProjCrs, coordinateOperationContext);
 
       checkForMissingGridFiles(coordinateOperation);
 
-      LOGGER.debug("Chosen operation for {} -> {}: {}{}", sourceCrs.toHumanReadableString(), targetCrs.toHumanReadableString(), coordinateOperation.getName().getCode(), getGridFile(coordinateOperation).orElse(""));
+      LOGGER.debug(
+          "Chosen operation for {} -> {}: {}{}",
+          sourceCrs.toHumanReadableString(),
+          targetCrs.toHumanReadableString(),
+          coordinateOperation.getName().getCode(),
+          getGridFile(coordinateOperation).orElse(""));
 
       CoordinateOperation horizontalCoordinateOperation = null;
       if (sourceDimension == 3) {
-        horizontalCoordinateOperation = Proj.createCoordinateOperation(getHorizontalCrs(sourceProjCrs),
-            getHorizontalCrs(targetProjCrs), coordinateOperationContext);
-        LOGGER.debug("Chosen operation for '{}' -> '{}': {}{}",
+        horizontalCoordinateOperation =
+            Proj.createCoordinateOperation(
+                getHorizontalCrs(sourceProjCrs),
+                getHorizontalCrs(targetProjCrs),
+                coordinateOperationContext);
+        LOGGER.debug(
+            "Chosen operation for '{}' -> '{}': {}{}",
             getHorizontalCrs(sourceProjCrs).getName().getCode(),
             getHorizontalCrs(targetProjCrs).getName().getCode(),
             coordinateOperation.getName().getCode(),
             getGridFile(horizontalCoordinateOperation).orElse(""));
       }
 
-      return new CrsTransformerProj(sourceProjCrs, targetProjCrs,
-          sourceCrs, targetCrs,
-          sourceDimension, targetDimension, coordinateOperation,
+      return new CrsTransformerProj(
+          sourceProjCrs,
+          targetProjCrs,
+          sourceCrs,
+          targetCrs,
+          sourceDimension,
+          targetDimension,
+          coordinateOperation,
           Optional.ofNullable(horizontalCoordinateOperation));
     } catch (IllegalStateException ex) {
-      //LogContext.error(LOGGER, ex, "PROJ");
+      // LogContext.error(LOGGER, ex, "PROJ");
       throw ex;
     } catch (Throwable ex) {
       LogContext.errorAsDebug(LOGGER, ex, "PROJ");
@@ -429,29 +479,30 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
   private void checkForMissingGridFiles(CoordinateOperation coordinateOperation) {
     try {
-      double[] coordinates = new double[]{0,0};
+      double[] coordinates = new double[] {0, 0};
       coordinateOperation.getMathTransform().transform(coordinates, 0, coordinates, 0, 1);
     } catch (OutOfMemoryError e) {
       Pattern pattern = Pattern.compile("PARAMETERFILE\\[\"(.*?)\",\"(.*?)\"\\]");
       Matcher matcher = pattern.matcher(coordinateOperation.toWKT());
       if (matcher.find()) {
-        throw new IllegalStateException(String.format("Missing PROJ parameter file: %s (%s)", matcher.group(2), matcher.group(1)));
+        throw new IllegalStateException(
+            String.format(
+                "Missing PROJ parameter file: %s (%s)", matcher.group(2), matcher.group(1)));
       }
       throw new IllegalStateException(e.getMessage());
     } catch (Throwable e) {
-      //ignore
+      // ignore
     }
   }
 
   private Optional<String> getGridFile(CoordinateOperation coordinateOperation) {
 
-      Pattern pattern = Pattern.compile("PARAMETERFILE\\[\"(.*?)\",\"(.*?)\"\\]");
-      Matcher matcher = pattern.matcher(coordinateOperation.toWKT());
-      if (matcher.find()) {
-        return Optional.of(
-            String.format(" with parameter file '%s' (%s)", matcher.group(2),
-                matcher.group(1)));
-      }
-      return Optional.empty();
+    Pattern pattern = Pattern.compile("PARAMETERFILE\\[\"(.*?)\",\"(.*?)\"\\]");
+    Matcher matcher = pattern.matcher(coordinateOperation.toWKT());
+    if (matcher.find()) {
+      return Optional.of(
+          String.format(" with parameter file '%s' (%s)", matcher.group(2), matcher.group(1)));
+    }
+    return Optional.empty();
   }
 }

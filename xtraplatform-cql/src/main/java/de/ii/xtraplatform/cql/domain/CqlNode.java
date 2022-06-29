@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,8 +11,7 @@ import com.google.common.collect.ImmutableList;
 
 public interface CqlNode {
 
-    default <T> T accept(CqlVisitor<T> visitor) {
-        return visitor.visit(this, ImmutableList.of());
-    }
-
+  default <T> T accept(CqlVisitor<T> visitor) {
+    return visitor.visit(this, ImmutableList.of());
+  }
 }

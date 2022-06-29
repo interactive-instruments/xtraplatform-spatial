@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,10 +12,9 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.base.domain.JacksonSubTypeIds;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorRx;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import java.util.Map;
 
 /**
  * @author zahnen
@@ -24,15 +23,14 @@ import java.util.Map;
 @AutoBind
 public class FeatureProviderRegisterSql implements JacksonSubTypeIds {
 
-    @Inject
-    public FeatureProviderRegisterSql() {
-    }
+  @Inject
+  public FeatureProviderRegisterSql() {}
 
-    @Override
-    public Map<Class<?>, String> getMapping() {
-        return new ImmutableMap.Builder<Class<?>, String>()
-                //.put(FeatureProviderDataPgis.class, FeatureProviderPgis.PROVIDER_TYPE)
-                .put(ConnectionInfoSql.class, SqlConnectorRx.CONNECTOR_TYPE)
-                .build();
-    }
+  @Override
+  public Map<Class<?>, String> getMapping() {
+    return new ImmutableMap.Builder<Class<?>, String>()
+        // .put(FeatureProviderDataPgis.class, FeatureProviderPgis.PROVIDER_TYPE)
+        .put(ConnectionInfoSql.class, SqlConnectorRx.CONNECTOR_TYPE)
+        .build();
+  }
 }

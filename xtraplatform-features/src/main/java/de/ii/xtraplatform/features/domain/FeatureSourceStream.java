@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,6 +12,5 @@ import java.util.concurrent.CompletionStage;
 
 public interface FeatureSourceStream<T> {
 
-    CompletionStage<ResultOld> runWith(FeatureConsumer consumer);
-
+  CompletionStage<ResultOld> runWith(FeatureConsumer consumer);
 }

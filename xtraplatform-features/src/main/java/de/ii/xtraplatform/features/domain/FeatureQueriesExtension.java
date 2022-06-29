@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,16 +13,24 @@ import java.util.function.BiConsumer;
 @AutoMultiBind
 public interface FeatureQueriesExtension {
 
-  enum LIFECYCLE_HOOK {STARTED}
+  enum LIFECYCLE_HOOK {
+    STARTED
+  }
 
-  enum QUERY_HOOK {BEFORE, AFTER}
+  enum QUERY_HOOK {
+    BEFORE,
+    AFTER
+  }
 
-  boolean isSupported(FeatureProviderConnector<?,?,?> connector);
+  boolean isSupported(FeatureProviderConnector<?, ?, ?> connector);
 
-  void on(LIFECYCLE_HOOK hook, FeatureProvider2 provider, FeatureProviderConnector<?, ?, ?> connector);
+  void on(
+      LIFECYCLE_HOOK hook, FeatureProvider2 provider, FeatureProviderConnector<?, ?, ?> connector);
 
-  void on(QUERY_HOOK hook, FeatureProviderDataV2 data, FeatureProviderConnector<?, ?, ?> connector,
+  void on(
+      QUERY_HOOK hook,
+      FeatureProviderDataV2 data,
+      FeatureProviderConnector<?, ?, ?> connector,
       FeatureQuery query,
       BiConsumer<String, String> aliasResolver);
-
 }

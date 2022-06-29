@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,9 +12,9 @@ package de.ii.xtraplatform.features.domain;
  */
 public interface ConnectorFactory {
 
-    FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV2 featureProviderData);
+  FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV2 featureProviderData);
 
-    void disposeConnector(FeatureProviderConnector<?, ?, ?> connector);
+  void disposeConnector(FeatureProviderConnector<?, ?, ?> connector);
 
-    void onDispose(FeatureProviderConnector<?, ?, ?> connector, Runnable runnable);
+  void onDispose(FeatureProviderConnector<?, ?, ?> connector, Runnable runnable);
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,16 +10,16 @@ package de.ii.xtraplatform.features.gml.domain;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.features.gml.infra.req.WfsOperation;
-
 import java.io.InputStream;
 import java.util.Optional;
 
 /**
  * @author zahnen
  */
-public interface WfsConnector extends FeatureProviderConnector<byte[], String, FeatureProviderConnector.QueryOptions> {
+public interface WfsConnector
+    extends FeatureProviderConnector<byte[], String, FeatureProviderConnector.QueryOptions> {
 
-    InputStream runWfsOperation(final WfsOperation operation);
+  InputStream runWfsOperation(final WfsOperation operation);
 
-    Optional<Metadata> getMetadata();
+  Optional<Metadata> getMetadata();
 }

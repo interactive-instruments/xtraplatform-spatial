@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -21,49 +21,53 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface FeaturePropertyTransformerObjectReduce extends FeaturePropertyContextTransformer {
 
-    String TYPE = "REDUCE";
+  String TYPE = "REDUCE";
 
-    @Override
-    default String getType() {
-        return TYPE;
-    }
+  @Override
+  default String getType() {
+    return TYPE;
+  }
 
-    @Override
-    default ModifiableContext<FeatureSchema, SchemaMapping> transform(String currentPropertyPath, ModifiableContext<FeatureSchema, SchemaMapping> context) {
-        if (Objects.equals(currentPropertyPath, getPropertyPath()) && context.currentSchema().filter(
-            SchemaBase::isObject).isPresent()) {
-            if (context.currentSchema().get().isArray() && !context.inArray()) {
-                return context;
-            }
-            if (!context.transformed().containsKey(getPropertyPath())) {
-                //String allPaths = String.join("|",
-                //    context.currentSchema().get().getAllNestedPropertyPathStrings());
-                context.putTransformed(getPropertyPath(), TYPE);// + "|" + allPaths);
-                context.setIsBuffering(true);
-            } else {
-                context.transformed().remove(getPropertyPath());
-                context.setIsBuffering(false);
-                context.setCustomSchema(new ImmutableFeatureSchema.Builder()
-                    .from(context.currentSchema().get())
-                    .type(context.currentSchema().get().isArray() ? Type.VALUE_ARRAY : Type.STRING)
-                    .valueType(Type.STRING)
-                    .objectType(Optional.empty())
-                    .propertyMap(ImmutableMap.of())
-                    .build());
-            }
-        } else if (currentPropertyPath.startsWith(getPropertyPath()) && context.currentSchema().filter(
-            SchemaBase::isValue).isPresent() && context.transformed().containsKey(getPropertyPath())) {
-            //context.setDoNotPush(true);
-            context.putValueBuffer(currentPropertyPath, context.value());
-            //context.putTransformed(getPropertyPath(), context.transformed().get(getPropertyPath()).replace("|" + currentPropertyPath, ""));
-
-            if (context.transformed().get(getPropertyPath()).equals(TYPE)) {
-                //context.transformed().remove(getPropertyPath());
-                //context.putTransformed(currentPropertyPath, TYPE);
-
-            }
-        }
-
+  @Override
+  default ModifiableContext<FeatureSchema, SchemaMapping> transform(
+      String currentPropertyPath, ModifiableContext<FeatureSchema, SchemaMapping> context) {
+    if (Objects.equals(currentPropertyPath, getPropertyPath())
+        && context.currentSchema().filter(SchemaBase::isObject).isPresent()) {
+      if (context.currentSchema().get().isArray() && !context.inArray()) {
         return context;
+      }
+      if (!context.transformed().containsKey(getPropertyPath())) {
+        // String allPaths = String.join("|",
+        //    context.currentSchema().get().getAllNestedPropertyPathStrings());
+        context.putTransformed(getPropertyPath(), TYPE); // + "|" + allPaths);
+        context.setIsBuffering(true);
+      } else {
+        context.transformed().remove(getPropertyPath());
+        context.setIsBuffering(false);
+        context.setCustomSchema(
+            new ImmutableFeatureSchema.Builder()
+                .from(context.currentSchema().get())
+                .type(context.currentSchema().get().isArray() ? Type.VALUE_ARRAY : Type.STRING)
+                .valueType(Type.STRING)
+                .objectType(Optional.empty())
+                .propertyMap(ImmutableMap.of())
+                .build());
+      }
+    } else if (currentPropertyPath.startsWith(getPropertyPath())
+        && context.currentSchema().filter(SchemaBase::isValue).isPresent()
+        && context.transformed().containsKey(getPropertyPath())) {
+      // context.setDoNotPush(true);
+      context.putValueBuffer(currentPropertyPath, context.value());
+      // context.putTransformed(getPropertyPath(),
+      // context.transformed().get(getPropertyPath()).replace("|" + currentPropertyPath, ""));
+
+      if (context.transformed().get(getPropertyPath()).equals(TYPE)) {
+        // context.transformed().remove(getPropertyPath());
+        // context.putTransformed(currentPropertyPath, TYPE);
+
+      }
     }
+
+    return context;
+  }
 }

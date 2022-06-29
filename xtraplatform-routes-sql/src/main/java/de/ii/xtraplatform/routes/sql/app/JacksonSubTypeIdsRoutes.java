@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,21 +15,20 @@ import de.ii.xtraplatform.routes.sql.domain.RoutesConfiguration;
 import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import com.github.azahnen.dagger.annotations.AutoBind;
 
 @Singleton
 @AutoBind
 public class JacksonSubTypeIdsRoutes implements JacksonSubTypeIds {
 
-    @Inject
-    public JacksonSubTypeIdsRoutes() {
-    }
+  @Inject
+  public JacksonSubTypeIdsRoutes() {}
 
-    @Override
-    public Map<Class<?>, String> getMapping() {
-        return new ImmutableMap.Builder<Class<?>, String>()
-                .put(RoutesConfiguration.class, ExtensionConfiguration.getIdentifier(
-                    RoutesConfiguration.class))
-                .build();
-    }
+  @Override
+  public Map<Class<?>, String> getMapping() {
+    return new ImmutableMap.Builder<Class<?>, String>()
+        .put(
+            RoutesConfiguration.class,
+            ExtensionConfiguration.getIdentifier(RoutesConfiguration.class))
+        .build();
+  }
 }

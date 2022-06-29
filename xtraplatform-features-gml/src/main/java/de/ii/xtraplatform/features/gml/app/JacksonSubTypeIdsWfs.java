@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,15 +7,14 @@
  */
 package de.ii.xtraplatform.features.gml.app;
 
+import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.base.domain.JacksonSubTypeIds;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.infra.WfsConnectorHttp;
+import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import com.github.azahnen.dagger.annotations.AutoBind;
-
-import java.util.Map;
 
 /**
  * @author zahnen
@@ -24,14 +23,13 @@ import java.util.Map;
 @AutoBind
 public class JacksonSubTypeIdsWfs implements JacksonSubTypeIds {
 
-    @Inject
-    public JacksonSubTypeIdsWfs() {
-    }
+  @Inject
+  public JacksonSubTypeIdsWfs() {}
 
-    @Override
-    public Map<Class<?>, String> getMapping() {
-        return new ImmutableMap.Builder<Class<?>, String>()
-                .put(ConnectionInfoWfsHttp.class, WfsConnectorHttp.CONNECTOR_TYPE)
-                .build();
-    }
+  @Override
+  public Map<Class<?>, String> getMapping() {
+    return new ImmutableMap.Builder<Class<?>, String>()
+        .put(ConnectionInfoWfsHttp.class, WfsConnectorHttp.CONNECTOR_TYPE)
+        .build();
+  }
 }

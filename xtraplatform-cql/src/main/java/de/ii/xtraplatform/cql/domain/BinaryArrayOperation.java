@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,29 +12,26 @@ import org.immutables.value.Value;
 
 public interface BinaryArrayOperation extends BinaryOperation2<Vector>, CqlNode {
 
-    @JsonIgnore
-    @Value.Derived
-    default ArrayOperator getArrayOperator() {
-        return ArrayOperator.valueOf(getOp().toUpperCase());
+  @JsonIgnore
+  @Value.Derived
+  default ArrayOperator getArrayOperator() {
+    return ArrayOperator.valueOf(getOp().toUpperCase());
+  }
+
+  static BinaryArrayOperation of(ArrayOperator operator, Vector vector1, Vector vector2) {
+    switch (operator) {
+      case A_EQUALS:
+        return AEquals.of(vector1, vector2);
+      case A_CONTAINS:
+        return AContains.of(vector1, vector2);
+      case A_CONTAINEDBY:
+        return AContainedBy.of(vector1, vector2);
+      case A_OVERLAPS:
+        return AOverlaps.of(vector1, vector2);
     }
 
-    static BinaryArrayOperation of(ArrayOperator operator, Vector vector1, Vector vector2) {
-        switch (operator) {
-            case A_EQUALS:
-                return AEquals.of(vector1, vector2);
-            case A_CONTAINS:
-                return AContains.of(vector1, vector2);
-            case A_CONTAINEDBY:
-                return AContainedBy.of(vector1, vector2);
-            case A_OVERLAPS:
-                return AOverlaps.of(vector1, vector2);
-        }
+    throw new IllegalStateException();
+  }
 
-        throw new IllegalStateException();
-    }
-
-
-
-    abstract class Builder<T extends BinaryArrayOperation> extends Operation.Builder<Vector, T> {}
-
+  abstract class Builder<T extends BinaryArrayOperation> extends Operation.Builder<Vector, T> {}
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,10 +11,9 @@ import java.util.Optional;
 
 public interface LogicalExpression {
 
-    Optional<And> getAnd();
+  Optional<And> getAnd();
 
-    Optional<Or> getOr();
+  Optional<Or> getOr();
 
-    Optional<Not> getNot();
-
+  Optional<Not> getNot();
 }

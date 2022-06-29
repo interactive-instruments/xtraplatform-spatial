@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,8 +12,8 @@ import org.immutables.value.Value;
 @Value.Modifiable
 public interface SqlRowPlain extends SqlRow {
 
-    @Override
-    default int compareTo(SqlRow sqlRow) {
-        return 0;
-    }
+  @Override
+  default int compareTo(SqlRow sqlRow) {
+    return 0;
+  }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,13 +14,19 @@ import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true, passAnnotations = DocIgnore.class)
+@Value.Style(
+    builder = "new",
+    deepImmutablesDetection = true,
+    attributeBuilderDetection = true,
+    passAnnotations = DocIgnore.class)
 @JsonDeserialize(builder = ImmutableSqlPathDefaults.Builder.class)
 public interface SqlPathDefaults {
 
   /**
-   * @langEn The default column that is used for join analysis if no differing primary key is set in the [sourcePath](#path-syntax).
-   * @langDe Die Standard-Spalte die zur Analyse von Joins verwendet wird, wenn keine abweichende Spalte in `sourcePath` gesetzt wird.
+   * @langEn The default column that is used for join analysis if no differing primary key is set in
+   *     the [sourcePath](#path-syntax).
+   * @langDe Die Standard-Spalte die zur Analyse von Joins verwendet wird, wenn keine abweichende
+   *     Spalte in `sourcePath` gesetzt wird.
    * @default `id`
    */
   @JsonAlias("defaultPrimaryKey")
@@ -30,9 +36,11 @@ public interface SqlPathDefaults {
   }
 
   /**
-   * @langEn The default column that is used to sort rows if no differing sort key is set in the [sourcePath](#path-syntax).
-   * @langDe Die Standard-Spalte die zur Sortierung von Reihen verwendet wird, wenn keine abweichende Spalte in
-   * `sourcePath` gesetzt wird. Es wird empfohlen, dass als Datentyp eine Ganzzahl verwendet wird.
+   * @langEn The default column that is used to sort rows if no differing sort key is set in the
+   *     [sourcePath](#path-syntax).
+   * @langDe Die Standard-Spalte die zur Sortierung von Reihen verwendet wird, wenn keine
+   *     abweichende Spalte in `sourcePath` gesetzt wird. Es wird empfohlen, dass als Datentyp eine
+   *     Ganzzahl verwendet wird.
    * @default `id`
    */
   @JsonAlias("defaultSortKey")

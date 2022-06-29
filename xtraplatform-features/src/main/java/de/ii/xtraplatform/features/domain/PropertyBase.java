@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,87 +7,85 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import java.util.Map;
-
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Optional;
+public interface PropertyBase<T extends PropertyBase<T, U>, U extends SchemaBase<U>> {
 
-public interface PropertyBase<T extends PropertyBase<T,U>, U extends SchemaBase<U>> {
+  enum Type {
+    VALUE,
+    ARRAY,
+    OBJECT
+  }
 
-    enum Type {
-        VALUE, ARRAY, OBJECT
-    }
+  Type getType();
 
-    Type getType();
+  Optional<U> getSchema();
 
-    Optional<U> getSchema();
+  @Value.Default
+  default String getName() {
+    return getSchema().map(U::getName).orElse("");
+  }
 
-    @Value.Default
-    default String getName() {
-        return getSchema().map(U::getName).orElse("");
-    }
+  @Nullable
+  String getValue();
 
-    @Nullable
-    String getValue();
+  @Value.Auxiliary
+  Optional<T> getParent();
 
-    @Value.Auxiliary
-    Optional<T> getParent();
+  List<T> getNestedProperties();
 
-    List<T> getNestedProperties();
+  List<String> getPropertyPath();
 
-    List<String> getPropertyPath();
+  @Value.Default
+  default int getLevel() {
+    return getPropertyPath().size();
+  }
 
-    @Value.Default
-    default int getLevel() {
-        return getPropertyPath().size();
-    }
+  Map<String, String> getTransformed();
 
-    Map<String, String> getTransformed();
+  @Value.Derived
+  default boolean isValue() {
+    return getType() == Type.VALUE;
+  }
 
-    @Value.Derived
-    default boolean isValue() {
-        return getType() == Type.VALUE;
-    }
+  @Value.Derived
+  default boolean isObject() {
+    return getType() == Type.OBJECT;
+  }
 
-    @Value.Derived
-    default boolean isObject() {
-        return getType() == Type.OBJECT;
-    }
+  @Value.Derived
+  default boolean isArray() {
+    return getType() == Type.ARRAY;
+  }
 
-    @Value.Derived
-    default boolean isArray() {
-        return getType() == Type.ARRAY;
-    }
+  Optional<SimpleFeatureGeometry> getGeometryType();
 
-    Optional<SimpleFeatureGeometry> getGeometryType();
+  PropertyBase<T, U> schema(Optional<U> schema);
 
+  PropertyBase<T, U> schema(U schema);
 
-    PropertyBase<T,U> schema(Optional<U> schema);
+  PropertyBase<T, U> name(String name);
 
-    PropertyBase<T,U> schema(U schema);
+  PropertyBase<T, U> type(Type type);
 
-    PropertyBase<T,U> name(String name);
+  PropertyBase<T, U> value(String value);
 
-    PropertyBase<T,U> type(Type type);
+  PropertyBase<T, U> parent(T parent);
 
-    PropertyBase<T,U> value(String value);
+  PropertyBase<T, U> addNestedProperties(T element);
 
-    PropertyBase<T,U> parent(T parent);
+  PropertyBase<T, U> propertyPath(Iterable<String> path);
 
-    PropertyBase<T,U> addNestedProperties(T element);
+  PropertyBase<T, U> level(int level);
 
-    PropertyBase<T,U> propertyPath(Iterable<String> path);
+  PropertyBase<T, U> transformed(Map<String, ? extends String> transformed);
 
-    PropertyBase<T,U> level(int level);
+  PropertyBase<T, U> geometryType(Optional<SimpleFeatureGeometry> geometryType);
 
-    PropertyBase<T,U> transformed(Map<String, ? extends String> transformed);
-
-    PropertyBase<T,U> geometryType(Optional<SimpleFeatureGeometry> geometryType);
-
-    PropertyBase<T,U> geometryType(SimpleFeatureGeometry geometryType);
-
+  PropertyBase<T, U> geometryType(SimpleFeatureGeometry geometryType);
 }

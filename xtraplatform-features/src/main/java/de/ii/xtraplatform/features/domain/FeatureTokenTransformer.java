@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,15 +11,18 @@ import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureEventHandlerGeneric.GenericContext;
 import java.util.Objects;
 
-public abstract class FeatureTokenTransformer extends
-    FeatureTokenTransformerBase<FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> {
+public abstract class FeatureTokenTransformer
+    extends FeatureTokenTransformerBase<
+        FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> {
 
   private ModifiableContext<FeatureSchema, SchemaMapping> context;
 
   @Override
   public Class<? extends ModifiableContext<FeatureSchema, SchemaMapping>> getContextInterface() {
     if (getDownstream() instanceof FeatureTokenContext<?>) {
-      return ((FeatureTokenContext<ModifiableContext<FeatureSchema, SchemaMapping>>) getDownstream()).getContextInterface();
+      return ((FeatureTokenContext<ModifiableContext<FeatureSchema, SchemaMapping>>)
+              getDownstream())
+          .getContextInterface();
     }
 
     return GenericContext.class;
@@ -27,9 +30,12 @@ public abstract class FeatureTokenTransformer extends
 
   @Override
   public final ModifiableContext<FeatureSchema, SchemaMapping> createContext() {
-    ModifiableContext<FeatureSchema, SchemaMapping> context = getDownstream() instanceof FeatureTokenContext<?>
-        ? ((FeatureTokenContext<ModifiableContext<FeatureSchema, SchemaMapping>>) getDownstream()).createContext()
-        : ModifiableGenericContext.create();
+    ModifiableContext<FeatureSchema, SchemaMapping> context =
+        getDownstream() instanceof FeatureTokenContext<?>
+            ? ((FeatureTokenContext<ModifiableContext<FeatureSchema, SchemaMapping>>)
+                    getDownstream())
+                .createContext()
+            : ModifiableGenericContext.create();
 
     if (Objects.isNull(this.context)) {
       this.context = context;

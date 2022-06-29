@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -47,9 +47,9 @@ import org.davidmoten.rx.jdbc.pool.DatabaseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-;
-
-/** @author zahnen */
+/**
+ * @author zahnen
+ */
 public class SqlConnectorRx implements SqlConnector {
 
   public static final String CONNECTOR_TYPE = "SLICK";
@@ -74,7 +74,10 @@ public class SqlConnectorRx implements SqlConnector {
 
   @AssistedInject
   public SqlConnectorRx(
-      AppContext appContext, @Assisted MetricRegistry metricRegistry, @Assisted HealthCheckRegistry healthCheckRegistry, @Assisted FeatureProviderSqlData data) {
+      AppContext appContext,
+      @Assisted MetricRegistry metricRegistry,
+      @Assisted HealthCheckRegistry healthCheckRegistry,
+      @Assisted FeatureProviderSqlData data) {
     this.connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
     this.poolName = String.format("db.%s", data.getId());
     this.metricRegistry = metricRegistry;
@@ -167,8 +170,7 @@ public class SqlConnectorRx implements SqlConnector {
     this.sqlClient = null;
     if (Objects.nonNull(healthCheckRegistry)) {
       try {
-        healthCheckRegistry.unregister(
-            MetricRegistry.name(poolName, "pool", "ConnectivityCheck"));
+        healthCheckRegistry.unregister(MetricRegistry.name(poolName, "pool", "ConnectivityCheck"));
       } catch (Throwable e) {
         // ignore
       }
@@ -307,16 +309,23 @@ public class SqlConnectorRx implements SqlConnector {
 
   private Database createSession(HikariDataSource dataSource) {
     int maxIdleTime = minConnections == maxConnections ? 0 : 600;
-    DatabaseType healthCheck = connectionInfo.getDialect() == Dialect.GPKG ? DatabaseType.SQLITE : DatabaseType.POSTGRES;
+    DatabaseType healthCheck =
+        connectionInfo.getDialect() == Dialect.GPKG ? DatabaseType.SQLITE : DatabaseType.POSTGRES;
     int idleTimeBeforeHealthCheck = 60;
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("rxjava2-jdbc - maxIdleTime: {}, healthCheck: {},  idleTimeBeforeHealthCheck: {}", maxIdleTime, healthCheck, idleTimeBeforeHealthCheck);
+      LOGGER.debug(
+          "rxjava2-jdbc - maxIdleTime: {}, healthCheck: {},  idleTimeBeforeHealthCheck: {}",
+          maxIdleTime,
+          healthCheck,
+          idleTimeBeforeHealthCheck);
     }
 
     return Database.nonBlocking()
         .connectionProvider(dataSource)
         .maxPoolSize(maxConnections)
-        .maxIdleTime(maxIdleTime, TimeUnit.SECONDS) //TODO: workaround for bug in rxjava2-jdbc, remove when fixed
+        .maxIdleTime(
+            maxIdleTime,
+            TimeUnit.SECONDS) // TODO: workaround for bug in rxjava2-jdbc, remove when fixed
         .healthCheck(healthCheck)
         .idleTimeBeforeHealthCheck(idleTimeBeforeHealthCheck, TimeUnit.SECONDS)
         .build();
@@ -330,7 +339,7 @@ public class SqlConnectorRx implements SqlConnector {
   }
 
   private static long parseMs(String duration) {
-    try{
+    try {
       return Long.parseLong(duration) * 1000;
     } catch (Throwable e) {
       // ignore
@@ -349,7 +358,7 @@ public class SqlConnectorRx implements SqlConnector {
     return password;
   }
 
-  //TODO: instantiate dataSource, apply driverOptions
+  // TODO: instantiate dataSource, apply driverOptions
   private static String getDataSourceClass(ConnectionInfoSql connectionInfo) {
 
     switch (connectionInfo.getDialect()) {

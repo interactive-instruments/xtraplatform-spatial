@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,39 +9,38 @@ package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.immutables.value.Value;
-
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
+import javax.annotation.Nullable;
+import org.immutables.value.Value;
 
 /**
  * @author zahnen
  */
 @Value.Immutable
-//@Value.Modifiable
+// @Value.Modifiable
 @Value.Style(builder = "new")
 @JsonDeserialize(builder = ImmutableMappingStatus.Builder.class)
 public abstract class MappingStatus {
 
-    public abstract boolean getEnabled();
+  public abstract boolean getEnabled();
 
-    public abstract boolean getSupported();
+  public abstract boolean getSupported();
 
-    @Value.Default
-    public boolean getRefined() {
-        return false;
-    }
+  @Value.Default
+  public boolean getRefined() {
+    return false;
+  }
 
-    @JsonIgnore
-    @Value.Derived
-    public boolean getLoading() {
-        return getEnabled() && !getSupported() && Objects.isNull(getErrorMessage());
-    }
+  @JsonIgnore
+  @Value.Derived
+  public boolean getLoading() {
+    return getEnabled() && !getSupported() && Objects.isNull(getErrorMessage());
+  }
 
-    @Nullable
-    public abstract String getErrorMessage();
+  @Nullable
+  public abstract String getErrorMessage();
 
-    @Nullable
-    public abstract List<String> getErrorMessageDetails();
+  @Nullable
+  public abstract List<String> getErrorMessageDetails();
 }

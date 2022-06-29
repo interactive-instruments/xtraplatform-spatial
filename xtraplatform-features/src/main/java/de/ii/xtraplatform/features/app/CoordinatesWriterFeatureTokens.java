@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -17,16 +17,22 @@ import java.io.IOException;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public abstract class CoordinatesWriterFeatureTokens implements CoordinatesWriter<FeatureEventHandler<FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>> {
+public abstract class CoordinatesWriterFeatureTokens
+    implements CoordinatesWriter<
+        FeatureEventHandler<
+            FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>> {
 
   @Value.Parameter
   public abstract ModifiableContext<FeatureSchema, SchemaMapping> getContext();
 
   @Value.Derived
   public boolean isPoint() {
-    return getContext().geometryType()
-        .filter(geoType -> geoType == SimpleFeatureGeometry.POINT
-            || geoType == SimpleFeatureGeometry.MULTI_POINT)
+    return getContext()
+        .geometryType()
+        .filter(
+            geoType ->
+                geoType == SimpleFeatureGeometry.POINT
+                    || geoType == SimpleFeatureGeometry.MULTI_POINT)
         .isPresent();
   }
 

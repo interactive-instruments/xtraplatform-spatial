@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,23 +9,24 @@ package de.ii.xtraplatform.features.gml.infra.req;
 
 import de.ii.xtraplatform.features.gml.infra.xml.XMLDocument;
 import de.ii.xtraplatform.features.gml.infra.xml.XMLDocumentFactory;
-import org.xml.sax.SAXException;
-
-import javax.xml.transform.TransformerException;
 import java.io.IOException;
 import java.util.Map;
+import javax.xml.transform.TransformerException;
+import org.xml.sax.SAXException;
 
 /**
  * @author zahnen
  */
 public interface WfsOperation {
-    WFS.OPERATION getOperation();
+  WFS.OPERATION getOperation();
 
-    default String getOperationName(WFS.VERSION version) {
-        return WFS.getWord(version, this.getOperation());
-    }
+  default String getOperationName(WFS.VERSION version) {
+    return WFS.getWord(version, this.getOperation());
+  }
 
-    XMLDocument asXml(XMLDocumentFactory documentFactory, Versions versions) throws TransformerException, IOException, SAXException;
+  XMLDocument asXml(XMLDocumentFactory documentFactory, Versions versions)
+      throws TransformerException, IOException, SAXException;
 
-    Map<String,String> asKvp(XMLDocumentFactory documentFactory, Versions versions) throws TransformerException, IOException, SAXException;
+  Map<String, String> asKvp(XMLDocumentFactory documentFactory, Versions versions)
+      throws TransformerException, IOException, SAXException;
 }

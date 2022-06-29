@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,12 +8,12 @@
 package de.ii.xtraplatform.cql.domain;
 
 public enum SpatialOperator implements CqlNode {
-    S_INTERSECTS,
-    S_EQUALS,
-    S_DISJOINT,
-    S_TOUCHES,
-    S_WITHIN,
-    S_OVERLAPS,
-    S_CROSSES,
-    S_CONTAINS
+  S_INTERSECTS,
+  S_EQUALS,
+  S_DISJOINT,
+  S_TOUCHES,
+  S_WITHIN,
+  S_OVERLAPS,
+  S_CROSSES,
+  S_CONTAINS
 }

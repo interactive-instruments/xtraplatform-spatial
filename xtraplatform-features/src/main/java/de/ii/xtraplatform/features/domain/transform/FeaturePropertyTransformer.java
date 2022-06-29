@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,12 +9,11 @@ package de.ii.xtraplatform.features.domain.transform;
 
 public interface FeaturePropertyTransformer<T> {
 
-    String getType();
+  String getType();
 
-    String getPropertyPath();
+  String getPropertyPath();
 
-    String getParameter();
+  String getParameter();
 
-    T transform(String currentPropertyPath, T input);
-
+  T transform(String currentPropertyPath, T input);
 }

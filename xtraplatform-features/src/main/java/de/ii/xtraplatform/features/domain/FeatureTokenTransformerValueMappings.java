@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -34,8 +34,10 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
   private ImmutableCoordinatesTransformer.Builder coordinatesTransformerBuilder;
   private int targetDimension;
 
-  public FeatureTokenTransformerValueMappings(PropertyTransformations propertyTransformations,
-      Map<String, Codelist> codelists, Optional<ZoneId> nativeTimeZone,
+  public FeatureTokenTransformerValueMappings(
+      PropertyTransformations propertyTransformations,
+      Map<String, Codelist> codelists,
+      Optional<ZoneId> nativeTimeZone,
       Optional<CrsTransformer> crsTransformer) {
     this.propertyTransformations = propertyTransformations;
     this.codelists = codelists;
@@ -45,20 +47,19 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
 
   @Override
   public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    //TODO: slow, precompute, same for original in decoder
+    // TODO: slow, precompute, same for original in decoder
     SchemaMapping schemaMapping = SchemaMapping.withTargetPaths(getContext().mapping());
 
-    this.valueTransformerChain = propertyTransformations.getValueTransformations(
-        schemaMapping, codelists, nativeTimeZone, context.valueBuffer()::get);
+    this.valueTransformerChain =
+        propertyTransformations.getValueTransformations(
+            schemaMapping, codelists, nativeTimeZone, context.valueBuffer()::get);
 
     super.onStart(context);
   }
 
   @Override
   public void onObjectStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    if (context.schema()
-    .filter(SchemaBase::isSpatial)
-    .isPresent()
+    if (context.schema().filter(SchemaBase::isSpatial).isPresent()
         || context.geometryType().isPresent()) {
       this.coordinatesTransformerBuilder = ImmutableCoordinatesTransformer.builder();
 
@@ -67,33 +68,37 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
       }
 
       int fallbackDimension = context.geometryDimension().orElse(2);
-      int sourceDimension = crsTransformer.map(CrsTransformer::getSourceDimension).orElse(fallbackDimension);
-      this.targetDimension = crsTransformer.map(CrsTransformer::getTargetDimension).orElse(fallbackDimension);
+      int sourceDimension =
+          crsTransformer.map(CrsTransformer::getSourceDimension).orElse(fallbackDimension);
+      this.targetDimension =
+          crsTransformer.map(CrsTransformer::getTargetDimension).orElse(fallbackDimension);
       coordinatesTransformerBuilder.sourceDimension(sourceDimension);
       coordinatesTransformerBuilder.targetDimension(targetDimension);
 
       if (context.query().getMaxAllowableOffset() > 0) {
-        int minPoints = context.geometryType().get() == SimpleFeatureGeometry.MULTI_POLYGON
-            || context.geometryType().get() == SimpleFeatureGeometry.POLYGON
-            ? 4
-            : 2;
+        int minPoints =
+            context.geometryType().get() == SimpleFeatureGeometry.MULTI_POLYGON
+                    || context.geometryType().get() == SimpleFeatureGeometry.POLYGON
+                ? 4
+                : 2;
         coordinatesTransformerBuilder.maxAllowableOffset(context.query().getMaxAllowableOffset());
         coordinatesTransformerBuilder.minNumberOfCoordinates(minPoints);
       }
 
-      //TODO: currently never true, see GeotoolsCrsTransformer.needsAxisSwap, find cfg example with forceAxisOrder
-    /*if (transformationContext.shouldSwapCoordinates()) {
-      coordinatesTransformerBuilder.isSwapXY(true);
-    }*/
+      // TODO: currently never true, see GeotoolsCrsTransformer.needsAxisSwap, find cfg example with
+      // forceAxisOrder
+      /*if (transformationContext.shouldSwapCoordinates()) {
+        coordinatesTransformerBuilder.isSwapXY(true);
+      }*/
 
       if (context.query().getGeometryPrecision().get(0) > 0) {
         coordinatesTransformerBuilder.precision(context.query().getGeometryPrecision());
       }
 
-      //TODO: currently never true, see FeatureProperty.isForceReversePolygon, find cfg example
-    /*if (Objects.equals(featureProperty.isForceReversePolygon(), true)) {
-      coordinatesTransformerBuilder.isReverseOrder(true);
-    }*/
+      // TODO: currently never true, see FeatureProperty.isForceReversePolygon, find cfg example
+      /*if (Objects.equals(featureProperty.isForceReversePolygon(), true)) {
+        coordinatesTransformerBuilder.isReverseOrder(true);
+      }*/
     }
 
     getDownstream().onObjectStart(context);
@@ -102,9 +107,12 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
   @Override
   public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (context.inGeometry()) {
-      CoordinatesTransformer coordinatesTransformer = coordinatesTransformerBuilder.coordinatesWriter(
-          ImmutableCoordinatesWriterFeatureTokens.of(getDownstream(), targetDimension, context))
-          .build();
+      CoordinatesTransformer coordinatesTransformer =
+          coordinatesTransformerBuilder
+              .coordinatesWriter(
+                  ImmutableCoordinatesWriterFeatureTokens.of(
+                      getDownstream(), targetDimension, context))
+              .build();
       try {
         coordinatesTransformer.write(context.value());
         coordinatesTransformer.close();
@@ -120,7 +128,6 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
       }
       value = valueTransformerChain.transform(path, value);
 
-
       // skip, if the value has been transformed to null
       if (Objects.nonNull(value)) {
         context.setValue(value);
@@ -129,8 +136,10 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
     }
   }
 
-  private void transformValueBuffer(ModifiableContext<FeatureSchema, SchemaMapping> context, String path) {
-    for(Iterator<Entry<String, String>> it = context.valueBuffer().entrySet().iterator(); it.hasNext(); ) {
+  private void transformValueBuffer(
+      ModifiableContext<FeatureSchema, SchemaMapping> context, String path) {
+    for (Iterator<Entry<String, String>> it = context.valueBuffer().entrySet().iterator();
+        it.hasNext(); ) {
       Map.Entry<String, String> entry = it.next();
       String key = entry.getKey();
 
@@ -144,5 +153,4 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
       }
     }
   }
-
 }

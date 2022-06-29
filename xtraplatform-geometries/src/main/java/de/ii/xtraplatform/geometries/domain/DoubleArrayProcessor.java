@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,11 +10,11 @@ package de.ii.xtraplatform.geometries.domain;
 import java.io.IOException;
 
 public interface DoubleArrayProcessor {
-    void onStart() throws IOException;
+  void onStart() throws IOException;
 
-    void onCoordinates(double[] coordinates, int length, int dimension) throws IOException;
+  void onCoordinates(double[] coordinates, int length, int dimension) throws IOException;
 
-    default void onFlush() throws IOException {}
+  default void onFlush() throws IOException {}
 
-    void onEnd() throws IOException;
+  void onEnd() throws IOException;
 }

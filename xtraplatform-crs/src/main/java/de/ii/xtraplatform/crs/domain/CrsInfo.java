@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,13 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import javax.measure.Unit;
-
-import dagger.Binds;
-import dagger.Provides;
-import de.ii.xtraplatform.crs.infra.CrsTransformerFactoryProj;
-import de.ii.xtraplatform.proj.domain.ProjLoader;
 import org.opengis.referencing.cs.AxisDirection;
-import org.opengis.referencing.cs.RangeMeaning;
 
 public interface CrsInfo {
 
@@ -40,5 +34,4 @@ public interface CrsInfo {
   List<AxisDirection> getAxisDirections(EpsgCrs crs);
 
   Optional<BoundingBox> getDomainOfValidity(EpsgCrs crs);
-
 }

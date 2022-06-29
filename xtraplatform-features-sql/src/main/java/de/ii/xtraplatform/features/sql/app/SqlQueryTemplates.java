@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -27,14 +27,22 @@ public interface SqlQueryTemplates {
 
   @FunctionalInterface
   interface MetaQueryTemplate {
-    String generateMetaQuery(long limit, long offset, List<SortKey> additionalSortKeys,
-        Optional<Cql2Expression> filter, Map<String, String> virtualTables);
+    String generateMetaQuery(
+        long limit,
+        long offset,
+        List<SortKey> additionalSortKeys,
+        Optional<Cql2Expression> filter,
+        Map<String, String> virtualTables);
   }
 
   @FunctionalInterface
   interface ValueQueryTemplate {
-    String generateValueQuery(long limit, long offset, List<SortKey> additionalSortKeys,
-        Optional<Cql2Expression> filter, Optional<Tuple<Object, Object>> minMaxKeys,
+    String generateValueQuery(
+        long limit,
+        long offset,
+        List<SortKey> additionalSortKeys,
+        Optional<Cql2Expression> filter,
+        Optional<Tuple<Object, Object>> minMaxKeys,
         Map<String, String> virtualTables);
   }
 }

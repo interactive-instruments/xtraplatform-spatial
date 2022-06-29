@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,9 +10,6 @@ package de.ii.xtraplatform.features.domain;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
-import de.ii.xtraplatform.streams.domain.Reactive.SinkReducedTransformed;
-import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import javax.annotation.Nullable;
@@ -23,9 +20,7 @@ public interface FeatureStream {
   @Value.Immutable
   interface Result extends ResultBase {
 
-    abstract class Builder extends ResultBase.Builder<Result, Builder> {
-
-    }
+    abstract class Builder extends ResultBase.Builder<Result, Builder> {}
   }
 
   @Value.Immutable
@@ -61,11 +56,15 @@ public interface FeatureStream {
     Optional<Throwable> getError();
   }
 
-  CompletionStage<Result> runWith(Sink<Object> sink, Optional<PropertyTransformations> propertyTransformations);
+  CompletionStage<Result> runWith(
+      Sink<Object> sink, Optional<PropertyTransformations> propertyTransformations);
 
-  <X> CompletionStage<ResultReduced<X>> runWith(SinkReduced<Object, X> sink, Optional<PropertyTransformations> propertyTransformations);
+  <X> CompletionStage<ResultReduced<X>> runWith(
+      SinkReduced<Object, X> sink, Optional<PropertyTransformations> propertyTransformations);
 
-  //CompletionStage<Result> runWith(SinkTransformed<Object, byte[]> sink, Optional<PropertyTransformations> propertyTransformations);
+  // CompletionStage<Result> runWith(SinkTransformed<Object, byte[]> sink,
+  // Optional<PropertyTransformations> propertyTransformations);
 
-  //CompletionStage<ResultReduced<byte[]>> runWith(SinkReducedTransformed<Object, byte[], byte[]> sink, Optional<PropertyTransformations> propertyTransformations);
+  // CompletionStage<ResultReduced<byte[]>> runWith(SinkReducedTransformed<Object, byte[], byte[]>
+  // sink, Optional<PropertyTransformations> propertyTransformations);
 }

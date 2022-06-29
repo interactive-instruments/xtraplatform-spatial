@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -32,8 +32,8 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
   }
 
   @Override
-  public final T visit(FeatureSchema schema, List<FeatureSchema> parents,
-      List<T> visitedProperties) {
+  public final T visit(
+      FeatureSchema schema, List<FeatureSchema> parents, List<T> visitedProperties) {
     if (parents.isEmpty()) {
       return deriveRootSchema(schema, visitedProperties);
     }
@@ -48,22 +48,33 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
 
     Map<String, T> definitions = extractDefinitions(visitedProperties);
 
-    Map<String, T> properties = visitedProperties.stream()
-        .filter(property -> Objects.nonNull(property) && getPropertyName(property).isPresent())
-        .map(property -> new SimpleEntry<>(getNameWithoutRole(getPropertyName(property).get()), property))
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    Map<String, T> properties =
+        visitedProperties.stream()
+            .filter(property -> Objects.nonNull(property) && getPropertyName(property).isPresent())
+            .map(
+                property ->
+                    new SimpleEntry<>(
+                        getNameWithoutRole(getPropertyName(property).get()), property))
+            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-    List<String> required = visitedProperties.stream()
-        .filter(property -> Objects.nonNull(property) && getPropertyName(property).isPresent() && isPropertyRequired(property))
-        .map(property -> getPropertyName(property).get())
-        .collect(Collectors.toList());
+    List<String> required =
+        visitedProperties.stream()
+            .filter(
+                property ->
+                    Objects.nonNull(property)
+                        && getPropertyName(property).isPresent()
+                        && isPropertyRequired(property))
+            .map(property -> getPropertyName(property).get())
+            .collect(Collectors.toList());
 
     return buildRootSchema(schema, properties, definitions, required);
   }
 
   private Map<String, T> extractDefinitions(List<T> properties) {
     return extractDefinitions(properties.stream())
-        .collect(ImmutableMap.toImmutableMap(def -> getPropertyName(def).get(), def -> def, (first, second) -> second));
+        .collect(
+            ImmutableMap.toImmutableMap(
+                def -> getPropertyName(def).get(), def -> def, (first, second) -> second));
   }
 
   protected Stream<T> extractDefinitions(Stream<T> properties) {
@@ -72,15 +83,24 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
 
   private T deriveObjectSchema(FeatureSchema schema, List<T> visitedProperties) {
 
-    Map<String, T> properties = visitedProperties.stream()
-        .filter(property -> Objects.nonNull(property) && getPropertyName(property).isPresent())
-        .map(property -> new SimpleEntry<>(getNameWithoutRole(getPropertyName(property).get()), property))
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    Map<String, T> properties =
+        visitedProperties.stream()
+            .filter(property -> Objects.nonNull(property) && getPropertyName(property).isPresent())
+            .map(
+                property ->
+                    new SimpleEntry<>(
+                        getNameWithoutRole(getPropertyName(property).get()), property))
+            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-    List<String> required = visitedProperties.stream()
-        .filter(property -> Objects.nonNull(property) && getPropertyName(property).isPresent() && isPropertyRequired(property))
-        .map(property -> getPropertyName(property).get())
-        .collect(Collectors.toList());
+    List<String> required =
+        visitedProperties.stream()
+            .filter(
+                property ->
+                    Objects.nonNull(property)
+                        && getPropertyName(property).isPresent()
+                        && isPropertyRequired(property))
+            .map(property -> getPropertyName(property).get())
+            .collect(Collectors.toList());
 
     T objectSchema = buildObjectSchema(schema, properties, required);
 
@@ -93,7 +113,8 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     }
 
     if (schema.getConstraints().isPresent()) {
-      objectSchema = withConstraints(objectSchema, schema.getConstraints().get(), schema, codelists);
+      objectSchema =
+          withConstraints(objectSchema, schema.getConstraints().get(), schema, codelists);
     }
 
     return objectSchema;
@@ -104,7 +125,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     Type propertyType = schema.getType();
     String propertyName = schema.getName();
     Optional<String> label = schema.getLabel();
-    Optional<String> description = schema.getDescription() ;
+    Optional<String> description = schema.getDescription();
 
     switch (propertyType) {
       case FLOAT:
@@ -116,7 +137,8 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
         valueSchema = getSchemaForLiteralType(propertyType, label, description);
         break;
       case VALUE_ARRAY:
-        valueSchema = getSchemaForLiteralType(schema.getValueType().orElse(Type.UNKNOWN), label, description);
+        valueSchema =
+            getSchemaForLiteralType(schema.getValueType().orElse(Type.UNKNOWN), label, description);
         break;
       case GEOMETRY:
         valueSchema = getSchemaForGeometry(schema);
@@ -127,11 +149,17 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     }
 
     if (propertyType == Type.GEOMETRY) {
-      valueSchema = withName(valueSchema,  schema.isPrimaryGeometry()
-          ? getNameWithRole(Role.PRIMARY_GEOMETRY.name(), propertyName)
-          : getNameWithRole(SECONDARY_GEOMETRY, propertyName));
+      valueSchema =
+          withName(
+              valueSchema,
+              schema.isPrimaryGeometry()
+                  ? getNameWithRole(Role.PRIMARY_GEOMETRY.name(), propertyName)
+                  : getNameWithRole(SECONDARY_GEOMETRY, propertyName));
     } else {
-      valueSchema = withName(valueSchema,  schema.isId() ? getNameWithRole(Role.ID.name(), propertyName) : propertyName);
+      valueSchema =
+          withName(
+              valueSchema,
+              schema.isId() ? getNameWithRole(Role.ID.name(), propertyName) : propertyName);
     }
 
     if (schema.isArray()) {
@@ -151,17 +179,17 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
 
   protected abstract Map<String, T> getNestedProperties(T property);
 
-  protected abstract T buildRootSchema(FeatureSchema schema,
+  protected abstract T buildRootSchema(
+      FeatureSchema schema,
       Map<String, T> properties,
       Map<String, T> definitions,
       List<String> requiredProperties);
 
-  protected abstract T buildObjectSchema(FeatureSchema schema,
-      Map<String, T> properties,
-      List<String> requiredProperties);
+  protected abstract T buildObjectSchema(
+      FeatureSchema schema, Map<String, T> properties, List<String> requiredProperties);
 
-  protected abstract T getSchemaForLiteralType(Type type, Optional<String> label,
-      Optional<String> description);
+  protected abstract T getSchemaForLiteralType(
+      Type type, Optional<String> label, Optional<String> description);
 
   protected abstract T getSchemaForGeometry(FeatureSchema schema);
 
@@ -169,12 +197,12 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
 
   protected abstract T withRequired(T schema);
 
-  protected abstract T withConstraints(T schema, SchemaConstraints constraints, FeatureSchema property, List<Codelist> codelists);
+  protected abstract T withConstraints(
+      T schema, SchemaConstraints constraints, FeatureSchema property, List<Codelist> codelists);
 
   protected abstract T withRefWrapper(T schema, String objectType);
 
   protected abstract T withArrayWrapper(T schema);
-
 
   protected final String getNameWithRole(String role, String propertyName) {
     return String.format("_%s_ROLE_%s", role, propertyName);
@@ -203,35 +231,43 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
 
   protected Optional<T> findByRole(Map<String, T> properties, String role) {
     return properties.values().stream()
-        .flatMap(property -> {
-          Collection<T> nestedProperties = getNestedProperties(property).values();
-          if (!nestedProperties.isEmpty()) {
-            return nestedProperties.stream();
-          }
-          return Stream.of(property);
-        })
-        .filter(property -> getPropertyName(property).filter(name -> nameHasRole(name, role)).isPresent())
+        .flatMap(
+            property -> {
+              Collection<T> nestedProperties = getNestedProperties(property).values();
+              if (!nestedProperties.isEmpty()) {
+                return nestedProperties.stream();
+              }
+              return Stream.of(property);
+            })
+        .filter(
+            property ->
+                getPropertyName(property).filter(name -> nameHasRole(name, role)).isPresent())
         .findFirst();
   }
 
-  //TODO: nested
+  // TODO: nested
   protected Map<String, T> withoutRoles(Map<String, T> properties, Role... roles) {
-    return properties.entrySet()
-        .stream()
-        .filter(entry -> getPropertyName(entry.getValue()).filter(name -> Arrays
-            .stream(roles).noneMatch(role -> nameHasRole(name, role.name()))).isPresent())
+    return properties.entrySet().stream()
+        .filter(
+            entry ->
+                getPropertyName(entry.getValue())
+                    .filter(
+                        name ->
+                            Arrays.stream(roles).noneMatch(role -> nameHasRole(name, role.name())))
+                    .isPresent())
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  //TODO: nested
+  // TODO: nested
   protected Map<String, T> withoutRoles(Map<String, T> properties) {
-    return properties.entrySet()
-        .stream()
-        .filter(entry -> getPropertyName(entry.getValue()).filter(name -> !nameHasRole(name)).isPresent())
+    return properties.entrySet().stream()
+        .filter(
+            entry ->
+                getPropertyName(entry.getValue()).filter(name -> !nameHasRole(name)).isPresent())
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   public static String getObjectType(FeatureSchema schema) {
-    return "type_"+Integer.toHexString(schema.hashCode());
+    return "type_" + Integer.toHexString(schema.hashCode());
   }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,10 +13,15 @@ import java.io.IOException;
  * @author zahnen
  */
 public interface CoordinateFormatter {
-    void open() throws IOException;
-    void close() throws IOException;
-    void separator() throws IOException;
-    void value(String value) throws IOException;
-    void value(char[] chars, int i, int j) throws IOException;
-    void raw(char[] chars, int i, int j) throws IOException;
+  void open() throws IOException;
+
+  void close() throws IOException;
+
+  void separator() throws IOException;
+
+  void value(String value) throws IOException;
+
+  void value(char[] chars, int i, int j) throws IOException;
+
+  void raw(char[] chars, int i, int j) throws IOException;
 }

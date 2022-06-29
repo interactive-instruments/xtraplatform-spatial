@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -22,8 +22,10 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-//TODO: how to handle name collisions for id or geometry
-public class FeatureTokenDecoderGeoJson extends FeatureTokenDecoder<byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> {
+// TODO: how to handle name collisions for id or geometry
+public class FeatureTokenDecoderGeoJson
+    extends FeatureTokenDecoder<
+        byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureTokenDecoderGeoJson.class);
   private static final JsonFactory JSON_FACTORY = new JsonFactory();
@@ -50,7 +52,6 @@ public class FeatureTokenDecoderGeoJson extends FeatureTokenDecoder<byte[], Feat
     }
     this.feeder = (ByteArrayFeeder) parser.getNonBlockingInputFeeder();
   }
-
 
   @Override
   protected void init() {
@@ -95,7 +96,7 @@ public class FeatureTokenDecoderGeoJson extends FeatureTokenDecoder<byte[], Feat
       JsonToken nextToken = parser.nextToken();
       String currentName = parser.currentName();
 
-      //TODO: null is end-of-input
+      // TODO: null is end-of-input
       if (Objects.isNull(nextToken)) {
         return true; // or completestage???
       }
@@ -129,7 +130,7 @@ public class FeatureTokenDecoderGeoJson extends FeatureTokenDecoder<byte[], Feat
                 context.pathTracker().track(currentName, 0);
                 break;
               default:
-                if (inProperties/* || inGeometry*/) {
+                if (inProperties /* || inGeometry*/) {
                   context.pathTracker().track(currentName);
                 }
                 break;
@@ -139,15 +140,16 @@ public class FeatureTokenDecoderGeoJson extends FeatureTokenDecoder<byte[], Feat
             getDownstream().onObjectStart(context);
             // feature in collection start
           } else if (depth == featureDepth - 1 && inFeature) {
-            //inFeature = false;
+            // inFeature = false;
             getDownstream().onFeatureStart(context);
           }
 
           // nested object start?
           if (Objects.nonNull(currentName) || lastNameIsArrayDepth == 0) {
             depth += 1;
-            if (depth > featureDepth && (inProperties /*|| inGeometry*/) && !Objects
-                .equals(currentName, "properties")) {
+            if (depth > featureDepth
+                && (inProperties /*|| inGeometry*/)
+                && !Objects.equals(currentName, "properties")) {
               getDownstream().onObjectStart(context);
             }
           }
@@ -222,8 +224,9 @@ public class FeatureTokenDecoderGeoJson extends FeatureTokenDecoder<byte[], Feat
 
           // end nested object
           if (Objects.nonNull(currentName) || lastNameIsArrayDepth == 0) {
-            if (depth > featureDepth && (inProperties || context.inGeometry()) && !Objects
-                .equals(currentName, "properties")) {
+            if (depth > featureDepth
+                && (inProperties || context.inGeometry())
+                && !Objects.equals(currentName, "properties")) {
               getDownstream().onObjectEnd(context);
             }
 
@@ -245,10 +248,10 @@ public class FeatureTokenDecoderGeoJson extends FeatureTokenDecoder<byte[], Feat
             getDownstream().onEnd(context);
             // end feature in collection
           } else if (depth == featureDepth - 1 && inFeature) {
-            //inFeature = false;
+            // inFeature = false;
             getDownstream().onFeatureEnd(context);
           } else if (inFeature) {
-            //featureConsumer.onPropertyEnd(pathTracker.asList());
+            // featureConsumer.onPropertyEnd(pathTracker.asList());
           }
 
           if (Objects.equals(currentName, "properties")) {
@@ -293,8 +296,7 @@ public class FeatureTokenDecoderGeoJson extends FeatureTokenDecoder<byte[], Feat
                 context.metadata().numberMatched(parser.getLongValue());
                 break;
               case "type":
-                if (!parser.getValueAsString()
-                    .equals("Feature")) {
+                if (!parser.getValueAsString().equals("Feature")) {
                   break;
                 }
               case "id":
@@ -312,13 +314,14 @@ public class FeatureTokenDecoderGeoJson extends FeatureTokenDecoder<byte[], Feat
                 break;
             }
             // feature id or props or geo value
-          } else if (((inProperties || context.inGeometry())) || (inFeature && Objects
-              .equals(currentName, "id"))) {
+          } else if (((inProperties || context.inGeometry()))
+              || (inFeature && Objects.equals(currentName, "id"))) {
 
             if (Objects.nonNull(currentName)) {
               if (context.inGeometry() && Objects.equals(currentName, "type")) {
-                context.setGeometryType(GeoJsonGeometryType.forString(parser.getValueAsString())
-                    .toSimpleFeatureGeometry());
+                context.setGeometryType(
+                    GeoJsonGeometryType.forString(parser.getValueAsString())
+                        .toSimpleFeatureGeometry());
                 getDownstream().onObjectStart(context);
                 break;
               }

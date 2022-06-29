@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface ObjectSchema {
 
-    List<ObjectSchema> getChildren();
+  List<ObjectSchema> getChildren();
 
-    List<ValueSchema> getProperties();
+  List<ValueSchema> getProperties();
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -61,9 +61,14 @@ public interface SqlPath {
   @Value.Derived
   default String asPath() {
     return isBranch()
-            ? String.format(
-                "[%s=%s]%s%s", getJoin().get().first(), getJoin().get().second(), getName(), getFilterString().map(filterString -> "{filter=" + filterString + "}").orElse(""))
-            : getName() + getFilterString().map(filterString -> "{filter=" + filterString + "}").orElse("");
+        ? String.format(
+            "[%s=%s]%s%s",
+            getJoin().get().first(),
+            getJoin().get().second(),
+            getName(),
+            getFilterString().map(filterString -> "{filter=" + filterString + "}").orElse(""))
+        : getName()
+            + getFilterString().map(filterString -> "{filter=" + filterString + "}").orElse("");
   }
 
   @Value.Derived

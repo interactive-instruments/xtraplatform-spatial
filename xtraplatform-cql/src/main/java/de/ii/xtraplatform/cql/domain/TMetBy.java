@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableTMetBy.Builder.class)
 public interface TMetBy extends BinaryTemporalOperation, CqlNode {
 
-    String TYPE = "t_metBy";
+  String TYPE = "t_metBy";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static TMetBy of(Temporal temporal1, Temporal temporal2) {
-        return new ImmutableTMetBy.Builder()
-            .addArgs(temporal1, temporal2)
-            .build();
-    }
+  static TMetBy of(Temporal temporal1, Temporal temporal2) {
+    return new ImmutableTMetBy.Builder().addArgs(temporal1, temporal2).build();
+  }
 
-    abstract class Builder extends BinaryTemporalOperation.Builder<TMetBy> {
-    }
-
+  abstract class Builder extends BinaryTemporalOperation.Builder<TMetBy> {}
 }

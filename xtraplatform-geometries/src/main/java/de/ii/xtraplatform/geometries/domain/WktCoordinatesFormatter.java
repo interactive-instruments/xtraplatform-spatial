@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,54 +14,54 @@ import java.io.Writer;
  * @author zahnen
  */
 public class WktCoordinatesFormatter implements CoordinateFormatter {
-    private Writer out;
-    private boolean lastWasValue;
+  private Writer out;
+  private boolean lastWasValue;
 
-    public WktCoordinatesFormatter(Writer out) {
-        this.out = out;
-    }
+  public WktCoordinatesFormatter(Writer out) {
+    this.out = out;
+  }
 
-    @Override
-    public void open() throws IOException {
-        //out.append('(');
-        lastWasValue = false;
-    }
+  @Override
+  public void open() throws IOException {
+    // out.append('(');
+    lastWasValue = false;
+  }
 
-    @Override
-    public void close() throws IOException {
-        //out.append(')');
-    }
+  @Override
+  public void close() throws IOException {
+    // out.append(')');
+  }
 
-    protected void valueSeparator() throws IOException {
-        out.append(' ');
-    }
+  protected void valueSeparator() throws IOException {
+    out.append(' ');
+  }
 
-    @Override
-    public void separator() throws IOException {
-        out.append(',');
-        lastWasValue = false;
-    }
+  @Override
+  public void separator() throws IOException {
+    out.append(',');
+    lastWasValue = false;
+  }
 
-    @Override
-    public void value(String value) throws IOException {
-        if (lastWasValue) {
-            valueSeparator();
-        }
-        out.write(value);
-        lastWasValue = true;
+  @Override
+  public void value(String value) throws IOException {
+    if (lastWasValue) {
+      valueSeparator();
     }
+    out.write(value);
+    lastWasValue = true;
+  }
 
-    @Override
-    public void value(char[] chars, int i, int j) throws IOException {
-        if (lastWasValue) {
-            valueSeparator();
-        }
-        out.write(chars, i, j);
-        lastWasValue = true;
+  @Override
+  public void value(char[] chars, int i, int j) throws IOException {
+    if (lastWasValue) {
+      valueSeparator();
     }
+    out.write(chars, i, j);
+    lastWasValue = true;
+  }
 
-    @Override
-    public void raw(char[] chars, int i, int j) throws IOException {
-        out.write(chars, i, j);
-    }
+  @Override
+  public void raw(char[] chars, int i, int j) throws IOException {
+    out.write(chars, i, j);
+  }
 }

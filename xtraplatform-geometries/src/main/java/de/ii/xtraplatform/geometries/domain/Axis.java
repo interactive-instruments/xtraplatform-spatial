@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,7 +8,9 @@
 package de.ii.xtraplatform.geometries.domain;
 
 enum Axis {
-    X, Y, Z;
+  X,
+  Y,
+  Z;
 
-    static final Axis[] fromInt = {X, Y, Z};
+  static final Axis[] fromInt = {X, Y, Z};
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,19 +7,16 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import de.ii.xtraplatform.cql.domain.*;
+import de.ii.xtraplatform.cql.domain.SpatialOperator;
+import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
 import org.threeten.extra.Interval;
 
 public interface SqlDialect {
@@ -53,8 +50,8 @@ public interface SqlDialect {
   List<String> getSystemTables();
 
   default String getSpatialOperator(SpatialOperator spatialOperator) {
-   return SPATIAL_OPERATORS.get(spatialOperator);
- }
+    return SPATIAL_OPERATORS.get(spatialOperator);
+  }
 
   default String getTemporalOperator(TemporalOperator temporalOperator) {
     // this is implementation specific
@@ -75,15 +72,15 @@ public interface SqlDialect {
     String TYPE = "type";
   }
 
-  Map<SpatialOperator, String> SPATIAL_OPERATORS = new ImmutableMap.Builder<SpatialOperator, String>()
-      .put(SpatialOperator.S_EQUALS, "ST_Equals")
-      .put(SpatialOperator.S_DISJOINT, "ST_Disjoint")
-      .put(SpatialOperator.S_TOUCHES, "ST_Touches")
-      .put(SpatialOperator.S_WITHIN, "ST_Within")
-      .put(SpatialOperator.S_OVERLAPS, "ST_Overlaps")
-      .put(SpatialOperator.S_CROSSES, "ST_Crosses")
-      .put(SpatialOperator.S_INTERSECTS, "ST_Intersects")
-      .put(SpatialOperator.S_CONTAINS, "ST_Contains")
-      .build();
-
+  Map<SpatialOperator, String> SPATIAL_OPERATORS =
+      new ImmutableMap.Builder<SpatialOperator, String>()
+          .put(SpatialOperator.S_EQUALS, "ST_Equals")
+          .put(SpatialOperator.S_DISJOINT, "ST_Disjoint")
+          .put(SpatialOperator.S_TOUCHES, "ST_Touches")
+          .put(SpatialOperator.S_WITHIN, "ST_Within")
+          .put(SpatialOperator.S_OVERLAPS, "ST_Overlaps")
+          .put(SpatialOperator.S_CROSSES, "ST_Crosses")
+          .put(SpatialOperator.S_INTERSECTS, "ST_Intersects")
+          .put(SpatialOperator.S_CONTAINS, "ST_Contains")
+          .build();
 }

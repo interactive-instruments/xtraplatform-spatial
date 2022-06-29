@@ -1,8 +1,9 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
- * <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy
- * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.features.gml.app;
 
@@ -11,7 +12,21 @@ import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Doubles;
-import de.ii.xtraplatform.cql.domain.*;
+import de.ii.xtraplatform.cql.domain.Accenti;
+import de.ii.xtraplatform.cql.domain.ArrayLiteral;
+import de.ii.xtraplatform.cql.domain.Between;
+import de.ii.xtraplatform.cql.domain.BinaryArrayOperation;
+import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
+import de.ii.xtraplatform.cql.domain.BinarySpatialOperation;
+import de.ii.xtraplatform.cql.domain.BinaryTemporalOperation;
+import de.ii.xtraplatform.cql.domain.BooleanValue2;
+import de.ii.xtraplatform.cql.domain.Casei;
+import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
+import de.ii.xtraplatform.cql.domain.CqlNode;
+import de.ii.xtraplatform.cql.domain.CqlVisitor;
+import de.ii.xtraplatform.cql.domain.Eq;
+import de.ii.xtraplatform.cql.domain.Function;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
 import de.ii.xtraplatform.cql.domain.Geometry.Envelope;
 import de.ii.xtraplatform.cql.domain.Geometry.LineString;
@@ -20,6 +35,19 @@ import de.ii.xtraplatform.cql.domain.Geometry.MultiPoint;
 import de.ii.xtraplatform.cql.domain.Geometry.MultiPolygon;
 import de.ii.xtraplatform.cql.domain.Geometry.Point;
 import de.ii.xtraplatform.cql.domain.Geometry.Polygon;
+import de.ii.xtraplatform.cql.domain.Gt;
+import de.ii.xtraplatform.cql.domain.In;
+import de.ii.xtraplatform.cql.domain.IsNull;
+import de.ii.xtraplatform.cql.domain.Like;
+import de.ii.xtraplatform.cql.domain.LogicalOperation;
+import de.ii.xtraplatform.cql.domain.Lt;
+import de.ii.xtraplatform.cql.domain.Not;
+import de.ii.xtraplatform.cql.domain.Or;
+import de.ii.xtraplatform.cql.domain.Property;
+import de.ii.xtraplatform.cql.domain.ScalarLiteral;
+import de.ii.xtraplatform.cql.domain.SpatialLiteral;
+import de.ii.xtraplatform.cql.domain.SpatialOperator;
+import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -77,8 +105,8 @@ public class FilterEncoderWfs {
   }
 
   public FesFilter encode(Cql2Expression filter, FeatureSchema schema) {
-    return (FesFilter) cql.mapTemporalOperators(filter, ImmutableSet.of())
-        .accept(new CqlToFes(schema));
+    return (FesFilter)
+        cql.mapTemporalOperators(filter, ImmutableSet.of()).accept(new CqlToFes(schema));
   }
 
   private List<Double> transformCoordinatesIfNecessary(
@@ -159,21 +187,33 @@ public class FilterEncoderWfs {
           && children.get(0) instanceof FesValueReference
           && children.get(1) instanceof FesTemporalLiteral) {
         if (scalarOperation instanceof Lt) {
-          return new FesAnd(ImmutableList.of(
-              new FesPropertyIsLessThan((FesLiteral) children.get(0), ((FesTemporalLiteral) children.get(1)).toInstantLiteral()),
-              new FesNot(ImmutableList.of(new FesPropertyIsNull((FesLiteral) children.get(0))))));
+          return new FesAnd(
+              ImmutableList.of(
+                  new FesPropertyIsLessThan(
+                      (FesLiteral) children.get(0),
+                      ((FesTemporalLiteral) children.get(1)).toInstantLiteral()),
+                  new FesNot(
+                      ImmutableList.of(new FesPropertyIsNull((FesLiteral) children.get(0))))));
         } else if (scalarOperation instanceof Gt) {
-          return new FesAnd(ImmutableList.of(
-              new FesPropertyIsGreaterThan((FesLiteral) children.get(0), ((FesTemporalLiteral) children.get(1)).toInstantLiteral()),
-              new FesNot(ImmutableList.of(new FesPropertyIsNull((FesLiteral) children.get(0))))));
+          return new FesAnd(
+              ImmutableList.of(
+                  new FesPropertyIsGreaterThan(
+                      (FesLiteral) children.get(0),
+                      ((FesTemporalLiteral) children.get(1)).toInstantLiteral()),
+                  new FesNot(
+                      ImmutableList.of(new FesPropertyIsNull((FesLiteral) children.get(0))))));
         }
       }
-      throw new IllegalArgumentException(String.format("Scalar operation '%s' is not supported for WFS feature providers.", scalarOperation.getClass().getSimpleName()));
+      throw new IllegalArgumentException(
+          String.format(
+              "Scalar operation '%s' is not supported for WFS feature providers.",
+              scalarOperation.getClass().getSimpleName()));
     }
 
     @Override
     public FesExpression visit(Between between, List<FesExpression> children) {
-      throw new IllegalArgumentException("BETWEEN predicates are not supported in filter expressions for WFS feature providers.");
+      throw new IllegalArgumentException(
+          "BETWEEN predicates are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
@@ -185,14 +225,16 @@ public class FilterEncoderWfs {
     @Override
     public FesExpression visit(In in, List<FesExpression> children) {
       if (children.size() != 2 || !(children.get(1) instanceof FesLiteral)) {
-        throw new IllegalArgumentException("IN predicates are not supported in filter expressions for WFS feature providers.");
+        throw new IllegalArgumentException(
+            "IN predicates are not supported in filter expressions for WFS feature providers.");
       }
       return new FesResourceId(((FesLiteral) children.get(1)).getValue());
     }
 
     @Override
     public FesExpression visit(IsNull isNull, List<FesExpression> children) {
-      throw new IllegalArgumentException("IS NULL predicates are not supported in filter expressions for WFS feature providers.");
+      throw new IllegalArgumentException(
+          "IS NULL predicates are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
@@ -208,13 +250,15 @@ public class FilterEncoderWfs {
     }
 
     @Override
-    public FesExpression visit(de.ii.xtraplatform.cql.domain.Interval interval, List<FesExpression> children) {
+    public FesExpression visit(
+        de.ii.xtraplatform.cql.domain.Interval interval, List<FesExpression> children) {
       throw new IllegalArgumentException(
           "Non-trivial intervals are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
-    public FesExpression visit(BinaryTemporalOperation temporalOperation, List<FesExpression> children) {
+    public FesExpression visit(
+        BinaryTemporalOperation temporalOperation, List<FesExpression> children) {
 
       if (children.size() == 2
           && children.get(0) instanceof FesValueReference
@@ -229,11 +273,15 @@ public class FilterEncoderWfs {
             (FesValueReference) children.get(0), (FesTemporalLiteral) children.get(1));
       }
 
-      throw new IllegalArgumentException(String.format("Temporal operation '%s' is not supported for WFS feature providers.", temporalOperation.getClass().getSimpleName()));
+      throw new IllegalArgumentException(
+          String.format(
+              "Temporal operation '%s' is not supported for WFS feature providers.",
+              temporalOperation.getClass().getSimpleName()));
     }
 
     @Override
-    public FesExpression visit(BinarySpatialOperation spatialOperation, List<FesExpression> children) {
+    public FesExpression visit(
+        BinarySpatialOperation spatialOperation, List<FesExpression> children) {
       if (spatialOperation.getSpatialOperator() == SpatialOperator.S_INTERSECTS
           && children.size() == 2
           && children.get(0) instanceof FesValueReference
@@ -242,19 +290,26 @@ public class FilterEncoderWfs {
             ((FesEnvelope) children.get(1)).getBoundingBox(),
             ((FesValueReference) children.get(0)).getValue());
       }
-      throw new IllegalArgumentException(String.format("Spatial operation '%s' is not supported for WFS feature providers.", spatialOperation.getClass().getSimpleName()));
+      throw new IllegalArgumentException(
+          String.format(
+              "Spatial operation '%s' is not supported for WFS feature providers.",
+              spatialOperation.getClass().getSimpleName()));
     }
 
     @Override
     public FesExpression visit(BinaryArrayOperation arrayOperation, List<FesExpression> children) {
-      throw new IllegalArgumentException("Array operations are not supported for WFS feature providers.");
+      throw new IllegalArgumentException(
+          "Array operations are not supported for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(Property property, List<FesExpression> children) {
       String propertyPath =
           getPrefixedPropertyName(schema, property.getName())
-              .orElseThrow(() -> new IllegalArgumentException(String.format("Property '%s' was not found.", property.getName())));
+              .orElseThrow(
+                  () ->
+                      new IllegalArgumentException(
+                          String.format("Property '%s' was not found.", property.getName())));
 
       return new FesValueReference(propertyPath);
     }
@@ -281,13 +336,14 @@ public class FilterEncoderWfs {
       }
 
       throw new IllegalArgumentException(
-          String.format("Unsupported temporal literal type: %s", temporalLiteral.getType().getSimpleName())
-      );
+          String.format(
+              "Unsupported temporal literal type: %s", temporalLiteral.getType().getSimpleName()));
     }
 
     @Override
     public FesExpression visit(ArrayLiteral arrayLiteral, List<FesExpression> children) {
-      throw new IllegalArgumentException("Array expressions are not supported in filter expressions for WFS feature providers.");
+      throw new IllegalArgumentException(
+          "Array expressions are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
@@ -297,37 +353,44 @@ public class FilterEncoderWfs {
 
     @Override
     public FesExpression visit(Coordinate coordinate, List<FesExpression> children) {
-      throw new IllegalArgumentException("Coordinates are not supported in filter expressions for WFS feature providers.");
+      throw new IllegalArgumentException(
+          "Coordinates are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(Point point, List<FesExpression> children) {
-      throw new IllegalArgumentException("Point geometries are not supported in filter expressions for WFS feature providers.");
+      throw new IllegalArgumentException(
+          "Point geometries are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(LineString lineString, List<FesExpression> children) {
-      throw new IllegalArgumentException("LineString geometries are not supported in filter expressions for WFS feature providers.");
+      throw new IllegalArgumentException(
+          "LineString geometries are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(Polygon polygon, List<FesExpression> children) {
-      throw new IllegalArgumentException("Polygon geometries are not supported in filter expressions for WFS feature providers.");
+      throw new IllegalArgumentException(
+          "Polygon geometries are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(MultiPoint multiPoint, List<FesExpression> children) {
-      throw new IllegalArgumentException("MultiPoint geometries are not supported in filter expressions for WFS feature providers.");
+      throw new IllegalArgumentException(
+          "MultiPoint geometries are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(MultiLineString multiLineString, List<FesExpression> children) {
-      throw new IllegalArgumentException("MultiLineString geometries are not supported in filter expressions for WFS feature providers.");
+      throw new IllegalArgumentException(
+          "MultiLineString geometries are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
     public FesExpression visit(MultiPolygon multiPolygon, List<FesExpression> children) {
-      throw new IllegalArgumentException("MultiPolygon geometries are not supported in filter expressions for WFS feature providers.");
+      throw new IllegalArgumentException(
+          "MultiPolygon geometries are not supported in filter expressions for WFS feature providers.");
     }
 
     @Override
@@ -347,13 +410,17 @@ public class FilterEncoderWfs {
     @Override
     public FesExpression visit(Function function, List<FesExpression> children) {
       throw new IllegalArgumentException(
-          String.format("Functions are not supported in filter expressions for WFS feature providers. Found: %s", function.getName()));
+          String.format(
+              "Functions are not supported in filter expressions for WFS feature providers. Found: %s",
+              function.getName()));
     }
 
     @Override
     public FesExpression visit(BooleanValue2 booleanValue, List<FesExpression> children) {
       throw new IllegalArgumentException(
-          String.format("Booleans are not supported in filter expressions for WFS feature providers. Found: %s", booleanValue));
+          String.format(
+              "Booleans are not supported in filter expressions for WFS feature providers. Found: %s",
+              booleanValue));
     }
   }
 }

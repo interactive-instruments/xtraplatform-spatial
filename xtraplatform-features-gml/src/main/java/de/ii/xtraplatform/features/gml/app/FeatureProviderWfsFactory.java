@@ -1,8 +1,9 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
- * <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy
- * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.features.gml.app;
 
@@ -106,24 +107,28 @@ public class FeatureProviderWfsFactory
       if (!connector.isConnected()) {
         connectorFactory.disposeConnector(connector);
 
-        RuntimeException connectionError = connector.getConnectionError()
-            .map(throwable -> throwable instanceof RuntimeException
-                ? (RuntimeException)throwable
-                : new RuntimeException(throwable))
-            .orElse(new IllegalStateException("unknown reason"));
+        RuntimeException connectionError =
+            connector
+                .getConnectionError()
+                .map(
+                    throwable ->
+                        throwable instanceof RuntimeException
+                            ? (RuntimeException) throwable
+                            : new RuntimeException(throwable))
+                .orElse(new IllegalStateException("unknown reason"));
 
         throw connectionError;
       }
 
-      return cleanupAutoPersist(cleanupAdditionalInfo(completeConnectionInfoIfNecessary(connector,
-          generateNativeCrsIfNecessary(
-              generateTypesIfNecessary(connector, data)
-          )
-      )));
-
+      return cleanupAutoPersist(
+          cleanupAdditionalInfo(
+              completeConnectionInfoIfNecessary(
+                  connector,
+                  generateNativeCrsIfNecessary(generateTypesIfNecessary(connector, data)))));
 
     } catch (Throwable e) {
-      LogContext.error(LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
+      LogContext.error(
+          LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
     } finally {
       connectorFactory.disposeConnector(connector);
     }
@@ -131,12 +136,11 @@ public class FeatureProviderWfsFactory
     throw new IllegalStateException();
   }
 
-  private FeatureProviderWfsData completeConnectionInfoIfNecessary(WfsConnectorHttp connector,
-      FeatureProviderWfsData data) {
+  private FeatureProviderWfsData completeConnectionInfoIfNecessary(
+      WfsConnectorHttp connector, FeatureProviderWfsData data) {
     ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
 
-    if (data.isAuto() && connectionInfo.getNamespaces()
-        .isEmpty()) {
+    if (data.isAuto() && connectionInfo.getNamespaces().isEmpty()) {
 
       WfsSchemaCrawler schemaCrawler = new WfsSchemaCrawler(connector, connectionInfo);
 
@@ -151,9 +155,9 @@ public class FeatureProviderWfsFactory
     return data;
   }
 
-  private FeatureProviderWfsData generateTypesIfNecessary(WfsConnectorHttp connector, FeatureProviderWfsData data) {
-    if (data.isAuto() && data.getTypes()
-        .isEmpty()) {
+  private FeatureProviderWfsData generateTypesIfNecessary(
+      WfsConnectorHttp connector, FeatureProviderWfsData data) {
+    if (data.isAuto() && data.getTypes().isEmpty()) {
 
       ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
 
@@ -161,39 +165,30 @@ public class FeatureProviderWfsFactory
 
       List<FeatureSchema> types = schemaCrawler.parseSchema();
 
-      ImmutableMap<String, FeatureSchema> typeMap = types.stream()
-          .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
-          .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+      ImmutableMap<String, FeatureSchema> typeMap =
+          types.stream()
+              .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
+              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
-      return new ImmutableFeatureProviderWfsData.Builder()
-          .from(data)
-          .types(typeMap)
-          .build();
+      return new ImmutableFeatureProviderWfsData.Builder().from(data).types(typeMap).build();
     }
 
     return data;
   }
 
   private FeatureProviderWfsData generateNativeCrsIfNecessary(FeatureProviderWfsData data) {
-    if (data.isAuto() && !data.getNativeCrs()
-        .isPresent()) {
-      EpsgCrs nativeCrs = data.getTypes()
-          .values()
-          .stream()
-          .flatMap(type -> type.getProperties()
-              .stream())
-          .filter(property -> property.isSpatial() && property.getAdditionalInfo()
-              .containsKey("crs"))
-          .findFirst()
-          .map(property -> EpsgCrs.fromString(property.getAdditionalInfo()
-              .get("crs")))
-          .orElseGet(() -> OgcCrs.CRS84);
+    if (data.isAuto() && !data.getNativeCrs().isPresent()) {
+      EpsgCrs nativeCrs =
+          data.getTypes().values().stream()
+              .flatMap(type -> type.getProperties().stream())
+              .filter(
+                  property ->
+                      property.isSpatial() && property.getAdditionalInfo().containsKey("crs"))
+              .findFirst()
+              .map(property -> EpsgCrs.fromString(property.getAdditionalInfo().get("crs")))
+              .orElseGet(() -> OgcCrs.CRS84);
 
-      return new ImmutableFeatureProviderWfsData.Builder()
-          .from(data)
-          .nativeCrs(nativeCrs)
-          .build();
-
+      return new ImmutableFeatureProviderWfsData.Builder().from(data).nativeCrs(nativeCrs).build();
     }
 
     return data;
@@ -203,20 +198,31 @@ public class FeatureProviderWfsFactory
     if (data.isAuto()) {
       return new ImmutableFeatureProviderWfsData.Builder()
           .from(data)
-          .types(data.getTypes().entrySet().stream()
-              .map(entry -> new SimpleImmutableEntry<>(entry.getKey(), new ImmutableFeatureSchema.Builder()
-                  .from(entry.getValue())
-                  .additionalInfo(ImmutableMap.of())
-                  .propertyMap(entry.getValue().getPropertyMap().entrySet().stream()
-                      .map(entry2 -> new SimpleImmutableEntry<>(entry2.getKey(), new ImmutableFeatureSchema.Builder()
-                          .from(entry2.getValue())
-                          .additionalInfo(ImmutableMap.of())
-                          .build()))
-                      .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
-                  .build()))
-              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
+          .types(
+              data.getTypes().entrySet().stream()
+                  .map(
+                      entry ->
+                          new SimpleImmutableEntry<>(
+                              entry.getKey(),
+                              new ImmutableFeatureSchema.Builder()
+                                  .from(entry.getValue())
+                                  .additionalInfo(ImmutableMap.of())
+                                  .propertyMap(
+                                      entry.getValue().getPropertyMap().entrySet().stream()
+                                          .map(
+                                              entry2 ->
+                                                  new SimpleImmutableEntry<>(
+                                                      entry2.getKey(),
+                                                      new ImmutableFeatureSchema.Builder()
+                                                          .from(entry2.getValue())
+                                                          .additionalInfo(ImmutableMap.of())
+                                                          .build()))
+                                          .collect(
+                                              ImmutableMap.toImmutableMap(
+                                                  Map.Entry::getKey, Map.Entry::getValue)))
+                                  .build()))
+                  .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
           .build();
-
     }
 
     return data;

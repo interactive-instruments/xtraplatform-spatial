@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -60,30 +60,36 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
 
   @Value.Derived
   default List<String> getSortKeys() {
-    return Stream
-        .concat(getCustomSortKeys().stream().map(SortKey::getField), getTableSchema()
-            .map(attributesContainer -> attributesContainer.getSortKeys().stream())
-            .orElse(Stream.empty())).collect(
-            Collectors.toList());
+    return Stream.concat(
+            getCustomSortKeys().stream().map(SortKey::getField),
+            getTableSchema()
+                .map(attributesContainer -> attributesContainer.getSortKeys().stream())
+                .orElse(Stream.empty()))
+        .collect(Collectors.toList());
   }
 
   @Value.Derived
   default List<SortKey.Direction> getSortDirections() {
-    return Stream
-        .concat(getCustomSortKeys().stream().map(SortKey::getDirection), getTableSchema()
-            .map(attributesContainer -> attributesContainer.getSortKeys().stream()
-                .map(s -> Direction.ASCENDING))
-            .orElse(Stream.empty())).collect(
-            Collectors.toList());
+    return Stream.concat(
+            getCustomSortKeys().stream().map(SortKey::getDirection),
+            getTableSchema()
+                .map(
+                    attributesContainer ->
+                        attributesContainer.getSortKeys().stream().map(s -> Direction.ASCENDING))
+                .orElse(Stream.empty()))
+        .collect(Collectors.toList());
   }
 
   @Value.Derived
   default List<Class<?>> getColumnTypes() {
     List<Class<?>> columnTypes = new ArrayList<>();
 
-    getTableSchema().ifPresent(attributesContainer -> attributesContainer.getProperties()
-        .stream().filter(SchemaBase::isValue)
-        .forEach(attribute -> columnTypes.add(String.class)));
+    getTableSchema()
+        .ifPresent(
+            attributesContainer ->
+                attributesContainer.getProperties().stream()
+                    .filter(SchemaBase::isValue)
+                    .forEach(attribute -> columnTypes.add(String.class)));
 
     columnTypes.addAll(getCustomColumnTypes());
 

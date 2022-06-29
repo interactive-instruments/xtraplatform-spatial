@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -20,33 +20,53 @@ import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-public class SchemaTransformerChain implements
-    TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> {
+public class SchemaTransformerChain
+    implements TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> {
 
   public static final String OBJECT_TYPE_WILDCARD = "*{objectType=";
 
   private final List<String> currentParentProperties;
   private final Map<String, List<FeaturePropertySchemaTransformer>> transformers;
 
-  public SchemaTransformerChain(Map<String, List<PropertyTransformation>> allTransformations,
-      SchemaMapping schemaMapping, boolean inCollection,
+  public SchemaTransformerChain(
+      Map<String, List<PropertyTransformation>> allTransformations,
+      SchemaMapping schemaMapping,
+      boolean inCollection,
       BiFunction<String, String, String> flattenedPathProvider) {
     this.currentParentProperties = new ArrayList<>();
-    this.transformers = allTransformations.entrySet().stream()
-        .flatMap(entry -> {
-          String propertyPath = entry.getKey();
-          List<PropertyTransformation> transformation = entry.getValue();
+    this.transformers =
+        allTransformations.entrySet().stream()
+            .flatMap(
+                entry -> {
+                  String propertyPath = entry.getKey();
+                  List<PropertyTransformation> transformation = entry.getValue();
 
-          if (hasWildcard(propertyPath, OBJECT_TYPE_WILDCARD)) {
-            return createSchemaTransformersForObjectType(propertyPath, schemaMapping,
-                transformation, inCollection, flattenedPathProvider).entrySet().stream();
-          }
+                  if (hasWildcard(propertyPath, OBJECT_TYPE_WILDCARD)) {
+                    return createSchemaTransformersForObjectType(
+                        propertyPath,
+                        schemaMapping,
+                        transformation,
+                        inCollection,
+                        flattenedPathProvider)
+                        .entrySet()
+                        .stream();
+                  }
 
-          return Stream.of(new SimpleEntry<>(propertyPath,
-              createSchemaTransformers(propertyPath, transformation, inCollection,
-                  flattenedPathProvider)));
-        })
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> new ImmutableList.Builder<FeaturePropertySchemaTransformer>().addAll(first).addAll(second).build()));
+                  return Stream.of(
+                      new SimpleEntry<>(
+                          propertyPath,
+                          createSchemaTransformers(
+                              propertyPath, transformation, inCollection, flattenedPathProvider)));
+                })
+            .collect(
+                ImmutableMap.toImmutableMap(
+                    Map.Entry::getKey,
+                    Map.Entry::getValue,
+                    (first, second) ->
+                        new ImmutableList.Builder<FeaturePropertySchemaTransformer>()
+                            .addAll(first)
+                            .addAll(second)
+                            .build()));
   }
 
   @Nullable
@@ -67,8 +87,10 @@ public class SchemaTransformerChain implements
       }
     }
 
-    if (!schema.isValue() && (currentParentProperties.isEmpty() || !Objects.equals(
-        currentParentProperties.get(currentParentProperties.size() - 1), path))) {
+    if (!schema.isValue()
+        && (currentParentProperties.isEmpty()
+            || !Objects.equals(
+                currentParentProperties.get(currentParentProperties.size() - 1), path))) {
       currentParentProperties.add(path);
     }
 
@@ -88,26 +110,26 @@ public class SchemaTransformerChain implements
   }
 
   private FeatureSchema run(
-      Map<String, List<FeaturePropertySchemaTransformer>> schemaTransformations, String keyPath,
-      String propertyPath, FeatureSchema schema) {
+      Map<String, List<FeaturePropertySchemaTransformer>> schemaTransformations,
+      String keyPath,
+      String propertyPath,
+      FeatureSchema schema) {
     FeatureSchema transformed = schema;
 
-    if (schemaTransformations.containsKey(keyPath) && !schemaTransformations.get(keyPath)
-        .isEmpty()) {
-      for (FeaturePropertySchemaTransformer schemaTransformer : schemaTransformations.get(
-          keyPath)) {
+    if (schemaTransformations.containsKey(keyPath)
+        && !schemaTransformations.get(keyPath).isEmpty()) {
+      for (FeaturePropertySchemaTransformer schemaTransformer :
+          schemaTransformations.get(keyPath)) {
         transformed = schemaTransformer.transform(propertyPath, transformed);
         if (Objects.isNull(transformed)) {
           return null;
         }
       }
     } else if (schemaTransformations.containsKey(PropertyTransformations.WILDCARD)
-        && !schemaTransformations.get(
-            PropertyTransformations.WILDCARD)
-        .isEmpty()) {
-      for (FeaturePropertySchemaTransformer schemaTransformer : schemaTransformations.getOrDefault(
-          PropertyTransformations.WILDCARD,
-          ImmutableList.of())) {
+        && !schemaTransformations.get(PropertyTransformations.WILDCARD).isEmpty()) {
+      for (FeaturePropertySchemaTransformer schemaTransformer :
+          schemaTransformations.getOrDefault(
+              PropertyTransformations.WILDCARD, ImmutableList.of())) {
         transformed = schemaTransformer.transform(propertyPath, transformed);
         if (Objects.isNull(transformed)) {
           return null;
@@ -118,67 +140,84 @@ public class SchemaTransformerChain implements
     return transformed;
   }
 
-  private List<FeaturePropertySchemaTransformer> createSchemaTransformers(String path,
-      List<PropertyTransformation> propertyTransformations, boolean inCollection,
+  private List<FeaturePropertySchemaTransformer> createSchemaTransformers(
+      String path,
+      List<PropertyTransformation> propertyTransformations,
+      boolean inCollection,
       BiFunction<String, String, String> flattenedPathProvider) {
     List<FeaturePropertySchemaTransformer> transformers = new ArrayList<>();
 
-    //TODO: RENAME, REMOVE, FLATTEN are not chainable, so only add last ones
-    propertyTransformations.forEach(propertyTransformation -> {
-      propertyTransformation.getRename()
-          .ifPresent(rename -> transformers
-              .add(ImmutableFeaturePropertyTransformerRename.builder()
-                  .propertyPath(path)
-                  .parameter(rename)
-                  .build()));
+    // TODO: RENAME, REMOVE, FLATTEN are not chainable, so only add last ones
+    propertyTransformations.forEach(
+        propertyTransformation -> {
+          propertyTransformation
+              .getRename()
+              .ifPresent(
+                  rename ->
+                      transformers.add(
+                          ImmutableFeaturePropertyTransformerRename.builder()
+                              .propertyPath(path)
+                              .parameter(rename)
+                              .build()));
 
-      propertyTransformation.getRemove()
-          .ifPresent(remove -> transformers
-              .add(ImmutableFeaturePropertyTransformerRemove.builder()
-                  .propertyPath(path)
-                  .parameter(remove)
-                  .inCollection(inCollection)
-                  .build()));
+          propertyTransformation
+              .getRemove()
+              .ifPresent(
+                  remove ->
+                      transformers.add(
+                          ImmutableFeaturePropertyTransformerRemove.builder()
+                              .propertyPath(path)
+                              .parameter(remove)
+                              .inCollection(inCollection)
+                              .build()));
 
-      propertyTransformation.getFlatten()
-          .ifPresent(flatten -> transformers
-              .add(ImmutableFeaturePropertyTransformerFlatten.builder()
-                  .propertyPath(path)
-                  .parameter(flatten)
-                  .flattenedPathProvider(flattenedPathProvider)
-                  .build()));
+          propertyTransformation
+              .getFlatten()
+              .ifPresent(
+                  flatten ->
+                      transformers.add(
+                          ImmutableFeaturePropertyTransformerFlatten.builder()
+                              .propertyPath(path)
+                              .parameter(flatten)
+                              .flattenedPathProvider(flattenedPathProvider)
+                              .build()));
 
-      //TODO
-    /*mapping.getFlattenObjects()
-        .ifPresent(flatten -> transformers
-            .add(ImmutableFeaturePropertyTransformerFlatten.builder()
-                .parameter(flatten)
-                .include(INCLUDE.OBJECTS)
-                .flattenedPathProvider(flattenedPathProvider)
-                .build()));
+          // TODO
+          /*mapping.getFlattenObjects()
+              .ifPresent(flatten -> transformers
+                  .add(ImmutableFeaturePropertyTransformerFlatten.builder()
+                      .parameter(flatten)
+                      .include(INCLUDE.OBJECTS)
+                      .flattenedPathProvider(flattenedPathProvider)
+                      .build()));
 
-    mapping.getFlattenArrays()
-        .ifPresent(flatten -> transformers
-            .add(ImmutableFeaturePropertyTransformerFlatten.builder()
-                .parameter(flatten)
-                .include(INCLUDE.ARRAYS)
-                .flattenedPathProvider(flattenedPathProvider)
-                .build()));*/
-    });
+          mapping.getFlattenArrays()
+              .ifPresent(flatten -> transformers
+                  .add(ImmutableFeaturePropertyTransformerFlatten.builder()
+                      .parameter(flatten)
+                      .include(INCLUDE.ARRAYS)
+                      .flattenedPathProvider(flattenedPathProvider)
+                      .build()));*/
+        });
 
     return transformers;
   }
 
   private Map<String, List<FeaturePropertySchemaTransformer>> createSchemaTransformersForObjectType(
-      String transformationKey, SchemaMapping schemaMapping,
-      List<PropertyTransformation> propertyTransformation, boolean inCollection,
+      String transformationKey,
+      SchemaMapping schemaMapping,
+      List<PropertyTransformation> propertyTransformation,
+      boolean inCollection,
       BiFunction<String, String, String> flattenedPathProvider) {
-    return explodeWildcard(transformationKey, OBJECT_TYPE_WILDCARD, schemaMapping,
-        this::matchesObjectType)
+    return explodeWildcard(
+            transformationKey, OBJECT_TYPE_WILDCARD, schemaMapping, this::matchesObjectType)
         .stream()
-        .map(propertyPath -> new SimpleEntry<>(propertyPath,
-            createSchemaTransformers(propertyPath, propertyTransformation, inCollection,
-                flattenedPathProvider)))
+        .map(
+            propertyPath ->
+                new SimpleEntry<>(
+                    propertyPath,
+                    createSchemaTransformers(
+                        propertyPath, propertyTransformation, inCollection, flattenedPathProvider)))
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
