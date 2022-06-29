@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,8 +7,8 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
-import de.ii.xtraplatform.features.sql.app.FeatureSql;
 import de.ii.xtraplatform.features.domain.Tuple;
+import de.ii.xtraplatform.features.sql.app.FeatureSql;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import java.sql.Connection;
 import java.util.Collection;
@@ -21,22 +21,24 @@ import java.util.function.Function;
 
 public interface SqlClient {
 
-    CompletableFuture<Collection<SqlRow>> run(String query, SqlQueryOptions options);
+  CompletableFuture<Collection<SqlRow>> run(String query, SqlQueryOptions options);
 
-    Reactive.Source<SqlRow> getSourceStream(String query, SqlQueryOptions options);
+  Reactive.Source<SqlRow> getSourceStream(String query, SqlQueryOptions options);
 
+  Reactive.Source<String> getMutationSource(
+      FeatureSql feature,
+      List<Function<FeatureSql, String>> mutations,
+      List<Consumer<String>> idConsumers,
+      Object executionContext);
 
-    Reactive.Source<String> getMutationSource(FeatureSql feature, List<Function<FeatureSql, String>> mutations,
-                                              List<Consumer<String>> idConsumers,
-                                              Object executionContext);
+  Reactive.Transformer<FeatureSql, String> getMutationFlow(
+      Function<FeatureSql, List<Function<FeatureSql, Tuple<String, Consumer<String>>>>> mutations,
+      Object executionContext,
+      Optional<String> id);
 
-    Reactive.Transformer<FeatureSql, String> getMutationFlow(
-            Function<FeatureSql, List<Function<FeatureSql, Tuple<String, Consumer<String>>>>> mutations,
-        Object executionContext, Optional<String> id);
+  Connection getConnection();
 
-    Connection getConnection();
+  Map<String, String> getDbInfo();
 
-    Map<String,String> getDbInfo();
-
-    List<String> getNotifications(Connection connection);
+  List<String> getNotifications(Connection connection);
 }

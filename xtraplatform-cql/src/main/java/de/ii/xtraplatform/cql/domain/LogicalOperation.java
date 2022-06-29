@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,18 +14,19 @@ import org.immutables.value.Value;
 
 public interface LogicalOperation extends Operation<Cql2Expression>, CqlNode {
 
-    @Value.Check
-    default void check() {
-        Preconditions.checkState(getArgs().size() > 1, "a boolean operation must have at least two children, found %s", getArgs().size());
-    }
+  @Value.Check
+  default void check() {
+    Preconditions.checkState(
+        getArgs().size() > 1,
+        "a boolean operation must have at least two children, found %s",
+        getArgs().size());
+  }
 
-    @Override
-    default <T> T accept(CqlVisitor<T> visitor) {
-        List<T> children = getArgs()
-                .stream()
-                .map(predicate -> predicate.accept(visitor))
-                .collect(Collectors.toList());
+  @Override
+  default <T> T accept(CqlVisitor<T> visitor) {
+    List<T> children =
+        getArgs().stream().map(predicate -> predicate.accept(visitor)).collect(Collectors.toList());
 
-        return visitor.visit(this, children);
-    }
+    return visitor.visit(this, children);
+  }
 }

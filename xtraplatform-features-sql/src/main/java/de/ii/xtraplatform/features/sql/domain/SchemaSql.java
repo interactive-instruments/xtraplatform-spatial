@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -46,13 +46,14 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
   @Value.Derived
   default List<String> getPath() {
     return getRelation().isEmpty()
-        ? ImmutableList
-        .of(getName() + getFilterString().map(filter -> "{filter=" + filter + "}").orElse(""))
-        : //Stream.concat(
-            //Stream.of(getName() + getFilterString().map(filter -> "{filter=" + filter + "}").orElse("")),
-            getRelation().stream()
-                .flatMap(relation -> relation.asPath().stream())//)
-                .collect(Collectors.toList());
+        ? ImmutableList.of(
+            getName() + getFilterString().map(filter -> "{filter=" + filter + "}").orElse(""))
+        : // Stream.concat(
+        // Stream.of(getName() + getFilterString().map(filter -> "{filter=" + filter +
+        // "}").orElse("")),
+        getRelation().stream()
+            .flatMap(relation -> relation.asPath().stream()) // )
+            .collect(Collectors.toList());
   }
 
   /*@Override
@@ -93,10 +94,11 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
     for (int i = 0; i < getRelation().size(); i++) {
       SqlRelation relation = getRelation().get(i);
       // add keys only for main table and target tables of M:N or 1:N relations
-      if (relation.getSourceSortKey().isPresent() && (i > 0 && (previousRelation.isM2N()
-          || previousRelation.isOne2N()))) {
-        keys.add(String
-            .format("%s.%s", relation.getSourceContainer(), relation.getSourceSortKey().get()));
+      if (relation.getSourceSortKey().isPresent()
+          && (i > 0 && (previousRelation.isM2N() || previousRelation.isOne2N()))) {
+        keys.add(
+            String.format(
+                "%s.%s", relation.getSourceContainer(), relation.getSourceSortKey().get()));
       }
       previousRelation = relation;
     }
@@ -108,9 +110,9 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
     return keys.build();
   }
 
-  //TODO: should we do this here? can we derive it from the above?
-  default List<String> getSortKeys(ListIterator<String> aliasesIterator, boolean onlyRelations,
-      int keyIndexStart) {
+  // TODO: should we do this here? can we derive it from the above?
+  default List<String> getSortKeys(
+      ListIterator<String> aliasesIterator, boolean onlyRelations, int keyIndexStart) {
     ImmutableList.Builder<String> keys = ImmutableList.builder();
 
     int keyIndex = keyIndexStart;
@@ -120,13 +122,13 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
       SqlRelation relation = getRelation().get(i);
       String alias = aliasesIterator.next();
       if (relation.isM2N()) {
-        //skip junction alias
+        // skip junction alias
         aliasesIterator.next();
       }
 
       // add keys only for main table and target tables of M:N or 1:N relations
-      if (relation.getSourceSortKey().isPresent() && (i == 0 || previousRelation.isM2N()
-          || previousRelation.isOne2N())) {
+      if (relation.getSourceSortKey().isPresent()
+          && (i == 0 || previousRelation.isM2N() || previousRelation.isOne2N())) {
         String suffix = keyIndex > 0 ? "_" + keyIndex : "";
         keys.add(
             String.format("%s.%s AS SKEY%s", alias, relation.getSourceSortKey().get(), suffix));
@@ -145,22 +147,24 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
     return keys.build();
   }
 
-  //TODO: to SchemaBase
+  // TODO: to SchemaBase
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
   default List<SchemaSql> getAllNestedProperties() {
     return getProperties().stream()
-        .flatMap(t -> {
-          SchemaSql current = isObject() && t.isObject()
-              ? new ImmutableSchemaSql.Builder()
-                .from(t)
-                .relation(getRelation())
-                .addAllRelation(t.getRelation())
-                .build()
-              : t;
-          return Stream.concat(Stream.of(current), current.getAllNestedProperties().stream());
-        })
+        .flatMap(
+            t -> {
+              SchemaSql current =
+                  isObject() && t.isObject()
+                      ? new ImmutableSchemaSql.Builder()
+                          .from(t)
+                          .relation(getRelation())
+                          .addAllRelation(t.getRelation())
+                          .build()
+                      : t;
+              return Stream.concat(Stream.of(current), current.getAllNestedProperties().stream());
+            })
         .collect(Collectors.toList());
   }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,33 +7,31 @@
  */
 package de.ii.xtraplatform.geometries.domain;
 
-import org.immutables.value.Value;
-
 import java.io.IOException;
+import org.immutables.value.Value;
 
 public interface CoordinatesTransformation extends DoubleArrayProcessor {
 
-    @Value.Parameter
-    DoubleArrayProcessor getNext();
+  @Value.Parameter
+  DoubleArrayProcessor getNext();
 
-    @Override
-    default void onStart() throws IOException {
-        getNext().onStart();
-    }
+  @Override
+  default void onStart() throws IOException {
+    getNext().onStart();
+  }
 
-    @Override
-    default void onCoordinates(double[] coordinates, int length, int dimension) throws IOException {
-        getNext().onCoordinates(coordinates, length, dimension);
-    }
+  @Override
+  default void onCoordinates(double[] coordinates, int length, int dimension) throws IOException {
+    getNext().onCoordinates(coordinates, length, dimension);
+  }
 
-    @Override
-    default void onFlush() throws IOException {
-        getNext().onFlush();
-    }
+  @Override
+  default void onFlush() throws IOException {
+    getNext().onFlush();
+  }
 
-    @Override
-    default void onEnd() throws IOException {
-        getNext().onEnd();
-    }
-
+  @Override
+  default void onEnd() throws IOException {
+    getNext().onEnd();
+  }
 }

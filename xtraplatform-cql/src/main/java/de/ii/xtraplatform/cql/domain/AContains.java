@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableAContains.Builder.class)
 public interface AContains extends BinaryArrayOperation, CqlNode {
 
-    String TYPE = "a_contains";
+  String TYPE = "a_contains";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static AContains of(Vector vector1, Vector vector2) {
-        return new ImmutableAContains.Builder()
-            .addArgs(vector1, vector2)
-            .build();
-    }
+  static AContains of(Vector vector1, Vector vector2) {
+    return new ImmutableAContains.Builder().addArgs(vector1, vector2).build();
+  }
 
-    abstract class Builder extends BinaryArrayOperation.Builder<AContains> {
-    }
-
+  abstract class Builder extends BinaryArrayOperation.Builder<AContains> {}
 }

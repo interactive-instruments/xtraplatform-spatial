@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,55 +16,56 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableBetween.Builder.class)
 public interface Between extends TernaryOperation<Scalar>, CqlNode {
 
-    String TYPE = "between";
+  String TYPE = "between";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static Between of(String property, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
-        return new ImmutableBetween.Builder().addArgs(Property.of(property))
-                                             .addArgs(scalarLiteral1)
-                                             .addArgs(scalarLiteral2)
-                                             .build();
-    }
+  static Between of(String property, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
+    return new ImmutableBetween.Builder()
+        .addArgs(Property.of(property))
+        .addArgs(scalarLiteral1)
+        .addArgs(scalarLiteral2)
+        .build();
+  }
 
-    static Between of(Property property, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
-        return new ImmutableBetween.Builder().addArgs(property)
-                .addArgs(scalarLiteral1)
-                .addArgs(scalarLiteral2)
-                .build();
-    }
+  static Between of(Property property, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
+    return new ImmutableBetween.Builder()
+        .addArgs(property)
+        .addArgs(scalarLiteral1)
+        .addArgs(scalarLiteral2)
+        .build();
+  }
 
-    static Between ofFunction(Function function, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
-        return new ImmutableBetween.Builder().addArgs(function)
-                                             .addArgs(scalarLiteral1)
-                                             .addArgs(scalarLiteral2)
-                                             .build();
-    }
+  static Between ofFunction(
+      Function function, ScalarLiteral scalarLiteral1, ScalarLiteral scalarLiteral2) {
+    return new ImmutableBetween.Builder()
+        .addArgs(function)
+        .addArgs(scalarLiteral1)
+        .addArgs(scalarLiteral2)
+        .build();
+  }
 
-    @JsonIgnore
-    @Value.Derived
-    default Optional<Scalar> getValue() {
-        return Optional.ofNullable(getArgs().get(0));
-    }
+  @JsonIgnore
+  @Value.Derived
+  default Optional<Scalar> getValue() {
+    return Optional.ofNullable(getArgs().get(0));
+  }
 
-    @JsonIgnore
-    @Value.Derived
-    default Optional<Scalar> getLower() {
-        return Optional.ofNullable(getArgs().get(1));
-    }
+  @JsonIgnore
+  @Value.Derived
+  default Optional<Scalar> getLower() {
+    return Optional.ofNullable(getArgs().get(1));
+  }
 
-    @JsonIgnore
-    @Value.Derived
-    default Optional<Scalar> getUpper() {
-        return Optional.ofNullable(getArgs().get(2));
-    }
+  @JsonIgnore
+  @Value.Derived
+  default Optional<Scalar> getUpper() {
+    return Optional.ofNullable(getArgs().get(2));
+  }
 
-
-    abstract class Builder extends TernaryOperation.Builder<Scalar, Between> {
-
-    }
+  abstract class Builder extends TernaryOperation.Builder<Scalar, Between> {}
 }

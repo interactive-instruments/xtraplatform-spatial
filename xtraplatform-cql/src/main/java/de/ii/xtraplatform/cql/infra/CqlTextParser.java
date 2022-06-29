@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -22,63 +22,68 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 public class CqlTextParser {
 
-    private CqlParser.CqlFilterContext parseToTree(String cql) {
-        CqlLexer lexer = new CqlLexer(CharStreams.fromString(cql));
-        lexer.removeErrorListeners();
-        lexer.addErrorListener(ThrowingErrorListener.INSTANCE);
+  private CqlParser.CqlFilterContext parseToTree(String cql) {
+    CqlLexer lexer = new CqlLexer(CharStreams.fromString(cql));
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(ThrowingErrorListener.INSTANCE);
 
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
+    CommonTokenStream tokens = new CommonTokenStream(lexer);
 
-        CqlParser parser = new CqlParser(tokens);
-        parser.removeErrorListeners();
-        parser.addErrorListener(ThrowingErrorListener.INSTANCE);
+    CqlParser parser = new CqlParser(tokens);
+    parser.removeErrorListeners();
+    parser.addErrorListener(ThrowingErrorListener.INSTANCE);
 
-        return parser.cqlFilter();
+    return parser.cqlFilter();
+  }
+
+  public Cql2Expression parse(String cql, EpsgCrs defaultCrs) throws CqlParseException {
+    return parse(cql, new CqlTextVisitor(defaultCrs));
+  }
+
+  public Cql2Expression parse(String cql, CqlTextVisitor visitor) throws CqlParseException {
+    try {
+      CqlParser.CqlFilterContext cqlFilterContext = parseToTree(cql);
+
+      return (Cql2Expression) visitor.visit(cqlFilterContext);
+    } catch (ParseCancellationException e) {
+      throw new CqlParseException(e.getMessage());
+    }
+  }
+
+  public static class ThrowingErrorListener extends BaseErrorListener {
+
+    public static final ThrowingErrorListener INSTANCE = new ThrowingErrorListener();
+
+    @Override
+    public void syntaxError(
+        Recognizer<?, ?> recognizer,
+        Object offendingSymbol,
+        int line,
+        int charPositionInLine,
+        String msg,
+        RecognitionException e)
+        throws ParseCancellationException {
+      throw new ParseCancellationException("line " + line + ":" + charPositionInLine + " " + msg);
+    }
+  }
+
+  public abstract static class CqlParserCustom extends Parser {
+
+    public CqlParserCustom(TokenStream input) {
+      super(input);
     }
 
-    public Cql2Expression parse(String cql, EpsgCrs defaultCrs) throws CqlParseException {
-        return parse(cql, new CqlTextVisitor(defaultCrs));
-    }
+    protected final Boolean isNotInsideNestedFilter(ParserRuleContext ctx) {
 
-    public Cql2Expression parse(String cql, CqlTextVisitor visitor) throws CqlParseException {
-        try {
-            CqlParser.CqlFilterContext cqlFilterContext = parseToTree(cql);
+      while (ctx.parent != null) {
+        ctx = (ParserRuleContext) ctx.parent;
 
-            return (Cql2Expression) visitor.visit(cqlFilterContext);
-        } catch (ParseCancellationException e) {
-            throw new CqlParseException(e.getMessage());
+        if (ctx instanceof CqlParser.NestedCqlFilterContext) {
+          return false;
         }
+      }
+
+      return true;
     }
-
-    public static class ThrowingErrorListener extends BaseErrorListener {
-
-        public static final ThrowingErrorListener INSTANCE = new ThrowingErrorListener();
-
-        @Override
-        public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine,
-                                String msg, RecognitionException e)
-                throws ParseCancellationException {
-            throw new ParseCancellationException("line " + line + ":" + charPositionInLine + " " + msg);
-        }
-    }
-
-    public static abstract class CqlParserCustom extends Parser {
-
-        public CqlParserCustom(TokenStream input) {
-            super(input);
-        }
-
-        protected final Boolean isNotInsideNestedFilter(ParserRuleContext ctx) {
-
-            while (ctx.parent != null) {
-                ctx = (ParserRuleContext) ctx.parent;
-
-                if (ctx instanceof CqlParser.NestedCqlFilterContext) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-    }
+  }
 }

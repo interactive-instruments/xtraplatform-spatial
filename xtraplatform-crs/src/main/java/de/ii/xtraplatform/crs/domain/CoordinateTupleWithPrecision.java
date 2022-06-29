@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,23 +16,25 @@ import java.util.Locale;
  */
 public class CoordinateTupleWithPrecision extends CoordinateTuple {
 
-    private static DecimalFormat DEFAULT_FORMAT = new DecimalFormat("#.0###########", DecimalFormatSymbols.getInstance( Locale.ENGLISH ));
-    private static DecimalFormat METRIC_FORMAT = new DecimalFormat("#.0##", DecimalFormatSymbols.getInstance( Locale.ENGLISH ));
+  private static DecimalFormat DEFAULT_FORMAT =
+      new DecimalFormat("#.0###########", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+  private static DecimalFormat METRIC_FORMAT =
+      new DecimalFormat("#.0##", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
 
-    private final DecimalFormat formatter;
+  private final DecimalFormat formatter;
 
-    public CoordinateTupleWithPrecision(double[] c, boolean isTargetMetric) {
-        super(c);
-        this.formatter = isTargetMetric ? METRIC_FORMAT : DEFAULT_FORMAT;
-    }
+  public CoordinateTupleWithPrecision(double[] c, boolean isTargetMetric) {
+    super(c);
+    this.formatter = isTargetMetric ? METRIC_FORMAT : DEFAULT_FORMAT;
+  }
 
-    @Override
-    public String getXasString() {
-        return formatter.format(c[0]);
-    }
+  @Override
+  public String getXasString() {
+    return formatter.format(c[0]);
+  }
 
-    @Override
-    public String getYasString() {
-        return formatter.format(c[1]);
-    }
+  @Override
+  public String getYasString() {
+    return formatter.format(c[1]);
+  }
 }

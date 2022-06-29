@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableAOverlaps.Builder.class)
 public interface AOverlaps extends BinaryArrayOperation, CqlNode {
 
-    String TYPE = "a_overlaps";
+  String TYPE = "a_overlaps";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static AOverlaps of(Vector vector1, Vector vector2) {
-        return new ImmutableAOverlaps.Builder()
-            .addArgs(vector1, vector2)
-            .build();
-    }
+  static AOverlaps of(Vector vector1, Vector vector2) {
+    return new ImmutableAOverlaps.Builder().addArgs(vector1, vector2).build();
+  }
 
-    abstract class Builder extends BinaryArrayOperation.Builder<AOverlaps> {
-    }
-
+  abstract class Builder extends BinaryArrayOperation.Builder<AOverlaps> {}
 }

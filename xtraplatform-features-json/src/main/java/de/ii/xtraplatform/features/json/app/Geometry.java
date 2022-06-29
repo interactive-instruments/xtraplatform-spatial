@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,118 +11,112 @@ import com.google.common.base.Preconditions;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.json.domain.GeoJsonGeometryType;
-import org.immutables.value.Value;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.immutables.value.Value;
 
 public interface Geometry<T> {
 
-    GeoJsonGeometryType getType();
+  GeoJsonGeometryType getType();
 
-    List<T> getCoordinates();
+  List<T> getCoordinates();
 
-    @Value.Default
-    default EpsgCrs getCrs() {
-        return OgcCrs.CRS84;
+  @Value.Default
+  default EpsgCrs getCrs() {
+    return OgcCrs.CRS84;
+  }
+
+  @Value.Modifiable
+  interface Point extends Geometry<String> {
+
+    @Value.Check
+    default void check() {
+      Preconditions.checkState(
+          getCoordinates().size() == 1,
+          "a point must have only one coordinate",
+          getCoordinates().size());
     }
 
-    @Value.Modifiable
-    interface Point extends Geometry<String> {
+    @Value.Derived
+    @Override
+    default GeoJsonGeometryType getType() {
+      return GeoJsonGeometryType.POINT;
+    }
+  }
 
-        @Value.Check
-        default void check() {
-            Preconditions.checkState(getCoordinates().size() == 1, "a point must have only one coordinate", getCoordinates().size());
-        }
+  @Value.Modifiable
+  interface LineString extends Geometry<String> {
 
-        @Value.Derived
-        @Override
-        default GeoJsonGeometryType getType() {
-            return GeoJsonGeometryType.POINT;
-        }
+    @Value.Derived
+    @Override
+    default GeoJsonGeometryType getType() {
+      return GeoJsonGeometryType.LINE_STRING;
+    }
+  }
 
+  @Value.Modifiable
+  interface Polygon extends Geometry<List<String>> {
+
+    @Value.Derived
+    @Override
+    default GeoJsonGeometryType getType() {
+      return GeoJsonGeometryType.POLYGON;
+    }
+  }
+
+  @Value.Modifiable
+  interface MultiPoint extends Geometry<Point> {
+
+    @Value.Derived
+    @Override
+    default GeoJsonGeometryType getType() {
+      return GeoJsonGeometryType.MULTI_POINT;
+    }
+  }
+
+  @Value.Modifiable
+  interface MultiLineString extends Geometry<LineString> {
+
+    @Value.Derived
+    @Override
+    default GeoJsonGeometryType getType() {
+      return GeoJsonGeometryType.MULTI_LINE_STRING;
+    }
+  }
+
+  @Value.Modifiable
+  interface MultiPolygon extends Geometry<Polygon> {
+
+    @Value.Derived
+    @Override
+    default GeoJsonGeometryType getType() {
+      return GeoJsonGeometryType.MULTI_POLYGON;
+    }
+  }
+
+  class Coordinate extends ArrayList<Double> {
+
+    public static Coordinate of(double x, double y) {
+      return new Coordinate(x, y);
     }
 
-    @Value.Modifiable
-    interface LineString extends Geometry<String> {
-
-        @Value.Derived
-        @Override
-        default GeoJsonGeometryType getType() {
-            return GeoJsonGeometryType.LINE_STRING;
-        }
-
+    static Coordinate of(double x, double y, double z) {
+      return new Coordinate(x, y, z);
     }
 
-    @Value.Modifiable
-    interface Polygon extends Geometry<List<String>> {
-
-        @Value.Derived
-        @Override
-        default GeoJsonGeometryType getType() {
-            return GeoJsonGeometryType.POLYGON;
-        }
-
+    public Coordinate(Double x, Double y) {
+      super();
+      add(x);
+      add(y);
     }
 
-    @Value.Modifiable
-    interface MultiPoint extends Geometry<Point> {
-
-        @Value.Derived
-        @Override
-        default GeoJsonGeometryType getType() {
-            return GeoJsonGeometryType.MULTI_POINT;
-        }
-
+    public Coordinate(Double x, Double y, Double z) {
+      this(x, y);
+      add(z);
     }
 
-    @Value.Modifiable
-    interface MultiLineString extends Geometry<LineString> {
-
-        @Value.Derived
-        @Override
-        default GeoJsonGeometryType getType() {
-            return GeoJsonGeometryType.MULTI_LINE_STRING;
-        }
-
+    public Coordinate() {
+      super();
     }
-
-    @Value.Modifiable
-    interface MultiPolygon extends Geometry<Polygon> {
-
-        @Value.Derived
-        @Override
-        default GeoJsonGeometryType getType() {
-            return GeoJsonGeometryType.MULTI_POLYGON;
-        }
-
-    }
-
-    class Coordinate extends ArrayList<Double> {
-
-        public static Coordinate of(double x, double y) {
-            return new Coordinate(x, y);
-        }
-
-        static Coordinate of(double x, double y, double z) {
-            return new Coordinate(x, y, z);
-        }
-
-        public Coordinate(Double x, Double y) {
-            super();
-            add(x);
-            add(y);
-        }
-
-        public Coordinate(Double x, Double y, Double z) {
-            this(x, y);
-            add(z);
-        }
-
-        public Coordinate() {
-            super();
-        }
-
-    }
-
+  }
 }

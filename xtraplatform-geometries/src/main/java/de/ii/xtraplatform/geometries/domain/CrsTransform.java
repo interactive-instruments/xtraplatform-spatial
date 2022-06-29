@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,20 +8,20 @@
 package de.ii.xtraplatform.geometries.domain;
 
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
-import org.immutables.value.Value;
-
 import java.io.IOException;
+import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class CrsTransform implements CoordinatesTransformation {
 
-    @Value.Parameter
-    protected abstract CrsTransformer getCrsTransformer();
+  @Value.Parameter
+  protected abstract CrsTransformer getCrsTransformer();
 
-    @Override
-    public void onCoordinates(double[] coordinates, int length, int dimension) throws IOException {
-        double[] transformed = getCrsTransformer().transform(coordinates, length / dimension, dimension);
+  @Override
+  public void onCoordinates(double[] coordinates, int length, int dimension) throws IOException {
+    double[] transformed =
+        getCrsTransformer().transform(coordinates, length / dimension, dimension);
 
-        getNext().onCoordinates(transformed, length, dimension);
-    }
+    getNext().onCoordinates(transformed, length, dimension);
+  }
 }

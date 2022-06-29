@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,12 +12,11 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface MetaQueryResult {
 
-    long getMinKey();
+  long getMinKey();
 
-    long getMaxKey();
+  long getMaxKey();
 
-    long getNumberReturned();
+  long getNumberReturned();
 
-    long getNumberMatched();
-
+  long getNumberMatched();
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,8 +7,6 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import de.ii.xtraplatform.base.domain.Registry;
-import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 

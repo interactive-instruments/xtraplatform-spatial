@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,9 +10,8 @@ package de.ii.xtraplatform.features.domain;
 import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomFuseableIn;
 import java.util.function.Consumer;
 
-public abstract class FeatureEventEncoder<T> implements
-    TransformerCustomFuseableIn<Object, T, FeatureEventConsumer>,
-    FeatureEventConsumer {
+public abstract class FeatureEventEncoder<T>
+    implements TransformerCustomFuseableIn<Object, T, FeatureEventConsumer>, FeatureEventConsumer {
 
   private final FeatureTokenReader tokenReader;
   private Consumer<T> downstream;
@@ -46,9 +45,7 @@ public abstract class FeatureEventEncoder<T> implements
     downstream.accept(t);
   }
 
-  protected void init() {
-  }
+  protected void init() {}
 
-  protected void cleanup() {
-  }
+  protected void cleanup() {}
 }

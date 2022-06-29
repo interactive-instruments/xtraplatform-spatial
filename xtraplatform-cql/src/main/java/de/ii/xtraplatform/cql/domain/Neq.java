@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,45 +16,41 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableNeq.Builder.class)
 public interface Neq extends BinaryScalarOperation, CqlNode {
 
-    String TYPE = "<>";
+  String TYPE = "<>";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static Neq of(List<Scalar> operands) {
-        return new ImmutableNeq.Builder().args(operands)
-                                        .build();
-    }
+  static Neq of(List<Scalar> operands) {
+    return new ImmutableNeq.Builder().args(operands).build();
+  }
 
-    static Neq of(String property, ScalarLiteral scalarLiteral) {
-        return new ImmutableNeq.Builder().args(ImmutableList.of(Property.of(property),scalarLiteral))
-                                        .build();
-    }
+  static Neq of(String property, ScalarLiteral scalarLiteral) {
+    return new ImmutableNeq.Builder()
+        .args(ImmutableList.of(Property.of(property), scalarLiteral))
+        .build();
+  }
 
-    static Neq of(String property, String property2) {
-        return new ImmutableNeq.Builder().args(ImmutableList.of(Property.of(property), Property.of(property2)))
-                                        .build();
-    }
+  static Neq of(String property, String property2) {
+    return new ImmutableNeq.Builder()
+        .args(ImmutableList.of(Property.of(property), Property.of(property2)))
+        .build();
+  }
 
-    static Neq of(Property property, ScalarLiteral scalarLiteral) {
-        return new ImmutableNeq.Builder().args(ImmutableList.of(property,scalarLiteral))
-                                        .build();
-    }
+  static Neq of(Property property, ScalarLiteral scalarLiteral) {
+    return new ImmutableNeq.Builder().args(ImmutableList.of(property, scalarLiteral)).build();
+  }
 
-    static Neq of(Property property, Property property2) {
-        return new ImmutableNeq.Builder().args(ImmutableList.of(property, property2))
-                                        .build();
-    }
+  static Neq of(Property property, Property property2) {
+    return new ImmutableNeq.Builder().args(ImmutableList.of(property, property2)).build();
+  }
 
-    static Neq ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableNeq.Builder().args(ImmutableList.of(function, scalarLiteral))
-                                        .build();
-    }
+  static Neq ofFunction(Function function, ScalarLiteral scalarLiteral) {
+    return new ImmutableNeq.Builder().args(ImmutableList.of(function, scalarLiteral)).build();
+  }
 
-    abstract class Builder extends BinaryScalarOperation.Builder<Neq> {
-    }
-
+  abstract class Builder extends BinaryScalarOperation.Builder<Neq> {}
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableTContains.Builder.class)
 public interface TContains extends BinaryTemporalOperation, CqlNode {
 
-    String TYPE = "t_contains";
+  String TYPE = "t_contains";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static TContains of(Temporal temporal1, Temporal temporal2) {
-        return new ImmutableTContains.Builder()
-            .addArgs(temporal1, temporal2)
-            .build();
-    }
+  static TContains of(Temporal temporal1, Temporal temporal2) {
+    return new ImmutableTContains.Builder().addArgs(temporal1, temporal2).build();
+  }
 
-    abstract class Builder extends BinaryTemporalOperation.Builder<TContains> {
-    }
-
+  abstract class Builder extends BinaryTemporalOperation.Builder<TContains> {}
 }

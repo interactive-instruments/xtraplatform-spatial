@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -21,23 +21,21 @@ import org.immutables.value.Value;
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 public interface SchemaMappingSql extends SchemaMappingBase<SchemaSql> {
 
-    @Value.Derived
-    @Value.Auxiliary
-    default Map<List<String>, List<SchemaSql>> getTargetSchemasByPath() {
-        return getTargetSchema().accept(new SchemaToMappingVisitor<>())
-            .asMap()
-            .entrySet()
-            .stream()
-            //TODO: removal of first path element only makes sense for geojson, so change in parser
-            .map(entry -> new AbstractMap.SimpleImmutableEntry<>(
-                entry.getKey().subList(1, entry.getKey().size()), Lists.newArrayList(entry.getValue())))
-            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
+  @Value.Derived
+  @Value.Auxiliary
+  default Map<List<String>, List<SchemaSql>> getTargetSchemasByPath() {
+    return getTargetSchema().accept(new SchemaToMappingVisitor<>()).asMap().entrySet().stream()
+        // TODO: removal of first path element only makes sense for geojson, so change in parser
+        .map(
+            entry ->
+                new AbstractMap.SimpleImmutableEntry<>(
+                    entry.getKey().subList(1, entry.getKey().size()),
+                    Lists.newArrayList(entry.getValue())))
+        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
 
-    @Override
-    default SchemaSql schemaWithGeometryType(SchemaSql schema, SimpleFeatureGeometry geometryType) {
-        return new ImmutableSchemaSql.Builder().from(schema)
-                                               .geometryType(geometryType)
-                                               .build();
-    }
+  @Override
+  default SchemaSql schemaWithGeometryType(SchemaSql schema, SimpleFeatureGeometry geometryType) {
+    return new ImmutableSchemaSql.Builder().from(schema).geometryType(geometryType).build();
+  }
 }

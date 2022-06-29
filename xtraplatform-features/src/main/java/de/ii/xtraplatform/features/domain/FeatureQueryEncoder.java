@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,12 +9,11 @@ package de.ii.xtraplatform.features.domain;
 
 import java.util.Map;
 
-public interface FeatureQueryEncoder<T,V extends FeatureProviderConnector.QueryOptions> {
+public interface FeatureQueryEncoder<T, V extends FeatureProviderConnector.QueryOptions> {
 
-    String PROPERTY_NOT_AVAILABLE = "PROPERTY_NOT_AVAILABLE";
+  String PROPERTY_NOT_AVAILABLE = "PROPERTY_NOT_AVAILABLE";
 
-    T encode(FeatureQuery featureQuery,
-                     Map<String, String> additionalQueryParameters);
+  T encode(FeatureQuery featureQuery, Map<String, String> additionalQueryParameters);
 
-    V getOptions(FeatureQuery featureQuery);
+  V getOptions(FeatureQuery featureQuery);
 }

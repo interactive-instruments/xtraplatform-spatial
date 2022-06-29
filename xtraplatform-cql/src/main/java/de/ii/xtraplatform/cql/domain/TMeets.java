@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableTMeets.Builder.class)
 public interface TMeets extends BinaryTemporalOperation, CqlNode {
 
-    String TYPE = "t_meets";
+  String TYPE = "t_meets";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static TMeets of(Temporal temporal1, Temporal temporal2) {
-        return new ImmutableTMeets.Builder()
-            .addArgs(temporal1, temporal2)
-            .build();
-    }
+  static TMeets of(Temporal temporal1, Temporal temporal2) {
+    return new ImmutableTMeets.Builder().addArgs(temporal1, temporal2).build();
+  }
 
-    abstract class Builder extends BinaryTemporalOperation.Builder<TMeets> {
-    }
-
+  abstract class Builder extends BinaryTemporalOperation.Builder<TMeets> {}
 }

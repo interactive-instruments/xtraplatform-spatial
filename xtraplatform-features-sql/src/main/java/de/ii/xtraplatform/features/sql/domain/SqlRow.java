@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,80 +8,79 @@
 package de.ii.xtraplatform.features.sql.domain;
 
 import com.google.common.collect.ImmutableList;
-
 import java.util.List;
 
 public interface SqlRow extends Comparable<SqlRow> {
 
-    List<Object> getValues();
+  List<Object> getValues();
 
-    default String getName() {
-        return "unknown";
-    }
+  default String getName() {
+    return "unknown";
+  }
 
-    default List<String> getPath() {
-        return ImmutableList.of();
-    }
+  default List<String> getPath() {
+    return ImmutableList.of();
+  }
 
-    default List<Comparable<?>> getIds() {
-        return ImmutableList.of();
-    }
+  default List<Comparable<?>> getIds() {
+    return ImmutableList.of();
+  }
 
-    default List<Comparable<?>> getSortKeys() {
-        return getIds();
-    }
+  default List<Comparable<?>> getSortKeys() {
+    return getIds();
+  }
 
-    default List<String> getSortKeyNames() {
-        return ImmutableList.of();
-    }
+  default List<String> getSortKeyNames() {
+    return ImmutableList.of();
+  }
 
-    default int getPriority() {
-        return 0;
-    }
+  default int getPriority() {
+    return 0;
+  }
 
-    default List<List<String>> getColumnPaths() {
-        return ImmutableList.of();
-    }
+  default List<List<String>> getColumnPaths() {
+    return ImmutableList.of();
+  }
 
-    default List<Boolean> getSpatialAttributes() {
-        return ImmutableList.of();
-    }
+  default List<Boolean> getSpatialAttributes() {
+    return ImmutableList.of();
+  }
 
-    default List<Boolean> getTemporalAttributes() {
-      return ImmutableList.of();
+  default List<Boolean> getTemporalAttributes() {
+    return ImmutableList.of();
   }
 
   @Override
-    default int compareTo(SqlRow sqlRow) {
-        return 0;
+  default int compareTo(SqlRow sqlRow) {
+    return 0;
+  }
+  /*Optional<SqlColumn> next();
+
+  default List<String> getIds() {
+      return Lists.newArrayList((String) null);
+  }
+
+  String getName();
+
+  default List<String> getPath() {
+      return ImmutableList.of();
+  }*/
+
+  class SqlColumn {
+    private final List<String> path;
+    private final String value;
+
+    SqlColumn(List<String> path, String value) {
+      this.path = path;
+      this.value = value;
     }
-    /*Optional<SqlColumn> next();
 
-    default List<String> getIds() {
-        return Lists.newArrayList((String) null);
+    public List<String> getPath() {
+      return path;
     }
 
-    String getName();
-
-    default List<String> getPath() {
-        return ImmutableList.of();
-    }*/
-
-    class SqlColumn {
-        private final List<String> path;
-        private final String value;
-
-        SqlColumn(List<String> path, String value) {
-            this.path = path;
-            this.value = value;
-        }
-
-        public List<String> getPath() {
-            return path;
-        }
-
-        public String getValue() {
-            return value;
-        }
+    public String getValue() {
+      return value;
     }
+  }
 }

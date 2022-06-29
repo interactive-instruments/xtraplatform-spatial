@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,211 +9,209 @@ package de.ii.xtraplatform.features.sql.app;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.features.sql.SqlPath;
-import de.ii.xtraplatform.features.sql.domain.SchemaSql;
-import de.ii.xtraplatform.features.sql.domain.SqlPathParser;
-import de.ii.xtraplatform.features.sql.domain.SqlRelation;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ReverseSchemaDeriver;
 import de.ii.xtraplatform.features.domain.SchemaBase;
+import de.ii.xtraplatform.features.sql.SqlPath;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSchemaSql.Builder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import de.ii.xtraplatform.features.sql.domain.SchemaSql;
+import de.ii.xtraplatform.features.sql.domain.SqlPathParser;
+import de.ii.xtraplatform.features.sql.domain.SqlRelation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MutationSchemaDeriver implements ReverseSchemaDeriver<SchemaSql> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MutationSchemaDeriver.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MutationSchemaDeriver.class);
 
-    private static final Joiner JOINER = Joiner.on('/')
-                                               .skipNulls();
-    private static final String IGNORE = "__IGNORE__";
+  private static final Joiner JOINER = Joiner.on('/').skipNulls();
+  private static final String IGNORE = "__IGNORE__";
 
-    private final PathParserSql pathParser;
-    private final SqlPathParser pathParser3;
-    private int ignoreCounter;
+  private final PathParserSql pathParser;
+  private final SqlPathParser pathParser3;
+  private int ignoreCounter;
 
-    public MutationSchemaDeriver(PathParserSql pathParser,
-        SqlPathParser pathParser3) {
-        this.pathParser = pathParser;
-        this.pathParser3 = pathParser3;
-        this.ignoreCounter = 0;
+  public MutationSchemaDeriver(PathParserSql pathParser, SqlPathParser pathParser3) {
+    this.pathParser = pathParser;
+    this.pathParser3 = pathParser3;
+    this.ignoreCounter = 0;
+  }
+
+  @Override
+  public SchemaSql create(List<String> path, FeatureSchema targetSchema) {
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("OLD {} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path);
     }
 
-    @Override
-    public SchemaSql create(List<String> path, FeatureSchema targetSchema) {
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("OLD {} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path);
-        }
+    return new Builder()
+        .name(path.get(path.size() - 1))
+        .parentPath(path.subList(0, path.size() - 1))
+        .type(targetSchema.getType())
+        .valueType(targetSchema.getValueType())
+        .geometryType(targetSchema.getGeometryType())
+        .role(targetSchema.getRole())
+        // .target(targetSchema.getFullPath())
+        .sourcePath(targetSchema.getName())
+        .build();
+  }
 
-        return new Builder()
-                .name(path.get(path.size() - 1))
-                .parentPath(path.subList(0, path.size() - 1))
-                .type(targetSchema.getType())
-                .valueType(targetSchema.getValueType())
-                .geometryType(targetSchema.getGeometryType())
-                .role(targetSchema.getRole())
-                //.target(targetSchema.getFullPath())
-                .sourcePath(targetSchema.getName())
-                .build();
+  @Override
+  public SchemaSql create(String path, FeatureSchema targetSchema) {
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("NEW {} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path);
     }
 
-    @Override
-    public SchemaSql create(String path, FeatureSchema targetSchema) {
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("NEW {} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path);
-        }
-
-        if (targetSchema.isValue()) {
-            de.ii.xtraplatform.features.sql.domain.SqlPath strings = pathParser3.parseColumnPath(path);
-        }
-
-        return null;
+    if (targetSchema.isValue()) {
+      de.ii.xtraplatform.features.sql.domain.SqlPath strings = pathParser3.parseColumnPath(path);
     }
 
-    @Override
-    public List<SchemaSql> createParents(String parentParentPath, SchemaSql child, Map<List<String>, SchemaSql> objectCache) {
+    return null;
+  }
 
-        String path = JOINER.join(child.getFullPath());
-        if (!shouldIgnore(parentParentPath)) {
-            path = parentParentPath + "/" + path;
-        } else {
-            boolean br = true;
-        }
+  @Override
+  public List<SchemaSql> createParents(
+      String parentParentPath, SchemaSql child, Map<List<String>, SchemaSql> objectCache) {
 
-        Optional<SqlPath> sqlPath = pathParser.parse(path, child.isValue());
-
-        //TODO: column?
-        if (!sqlPath.isPresent()) {
-            throw new IllegalArgumentException("Parse error for SQL path: " + path);
-        }
-
-        List<String> tablePathAsList = ReverseSchemaDeriver.SPLITTER.splitToList(sqlPath.get()
-                                                                                        .getTablePath());
-
-        boolean hasRelation = tablePathAsList.size() > 1;//(isRoot ? 1 : 0);
-
-        List<SqlRelation> relations = ImmutableList.of();//TODO hasRelation ? pathParser.toRelations(tablePathAsList, ImmutableMap.of()) : ImmutableList.of();
-
-        SchemaSql currentChild = child;
-
-        List<SchemaSql> parents = new ArrayList<>();
-
-        for (int i = relations.size() - 1; i >= 0; i--) {
-            SqlRelation relation = relations.get(i);
-
-            SchemaBase.Type type = relation.isOne2One()
-                    ? SchemaBase.Type.OBJECT
-                    : SchemaBase.Type.OBJECT_ARRAY;
-
-            boolean replace = currentChild.isObject() && parents.isEmpty();
-
-            SchemaSql parent = objectCache.computeIfAbsent(relation.asPath(), ignore -> createParent(relation, type, child, replace));
-
-            currentChild = replace ? parent : addChild(parent, currentChild);
-
-            parents.add(0, currentChild);
-        }
-
-        return parents;
+    String path = JOINER.join(child.getFullPath());
+    if (!shouldIgnore(parentParentPath)) {
+      path = parentParentPath + "/" + path;
+    } else {
+      boolean br = true;
     }
 
-    private SchemaSql createParent(SqlRelation relation, SchemaBase.Type type, SchemaSql child, boolean replace) {
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("OBJECT {}", relation);
-        }
+    Optional<SqlPath> sqlPath = pathParser.parse(path, child.isValue());
 
-        //List<String> targetPath = (List<String>) child.getTarget()
-        //                                              .get();
-        Builder builder = new Builder()
-                .name(relation.getTargetContainer())
-                .type(type)
-                .addRelation(relation)
-                .parentPath(child.getParentPath()
-                                 .subList(0, child.getParentPath()
-                                                  .size() - 1));
-                //.target(targetPath.subList(0, targetPath.size() - 1))
-                //.sourcePath("");
-
-        if (replace) {
-            builder.parentPath(child.getParentPath()
-                                    .subList(0, child.getParentPath()
-                                                     .size() - 1))
-                   .properties(child.getProperties())
-                   .sourcePath(child.getSourcePath())
-                   ;//.target(child.getTarget());
-        }
-
-        return builder.build();
+    // TODO: column?
+    if (!sqlPath.isPresent()) {
+      throw new IllegalArgumentException("Parse error for SQL path: " + path);
     }
 
-    private SchemaSql addChild(SchemaSql parent, SchemaSql child) {
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("CHILD {} {}", parent.getName(), child.getName());
-        }
+    List<String> tablePathAsList =
+        ReverseSchemaDeriver.SPLITTER.splitToList(sqlPath.get().getTablePath());
 
-        SchemaSql toAdd = child;
+    boolean hasRelation = tablePathAsList.size() > 1; // (isRoot ? 1 : 0);
 
-        if (child.getValueType()
-                 .isPresent()) {
-            toAdd = new Builder().from(child)
-                                                    .type(child.getValueType()
-                                                                     .get())
-                                                    .valueType(Optional.empty())
-                                                    .build();
-        }
+    List<SqlRelation> relations =
+        ImmutableList
+            .of(); // TODO hasRelation ? pathParser.toRelations(tablePathAsList, ImmutableMap.of())
+    // : ImmutableList.of();
 
-        return new Builder().from(parent)
-                                               .addProperties(toAdd)
-                                               .build();
+    SchemaSql currentChild = child;
+
+    List<SchemaSql> parents = new ArrayList<>();
+
+    for (int i = relations.size() - 1; i >= 0; i--) {
+      SqlRelation relation = relations.get(i);
+
+      SchemaBase.Type type =
+          relation.isOne2One() ? SchemaBase.Type.OBJECT : SchemaBase.Type.OBJECT_ARRAY;
+
+      boolean replace = currentChild.isObject() && parents.isEmpty();
+
+      SchemaSql parent =
+          objectCache.computeIfAbsent(
+              relation.asPath(), ignore -> createParent(relation, type, child, replace));
+
+      currentChild = replace ? parent : addChild(parent, currentChild);
+
+      parents.add(0, currentChild);
     }
 
-    @Override
-    public SchemaSql addChildren(SchemaSql parent, List<SchemaSql> children) {
-        return new Builder().from(parent)
-                                               .addAllProperties(children)
-                                               .build();
+    return parents;
+  }
+
+  private SchemaSql createParent(
+      SqlRelation relation, SchemaBase.Type type, SchemaSql child, boolean replace) {
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("OBJECT {}", relation);
     }
 
-    @Override
-    public SchemaSql prependToParentPath(List<String> path, SchemaSql schema) {
-        if (shouldIgnore(path)) {
-            return schema;
-        }
+    // List<String> targetPath = (List<String>) child.getTarget()
+    //                                              .get();
+    Builder builder =
+        new Builder()
+            .name(relation.getTargetContainer())
+            .type(type)
+            .addRelation(relation)
+            .parentPath(child.getParentPath().subList(0, child.getParentPath().size() - 1));
+    // .target(targetPath.subList(0, targetPath.size() - 1))
+    // .sourcePath("");
 
-        return new Builder().from(schema)
-                                               .parentPath(path)
-                                               .addAllParentPath(schema.getParentPath())
-                                               .properties(schema.getProperties()
-                                                                       .stream()
-                                                                       .map(prop -> prependToParentPath(path, prop))
-                                                                       .collect(Collectors.toList()))
-                                               .build();
+    if (replace) {
+      builder
+          .parentPath(child.getParentPath().subList(0, child.getParentPath().size() - 1))
+          .properties(child.getProperties())
+          .sourcePath(child.getSourcePath()); // .target(child.getTarget());
     }
 
-    @Override
-    public SchemaSql prependToSourcePath(String parentSourcePath, SchemaSql schema) {
-        return new Builder().from(schema)
-            .sourcePath(JOINER.join(parentSourcePath, schema.getSourcePath().orElse(null)))
-            .build();
+    return builder.build();
+  }
+
+  private SchemaSql addChild(SchemaSql parent, SchemaSql child) {
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("CHILD {} {}", parent.getName(), child.getName());
     }
 
-    @Override
-    public String ignore() {
-            return IGNORE + ignoreCounter++;
+    SchemaSql toAdd = child;
+
+    if (child.getValueType().isPresent()) {
+      toAdd =
+          new Builder()
+              .from(child)
+              .type(child.getValueType().get())
+              .valueType(Optional.empty())
+              .build();
     }
 
-    private boolean shouldIgnore(String path) {
-        return path.startsWith(IGNORE);
+    return new Builder().from(parent).addProperties(toAdd).build();
+  }
+
+  @Override
+  public SchemaSql addChildren(SchemaSql parent, List<SchemaSql> children) {
+    return new Builder().from(parent).addAllProperties(children).build();
+  }
+
+  @Override
+  public SchemaSql prependToParentPath(List<String> path, SchemaSql schema) {
+    if (shouldIgnore(path)) {
+      return schema;
     }
 
-    @Override
-    public boolean shouldIgnore(List<String> path) {
-        return path.isEmpty() || shouldIgnore(path.get(0));
-    }
+    return new Builder()
+        .from(schema)
+        .parentPath(path)
+        .addAllParentPath(schema.getParentPath())
+        .properties(
+            schema.getProperties().stream()
+                .map(prop -> prependToParentPath(path, prop))
+                .collect(Collectors.toList()))
+        .build();
+  }
+
+  @Override
+  public SchemaSql prependToSourcePath(String parentSourcePath, SchemaSql schema) {
+    return new Builder()
+        .from(schema)
+        .sourcePath(JOINER.join(parentSourcePath, schema.getSourcePath().orElse(null)))
+        .build();
+  }
+
+  @Override
+  public String ignore() {
+    return IGNORE + ignoreCounter++;
+  }
+
+  private boolean shouldIgnore(String path) {
+    return path.startsWith(IGNORE);
+  }
+
+  @Override
+  public boolean shouldIgnore(List<String> path) {
+    return path.isEmpty() || shouldIgnore(path.get(0));
+  }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.util.Optional;
 
 /**
@@ -17,10 +16,10 @@ import java.util.Optional;
 @Deprecated
 public abstract class FeatureProviderData {
 
-    public abstract String getProviderType();
+  public abstract String getProviderType();
 
-    public abstract String getConnectorType();
+  public abstract String getConnectorType();
 
-    @JsonIgnore
-    public abstract Optional<String> getDataSourceUrl();
+  @JsonIgnore
+  public abstract Optional<String> getDataSourceUrl();
 }

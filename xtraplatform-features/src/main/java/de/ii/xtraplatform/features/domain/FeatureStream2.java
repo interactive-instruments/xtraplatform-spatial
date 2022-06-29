@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,26 +7,24 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import org.immutables.value.Value;
-
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import org.immutables.value.Value;
 
 public interface FeatureStream2 {
 
-    @Value.Immutable
-    interface ResultOld {
+  @Value.Immutable
+  interface ResultOld {
 
-        @Value.Derived
-        default boolean isSuccess() {
-            return !getError().isPresent();
-        }
-
-        boolean isEmpty();
-
-        Optional<Throwable> getError();
+    @Value.Derived
+    default boolean isSuccess() {
+      return !getError().isPresent();
     }
 
-    CompletionStage<ResultOld> runWith(FeatureTransformer2 transformer);
+    boolean isEmpty();
 
+    Optional<Throwable> getError();
+  }
+
+  CompletionStage<ResultOld> runWith(FeatureTransformer2 transformer);
 }

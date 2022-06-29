@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -26,10 +26,11 @@ class AliasGenerator {
 
     ImmutableList.Builder<String> aliases = new ImmutableList.Builder<>();
 
-    List<SqlRelation> relations = Stream.concat(
-        parents.stream().flatMap(parent -> parent.getRelation().stream()),
-        schema.getRelation().stream())
-        .collect(Collectors.toList());
+    List<SqlRelation> relations =
+        Stream.concat(
+                parents.stream().flatMap(parent -> parent.getRelation().stream()),
+                schema.getRelation().stream())
+            .collect(Collectors.toList());
 
     for (SqlRelation relation : relations) {
       aliases.add(String.valueOf(alias++));
@@ -63,14 +64,9 @@ class AliasGenerator {
 
   public List<String> getAliases(SchemaSql schema, int level) {
     if (level > 0) {
-      String prefix = IntStream.range(0, level)
-          .mapToObj(i -> "A")
-          .collect(Collectors.joining());
+      String prefix = IntStream.range(0, level).mapToObj(i -> "A").collect(Collectors.joining());
 
-      return getAliases(schema)
-          .stream()
-          .map(s -> prefix + s)
-          .collect(Collectors.toList());
+      return getAliases(schema).stream().map(s -> prefix + s).collect(Collectors.toList());
     }
 
     return getAliases(schema);
@@ -78,14 +74,9 @@ class AliasGenerator {
 
   public List<String> getAliases(List<SchemaSql> parents, SchemaSql schema, int level) {
     if (level > 0) {
-      String prefix = IntStream.range(0, level)
-          .mapToObj(i -> "A")
-          .collect(Collectors.joining());
+      String prefix = IntStream.range(0, level).mapToObj(i -> "A").collect(Collectors.joining());
 
-      return getAliases(parents, schema)
-          .stream()
-          .map(s -> prefix + s)
-          .collect(Collectors.toList());
+      return getAliases(parents, schema).stream().map(s -> prefix + s).collect(Collectors.toList());
     }
 
     return getAliases(schema);

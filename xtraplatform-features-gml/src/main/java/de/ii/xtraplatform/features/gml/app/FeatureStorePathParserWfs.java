@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.features.gml.app;
 
-import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
@@ -19,46 +18,46 @@ import java.util.stream.Collectors;
 
 public class FeatureStorePathParserWfs implements FeatureStorePathParser {
 
-    public FeatureStorePathParserWfs(Map<String, String> namespaces) {
+  public FeatureStorePathParserWfs(Map<String, String> namespaces) {}
 
-    }
+  @Override
+  public List<FeatureStoreInstanceContainer> parse(FeatureSchema schema) {
 
-    @Override
-    public List<FeatureStoreInstanceContainer> parse(FeatureSchema schema) {
+    LinkedHashMap<String, ImmutableFeatureStoreInstanceContainer.Builder>
+        instanceContainerBuilders = new LinkedHashMap<>();
 
-        LinkedHashMap<String, ImmutableFeatureStoreInstanceContainer.Builder> instanceContainerBuilders = new LinkedHashMap<>();
+    String instanceContainerName = schema.getName();
 
-        String instanceContainerName = schema.getName();
+    /*List<String> path = schema.getProperties()
+    .stream()
+     .filter(property -> property.getSourcePath().isPresent())
+    .findFirst()
+    .map(property -> property.getSourcePath().get().substring(1, property.getSourcePath().get().indexOf("/", 1)))
+    .map(ImmutableList::of)
+    .orElse(ImmutableList.of());*/
 
-        /*List<String> path = schema.getProperties()
-                                       .stream()
-                                        .filter(property -> property.getSourcePath().isPresent())
-                                       .findFirst()
-                                       .map(property -> property.getSourcePath().get().substring(1, property.getSourcePath().get().indexOf("/", 1)))
-                                       .map(ImmutableList::of)
-                                       .orElse(ImmutableList.of());*/
+    instanceContainerBuilders.put(
+        instanceContainerName, ImmutableFeatureStoreInstanceContainer.builder());
 
-        instanceContainerBuilders.put(instanceContainerName, ImmutableFeatureStoreInstanceContainer.builder());
+    /*ImmutableFeatureStoreAttribute attribute = ImmutableFeatureStoreAttribute.builder()
+                                                                                 .name("id")
+                                                                                 .path(ImmutableList.of("http://repository.gdi-de.org/schemas/adv/produkt/alkis-vereinfacht/2.0:Flurstueck"))
+                                                                                 .addPath("id")
+                                                                                 .queryable("id")
+                                                                                 .isId(true)
+                                                                                 .isSpatial(false)
+                                                                                 .build();
+    */
+    instanceContainerBuilders
+        .get(instanceContainerName)
+        .name(instanceContainerName)
+        // TODO.path(path)
+        .sortKey("none")
+        // .attributes(ImmutableList.of(attribute))
+        .attributesPosition(0);
 
-        /*ImmutableFeatureStoreAttribute attribute = ImmutableFeatureStoreAttribute.builder()
-                                                                             .name("id")
-                                                                             .path(ImmutableList.of("http://repository.gdi-de.org/schemas/adv/produkt/alkis-vereinfacht/2.0:Flurstueck"))
-                                                                             .addPath("id")
-                                                                             .queryable("id")
-                                                                             .isId(true)
-                                                                             .isSpatial(false)
-                                                                             .build();
-*/
-        instanceContainerBuilders.get(instanceContainerName)
-                                 .name(instanceContainerName)
-                                 //TODO.path(path)
-                                 .sortKey("none")
-                                 //.attributes(ImmutableList.of(attribute))
-                                 .attributesPosition(0);
-
-        return instanceContainerBuilders.values()
-                                        .stream()
-                                        .map(ImmutableFeatureStoreInstanceContainer.Builder::build)
-                                        .collect(Collectors.toList());
-    }
+    return instanceContainerBuilders.values().stream()
+        .map(ImmutableFeatureStoreInstanceContainer.Builder::build)
+        .collect(Collectors.toList());
+  }
 }

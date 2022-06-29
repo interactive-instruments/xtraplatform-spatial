@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,7 +12,6 @@ import java.util.List;
 
 public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTransformer {
 
-
   private final List<String> nestingStack;
   private final List<FeatureSchema> schemaStack;
   private final List<FeatureSchema> customSchemaStack;
@@ -25,7 +24,7 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
 
   @Override
   public void onObjectStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    if (context.inGeometry() ) {
+    if (context.inGeometry()) {
       openIfNecessary(context);
       super.onObjectStart(context);
       return;
@@ -36,9 +35,9 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
     if (schema.isRequired() && schemaStack.isEmpty()) {
       getDownstream().onObjectStart(context);
     } else {
-        nestingStack.add("O");
-        schemaStack.add(schema);
-        customSchemaStack.add(context.customSchema());
+      nestingStack.add("O");
+      schemaStack.add(schema);
+      customSchemaStack.add(context.customSchema());
     }
   }
 
@@ -52,9 +51,9 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
     if (schemaStack.isEmpty()) {
       getDownstream().onObjectEnd(context);
     } else {
-      nestingStack.remove(nestingStack.size()-1);
-      schemaStack.remove(schemaStack.size()-1);
-      customSchemaStack.remove(customSchemaStack.size()-1);
+      nestingStack.remove(nestingStack.size() - 1);
+      schemaStack.remove(schemaStack.size() - 1);
+      customSchemaStack.remove(customSchemaStack.size() - 1);
     }
   }
 
@@ -87,9 +86,9 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
     if (schemaStack.isEmpty()) {
       getDownstream().onArrayEnd(context);
     } else {
-      nestingStack.remove(nestingStack.size()-1);
-      schemaStack.remove(schemaStack.size()-1);
-      customSchemaStack.remove(customSchemaStack.size()-1);
+      nestingStack.remove(nestingStack.size() - 1);
+      schemaStack.remove(schemaStack.size() - 1);
+      customSchemaStack.remove(customSchemaStack.size() - 1);
     }
   }
 

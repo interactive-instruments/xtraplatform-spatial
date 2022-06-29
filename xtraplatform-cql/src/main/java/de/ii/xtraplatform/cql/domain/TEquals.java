@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableTEquals.Builder.class)
 public interface TEquals extends BinaryTemporalOperation, CqlNode {
 
-    String TYPE = "t_equals";
+  String TYPE = "t_equals";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static TEquals of(Temporal temporal1, Temporal temporal2) {
-        return new ImmutableTEquals.Builder()
-            .addArgs(temporal1, temporal2)
-            .build();
-    }
+  static TEquals of(Temporal temporal1, Temporal temporal2) {
+    return new ImmutableTEquals.Builder().addArgs(temporal1, temporal2).build();
+  }
 
-    abstract class Builder extends BinaryTemporalOperation.Builder<TEquals> {
-    }
-
+  abstract class Builder extends BinaryTemporalOperation.Builder<TEquals> {}
 }

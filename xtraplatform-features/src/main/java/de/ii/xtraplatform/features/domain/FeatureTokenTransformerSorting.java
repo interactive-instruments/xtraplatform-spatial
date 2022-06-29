@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,21 +15,21 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-//TODO: main table columns might have to wait for joined queries (likewise for deeper levels)
+// TODO: main table columns might have to wait for joined queries (likewise for deeper levels)
 // joined queries might not have any rows
-// if a row for a joined query with a greater order arrives, lesser joined queries can be assumed to be empty
-//TODO: return nulls from FeatureDecoderSql
+// if a row for a joined query with a greater order arrives, lesser joined queries can be assumed to
+// be empty
+// TODO: return nulls from FeatureDecoderSql
 public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
 
-  private static final Logger LOGGER = LoggerFactory
-      .getLogger(FeatureTokenTransformerSorting.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(FeatureTokenTransformerSorting.class);
 
   private Map<List<String>, Integer> pathOrder;
   private int lastOrder;
   private List<Integer> lastIndexes;
 
-  public FeatureTokenTransformerSorting() {
-  }
+  public FeatureTokenTransformerSorting() {}
 
   @Override
   public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
@@ -54,7 +54,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
 
   @Override
   public void onObjectStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    //LOGGER.warn("{} - {} - O", pathOrder.get(context.path()), context.path());
+    // LOGGER.warn("{} - {} - O", pathOrder.get(context.path()), context.path());
 
     if (pathOrder.containsKey(context.path())) {
       this.lastOrder = pathOrder.get(context.path());
@@ -72,7 +72,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
 
   @Override
   public void onArrayStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    //LOGGER.warn("{} - {} - A", pathOrder.get(context.path()), context.path());
+    // LOGGER.warn("{} - {} - A", pathOrder.get(context.path()), context.path());
 
     super.onArrayStart(context);
   }

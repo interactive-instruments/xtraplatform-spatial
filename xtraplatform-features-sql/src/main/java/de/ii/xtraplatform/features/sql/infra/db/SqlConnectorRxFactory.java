@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -34,8 +34,8 @@ import javax.inject.Singleton;
 
 @Singleton
 @AutoBind
-public class SqlConnectorRxFactory implements ConnectorFactory2<SqlRow, SqlQueries, SqlQueryOptions>,
-    DropwizardPlugin {
+public class SqlConnectorRxFactory
+    implements ConnectorFactory2<SqlRow, SqlQueries, SqlQueryOptions>, DropwizardPlugin {
 
   private final FactoryAssisted factoryAssisted;
   private final Map<String, SqlConnector> instances;
@@ -44,7 +44,7 @@ public class SqlConnectorRxFactory implements ConnectorFactory2<SqlRow, SqlQueri
 
   @Inject
   public SqlConnectorRxFactory(
-      AppContext appContext, //TODO: needed because dagger-auto does not parse SqlConnectorSlick
+      AppContext appContext, // TODO: needed because dagger-auto does not parse SqlConnectorSlick
       FactoryAssisted factoryAssisted) {
     this.factoryAssisted = factoryAssisted;
     this.instances = new LinkedHashMap<>();
@@ -80,7 +80,8 @@ public class SqlConnectorRxFactory implements ConnectorFactory2<SqlRow, SqlQueri
   @Override
   public FeatureProviderConnector<SqlRow, SqlQueries, SqlQueryOptions> createInstance(
       FeatureProviderDataV2 data) {
-    SqlConnector sqlConnector = factoryAssisted.create(metricRegistry, healthCheckRegistry, (FeatureProviderSqlData) data);
+    SqlConnector sqlConnector =
+        factoryAssisted.create(metricRegistry, healthCheckRegistry, (FeatureProviderSqlData) data);
     sqlConnector.start();
     instances.put(sqlConnector.getProviderId(), sqlConnector);
 
@@ -95,6 +96,9 @@ public class SqlConnectorRxFactory implements ConnectorFactory2<SqlRow, SqlQueri
 
   @AssistedFactory
   public interface FactoryAssisted {
-    SqlConnectorRx create(MetricRegistry metricRegistry, HealthCheckRegistry healthCheckRegistry, FeatureProviderSqlData data);
+    SqlConnectorRx create(
+        MetricRegistry metricRegistry,
+        HealthCheckRegistry healthCheckRegistry,
+        FeatureProviderSqlData data);
   }
 }

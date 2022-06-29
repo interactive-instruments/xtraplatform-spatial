@@ -1,8 +1,9 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
- * <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy
- * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.features.gml.app;
 
@@ -19,8 +20,8 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
-import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.AggregateStatsReader;
+import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
@@ -44,10 +45,10 @@ import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.features.gml.domain.WfsConnector;
+import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
-import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map;
 import java.util.Objects;
@@ -143,8 +144,7 @@ public class FeatureProviderWfs
   }
 
   @Override
-  protected FeatureQueryEncoder<String, QueryOptions>
-  getQueryEncoder() {
+  protected FeatureQueryEncoder<String, QueryOptions> getQueryEncoder() {
     return queryTransformer;
   }
 
@@ -156,14 +156,15 @@ public class FeatureProviderWfs
   }
 
   @Override
-  protected FeatureTokenDecoder<byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> getDecoderPassThrough(
-      FeatureQuery query) {
+  protected FeatureTokenDecoder<
+          byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
+      getDecoderPassThrough(FeatureQuery query) {
     return getDecoder(query, true);
   }
 
   private FeatureTokenDecoder<
-      byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-  getDecoder(FeatureQuery query, boolean passThrough) {
+          byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
+      getDecoder(FeatureQuery query, boolean passThrough) {
     Map<String, String> namespaces = getData().getConnectionInfo().getNamespaces();
     XMLNamespaceNormalizer namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
     FeatureSchema featureSchema = getData().getTypes().get(query.getType());
@@ -209,8 +210,7 @@ public class FeatureProviderWfs
 
   @Override
   public long getFeatureCount(String typeName) {
-    Optional<FeatureStoreTypeInfo> typeInfo =
-        Optional.ofNullable(getTypeInfos().get(typeName));
+    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
 
     if (!typeInfo.isPresent()) {
       return -1;
@@ -241,7 +241,8 @@ public class FeatureProviderWfs
     }
 
     try {
-      Stream<Optional<BoundingBox>> extentGraph = aggregateStatsReader.getSpatialExtent(typeInfo.get(), is3dSupported());
+      Stream<Optional<BoundingBox>> extentGraph =
+          aggregateStatsReader.getSpatialExtent(typeInfo.get(), is3dSupported());
 
       return extentGraph
           .on(getStreamRunner())

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,8 +12,7 @@ import org.slf4j.LoggerFactory;
 
 public class FeatureTokenTransformerLogger extends FeatureTokenTransformer {
 
-  private static final Logger LOGGER = LoggerFactory
-      .getLogger(FeatureTokenTransformerLogger.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FeatureTokenTransformerLogger.class);
 
   @Override
   public void onFeatureStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {

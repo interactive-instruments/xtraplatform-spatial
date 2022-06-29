@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -17,19 +17,19 @@ import javax.xml.parsers.ParserConfigurationException;
  */
 public class XMLDocumentFactory {
 
-    private final XMLNamespaceNormalizer nsn;
-    private final DocumentBuilder builder;
+  private final XMLNamespaceNormalizer nsn;
+  private final DocumentBuilder builder;
 
-    public XMLDocumentFactory(XMLNamespaceNormalizer nsn) throws ParserConfigurationException {
-        this.nsn = nsn;
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        factory.setValidating(true);
+  public XMLDocumentFactory(XMLNamespaceNormalizer nsn) throws ParserConfigurationException {
+    this.nsn = nsn;
+    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    factory.setNamespaceAware(true);
+    factory.setValidating(true);
 
-        this.builder = factory.newDocumentBuilder();
-    }
+    this.builder = factory.newDocumentBuilder();
+  }
 
-    public XMLDocument newDocument() {
-        return new XMLDocument(nsn, builder.newDocument());
-    }
+  public XMLDocument newDocument() {
+    return new XMLDocument(nsn, builder.newDocument());
+  }
 }

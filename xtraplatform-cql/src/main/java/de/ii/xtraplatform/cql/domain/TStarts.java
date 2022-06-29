@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableTStarts.Builder.class)
 public interface TStarts extends BinaryTemporalOperation, CqlNode {
 
-    String TYPE = "t_starts";
+  String TYPE = "t_starts";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static TStarts of(Temporal temporal1, Temporal temporal2) {
-        return new ImmutableTStarts.Builder()
-            .addArgs(temporal1, temporal2)
-            .build();
-    }
+  static TStarts of(Temporal temporal1, Temporal temporal2) {
+    return new ImmutableTStarts.Builder().addArgs(temporal1, temporal2).build();
+  }
 
-    abstract class Builder extends BinaryTemporalOperation.Builder<TStarts> {
-    }
-
+  abstract class Builder extends BinaryTemporalOperation.Builder<TStarts> {}
 }

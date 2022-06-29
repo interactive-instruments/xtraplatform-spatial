@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.ii.xtraplatform.docs.DocIgnore;
 import java.util.Optional;
-import org.immutables.value.Value;
 
 /**
  * @lang_en
@@ -20,14 +19,14 @@ import org.immutables.value.Value;
  */
 public interface ConnectionInfo {
 
-    @DocIgnore
-    Optional<String> getConnectionUri();
+  @DocIgnore
+  Optional<String> getConnectionUri();
 
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
-    String getConnectorType();
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // means only read from json
+  String getConnectorType();
 
-    @JsonIgnore
-    default boolean isShared() {
-        return false;
-    }
+  @JsonIgnore
+  default boolean isShared() {
+    return false;
+  }
 }

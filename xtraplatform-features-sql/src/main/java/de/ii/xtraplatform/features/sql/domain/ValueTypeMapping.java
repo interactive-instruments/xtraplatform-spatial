@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -83,7 +83,9 @@ public class ValueTypeMapping {
               boolean vendorTypeNumberMatches =
                   Objects.equals(allowedType.getVendorTypeNumber(), sqlType.getVendorTypeNumber());
 
-              if (vendorTypeNumberMatches && Objects.equals(JDBCType.OTHER.getVendorTypeNumber(), sqlType.getVendorTypeNumber())) {
+              if (vendorTypeNumberMatches
+                  && Objects.equals(
+                      JDBCType.OTHER.getVendorTypeNumber(), sqlType.getVendorTypeNumber())) {
                 return allowedType.getName().equalsIgnoreCase(databaseSpecificTypeName);
               }
 

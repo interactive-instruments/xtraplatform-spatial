@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -25,24 +25,32 @@ public interface TransformerChain<T, U> {
   List<U> get(String path);
 
   default boolean hasWildcard(String propertyPath, String wildcardParameter) {
-    return propertyPath.startsWith(wildcardParameter) && propertyPath.length() > wildcardParameter.length() + 1;
+    return propertyPath.startsWith(wildcardParameter)
+        && propertyPath.length() > wildcardParameter.length() + 1;
   }
 
   default String extractWildcardParameter(String propertyPath, String wildcardParameter) {
     return propertyPath.substring(wildcardParameter.length(), propertyPath.length() - 1);
   }
 
-  default List<String> explodeWildcard(String transformationKey, String wildcardPattern,
-      SchemaMapping schemaMapping, BiPredicate<FeatureSchema, String> filter) {
+  default List<String> explodeWildcard(
+      String transformationKey,
+      String wildcardPattern,
+      SchemaMapping schemaMapping,
+      BiPredicate<FeatureSchema, String> filter) {
     if (!hasWildcard(transformationKey, wildcardPattern)) {
       return ImmutableList.of();
     }
 
-    return schemaMapping.getTargetSchemasByPath()
-        .entrySet().stream()
-        .filter(entry -> entry.getValue().stream()
-            .anyMatch(schema -> filter.test(schema,
-                extractWildcardParameter(transformationKey, wildcardPattern))))
+    return schemaMapping.getTargetSchemasByPath().entrySet().stream()
+        .filter(
+            entry ->
+                entry.getValue().stream()
+                    .anyMatch(
+                        schema ->
+                            filter.test(
+                                schema,
+                                extractWildcardParameter(transformationKey, wildcardPattern))))
         .map(entry -> String.join(".", entry.getKey()))
         .collect(Collectors.toList());
   }

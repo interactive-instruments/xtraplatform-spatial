@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableSIntersects.Builder.class)
 public interface SIntersects extends BinarySpatialOperation, CqlNode {
 
-    String TYPE = "s_intersects";
+  String TYPE = "s_intersects";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static SIntersects of(Spatial spatial1, Spatial spatial2) {
-        return new ImmutableSIntersects.Builder()
-            .addArgs(spatial1, spatial2)
-            .build();
-    }
+  static SIntersects of(Spatial spatial1, Spatial spatial2) {
+    return new ImmutableSIntersects.Builder().addArgs(spatial1, spatial2).build();
+  }
 
-    abstract class Builder extends BinarySpatialOperation.Builder<SIntersects> {
-    }
-
+  abstract class Builder extends BinarySpatialOperation.Builder<SIntersects> {}
 }

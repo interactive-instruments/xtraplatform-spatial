@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,14 +7,12 @@
  */
 package de.ii.xtraplatform.features.sql.app;
 
+import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.sql.domain.SchemaMappingSql;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
-import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Modifiable;
 
 @Modifiable
 @Value.Style(deepImmutablesDetection = true)
-public interface SqlMutationContext extends ModifiableContext<SchemaSql, SchemaMappingSql> {
-
-}
+public interface SqlMutationContext extends ModifiableContext<SchemaSql, SchemaMappingSql> {}

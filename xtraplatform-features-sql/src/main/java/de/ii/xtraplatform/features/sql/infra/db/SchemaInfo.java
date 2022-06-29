@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,9 +7,9 @@
  */
 package de.ii.xtraplatform.features.sql.infra.db;
 
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.ValueTypeMapping;
-import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
@@ -44,11 +44,12 @@ class SchemaInfo {
         .anyMatch(c -> c.getName().equals(name));
   }
 
-  //TODO: unique may be either column constraint, table constraint or index plus primary key
-  //TODO: NOT NULL constraints
+  // TODO: unique may be either column constraint, table constraint or index plus primary key
+  // TODO: NOT NULL constraints
   public boolean isColumnUnique(String columnName, String tableName) {
     return isColumnUnique(columnName, tableName, true);
   }
+
   public boolean isColumnUnique(String columnName, String tableName, boolean warn) {
     Optional<Column> optionalColumn = getColumn(tableName, columnName, true, warn);
 
@@ -77,15 +78,23 @@ class SchemaInfo {
 
   public boolean isColumnSpatial(String table, String name) {
     return getColumn(table, name)
-        .filter(c -> ValueTypeMapping.matches(c.getColumnDataType().getJavaSqlType(),
-            c.getColumnDataType().getName(), Type.GEOMETRY))
+        .filter(
+            c ->
+                ValueTypeMapping.matches(
+                    c.getColumnDataType().getJavaSqlType(),
+                    c.getColumnDataType().getName(),
+                    Type.GEOMETRY))
         .isPresent();
   }
 
   public boolean isColumnTemporal(String table, String name) {
     return getColumn(table, name)
-        .filter(c -> ValueTypeMapping.matches(c.getColumnDataType().getJavaSqlType(),
-            c.getColumnDataType().getDatabaseSpecificTypeName(), Type.DATETIME))
+        .filter(
+            c ->
+                ValueTypeMapping.matches(
+                    c.getColumnDataType().getJavaSqlType(),
+                    c.getColumnDataType().getDatabaseSpecificTypeName(),
+                    Type.DATETIME))
         .isPresent();
   }
 
@@ -93,7 +102,8 @@ class SchemaInfo {
     return getColumn(tableName, columnName, false, false);
   }
 
-  public Optional<Column> getColumn(String tableName, String columnName, boolean resolveViews, boolean warn) {
+  public Optional<Column> getColumn(
+      String tableName, String columnName, boolean resolveViews, boolean warn) {
     Optional<Column> optionalColumn =
         tables.stream()
             .filter(t -> t.getName().equals(tableName))

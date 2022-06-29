@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,8 +11,7 @@ import javax.ws.rs.core.MediaType;
 
 public interface FeatureQueriesPassThrough {
 
-    MediaType getMediaType();
+  MediaType getMediaType();
 
-    FeatureStream getFeatureStreamPassThrough(FeatureQuery query);
-
+  FeatureStream getFeatureStreamPassThrough(FeatureQuery query);
 }

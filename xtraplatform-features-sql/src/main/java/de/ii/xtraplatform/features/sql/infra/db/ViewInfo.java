@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -35,12 +35,13 @@ public class ViewInfo {
     try {
       PlainSelect select = parse(viewDefinition);
 
-      TablesNamesFinder tablesNamesFinder = new TablesNamesFinder() {
-        @Override
-        protected String extractTableName(Table table) {
-          return table.getName();
-        }
-      };
+      TablesNamesFinder tablesNamesFinder =
+          new TablesNamesFinder() {
+            @Override
+            protected String extractTableName(Table table) {
+              return table.getName();
+            }
+          };
 
       return tablesNamesFinder.getTableList(statementVisitor -> select.accept(tablesNamesFinder));
 

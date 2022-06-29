@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -20,15 +20,15 @@ import javax.inject.Singleton;
 @AutoBind
 public class JacksonSubTypeIdsFeatureChanges implements JacksonSubTypeIds {
 
-    @Inject
-    public JacksonSubTypeIdsFeatureChanges() {
-    }
+  @Inject
+  public JacksonSubTypeIdsFeatureChanges() {}
 
-    @Override
-    public Map<Class<?>, String> getMapping() {
-        return new ImmutableMap.Builder<Class<?>, String>()
-                .put(FeatureChangesPgConfiguration.class, ExtensionConfiguration.getIdentifier(
-                    FeatureChangesPgConfiguration.class))
-                .build();
-    }
+  @Override
+  public Map<Class<?>, String> getMapping() {
+    return new ImmutableMap.Builder<Class<?>, String>()
+        .put(
+            FeatureChangesPgConfiguration.class,
+            ExtensionConfiguration.getIdentifier(FeatureChangesPgConfiguration.class))
+        .build();
+  }
 }

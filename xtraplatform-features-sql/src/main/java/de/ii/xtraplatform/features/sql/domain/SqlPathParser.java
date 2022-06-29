@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -284,7 +284,8 @@ public class SqlPathParser {
                 .sortKey(parent.getSortKey().orElse(defaults.getSortKey()))
                 .primaryKey(parent.getPrimaryKey().orElse(defaults.getPrimaryKey()))
                 .filter(parent.getFilter())
-                .filterString(parent.getFilter().map(filterCql -> cql.write(filterCql, Format.TEXT)))
+                .filterString(
+                    parent.getFilter().map(filterCql -> cql.write(filterCql, Format.TEXT)))
                 .junction(false)
                 .build(),
             path);

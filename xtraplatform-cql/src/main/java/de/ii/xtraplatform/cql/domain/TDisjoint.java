@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableTDisjoint.Builder.class)
 public interface TDisjoint extends BinaryTemporalOperation, CqlNode {
 
-    String TYPE = "t_disjoint";
+  String TYPE = "t_disjoint";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static TDisjoint of(Temporal temporal1, Temporal temporal2) {
-        return new ImmutableTDisjoint.Builder()
-            .addArgs(temporal1, temporal2)
-            .build();
-    }
+  static TDisjoint of(Temporal temporal1, Temporal temporal2) {
+    return new ImmutableTDisjoint.Builder().addArgs(temporal1, temporal2).build();
+  }
 
-    abstract class Builder extends BinaryTemporalOperation.Builder<TDisjoint> {
-    }
-
+  abstract class Builder extends BinaryTemporalOperation.Builder<TDisjoint> {}
 }

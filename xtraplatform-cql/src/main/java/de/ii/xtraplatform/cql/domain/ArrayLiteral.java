@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,40 +9,38 @@ package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.immutables.value.Value;
-
 import java.util.List;
+import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableArrayLiteral.Builder.class)
 public interface ArrayLiteral extends Vector, Literal, Scalar, CqlNode {
 
-    static ArrayLiteral of(String elements) throws CqlParseException {
-        return new ArrayLiteral.Builder(elements).build();
+  static ArrayLiteral of(String elements) throws CqlParseException {
+    return new ArrayLiteral.Builder(elements).build();
+  }
+
+  static ArrayLiteral of(List<Scalar> elements) {
+    return new ArrayLiteral.Builder(elements).build();
+  }
+
+  class Builder extends ImmutableArrayLiteral.Builder {
+    public Builder() {
+      super();
     }
 
-    static ArrayLiteral of(List<Scalar> elements) {
-        return new ArrayLiteral.Builder(elements).build();
+    @JsonCreator
+    public Builder(List<Scalar> literal) {
+      super();
+      value(literal);
+      type(List.class);
     }
 
-    class Builder extends ImmutableArrayLiteral.Builder {
-        public Builder() {
-            super();
-        }
-
-        @JsonCreator
-        public Builder(List<Scalar> literal) {
-            super();
-            value(literal);
-            type(List.class);
-        }
-
-        @JsonCreator
-        public Builder(String literal) throws CqlParseException {
-            super();
-            value(literal);
-            type(String.class);
-        }
+    @JsonCreator
+    public Builder(String literal) throws CqlParseException {
+      super();
+      value(literal);
+      type(String.class);
     }
-
+  }
 }

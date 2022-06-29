@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,37 +15,40 @@ import java.util.Optional;
 
 /**
  * @author zahnen
- *
- *
  * @param <T> query result type
  * @param <U> query type
  * @param <V> options type
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = FeatureProviderConnector.CONNECTOR_TYPE_KEY, visible = true)
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.CUSTOM,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = FeatureProviderConnector.CONNECTOR_TYPE_KEY,
+    visible = true)
 @JsonTypeIdResolver(JacksonProvider.DynamicTypeIdResolver.class)
-public interface FeatureProviderConnector<T,U,V extends FeatureProviderConnector.QueryOptions> {
+public interface FeatureProviderConnector<T, U, V extends FeatureProviderConnector.QueryOptions> {
 
-    String CONNECTOR_TYPE_KEY = "connectorType";
+  String CONNECTOR_TYPE_KEY = "connectorType";
 
-    interface QueryOptions {}
+  interface QueryOptions {}
 
-    String getType();
+  String getType();
 
-    String getProviderId();
+  String getProviderId();
 
-    void start();
+  void start();
 
-    void stop();
+  void stop();
 
-    boolean isConnected();
+  boolean isConnected();
 
-    Optional<Throwable> getConnectionError();
+  Optional<Throwable> getConnectionError();
 
-    Reactive.Source<T> getSourceStream(U query);
+  Reactive.Source<T> getSourceStream(U query);
 
-    Reactive.Source<T> getSourceStream(U query, V options);
+  Reactive.Source<T> getSourceStream(U query, V options);
 
-    default Tuple<Boolean, String> canBeSharedWith(ConnectionInfo connectionInfo, boolean checkAllParameters) {
-        return Tuple.of(false, null);
-    }
+  default Tuple<Boolean, String> canBeSharedWith(
+      ConnectionInfo connectionInfo, boolean checkAllParameters) {
+    return Tuple.of(false, null);
+  }
 }

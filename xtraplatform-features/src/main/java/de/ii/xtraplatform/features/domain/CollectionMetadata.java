@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,23 +7,22 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import org.immutables.value.Value;
-
 import java.util.OptionalLong;
+import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Modifiable
 @Value.Style(set = "*")
 public interface CollectionMetadata {
 
-    @Value.Parameter
-    OptionalLong getNumberReturned();
+  @Value.Parameter
+  OptionalLong getNumberReturned();
 
-    @Value.Parameter
-    OptionalLong getNumberMatched();
+  @Value.Parameter
+  OptionalLong getNumberMatched();
 
-    @Value.Default
-    default boolean isSingleFeature() {
-        return false;
-    }
+  @Value.Default
+  default boolean isSingleFeature() {
+    return false;
+  }
 }

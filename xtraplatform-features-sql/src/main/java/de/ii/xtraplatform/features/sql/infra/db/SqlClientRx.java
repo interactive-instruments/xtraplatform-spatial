@@ -1,8 +1,9 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
- * <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy
- * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.features.sql.infra.db;
 
@@ -101,7 +102,8 @@ public class SqlClientRx implements SqlClient {
                   return row;
                 });
 
-    //TODO: prettify, see https://github.com/slick/slick/blob/main/slick/src/main/scala/slick/jdbc/StatementInvoker.scala
+    // TODO: prettify, see
+    // https://github.com/slick/slick/blob/main/slick/src/main/scala/slick/jdbc/StatementInvoker.scala
     if (LOGGER.isDebugEnabled(MARKER.SQL_RESULT)) {
       flowable =
           flowable.doOnComplete(
@@ -119,9 +121,9 @@ public class SqlClientRx implements SqlClient {
                   String values =
                       Stream.concat(
                               logBuffer.get(i).getSortKeys().stream()
-                                  .map(val -> Objects.nonNull(val) ?  val.toString() : "null"),
+                                  .map(val -> Objects.nonNull(val) ? val.toString() : "null"),
                               logBuffer.get(i).getValues().stream()
-                                  .map(val -> Objects.nonNull(val) ?  val.toString() : "null"))
+                                  .map(val -> Objects.nonNull(val) ? val.toString() : "null"))
                           .collect(Collectors.joining(" | "));
                   LOGGER.debug(MARKER.SQL_RESULT, values);
                 }
@@ -287,7 +289,7 @@ public class SqlClientRx implements SqlClient {
       try {
         actualConnection = actualConnection.unwrap(Connection.class);
       } catch (SQLException e) {
-        //ignore
+        // ignore
       }
     }
 

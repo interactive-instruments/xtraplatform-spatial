@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,28 +8,23 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTDuring.Builder.class)
 public interface TDuring extends BinaryTemporalOperation, CqlNode {
 
-    String TYPE = "t_during";
+  String TYPE = "t_during";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static TDuring of(Temporal temporal1, Temporal temporal2) {
-        return new ImmutableTDuring.Builder()
-            .addArgs(temporal1, temporal2)
-            .build();
-    }
+  static TDuring of(Temporal temporal1, Temporal temporal2) {
+    return new ImmutableTDuring.Builder().addArgs(temporal1, temporal2).build();
+  }
 
-    abstract class Builder extends BinaryTemporalOperation.Builder<TDuring> {
-    }
-
+  abstract class Builder extends BinaryTemporalOperation.Builder<TDuring> {}
 }

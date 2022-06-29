@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,7 +16,9 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** @author zahnen */
+/**
+ * @author zahnen
+ */
 public class CodelistEntity extends AbstractPersistentEntity<CodelistData> implements Codelist {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CodelistEntity.class);

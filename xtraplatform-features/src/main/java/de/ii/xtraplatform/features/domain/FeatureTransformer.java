@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,7 +9,6 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.legacy.TargetMapping;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
-
 import java.util.List;
 import java.util.OptionalLong;
 
@@ -17,30 +16,31 @@ import java.util.OptionalLong;
  * @author zahnen
  */
 public interface FeatureTransformer {
-    String getTargetFormat();
+  String getTargetFormat();
 
-    void onStart(OptionalLong numberReturned, OptionalLong numberMatched) throws Exception;
+  void onStart(OptionalLong numberReturned, OptionalLong numberMatched) throws Exception;
 
-    void onEnd() throws Exception;
+  void onEnd() throws Exception;
 
-    void onFeatureStart(final TargetMapping mapping) throws Exception;
+  void onFeatureStart(final TargetMapping mapping) throws Exception;
 
-    void onFeatureEnd() throws Exception;
+  void onFeatureEnd() throws Exception;
 
-    void onPropertyStart(final TargetMapping mapping, List<Integer> multiplicities) throws Exception;
+  void onPropertyStart(final TargetMapping mapping, List<Integer> multiplicities) throws Exception;
 
-    void onPropertyText(final String text) throws Exception;
+  void onPropertyText(final String text) throws Exception;
 
-    void onPropertyEnd() throws Exception;
+  void onPropertyEnd() throws Exception;
 
-    void onGeometryStart(final TargetMapping mapping, final SimpleFeatureGeometry type, final Integer dimension) throws Exception;
+  void onGeometryStart(
+      final TargetMapping mapping, final SimpleFeatureGeometry type, final Integer dimension)
+      throws Exception;
 
-    void onGeometryNestedStart() throws Exception;
+  void onGeometryNestedStart() throws Exception;
 
-    void onGeometryCoordinates(final String text) throws Exception;
+  void onGeometryCoordinates(final String text) throws Exception;
 
-    void onGeometryNestedEnd() throws Exception;
+  void onGeometryNestedEnd() throws Exception;
 
-    void onGeometryEnd() throws Exception;
-
+  void onGeometryEnd() throws Exception;
 }

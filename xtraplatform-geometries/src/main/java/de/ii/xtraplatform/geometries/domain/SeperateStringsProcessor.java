@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,18 +11,17 @@ import java.io.IOException;
 
 public interface SeperateStringsProcessor {
 
-    void onStart() throws IOException;
+  void onStart() throws IOException;
 
-    void onSeparator() throws IOException;
+  void onSeparator() throws IOException;
 
-    void onX(char[] chars, int offset, int length) throws IOException;
+  void onX(char[] chars, int offset, int length) throws IOException;
 
-    void onY(char[] chars, int offset, int length) throws IOException;
+  void onY(char[] chars, int offset, int length) throws IOException;
 
-    void onZ(char[] chars, int offset, int length) throws IOException;
+  void onZ(char[] chars, int offset, int length) throws IOException;
 
-    default void onFlush() throws IOException {}
+  default void onFlush() throws IOException {}
 
-    void onEnd() throws IOException;
-
+  void onEnd() throws IOException;
 }

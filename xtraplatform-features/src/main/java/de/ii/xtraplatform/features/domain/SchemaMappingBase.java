@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,7 +9,6 @@ package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import de.ii.xtraplatform.features.domain.SchemaBase.Role;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
@@ -43,27 +42,28 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default Map<List<String>, List<List<T>>> getParentSchemasByPath() {
-    return getTargetSchemasByPath()
-        .entrySet()
-        .stream()
-        .map(entry -> {
-          List<List<T>> parentSchemas = entry.getValue()
-              .stream()
-              .map(this::findParentSchemas)
-              .collect(Collectors.toList());
+    return getTargetSchemasByPath().entrySet().stream()
+        .map(
+            entry -> {
+              List<List<T>> parentSchemas =
+                  entry.getValue().stream()
+                      .map(this::findParentSchemas)
+                      .collect(Collectors.toList());
 
-          return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), parentSchemas);
-        })
+              return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), parentSchemas);
+            })
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   @Value.Derived
   @Value.Auxiliary
   default List<T> getAllSchemas() {
-    return getTargetSchema().accept((schema1, visitedProperties) -> Stream
-        .concat(Stream.of(schema1), visitedProperties.stream().flatMap(Collection::stream))
-        .collect(Collectors.toList()));
-
+    return getTargetSchema()
+        .accept(
+            (schema1, visitedProperties) ->
+                Stream.concat(
+                        Stream.of(schema1), visitedProperties.stream().flatMap(Collection::stream))
+                    .collect(Collectors.toList()));
   }
 
   default List<T> getTargetSchemas(List<String> path) {
@@ -71,13 +71,17 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
   }
 
   default Optional<T> getTargetSchema(Type type) {
-    return getTargetSchemasByPath().values().stream().flatMap(Collection::stream)
-        .filter(ts -> ts.getType() == type).findFirst();
+    return getTargetSchemasByPath().values().stream()
+        .flatMap(Collection::stream)
+        .filter(ts -> ts.getType() == type)
+        .findFirst();
   }
 
   default Optional<T> getTargetSchema(Role role) {
-    return getTargetSchemasByPath().values().stream().flatMap(Collection::stream)
-        .filter(ts -> ts.getRole().isPresent() && ts.getRole().get() == role).findFirst();
+    return getTargetSchemasByPath().values().stream()
+        .flatMap(Collection::stream)
+        .filter(ts -> ts.getRole().isPresent() && ts.getRole().get() == role)
+        .findFirst();
   }
 
   default List<List<T>> getParentSchemas(List<String> path) {

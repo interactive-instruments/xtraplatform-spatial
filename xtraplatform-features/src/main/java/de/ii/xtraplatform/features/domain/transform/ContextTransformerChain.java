@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -18,12 +18,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
-public class ContextTransformerChain implements
-    TransformerChain<ModifiableContext<FeatureSchema, SchemaMapping>, FeaturePropertyContextTransformer> {
+public class ContextTransformerChain
+    implements TransformerChain<
+        ModifiableContext<FeatureSchema, SchemaMapping>, FeaturePropertyContextTransformer> {
 
   public static final String OBJECT_TYPE_WILDCARD = "*{objectType=";
 
@@ -31,26 +31,41 @@ public class ContextTransformerChain implements
   private final Map<String, List<FeaturePropertyContextTransformer>> transformers;
 
   public ContextTransformerChain(
-      Map<String, List<PropertyTransformation>> allTransformations,
-      SchemaMapping schemaMapping) {
+      Map<String, List<PropertyTransformation>> allTransformations, SchemaMapping schemaMapping) {
     this.currentParentProperties = new ArrayList<>();
-    this.transformers = allTransformations.entrySet().stream()
-        .flatMap(entry -> {
-          String propertyPath = entry.getKey();
-          List<PropertyTransformation> transformation = entry.getValue();
+    this.transformers =
+        allTransformations.entrySet().stream()
+            .flatMap(
+                entry -> {
+                  String propertyPath = entry.getKey();
+                  List<PropertyTransformation> transformation = entry.getValue();
 
-          if (hasWildcard(propertyPath, OBJECT_TYPE_WILDCARD)) {
-              return createContextTransformersForObjectType(propertyPath, schemaMapping, transformation).entrySet().stream();
-          }
+                  if (hasWildcard(propertyPath, OBJECT_TYPE_WILDCARD)) {
+                    return createContextTransformersForObjectType(
+                        propertyPath, schemaMapping, transformation)
+                        .entrySet()
+                        .stream();
+                  }
 
-          return Stream.of(new SimpleEntry<>(propertyPath, createContextTransformers(propertyPath, transformation)));
-        })
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> new ImmutableList.Builder<FeaturePropertyContextTransformer>().addAll(first).addAll(second).build()));
+                  return Stream.of(
+                      new SimpleEntry<>(
+                          propertyPath, createContextTransformers(propertyPath, transformation)));
+                })
+            .collect(
+                ImmutableMap.toImmutableMap(
+                    Map.Entry::getKey,
+                    Map.Entry::getValue,
+                    (first, second) ->
+                        new ImmutableList.Builder<FeaturePropertyContextTransformer>()
+                            .addAll(first)
+                            .addAll(second)
+                            .build()));
   }
 
   @Nullable
   @Override
-  public ModifiableContext<FeatureSchema, SchemaMapping> transform(String path, ModifiableContext<FeatureSchema, SchemaMapping> context) {
+  public ModifiableContext<FeatureSchema, SchemaMapping> transform(
+      String path, ModifiableContext<FeatureSchema, SchemaMapping> context) {
     boolean ran = false;
     for (int i = currentParentProperties.size() - 1; i >= 0; i--) {
       String parentPath = currentParentProperties.get(i);
@@ -63,8 +78,9 @@ public class ContextTransformerChain implements
     }
 
     if (context.currentSchema().filter(SchemaBase::isObject).isPresent()
-        && (currentParentProperties.isEmpty() || !Objects.equals(
-        currentParentProperties.get(currentParentProperties.size() - 1), path))) {
+        && (currentParentProperties.isEmpty()
+            || !Objects.equals(
+                currentParentProperties.get(currentParentProperties.size() - 1), path))) {
       currentParentProperties.add(path);
     }
 
@@ -86,15 +102,17 @@ public class ContextTransformerChain implements
   }
 
   private boolean run(
-      Map<String, List<FeaturePropertyContextTransformer>> contextTransformers, String keyPath,
-      String propertyPath, ModifiableContext<FeatureSchema, SchemaMapping> context) {
+      Map<String, List<FeaturePropertyContextTransformer>> contextTransformers,
+      String keyPath,
+      String propertyPath,
+      ModifiableContext<FeatureSchema, SchemaMapping> context) {
     boolean ran = false;
 
-    if (contextTransformers.containsKey(keyPath) && !contextTransformers.get(keyPath)
-        .isEmpty()) {
-      for (FeaturePropertyContextTransformer contextTransformer : contextTransformers.get(
-          keyPath)) {
-        ModifiableContext<FeatureSchema, SchemaMapping> transformed = contextTransformer.transform(propertyPath, context);
+    if (contextTransformers.containsKey(keyPath) && !contextTransformers.get(keyPath).isEmpty()) {
+      for (FeaturePropertyContextTransformer contextTransformer :
+          contextTransformers.get(keyPath)) {
+        ModifiableContext<FeatureSchema, SchemaMapping> transformed =
+            contextTransformer.transform(propertyPath, context);
         ran = true;
 
         if (Objects.isNull(transformed)) {
@@ -102,13 +120,11 @@ public class ContextTransformerChain implements
         }
       }
     } else if (contextTransformers.containsKey(PropertyTransformations.WILDCARD)
-        && !contextTransformers.get(
-            PropertyTransformations.WILDCARD)
-        .isEmpty()) {
-      for (FeaturePropertyContextTransformer contextTransformer : contextTransformers.getOrDefault(
-          PropertyTransformations.WILDCARD,
-          ImmutableList.of())) {
-        ModifiableContext<FeatureSchema, SchemaMapping> transformed = contextTransformer.transform(propertyPath, context);
+        && !contextTransformers.get(PropertyTransformations.WILDCARD).isEmpty()) {
+      for (FeaturePropertyContextTransformer contextTransformer :
+          contextTransformers.getOrDefault(PropertyTransformations.WILDCARD, ImmutableList.of())) {
+        ModifiableContext<FeatureSchema, SchemaMapping> transformed =
+            contextTransformer.transform(propertyPath, context);
         ran = true;
 
         if (Objects.isNull(transformed)) {
@@ -120,27 +136,41 @@ public class ContextTransformerChain implements
     return ran;
   }
 
-  private List<FeaturePropertyContextTransformer> createContextTransformers(String path,
-      List<PropertyTransformation> propertyTransformations) {
+  private List<FeaturePropertyContextTransformer> createContextTransformers(
+      String path, List<PropertyTransformation> propertyTransformations) {
     List<FeaturePropertyContextTransformer> transformers = new ArrayList<>();
 
-    propertyTransformations.forEach(propertyTransformation -> {
-      propertyTransformation.getReduceStringFormat()
-          .ifPresent(ignore -> transformers
-              .add(ImmutableFeaturePropertyTransformerObjectReduce.builder()
-                  .propertyPath(path)
-                  .parameter("")
-                  .build()));
-    });
+    propertyTransformations.forEach(
+        propertyTransformation -> {
+          propertyTransformation
+              .getReduceStringFormat()
+              .ifPresent(
+                  ignore ->
+                      transformers.add(
+                          ImmutableFeaturePropertyTransformerObjectReduce.builder()
+                              .propertyPath(path)
+                              .parameter("")
+                              .build()));
+        });
 
     return transformers;
   }
 
-  private Map<String, List<FeaturePropertyContextTransformer>> createContextTransformersForObjectType(String transformationKey, SchemaMapping schemaMapping, List<PropertyTransformation> propertyTransformation) {
-    return explodeWildcard(transformationKey, OBJECT_TYPE_WILDCARD, schemaMapping, ContextTransformerChain::matchesObjectType)
+  private Map<String, List<FeaturePropertyContextTransformer>>
+      createContextTransformersForObjectType(
+          String transformationKey,
+          SchemaMapping schemaMapping,
+          List<PropertyTransformation> propertyTransformation) {
+    return explodeWildcard(
+            transformationKey,
+            OBJECT_TYPE_WILDCARD,
+            schemaMapping,
+            ContextTransformerChain::matchesObjectType)
         .stream()
-        .map(propertyPath -> new SimpleEntry<>(propertyPath,
-            createContextTransformers(propertyPath, propertyTransformation)))
+        .map(
+            propertyPath ->
+                new SimpleEntry<>(
+                    propertyPath, createContextTransformers(propertyPath, propertyTransformation)))
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
@@ -148,5 +178,4 @@ public class ContextTransformerChain implements
     return schema.getObjectType().isPresent()
         && Objects.equals(schema.getObjectType().get(), objectType);
   }
-
 }

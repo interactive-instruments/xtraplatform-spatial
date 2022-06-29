@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,28 +8,26 @@
 package de.ii.xtraplatform.cql.domain;
 
 public enum ComparisonOperator implements CqlNode {
+  EQ("="),
+  NEQ("<>"),
+  GT(">"),
+  GTEQ(">="),
+  LT("<"),
+  LTEQ("<="),
+  LIKE("LIKE");
 
-    EQ("="),
-    NEQ("<>"),
-    GT(">"),
-    GTEQ(">="),
-    LT("<"),
-    LTEQ("<="),
-    LIKE("LIKE");
+  private final String cqlText;
 
-    private final String cqlText;
+  ComparisonOperator(String cqlText) {
+    this.cqlText = cqlText;
+  }
 
-    ComparisonOperator(String cqlText) {
-        this.cqlText = cqlText;
+  public static ComparisonOperator valueOfCqlText(String cqlText) {
+    for (ComparisonOperator e : values()) {
+      if (e.cqlText.equals(cqlText)) {
+        return e;
+      }
     }
-
-    public static ComparisonOperator valueOfCqlText(String cqlText) {
-        for (ComparisonOperator e : values()) {
-            if (e.cqlText.equals(cqlText)) {
-                return e;
-            }
-        }
-        return null;
-    }
-
+    return null;
+  }
 }

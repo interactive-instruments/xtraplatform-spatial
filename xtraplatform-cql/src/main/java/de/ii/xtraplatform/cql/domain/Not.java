@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,29 +14,23 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableNot.Builder.class)
 public interface Not extends UnaryOperation<Cql2Expression>, CqlNode {
 
-    String TYPE = "not";
+  String TYPE = "not";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static Not of(Cql2Expression predicate) {
-        return new ImmutableNot.Builder()
-                .addArgs(predicate)
-                .build();
-    }
+  static Not of(Cql2Expression predicate) {
+    return new ImmutableNot.Builder().addArgs(predicate).build();
+  }
 
-    static Not of(CqlPredicate predicate) {
-        return new ImmutableNot.Builder()
-            .addArgs(Eq.of("", ""))
-            .build();
-    }
+  static Not of(CqlPredicate predicate) {
+    return new ImmutableNot.Builder().addArgs(Eq.of("", "")).build();
+  }
 
-        static Not of(NonBinaryScalarOperation scalarOperation) {
-                return new ImmutableNot.Builder()
-                    .addArgs(Eq.of("", ""))
-                    .build();
-            }
+  static Not of(NonBinaryScalarOperation scalarOperation) {
+    return new ImmutableNot.Builder().addArgs(Eq.of("", "")).build();
+  }
 }

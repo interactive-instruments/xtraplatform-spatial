@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -29,8 +29,8 @@ import org.sqlite.util.OSInfo;
 public class SpatialiteDataSource extends SQLiteDataSource {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SpatialiteDataSource.class);
-  private static final Path TMP_DIR = Paths.get(System.getProperty(TMP_DIR_PROP))
-      .resolve("spatialite-5.0.1-1");
+  private static final Path TMP_DIR =
+      Paths.get(System.getProperty(TMP_DIR_PROP)).resolve("spatialite-5.0.1-1");
   private static final String LIB_Z = "libz.so";
   private static final String LIB_GEOS = "libgeos.so";
   private static final String LIB_GEOS_C = "libgeos_c.so";
@@ -39,10 +39,11 @@ public class SpatialiteDataSource extends SQLiteDataSource {
   private static final String MOD_SPATIALITE_SO = "mod_spatialite.so";
   private static final boolean USE_GLOBAL_LIBS;
 
-  //TODO: versioned libs
-  //TODO: generalize native lib handling in xtraplatform-native
+  // TODO: versioned libs
+  // TODO: generalize native lib handling in xtraplatform-native
   static {
-    if (OSInfo.getOSName().equalsIgnoreCase("LINUX") && OSInfo.getArchName().equals(OSInfo.X86_64)) {
+    if (OSInfo.getOSName().equalsIgnoreCase("LINUX")
+        && OSInfo.getArchName().equals(OSInfo.X86_64)) {
       USE_GLOBAL_LIBS = false;
       try {
         SQLiteJDBCLoader.initialize();
@@ -64,10 +65,13 @@ public class SpatialiteDataSource extends SQLiteDataSource {
       loadLib(LIB_Z);
       loadLib(LIB_GEOS);
       loadLib(LIB_GEOS_C);
-      //TODO: should be redundant if libspatialite is built against xerial libsqlite
+      // TODO: should be redundant if libspatialite is built against xerial libsqlite
       loadLib(LIB_SQLITE);
     } else {
-      LOGGER.warn("GeoPackage/Spatialite is not supported for OS '{}-{}'. It might work if you install libspatialite as a system library.", System.getProperty("os.name"), System.getProperty("os.arch"));
+      LOGGER.warn(
+          "GeoPackage/Spatialite is not supported for OS '{}-{}'. It might work if you install libspatialite as a system library.",
+          System.getProperty("os.name"),
+          System.getProperty("os.arch"));
       USE_GLOBAL_LIBS = true;
     }
   }
@@ -76,7 +80,9 @@ public class SpatialiteDataSource extends SQLiteDataSource {
     File lib = TMP_DIR.resolve(libName).toFile();
     if (!lib.exists()) {
       try {
-        Resources.copy(Resources.getResource(SpatialiteLoader.class, "/" + libName), new FileOutputStream(lib));
+        Resources.copy(
+            Resources.getResource(SpatialiteLoader.class, "/" + libName),
+            new FileOutputStream(lib));
       } catch (IOException e) {
         throw new IllegalStateException("Could not create file: " + lib);
       }
@@ -96,9 +102,10 @@ public class SpatialiteDataSource extends SQLiteDataSource {
   public SQLiteConnection getConnection(String username, String password) throws SQLException {
     SQLiteConnection connection = super.getConnection(username, password);
 
-    String query = USE_GLOBAL_LIBS
-        ? String.format("SELECT load_extension('%s');", MOD_SPATIALITE)
-        : String.format("SELECT load_extension('%s');", TMP_DIR.resolve(MOD_SPATIALITE));
+    String query =
+        USE_GLOBAL_LIBS
+            ? String.format("SELECT load_extension('%s');", MOD_SPATIALITE)
+            : String.format("SELECT load_extension('%s');", TMP_DIR.resolve(MOD_SPATIALITE));
 
     try (Statement statement = connection.createStatement()) {
       statement.execute(query);

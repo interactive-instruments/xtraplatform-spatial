@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,11 +9,11 @@ package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelatedContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
+import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.store.domain.entities.ImmutableValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
@@ -50,8 +50,8 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
   public ValidationResult validate(
       String typeName, FeatureStoreAttributesContainer attributesContainer, MODE mode) {
     try (SqlSchemaCrawler schemaCrawler = new SqlSchemaCrawler(sqlClient.get().getConnection())) {
-      Catalog catalog = schemaCrawler.getCatalog(schemas, getUsedTables(attributesContainer),
-          ImmutableList.of());
+      Catalog catalog =
+          schemaCrawler.getCatalog(schemas, getUsedTables(attributesContainer), ImmutableList.of());
       Collection<Table> tables = catalog.getTables();
 
       return validate(typeName, attributesContainer, mode, new SchemaInfo(tables));
@@ -61,7 +61,10 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
   }
 
   private ValidationResult validate(
-      String typeName, FeatureStoreAttributesContainer attributesContainer, MODE mode, SchemaInfo schemaInfo) {
+      String typeName,
+      FeatureStoreAttributesContainer attributesContainer,
+      MODE mode,
+      SchemaInfo schemaInfo) {
     ImmutableValidationResult.Builder result = ImmutableValidationResult.builder().mode(mode);
 
     if (attributesContainer instanceof FeatureStoreRelatedContainer) {
@@ -76,8 +79,10 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                 Joiner.on('/').join(relation.asPath()), typeName);
 
         if (i > 0 && !schemaInfo.tableExists(relation.getSourceContainer())) {
-          result.addErrors(String.format(TABLE_DOES_NOT_EXIST, context, relation.getSourceContainer()));
-        } else if (!schemaInfo.columnExists(relation.getSourceField(), relation.getSourceContainer())) {
+          result.addErrors(
+              String.format(TABLE_DOES_NOT_EXIST, context, relation.getSourceContainer()));
+        } else if (!schemaInfo.columnExists(
+            relation.getSourceField(), relation.getSourceContainer())) {
           result.addErrors(
               String.format(
                   COLUMN_DOES_NOT_EXIST,
@@ -87,8 +92,10 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
         }
 
         if (!schemaInfo.tableExists(relation.getTargetContainer())) {
-          result.addErrors(String.format(TABLE_DOES_NOT_EXIST, context, relation.getTargetContainer()));
-        } else if (!schemaInfo.columnExists(relation.getTargetField(), relation.getTargetContainer())) {
+          result.addErrors(
+              String.format(TABLE_DOES_NOT_EXIST, context, relation.getTargetContainer()));
+        } else if (!schemaInfo.columnExists(
+            relation.getTargetField(), relation.getTargetContainer())) {
           result.addErrors(
               String.format(
                   COLUMN_DOES_NOT_EXIST,
@@ -97,8 +104,10 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                   relation.getTargetContainer()));
         }
 
-        if (relation.getJunction().isPresent() && !schemaInfo.tableExists(relation.getJunction().get())) {
-          result.addErrors(String.format(TABLE_DOES_NOT_EXIST, context, relation.getJunction().get()));
+        if (relation.getJunction().isPresent()
+            && !schemaInfo.tableExists(relation.getJunction().get())) {
+          result.addErrors(
+              String.format(TABLE_DOES_NOT_EXIST, context, relation.getJunction().get()));
         } else {
           if (relation.getJunctionSource().isPresent() && relation.getJunction().isPresent()) {
             if (!schemaInfo.columnExists(
@@ -173,7 +182,8 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                           attributesContainer.getName()));
                 } else {
                   if (attribute.isId()
-                      && !schemaInfo.isColumnUnique(attribute.getName(), attributesContainer.getName())) {
+                      && !schemaInfo.isColumnUnique(
+                          attribute.getName(), attributesContainer.getName())) {
                     String context3 =
                         String.format(
                             "Invalid role ID for property '%s' in type '%s'",
@@ -189,7 +199,7 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
 
                   if (attribute.isSpatial()
                       && !schemaInfo.isColumnSpatial(
-                      attributesContainer.getName(), attribute.getName())) {
+                          attributesContainer.getName(), attribute.getName())) {
                     result.addErrors(
                         String.format(
                             COLUMN_CANNOT_BE_USED_AS,
@@ -199,10 +209,10 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
                             "geometry"));
                   }
 
-                  //TODO: strictError on string
+                  // TODO: strictError on string
                   if (attribute.isTemporal()
                       && !schemaInfo.isColumnTemporal(
-                      attributesContainer.getName(), attribute.getName())) {
+                          attributesContainer.getName(), attribute.getName())) {
                     result.addErrors(
                         String.format(
                             COLUMN_CANNOT_BE_USED_AS,
@@ -238,5 +248,4 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
 
     return usedTables;
   }
-
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableTAfter.Builder.class)
 public interface TAfter extends BinaryTemporalOperation, CqlNode {
 
-    String TYPE = "t_after";
+  String TYPE = "t_after";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static TAfter of(Temporal temporal1, Temporal temporal2) {
-        return new ImmutableTAfter.Builder()
-            .addArgs(temporal1, temporal2)
-            .build();
-    }
+  static TAfter of(Temporal temporal1, Temporal temporal2) {
+    return new ImmutableTAfter.Builder().addArgs(temporal1, temporal2).build();
+  }
 
-    abstract class Builder extends BinaryTemporalOperation.Builder<TAfter> {
-    }
-
+  abstract class Builder extends BinaryTemporalOperation.Builder<TAfter> {}
 }

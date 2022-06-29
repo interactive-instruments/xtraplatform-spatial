@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -20,56 +20,58 @@ import org.immutables.value.Value;
 @Value.Immutable
 public abstract class FeatureQuery {
 
-    public abstract String getType();
+  public abstract String getType();
 
-    public abstract Optional<EpsgCrs> getCrs();
+  public abstract Optional<EpsgCrs> getCrs();
 
-    @Value.Default
-    public int getLimit() {
-        return 0;
-    }
+  @Value.Default
+  public int getLimit() {
+    return 0;
+  }
 
-    @Value.Default
-    public int getOffset() {
-        return 0;
-    }
+  @Value.Default
+  public int getOffset() {
+    return 0;
+  }
 
-    public abstract Optional<Cql2Expression> getFilter();
+  public abstract Optional<Cql2Expression> getFilter();
 
-    public abstract List<SortKey> getSortKeys();
+  public abstract List<SortKey> getSortKeys();
 
-    @Value.Default
-    public boolean hitsOnly() {
-        return false;
-    }
+  @Value.Default
+  public boolean hitsOnly() {
+    return false;
+  }
 
-    @Value.Default
-    public boolean propertyOnly() {
-        return false;
-    }
+  @Value.Default
+  public boolean propertyOnly() {
+    return false;
+  }
 
-    @Value.Default
-    public double getMaxAllowableOffset() {
-        return 0;
-    }
+  @Value.Default
+  public double getMaxAllowableOffset() {
+    return 0;
+  }
 
-    @Value.Default
-    public List<Integer> getGeometryPrecision() {
-        return ImmutableList.of(0, 0, 0);
-    }
+  @Value.Default
+  public List<Integer> getGeometryPrecision() {
+    return ImmutableList.of(0, 0, 0);
+  }
 
-    @Value.Default
-    public List<String> getFields() {
-        return ImmutableList.of("*");
-    }
+  @Value.Default
+  public List<String> getFields() {
+    return ImmutableList.of("*");
+  }
 
-    @Value.Default
-    public boolean skipGeometry() {
-        return false;
-    }
+  @Value.Default
+  public boolean skipGeometry() {
+    return false;
+  }
 
-    @Value.Default
-    public boolean returnsSingleFeature() { return false; }
+  @Value.Default
+  public boolean returnsSingleFeature() {
+    return false;
+  }
 
-    public abstract List<FeatureQueryExtension> getExtensions();
+  public abstract List<FeatureQueryExtension> getExtensions();
 }

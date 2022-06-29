@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -22,8 +22,7 @@ import org.slf4j.LoggerFactory;
 
 public class SqlFeatureTypeParser {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(SqlFeatureTypeParser.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SqlFeatureTypeParser.class);
 
   private final SqlPathSyntax syntax;
 
@@ -31,33 +30,38 @@ public class SqlFeatureTypeParser {
     this.syntax = syntax;
   }
 
-
   public List<String> parse(FeatureSchema schema) {
 
-    Map<List<String>, List<FeatureSchema>> accept = schema.accept(
-        new SchemaToSourcePathsVisitor<>()).asMap()
-        .entrySet()
-        .stream()
-        .sorted(Comparator.comparing(
-            entry -> syntax.getPriorityFlag(entry.getKey().get(entry.getKey().size() - 1))
-                .orElse(10000)))
-        .map(entry -> new AbstractMap.SimpleImmutableEntry<>(
-            entry.getKey(), Lists.newArrayList(entry.getValue())))
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    Map<List<String>, List<FeatureSchema>> accept =
+        schema.accept(new SchemaToSourcePathsVisitor<>()).asMap().entrySet().stream()
+            .sorted(
+                Comparator.comparing(
+                    entry ->
+                        syntax
+                            .getPriorityFlag(entry.getKey().get(entry.getKey().size() - 1))
+                            .orElse(10000)))
+            .map(
+                entry ->
+                    new AbstractMap.SimpleImmutableEntry<>(
+                        entry.getKey(), Lists.newArrayList(entry.getValue())))
+            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 
     Map<List<String>, Integer> pathCounter = new HashMap<>();
 
-    List<String> collect1 = accept.entrySet().stream()
-        .flatMap(entry -> entry.getValue().stream()
-            .filter(FeatureSchema::isValue)
-            .map(property -> toPathWithFlags2(entry.getKey(), property, pathCounter)))
-        .collect(Collectors.toList());
+    List<String> collect1 =
+        accept.entrySet().stream()
+            .flatMap(
+                entry ->
+                    entry.getValue().stream()
+                        .filter(FeatureSchema::isValue)
+                        .map(property -> toPathWithFlags2(entry.getKey(), property, pathCounter)))
+            .collect(Collectors.toList());
 
     return collect1;
   }
 
-  private String toPathWithFlags2(List<String> path, FeatureSchema property,
-      Map<List<String>, Integer> pathCounter) {
+  private String toPathWithFlags2(
+      List<String> path, FeatureSchema property, Map<List<String>, Integer> pathCounter) {
     pathCounter.computeIfPresent(property.getFullPath(), (p, i) -> i + 1);
     pathCounter.putIfAbsent(property.getFullPath(), 0);
     int index = pathCounter.get(property.getFullPath());
@@ -67,12 +71,11 @@ public class SqlFeatureTypeParser {
       return "";
     }
     String current = property.getEffectiveSourcePaths().get(index);
-    String current2 = current.indexOf('{') > -1
-        ? current.substring(0, current.indexOf('{'))
-        : current;
+    String current2 =
+        current.indexOf('{') > -1 ? current.substring(0, current.indexOf('{')) : current;
     String[] split = current2.split("/");
-    String sourcePath = "/" + String.join("/", path.subList(0, path.size() - split.length))
-        + "/" + current;
+    String sourcePath =
+        "/" + String.join("/", path.subList(0, path.size() - split.length)) + "/" + current;
 
     sourcePath = syntax.setQueryableFlag(sourcePath, String.join(".", property.getFullPath()));
 

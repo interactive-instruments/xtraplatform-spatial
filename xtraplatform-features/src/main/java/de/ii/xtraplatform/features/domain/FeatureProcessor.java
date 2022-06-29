@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,11 +9,12 @@ package de.ii.xtraplatform.features.domain;
 
 import java.io.IOException;
 
-public interface FeatureProcessor<T extends PropertyBase<T,W>, U extends FeatureBase<T,W>, W extends SchemaBase<W>> {
+public interface FeatureProcessor<
+    T extends PropertyBase<T, W>, U extends FeatureBase<T, W>, W extends SchemaBase<W>> {
 
-    U createFeature();
+  U createFeature();
 
-    T createProperty();
+  T createProperty();
 
-    void process(U feature) throws IOException;
+  void process(U feature) throws IOException;
 }

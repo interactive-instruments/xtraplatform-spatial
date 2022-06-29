@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,137 +8,150 @@
 package de.ii.xtraplatform.features.sql.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-//TODO: not used, shouldn't this replace SqlRowSlick?
+// TODO: not used, shouldn't this replace SqlRowSlick?
 public class SqlRowValues implements SqlRow {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SqlRowValues.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SqlRowValues.class);
 
-    //protected final String id;
-    protected final String name;
-    protected  List<String> path;
-    protected  List<List<String>> columnPaths;
-    protected  List<String> values;
-    protected  List<String> ids;
-    protected  List<String> idNames;
-    protected int columnCount = 0;
-    protected  int priority;
+  // protected final String id;
+  protected final String name;
+  protected List<String> path;
+  protected List<List<String>> columnPaths;
+  protected List<String> values;
+  protected List<String> ids;
+  protected List<String> idNames;
+  protected int columnCount = 0;
+  protected int priority;
 
-    //TODO: no need for next impl, just return values list
-    //TODO: reusable Modifiable
-    public SqlRowValues(Object delegate, FeatureStoreAttributesContainer attributesContainer, int priority) {
-        //this.id = delegate.nextString();
-        this.name = attributesContainer.getName();
-/*
-        if (name.equals("meta")) {
-            this.columnPaths = attributesContainer.getAttributePaths();
-            this.path = attributesContainer.getPath();
-            this.ids = ImmutableList.of();
-            this.idNames = ImmutableList.of();
+  // TODO: no need for next impl, just return values list
+  // TODO: reusable Modifiable
+  public SqlRowValues(
+      Object delegate, FeatureStoreAttributesContainer attributesContainer, int priority) {
+    // this.id = delegate.nextString();
+    this.name = attributesContainer.getName();
+    /*
+           if (name.equals("meta")) {
+               this.columnPaths = attributesContainer.getAttributePaths();
+               this.path = attributesContainer.getPath();
+               this.ids = ImmutableList.of();
+               this.idNames = ImmutableList.of();
 
-            this.values = IntStream.range(0, columnPaths.size())
+               this.values = IntStream.range(0, columnPaths.size())
+                                      .mapToObj(i -> delegate.nextString())
+                                      .collect(Collectors.toList());
+               this.priority = priority;
+           } else {
+               this.columnPaths = attributesContainer.getAttributePaths();
+               this.path = attributesContainer.getPath();
+
+               this.ids = IntStream.range(0, attributesContainer.getSortKeys()
+                                                                .size())
                                    .mapToObj(i -> delegate.nextString())
                                    .collect(Collectors.toList());
-            this.priority = priority;
-        } else {
-            this.columnPaths = attributesContainer.getAttributePaths();
-            this.path = attributesContainer.getPath();
 
-            this.ids = IntStream.range(0, attributesContainer.getSortKeys()
-                                                             .size())
-                                .mapToObj(i -> delegate.nextString())
-                                .collect(Collectors.toList());
+               this.idNames = attributesContainer.getSortKeys();
 
-            this.idNames = attributesContainer.getSortKeys();
+               this.values = IntStream.range(0, columnPaths.size())
+                                      .mapToObj(i -> delegate.nextString())
+                                      .collect(Collectors.toList());
+               this.priority = priority;
+           }
 
-            this.values = IntStream.range(0, columnPaths.size())
-                                   .mapToObj(i -> delegate.nextString())
-                                   .collect(Collectors.toList());
-            this.priority = priority;
-        }
+    */
+  }
 
- */
+  @Override
+  public List<Object> getValues() {
+    return null;
+  }
+
+  @Override
+  public int compareTo(SqlRow row) {
+    if (row instanceof SqlRowMeta) {
+      return 1;
     }
 
-    @Override
-    public List<Object> getValues() {
-        return null;
+    SqlRowValues valueRow = (SqlRowValues) row;
+
+    int size = 0;
+    for (int i = 0; i < idNames.size() && i < valueRow.idNames.size(); i++) {
+      if (!Objects.equals(idNames.get(i), valueRow.idNames.get(i))) {
+        break;
+      }
+      size = i + 1;
     }
 
-    @Override
-    public int compareTo(SqlRow row) {
-        if (row instanceof SqlRowMeta) {
-            return 1;
-        }
+    int resultIds = compareIdLists(ids.subList(0, size), valueRow.ids.subList(0, size));
+    int result = resultIds == 0 ? priority - valueRow.priority : resultIds;
 
-        SqlRowValues valueRow = (SqlRowValues) row;
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace(
+          "Compare: {}[{}{}] <=> {}[{}{}] -> {}({})",
+          name,
+          idNames,
+          ids,
+          valueRow.name,
+          valueRow.idNames,
+          valueRow.ids,
+          result,
+          resultIds);
+    }
 
-        int size = 0;
-        for (int i = 0; i < idNames.size() && i < valueRow.idNames.size(); i++) {
-            if (!Objects.equals(idNames.get(i), valueRow.idNames.get(i))) {
-                break;
-            }
-            size = i + 1;
-        }
+    return result;
+  }
 
-        int resultIds = compareIdLists(ids.subList(0, size), valueRow.ids.subList(0, size));
-        int result = resultIds == 0 ? priority - valueRow.priority : resultIds;
+  public List<Comparable<?>> getIds() {
+    return ids.stream().map(s -> Long.parseLong(s)).collect(Collectors.toList());
+  }
 
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("Compare: {}[{}{}] <=> {}[{}{}] -> {}({})", name, idNames, ids, valueRow.name, valueRow.idNames, valueRow.ids, result, resultIds);
-        }
+  public List<String> getPath() {
+    return path;
+  }
 
+  public String getName() {
+    return name;
+  }
+
+  public Optional<SqlColumn> next() {
+    if (columnCount >= columnPaths.size()) {
+      return Optional.empty();
+    }
+    /*if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("NEXT: {} {} {} {}", paths.get(columnCount), ids, columnCount, columns.get(columnCount));
+    }*/
+    return Optional.of(new SqlColumn(columnPaths.get(columnCount), values.get(columnCount++)));
+  }
+
+  @Override
+  public String toString() {
+    return "SlickRowInfo{"
+        + "ids='"
+        + ids
+        + '\''
+        + ", name='"
+        + name
+        + '\''
+        + ", values="
+        + values
+        + ", priority="
+        + priority
+        + '}';
+  }
+
+  static int compareIdLists(List<String> ids1, List<String> ids2) {
+    for (int i = 0; i < ids1.size(); i++) {
+      int result = Integer.valueOf(ids1.get(i)).compareTo(Integer.valueOf(ids2.get(i)));
+      if (result != 0) {
         return result;
+      }
     }
-
-
-    public List<Comparable<?>> getIds() {
-        return ids.stream().map(s -> Long.parseLong(s)).collect(Collectors.toList());
-    }
-
-    public List<String> getPath() {
-        return path;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Optional<SqlColumn> next() {
-        if (columnCount >= columnPaths.size()) {
-            return Optional.empty();
-        }
-        /*if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("NEXT: {} {} {} {}", paths.get(columnCount), ids, columnCount, columns.get(columnCount));
-        }*/
-        return Optional.of(new SqlColumn(columnPaths.get(columnCount), values.get(columnCount++)));
-    }
-
-    @Override
-    public String toString() {
-        return "SlickRowInfo{" +
-                "ids='" + ids + '\'' +
-                ", name='" + name + '\'' +
-                ", values=" + values +
-                ", priority=" + priority +
-                '}';
-    }
-
-    static int compareIdLists(List<String> ids1, List<String> ids2) {
-        for (int i = 0; i < ids1.size(); i++) {
-            int result = Integer.valueOf(ids1.get(i))
-                                .compareTo(Integer.valueOf(ids2.get(i)));
-            if (result != 0) {
-                return result;
-            }
-        }
-        return 0;
-    }
+    return 0;
+  }
 }

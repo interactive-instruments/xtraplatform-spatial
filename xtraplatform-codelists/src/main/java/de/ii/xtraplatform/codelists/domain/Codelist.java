@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,15 +13,15 @@ import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
  * @author zahnen
  */
 public interface Codelist extends PersistentEntity {
-    String ENTITY_TYPE = "codelists";
+  String ENTITY_TYPE = "codelists";
 
-    @Override
-    default String getType() {
-        return ENTITY_TYPE;
-    }
+  @Override
+  default String getType() {
+    return ENTITY_TYPE;
+  }
 
-    @Override
-    CodelistData getData();
+  @Override
+  CodelistData getData();
 
-    String getValue(String key);
+  String getValue(String key);
 }

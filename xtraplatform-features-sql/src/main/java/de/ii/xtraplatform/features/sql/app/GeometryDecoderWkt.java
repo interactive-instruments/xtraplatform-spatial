@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -22,11 +22,15 @@ import java.util.Objects;
 
 public class GeometryDecoderWkt {
 
-  private final FeatureEventHandler<FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> handler;
+  private final FeatureEventHandler<
+          FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
+      handler;
   private final ModifiableContext<FeatureSchema, SchemaMapping> context;
 
   public GeometryDecoderWkt(
-      FeatureEventHandler<FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> handler,
+      FeatureEventHandler<
+              FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
+          handler,
       ModifiableContext<FeatureSchema, SchemaMapping> context) {
     this.handler = handler;
     this.context = context;
@@ -34,9 +38,7 @@ public class GeometryDecoderWkt {
 
   public void decode(String text) throws IOException {
     // remove whitespace after array delimiters, without this they will be matched as words
-    text = text.replace(") ", ")")
-        .replace("( ", "(")
-        .replace(", ", ",");
+    text = text.replace(") ", ")").replace("( ", "(").replace(", ", ",");
     StreamTokenizer tokenizer = new StreamTokenizer(new StringReader(text));
     final int char128 = 128;
     final int skip32 = 32;
@@ -52,14 +54,14 @@ public class GeometryDecoderWkt {
     tokenizer.wordChars('.', '.');
     tokenizer.wordChars(',', ',');
     tokenizer.wordChars(' ', ' ');
-    //tokenizer.whitespaceChars(0, ' ');
-    //tokenizer.commentChar('#');
+    // tokenizer.whitespaceChars(0, ' ');
+    // tokenizer.commentChar('#');
 
     String type = getNextWord(tokenizer);
     int dimension = type.contains(" Z ") ? 3 : 2;
     type = type.replace(" Z ", "");
-    SimpleFeatureGeometry geometryType = SimpleFeatureGeometryFromToWkt.fromString(type)
-        .toSimpleFeatureGeometry();
+    SimpleFeatureGeometry geometryType =
+        SimpleFeatureGeometryFromToWkt.fromString(type).toSimpleFeatureGeometry();
 
     if (!geometryType.isValid()) {
       return;
@@ -69,7 +71,7 @@ public class GeometryDecoderWkt {
     context.setGeometryDimension(dimension);
     handler.onObjectStart(context);
     context.setInGeometry(true);
-    //featureTransformer.onGeometryStart(geometry, geometryType, dimension);
+    // featureTransformer.onGeometryStart(geometry, geometryType, dimension);
 
     switch (geometryType) {
       case POINT:
@@ -98,12 +100,8 @@ public class GeometryDecoderWkt {
     context.setInGeometry(false);
   }
 
-  private static final Splitter COMMA_SPLITTER = Splitter.on(',')
-      .omitEmptyStrings()
-      .trimResults();
-  private static final Splitter BLANK_SPLITTER = Splitter.on(' ')
-      .omitEmptyStrings()
-      .trimResults();
+  private static final Splitter COMMA_SPLITTER = Splitter.on(',').omitEmptyStrings().trimResults();
+  private static final Splitter BLANK_SPLITTER = Splitter.on(' ').omitEmptyStrings().trimResults();
   private static final String EMPTY = "EMPTY";
   private static final String COMMA = ",";
   private static final String L_PAREN = "(";
@@ -144,12 +142,15 @@ public class GeometryDecoderWkt {
     if (!Objects.equals(nextToken, EMPTY)) {
       nextToken = getNextWord(tokenizer);
       handler.onArrayStart(context);
-      COMMA_SPLITTER.splitToList(nextToken)
-          .forEach(LambdaWithException.consumerMayThrow(point -> {
-            context.setValueType(Type.STRING);
-            context.setValue(point);
-            handler.onValue(context);
-          }));
+      COMMA_SPLITTER
+          .splitToList(nextToken)
+          .forEach(
+              LambdaWithException.consumerMayThrow(
+                  point -> {
+                    context.setValueType(Type.STRING);
+                    context.setValue(point);
+                    handler.onValue(context);
+                  }));
       handler.onArrayEnd(context);
       nextToken = getNextCloserOrComma(tokenizer);
     }
@@ -162,10 +163,10 @@ public class GeometryDecoderWkt {
     }
     handler.onArrayStart(context);
     readPolygonText(tokenizer);
-    //handler.onArrayEnd(context);
+    // handler.onArrayEnd(context);
     nextToken = getNextCloserOrComma(tokenizer);
     while (Objects.equals(nextToken, COMMA)) {
-      //handler.onArrayStart(context);
+      // handler.onArrayStart(context);
       readPolygonText(tokenizer);
 
       nextToken = getNextCloserOrComma(tokenizer);
@@ -180,10 +181,10 @@ public class GeometryDecoderWkt {
     }
     handler.onArrayStart(context);
     readCoordinates(tokenizer);
-    //handler.onArrayEnd(context);
+    // handler.onArrayEnd(context);
     nextToken = getNextCloserOrComma(tokenizer);
     while (Objects.equals(nextToken, COMMA)) {
-      //handler.onArrayStart(context);
+      // handler.onArrayStart(context);
       readCoordinates(tokenizer);
 
       nextToken = getNextCloserOrComma(tokenizer);
@@ -202,23 +203,21 @@ public class GeometryDecoderWkt {
     }
   }
 
-  private String getNextEmptyOrOpener(StreamTokenizer tokenizer)
-      throws IOException {
+  private String getNextEmptyOrOpener(StreamTokenizer tokenizer) throws IOException {
     String nextWord = getNextWord(tokenizer);
     if (EMPTY.equals(nextWord) || L_PAREN.equals(nextWord)) {
       return nextWord;
     }
-    //parseError(EMPTY + " or " + L_PAREN, tokenizer);
+    // parseError(EMPTY + " or " + L_PAREN, tokenizer);
     return null;
   }
 
-  private String getNextCloserOrComma(StreamTokenizer tokenizer)
-      throws IOException {
+  private String getNextCloserOrComma(StreamTokenizer tokenizer) throws IOException {
     String nextWord = getNextWord(tokenizer);
     if (COMMA.equals(nextWord) || R_PAREN.equals(nextWord)) {
       return nextWord;
     }
-    //parseError(COMMA + " or " + R_PAREN, tokenizer);
+    // parseError(COMMA + " or " + R_PAREN, tokenizer);
     return null;
   }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -22,15 +22,21 @@ public interface FeaturePropertyTransformerRemove extends FeaturePropertySchemaT
 
   Logger LOGGER = LoggerFactory.getLogger(FeaturePropertyTransformerRemove.class);
 
-  enum Condition {ALWAYS, IN_COLLECTION, NEVER}
+  enum Condition {
+    ALWAYS,
+    IN_COLLECTION,
+    NEVER
+  }
 
   String IN_COLLECTION_DEPRECATED = "OVERVIEW";
 
   String TYPE = "REMOVE";
 
-  Set<String> CONDITION_VALUES = Stream.concat(
-      Stream.of(IN_COLLECTION_DEPRECATED),
-      Arrays.stream(Condition.values()).map(Enum::name)).collect(Collectors.toSet());
+  Set<String> CONDITION_VALUES =
+      Stream.concat(
+              Stream.of(IN_COLLECTION_DEPRECATED),
+              Arrays.stream(Condition.values()).map(Enum::name))
+          .collect(Collectors.toSet());
 
   @Override
   default String getType() {
@@ -47,7 +53,10 @@ public interface FeaturePropertyTransformerRemove extends FeaturePropertySchemaT
     if (Objects.equals(parameter, IN_COLLECTION_DEPRECATED)) {
       LOGGER.warn(
           "Condition '{}' in {} transformation for property '{}' is deprecated, use '{}' instead.",
-          IN_COLLECTION_DEPRECATED, getType(), getPropertyPath(), Condition.IN_COLLECTION);
+          IN_COLLECTION_DEPRECATED,
+          getType(),
+          getPropertyPath(),
+          Condition.IN_COLLECTION);
       condition = Condition.IN_COLLECTION;
     } else {
       try {
@@ -55,13 +64,17 @@ public interface FeaturePropertyTransformerRemove extends FeaturePropertySchemaT
       } catch (Throwable e) {
         LOGGER.warn(
             "Skipping {} transformation for property '{}', condition '{}' is not supported. Supported types: {}",
-            getType(), getPropertyPath(), getParameter(), Condition.values());
+            getType(),
+            getPropertyPath(),
+            getParameter(),
+            Condition.values());
         return schema;
       }
     }
 
-    if (condition == Condition.ALWAYS || (condition == Condition.IN_COLLECTION && inCollection())
-      && currentPropertyPath.startsWith(getPropertyPath())) {
+    if (condition == Condition.ALWAYS
+        || (condition == Condition.IN_COLLECTION && inCollection())
+            && currentPropertyPath.startsWith(getPropertyPath())) {
       return null;
     }
 

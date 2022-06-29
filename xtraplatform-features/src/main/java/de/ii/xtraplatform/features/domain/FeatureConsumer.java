@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,19 +15,21 @@ import java.util.OptionalLong;
  * @author zahnen
  */
 public interface FeatureConsumer {
-    void onStart(OptionalLong numberReturned, OptionalLong numberMatched,
-                 Map<String, String> additionalInfos) throws Exception;
+  void onStart(
+      OptionalLong numberReturned, OptionalLong numberMatched, Map<String, String> additionalInfos)
+      throws Exception;
 
-    void onEnd() throws Exception;
+  void onEnd() throws Exception;
 
-    void onFeatureStart(List<String> path, Map<String, String> additionalInfos) throws Exception;
+  void onFeatureStart(List<String> path, Map<String, String> additionalInfos) throws Exception;
 
-    void onFeatureEnd(List<String> path) throws Exception;
+  void onFeatureEnd(List<String> path) throws Exception;
 
-    void onPropertyStart(List<String> path, List<Integer> multiplicities,
-                         Map<String, String> additionalInfos) throws Exception;
+  void onPropertyStart(
+      List<String> path, List<Integer> multiplicities, Map<String, String> additionalInfos)
+      throws Exception;
 
-    void onPropertyText(String text) throws Exception;
+  void onPropertyText(String text) throws Exception;
 
-    void onPropertyEnd(List<String> path) throws Exception;
+  void onPropertyEnd(List<String> path) throws Exception;
 }

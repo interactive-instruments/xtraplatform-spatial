@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,8 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-public interface SchemaVisitorWithFinalizer<T extends SchemaBase<T>, U, V> extends SchemaVisitorTopDown<T, U> {
+public interface SchemaVisitorWithFinalizer<T extends SchemaBase<T>, U, V>
+    extends SchemaVisitorTopDown<T, U> {
 
   V finalize(T t, U u);
-
 }

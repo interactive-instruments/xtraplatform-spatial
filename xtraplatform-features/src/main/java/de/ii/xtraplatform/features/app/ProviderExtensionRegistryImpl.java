@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,15 +9,12 @@ package de.ii.xtraplatform.features.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.Lazy;
-import de.ii.xtraplatform.base.domain.Registry;
-import de.ii.xtraplatform.base.domain.RegistryState;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import java.util.Optional;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import com.github.azahnen.dagger.annotations.AutoBind;
 
 @Singleton
 @AutoBind
@@ -36,8 +33,7 @@ public class ProviderExtensionRegistryImpl implements ProviderExtensionRegistry 
   }
 
   @Override
-  public Optional<FeatureQueriesExtension> get(
-      String... identifiers) {
+  public Optional<FeatureQueriesExtension> get(String... identifiers) {
     return Optional.empty();
   }
 }

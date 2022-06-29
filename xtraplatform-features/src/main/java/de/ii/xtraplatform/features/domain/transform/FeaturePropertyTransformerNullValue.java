@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,32 +8,29 @@
 package de.ii.xtraplatform.features.domain.transform;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.features.domain.FeatureProperty;
 import de.ii.xtraplatform.features.domain.SchemaBase;
-import org.immutables.value.Value;
-
 import java.util.List;
+import org.immutables.value.Value;
 
 @Value.Immutable
 public interface FeaturePropertyTransformerNullValue extends FeaturePropertyValueTransformer {
 
-    String TYPE = "NULL_VALUE";
+  String TYPE = "NULL_VALUE";
 
-    @Override
-    default String getType() {
-        return TYPE;
-    }
+  @Override
+  default String getType() {
+    return TYPE;
+  }
 
-    @Override
-    default List<SchemaBase.Type> getSupportedPropertyTypes() {
-        return ImmutableList.of(SchemaBase.Type.STRING, SchemaBase.Type.INTEGER, SchemaBase.Type.FLOAT);
-    }
+  @Override
+  default List<SchemaBase.Type> getSupportedPropertyTypes() {
+    return ImmutableList.of(SchemaBase.Type.STRING, SchemaBase.Type.INTEGER, SchemaBase.Type.FLOAT);
+  }
 
-    @Override
-    default String transform(String currentPropertyPath, String input) {
-        if (input.matches(getParameter()))
-            return null;
+  @Override
+  default String transform(String currentPropertyPath, String input) {
+    if (input.matches(getParameter())) return null;
 
-        return input;
-    }
+    return input;
+  }
 }
