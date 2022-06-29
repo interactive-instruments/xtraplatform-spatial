@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,5 +12,6 @@ import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
 import de.ii.xtraplatform.features.domain.FilterEncoder;
 
 public interface FilterEncoderSqlNewNew extends FilterEncoder<String> {
-    String encodeNested(Cql2Expression cqlFilter, FeatureStoreAttributesContainer typeInfo, boolean isUserFilter);
+  String encodeNested(
+      Cql2Expression cqlFilter, FeatureStoreAttributesContainer typeInfo, boolean isUserFilter);
 }

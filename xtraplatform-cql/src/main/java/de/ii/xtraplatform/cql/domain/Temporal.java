@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,12 +14,15 @@ public interface Temporal extends Scalar, Operand, CqlNode {
   static Temporal intervalOf(Temporal op1, Temporal op2) {
     // if at least one parameter is a property, we create a function, otherwise a fixed interval
     if (op1 instanceof Property && op2 instanceof Property) {
-      return de.ii.xtraplatform.cql.domain.Interval.of(ImmutableList.of((Property) op1, (Property) op2));
-    } else if (op1 instanceof Property &&  op2 instanceof TemporalLiteral) {
-      return de.ii.xtraplatform.cql.domain.Interval.of(ImmutableList.of((Property) op1, (TemporalLiteral) op2));
-    } else if (op1 instanceof TemporalLiteral &&  op2 instanceof Property) {
-      return de.ii.xtraplatform.cql.domain.Interval.of(ImmutableList.of((TemporalLiteral) op1, (Property) op2));
-    } else if (op1 instanceof TemporalLiteral &&  op2 instanceof TemporalLiteral) {
+      return de.ii.xtraplatform.cql.domain.Interval.of(
+          ImmutableList.of((Property) op1, (Property) op2));
+    } else if (op1 instanceof Property && op2 instanceof TemporalLiteral) {
+      return de.ii.xtraplatform.cql.domain.Interval.of(
+          ImmutableList.of((Property) op1, (TemporalLiteral) op2));
+    } else if (op1 instanceof TemporalLiteral && op2 instanceof Property) {
+      return de.ii.xtraplatform.cql.domain.Interval.of(
+          ImmutableList.of((TemporalLiteral) op1, (Property) op2));
+    } else if (op1 instanceof TemporalLiteral && op2 instanceof TemporalLiteral) {
       return TemporalLiteral.of((TemporalLiteral) op1, (TemporalLiteral) op2);
     }
 

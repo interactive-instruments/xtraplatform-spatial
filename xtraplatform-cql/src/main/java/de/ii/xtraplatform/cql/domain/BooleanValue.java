@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,6 +11,5 @@ import java.util.Optional;
 
 public interface BooleanValue {
 
-    Optional<ScalarLiteral> getBooleanValue();
-
+  Optional<ScalarLiteral> getBooleanValue();
 }

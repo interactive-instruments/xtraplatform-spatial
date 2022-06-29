@@ -1,9 +1,15 @@
+/*
+ * Copyright 2022 interactive instruments GmbH
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package de.ii.xtraplatform.features.gml.domain;
 
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 
 public enum GmlGeometryType {
-
   GEOMETRY("GeometryPropertyType"),
   ABSTRACT_GEOMETRY("GeometricPrimitivePropertyType"),
   POINT("PointPropertyType", "Point"),
@@ -38,8 +44,9 @@ public enum GmlGeometryType {
 
   public static GmlGeometryType fromString(String type) {
     for (GmlGeometryType v : GmlGeometryType.values()) {
-      if (v.toString().equals(type) || (v.elementStringRepresentation != null
-          && v.elementStringRepresentation.equals(type))) {
+      if (v.toString().equals(type)
+          || (v.elementStringRepresentation != null
+              && v.elementStringRepresentation.equals(type))) {
         return v;
       }
     }
@@ -59,7 +66,6 @@ public enum GmlGeometryType {
     SimpleFeatureGeometry simpleFeatureGeometry = SimpleFeatureGeometry.NONE;
 
     switch (this) {
-
       case GEOMETRY:
       case ABSTRACT_GEOMETRY:
         simpleFeatureGeometry = SimpleFeatureGeometry.ANY;

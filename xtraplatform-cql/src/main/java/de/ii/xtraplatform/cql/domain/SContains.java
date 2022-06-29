@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableSContains.Builder.class)
 public interface SContains extends BinarySpatialOperation, CqlNode {
 
-    String TYPE = "s_contains";
+  String TYPE = "s_contains";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static SContains of(Spatial spatial1, Spatial spatial2) {
-        return new ImmutableSContains.Builder()
-            .addArgs(spatial1, spatial2)
-            .build();
-    }
+  static SContains of(Spatial spatial1, Spatial spatial2) {
+    return new ImmutableSContains.Builder().addArgs(spatial1, spatial2).build();
+  }
 
-    abstract class Builder extends BinarySpatialOperation.Builder<SContains> {
-    }
-
+  abstract class Builder extends BinarySpatialOperation.Builder<SContains> {}
 }

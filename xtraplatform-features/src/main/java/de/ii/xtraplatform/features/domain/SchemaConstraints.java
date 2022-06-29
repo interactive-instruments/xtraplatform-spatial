@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,23 +15,24 @@ import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
-import java.util.Objects;
-import org.immutables.value.Value;
-
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import org.immutables.value.Value;
 
 /**
  * # Constraints
+ *
  * @langEn Currently only available in [German](../../de/providers/details/constraints.md).
- * @langDe In der Konfiguration der Objektarten im Feature-Provider können Schema-Einschränkungen dokumentiert werden.
- * Diese werden z.B. bei der Erzeugung von JSON-Schema-Dokumenten verwendet.
- * <p>
- * {@docTable:properties}
- * <p>
- * Als Beispiel hier die Eigenschaften der [Abschnitte/Äste-Features](https://demo.ldproxy.net/strassen/collections/abschnitteaeste/items) in der API [Straßennetz und Unfälle in NRW](https://demo.ldproxy.net/strassen) mit Constraints:
- * <p>
- * <code>
+ * @langDe In der Konfiguration der Objektarten im Feature-Provider können Schema-Einschränkungen
+ *     dokumentiert werden. Diese werden z.B. bei der Erzeugung von JSON-Schema-Dokumenten
+ *     verwendet.
+ *     <p>{@docTable:properties}
+ *     <p>Als Beispiel hier die Eigenschaften der
+ *     [Abschnitte/Äste-Features](https://demo.ldproxy.net/strassen/collections/abschnitteaeste/items)
+ *     in der API [Straßennetz und Unfälle in NRW](https://demo.ldproxy.net/strassen) mit
+ *     Constraints:
+ *     <p><code>
  * ```yaml
  * types:
  *   abschnitteaeste:
@@ -100,82 +101,83 @@ import java.util.Optional;
  *           min: 0
  * ```
  * </code>
- * <p>
+ *     <p>
  * @ref:properties {@link de.ii.xtraplatform.features.domain.ImmutableSchemaConstraints}
  */
 @DocFile(
     path = "providers/details",
     name = "constraints.md",
     tables = {
-        @DocTable(
-            name = "properties",
-            rows = {
-                @DocStep(type = Step.TAG_REFS, params = "{@ref:properties}"),
-                @DocStep(type = Step.JSON_PROPERTIES)
-            },
-            columnSet = ColumnSet.JSON_PROPERTIES
-        ),
-    }
-)
+      @DocTable(
+          name = "properties",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:properties}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+    })
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 @JsonDeserialize(builder = ImmutableSchemaConstraints.Builder.class)
 public interface SchemaConstraints {
 
-    /**
-     * @langEn TODO
-     * @langDe Identifiziert eine [Codelist](../../codelists/README.md), die für die Eigenschaft gilt. Nur bei String- oder Integer-Eigenschaften sinnvoll.
-     */
-    Optional<String> getCodelist();
+  /**
+   * @langEn TODO
+   * @langDe Identifiziert eine [Codelist](../../codelists/README.md), die für die Eigenschaft gilt.
+   *     Nur bei String- oder Integer-Eigenschaften sinnvoll.
+   */
+  Optional<String> getCodelist();
 
-    /**
-     * @langEn TODO
-     * @langDe Liste von erlaubten Werten für die Eigenschaft. Nur bei String- oder Integer-Eigenschaften sinnvoll.
-     */
-    @JsonProperty(value = "enum")
-    List<String> getEnumValues();
+  /**
+   * @langEn TODO
+   * @langDe Liste von erlaubten Werten für die Eigenschaft. Nur bei String- oder
+   *     Integer-Eigenschaften sinnvoll.
+   */
+  @JsonProperty(value = "enum")
+  List<String> getEnumValues();
 
-    /**
-     * @langEn TODO
-     * @langDe Ein regulärer Ausdruck, der von allen Werten erfüllt werden muss. Nur bei String-Eigenschaften sinnvoll.
-     */
-    Optional<String> getRegex();
+  /**
+   * @langEn TODO
+   * @langDe Ein regulärer Ausdruck, der von allen Werten erfüllt werden muss. Nur bei
+   *     String-Eigenschaften sinnvoll.
+   */
+  Optional<String> getRegex();
 
-    /**
-     * @langEn TODO
-     * @langDe Eine Eigenschaft kann als Pflichteigenschaft, die in allen Instanzen gesetzt sein muss, qualifiziert werden.
-     */
-    Optional<Boolean> getRequired();
+  /**
+   * @langEn TODO
+   * @langDe Eine Eigenschaft kann als Pflichteigenschaft, die in allen Instanzen gesetzt sein muss,
+   *     qualifiziert werden.
+   */
+  Optional<Boolean> getRequired();
 
-    /**
-     * @langEn TODO
-     * @langDe Mindestwert für alle Instanzen. Nur bei numerischen Eigenschaften sinnvoll.
-     */
-    Optional<Double> getMin();
+  /**
+   * @langEn TODO
+   * @langDe Mindestwert für alle Instanzen. Nur bei numerischen Eigenschaften sinnvoll.
+   */
+  Optional<Double> getMin();
 
-    /**
-     * @langEn TODO
-     * @langDe Maximalwert für alle Instanzen. Nur bei numerischen Eigenschaften sinnvoll.
-     */
-    Optional<Double> getMax();
+  /**
+   * @langEn TODO
+   * @langDe Maximalwert für alle Instanzen. Nur bei numerischen Eigenschaften sinnvoll.
+   */
+  Optional<Double> getMax();
 
-    /**
-     * @langEn TODO
-     * @langDe Mindestanzahl von Werten für alle Instanzen. Nur bei Array-Eigenschaften sinnvoll.
-     */
-    Optional<Integer> getMinOccurrence();
+  /**
+   * @langEn TODO
+   * @langDe Mindestanzahl von Werten für alle Instanzen. Nur bei Array-Eigenschaften sinnvoll.
+   */
+  Optional<Integer> getMinOccurrence();
 
-    /**
-     * @langEn TODO
-     * @langDe Maximalanzahl von Werten für alle Instanzen. Nur bei Array-Eigenschaften sinnvoll.
-     */
-    Optional<Integer> getMaxOccurrence();
+  /**
+   * @langEn TODO
+   * @langDe Maximalanzahl von Werten für alle Instanzen. Nur bei Array-Eigenschaften sinnvoll.
+   */
+  Optional<Integer> getMaxOccurrence();
 
-    @JsonIgnore
-    @Value.Derived
-    @Value.Auxiliary
-    default boolean isRequired() {
-        return getRequired().filter(required -> Objects.equals(required, true)).isPresent();
-    }
-
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isRequired() {
+    return getRequired().filter(required -> Objects.equals(required, true)).isPresent();
+  }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableTFinishes.Builder.class)
 public interface TFinishes extends BinaryTemporalOperation, CqlNode {
 
-    String TYPE = "t_finishes";
+  String TYPE = "t_finishes";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static TFinishes of(Temporal temporal1, Temporal temporal2) {
-        return new ImmutableTFinishes.Builder()
-            .addArgs(temporal1, temporal2)
-            .build();
-    }
+  static TFinishes of(Temporal temporal1, Temporal temporal2) {
+    return new ImmutableTFinishes.Builder().addArgs(temporal1, temporal2).build();
+  }
 
-    abstract class Builder extends BinaryTemporalOperation.Builder<TFinishes> {
-    }
-
+  abstract class Builder extends BinaryTemporalOperation.Builder<TFinishes> {}
 }

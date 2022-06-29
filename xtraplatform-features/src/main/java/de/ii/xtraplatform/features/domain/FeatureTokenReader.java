@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,7 +15,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class FeatureTokenReader<T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>> {
+public class FeatureTokenReader<
+    T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>> {
 
   private final FeatureEventHandler<T, U, V> eventHandler;
 
@@ -24,7 +25,7 @@ public class FeatureTokenReader<T extends SchemaBase<T>, U extends SchemaMapping
   private V context;
   private List<String> nestingStack;
 
-  //TODO
+  // TODO
   public FeatureTokenReader(FeatureEventConsumer eventConsumer) {
     this.eventHandler = null;
   }
@@ -62,7 +63,11 @@ public class FeatureTokenReader<T extends SchemaBase<T>, U extends SchemaMapping
     switch (currentType) {
       case OBJECT:
         if (inArray()) {
-          this.context.indexes().set(this.context.indexes().size() - 1, this.context.indexes().get(this.context.indexes().size() - 1) + 1);
+          this.context
+              .indexes()
+              .set(
+                  this.context.indexes().size() - 1,
+                  this.context.indexes().get(this.context.indexes().size() - 1) + 1);
         }
         push("O");
         break;
@@ -72,7 +77,11 @@ public class FeatureTokenReader<T extends SchemaBase<T>, U extends SchemaMapping
         break;
       case VALUE:
         if (inArray()) {
-          this.context.indexes().set(this.context.indexes().size() - 1, this.context.indexes().get(this.context.indexes().size() - 1) + 1);
+          this.context
+              .indexes()
+              .set(
+                  this.context.indexes().size() - 1,
+                  this.context.indexes().get(this.context.indexes().size() - 1) + 1);
         }
         break;
       case ARRAY_END:
@@ -128,7 +137,7 @@ public class FeatureTokenReader<T extends SchemaBase<T>, U extends SchemaMapping
 
   private void tryReadPath(Object context) {
     if (contextIndex == 0 && context instanceof List) {
-      //TODO: too expensive
+      // TODO: too expensive
       this.context.pathTracker().track((List<String>) context);
     }
   }
@@ -166,7 +175,7 @@ public class FeatureTokenReader<T extends SchemaBase<T>, U extends SchemaMapping
   }
 
   private boolean inArray() {
-    return !nestingStack.isEmpty() && nestingStack.get(nestingStack.size() -1).equals("A");
+    return !nestingStack.isEmpty() && nestingStack.get(nestingStack.size() - 1).equals("A");
   }
 
   private void push(String type) {

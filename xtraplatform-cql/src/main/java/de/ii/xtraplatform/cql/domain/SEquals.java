@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableSEquals.Builder.class)
 public interface SEquals extends BinarySpatialOperation, CqlNode {
 
-    String TYPE = "s_equals";
+  String TYPE = "s_equals";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static SEquals of(Spatial spatial1, Spatial spatial2) {
-        return new ImmutableSEquals.Builder()
-            .addArgs(spatial1, spatial2)
-            .build();
-    }
+  static SEquals of(Spatial spatial1, Spatial spatial2) {
+    return new ImmutableSEquals.Builder().addArgs(spatial1, spatial2).build();
+  }
 
-    abstract class Builder extends BinarySpatialOperation.Builder<SEquals> {
-    }
-
+  abstract class Builder extends BinarySpatialOperation.Builder<SEquals> {}
 }

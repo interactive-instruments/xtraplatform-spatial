@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,14 +10,13 @@ package de.ii.xtraplatform.features.gml.domain;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocIgnore;
-import de.ii.xtraplatform.features.gml.infra.WfsConnectorHttp;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
-import javax.annotation.Nullable;
-import org.immutables.value.Value;
-
+import de.ii.xtraplatform.features.gml.infra.WfsConnectorHttp;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nullable;
+import org.immutables.value.Value;
 
 /**
  * @example <code>
@@ -40,53 +39,62 @@ import java.util.Optional;
  * </code>
  */
 @Value.Immutable
-@Value.Style(builder = "new", deepImmutablesDetection = true, attributeBuilderDetection = true, passAnnotations = DocIgnore.class)
+@Value.Style(
+    builder = "new",
+    deepImmutablesDetection = true,
+    attributeBuilderDetection = true,
+    passAnnotations = DocIgnore.class)
 @JsonDeserialize(builder = ImmutableConnectionInfoWfsHttp.Builder.class)
 public interface ConnectionInfoWfsHttp extends ConnectionInfo, WfsInfo {
 
-    enum METHOD {GET,POST}
+  enum METHOD {
+    GET,
+    POST
+  }
 
-    /**
-     * @langEn Always `HTTP`.
-     * @langDe Stets `HTTP`.
-     * @default
-     */
-    @Override
-    @Value.Derived
-    default String getConnectorType() {
-        return WfsConnectorHttp.CONNECTOR_TYPE;
-    }
+  /**
+   * @langEn Always `HTTP`.
+   * @langDe Stets `HTTP`.
+   * @default
+   */
+  @Override
+  @Value.Derived
+  default String getConnectorType() {
+    return WfsConnectorHttp.CONNECTOR_TYPE;
+  }
 
-    /**
-     * @langEn The URI of the GetCapabilities operation for the WFS.
-     * @langDe Die URI der GetCapabilities-Operation des WFS.
-     */
-    @Nullable
-    URI getUri();
+  /**
+   * @langEn The URI of the GetCapabilities operation for the WFS.
+   * @langDe Die URI der GetCapabilities-Operation des WFS.
+   */
+  @Nullable
+  URI getUri();
 
-    /**
-     * @langEn The HTTP method to use, `GET` or `POST`.
-     * @langDe Die bevorzugt zu verwendende HTTP-Methode, `GET` oder `POST`.
-     * @default GET
-     */
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY, value = "method") // means only read from json
-    @Value.Default
-    default METHOD getMethod() {
-        return METHOD.GET;
-    }
+  /**
+   * @langEn The HTTP method to use, `GET` or `POST`.
+   * @langDe Die bevorzugt zu verwendende HTTP-Methode, `GET` oder `POST`.
+   * @default GET
+   */
+  @JsonProperty(
+      access = JsonProperty.Access.WRITE_ONLY,
+      value = "method") // means only read from json
+  @Value.Default
+  default METHOD getMethod() {
+    return METHOD.GET;
+  }
 
-    /**
-     * @langEn The user name for HTTP Basic Auth.
-     * @langDe Der Benutzername.
-     */
-    Optional<String> getUser();
+  /**
+   * @langEn The user name for HTTP Basic Auth.
+   * @langDe Der Benutzername.
+   */
+  Optional<String> getUser();
 
-    /**
-     * @langEn The base64 encoded password  for HTTP Basic Auth.
-     * @langDe Das mit base64 verschüsselte Passwort des Benutzers.
-     */
-    Optional<String> getPassword();
+  /**
+   * @langEn The base64 encoded password for HTTP Basic Auth.
+   * @langDe Das mit base64 verschüsselte Passwort des Benutzers.
+   */
+  Optional<String> getPassword();
 
-    @DocIgnore
-    Map<String,String> getOtherUrls();
+  @DocIgnore
+  Map<String, String> getOtherUrls();
 }

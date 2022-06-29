@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -23,8 +23,8 @@ public class NestingTracker {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(NestingTracker.class);
 
-  private final FeatureEventHandler<?,?,ModifiableContext<?,?>> downstream;
-  private final ModifiableContext<?,?> context;
+  private final FeatureEventHandler<?, ?, ModifiableContext<?, ?>> downstream;
+  private final ModifiableContext<?, ?> context;
   private final List<String> mainPath;
   private final boolean flattenObjects;
   private final boolean flattenArrays;
@@ -33,9 +33,13 @@ public class NestingTracker {
   private final List<String> flattened;
   private final boolean skippable;
 
-  public <T extends ModifiableContext<?,?>> NestingTracker(FeatureEventHandler<?,?,T> downstream,
-      T context, List<String> mainPath,
-      boolean flattenObjects, boolean flattenArrays, boolean skippable) {
+  public <T extends ModifiableContext<?, ?>> NestingTracker(
+      FeatureEventHandler<?, ?, T> downstream,
+      T context,
+      List<String> mainPath,
+      boolean flattenObjects,
+      boolean flattenArrays,
+      boolean skippable) {
     this.downstream = (FeatureEventHandler<?, ?, ModifiableContext<?, ?>>) downstream;
     this.context = context;
     this.mainPath = mainPath;
@@ -52,7 +56,7 @@ public class NestingTracker {
       flattened.add(context.currentSchema().get().getName());
     } else {
       if (!skippable || !context.shouldSkip()) {
-          downstream.onArrayStart(context);
+        downstream.onArrayStart(context);
       }
     }
 
@@ -67,7 +71,7 @@ public class NestingTracker {
       flattened.add(context.currentSchema().get().getName());
     } else {
       if (!skippable || !context.shouldSkip()) {
-          downstream.onObjectStart(context);
+        downstream.onObjectStart(context);
       }
     }
 
@@ -86,9 +90,9 @@ public class NestingTracker {
     context.pathTracker().track(getCurrentNestingPath());
 
     if (flattenArrays && isObjectInArray()) {
-      flattened.remove(flattened.size()-1);
+      flattened.remove(flattened.size() - 1);
     } else if (flattenObjects && (flattenArrays || !isObjectInArray())) {
-      flattened.remove(flattened.size()-1);
+      flattened.remove(flattened.size() - 1);
     } else {
       if (!skippable || !context.shouldSkip()) {
         downstream.onObjectEnd(context);
@@ -116,7 +120,7 @@ public class NestingTracker {
     }
     context.pathTracker().track(getCurrentNestingPath());
     if (flattenArrays) {
-      flattened.remove(flattened.size()-1);
+      flattened.remove(flattened.size() - 1);
     } else {
       if (!skippable || !context.shouldSkip()) {
         downstream.onArrayEnd(context);
@@ -157,7 +161,6 @@ public class NestingTracker {
     pathStack.remove(pathStack.size() - 1);
   }
 
-
   public List<String> getCurrentNestingPath() {
     if (pathStack.isEmpty()) {
       return null;
@@ -178,7 +181,9 @@ public class NestingTracker {
   }
 
   public boolean isObjectInArray() {
-    return inObject() && nestingStack.size() > 1 && Objects.equals(nestingStack.get(nestingStack.size() - 2), "A");
+    return inObject()
+        && nestingStack.size() > 1
+        && Objects.equals(nestingStack.get(nestingStack.size() - 2), "A");
   }
 
   public boolean isNotMain(List<String> nextPath) {
@@ -209,8 +214,9 @@ public class NestingTracker {
   }
 
   public boolean hasParentIndexChanged(List<Integer> nextIndexes) {
-    return nextIndexes.size() > 1 && context.indexes().size() >= nextIndexes.size() - 1 &&
-        nextIndexes.get(nextIndexes.size() - 2) > context.indexes().get(nextIndexes.size() - 2);
+    return nextIndexes.size() > 1
+        && context.indexes().size() >= nextIndexes.size() - 1
+        && nextIndexes.get(nextIndexes.size() - 2) > context.indexes().get(nextIndexes.size() - 2);
   }
 
   private static <T> boolean startsWith(List<T> longer, List<T> shorter) {
@@ -228,7 +234,7 @@ public class NestingTracker {
       flattened.add(name);
     }
     String path = Joiner.on(separator).join(flattened);
-    flattened.remove(flattened.size()-1);
+    flattened.remove(flattened.size() - 1);
     return path;
   }
 }

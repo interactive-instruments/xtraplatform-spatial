@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableAEquals.Builder.class)
 public interface AEquals extends BinaryArrayOperation, CqlNode {
 
-    String TYPE = "a_equals";
+  String TYPE = "a_equals";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static AEquals of(Vector vector1, Vector vector2) {
-        return new ImmutableAEquals.Builder()
-            .addArgs(vector1, vector2)
-            .build();
-    }
+  static AEquals of(Vector vector1, Vector vector2) {
+    return new ImmutableAEquals.Builder().addArgs(vector1, vector2).build();
+  }
 
-    abstract class Builder extends BinaryArrayOperation.Builder<AEquals> {
-    }
-
+  abstract class Builder extends BinaryArrayOperation.Builder<AEquals> {}
 }

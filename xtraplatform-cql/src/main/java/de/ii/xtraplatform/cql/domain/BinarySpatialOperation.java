@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,45 +8,38 @@
 package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import java.util.List;
 import org.immutables.value.Value;
-import org.threeten.extra.Interval;
 
 public interface BinarySpatialOperation extends BinaryOperation2<Spatial>, CqlNode {
 
-    @JsonIgnore
-    @Value.Derived
-    default SpatialOperator getSpatialOperator() {
-        return SpatialOperator.valueOf(getOp().toUpperCase());
+  @JsonIgnore
+  @Value.Derived
+  default SpatialOperator getSpatialOperator() {
+    return SpatialOperator.valueOf(getOp().toUpperCase());
+  }
+
+  static BinarySpatialOperation of(SpatialOperator operator, Spatial spatial1, Spatial spatial2) {
+    switch (operator) {
+      case S_INTERSECTS:
+        return SIntersects.of(spatial1, spatial2);
+      case S_EQUALS:
+        return SEquals.of(spatial1, spatial2);
+      case S_DISJOINT:
+        return SDisjoint.of(spatial1, spatial2);
+      case S_TOUCHES:
+        return STouches.of(spatial1, spatial2);
+      case S_WITHIN:
+        return SWithin.of(spatial1, spatial2);
+      case S_OVERLAPS:
+        return SOverlaps.of(spatial1, spatial2);
+      case S_CROSSES:
+        return SCrosses.of(spatial1, spatial2);
+      case S_CONTAINS:
+        return SContains.of(spatial1, spatial2);
     }
 
-    static BinarySpatialOperation of(SpatialOperator operator, Spatial spatial1, Spatial spatial2) {
-        switch (operator) {
-            case S_INTERSECTS:
-                return SIntersects.of(spatial1, spatial2);
-            case S_EQUALS:
-                return SEquals.of(spatial1, spatial2);
-            case S_DISJOINT:
-                return SDisjoint.of(spatial1, spatial2);
-            case S_TOUCHES:
-                return STouches.of(spatial1, spatial2);
-            case S_WITHIN:
-                return SWithin.of(spatial1, spatial2);
-            case S_OVERLAPS:
-                return SOverlaps.of(spatial1, spatial2);
-            case S_CROSSES:
-                return SCrosses.of(spatial1, spatial2);
-            case S_CONTAINS:
-                return SContains.of(spatial1, spatial2);
-        }
+    throw new IllegalStateException();
+  }
 
-        throw new IllegalStateException();
-    }
-
-
-
-    abstract class Builder<T extends BinarySpatialOperation> extends Operation.Builder<Spatial, T> {}
-
+  abstract class Builder<T extends BinarySpatialOperation> extends Operation.Builder<Spatial, T> {}
 }

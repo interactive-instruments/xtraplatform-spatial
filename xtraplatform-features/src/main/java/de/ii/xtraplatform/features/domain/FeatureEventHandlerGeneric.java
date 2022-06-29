@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -12,8 +12,11 @@ import de.ii.xtraplatform.features.domain.FeatureEventHandlerGeneric.GenericCont
 import org.immutables.value.Value;
 import org.immutables.value.Value.Modifiable;
 
-//TODO: more comfortable variant of consumer, use in encoder/transformer
-public interface FeatureEventHandlerGeneric extends FeatureEventHandler<FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>, FeatureTokenContext<GenericContext> {
+// TODO: more comfortable variant of consumer, use in encoder/transformer
+public interface FeatureEventHandlerGeneric
+    extends FeatureEventHandler<
+            FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>,
+        FeatureTokenContext<GenericContext> {
 
   @Modifiable
   @Value.Style(deepImmutablesDetection = true)

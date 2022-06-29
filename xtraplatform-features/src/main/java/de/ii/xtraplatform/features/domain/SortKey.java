@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,7 +13,10 @@ import org.immutables.value.Value.Default;
 @Value.Immutable
 public interface SortKey {
 
-  enum Direction {ASCENDING, DESCENDING}
+  enum Direction {
+    ASCENDING,
+    DESCENDING
+  }
 
   static SortKey of(String field) {
     return ImmutableSortKey.builder().field(field).build();

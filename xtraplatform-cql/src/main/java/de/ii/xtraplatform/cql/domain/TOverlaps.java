@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableTOverlaps.Builder.class)
 public interface TOverlaps extends BinaryTemporalOperation, CqlNode {
 
-    String TYPE = "t_overlaps";
+  String TYPE = "t_overlaps";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static TOverlaps of(Temporal temporal1, Temporal temporal2) {
-        return new ImmutableTOverlaps.Builder()
-            .addArgs(temporal1, temporal2)
-            .build();
-    }
+  static TOverlaps of(Temporal temporal1, Temporal temporal2) {
+    return new ImmutableTOverlaps.Builder().addArgs(temporal1, temporal2).build();
+  }
 
-    abstract class Builder extends BinaryTemporalOperation.Builder<TOverlaps> {
-    }
-
+  abstract class Builder extends BinaryTemporalOperation.Builder<TOverlaps> {}
 }

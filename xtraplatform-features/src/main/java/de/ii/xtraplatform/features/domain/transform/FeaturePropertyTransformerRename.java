@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,21 +15,19 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface FeaturePropertyTransformerRename extends FeaturePropertySchemaTransformer {
 
-    String TYPE = "RENAME";
+  String TYPE = "RENAME";
 
-    @Override
-    default String getType() {
-        return TYPE;
+  @Override
+  default String getType() {
+    return TYPE;
+  }
+
+  @Override
+  default FeatureSchema transform(String currentPropertyPath, FeatureSchema schema) {
+    if (Objects.equals(currentPropertyPath, getPropertyPath())) {
+      return new ImmutableFeatureSchema.Builder().from(schema).name(getParameter()).build();
     }
 
-    @Override
-    default FeatureSchema transform(String currentPropertyPath, FeatureSchema schema) {
-        if (Objects.equals(currentPropertyPath, getPropertyPath())) {
-            return new ImmutableFeatureSchema.Builder().from(schema)
-                .name(getParameter())
-                .build();
-        }
-
-        return schema;
-    }
+    return schema;
+  }
 }

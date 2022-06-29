@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -19,8 +19,7 @@ public interface FeatureChangesPgConfiguration extends ExtensionConfiguration {
 
   List<String> getListenForTypes();
 
-  abstract class Builder extends ExtensionConfiguration.Builder {
-  }
+  abstract class Builder extends ExtensionConfiguration.Builder {}
 
   @Override
   default Builder getBuilder() {

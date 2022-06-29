@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableSOverlaps.Builder.class)
 public interface SOverlaps extends BinarySpatialOperation, CqlNode {
 
-    String TYPE = "s_overlaps";
+  String TYPE = "s_overlaps";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static SOverlaps of(Spatial spatial1, Spatial spatial2) {
-        return new ImmutableSOverlaps.Builder()
-            .addArgs(spatial1, spatial2)
-            .build();
-    }
+  static SOverlaps of(Spatial spatial1, Spatial spatial2) {
+    return new ImmutableSOverlaps.Builder().addArgs(spatial1, spatial2).build();
+  }
 
-    abstract class Builder extends BinarySpatialOperation.Builder<SOverlaps> {
-    }
-
+  abstract class Builder extends BinarySpatialOperation.Builder<SOverlaps> {}
 }

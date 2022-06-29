@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,61 +16,57 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableIn.Builder.class)
 public interface In extends BinaryOperation2<Scalar>, CqlNode {
 
-    String TYPE = "in";
-    String ID_PLACEHOLDER = "_ID_";
+  String TYPE = "in";
+  String ID_PLACEHOLDER = "_ID_";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
+  static In of(String property, List<Scalar> values) {
+    return new ImmutableIn.Builder()
+        .addArgs(Property.of(property))
+        .addArgs(ArrayLiteral.of(values))
+        .build();
+  }
 
-    static In of(String property, List<Scalar> values) {
-        return new ImmutableIn.Builder().addArgs(Property.of(property))
-                                        .addArgs(ArrayLiteral.of(values))
-                                        .build();
-    }
+  static In of(String property, Scalar... values) {
+    return new ImmutableIn.Builder()
+        .addArgs(Property.of(property))
+        .addArgs(ArrayLiteral.of(Arrays.asList(values)))
+        .build();
+  }
 
-    static In of(String property, Scalar... values) {
-        return new ImmutableIn.Builder().addArgs(Property.of(property))
-                                        .addArgs(ArrayLiteral.of(Arrays.asList(values)))
-                                        .build();
-    }
+  static In of(String property, TemporalLiteral... values) {
+    return new ImmutableIn.Builder()
+        .addArgs(Property.of(property))
+        .addArgs(ArrayLiteral.of(Arrays.asList(values)))
+        .build();
+  }
 
-    static In of(String property, TemporalLiteral... values) {
-        return new ImmutableIn.Builder().addArgs(Property.of(property))
-                .addArgs(ArrayLiteral.of(Arrays.asList(values)))
-                .build();
-    }
+  static In of(Scalar... values) {
+    return new ImmutableIn.Builder()
+        .addArgs(Property.of(ID_PLACEHOLDER))
+        .addArgs(ArrayLiteral.of(Arrays.asList(values)))
+        .build();
+  }
 
-    static In of(Scalar... values) {
-        return new ImmutableIn.Builder().addArgs(Property.of(ID_PLACEHOLDER))
-                                        .addArgs(ArrayLiteral.of(Arrays.asList(values)))
-                                        .build();
-    }
+  static In of(List<Scalar> values) {
+    return new ImmutableIn.Builder()
+        .addArgs(Property.of(ID_PLACEHOLDER))
+        .addArgs(ArrayLiteral.of(values))
+        .build();
+  }
 
-    static In of(List<Scalar> values) {
-        return new ImmutableIn.Builder().addArgs(Property.of(ID_PLACEHOLDER))
-                                        .addArgs(ArrayLiteral.of(values))
-                                        .build();
-    }
+  static In of(Scalar leftOperand, List<Scalar> values) {
+    return new ImmutableIn.Builder().addArgs(leftOperand).addArgs(ArrayLiteral.of(values)).build();
+  }
 
-    static In of(Scalar leftOperand, List<Scalar> values) {
-        return new ImmutableIn.Builder()
-            .addArgs(leftOperand)
-            .addArgs(ArrayLiteral.of(values))
-            .build();
-    }
+  static In ofFunction(Function function, List<Scalar> values) {
+    return new ImmutableIn.Builder().addArgs(function).addArgs(ArrayLiteral.of(values)).build();
+  }
 
-    static In ofFunction(Function function, List<Scalar> values) {
-        return new ImmutableIn.Builder()
-                .addArgs(function)
-                .addArgs(ArrayLiteral.of(values))
-                .build();
-    }
-
-    abstract class Builder extends BinaryOperation2.Builder<Scalar, In> {
-
-    }
+  abstract class Builder extends BinaryOperation2.Builder<Scalar, In> {}
 }

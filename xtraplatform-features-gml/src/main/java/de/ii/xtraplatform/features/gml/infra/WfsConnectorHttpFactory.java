@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,12 +10,12 @@ package de.ii.xtraplatform.features.gml.infra;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableSet;
 import dagger.assisted.AssistedFactory;
-import de.ii.xtraplatform.features.gml.app.FeatureProviderWfs;
-import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
-import de.ii.xtraplatform.features.gml.domain.WfsConnector;
 import de.ii.xtraplatform.features.domain.ConnectorFactory2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.gml.app.FeatureProviderWfs;
+import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
+import de.ii.xtraplatform.features.gml.domain.WfsConnector;
 import de.ii.xtraplatform.web.domain.Http;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,14 +26,15 @@ import javax.inject.Singleton;
 
 @Singleton
 @AutoBind
-public class WfsConnectorHttpFactory implements ConnectorFactory2<byte[], String, FeatureProviderConnector.QueryOptions> {
+public class WfsConnectorHttpFactory
+    implements ConnectorFactory2<byte[], String, FeatureProviderConnector.QueryOptions> {
 
   private final FactoryAssisted factoryAssisted;
   private final Map<String, WfsConnector> instances;
 
   @Inject
   public WfsConnectorHttpFactory(
-      Http http, //TODO: needed because dagger-auto does not parse SqlConnectorSlick
+      Http http, // TODO: needed because dagger-auto does not parse SqlConnectorSlick
       FactoryAssisted factoryAssisted) {
     this.factoryAssisted = factoryAssisted;
     this.instances = new LinkedHashMap<>();
@@ -50,19 +51,20 @@ public class WfsConnectorHttpFactory implements ConnectorFactory2<byte[], String
   }
 
   @Override
-  public Optional<FeatureProviderConnector<byte[], String, FeatureProviderConnector.QueryOptions>> instance(
-      String id) {
+  public Optional<FeatureProviderConnector<byte[], String, FeatureProviderConnector.QueryOptions>>
+      instance(String id) {
     return Optional.ofNullable(instances.get(id));
   }
 
   @Override
-  public Set<FeatureProviderConnector<byte[], String, FeatureProviderConnector.QueryOptions>> instances() {
+  public Set<FeatureProviderConnector<byte[], String, FeatureProviderConnector.QueryOptions>>
+      instances() {
     return ImmutableSet.copyOf(instances.values());
   }
 
   @Override
-  public FeatureProviderConnector<byte[], String, FeatureProviderConnector.QueryOptions> createInstance(
-      FeatureProviderDataV2 data) {
+  public FeatureProviderConnector<byte[], String, FeatureProviderConnector.QueryOptions>
+      createInstance(FeatureProviderDataV2 data) {
     WfsConnector wfsConnector = factoryAssisted.create((FeatureProviderWfsData) data);
     wfsConnector.start();
     instances.put(wfsConnector.getProviderId(), wfsConnector);

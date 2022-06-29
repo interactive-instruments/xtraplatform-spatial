@@ -1,8 +1,9 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
- * <p>This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy
- * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.features.sql.app;
 
@@ -38,7 +39,6 @@ import de.ii.xtraplatform.store.domain.entities.EntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
 import de.ii.xtraplatform.streams.domain.Reactive;
-import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
@@ -123,7 +123,8 @@ public class FeatureProviderSqlFactory
       return cleanupAutoPersist(
           cleanupAdditionalInfo(generateNativeCrsIfNecessary(generateTypesIfNecessary(data))));
     } catch (Throwable e) {
-      LogContext.error(LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
+      LogContext.error(
+          LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
     }
 
     throw new IllegalStateException();
@@ -136,11 +137,15 @@ public class FeatureProviderSqlFactory
       if (!connector.isConnected()) {
         connectorFactory.disposeConnector(connector);
 
-        RuntimeException connectionError = connector.getConnectionError()
-            .map(throwable -> throwable instanceof RuntimeException
-                ? (RuntimeException)throwable
-                : new RuntimeException(throwable))
-            .orElse(new IllegalStateException("unknown reason"));
+        RuntimeException connectionError =
+            connector
+                .getConnectionError()
+                .map(
+                    throwable ->
+                        throwable instanceof RuntimeException
+                            ? (RuntimeException) throwable
+                            : new RuntimeException(throwable))
+                .orElse(new IllegalStateException("unknown reason"));
 
         throw connectionError;
       }
@@ -230,7 +235,7 @@ public class FeatureProviderSqlFactory
           try {
             schemaGeneratorSql.close();
           } catch (Throwable e) {
-            //ignore
+            // ignore
           }
         }
       }

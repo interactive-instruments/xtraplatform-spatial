@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,5 +11,5 @@ import de.ii.xtraplatform.cql.domain.Cql2Expression;
 
 public interface FilterEncoder<T> {
 
-    T encode(Cql2Expression cqlFilter, FeatureStoreInstanceContainer typeInfo);
+  T encode(Cql2Expression cqlFilter, FeatureStoreInstanceContainer typeInfo);
 }

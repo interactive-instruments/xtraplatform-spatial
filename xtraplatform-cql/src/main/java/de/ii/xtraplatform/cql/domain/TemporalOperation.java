@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,27 +9,24 @@ package de.ii.xtraplatform.cql.domain;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import java.util.List;
 import org.immutables.value.Value;
-import org.threeten.extra.Interval;
 
 @Deprecated
 @Value.Immutable
 @JsonDeserialize(as = TemporalOperation.class)
 public interface TemporalOperation extends BinaryOperation<TemporalLiteral>, CqlNode {
 
-    @JsonValue
-    TemporalOperator getOperator();
+  @JsonValue
+  TemporalOperator getOperator();
 
-    static TemporalOperation of(TemporalOperator operator, String property, TemporalLiteral temporalLiteral) {
-        return new ImmutableTemporalOperation.Builder()
-            .operator(operator)
-            .operands(ImmutableList.of(Property.of(property),temporalLiteral))
-            .build();
-    }
+  static TemporalOperation of(
+      TemporalOperator operator, String property, TemporalLiteral temporalLiteral) {
+    return new ImmutableTemporalOperation.Builder()
+        .operator(operator)
+        .operands(ImmutableList.of(Property.of(property), temporalLiteral))
+        .build();
+  }
 
-    abstract class Builder extends BinaryOperation.Builder<TemporalLiteral, TemporalOperation> {
-    }
+  abstract class Builder extends BinaryOperation.Builder<TemporalLiteral, TemporalOperation> {}
 }

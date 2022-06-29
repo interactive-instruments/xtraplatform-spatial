@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,21 +8,20 @@
 package de.ii.xtraplatform.features.sql.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
-import org.immutables.value.Value;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.immutables.value.Value;
 
 @Value.Immutable
 public interface SqlQueries {
 
-    Optional<String> getMetaQuery();
+  Optional<String> getMetaQuery();
 
-    Function<SqlRowMeta, Stream<String>> getValueQueries();
+  Function<SqlRowMeta, Stream<String>> getValueQueries();
 
-    List<FeatureStoreInstanceContainer> getInstanceContainers();
+  List<FeatureStoreInstanceContainer> getInstanceContainers();
 
-    List<SchemaSql> getTableSchemas();
+  List<SchemaSql> getTableSchemas();
 }

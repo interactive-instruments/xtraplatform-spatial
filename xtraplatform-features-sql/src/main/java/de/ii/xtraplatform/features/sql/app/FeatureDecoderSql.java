@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,9 +7,6 @@
  */
 package de.ii.xtraplatform.features.sql.app;
 
-import de.ii.xtraplatform.features.sql.domain.SchemaSql;
-import de.ii.xtraplatform.features.sql.domain.SqlRow;
-import de.ii.xtraplatform.features.sql.domain.SqlRowMeta;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -21,6 +18,9 @@ import de.ii.xtraplatform.features.domain.NestingTracker;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql;
+import de.ii.xtraplatform.features.sql.domain.SqlRow;
+import de.ii.xtraplatform.features.sql.domain.SqlRowMeta;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +30,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> {
+public class FeatureDecoderSql
+    extends FeatureTokenDecoder<
+        SqlRow, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDecoderSql.class);
 
@@ -49,32 +51,36 @@ public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow, FeatureSchema
   private GeometryDecoderWkt geometryDecoder;
   private NestingTracker nestingTracker;
 
-  public FeatureDecoderSql(List<FeatureStoreTypeInfo> typeInfos,
+  public FeatureDecoderSql(
+      List<FeatureStoreTypeInfo> typeInfos,
       List<SchemaSql> tableSchemas,
-      FeatureSchema featureSchema, FeatureQuery query) {
+      FeatureSchema featureSchema,
+      FeatureQuery query) {
     this.featureSchema = featureSchema;
     this.featureQuery = query;
 
-    //TODO: support multiple main tables
+    // TODO: support multiple main tables
     SchemaSql tableSchema = tableSchemas.get(0);
 
     this.mainTablePath = tableSchema.getFullPath();
-    List<List<String>> multiTables = tableSchema.getAllObjects().stream()
-        .filter(schema -> !schema.getRelation().isEmpty())
-        .map(SchemaBase::getFullPath)
-        .collect(Collectors.toList());
+    List<List<String>> multiTables =
+        tableSchema.getAllObjects().stream()
+            .filter(schema -> !schema.getRelation().isEmpty())
+            .map(SchemaBase::getFullPath)
+            .collect(Collectors.toList());
     this.multiplicityTracker = new SqlMultiplicityTracker(multiTables);
     this.isSingleFeature = query.returnsSingleFeature();
   }
 
   @Override
   protected void init() {
-    this.context = createContext()
-        .setMapping(new ImmutableSchemaMapping.Builder().targetSchema(featureSchema).build())
-        .setQuery(featureQuery);
+    this.context =
+        createContext()
+            .setMapping(new ImmutableSchemaMapping.Builder().targetSchema(featureSchema).build())
+            .setQuery(featureQuery);
     this.geometryDecoder = new GeometryDecoderWkt(getDownstream(), context);
-    this.nestingTracker = new NestingTracker(getDownstream(), context, mainTablePath, false, false,
-        false);
+    this.nestingTracker =
+        new NestingTracker(getDownstream(), context, mainTablePath, false, false, false);
   }
 
   @Override
@@ -97,15 +103,15 @@ public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow, FeatureSchema
       return;
     }
 
-    //TODO: should't happen, test with exception in onStart
+    // TODO: should't happen, test with exception in onStart
     if (!started) {
       return;
     }
 
-    //if (sqlRow instanceof SqlRowValues) {
+    // if (sqlRow instanceof SqlRowValues) {
     handleValueRow(sqlRow);
     //    return;
-    //}
+    // }
   }
 
   private void handleMetaRow(SqlRowMeta sqlRow) {
@@ -131,7 +137,9 @@ public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow, FeatureSchema
       multiplicityTracker.track(sqlRow.getPath(), sqlRow.getIds());
 
       if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("Multiplicities {} {}", sqlRow.getPath(),
+        LOGGER.trace(
+            "Multiplicities {} {}",
+            sqlRow.getPath(),
             multiplicityTracker.getMultiplicitiesForPath(sqlRow.getPath()));
       }
     }
@@ -156,19 +164,23 @@ public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow, FeatureSchema
     if (!isAtLeastOneFeatureWritten) {
       this.isAtLeastOneFeatureWritten = true;
     }
-
   }
 
-  //TODO: move general parts to NestingTracker
-  private void handleNesting(SqlRow sqlRow, List<Integer> indexes)  {
-    while (nestingTracker.isNested() &&
-        (nestingTracker.doesNotStartWithPreviousPath(sqlRow.getPath()) ||
-            (nestingTracker.inObject() && nestingTracker.isSamePath(sqlRow.getPath()) ||
-                (nestingTracker.inArray() && nestingTracker.isSamePath(sqlRow.getPath()) && nestingTracker.hasParentIndexChanged(indexes))))) {
+  // TODO: move general parts to NestingTracker
+  private void handleNesting(SqlRow sqlRow, List<Integer> indexes) {
+    while (nestingTracker.isNested()
+        && (nestingTracker.doesNotStartWithPreviousPath(sqlRow.getPath())
+            || (nestingTracker.inObject() && nestingTracker.isSamePath(sqlRow.getPath())
+                || (nestingTracker.inArray()
+                    && nestingTracker.isSamePath(sqlRow.getPath())
+                    && nestingTracker.hasParentIndexChanged(indexes))))) {
       nestingTracker.close();
     }
 
-    if (nestingTracker.inObject() && context.inArray() && nestingTracker.doesStartWithPreviousPath(sqlRow.getPath()) && nestingTracker.hasIndexChanged(indexes)) {
+    if (nestingTracker.inObject()
+        && context.inArray()
+        && nestingTracker.doesStartWithPreviousPath(sqlRow.getPath())
+        && nestingTracker.hasIndexChanged(indexes)) {
       nestingTracker.closeObject();
       nestingTracker.openObject();
     }
@@ -186,25 +198,25 @@ public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow, FeatureSchema
     }
   }
 
-  //TODO: schemaIndex
-  private void handleColumns(SqlRow sqlRow)  {
+  // TODO: schemaIndex
+  private void handleColumns(SqlRow sqlRow) {
 
     Map<List<String>, Integer> schemaIndexes = new HashMap<>();
 
-    for (int i = 0; i < sqlRow.getValues()
-        .size() && i < sqlRow.getColumnPaths()
-        .size(); i++) {
-      if (Objects.nonNull(sqlRow.getValues()
-          .get(i))) {
+    for (int i = 0; i < sqlRow.getValues().size() && i < sqlRow.getColumnPaths().size(); i++) {
+      if (Objects.nonNull(sqlRow.getValues().get(i))) {
 
         context.pathTracker().track(sqlRow.getColumnPaths().get(i));
         if (!schemaIndexes.containsKey(sqlRow.getColumnPaths().get(i))) {
           schemaIndexes.put(sqlRow.getColumnPaths().get(i), 0);
         } else {
-          schemaIndexes.put(sqlRow.getColumnPaths().get(i), schemaIndexes.get(sqlRow.getColumnPaths().get(i)) + 1);
+          schemaIndexes.put(
+              sqlRow.getColumnPaths().get(i),
+              schemaIndexes.get(sqlRow.getColumnPaths().get(i)) + 1);
         }
 
-        if (sqlRow.getSpatialAttributes().size() > i && Objects.equals(sqlRow.getSpatialAttributes().get(i), true)) {
+        if (sqlRow.getSpatialAttributes().size() > i
+            && Objects.equals(sqlRow.getSpatialAttributes().get(i), true)) {
           try {
             context.setSchemaIndex(-1);
             geometryDecoder.decode((String) sqlRow.getValues().get(i));
@@ -212,7 +224,7 @@ public class FeatureDecoderSql extends FeatureTokenDecoder<SqlRow, FeatureSchema
             throw new IllegalStateException("Error parsing WKT geometry", e);
           }
         } else {
-          //TODO: is that correct or do we need the column type?
+          // TODO: is that correct or do we need the column type?
           context.setValueType(Type.STRING);
           context.setValue((String) sqlRow.getValues().get(i));
           context.setSchemaIndex(schemaIndexes.get(sqlRow.getColumnPaths().get(i)));

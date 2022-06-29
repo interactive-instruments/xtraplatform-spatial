@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,30 +15,29 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableLike.Builder.class)
 public interface Like extends BinaryScalarOperation, CqlNode {
 
-    String TYPE = "like";
+  String TYPE = "like";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static Like of(String property, ScalarLiteral scalarLiteral) {
-        return new ImmutableLike.Builder().args(ImmutableList.of(Property.of(property),scalarLiteral))
-                                          .build();
-    }
+  static Like of(String property, ScalarLiteral scalarLiteral) {
+    return new ImmutableLike.Builder()
+        .args(ImmutableList.of(Property.of(property), scalarLiteral))
+        .build();
+  }
 
-    static Like of(String property, String property2) {
-        return new ImmutableLike.Builder().args(ImmutableList.of(Property.of(property),Property.of(property2)))
-                                          .build();
-    }
+  static Like of(String property, String property2) {
+    return new ImmutableLike.Builder()
+        .args(ImmutableList.of(Property.of(property), Property.of(property2)))
+        .build();
+  }
 
-    static Like ofFunction(Function function, ScalarLiteral scalarLiteral) {
-        return new ImmutableLike.Builder().args(ImmutableList.of(function, scalarLiteral))
-                                          .build();
-    }
+  static Like ofFunction(Function function, ScalarLiteral scalarLiteral) {
+    return new ImmutableLike.Builder().args(ImmutableList.of(function, scalarLiteral)).build();
+  }
 
-    abstract class Builder extends BinaryScalarOperation.Builder<Like> {
-
-    }
+  abstract class Builder extends BinaryScalarOperation.Builder<Like> {}
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,19 +9,18 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
-import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
 import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomFuseable;
 import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomFuseableIn;
 import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomSource;
-import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public abstract class FeatureTokenTransformerBase<T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>> implements
-    TransformerCustomFuseable<Object, FeatureEventHandler>,
-    TransformerCustomSource<Object, Object, FeatureTokenSource>,
-    FeatureEventHandler<T, U, V>,
-    FeatureTokenContext<V> {
+public abstract class FeatureTokenTransformerBase<
+        T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>>
+    implements TransformerCustomFuseable<Object, FeatureEventHandler>,
+        TransformerCustomSource<Object, Object, FeatureTokenSource>,
+        FeatureEventHandler<T, U, V>,
+        FeatureTokenContext<V> {
 
   private FeatureEventHandler<T, U, V> downstream;
   private FeatureTokenReader<T, U, V> tokenReader;
@@ -35,12 +34,17 @@ public abstract class FeatureTokenTransformerBase<T extends SchemaBase<T>, U ext
   @Override
   public final boolean canFuse(
       TransformerCustomFuseableIn<Object, ?, ?> transformerCustomFuseableIn) {
-    boolean isTransformerFuseable = TransformerCustomFuseable.super.canFuse(
-        transformerCustomFuseableIn);
+    boolean isTransformerFuseable =
+        TransformerCustomFuseable.super.canFuse(transformerCustomFuseableIn);
 
     if (isTransformerFuseable && transformerCustomFuseableIn instanceof FeatureTokenContext<?>) {
-      if (!ModifiableContext.class.isAssignableFrom(((FeatureTokenContext<?>) transformerCustomFuseableIn).getContextInterface())) {
-        throw new IllegalStateException("Cannot fuse FeatureTokenTransformer: " + ((FeatureTokenContext<?>) transformerCustomFuseableIn).getContextInterface() + " does not extend " + this.getContextInterface());
+      if (!ModifiableContext.class.isAssignableFrom(
+          ((FeatureTokenContext<?>) transformerCustomFuseableIn).getContextInterface())) {
+        throw new IllegalStateException(
+            "Cannot fuse FeatureTokenTransformer: "
+                + ((FeatureTokenContext<?>) transformerCustomFuseableIn).getContextInterface()
+                + " does not extend "
+                + this.getContextInterface());
       }
     }
 
@@ -49,16 +53,17 @@ public abstract class FeatureTokenTransformerBase<T extends SchemaBase<T>, U ext
 
   @Override
   public final void fuse(
-      TransformerCustomFuseableIn<Object, ?, ? extends FeatureEventHandler> transformerCustomFuseableIn) {
+      TransformerCustomFuseableIn<Object, ?, ? extends FeatureEventHandler>
+          transformerCustomFuseableIn) {
     if (!canFuse(transformerCustomFuseableIn)) {
       throw new IllegalArgumentException();
     }
     if (Objects.isNull(downstream)) {
       this.downstream = transformerCustomFuseableIn.fuseableSink();
-      //TODO this.tokenReader = new FeatureTokenReader<>(this, createContext());
+      // TODO this.tokenReader = new FeatureTokenReader<>(this, createContext());
 
       transformerCustomFuseableIn.afterInit(this::init);
-      //init();
+      // init();
     }
   }
 
@@ -66,7 +71,7 @@ public abstract class FeatureTokenTransformerBase<T extends SchemaBase<T>, U ext
   public final void init(Consumer<Object> push) {
     if (Objects.isNull(downstream)) {
       this.downstream = (FeatureTokenEmitter2<T, U, V>) push::accept;
-      //TODO this.tokenReader = new FeatureTokenReader<>(this, createContext());
+      // TODO this.tokenReader = new FeatureTokenReader<>(this, createContext());
       init();
     }
   }
@@ -106,8 +111,7 @@ public abstract class FeatureTokenTransformerBase<T extends SchemaBase<T>, U ext
     }
   }
 
-  protected void cleanup() {
-  }
+  protected void cleanup() {}
 
   @Override
   public void onStart(V context) {

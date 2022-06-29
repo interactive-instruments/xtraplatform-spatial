@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,11 +7,7 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.google.common.base.Preconditions;
-import org.immutables.value.Value;
-
 public interface BinaryScalarOperation extends BinaryOperation2<Scalar>, CqlNode {
 
-    abstract class Builder<T extends BinaryScalarOperation> extends Operation.Builder<Scalar, T> {}
-
+  abstract class Builder<T extends BinaryScalarOperation> extends Operation.Builder<Scalar, T> {}
 }

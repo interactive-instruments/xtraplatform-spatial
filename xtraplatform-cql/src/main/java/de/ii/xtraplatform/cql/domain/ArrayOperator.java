@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,8 +8,8 @@
 package de.ii.xtraplatform.cql.domain;
 
 public enum ArrayOperator implements CqlNode {
-    A_EQUALS,
-    A_CONTAINS,
-    A_CONTAINEDBY,
-    A_OVERLAPS
+  A_EQUALS,
+  A_CONTAINS,
+  A_CONTAINEDBY,
+  A_OVERLAPS
 }

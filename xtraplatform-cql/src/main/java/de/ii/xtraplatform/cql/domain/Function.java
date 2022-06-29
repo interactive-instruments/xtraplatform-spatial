@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -17,145 +17,133 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.immutables.value.Value;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.threeten.extra.Interval;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableFunction.Builder.class)
 @JsonSerialize(using = Function.Serializer.class)
 public interface Function extends CqlNode, Scalar, Temporal, Operand {
 
-    String getName();
+  String getName();
 
-    List<Operand> getArgs();
+  List<Operand> getArgs();
 
-    static Function of(String name, List<Operand> arguments) {
-        return new ImmutableFunction.Builder()
-                .name(name)
-                .args(arguments)
-                .build();
+  static Function of(String name, List<Operand> arguments) {
+    return new ImmutableFunction.Builder().name(name).args(arguments).build();
+  }
+
+  @Override
+  default <U> U accept(CqlVisitor<U> visitor) {
+
+    List<U> arguments =
+        getArgs().stream().map(argument -> argument.accept(visitor)).collect(Collectors.toList());
+
+    return visitor.visit(this, arguments);
+  }
+
+  @JsonIgnore
+  @Value.Lazy
+  default Class<?> getType() {
+    if (isLower() || isUpper()) return String.class;
+    else if (isPosition()) return Integer.class;
+    return Object.class;
+  }
+
+  /*
+  @JsonIgnore
+  @Value.Lazy
+  default boolean isCasei() {
+      return "casei".equalsIgnoreCase(getName());
+  }
+
+  @JsonIgnore
+  @Value.Lazy
+  default boolean isAccenti() {
+      return "accenti".equalsIgnoreCase(getName());
+  }
+
+  @JsonIgnore
+  @Value.Lazy
+  default boolean isInterval() {
+      return "interval".equalsIgnoreCase(getName());
+  }
+   */
+
+  @JsonIgnore
+  @Value.Lazy
+  default boolean isLower() {
+    return "lower".equalsIgnoreCase(getName());
+  }
+
+  @JsonIgnore
+  @Value.Lazy
+  default boolean isUpper() {
+    return "upper".equalsIgnoreCase(getName());
+  }
+
+  @JsonIgnore
+  @Value.Lazy
+  default boolean isPosition() {
+    return "position".equalsIgnoreCase(getName());
+  }
+
+  class Serializer extends StdSerializer<Function> {
+
+    protected Serializer() {
+      this(null);
+    }
+
+    protected Serializer(Class<Function> t) {
+      super(t);
     }
 
     @Override
-    default <U> U accept(CqlVisitor<U> visitor) {
+    public void serialize(Function value, JsonGenerator gen, SerializerProvider serializers)
+        throws IOException {
+      /*
+      if (value.isCasei() || value.isAccenti()) {
+          gen.writeStartObject();
+          gen.writeFieldName(value.getName().toLowerCase());
+          Operand operand = value.getArgs().get(0);
+          if (operand instanceof ScalarLiteral) {
+              gen.writeString(String.format("%s", ((ScalarLiteral) operand).getValue().toString()));
+          } else {
+              gen.writeObject(operand);
+          }
+          gen.writeEndObject();
+          return;
+      } else if (value.isInterval()) {
+          gen.writeStartObject();
+          gen.writeFieldName(value.getName().toLowerCase());
+          gen.writeStartArray();
+          for (Operand operand : value.getArgs()) {
+              if (operand instanceof TemporalLiteral) {
+                  gen.writeString(String.format("%s", ((TemporalLiteral) operand).getValue().toString()));
+              } else {
+                  gen.writeObject(operand);
+              }
+          }
+          gen.writeEndArray();
+          gen.writeEndObject();
+          return;
+      }
+       */
 
-        List<U> arguments = getArgs()
-                .stream()
-                .map(argument -> argument.accept(visitor))
-                .collect(Collectors.toList());
-
-        return visitor.visit(this, arguments);
-    }
-
-    @JsonIgnore
-    @Value.Lazy
-    default Class<?> getType() {
-        if (isLower() || isUpper())
-            return String.class;
-        else if (isPosition())
-            return Integer.class;
-        return Object.class;
-    }
-
-    /*
-    @JsonIgnore
-    @Value.Lazy
-    default boolean isCasei() {
-        return "casei".equalsIgnoreCase(getName());
-    }
-
-    @JsonIgnore
-    @Value.Lazy
-    default boolean isAccenti() {
-        return "accenti".equalsIgnoreCase(getName());
-    }
-
-    @JsonIgnore
-    @Value.Lazy
-    default boolean isInterval() {
-        return "interval".equalsIgnoreCase(getName());
-    }
-     */
-
-    @JsonIgnore
-    @Value.Lazy
-    default boolean isLower() {
-        return "lower".equalsIgnoreCase(getName());
-    }
-
-    @JsonIgnore
-    @Value.Lazy
-    default boolean isUpper() {
-        return "upper".equalsIgnoreCase(getName());
-    }
-
-    @JsonIgnore
-    @Value.Lazy
-    default boolean isPosition() {
-        return "position".equalsIgnoreCase(getName());
-    }
-
-    class Serializer extends StdSerializer<Function> {
-
-        protected Serializer() {
-            this(null);
+      gen.writeStartObject();
+      gen.writeFieldName("function");
+      gen.writeStartObject();
+      gen.writeStringField("name", value.getName());
+      gen.writeFieldName("args");
+      gen.writeStartArray();
+      for (Operand operand : value.getArgs()) {
+        if (operand instanceof ScalarLiteral) {
+          gen.writeString(String.format("%s", ((ScalarLiteral) operand).getValue().toString()));
+        } else {
+          gen.writeObject(operand);
         }
-
-        protected Serializer(Class<Function> t) {
-            super(t);
-        }
-
-        @Override
-        public void serialize(Function value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            /*
-            if (value.isCasei() || value.isAccenti()) {
-                gen.writeStartObject();
-                gen.writeFieldName(value.getName().toLowerCase());
-                Operand operand = value.getArgs().get(0);
-                if (operand instanceof ScalarLiteral) {
-                    gen.writeString(String.format("%s", ((ScalarLiteral) operand).getValue().toString()));
-                } else {
-                    gen.writeObject(operand);
-                }
-                gen.writeEndObject();
-                return;
-            } else if (value.isInterval()) {
-                gen.writeStartObject();
-                gen.writeFieldName(value.getName().toLowerCase());
-                gen.writeStartArray();
-                for (Operand operand : value.getArgs()) {
-                    if (operand instanceof TemporalLiteral) {
-                        gen.writeString(String.format("%s", ((TemporalLiteral) operand).getValue().toString()));
-                    } else {
-                        gen.writeObject(operand);
-                    }
-                }
-                gen.writeEndArray();
-                gen.writeEndObject();
-                return;
-            }
-             */
-
-            gen.writeStartObject();
-            gen.writeFieldName("function");
-            gen.writeStartObject();
-            gen.writeStringField("name", value.getName());
-            gen.writeFieldName("args");
-            gen.writeStartArray();
-            for (Operand operand : value.getArgs()) {
-                if (operand instanceof ScalarLiteral) {
-                    gen.writeString(String.format("%s", ((ScalarLiteral) operand).getValue().toString()));
-                } else {
-                    gen.writeObject(operand);
-                }
-            }
-            gen.writeEndArray();
-            gen.writeEndObject();
-            gen.writeEndObject();
-        }
+      }
+      gen.writeEndArray();
+      gen.writeEndObject();
+      gen.writeEndObject();
     }
+  }
 }
-
-
-

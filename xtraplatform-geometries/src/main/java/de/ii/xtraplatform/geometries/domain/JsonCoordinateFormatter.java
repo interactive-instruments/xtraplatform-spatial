@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,47 +8,46 @@
 package de.ii.xtraplatform.geometries.domain;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-
 import java.io.IOException;
 
 /**
  * @author zahnen
  */
 public class JsonCoordinateFormatter implements CoordinateFormatter {
-    protected JsonGenerator jsonOut;
+  protected JsonGenerator jsonOut;
 
-    public JsonCoordinateFormatter(JsonGenerator jsonOut) {
-        this.jsonOut = jsonOut;
-    }
+  public JsonCoordinateFormatter(JsonGenerator jsonOut) {
+    this.jsonOut = jsonOut;
+  }
 
-    @Override
-    public void open() throws IOException {
-        jsonOut.writeStartArray();
-    }
+  @Override
+  public void open() throws IOException {
+    jsonOut.writeStartArray();
+  }
 
-    @Override
-    public void close() throws IOException {
-        jsonOut.writeEndArray();
-    }
+  @Override
+  public void close() throws IOException {
+    jsonOut.writeEndArray();
+  }
 
-    @Override
-    public void separator() throws IOException {
-        jsonOut.writeEndArray();
-        jsonOut.writeStartArray();
-    }
+  @Override
+  public void separator() throws IOException {
+    jsonOut.writeEndArray();
+    jsonOut.writeStartArray();
+  }
 
-    @Override
-    public void value(String value) throws IOException {
-        jsonOut.writeRawValue(value);
-    }
+  @Override
+  public void value(String value) throws IOException {
+    jsonOut.writeRawValue(value);
+  }
 
-    @Override
-    public void value(char[] chars, int i, int j) throws IOException {
-        jsonOut.writeRawValue(chars, i, j);
-    }
+  @Override
+  public void value(char[] chars, int i, int j) throws IOException {
+    jsonOut.writeRawValue(chars, i, j);
+  }
 
-    @Override
-    public void raw(char[] chars, int i, int j) throws IOException {
-        jsonOut.writeRaw(chars, i, j);
-    }
+  @Override
+  public void raw(char[] chars, int i, int j) throws IOException {
+    jsonOut.writeRaw(chars, i, j);
+  }
 }

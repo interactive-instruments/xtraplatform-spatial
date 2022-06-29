@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,6 +11,4 @@ import org.immutables.value.Value;
 
 @Value.Modifiable
 @Value.Style(set = "*")
-public interface Feature extends FeatureBase<Property, FeatureSchema> {
-
-}
+public interface Feature extends FeatureBase<Property, FeatureSchema> {}

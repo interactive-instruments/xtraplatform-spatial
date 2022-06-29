@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -20,31 +20,25 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableProperty.Builder.class)
 public interface Property extends Scalar, Spatial, Temporal, Operand, Vector, CqlNode {
 
-    static Property of(String name) {
-        return ImmutableProperty.builder()
-                .name(name)
-                .build();
-    }
-    static Property of(String name, Map<String, Cql2Expression> nestedFilters) {
-        return ImmutableProperty.builder()
-            .name(name)
-            .nestedFilters(nestedFilters)
-            .build();
-    }
+  static Property of(String name) {
+    return ImmutableProperty.builder().name(name).build();
+  }
 
-    @JsonProperty("property")
-    String getName();
+  static Property of(String name, Map<String, Cql2Expression> nestedFilters) {
+    return ImmutableProperty.builder().name(name).nestedFilters(nestedFilters).build();
+  }
 
-    @JsonIgnore
-    Map<String, Cql2Expression> getNestedFilters();
+  @JsonProperty("property")
+  String getName();
 
-    Splitter PATH_SPLITTER = Splitter.on('.')
-                                     .omitEmptyStrings();
+  @JsonIgnore
+  Map<String, Cql2Expression> getNestedFilters();
 
-    @JsonIgnore
-    @Value.Derived
-    default List<String> getPath() {
-        return PATH_SPLITTER.splitToList(getName());
-    }
+  Splitter PATH_SPLITTER = Splitter.on('.').omitEmptyStrings();
 
+  @JsonIgnore
+  @Value.Derived
+  default List<String> getPath() {
+    return PATH_SPLITTER.splitToList(getName());
+  }
 }

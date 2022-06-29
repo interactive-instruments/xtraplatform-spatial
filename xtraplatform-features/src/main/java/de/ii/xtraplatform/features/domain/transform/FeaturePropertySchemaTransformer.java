@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,6 +9,5 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 
-public interface FeaturePropertySchemaTransformer extends FeaturePropertyTransformer<FeatureSchema> {
-
-}
+public interface FeaturePropertySchemaTransformer
+    extends FeaturePropertyTransformer<FeatureSchema> {}

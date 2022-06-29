@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,19 +16,24 @@ import org.slf4j.LoggerFactory;
 
 public interface FeaturePropertyValueTransformer extends FeaturePropertyTransformer<String> {
 
-    Logger LOGGER = LoggerFactory.getLogger(FeaturePropertyValueTransformer.class);
+  Logger LOGGER = LoggerFactory.getLogger(FeaturePropertyValueTransformer.class);
 
-    List<SchemaBase.Type> getSupportedPropertyTypes();
+  List<SchemaBase.Type> getSupportedPropertyTypes();
 
-    default boolean matches(FeatureSchema schema) {
-        Type valueType = schema.getValueType().orElse(schema.getType());
-        boolean isTypeMatching = getSupportedPropertyTypes().isEmpty() || getSupportedPropertyTypes().contains(valueType);
+  default boolean matches(FeatureSchema schema) {
+    Type valueType = schema.getValueType().orElse(schema.getType());
+    boolean isTypeMatching =
+        getSupportedPropertyTypes().isEmpty() || getSupportedPropertyTypes().contains(valueType);
 
-        if (!isTypeMatching) {
-            LOGGER.warn("Skipping {} transformation for property '{}', type {} is not supported. Supported types: {}", getType(), getPropertyPath(), valueType, getSupportedPropertyTypes());
-        }
-
-        return isTypeMatching;
+    if (!isTypeMatching) {
+      LOGGER.warn(
+          "Skipping {} transformation for property '{}', type {} is not supported. Supported types: {}",
+          getType(),
+          getPropertyPath(),
+          valueType,
+          getSupportedPropertyTypes());
     }
 
+    return isTypeMatching;
+  }
 }

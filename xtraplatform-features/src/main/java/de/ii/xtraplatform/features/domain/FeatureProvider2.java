@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,106 +7,105 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-
 import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
 
 public interface FeatureProvider2 extends PersistentEntity {
 
-    String ENTITY_TYPE = "providers";
-    String PROVIDER_TYPE_KEY = "providerType";
-    String PROVIDER_TYPE = "FEATURE";
+  String ENTITY_TYPE = "providers";
+  String PROVIDER_TYPE_KEY = "providerType";
+  String PROVIDER_TYPE = "FEATURE";
 
-    @Override
-    default String getType() {
-        return ENTITY_TYPE;
+  @Override
+  default String getType() {
+    return ENTITY_TYPE;
+  }
+
+  @Override
+  FeatureProviderDataV2 getData();
+
+  /*
+      default String getProviderType() {
+          return getData().getProviderType();
+      }
+
+      default String getFeatureProviderType() {
+          return getData().getFeatureProviderType();
+      }
+  */
+
+  FeatureChangeHandler getFeatureChangeHandler();
+
+  default boolean supportsQueries() {
+    return this instanceof FeatureQueries;
+  }
+
+  default FeatureQueries queries() {
+    if (!supportsQueries()) {
+      throw new UnsupportedOperationException("Queries not supported");
     }
+    return (FeatureQueries) this;
+  }
 
-    @Override
-    FeatureProviderDataV2 getData();
+  default boolean supportsExtents() {
+    return this instanceof FeatureExtents && supportsCrs();
+  }
 
-/*
-    default String getProviderType() {
-        return getData().getProviderType();
+  default FeatureExtents extents() {
+    if (!supportsExtents()) {
+      throw new UnsupportedOperationException("Extents not supported");
     }
+    return (FeatureExtents) this;
+  }
 
-    default String getFeatureProviderType() {
-        return getData().getFeatureProviderType();
+  default boolean supportsPassThrough() {
+    return this instanceof FeatureQueriesPassThrough;
+  }
+
+  default FeatureQueriesPassThrough passThrough() {
+    if (!supportsQueries()) {
+      throw new UnsupportedOperationException("Queries not supported");
     }
-*/
+    return (FeatureQueriesPassThrough) this;
+  }
 
-    FeatureChangeHandler getFeatureChangeHandler();
+  default boolean supportsTransactions() {
+    return this instanceof FeatureTransactions;
+  }
 
-    default boolean supportsQueries() {
-        return this instanceof FeatureQueries;
+  default FeatureTransactions transactions() {
+    if (!supportsTransactions()) {
+      throw new UnsupportedOperationException("Transactions not supported");
     }
+    return (FeatureTransactions) this;
+  }
 
-    default FeatureQueries queries() {
-        if (!supportsQueries()) {
-            throw new UnsupportedOperationException("Queries not supported");
-        }
-        return (FeatureQueries) this;
-    }
+  default boolean supportsCrs() {
+    return this instanceof FeatureCrs;
+  }
 
-    default boolean supportsExtents() {
-        return this instanceof FeatureExtents && supportsCrs();
+  default FeatureCrs crs() {
+    if (!supportsCrs()) {
+      throw new UnsupportedOperationException("CRS not supported");
     }
+    return (FeatureCrs) this;
+  }
 
-    default FeatureExtents extents() {
-        if (!supportsExtents()) {
-            throw new UnsupportedOperationException("Extents not supported");
-        }
-        return (FeatureExtents) this;
-    }
+  default boolean supportsMetadata() {
+    return this instanceof FeatureMetadata;
+  }
 
-    default boolean supportsPassThrough() {
-        return this instanceof FeatureQueriesPassThrough;
+  default FeatureMetadata metadata() {
+    if (!supportsMetadata()) {
+      throw new UnsupportedOperationException("Metadata not supported");
     }
+    return (FeatureMetadata) this;
+  }
 
-    default FeatureQueriesPassThrough passThrough() {
-        if (!supportsQueries()) {
-            throw new UnsupportedOperationException("Queries not supported");
-        }
-        return (FeatureQueriesPassThrough) this;
-    }
+  default boolean supportsSorting() {
+    return false;
+  }
 
-    default boolean supportsTransactions() {
-        return this instanceof FeatureTransactions;
-    }
-
-    default FeatureTransactions transactions() {
-        if (!supportsTransactions()) {
-            throw new UnsupportedOperationException("Transactions not supported");
-        }
-        return (FeatureTransactions) this;
-    }
-
-    default boolean supportsCrs() {
-        return this instanceof FeatureCrs;
-    }
-
-    default FeatureCrs crs() {
-        if (!supportsCrs()) {
-            throw new UnsupportedOperationException("CRS not supported");
-        }
-        return (FeatureCrs) this;
-    }
-
-    default boolean supportsMetadata() {
-        return this instanceof FeatureMetadata;
-    }
-
-    default FeatureMetadata metadata() {
-        if (!supportsMetadata()) {
-            throw new UnsupportedOperationException("Metadata not supported");
-        }
-        return (FeatureMetadata) this;
-    }
-
-    default boolean supportsSorting() {
-        return false;
-    }
-
-    default boolean supportsHighLoad() {
-        return false;
-    }
+  default boolean supportsHighLoad() {
+    return false;
+  }
 }

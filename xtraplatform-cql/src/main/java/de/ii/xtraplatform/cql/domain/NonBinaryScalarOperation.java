@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,14 +7,7 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.google.common.base.Preconditions;
-import org.immutables.value.Value;
-
-import java.util.List;
-
 public interface NonBinaryScalarOperation extends CqlNode {
 
-    abstract class Builder<T extends NonBinaryScalarOperation> {}
+  abstract class Builder<T extends NonBinaryScalarOperation> {}
 }

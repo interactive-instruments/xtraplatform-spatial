@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 
-public abstract class FeatureTokenEncoderDefault<T extends ModifiableContext<FeatureSchema, SchemaMapping>> extends
-    FeatureTokenEncoderBase<FeatureSchema, SchemaMapping, T> implements FeatureTokenEncoder<T> {
-
-}
+public abstract class FeatureTokenEncoderDefault<
+        T extends ModifiableContext<FeatureSchema, SchemaMapping>>
+    extends FeatureTokenEncoderBase<FeatureSchema, SchemaMapping, T>
+    implements FeatureTokenEncoder<T> {}

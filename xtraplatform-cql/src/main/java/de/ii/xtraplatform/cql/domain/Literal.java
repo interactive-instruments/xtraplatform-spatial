@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,10 +14,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(using = Operand.OperandDeserializer.class)
 public interface Literal extends Operand, CqlNode {
 
-    @JsonValue
-    Object getValue();
+  @JsonValue
+  Object getValue();
 
-    @JsonIgnore
-    Class<?> getType();
-
+  @JsonIgnore
+  Class<?> getType();
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -8,12 +8,12 @@
 package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
-import de.ii.xtraplatform.streams.domain.Reactive.TransformerCustomFuseableIn;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public abstract class FeatureTokenEncoderBase<T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>> implements
-    FeatureTokenEncoderGeneric<T, U, V> {
+public abstract class FeatureTokenEncoderBase<
+        T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>>
+    implements FeatureTokenEncoderGeneric<T, U, V> {
 
   private final FeatureTokenReader tokenReader;
   private Consumer<byte[]> downstream;
@@ -59,6 +59,5 @@ public abstract class FeatureTokenEncoderBase<T extends SchemaBase<T>, U extends
     }
   }
 
-  protected void cleanup() {
-  }
+  protected void cleanup() {}
 }

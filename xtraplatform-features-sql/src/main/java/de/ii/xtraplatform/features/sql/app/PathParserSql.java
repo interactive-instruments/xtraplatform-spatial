@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,11 +10,11 @@ package de.ii.xtraplatform.features.sql.app;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
-import de.ii.xtraplatform.features.sql.SqlPath;
-import de.ii.xtraplatform.features.sql.SqlPathSyntax;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation;
 import de.ii.xtraplatform.features.sql.ImmutableSqlPath.Builder;
+import de.ii.xtraplatform.features.sql.SqlPath;
+import de.ii.xtraplatform.features.sql.SqlPathSyntax;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +100,8 @@ public class PathParserSql {
     return Optional.empty();
   }
 
-  public List<FeatureStoreRelation> toRelations(List<String> path, Map<String, Cql2Expression> filters) {
+  public List<FeatureStoreRelation> toRelations(
+      List<String> path, Map<String, Cql2Expression> filters) {
 
     if (path.size() < 2) {
       throw new IllegalArgumentException(String.format("not a valid relation path: %s", path));
@@ -122,7 +123,11 @@ public class PathParserSql {
   }
 
   private Stream<FeatureStoreRelation> toRelations(
-      String source, String link, String target, boolean isLast, Map<String, Cql2Expression> filters) {
+      String source,
+      String link,
+      String target,
+      boolean isLast,
+      Map<String, Cql2Expression> filters) {
     if (syntax.isJunctionTable(source)) {
       if (isLast) {
         return Stream.of(toRelation(link, target, filters));

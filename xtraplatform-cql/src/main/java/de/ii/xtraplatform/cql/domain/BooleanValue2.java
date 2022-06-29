@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,13 +14,13 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableBooleanValue2.Builder.class)
 public interface BooleanValue2 extends Cql2Expression, Literal, CqlNode {
 
-    @Value.Derived
-    @Override
-    default Class<?> getType() {
-        return java.lang.Boolean.class;
-    }
+  @Value.Derived
+  @Override
+  default Class<?> getType() {
+    return java.lang.Boolean.class;
+  }
 
-    static BooleanValue2 of(java.lang.Boolean literal) {
-        return new ImmutableBooleanValue2.Builder().value(literal).build();
-    }
+  static BooleanValue2 of(java.lang.Boolean literal) {
+    return new ImmutableBooleanValue2.Builder().value(literal).build();
+  }
 }

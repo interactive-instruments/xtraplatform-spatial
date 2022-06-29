@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,5 +10,4 @@ package de.ii.xtraplatform.features.sql.domain;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface SourcePropertySchemaSql {
-}
+public interface SourcePropertySchemaSql {}

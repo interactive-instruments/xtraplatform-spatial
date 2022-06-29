@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,36 +15,37 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface FeaturePropertyTransformerStringFormat extends FeaturePropertyValueTransformer {
 
-    String TYPE = "STRING_FORMAT";
-    String DEFAULT_SUBSTITUTION_KEY = "value";
+  String TYPE = "STRING_FORMAT";
+  String DEFAULT_SUBSTITUTION_KEY = "value";
 
-    @Override
-    default String getType() {
-        return TYPE;
-    }
+  @Override
+  default String getType() {
+    return TYPE;
+  }
 
-    Function<String, String> getSubstitutionLookup();
+  Function<String, String> getSubstitutionLookup();
 
-    @Override
-    default String transform(String currentPropertyPath, String input) {
-        Function<String, String> lookup = key -> {
-            if (Objects.isNull(key)) {
-                return null;
-            }
-            if (Objects.equals(key, DEFAULT_SUBSTITUTION_KEY) || Objects.equals(getPropertyPath(), key)) {
-                return input;
-            }
+  @Override
+  default String transform(String currentPropertyPath, String input) {
+    Function<String, String> lookup =
+        key -> {
+          if (Objects.isNull(key)) {
+            return null;
+          }
+          if (Objects.equals(key, DEFAULT_SUBSTITUTION_KEY)
+              || Objects.equals(getPropertyPath(), key)) {
+            return input;
+          }
 
-            String lookupWithKey = getSubstitutionLookup().apply(key);
+          String lookupWithKey = getSubstitutionLookup().apply(key);
 
-            if (Objects.nonNull(lookupWithKey)) {
-                return lookupWithKey;
-            }
+          if (Objects.nonNull(lookupWithKey)) {
+            return lookupWithKey;
+          }
 
-            return getSubstitutionLookup().apply(currentPropertyPath + "." + key);
+          return getSubstitutionLookup().apply(currentPropertyPath + "." + key);
         };
 
-        return StringTemplateFilters.applyTemplate(getParameter(), lookup);
-    }
-
+    return StringTemplateFilters.applyTemplate(getParameter(), lookup);
+  }
 }

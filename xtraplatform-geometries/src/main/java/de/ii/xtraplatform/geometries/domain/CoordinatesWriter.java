@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -11,10 +11,9 @@ import org.immutables.value.Value;
 
 public interface CoordinatesWriter<T> extends SeperateStringsProcessor {
 
-    @Value.Parameter
-    T getDelegate();
+  @Value.Parameter
+  T getDelegate();
 
-    @Value.Parameter
-    int getDimension();
-
+  @Value.Parameter
+  int getDimension();
 }

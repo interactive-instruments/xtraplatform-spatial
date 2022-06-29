@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -29,8 +29,7 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
   private List<T> currentNesting;
   private List<String> currentNestingPath;
 
-  public FeatureSchemaMapper(SchemaMappingBase<T> mapping,
-      FeatureReader<T, T> delegate) {
+  public FeatureSchemaMapper(SchemaMappingBase<T> mapping, FeatureReader<T, T> delegate) {
     this.mapping = mapping;
     this.delegate = delegate;
     this.currentNesting = new ArrayList<>();
@@ -38,8 +37,9 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
   }
 
   @Override
-  public void onStart(OptionalLong numberReturned, OptionalLong numberMatched,
-      Map<String, String> context) throws Exception {
+  public void onStart(
+      OptionalLong numberReturned, OptionalLong numberMatched, Map<String, String> context)
+      throws Exception {
     delegate.onStart(numberReturned, numberMatched, mapping.getTargetSchema());
   }
 
@@ -69,23 +69,26 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
 
     T objectSchema = targetSchemas.get(targetSchemas.size() - 1);
 
-    //TODO
+    // TODO
     if (objectSchema.isSpatial() && context.containsKey("geometryType")) {
-      SimpleFeatureGeometry geometryType = SimpleFeatureGeometry
-          .valueOf(context.get("geometryType").toUpperCase());
+      SimpleFeatureGeometry geometryType =
+          SimpleFeatureGeometry.valueOf(context.get("geometryType").toUpperCase());
 
-      //if (!objectSchema.getGeometryType().isPresent()) {
-        objectSchema = mapping.schemaWithGeometryType(objectSchema, geometryType);
-        targetSchemas = Lists.newArrayList(Iterables
-            .concat(targetSchemas.subList(0, targetSchemas.size() - 1),
-                ImmutableList.of(objectSchema)));
-      //} else {
-        //TODO: warn or reject if not matching
-      //}
+      // if (!objectSchema.getGeometryType().isPresent()) {
+      objectSchema = mapping.schemaWithGeometryType(objectSchema, geometryType);
+      targetSchemas =
+          Lists.newArrayList(
+              Iterables.concat(
+                  targetSchemas.subList(0, targetSchemas.size() - 1),
+                  ImmutableList.of(objectSchema)));
+      // } else {
+      // TODO: warn or reject if not matching
+      // }
     }
 
-    if (objectSchema.isObject() && objectSchema.isArray() && Objects
-        .equals(currentNesting, targetSchemas)) {
+    if (objectSchema.isObject()
+        && objectSchema.isArray()
+        && Objects.equals(currentNesting, targetSchemas)) {
       delegate.onObjectStart(path, objectSchema);
     }
 
@@ -102,7 +105,7 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
 
     T objectSchema = targetSchemas.get(targetSchemas.size() - 1);
 
-    //TODO: why
+    // TODO: why
     if (objectSchema.isSpatial()) {
       closeDiffering(ImmutableList.of(), ImmutableList.of());
       return;
@@ -116,7 +119,7 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
       delegate.onObjectEnd(path, ImmutableMap.of());
     }
 
-    //closeLast(path, targetSchemas);
+    // closeLast(path, targetSchemas);
   }
 
   @Override
@@ -125,19 +128,21 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
 
     T objectSchema = targetSchemas.get(targetSchemas.size() - 1);
 
-    //TODO
+    // TODO
     if (objectSchema.isSpatial() && context.containsKey("geometryType")) {
-      SimpleFeatureGeometry geometryType = SimpleFeatureGeometry
-          .valueOf(context.get("geometryType").toUpperCase());
+      SimpleFeatureGeometry geometryType =
+          SimpleFeatureGeometry.valueOf(context.get("geometryType").toUpperCase());
 
-      //if (!objectSchema.getGeometryType().isPresent()) {
-        objectSchema = mapping.schemaWithGeometryType(objectSchema, geometryType);
-        targetSchemas = Lists.newArrayList(Iterables
-            .concat(targetSchemas.subList(0, targetSchemas.size() - 1),
-                ImmutableList.of(objectSchema)));
-      //} else {
-        //TODO: warn or reject if not matching
-      //}
+      // if (!objectSchema.getGeometryType().isPresent()) {
+      objectSchema = mapping.schemaWithGeometryType(objectSchema, geometryType);
+      targetSchemas =
+          Lists.newArrayList(
+              Iterables.concat(
+                  targetSchemas.subList(0, targetSchemas.size() - 1),
+                  ImmutableList.of(objectSchema)));
+      // } else {
+      // TODO: warn or reject if not matching
+      // }
     }
 
     ensureNestingIsOpen(path, targetSchemas);
@@ -148,13 +153,12 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
   }
 
   @Override
-  public void onArrayEnd(List<String> path,
-      Map<String, String> context) throws Exception {
+  public void onArrayEnd(List<String> path, Map<String, String> context) throws Exception {
     List<T> targetSchemas = getTargetSchemas(path, context);
 
     T arraySchema = targetSchemas.get(targetSchemas.size() - 1);
 
-    //TODO
+    // TODO
     if (arraySchema.isSpatial()) {
       delegate.onArrayEnd(path, ImmutableMap.of());
       return;
@@ -168,10 +172,10 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
       delegate.onArrayEnd(path, ImmutableMap.of());
     }
 
-    //closeLast(path, targetSchemas);
+    // closeLast(path, targetSchemas);
   }
 
-  //TODO: who closes nesting, e.g. osirisobjekt
+  // TODO: who closes nesting, e.g. osirisobjekt
   @Override
   public void onValue(List<String> path, String value, Map<String, String> context)
       throws Exception {
@@ -217,13 +221,13 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
   }
 
   private void closeDiffering(List<String> path, List<T> targetSchemas) throws Exception {
-        /*if (Objects.equals(currentNestingPath, path)) {
-            return;
-        }*/
+    /*if (Objects.equals(currentNestingPath, path)) {
+        return;
+    }*/
 
     int commonPrefixLength = getCommonPrefixLength(currentNesting, targetSchemas);
 
-    //if (commonPrefixLength > 0) {
+    // if (commonPrefixLength > 0) {
     int to = currentNesting.size() - commonPrefixLength;
     for (int i = 0; i < to; i++) {
       T toClose = pop();
@@ -231,18 +235,18 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
     }
 
     return;
-    //}
+    // }
 
-    //TODO: this is for opening
-        /*int overlapLength = getOverlapLength(currentNesting, targetSchemas);
+    // TODO: this is for opening
+    /*int overlapLength = getOverlapLength(currentNesting, targetSchemas);
 
-        if (overlapLength > 0) {
-            for (int i = 0; i < overlapLength; i++) {
-                T toClose = pop();
-                close(currentNestingPath, toClose);
-            }
+    if (overlapLength > 0) {
+        for (int i = 0; i < overlapLength; i++) {
+            T toClose = pop();
+            close(currentNestingPath, toClose);
+        }
 
-        }*/
+    }*/
 
   }
 
@@ -335,13 +339,19 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
     List<T> targetSchemas = mapping.getTargetSchemas(path);
 
     if (targetSchemas.isEmpty() && context.containsKey("type")) {
-      targetSchemas = mapping.getTargetSchema(SchemaBase.Type.valueOf(context.get("type")))
-          .map(ImmutableList::of).orElse(ImmutableList.of());
+      targetSchemas =
+          mapping
+              .getTargetSchema(SchemaBase.Type.valueOf(context.get("type")))
+              .map(ImmutableList::of)
+              .orElse(ImmutableList.of());
     }
 
     if (targetSchemas.isEmpty() && context.containsKey("role")) {
-      targetSchemas = mapping.getTargetSchema(SchemaBase.Role.valueOf(context.get("role")))
-          .map(ImmutableList::of).orElse(ImmutableList.of());
+      targetSchemas =
+          mapping
+              .getTargetSchema(SchemaBase.Role.valueOf(context.get("role")))
+              .map(ImmutableList::of)
+              .orElse(ImmutableList.of());
     }
 
     return targetSchemas;

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,31 +15,31 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableSpatialLiteral.Builder.class)
 public interface SpatialLiteral extends Spatial, Literal, CqlNode {
 
-    static SpatialLiteral of(String literal) throws CqlParseException {
-        return new SpatialLiteral.Builder(literal).build();
+  static SpatialLiteral of(String literal) throws CqlParseException {
+    return new SpatialLiteral.Builder(literal).build();
+  }
+
+  static SpatialLiteral of(Geometry<?> literal) {
+    return new SpatialLiteral.Builder(literal).build();
+  }
+
+  class Builder extends ImmutableSpatialLiteral.Builder {
+    public Builder() {
+      super();
     }
 
-    static SpatialLiteral of(Geometry<?> literal) {
-        return new SpatialLiteral.Builder(literal).build();
+    @JsonCreator
+    public Builder(Geometry<?> literal) {
+      super();
+      value(literal);
+      type(Geometry.class);
     }
 
-    class Builder extends ImmutableSpatialLiteral.Builder {
-        public Builder() {
-            super();
-        }
-
-        @JsonCreator
-        public Builder(Geometry<?> literal) {
-            super();
-            value(literal);
-            type(Geometry.class);
-        }
-
-        @JsonCreator
-        public Builder(String literal) throws CqlParseException {
-            super();
-            value(literal);
-            type(String.class);
-        }
+    @JsonCreator
+    public Builder(String literal) throws CqlParseException {
+      super();
+      value(literal);
+      type(String.class);
     }
+  }
 }

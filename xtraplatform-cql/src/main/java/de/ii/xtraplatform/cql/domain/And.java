@@ -1,8 +1,9 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
- * <p>
- * This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
- * the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package de.ii.xtraplatform.cql.domain;
 
@@ -23,21 +24,15 @@ public interface And extends LogicalOperation, CqlNode {
   }
 
   static And of(Cql2Expression... predicates) {
-    return new ImmutableAnd.Builder()
-        .addArgs(predicates)
-        .build();
+    return new ImmutableAnd.Builder().addArgs(predicates).build();
   }
 
   static And of(List<Cql2Expression> predicates) {
-    return new ImmutableAnd.Builder().args(predicates)
-        .build();
+    return new ImmutableAnd.Builder().args(predicates).build();
   }
 
   @Deprecated
   static And of(CqlPredicate... predicates) {
-    return new ImmutableAnd.Builder()
-        .addArgs(Eq.of("", ""), Eq.of("", ""))
-        .build();
+    return new ImmutableAnd.Builder().addArgs(Eq.of("", ""), Eq.of("", "")).build();
   }
-
 }

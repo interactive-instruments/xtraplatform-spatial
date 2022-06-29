@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -14,21 +14,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableTIntersects.Builder.class)
 public interface TIntersects extends BinaryTemporalOperation, CqlNode {
 
-    String TYPE = "t_intersects";
+  String TYPE = "t_intersects";
 
-    @Override
-    @Value.Derived
-    default String getOp() {
-        return TYPE;
-    }
+  @Override
+  @Value.Derived
+  default String getOp() {
+    return TYPE;
+  }
 
-    static TIntersects of(Temporal temporal1, Temporal temporal2) {
-        return new ImmutableTIntersects.Builder()
-            .addArgs(temporal1, temporal2)
-            .build();
-    }
+  static TIntersects of(Temporal temporal1, Temporal temporal2) {
+    return new ImmutableTIntersects.Builder().addArgs(temporal1, temporal2).build();
+  }
 
-    abstract class Builder extends BinaryTemporalOperation.Builder<TIntersects> {
-    }
-
+  abstract class Builder extends BinaryTemporalOperation.Builder<TIntersects> {}
 }

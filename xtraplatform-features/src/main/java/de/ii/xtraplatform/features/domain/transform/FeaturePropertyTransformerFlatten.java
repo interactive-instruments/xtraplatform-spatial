@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,29 +16,36 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface FeaturePropertyTransformerFlatten extends FeaturePropertySchemaTransformer {
 
-    String TYPE = "FLATTEN";
+  String TYPE = "FLATTEN";
 
-    @Override
-    default String getType() {
-        return TYPE;
-    }
+  @Override
+  default String getType() {
+    return TYPE;
+  }
 
-    enum INCLUDE {ALL, OBJECTS, ARRAYS}
+  enum INCLUDE {
+    ALL,
+    OBJECTS,
+    ARRAYS
+  }
 
-    @Value.Default
-    default INCLUDE include() {
-        return INCLUDE.ALL;
-    }
+  @Value.Default
+  default INCLUDE include() {
+    return INCLUDE.ALL;
+  }
 
-    BiFunction<String, String, String> flattenedPathProvider();
+  BiFunction<String, String, String> flattenedPathProvider();
 
-    @Override
-    default FeatureSchema transform(String currentPropertyPath, FeatureSchema input) {
-        String flattenedPath = flattenedPathProvider().apply(getParameter(), input.getName());
-        return new ImmutableFeatureSchema.Builder()
-            .from(input)
-            .name(flattenedPath)
-            .type(input.getType() == Type.VALUE_ARRAY ? input.getValueType().orElse(Type.STRING) : input.getType())
-            .build();
-    }
+  @Override
+  default FeatureSchema transform(String currentPropertyPath, FeatureSchema input) {
+    String flattenedPath = flattenedPathProvider().apply(getParameter(), input.getName());
+    return new ImmutableFeatureSchema.Builder()
+        .from(input)
+        .name(flattenedPath)
+        .type(
+            input.getType() == Type.VALUE_ARRAY
+                ? input.getValueType().orElse(Type.STRING)
+                : input.getType())
+        .build();
+  }
 }

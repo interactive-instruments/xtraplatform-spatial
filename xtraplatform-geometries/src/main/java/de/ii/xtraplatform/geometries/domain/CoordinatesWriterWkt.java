@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,47 +7,44 @@
  */
 package de.ii.xtraplatform.geometries.domain;
 
-import org.immutables.value.Value;
-
 import java.io.IOException;
 import java.io.Writer;
+import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class CoordinatesWriterWkt implements CoordinatesWriter<Writer> {
 
-    @Override
-    public void onStart() throws IOException {
-    }
+  @Override
+  public void onStart() throws IOException {}
 
-    @Override
-    public void onSeparator() throws IOException {
-        getDelegate().append(',');
-    }
+  @Override
+  public void onSeparator() throws IOException {
+    getDelegate().append(',');
+  }
 
-    @Override
-    public void onX(char[] chars, int offset, int length) throws IOException {
-        onValue(chars, offset, length, true);
-    }
+  @Override
+  public void onX(char[] chars, int offset, int length) throws IOException {
+    onValue(chars, offset, length, true);
+  }
 
-    @Override
-    public void onY(char[] chars, int offset, int length) throws IOException {
-        onValue(chars, offset, length, getDimension() == 3);
-    }
+  @Override
+  public void onY(char[] chars, int offset, int length) throws IOException {
+    onValue(chars, offset, length, getDimension() == 3);
+  }
 
-    @Override
-    public void onZ(char[] chars, int offset, int length) throws IOException {
-        onValue(chars, offset, length, false);
-    }
+  @Override
+  public void onZ(char[] chars, int offset, int length) throws IOException {
+    onValue(chars, offset, length, false);
+  }
 
-    @Override
-    public void onEnd() throws IOException {
-    }
+  @Override
+  public void onEnd() throws IOException {}
 
-    private void onValue(char[] chars, int offset, int length, boolean separator) throws IOException {
-        getDelegate().write(chars, offset, length);
+  private void onValue(char[] chars, int offset, int length, boolean separator) throws IOException {
+    getDelegate().write(chars, offset, length);
 
-        if (separator) {
-            getDelegate().append(' ');
-        }
+    if (separator) {
+      getDelegate().append(' ');
     }
+  }
 }

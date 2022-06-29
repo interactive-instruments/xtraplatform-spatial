@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2022 interactive instruments GmbH
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -7,14 +7,14 @@
  */
 package de.ii.xtraplatform.features.sql.app;
 
-import de.ii.xtraplatform.features.sql.domain.SchemaMappingSql;
-import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.domain.FeatureObjectTransformerBase;
 import de.ii.xtraplatform.features.domain.FeatureTokenEmitter2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery;
+import de.ii.xtraplatform.features.sql.domain.SchemaMappingSql;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 
-public class FeatureEncoderSql2 extends
-    FeatureObjectTransformerBase<SchemaSql, SchemaMappingSql, PropertySql, FeatureSql> {
+public class FeatureEncoderSql2
+    extends FeatureObjectTransformerBase<SchemaSql, SchemaMappingSql, PropertySql, FeatureSql> {
 
   private final SchemaMappingSql mapping;
 
@@ -36,7 +36,7 @@ public class FeatureEncoderSql2 extends
   public void onFeature(FeatureSql feature) {
     boolean br = true;
     if (getDownstream() instanceof FeatureTokenEmitter2) {
-      ((FeatureTokenEmitter2<?,?,?>)getDownstream()).push(feature);
+      ((FeatureTokenEmitter2<?, ?, ?>) getDownstream()).push(feature);
     }
   }
 
