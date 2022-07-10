@@ -342,6 +342,10 @@ public class FilterEncoderWfs {
 
     @Override
     public FesExpression visit(ArrayLiteral arrayLiteral, List<FesExpression> children) {
+      if (((List<?>) arrayLiteral.getValue()).size() == 1) {
+        // support id queries with a single id
+        return ((CqlNode) ((List<?>) arrayLiteral.getValue()).get(0)).accept(this);
+      }
       throw new IllegalArgumentException(
           "Array expressions are not supported in filter expressions for WFS feature providers.");
     }
