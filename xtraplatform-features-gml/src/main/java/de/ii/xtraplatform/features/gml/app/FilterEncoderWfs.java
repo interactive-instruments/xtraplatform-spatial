@@ -105,8 +105,8 @@ public class FilterEncoderWfs {
   }
 
   public FesFilter encode(Cql2Expression filter, FeatureSchema schema) {
-    return (FesFilter)
-        cql.mapTemporalOperators(filter, ImmutableSet.of()).accept(new CqlToFes(schema));
+    return new FesFilter(ImmutableList.of(
+        cql.mapTemporalOperators(filter, ImmutableSet.of()).accept(new CqlToFes(schema))));
   }
 
   private List<Double> transformCoordinatesIfNecessary(
