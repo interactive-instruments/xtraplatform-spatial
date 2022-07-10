@@ -53,6 +53,7 @@ import org.slf4j.LoggerFactory;
   "objectType",
   "label",
   "description",
+  "unit",
   "transformations",
   "constraints",
   "properties"
@@ -189,6 +190,12 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
    * @langDe Eine Beschreibung des Schemaobjekts, z.B. für die HTML-Ausgabe oder das JSON-Schema.
    */
   Optional<String> getDescription();
+
+  /**
+   * @langEn The unit of measurement of the value, only relevant for numeric properties.
+   * @langDe Die Maßeinheit des Wertes, nur relevant bei numerischen Eigenschaften.
+   */
+  Optional<String> getUnit();
 
   /**
    * @langEn Might be used instead of `sourcePath` to define a property with a constant value.
