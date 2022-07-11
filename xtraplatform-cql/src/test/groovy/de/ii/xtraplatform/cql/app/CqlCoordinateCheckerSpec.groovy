@@ -7,18 +7,22 @@
  */
 package de.ii.xtraplatform.cql.app
 
+import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.cql.domain.*
 import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes
+import de.ii.xtraplatform.crs.domain.BoundingBox
 import de.ii.xtraplatform.crs.domain.CrsInfo
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory
 import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.crs.infra.CrsTransformerFactoryProj
 import de.ii.xtraplatform.proj.domain.ProjLoaderImpl
+import org.spockframework.util.Immutable
 import spock.lang.Shared
 import spock.lang.Specification
 
+import javax.xml.transform.TransformerFactory
 import java.nio.file.Path
 
 class CqlCoordinateCheckerSpec extends Specification {
@@ -35,12 +39,14 @@ class CqlCoordinateCheckerSpec extends Specification {
     @Shared
     CqlCoordinateChecker visitor2
 
+
     def setupSpec() {
         cql = new CqlImpl()
         transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
         visitor1 = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactory, (CrsInfo) transformerFactory, OgcCrs.CRS84, EpsgCrs.of(5555))
         visitor2 = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactory, (CrsInfo) transformerFactory, OgcCrs.CRS84, OgcCrs.CRS84)
     }
+
 
     def 'Valid CRS84 bbox'() {
         given:
@@ -59,6 +65,29 @@ class CqlCoordinateCheckerSpec extends Specification {
 
         then:
         noExceptionThrown()
+    }
+
+
+
+    def "Native not present"() {
+        when:
+        CrsTransformerFactoryProj transformerFactoryOptionalEmpty = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
+        CqlCoordinateChecker visitor1OptionalEmpty = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactoryOptionalEmpty, (CrsInfo) transformerFactoryOptionalEmpty, OgcCrs.CRS84, null)
+        CqlCoordinateChecker visitor2OptionalEmpty = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactoryOptionalEmpty, (CrsInfo) transformerFactoryOptionalEmpty, OgcCrs.CRS84, null)
+        then:
+        visitor1OptionalEmpty.crsTransformerFilterToNative.isEmpty()
+        visitor2OptionalEmpty.crsTransformerFilterToNative.isEmpty()
+    }
+
+
+    def 'Test envelope 3D'() {
+
+        when:
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Envelope.of(BoundingBox.of(2.00, 2.00, 2.00, 3.00, 3.00, 3.00, EpsgCrs.of(5555))))).accept(visitor1)
+
+        then:
+        thrown IllegalArgumentException
+
     }
 
     def 'min > max'() {
@@ -128,4 +157,144 @@ class CqlCoordinateCheckerSpec extends Specification {
         then:
         noExceptionThrown()
     }
+
+    def "Visit with Point test" (){
+        when:
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Point.of(5.00, 42.27))).accept(visitor1)
+
+        then:
+        thrown IllegalArgumentException
+
+        and:
+
+        when:
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Point.of(6.00, 47.27))).accept(visitor1)
+
+        then:
+        noExceptionThrown()
+    }
+
+
+    def "Visit with Linestring test" () {
+
+        when:
+
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.LineString.of(Geometry.Coordinate.of((double)6.00, (double)47.27)))).accept(visitor1)
+
+        then:
+        noExceptionThrown()
+
+        and:
+
+        when:
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(spatialLiteral)).accept(visitor1)
+
+        then:
+        thrown ex
+
+        where:
+
+        xCoordinate     |    yCoordinate     |      spatialLiteral                                                              |       ex
+        (double) 8.00   |    (double) 5      |     Geometry.LineString.of(Geometry.Coordinate.of(xCoordinate, yCoordinate))     |       IllegalArgumentException
+        (double) 0.50   |    (double) 1000   |     Geometry.LineString.of(Geometry.Coordinate.of(xCoordinate, yCoordinate))     |       NullPointerException
+
+    }
+
+    def "Test visit Multipoint"(){
+        when:
+
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.MultiPoint.of(Geometry.Point.of((double)12.00, (double)55.09), Geometry.Point.of((double)11.00, (double)54.09)))).accept(visitor1)
+
+        then:
+
+        noExceptionThrown()
+
+        and:
+
+        when:
+
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(spatialLiteral)).accept(visitor1)
+
+        then:
+
+        thrown ex
+
+        where:
+
+        xCoordinate     |    yCoordinate     |      spatialLiteral                                                        |       ex
+        (double) 11.00  |    (double) 56.00  |     Geometry.MultiPoint.of(Geometry.Point.of(xCoordinate, yCoordinate))    |       IllegalArgumentException
+        (double) 0.50   |    (double) 1000   |     Geometry.MultiPoint.of(Geometry.Point.of(xCoordinate, yCoordinate))    |       NullPointerException
+
+    }
+
+    def "Test visit MultiLineString"(){
+
+        when:
+
+        Geometry.LineString lineString1 =  Geometry.LineString.of(Geometry.Coordinate.of((double)6.00, (double)47.27))
+        Geometry.LineString lineString2 =  Geometry.LineString.of(Geometry.Coordinate.of((double)11.00, (double)50.27))
+
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.MultiLineString.of(lineString1, lineString2))).accept(visitor1)
+
+        then:
+        noExceptionThrown()
+
+        and:
+
+        when:
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(spatialLiteral)).accept(visitor1)
+
+        then:
+        thrown ex
+
+        where:
+
+        xCoordinate1    |    yCoordinate1   |    xCoordinate2   |    yCoordinate2        |      spatialLiteral                                                                                                                                                |       ex
+        (double) 8.00   |    (double) 5     |    (double) 4.40  |    (double) 51.00      |     Geometry.MultiLineString.of(Geometry.LineString.of(Geometry.Coordinate.of(xCoordinate1, yCoordinate1), Geometry.Coordinate.of(xCoordinate2, yCoordinate2)))   |       IllegalArgumentException
+        (double) 0.50   |    (double) 1000  |    (double) 0.03  |    (double) 1          |     Geometry.MultiLineString.of(Geometry.LineString.of(Geometry.Coordinate.of(xCoordinate1, yCoordinate1), Geometry.Coordinate.of(xCoordinate2, yCoordinate2)))   |       NullPointerException
+
+    }
+
+    def "Test MultiPolygon visit"(){
+
+        when:
+
+        List<Geometry.Coordinate> coordinateList = new ArrayList<>()
+        coordinateList.add(Geometry.Coordinate.of((double)6.00, (double)47.27))
+        coordinateList.add(Geometry.Coordinate.of((double)11.00, (double)50.27))
+        Geometry.Polygon polygon1 =  Geometry.Polygon.of(coordinateList)
+
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.MultiPolygon.of(polygon1))).accept(visitor1)
+
+        then:
+        noExceptionThrown()
+
+        and:
+
+        when:
+        List<Geometry.Coordinate> coordinateList2 = new ArrayList<>()
+        coordinateList2.add(Geometry.Coordinate.of(xCoordinate1, yCoordinate1))
+        coordinateList2.add(Geometry.Coordinate.of(xCoordinate2, yCoordinate2))
+        Geometry.Polygon polygon2 =  Geometry.Polygon.of(coordinateList2)
+
+        List<Geometry.Coordinate> coordinateList3 = new ArrayList<>()
+        coordinateList3.add(Geometry.Coordinate.of(xCoordinate3, yCoordinate3))
+        coordinateList3.add(Geometry.Coordinate.of(xCoordinate4, yCoordinate4))
+        Geometry.Polygon polygon3 =  Geometry.Polygon.of(coordinateList3)
+
+
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.MultiPolygon.of(polygon2, polygon3))).accept(visitor1)
+
+        then:
+        thrown ex
+
+        where:
+
+        xCoordinate1    |    yCoordinate1   |    xCoordinate2   |    yCoordinate2      |  xCoordinate3    |    yCoordinate3   |    xCoordinate4   |    yCoordinate4    |     ex
+        (double) 8.00   |    (double) 5     |    (double) 4.40  |    (double) 51.00    |  (double) 8.00   |    (double) 5     |    (double) 4.40  |    (double) 51.00  |     IllegalArgumentException
+        (double) 0.50   |    (double) 1000  |    (double) 0.03  |    (double) 1        |  (double) 0.00  |    (double) 100000  |    (double) 0.03  |    (double) 1      |    NullPointerException
+
+    }
+
+
 }
