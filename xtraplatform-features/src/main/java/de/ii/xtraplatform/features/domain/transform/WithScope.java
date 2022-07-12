@@ -18,8 +18,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 
-public class WithScope
-    implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
+public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
   private final Scope scope;
 

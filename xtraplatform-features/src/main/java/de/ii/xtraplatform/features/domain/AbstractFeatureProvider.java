@@ -42,7 +42,6 @@ import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -446,11 +445,12 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
                           .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue)));
       PropertyTransformations providerTransformations = () -> providerTransformationMap;
 
-      PropertyTransformations mergedTransformations = query.getSchemaScope() == Scope.QUERIES
-          ? propertyTransformations
-              .map(p -> p.mergeInto(providerTransformations))
-              .orElse(providerTransformations)
-          : HashMap::new;
+      PropertyTransformations mergedTransformations =
+          query.getSchemaScope() == Scope.QUERIES
+              ? propertyTransformations
+                  .map(p -> p.mergeInto(providerTransformations))
+                  .orElse(providerTransformations)
+              : HashMap::new;
 
       FeatureTokenTransformerSchemaMappings schemaMapper =
           new FeatureTokenTransformerSchemaMappings(mergedTransformations);
@@ -472,7 +472,6 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
       FeatureTokenTransformerSorting sorter = new FeatureTokenTransformerSorting();
 
       FeatureTokenTransformerLogger logger = new FeatureTokenTransformerLogger();
-
 
       return featureTokenSource
           // .via(sorter)
