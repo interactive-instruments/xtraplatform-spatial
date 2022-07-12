@@ -90,6 +90,17 @@ class CqlCoordinateCheckerSpec extends Specification {
 
     }
 
+    def 'Test crsTransformerFilterToCrs84 is present'() {
+
+        when:
+        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Envelope.of(6,52,12, 53, OgcCrs.CRS84))).accept(visitor3)
+
+        then:
+        thrown IllegalArgumentException
+
+    }
+
+
     def 'min > max'() {
         given:
         //
@@ -106,6 +117,7 @@ class CqlCoordinateCheckerSpec extends Specification {
         SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Envelope.of(6,53,12, 52,OgcCrs.CRS84))).accept(visitor2)
 
         then:
+
         thrown IllegalArgumentException
     }
 
