@@ -32,6 +32,7 @@ import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
@@ -43,6 +44,7 @@ import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
+import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.features.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.features.sql.SqlPathSyntax;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
@@ -102,6 +104,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   private SqlPathParser pathParser3;
   private TypeInfoValidator typeInfoValidator;
   private Map<String, List<SchemaSql>> tableSchemas;
+  private Map<String, List<SchemaSql>> tableSchemasMutations;
 
   @AssistedInject
   public FeatureProviderSql(
@@ -189,7 +192,17 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
             .map(
                 entry ->
                     new SimpleImmutableEntry<>(
-                        entry.getKey(), entry.getValue().accept(querySchemaDeriver)))
+                        entry.getKey(),
+                        entry.getValue().accept(WITH_SCOPE_QUERIES).accept(querySchemaDeriver)))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+    this.tableSchemasMutations =
+        getData().getTypes().entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(
+                        entry.getKey(),
+                        entry.getValue().accept(WITH_SCOPE_MUTATIONS).accept(querySchemaDeriver)))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     Map<String, List<SqlQueryTemplates>> schemas =
@@ -201,12 +214,29 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                         ImmutableList.of(
                             entry
                                 .getValue()
+                                .accept(WITH_SCOPE_QUERIES)
                                 .accept(querySchemaDeriver)
                                 .get(0)
                                 .accept(queryTemplatesDeriver))))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
-    this.queryTransformer = new FeatureQueryEncoderSql(schemas, getTypeInfos());
+    Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations =
+        getData().getTypes().entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(
+                        entry.getKey(),
+                        ImmutableList.of(
+                            entry
+                                .getValue()
+                                .accept(WITH_SCOPE_MUTATIONS)
+                                .accept(querySchemaDeriver)
+                                .get(0)
+                                .accept(queryTemplatesDeriver))))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+    this.queryTransformer =
+        new FeatureQueryEncoderSql(schemas, allQueryTemplatesMutations, getTypeInfos());
 
     this.aggregateStatsReader =
         new AggregateStatsReaderSql(
@@ -239,7 +269,9 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     try {
       for (FeatureSchema fs : getData().getTypes().values()) {
         sourceSchema.put(
-            fs.getName(), fs.accept(new MutationSchemaDeriver(pathParser2, pathParser3)));
+            fs.getName(),
+            fs.accept(WITH_SCOPE_MUTATIONS)
+                .accept(new MutationSchemaDeriver(pathParser2, pathParser3)));
       }
     } catch (Throwable e) {
       boolean br = true;
@@ -363,10 +395,14 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   protected FeatureTokenDecoder<
           SqlRow, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
       getDecoder(FeatureQuery query) {
+    WithScope withScope =
+        query.getSchemaScope() == Scope.QUERIES ? WITH_SCOPE_QUERIES : WITH_SCOPE_MUTATIONS;
     return new FeatureDecoderSql(
         ImmutableList.of(getTypeInfos().get(query.getType())),
-        tableSchemas.get(query.getType()),
-        getData().getTypes().get(query.getType()),
+        query.getSchemaScope() == Scope.QUERIES
+            ? tableSchemas.get(query.getType())
+            : tableSchemasMutations.get(query.getType()),
+        getData().getTypes().get(query.getType()).accept(withScope),
         query);
   }
 
@@ -591,7 +627,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     FeatureSchema migrated = schema.get(); // FeatureSchemaNamePathSwapper.migrate(schema.get());
 
-    List<SchemaSql> sqlSchema = migrated.accept(new MutationSchemaDeriver(pathParser2, null));
+    List<SchemaSql> sqlSchema =
+        migrated.accept(WITH_SCOPE_MUTATIONS).accept(new MutationSchemaDeriver(pathParser2, null));
 
     if (sqlSchema.isEmpty()) {
       throw new IllegalStateException(
@@ -650,7 +687,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     // Multimap<List<String>, FeatureSchema> mapping2 = migrated.accept(new
     // SchemaToMappingVisitor<>());
 
-    List<SchemaSql> sqlSchema = migrated.accept(new MutationSchemaDeriver(pathParser2, null));
+    List<SchemaSql> sqlSchema =
+        migrated.accept(WITH_SCOPE_MUTATIONS).accept(new MutationSchemaDeriver(pathParser2, null));
 
     if (sqlSchema.isEmpty()) {
       throw new IllegalStateException(

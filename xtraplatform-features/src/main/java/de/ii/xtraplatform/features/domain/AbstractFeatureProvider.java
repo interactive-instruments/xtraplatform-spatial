@@ -22,10 +22,12 @@ import de.ii.xtraplatform.features.app.FeatureChangeHandlerImpl;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.LIFECYCLE_HOOK;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.QUERY_HOOK;
+import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
@@ -40,6 +42,7 @@ import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -55,6 +58,8 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
     implements FeatureProvider2, FeatureQueries {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
+  protected static final WithScope WITH_SCOPE_QUERIES = new WithScope(Scope.QUERIES);
+  protected static final WithScope WITH_SCOPE_MUTATIONS = new WithScope(Scope.MUTATIONS);
 
   private final ConnectorFactory connectorFactory;
   private final Reactive reactive;
@@ -408,37 +413,44 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
 
       FeatureSchema featureSchema = getData().getTypes().get(query.getType());
       Map<String, List<PropertyTransformation>> providerTransformationMap =
-          featureSchema.accept(
-              (schema, visitedProperties) ->
-                  java.util.stream.Stream.concat(
-                          schema.getTransformations().isEmpty()
-                              ? schema.isTemporal()
-                                  ? java.util.stream.Stream.of(
+          featureSchema
+              .accept(
+                  query.getSchemaScope() == Scope.QUERIES
+                      ? WITH_SCOPE_QUERIES
+                      : WITH_SCOPE_MUTATIONS)
+              .accept(
+                  (schema, visitedProperties) ->
+                      java.util.stream.Stream.concat(
+                              schema.getTransformations().isEmpty()
+                                  ? schema.isTemporal()
+                                      ? java.util.stream.Stream.of(
+                                          new SimpleImmutableEntry<
+                                              String, List<PropertyTransformation>>(
+                                              String.join(".", schema.getFullPath()),
+                                              ImmutableList.of(
+                                                  new ImmutablePropertyTransformation.Builder()
+                                                      .dateFormat(
+                                                          schema.getType() == Type.DATETIME
+                                                              ? DATETIME_FORMAT
+                                                              : DATE_FORMAT)
+                                                      .build())))
+                                      : java.util.stream.Stream.empty()
+                                  : java.util.stream.Stream.of(
                                       new SimpleImmutableEntry<
                                           String, List<PropertyTransformation>>(
-                                          String.join(".", schema.getFullPath()),
-                                          ImmutableList.of(
-                                              new ImmutablePropertyTransformation.Builder()
-                                                  .dateFormat(
-                                                      schema.getType() == Type.DATETIME
-                                                          ? DATETIME_FORMAT
-                                                          : DATE_FORMAT)
-                                                  .build())))
-                                  : java.util.stream.Stream.empty()
-                              : java.util.stream.Stream.of(
-                                  new SimpleImmutableEntry<String, List<PropertyTransformation>>(
-                                      schema.getFullPath().isEmpty()
-                                          ? WILDCARD
-                                          : String.join(".", schema.getFullPath()),
-                                      schema.getTransformations())),
-                          visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
-                      .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue)));
+                                          schema.getFullPath().isEmpty()
+                                              ? WILDCARD
+                                              : String.join(".", schema.getFullPath()),
+                                          schema.getTransformations())),
+                              visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
+                          .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue)));
       PropertyTransformations providerTransformations = () -> providerTransformationMap;
 
-      PropertyTransformations mergedTransformations =
-          propertyTransformations
+      PropertyTransformations mergedTransformations = query.getSchemaScope() == Scope.QUERIES
+          ? propertyTransformations
               .map(p -> p.mergeInto(providerTransformations))
-              .orElse(providerTransformations);
+              .orElse(providerTransformations)
+          : HashMap::new;
 
       FeatureTokenTransformerSchemaMappings schemaMapper =
           new FeatureTokenTransformerSchemaMappings(mergedTransformations);
@@ -460,6 +472,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
       FeatureTokenTransformerSorting sorter = new FeatureTokenTransformerSorting();
 
       FeatureTokenTransformerLogger logger = new FeatureTokenTransformerLogger();
+
 
       return featureTokenSource
           // .via(sorter)

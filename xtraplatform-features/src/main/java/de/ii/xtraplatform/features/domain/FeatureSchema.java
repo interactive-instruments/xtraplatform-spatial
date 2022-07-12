@@ -60,6 +60,8 @@ import org.slf4j.LoggerFactory;
 })
 public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<FeatureSchema> {
 
+  enum Scope {QUERIES, MUTATIONS}
+
   Logger LOGGER = LoggerFactory.getLogger(FeatureSchema.class);
 
   @JsonIgnore
@@ -204,6 +206,15 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
    * @default `null`
    */
   Optional<String> getConstantValue();
+
+  /**
+   * @langEn Optional scope for properties that should only be used when either reading (`QUERIES`)
+   *     or writing (`MUTATIONS`) features.
+   * @langDe Optionaler Geltungsbereich für Eigenschaften die entweder nur beim Lesen (`QUERIES`)
+   *     * oder beim Schreiben (`MUTATIONS`) verwendet werden sollen.
+   * @default null
+   */
+  Optional<Scope> getScope();
 
   /**
    * @langEn Optional transformations for the property, see
