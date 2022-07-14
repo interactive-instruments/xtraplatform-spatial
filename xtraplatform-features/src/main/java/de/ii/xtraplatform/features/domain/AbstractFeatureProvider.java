@@ -23,6 +23,7 @@ import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.LIFECYCLE_HOOK;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.QUERY_HOOK;
 import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
+import de.ii.xtraplatform.features.domain.ImmutableResult.Builder;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
@@ -38,6 +39,7 @@ import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReducedTransformed;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
+import de.ii.xtraplatform.web.domain.ETag;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -347,18 +349,39 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
 
       Function<FeatureTokenSource, Stream<Result>> stream =
           tokenSource -> {
+            FeatureTokenSource source = tokenSource;
+            Builder resultBuilder = ImmutableResult.builder();
+            final ETag.Incremental eTag = ETag.incremental();
+            final boolean strongETag =
+                query.getETag().filter(type -> type == ETag.Type.STRONG).isPresent();
+
+            if (query.getETag().filter(type -> type == ETag.Type.WEAK).isPresent()) {
+              source = source.via(new FeatureTokenTransformerWeakETag(resultBuilder));
+            }
+
             BasicStream<?, Void> basicStream =
                 sink instanceof SinkTransformed
-                    ? tokenSource.to((SinkTransformed<Object, ?>) sink)
-                    : tokenSource.to(sink);
+                    ? source.to((SinkTransformed<Object, ?>) sink)
+                    : source.to(sink);
 
             return basicStream
-                .withResult(ImmutableResult.builder().isEmpty(true))
+                .withResult(resultBuilder.isEmpty(true))
                 .handleError(ImmutableResult.Builder::error)
                 .handleItem(
-                    (builder, x) ->
-                        builder.isEmpty(x instanceof byte[] ? ((byte[]) x).length <= 0 : false))
-                .handleEnd(Result.Builder::build);
+                    (builder, x) -> {
+                      if (strongETag && x instanceof byte[]) {
+                        eTag.put((byte[]) x);
+                      }
+                      return builder.isEmpty(
+                          x instanceof byte[] ? ((byte[]) x).length <= 0 : false);
+                    })
+                .handleEnd(
+                    (Builder builder1) -> {
+                      if (strongETag) {
+                        builder1.eTag(eTag.build(ETag.Type.STRONG));
+                      }
+                      return builder1.build();
+                    });
           };
 
       return run(stream, propertyTransformations);
@@ -370,16 +393,38 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
 
       Function<FeatureTokenSource, Stream<ResultReduced<X>>> stream =
           tokenSource -> {
+            FeatureTokenSource source = tokenSource;
+            ImmutableResultReduced.Builder<X> resultBuilder = ImmutableResultReduced.<X>builder();
+            final ETag.Incremental eTag = ETag.incremental();
+            final boolean strongETag =
+                query.getETag().filter(type -> type == ETag.Type.STRONG).isPresent();
+
+            if (query.getETag().filter(type -> type == ETag.Type.WEAK).isPresent()) {
+              source = source.via(new FeatureTokenTransformerWeakETag(resultBuilder));
+            }
+
             BasicStream<?, X> basicStream =
                 sink instanceof SinkReducedTransformed
-                    ? tokenSource.to((SinkReducedTransformed<Object, ?, X>) sink)
-                    : tokenSource.to(sink);
+                    ? source.to((SinkReducedTransformed<Object, ?, X>) sink)
+                    : source.to(sink);
 
             return basicStream
-                .withResult(ImmutableResultReduced.<X>builder().isEmpty(true))
+                .withResult(resultBuilder.isEmpty(true))
                 .handleError(ImmutableResultReduced.Builder::error)
-                .handleItem((builder, x) -> builder.reduced((X) x).isEmpty(false))
-                .handleEnd(ResultReduced.Builder::build);
+                .handleItem(
+                    (builder, x) -> {
+                      if (strongETag && x instanceof byte[]) {
+                        eTag.put((byte[]) x);
+                      }
+                      return builder.reduced((X) x).isEmpty(false);
+                    })
+                .handleEnd(
+                    (ImmutableResultReduced.Builder<X> xBuilder) -> {
+                      if (strongETag) {
+                        xBuilder.eTag(eTag.build(ETag.Type.STRONG));
+                      }
+                      return xBuilder.build();
+                    });
           };
 
       return run(stream, propertyTransformations);
@@ -448,16 +493,16 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
                       java.util.stream.Stream.concat(
                               schema.isTemporal()
                                   ? java.util.stream.Stream.of(
-                                  new SimpleImmutableEntry<
-                                      String, List<PropertyTransformation>>(
-                                      String.join(".", schema.getFullPath()),
-                                      ImmutableList.of(
-                                          new ImmutablePropertyTransformation.Builder()
-                                              .dateFormat(
-                                                  schema.getType() == Type.DATETIME
-                                                      ? DATETIME_FORMAT
-                                                      : DATE_FORMAT)
-                                              .build())))
+                                      new SimpleImmutableEntry<
+                                          String, List<PropertyTransformation>>(
+                                          String.join(".", schema.getFullPath()),
+                                          ImmutableList.of(
+                                              new ImmutablePropertyTransformation.Builder()
+                                                  .dateFormat(
+                                                      schema.getType() == Type.DATETIME
+                                                          ? DATETIME_FORMAT
+                                                          : DATE_FORMAT)
+                                                  .build())))
                                   : java.util.stream.Stream.empty(),
                               visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
                           .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue)));

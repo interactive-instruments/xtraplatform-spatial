@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
+import de.ii.xtraplatform.web.domain.ETag;
 import java.util.List;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -80,4 +81,6 @@ public abstract class FeatureQuery {
   public Scope getSchemaScope() {
     return Scope.QUERIES;
   }
+
+  public abstract Optional<ETag.Type> getETag();
 }
