@@ -50,6 +50,7 @@ import de.ii.xtraplatform.features.sql.SqlPathSyntax;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
+import de.ii.xtraplatform.features.sql.domain.FeatureTokenStatsCollector;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSchemaMappingSql;
 import de.ii.xtraplatform.features.sql.domain.SchemaMappingSql;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
@@ -708,14 +709,18 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
             ? featureMutationsSql.getUpdaterFlow(mutationSchemaSql, null, featureId.get())
             : featureMutationsSql.getCreatorFlow(mutationSchemaSql, null);
 
+    ImmutableMutationResult.Builder builder = ImmutableMutationResult.builder();
+    FeatureTokenStatsCollector statsCollector = new FeatureTokenStatsCollector(builder);
+
     RunnableStream<MutationResult> mutationStream =
         featureTokenSource
+            .via(statsCollector)
             .via(new FeatureEncoderSql2(mapping4))
             // TODO: support generic encoders, not only to byte[]
             .via(Transformer.map(feature -> (FeatureSql) feature))
             .via(featureWriter)
             .to(Sink.ignore())
-            .withResult((Builder) ImmutableMutationResult.builder())
+            .withResult((Builder) builder)
             .handleError(
                 (result, throwable) -> {
                   Throwable error =

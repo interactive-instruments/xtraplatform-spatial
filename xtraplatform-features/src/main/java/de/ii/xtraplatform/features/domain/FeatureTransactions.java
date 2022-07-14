@@ -7,8 +7,10 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
 import java.util.List;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 public interface FeatureTransactions {
@@ -21,6 +23,10 @@ public interface FeatureTransactions {
     }
 
     List<String> getIds();
+
+    Optional<BoundingBox> getSpatialExtent();
+
+    Optional<Tuple<Long, Long>> getTemporalExtent();
 
     @Value.Default
     @Override
