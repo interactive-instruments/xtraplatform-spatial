@@ -11,6 +11,12 @@ import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult.Builder;
+import de.ii.xtraplatform.features.domain.SchemaBase;
+import de.ii.xtraplatform.features.domain.Tuple;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +32,8 @@ public class FeatureTokenStatsCollector extends FeatureTokenTransformerSql {
   private String ymin = "";
   private String xmax = "";
   private String ymax = "";
+  private String start = "";
+  private String end = "";
 
   public FeatureTokenStatsCollector(Builder builder) {
     this.builder = builder;
@@ -41,46 +49,73 @@ public class FeatureTokenStatsCollector extends FeatureTokenTransformerSql {
 
   @Override
   public void onEnd(ModifiableContext<SchemaSql, SchemaMappingSql> context) {
-    builder.spatialExtent(
-        BoundingBox.of(
-            Double.parseDouble(xmin),
-            Double.parseDouble(ymin),
-            Double.parseDouble(xmax),
-            Double.parseDouble(ymax),
-            crs));
+    if (!xmin.isEmpty() && !ymin.isEmpty() && !xmax.isEmpty() && !ymax.isEmpty()) {
+      builder.spatialExtent(
+          BoundingBox.of(
+              Double.parseDouble(xmin),
+              Double.parseDouble(ymin),
+              Double.parseDouble(xmax),
+              Double.parseDouble(ymax),
+              crs));
+    }
+
+    if (!start.isEmpty() || !end.isEmpty()) {
+      builder.temporalExtent(Tuple.of(parseTemporal(start), parseTemporal(end)));
+    }
 
     super.onEnd(context);
   }
 
+  private Long parseTemporal(String temporal) {
+    if (temporal.isEmpty()) {
+      return null;
+    }
+    try {
+      if (temporal.length() > 10) {
+        return ZonedDateTime.parse(temporal).toInstant().toEpochMilli();
+      }
+      return LocalDate.parse(temporal).atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
+    } catch (Throwable e) {
+      return null;
+    }
+  }
+
   @Override
   public void onValue(ModifiableContext<SchemaSql, SchemaMappingSql> context) {
+    if (Objects.nonNull(context.value())) {
+      String value = context.value();
 
-    /*if (context.schema().filter(SchemaBase::isPrimaryInstant).isPresent()) {
-      // TODO: enable date transformation
-      LOGGER.debug("INSTANT {} {}", context.pathAsString(), context.value());
-    }
-    if (context.schema().filter(SchemaBase::isPrimaryIntervalStart).isPresent()) {
-      LOGGER.debug("START {} {}", context.pathAsString(), context.value());
-    }
-    if (context.schema().filter(SchemaBase::isPrimaryIntervalEnd).isPresent()) {
-      LOGGER.debug("END {} {}", context.pathAsString(), context.value());
-    }*/
-    if (context.inGeometry()) {
+      if (context.inGeometry()) {
+        if (axis == 0 && (xmin.isEmpty() || value.compareTo(xmin) < 0)) {
+          this.xmin = value;
+        }
+        if (axis == 0 && (xmax.isEmpty() || value.compareTo(xmax) > 0)) {
+          this.xmax = value;
+        }
+        if (axis == 1 && (ymin.isEmpty() || value.compareTo(ymin) < 0)) {
+          this.ymin = value;
+        }
+        if (axis == 1 && (ymax.isEmpty() || value.compareTo(ymax) > 0)) {
+          this.ymax = value;
+        }
 
-      if (axis == 0 && (xmin.isEmpty() || context.value().compareTo(xmin) < 0)) {
-        this.xmin = context.value();
+        this.axis = (axis + 1) % dim;
+      } else if (context.schema().filter(SchemaBase::isPrimaryInstant).isPresent()) {
+        if (start.isEmpty() || value.compareTo(start) < 0) {
+          this.start = value;
+        }
+        if (end.isEmpty() || value.compareTo(end) > 0) {
+          this.end = value;
+        }
+      } else if (context.schema().filter(SchemaBase::isPrimaryIntervalStart).isPresent()) {
+        if (start.isEmpty() || value.compareTo(start) < 0) {
+          this.start = value;
+        }
+      } else if (context.schema().filter(SchemaBase::isPrimaryIntervalEnd).isPresent()) {
+        if (end.isEmpty() || value.compareTo(end) > 0) {
+          this.end = value;
+        }
       }
-      if (axis == 0 && (xmax.isEmpty() || context.value().compareTo(xmax) > 0)) {
-        this.xmax = context.value();
-      }
-      if (axis == 1 && (ymin.isEmpty() || context.value().compareTo(ymin) < 0)) {
-        this.ymin = context.value();
-      }
-      if (axis == 1 && (ymax.isEmpty() || context.value().compareTo(ymax) > 0)) {
-        this.ymax = context.value();
-      }
-
-      this.axis = (axis + 1) % dim;
     }
 
     super.onValue(context);

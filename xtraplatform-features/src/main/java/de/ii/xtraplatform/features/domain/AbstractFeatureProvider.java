@@ -413,10 +413,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
       FeatureSchema featureSchema = getData().getTypes().get(query.getType());
       Map<String, List<PropertyTransformation>> providerTransformationMap =
           featureSchema
-              .accept(
-                  query.getSchemaScope() == Scope.QUERIES
-                      ? WITH_SCOPE_QUERIES
-                      : WITH_SCOPE_MUTATIONS)
+              .accept(WITH_SCOPE_QUERIES)
               .accept(
                   (schema, visitedProperties) ->
                       java.util.stream.Stream.concat(
@@ -443,6 +440,27 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
                                           schema.getTransformations())),
                               visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
                           .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue)));
+      Map<String, List<PropertyTransformation>> providerTransformationMapMutations =
+          featureSchema
+              .accept(WITH_SCOPE_MUTATIONS)
+              .accept(
+                  (schema, visitedProperties) ->
+                      java.util.stream.Stream.concat(
+                              schema.isTemporal()
+                                  ? java.util.stream.Stream.of(
+                                  new SimpleImmutableEntry<
+                                      String, List<PropertyTransformation>>(
+                                      String.join(".", schema.getFullPath()),
+                                      ImmutableList.of(
+                                          new ImmutablePropertyTransformation.Builder()
+                                              .dateFormat(
+                                                  schema.getType() == Type.DATETIME
+                                                      ? DATETIME_FORMAT
+                                                      : DATE_FORMAT)
+                                              .build())))
+                                  : java.util.stream.Stream.empty(),
+                              visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
+                          .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue)));
       PropertyTransformations providerTransformations = () -> providerTransformationMap;
 
       PropertyTransformations mergedTransformations =
@@ -450,7 +468,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
               ? propertyTransformations
                   .map(p -> p.mergeInto(providerTransformations))
                   .orElse(providerTransformations)
-              : HashMap::new;
+              : () -> providerTransformationMapMutations;
 
       FeatureTokenTransformerSchemaMappings schemaMapper =
           new FeatureTokenTransformerSchemaMappings(mergedTransformations);
