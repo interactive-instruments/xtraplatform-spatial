@@ -416,7 +416,9 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
                       if (strongETag && x instanceof byte[]) {
                         eTag.put((byte[]) x);
                       }
-                      return builder.reduced((X) x).isEmpty(false);
+                      return builder
+                          .reduced((X) x)
+                          .isEmpty(x instanceof byte[] && ((byte[]) x).length <= 0);
                     })
                 .handleEnd(
                     (ImmutableResultReduced.Builder<X> xBuilder) -> {
