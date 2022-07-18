@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.sql.app;
 
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.function.Function;
 
 public interface FeatureStoreInsertGenerator {
   Function<FeatureSql, Tuple<String, Consumer<String>>> createInsert(
-      SchemaSql schema, List<Integer> parentRows, Optional<String> id);
+      SchemaSql schema, List<Integer> parentRows, Optional<String> id, EpsgCrs crs);
 
   Function<FeatureSql, Tuple<String, Consumer<String>>> createJunctionInsert(
       SchemaSql schema, List<Integer> parentRows);

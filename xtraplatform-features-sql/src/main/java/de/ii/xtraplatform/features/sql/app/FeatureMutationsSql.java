@@ -8,16 +8,17 @@
 package de.ii.xtraplatform.features.sql.app;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaVisitor;
 import de.ii.xtraplatform.features.domain.Tuple;
-import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryOptions.Builder;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
+import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRelation;
-import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +46,7 @@ public class FeatureMutationsSql {
   }
 
   public Reactive.Transformer<FeatureSql, String> getCreatorFlow(
-      SchemaSql schema, Object executionContext) {
+      SchemaSql schema, Object executionContext, EpsgCrs crs) {
 
     RowCursor rowCursor = new RowCursor(schema.getPath());
 
@@ -53,13 +54,14 @@ public class FeatureMutationsSql {
         .get()
         .getMutationFlow(
             feature ->
-                createInstanceInserts(schema, feature.getRowCounts(), rowCursor, Optional.empty()),
+                createInstanceInserts(
+                    schema, feature.getRowCounts(), rowCursor, Optional.empty(), crs),
             executionContext,
             Optional.empty());
   }
 
   public Reactive.Transformer<FeatureSql, String> getUpdaterFlow(
-      SchemaSql schema, Object executionContext, String id) {
+      SchemaSql schema, Object executionContext, String id, EpsgCrs crs) {
 
     RowCursor rowCursor = new RowCursor(schema.getPath());
 
@@ -67,15 +69,19 @@ public class FeatureMutationsSql {
         .get()
         .getMutationFlow(
             feature ->
-                createInstanceInserts(schema, feature.getRowCounts(), rowCursor, Optional.of(id)),
+                createInstanceInserts(
+                    schema, feature.getRowCounts(), rowCursor, Optional.of(id), crs),
             executionContext,
             Optional.of(id));
   }
 
-  public Reactive.Source<SqlRow> getDeletionSource(SchemaSql schema, String id) {
+  public Reactive.Source<String> getDeletionSource(SchemaSql schema, String id) {
     Tuple<String, Consumer<String>> delete = createInstanceDelete(schema, id).apply(null);
 
-    return sqlClient.get().getSourceStream(delete.first(), new Builder().build());
+    return sqlClient
+        .get()
+        .getSourceStream(delete.first(), SqlQueryOptions.withColumnTypes(String.class))
+        .via(Transformer.map(sqlRow -> (String) sqlRow.getValues().get(0)));
   }
 
   // TODO: shouldn't id be part of the feature already?
@@ -137,7 +143,7 @@ public class FeatureMutationsSql {
       List<Function<FeatureSql, Tuple<String, Consumer<String>>>> before = new ArrayList<>();
       List<Function<FeatureSql, Tuple<String, Consumer<String>>>> after = new ArrayList<>();
 
-      after.addAll(createObjectInserts(schema, rowNesting, rowCursor, id));
+      after.addAll(createObjectInserts(schema, rowNesting, rowCursor, id, null));
 
       for (int i = 0; i < schema.getProperties().size(); i++) {
         if (schema.isObject()) {
@@ -176,15 +182,16 @@ public class FeatureMutationsSql {
       SchemaSql schema,
       Map<List<String>, List<Integer>> rowNesting,
       RowCursor rowCursor,
-      Optional<String> id) {
+      Optional<String> id,
+      EpsgCrs crs) {
     boolean withId = id.isPresent();
 
     Stream<Function<FeatureSql, Tuple<String, Consumer<String>>>> instance =
         withId
             ? Stream.concat(
                 Stream.of(createInstanceDelete(schema, id.get())),
-                createObjectInserts(schema, rowNesting, rowCursor, id).stream())
-            : createObjectInserts(schema, rowNesting, rowCursor, id).stream();
+                createObjectInserts(schema, rowNesting, rowCursor, id, crs).stream())
+            : createObjectInserts(schema, rowNesting, rowCursor, id, crs).stream();
 
     return Stream.concat(
             instance,
@@ -192,7 +199,8 @@ public class FeatureMutationsSql {
                 .filter(SchemaSql::isObject)
                 .flatMap(
                     childSchema ->
-                        createInstanceInserts(childSchema, rowNesting, rowCursor, Optional.empty())
+                        createInstanceInserts(
+                            childSchema, rowNesting, rowCursor, Optional.empty(), crs)
                             .stream()))
         .collect(Collectors.toList());
   }
@@ -223,10 +231,11 @@ public class FeatureMutationsSql {
       SchemaSql schema,
       Map<List<String>, List<Integer>> rowNesting,
       RowCursor rowCursor,
-      Optional<String> id) {
+      Optional<String> id,
+      EpsgCrs crs) {
 
     if (schema.isFeature()) {
-      return createAttributesInserts(schema, rowCursor.get(schema.getPath()), id);
+      return createAttributesInserts(schema, rowCursor.get(schema.getPath()), id, crs);
     }
 
     if (schema.getRelation().isEmpty()) {
@@ -241,7 +250,7 @@ public class FeatureMutationsSql {
       List<Integer> newParentRows =
           rowCursor.track(schema.getFullPath(), schema.getParentPath(), 0);
 
-      return createAttributesInserts(schema, newParentRows, id);
+      return createAttributesInserts(schema, newParentRows, id, crs);
     }
 
     // TODO: what are the keys?
@@ -262,19 +271,19 @@ public class FeatureMutationsSql {
               List<Integer> newParentRows =
                   rowCursor.track(schema.getFullPath(), schema.getParentPath(), currentRow);
 
-              return createAttributesInserts(schema, newParentRows, id);
+              return createAttributesInserts(schema, newParentRows, id, crs);
             })
         .flatMap(List::stream)
         .collect(Collectors.toList());
   }
 
   List<Function<FeatureSql, Tuple<String, Consumer<String>>>> createAttributesInserts(
-      SchemaSql schema, List<Integer> parentRows, Optional<String> id) {
+      SchemaSql schema, List<Integer> parentRows, Optional<String> id, EpsgCrs crs) {
 
     ImmutableList.Builder<Function<FeatureSql, Tuple<String, Consumer<String>>>> queries =
         ImmutableList.builder();
 
-    queries.add(generator.createInsert(schema, parentRows, id));
+    queries.add(generator.createInsert(schema, parentRows, id, crs));
 
     if (!schema.getRelation().isEmpty()) {
       SqlRelation relation = schema.getRelation().get(0);

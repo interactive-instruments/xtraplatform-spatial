@@ -40,6 +40,7 @@ import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.FeatureTokenSource;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
+import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Type;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
@@ -603,17 +604,18 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   }
 
   @Override
-  public MutationResult createFeatures(String featureType, FeatureTokenSource featureTokenSource) {
+  public MutationResult createFeatures(
+      String featureType, FeatureTokenSource featureTokenSource, EpsgCrs crs) {
 
     // TODO: where does crs transformation happen?
     // decoder should write source crs to Feature, encoder should transform to target crs
-    return writeFeatures(featureType, featureTokenSource, Optional.empty());
+    return writeFeatures(featureType, featureTokenSource, Optional.empty(), null);
   }
 
   @Override
   public MutationResult updateFeature(
-      String featureType, String featureId, FeatureTokenSource featureTokenSource) {
-    return writeFeatures(featureType, featureTokenSource, Optional.of(featureId));
+      String featureType, String featureId, FeatureTokenSource featureTokenSource, EpsgCrs crs) {
+    return writeFeatures(featureType, featureTokenSource, Optional.of(featureId), crs);
   }
 
   @Override
@@ -638,7 +640,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     SchemaSql mutationSchemaSql = sqlSchema.get(0).accept(new MutationSchemaBuilderSql());
 
-    Reactive.Source<SqlRow> deletionSource =
+    Reactive.Source<String> deletionSource =
         featureMutationsSql.getDeletionSource(mutationSchemaSql, id)
         /*.watchTermination(
         (Function2<NotUsed, CompletionStage<Done>, CompletionStage<MutationResult>>) (notUsed, completionStage) -> completionStage
@@ -655,12 +657,12 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     .emptyResult(ImmutableMutationResult.builder())
     .build();*/
 
-    // TODO: test
     RunnableStream<MutationResult> deletionStream =
         deletionSource
             .to(Sink.ignore())
-            .withResult(ImmutableMutationResult.builder())
+            .withResult(ImmutableMutationResult.builder().type(Type.DELETE))
             .handleError(ImmutableMutationResult.Builder::error)
+            .handleItem(ImmutableMutationResult.Builder::addIds)
             .handleEnd(Builder::build)
             .on(getStreamRunner());
 
@@ -668,7 +670,10 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   }
 
   private MutationResult writeFeatures(
-      String featureType, FeatureTokenSource featureTokenSource, Optional<String> featureId) {
+      String featureType,
+      FeatureTokenSource featureTokenSource,
+      Optional<String> featureId,
+      EpsgCrs crs) {
 
     Optional<FeatureSchema> schema = Optional.ofNullable(getData().getTypes().get(featureType));
     Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(featureType));
@@ -706,10 +711,11 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     Transformer<FeatureSql, String> featureWriter =
         featureId.isPresent()
-            ? featureMutationsSql.getUpdaterFlow(mutationSchemaSql, null, featureId.get())
-            : featureMutationsSql.getCreatorFlow(mutationSchemaSql, null);
+            ? featureMutationsSql.getUpdaterFlow(mutationSchemaSql, null, featureId.get(), crs)
+            : featureMutationsSql.getCreatorFlow(mutationSchemaSql, null, crs);
 
-    ImmutableMutationResult.Builder builder = ImmutableMutationResult.builder();
+    ImmutableMutationResult.Builder builder =
+        ImmutableMutationResult.builder().type(featureId.isPresent() ? Type.REPLACE : Type.CREATE);
     FeatureTokenStatsCollector statsCollector = new FeatureTokenStatsCollector(builder);
 
     RunnableStream<MutationResult> mutationStream =
