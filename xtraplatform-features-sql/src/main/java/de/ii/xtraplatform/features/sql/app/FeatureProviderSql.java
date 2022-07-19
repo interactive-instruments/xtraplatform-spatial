@@ -607,9 +607,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   public MutationResult createFeatures(
       String featureType, FeatureTokenSource featureTokenSource, EpsgCrs crs) {
 
-    // TODO: where does crs transformation happen?
-    // decoder should write source crs to Feature, encoder should transform to target crs
-    return writeFeatures(featureType, featureTokenSource, Optional.empty(), null);
+    return writeFeatures(featureType, featureTokenSource, Optional.empty(), crs);
   }
 
   @Override
@@ -716,7 +714,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     ImmutableMutationResult.Builder builder =
         ImmutableMutationResult.builder().type(featureId.isPresent() ? Type.REPLACE : Type.CREATE);
-    FeatureTokenStatsCollector statsCollector = new FeatureTokenStatsCollector(builder);
+    FeatureTokenStatsCollector statsCollector = new FeatureTokenStatsCollector(builder, crs);
 
     RunnableStream<MutationResult> mutationStream =
         featureTokenSource

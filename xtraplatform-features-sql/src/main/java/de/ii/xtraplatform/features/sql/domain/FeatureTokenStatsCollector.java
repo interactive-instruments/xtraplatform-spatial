@@ -25,9 +25,9 @@ public class FeatureTokenStatsCollector extends FeatureTokenTransformerSql {
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureTokenStatsCollector.class);
 
   private final Builder builder;
+  private final EpsgCrs crs;
   private int axis = 0;
   private int dim = 2;
-  private EpsgCrs crs = OgcCrs.CRS84;
   private String xmin = "";
   private String ymin = "";
   private String xmax = "";
@@ -35,8 +35,9 @@ public class FeatureTokenStatsCollector extends FeatureTokenTransformerSql {
   private String start = "";
   private String end = "";
 
-  public FeatureTokenStatsCollector(Builder builder) {
+  public FeatureTokenStatsCollector(Builder builder, EpsgCrs crs) {
     this.builder = builder;
+    this.crs = crs;
   }
 
   @Override
