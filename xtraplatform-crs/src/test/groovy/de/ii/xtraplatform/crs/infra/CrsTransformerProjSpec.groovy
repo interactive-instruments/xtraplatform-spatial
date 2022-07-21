@@ -75,7 +75,7 @@ class CrsTransformerProjSpec extends Specification {
         double[] target = gct.transform(source, 1, 3)
 
         then:
-        target == [48.68423644912392, 7.923077973066287, 131.96] as double[]
+        compareGeographicCoordinate(target, [48.68423644912392, 7.923077973066287, 131.96] as double[])
     }
 
     def 'CRS transformer test 2D'() {
@@ -99,41 +99,55 @@ class CrsTransformerProjSpec extends Specification {
         double[] re = gct.transform(ra, 5, 2)
 
         then:
-        coordinateTuple1.getX() == rx
-        coordinateTuple1.getY() == ry
-        coordinateTuple2.getX() == rx
-        coordinateTuple2.getY() == ry
+        compareValueInMeter(coordinateTuple1.getX(), rx)
+        compareValueInMeter(coordinateTuple1.getY(), ry)
+        compareValueInMeter(coordinateTuple2.getX(), rx)
+        compareValueInMeter(coordinateTuple2.getY(), ry)
         for (int i = 0; i < 10; i += 2) {
-            re[i] == rx
-            re[i + 1] == ry
+            compareValueInMeter(re[i], rx)
+            compareValueInMeter(re[i + 1], ry)
         }
     }
 
-    def 'CRS transformer test 3D to 2D'() {
+    def 'CRS transformer test 3D to 2D - Geographic CRS'() {
         when:
         CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
         double[] result = gct.transform(source as double[], 1, 3)
 
         then:
-        result == target as double[]
+        compareGeographicCoordinate(result, target as double[])
+
+        where:
+        sourceCrs        | targetCrs         | source                            | target
+        EpsgCrs.of(5555) | EpsgCrs.of(4326)  | [420735.071, 5392914.343, 131.96] | [48.68423644912392, 7.923077973066287, 0.0]
+        EpsgCrs.of(5555) | OgcCrs.CRS84      | [420735.071, 5392914.343, 131.96] | [7.923077973066287, 48.68423644912392, 0.0]
+
+        EpsgCrs.of(4979) | EpsgCrs.of(4326)  | [48.684, 7.923, 131.96]           | [48.684, 7.923, 0.0]
+        EpsgCrs.of(4979) | OgcCrs.CRS84      | [48.684, 7.923, 131.96]           | [7.923, 48.684, 0.0]
+
+        OgcCrs.CRS84h    | EpsgCrs.of(4326)  | [7.923, 48.684, 131.96]           | [48.684, 7.923, 0.0]
+        OgcCrs.CRS84h    | OgcCrs.CRS84      | [7.923, 48.684, 131.96]           | [7.923, 48.684, 0.0]
+
+    }
+
+    def 'CRS transformer test 3D to 2D - Projected CRS'() {
+        when:
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
+        double[] result = gct.transform(source as double[], 1, 3)
+
+        then:
+        compareValuesInMeter(result, target as double[])
 
         where:
         sourceCrs        | targetCrs         | source                            | target
         EpsgCrs.of(5555) | EpsgCrs.of(25832) | [420735.071, 5392914.343, 131.96] | [420735.071, 5392914.343, 0.0]
-        EpsgCrs.of(5555) | EpsgCrs.of(4326)  | [420735.071, 5392914.343, 131.96] | [48.68423644912392, 7.923077973066287, 0.0]
         EpsgCrs.of(5555) | EpsgCrs.of(3857)  | [420735.071, 5392914.343, 131.96] | [881993.0054771411, 6221451.78116173, 0.0]
-        EpsgCrs.of(5555) | OgcCrs.CRS84      | [420735.071, 5392914.343, 131.96] | [7.923077973066287, 48.68423644912392, 0.0]
 
         EpsgCrs.of(4979) | EpsgCrs.of(25832) | [48.684, 7.923, 131.96]           | [420728.9609056481, 5392888.1411416, 0.0]
-        EpsgCrs.of(4979) | EpsgCrs.of(4326)  | [48.684, 7.923, 131.96]           | [48.684, 7.923, 0.0]
         EpsgCrs.of(4979) | EpsgCrs.of(3857)  | [48.684, 7.923, 131.96]           | [881984.3255551065, 6221411.912936983, 0.0]
-        EpsgCrs.of(4979) | OgcCrs.CRS84      | [48.684, 7.923, 131.96]           | [7.923, 48.684, 0.0]
 
         OgcCrs.CRS84h    | EpsgCrs.of(25832) | [7.923, 48.684, 131.96]           | [420728.9609056481, 5392888.1411416, 0.0]
-        OgcCrs.CRS84h    | EpsgCrs.of(4326)  | [7.923, 48.684, 131.96]           | [48.684, 7.923, 0.0]
         OgcCrs.CRS84h    | EpsgCrs.of(3857)  | [7.923, 48.684, 131.96]           | [881984.3255551065, 6221411.912936983, 0.0]
-        OgcCrs.CRS84h    | OgcCrs.CRS84      | [7.923, 48.684, 131.96]           | [7.923, 48.684, 0.0]
-
 
     }
 
@@ -186,14 +200,31 @@ class CrsTransformerProjSpec extends Specification {
 
     }
 
-    def 'Compound CRS test'() {
+    def 'Compound CRS test - Geographic CRS'() {
 
         when:
         CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
         double[] result = gct.transform(source as double[], 1, 3)
 
         then:
-        result == target as double[]
+        compareGeographicCoordinate(result, target as double[])
+
+        where:
+        sourceCrs               | targetCrs               | source                            | target
+
+        EpsgCrs.of(25832, 7837) | EpsgCrs.of(4979)        | [420735.071, 5392914.343, 131.96] | [48.68423644912392, 7.923077973066287, 131.96]
+        EpsgCrs.of(25832, 7837) | OgcCrs.CRS84h           | [420735.071, 5392914.343, 131.96] | [7.923077973066287, 48.68423644912392, 131.96]
+
+    }
+
+    def 'Compound CRS test - Projected CRS'() {
+
+        when:
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
+        double[] result = gct.transform(source as double[], 1, 3)
+
+        then:
+        compareValuesInMeter(result, target as double[])
 
         where:
         sourceCrs               | targetCrs               | source                            | target
@@ -203,57 +234,83 @@ class CrsTransformerProjSpec extends Specification {
         OgcCrs.CRS84h           | EpsgCrs.of(25832, 7837) | [7.923, 48.684, 131.96]           | [420728.9609056481, 5392888.1411416, 131.96]
 
         EpsgCrs.of(25832, 7837) | EpsgCrs.of(5555)        | [420735.071, 5392914.343, 131.96] | [420735.071, 5392914.343, 131.96]
-        EpsgCrs.of(25832, 7837) | EpsgCrs.of(4979)        | [420735.071, 5392914.343, 131.96] | [48.68423644912392, 7.923077973066287, 131.96]
-        EpsgCrs.of(25832, 7837) | OgcCrs.CRS84h           | [420735.071, 5392914.343, 131.96] | [7.923077973066287, 48.68423644912392, 131.96]
 
     }
 
-    def 'CRS transformer test 2D with 3D transformer'() {
+    def 'CRS transformer test 2D with 3D transformer - Geographic CRS'() {
         when:
         CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
         double[] result = gct.transform(source as double[], 1, 2)
 
         then:
-        result == target as double[]
+        compareGeographicCoordinate(result, target as double[])
+
+        where:
+        sourceCrs               | targetCrs               | source                    | target
+        EpsgCrs.of(5555)        | EpsgCrs.of(4326)        | [420735.071, 5392914.343] | [48.68423644912392, 7.923077973066287]
+        EpsgCrs.of(5555)        | OgcCrs.CRS84            | [420735.071, 5392914.343] | [7.923077973066287, 48.68423644912392]
+
+        EpsgCrs.of(4979)        | EpsgCrs.of(4326)        | [48.684, 7.923]           | [48.684, 7.923]
+        EpsgCrs.of(4979)        | OgcCrs.CRS84            | [48.684, 7.923]           | [7.923, 48.684]
+
+        OgcCrs.CRS84h           | EpsgCrs.of(4326)        | [7.923, 48.684]           | [48.684, 7.923]
+        OgcCrs.CRS84h           | OgcCrs.CRS84            | [7.923, 48.684]           | [7.923, 48.684]
+
+        EpsgCrs.of(25832, 7837) | EpsgCrs.of(4979)        | [420735.071, 5392914.343] | [48.68423644912392, 7.923077973066287]
+        EpsgCrs.of(25832, 7837) | OgcCrs.CRS84h           | [420735.071, 5392914.343] | [7.923077973066287, 48.68423644912392]
+    }
+
+    def 'CRS transformer test 2D with 3D transformer - Projected CRS'() {
+        when:
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceCrs, targetCrs).get()
+        double[] result = gct.transform(source as double[], 1, 2)
+
+        then:
+        compareValuesInMeter(result, target as double[])
 
         where:
         sourceCrs               | targetCrs               | source                    | target
         EpsgCrs.of(5555)        | EpsgCrs.of(25832)       | [420735.071, 5392914.343] | [420735.071, 5392914.343]
-        EpsgCrs.of(5555)        | EpsgCrs.of(4326)        | [420735.071, 5392914.343] | [48.68423644912392, 7.923077973066287]
         EpsgCrs.of(5555)        | EpsgCrs.of(3857)        | [420735.071, 5392914.343] | [881993.0054771411, 6221451.78116173]
-        EpsgCrs.of(5555)        | OgcCrs.CRS84            | [420735.071, 5392914.343] | [7.923077973066287, 48.68423644912392]
 
         EpsgCrs.of(4979)        | EpsgCrs.of(25832)       | [48.684, 7.923]           | [420728.9609056481, 5392888.1411416]
-        EpsgCrs.of(4979)        | EpsgCrs.of(4326)        | [48.684, 7.923]           | [48.684, 7.923]
         EpsgCrs.of(4979)        | EpsgCrs.of(3857)        | [48.684, 7.923]           | [881984.3255551065, 6221411.912936983]
-        EpsgCrs.of(4979)        | OgcCrs.CRS84            | [48.684, 7.923]           | [7.923, 48.684]
 
         OgcCrs.CRS84h           | EpsgCrs.of(25832)       | [7.923, 48.684]           | [420728.9609056481, 5392888.1411416]
-        OgcCrs.CRS84h           | EpsgCrs.of(4326)        | [7.923, 48.684]           | [48.684, 7.923]
         OgcCrs.CRS84h           | EpsgCrs.of(3857)        | [7.923, 48.684]           | [881984.3255551065, 6221411.912936983]
-        OgcCrs.CRS84h           | OgcCrs.CRS84            | [7.923, 48.684]           | [7.923, 48.684]
 
         EpsgCrs.of(5555)        | EpsgCrs.of(25832, 7837) | [420735.071, 5392914.343] | [420735.071, 5392914.343]
         EpsgCrs.of(4979)        | EpsgCrs.of(25832, 7837) | [48.684, 7.923]           | [420728.9609056481, 5392888.1411416]
         OgcCrs.CRS84h           | EpsgCrs.of(25832, 7837) | [7.923, 48.684]           | [420728.9609056481, 5392888.1411416]
 
         EpsgCrs.of(25832, 7837) | EpsgCrs.of(5555)        | [420735.071, 5392914.343] | [420735.071, 5392914.343]
-        EpsgCrs.of(25832, 7837) | EpsgCrs.of(4979)        | [420735.071, 5392914.343] | [48.68423644912392, 7.923077973066287]
-        EpsgCrs.of(25832, 7837) | OgcCrs.CRS84h           | [420735.071, 5392914.343] | [7.923077973066287, 48.68423644912392]
     }
 
-    def 'CRS transformBoundingBox'() {
+    def 'CRS transformBoundingBox - Geographic CRS'() {
         when:
         CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceBbox.getEpsgCrs(), targetBbox.getEpsgCrs()).get()
         BoundingBox result = gct.transformBoundingBox(sourceBbox)
 
         then:
-        result == targetBbox
+        compareValuesInDegrees(result.toArray(), targetBbox.toArray)
+
+        where:
+        sourceBbox                                                                                         | targetBbox
+        BoundingBox.of(420735.071, 5392914.343, 131.96, 430735.071, 5492914.343, 141.96, EpsgCrs.of(5555)) | BoundingBox.of(48.68423644912392, 7.923077973066287, 131.96, 49.58484311245754, 8.041737428193695, 141.96, EpsgCrs.of(4979))
+
+    }
+
+    def 'CRS transformBoundingBox - Projected CRS'() {
+        when:
+        CrsTransformerProj gct = (CrsTransformerProj) transformerFactory.getTransformer(sourceBbox.getEpsgCrs(), targetBbox.getEpsgCrs()).get()
+        BoundingBox result = gct.transformBoundingBox(sourceBbox)
+
+        then:
+        compareValuesInMeter(result.toArray(), targetBbox.toArray)
 
         where:
         sourceBbox                                                                                         | targetBbox
         BoundingBox.of(420735.071, 5392914.343, 430735.071, 5492914.343, EpsgCrs.of(5555))                 | BoundingBox.of(420735.071, 5392914.343, 430735.071, 5492914.343, EpsgCrs.of(25832))
-        BoundingBox.of(420735.071, 5392914.343, 131.96, 430735.071, 5492914.343, 141.96, EpsgCrs.of(5555)) | BoundingBox.of(48.68423644912392, 7.923077973066287, 131.96, 49.58484311245754, 8.041737428193695, 141.96, EpsgCrs.of(4979))
 
     }
 
@@ -272,4 +329,37 @@ class CrsTransformerProjSpec extends Specification {
 
     }
 
+    static void compareValueInMeter(double val1, double val2) {
+        // compare µm
+        assert Math.abs(val1-val2) < 1e-6;
+    }
+
+    static void compareValueInDegree(double val1, double val2) {
+        // compare µm
+        assert Math.abs(val1-val2) < 1e-11;
+    }
+
+    static void compareGeographicCoordinate(double[] val1, double[] val2) {
+        assert val1.length == val2.length
+        for (int i = 0; i < val1.length; i++) {
+            if (i<2)
+                compareValueInDegree(val1[i],val2[i])
+            else
+                compareValueInMeter(val1[i],val2[i])
+        }
+    }
+
+    static void compareValuesInMeter(double[] val1, double[] val2) {
+        assert val1.length == val2.length
+        for (int i = 0; i < val1.length; i++) {
+            compareValueInMeter(val1[i],val2[i])
+        }
+    }
+
+    static void compareValuesInDegrees(double[] val1, double[] val2) {
+        assert val1.length == val2.length
+        for (int i = 0; i < val1.length; i++) {
+            compareValueInDegree(val1[i],val2[i])
+        }
+    }
 }
