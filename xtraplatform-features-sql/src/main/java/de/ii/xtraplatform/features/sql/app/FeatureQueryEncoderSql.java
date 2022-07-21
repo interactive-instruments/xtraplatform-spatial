@@ -12,6 +12,7 @@ import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
+import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
@@ -38,12 +39,15 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueries, SqlQuery
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderSql.class);
 
   private final Map<String, List<SqlQueryTemplates>> allQueryTemplates;
+  private final Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations;
   private final Map<String, FeatureStoreTypeInfo> typeInfos;
 
   FeatureQueryEncoderSql(
       Map<String, List<SqlQueryTemplates>> allQueryTemplates,
+      Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations,
       Map<String, FeatureStoreTypeInfo> typeInfos) {
     this.allQueryTemplates = allQueryTemplates;
+    this.allQueryTemplatesMutations = allQueryTemplatesMutations;
     this.typeInfos = typeInfos;
   }
 
@@ -54,7 +58,10 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueries, SqlQuery
       FeatureQuery featureQuery, Map<String, String> additionalQueryParameters) {
     // TODO: either pass as parameter, or check for null here
     FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());
-    List<SqlQueryTemplates> queryTemplates = allQueryTemplates.get(featureQuery.getType());
+    List<SqlQueryTemplates> queryTemplates =
+        featureQuery.getSchemaScope() == Scope.QUERIES
+            ? allQueryTemplates.get(featureQuery.getType())
+            : allQueryTemplatesMutations.get(featureQuery.getType());
 
     // TODO: implement for multiple main tables
     FeatureStoreInstanceContainer mainTable = typeInfo.getInstanceContainers().get(0);

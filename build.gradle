@@ -18,15 +18,6 @@ dependencies {
 
 
 subprojects {
-    repositories {
-        mavenCentral()
-        maven {
-            url "https://repo.osgeo.org/repository/release"
-        }
-        maven {
-            url "https://maven.ecc.no/releases"
-        }
-    }
     tasks.withType(GenerateModuleMetadata).configureEach {
         suppressedValidationErrors.add('enforced-platform')
     }
