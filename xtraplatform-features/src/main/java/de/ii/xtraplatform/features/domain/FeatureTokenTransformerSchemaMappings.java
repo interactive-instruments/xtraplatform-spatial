@@ -245,7 +245,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
               new ArrayList<>(
                   index == 0
                       ? context.indexes()
-                      : context.indexes().subList(0, context.indexes().size() - 1));
+                      : context.indexes().subList(0, Math.max(0, context.indexes().size() - 1)));
           indexes.add(index + 1);
           context.setIndexes(indexes);
         }
