@@ -34,7 +34,7 @@ public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSch
       return null;
     }
 
-    if (schema.isConstant()) {
+    if (schema.isConstant() && scope == Scope.MUTATIONS) {
       return null;
     }
 
