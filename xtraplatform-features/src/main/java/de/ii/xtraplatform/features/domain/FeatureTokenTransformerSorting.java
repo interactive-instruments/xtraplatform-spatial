@@ -7,38 +7,97 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.Queue;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO: main table columns might have to wait for joined queries (likewise for deeper levels)
-// joined queries might not have any rows
-// if a row for a joined query with a greater order arrives, lesser joined queries can be assumed to
-// be empty
-// TODO: return nulls from FeatureDecoderSql
+/*
+NOTE: while this works, it is cumbersome and hard to maintain
+ a much cleaner solution would use FeatureTokenEmitter and FeatureTokenReader for buffering
+ but these are out of sync with Context and have to be adjusted (geoDim, in(Geo|Array|Object))
+*/
 public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FeatureTokenTransformerSorting.class);
 
-  private Map<List<String>, Integer> pathOrder;
-  private int lastOrder;
-  private List<Integer> lastIndexes;
+  private final Map<List<String>, Integer> pathIndex;
+  private final Map<List<String>, Integer> rearrange;
+  private final Queue<Integer> indexQueue;
+  private final Queue<List<String>> pathQueue;
+  private final Queue<List<Integer>> indexesQueue;
+  private final Queue<String> valueQueue;
+  private final Queue<Optional<SimpleFeatureGeometry>> geoTypeQueue;
+  private final Queue<OptionalInt> geoDimQueue;
+  private final Queue<Boolean> inGeoQueue;
+  private final Queue<Boolean> inArrayQueue;
+  private final Queue<Boolean> inObjectQueue;
+  private final Queue<FeatureTokenType> tokenQueue;
 
-  public FeatureTokenTransformerSorting() {}
+  private int bufferIndex;
+  private List<String> bufferParent;
+
+  public FeatureTokenTransformerSorting() {
+    this.pathIndex = new LinkedHashMap<>();
+    this.rearrange = new LinkedHashMap<>();
+    this.indexQueue = new LinkedList<>();
+    this.pathQueue = new LinkedList<>();
+    this.indexesQueue = new LinkedList<>();
+    this.valueQueue = new LinkedList<>();
+    this.geoTypeQueue = new LinkedList<>();
+    this.geoDimQueue = new LinkedList<>();
+    this.inGeoQueue = new LinkedList<>();
+    this.inArrayQueue = new LinkedList<>();
+    this.inObjectQueue = new LinkedList<>();
+    this.tokenQueue = new LinkedList<>();
+    this.bufferIndex = 0;
+    this.bufferParent = new ArrayList<>();
+  }
 
   @Override
   public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    this.pathOrder = new LinkedHashMap<>();
-    int counter = 0;
+    int index = 0;
+    Set<List<String>> parents = new HashSet<>();
+    List<String> lastParent = null;
+    boolean doRearrange = false;
+
     for (List<String> path : context.mapping().getTargetSchemasByPath().keySet()) {
-      pathOrder.put(path, counter);
-      LOGGER.warn("{}: {}", counter, path);
-      counter++;
+      if (path.size() > 1) {
+        List<String> parent = path.subList(0, path.size() - 1);
+        if (!doRearrange
+            && !Objects.equals(parent, lastParent)
+            && parents.contains(parent)
+            && !path.get(path.size() - 1).startsWith("[")) {
+          doRearrange = true;
+        } else if (doRearrange
+            && (!Objects.equals(parent, lastParent) || path.get(path.size() - 1).startsWith("["))) {
+          doRearrange = false;
+        }
+
+        parents.add(parent);
+        lastParent = parent;
+        if (doRearrange) {
+          rearrange.put(path, index);
+        }
+      }
+
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("{}: {}{}", index, doRearrange ? "QUEUE " : "", path);
+      }
+
+      pathIndex.put(path, index);
+      index++;
     }
 
     super.onStart(context);
@@ -46,52 +105,129 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
 
   @Override
   public void onFeatureStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    this.lastIndexes = ImmutableList.of();
-    this.lastOrder = 0;
-
     super.onFeatureStart(context);
   }
 
   @Override
-  public void onObjectStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    // LOGGER.warn("{} - {} - O", pathOrder.get(context.path()), context.path());
-
-    if (pathOrder.containsKey(context.path())) {
-      this.lastOrder = pathOrder.get(context.path());
+  public void onFeatureEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
+    if (bufferIndex > 0) {
+      emptyBuffer(context);
     }
 
-    this.lastIndexes = context.indexes();
+    super.onFeatureEnd(context);
+  }
 
-    super.onObjectStart(context);
+  @Override
+  public void onObjectStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
+    int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
+
+    checkBuffer(context, FeatureTokenType.OBJECT, index > bufferIndex);
   }
 
   @Override
   public void onObjectEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    super.onObjectEnd(context);
+    checkBuffer(context, FeatureTokenType.OBJECT_END, startsWith(bufferParent, context.path()));
   }
 
   @Override
   public void onArrayStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    // LOGGER.warn("{} - {} - A", pathOrder.get(context.path()), context.path());
+    int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
 
-    super.onArrayStart(context);
+    checkBuffer(context, FeatureTokenType.ARRAY, index > bufferIndex);
   }
 
   @Override
   public void onArrayEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    super.onArrayEnd(context);
+    checkBuffer(context, FeatureTokenType.ARRAY_END, false);
   }
 
   @Override
   public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    int order = pathOrder.get(context.path());
+    int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
 
-    if (order > lastOrder + 1 && Objects.equals(lastIndexes, context.indexes())) {
-      LOGGER.warn("{} - {} - waiting for {}", order, context.path(), lastOrder + 1);
+    checkBuffer(context, FeatureTokenType.VALUE, index > bufferIndex);
+  }
+
+  private void checkBuffer(
+      ModifiableContext<FeatureSchema, SchemaMapping> context,
+      FeatureTokenType token,
+      boolean doEmptyBuffer) {
+    int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
+    boolean doRearrange = rearrange.containsKey(context.path());
+
+    if (doRearrange) {
+      buffer(context, index, token);
+    } else {
+      if (bufferIndex > 0 && doEmptyBuffer) {
+        emptyBuffer(context);
+      }
+
+      push(context, token);
+    }
+  }
+
+  private static boolean startsWith(List<String> a, List<String> b) {
+    return Objects.equals(a, b)
+        || (a.size() > b.size() && Objects.equals(a.subList(0, b.size()), b));
+  }
+
+  private void buffer(
+      ModifiableContext<FeatureSchema, SchemaMapping> context, int order, FeatureTokenType token) {
+    if (bufferIndex <= 0) {
+      this.bufferIndex = order;
+      this.bufferParent = context.path().subList(0, context.path().size() - 1);
     }
 
-    this.lastOrder = order;
+    // indexQueue.add(order);
+    tokenQueue.add(token);
+    pathQueue.add(context.path());
+    indexesQueue.add(new ArrayList<>(context.indexes()));
+    valueQueue.add(context.value());
+    geoTypeQueue.add(context.geometryType());
+    geoDimQueue.add(context.geometryDimension());
+    inGeoQueue.add(context.inGeometry());
+    inArrayQueue.add(context.inArray());
+    inObjectQueue.add(context.inObject());
+  }
 
-    super.onValue(context);
+  private void emptyBuffer(ModifiableContext<FeatureSchema, SchemaMapping> context) {
+    this.bufferIndex = 0;
+    this.bufferParent = new ArrayList<>();
+
+    while (!tokenQueue.isEmpty()) {
+      FeatureTokenType token = tokenQueue.remove();
+
+      context.pathTracker().track(pathQueue.remove());
+      context.setIndexes(indexesQueue.remove());
+      context.setValue(valueQueue.remove());
+      context.setGeometryType(geoTypeQueue.remove());
+      context.setGeometryDimension(geoDimQueue.remove());
+      context.setInGeometry(inGeoQueue.remove());
+      context.setInArray(inArrayQueue.remove());
+      context.setInObject(inObjectQueue.remove());
+
+      push(context, token);
+    }
+  }
+
+  private void push(
+      ModifiableContext<FeatureSchema, SchemaMapping> context, FeatureTokenType token) {
+    switch (token) {
+      case VALUE:
+        super.onValue(context);
+        break;
+      case OBJECT:
+        super.onObjectStart(context);
+        break;
+      case OBJECT_END:
+        super.onObjectEnd(context);
+        break;
+      case ARRAY:
+        super.onArrayStart(context);
+        break;
+      case ARRAY_END:
+        super.onArrayEnd(context);
+        break;
+    }
   }
 }

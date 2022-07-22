@@ -38,6 +38,8 @@ import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.FeatureTokenSource;
+import de.ii.xtraplatform.features.domain.FeatureTokenTransformer;
+import de.ii.xtraplatform.features.domain.FeatureTokenTransformerSorting;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Type;
@@ -399,6 +401,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
       getDecoder(FeatureQuery query) {
     WithScope withScope =
         query.getSchemaScope() == Scope.QUERIES ? WITH_SCOPE_QUERIES : WITH_SCOPE_MUTATIONS;
+
     return new FeatureDecoderSql(
         ImmutableList.of(getTypeInfos().get(query.getType())),
         query.getSchemaScope() == Scope.QUERIES
@@ -406,6 +409,11 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
             : tableSchemasMutations.get(query.getType()),
         getData().getTypes().get(query.getType()).accept(withScope),
         query);
+  }
+
+  @Override
+  protected List<FeatureTokenTransformer> getDecoderTransformers() {
+    return ImmutableList.of(new FeatureTokenTransformerSorting());
   }
 
   @Override

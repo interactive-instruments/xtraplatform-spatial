@@ -96,8 +96,8 @@ public class GeometryDecoderWkt {
         break;
     }
 
-    handler.onObjectEnd(context);
     context.setInGeometry(false);
+    handler.onObjectEnd(context);
   }
 
   private static final Splitter COMMA_SPLITTER = Splitter.on(',').omitEmptyStrings().trimResults();

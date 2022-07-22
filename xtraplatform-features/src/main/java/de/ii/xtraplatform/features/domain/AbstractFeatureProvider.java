@@ -265,6 +265,10 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
     return getDecoder(query);
   }
 
+  protected List<FeatureTokenTransformer> getDecoderTransformers() {
+    return ImmutableList.of();
+  }
+
   protected abstract Map<String, Codelist> getCodelists();
 
   public static Map<String, FeatureStoreTypeInfo> createTypeInfos(
@@ -449,7 +453,13 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
               T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
           decoder = doTransform ? getDecoder(query) : getDecoderPassThrough(query);
 
-      return source.via(decoder);
+      FeatureTokenSource featureSource = source.via(decoder);
+
+      for (FeatureTokenTransformer transformer : getDecoderTransformers()) {
+        featureSource = featureSource.via(transformer);
+      }
+
+      return featureSource;
     }
 
     private FeatureTokenSource getFeatureTokenSourceTransformed(
@@ -534,15 +544,9 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
       FeatureTokenTransformerRemoveEmptyOptionals cleaner =
           new FeatureTokenTransformerRemoveEmptyOptionals();
 
-      FeatureTokenTransformerSorting sorter = new FeatureTokenTransformerSorting();
-
       FeatureTokenTransformerLogger logger = new FeatureTokenTransformerLogger();
 
-      return featureTokenSource
-          // .via(sorter)
-          .via(schemaMapper)
-          .via(valueMapper)
-          .via(cleaner);
+      return featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner);
       // .via(logger);
     }
   }
