@@ -49,35 +49,35 @@ class FeatureMutationsSqlSpec extends Specification {
 
         //List<Function<FeatureSql, Pair<String, Consumer<String>>>> accept = FULL.accept(new FeatureMutationsSql.StatementsVisitor(rows, rowCursor, false));
 
-        inserts.createInstanceInserts(FULL, rows, rowCursor, Optional.empty())
+        inserts.createInstanceInserts(FULL, rows, rowCursor, Optional.empty(), null)
 
         then:
-        1 * inserts.createAttributesInserts(FULL, [0], Optional.empty())
+        1 * inserts.createAttributesInserts(FULL, [0], Optional.empty(), null)
 
         //TODO: after merge_merge
         then:
-        1 * inserts.createAttributesInserts(MERGE_WITH_CHILDREN, [0,0], Optional.empty())
+        1 * inserts.createAttributesInserts(MERGE_WITH_CHILDREN, [0, 0], Optional.empty(), null)
 
         then:
-        1 * inserts.createAttributesInserts(MERGE_MERGE_WITH_CHILDREN, [0,0,0], Optional.empty())
+        1 * inserts.createAttributesInserts(MERGE_MERGE_WITH_CHILDREN, [0, 0, 0], Optional.empty(), null)
 
         then:
-        1 * inserts.createAttributesInserts(MERGE_MERGE_ONE_2_ONE_SCHEMA, [0,0,0,0], Optional.empty())
+        1 * inserts.createAttributesInserts(MERGE_MERGE_ONE_2_ONE_SCHEMA, [0, 0, 0, 0], Optional.empty(), null)
 
         then:
-        1 * inserts.createAttributesInserts(MERGE_MERGE_M_2_N_SCHEMA, [0,0,0,0], Optional.empty())
+        1 * inserts.createAttributesInserts(MERGE_MERGE_M_2_N_SCHEMA, [0, 0, 0, 0], Optional.empty(), null)
 
         then:
-        1 * inserts.createAttributesInserts(MERGE_MERGE_M_2_N_SCHEMA, [0,0,0,1], Optional.empty())
+        1 * inserts.createAttributesInserts(MERGE_MERGE_M_2_N_SCHEMA, [0, 0, 0, 1], Optional.empty(), null)
 
         then:
-        1 * inserts.createAttributesInserts(MAIN_M_2_N_SCHEMA, [0,0], Optional.empty())
+        1 * inserts.createAttributesInserts(MAIN_M_2_N_SCHEMA, [0, 0], Optional.empty(), null)
 
         then:
-        1 * inserts.createAttributesInserts(MAIN_M_2_N_SCHEMA, [0,1], Optional.empty())
+        1 * inserts.createAttributesInserts(MAIN_M_2_N_SCHEMA, [0, 1], Optional.empty(), null)
 
         then:
-        1 * inserts.createAttributesInserts(MAIN_M_2_N_SCHEMA, [0,2], Optional.empty())
+        1 * inserts.createAttributesInserts(MAIN_M_2_N_SCHEMA, [0, 2], Optional.empty(), null)
 
         then:
         0 * inserts.createAttributesInserts(_, _, _)
@@ -94,11 +94,11 @@ class FeatureMutationsSqlSpec extends Specification {
 
         when:
 
-        inserts.createAttributesInserts(MERGE_MERGE_SCHEMA, rows, Optional.empty())
+        inserts.createAttributesInserts(MERGE_MERGE_SCHEMA, rows, Optional.empty(), null)
 
         then:
 
-        1 * generator.createInsert(MERGE_MERGE_SCHEMA, rows, Optional.empty()) >> Mock(Function)
+        1 * generator.createInsert(MERGE_MERGE_SCHEMA, rows, Optional.empty(), null) >> Mock(Function)
         0 * _
 
     }
@@ -113,10 +113,10 @@ class FeatureMutationsSqlSpec extends Specification {
 
         when:
 
-        inserts.createAttributesInserts(MERGE_MERGE_ONE_2_ONE_SCHEMA, rows, Optional.empty())
+        inserts.createAttributesInserts(MERGE_MERGE_ONE_2_ONE_SCHEMA, rows, Optional.empty(), null)
 
         then:
-        1 * generator.createInsert(MERGE_MERGE_ONE_2_ONE_SCHEMA, rows, Optional.empty()) >> Mock(Function)
+        1 * generator.createInsert(MERGE_MERGE_ONE_2_ONE_SCHEMA, rows, Optional.empty(), null) >> Mock(Function)
 
         then:
         1 * generator.createForeignKeyUpdate(MERGE_MERGE_ONE_2_ONE_SCHEMA, rows) >> Mock(Function)
@@ -136,10 +136,10 @@ class FeatureMutationsSqlSpec extends Specification {
 
         when:
 
-        inserts.createAttributesInserts(MERGE_MERGE_M_2_N_SCHEMA, rows, Optional.empty())
+        inserts.createAttributesInserts(MERGE_MERGE_M_2_N_SCHEMA, rows, Optional.empty(), null)
 
         then:
-        1 * generator.createInsert(MERGE_MERGE_M_2_N_SCHEMA, rows, Optional.empty()) >> Mock(Function)
+        1 * generator.createInsert(MERGE_MERGE_M_2_N_SCHEMA, rows, Optional.empty(), null) >> Mock(Function)
 
         then:
         1 * generator.createJunctionInsert(MERGE_MERGE_M_2_N_SCHEMA, rows) >> Mock(Function)

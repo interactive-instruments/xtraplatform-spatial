@@ -13,9 +13,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
-import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
 import de.ii.xtraplatform.features.domain.PropertyBase;
 import de.ii.xtraplatform.features.domain.PropertyBase.Type;
@@ -180,7 +178,7 @@ public interface ObjectSql {
 
   @Value.Derived
   default Map<String, String> getValues(
-      EpsgCrs nativeCrs, CrsTransformerFactory crsTransformerFactory) {
+      Optional<CrsTransformer> crsTransformer, EpsgCrs nativeCrs) {
     return getChildren().stream()
         .filter(
             propertySql ->
@@ -201,7 +199,7 @@ public interface ObjectSql {
                           .orElse(false);
 
               if (isGeometry) {
-                return toWkt(propertySql, nativeCrs, crsTransformerFactory);
+                return toWkt(propertySql, crsTransformer, nativeCrs);
               }
 
               boolean needsQuotes =
@@ -224,7 +222,7 @@ public interface ObjectSql {
   }
 
   default Map.Entry<String, String> toWkt(
-      PropertySql propertySql, EpsgCrs nativeCrs, CrsTransformerFactory crsTransformerFactory) {
+      PropertySql propertySql, Optional<CrsTransformer> crsTransformer, EpsgCrs nativeCrs) {
     // TODO: error if not set
     SimpleFeatureGeometry geometryType =
         propertySql
@@ -241,10 +239,6 @@ public interface ObjectSql {
     coordinatesTransformerBuilder.coordinatesWriter(
         ImmutableCoordinatesWriterWkt.of(geometryWriter, Optional.ofNullable(dimension).orElse(2)));
 
-    // TODO: from decoder
-    EpsgCrs sourceCrs = OgcCrs.CRS84;
-    Optional<CrsTransformer> crsTransformer =
-        crsTransformerFactory.getTransformer(sourceCrs, nativeCrs);
     coordinatesTransformerBuilder.crsTransformer(crsTransformer);
 
     if (dimension != null) {

@@ -7,8 +7,11 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import de.ii.xtraplatform.crs.domain.BoundingBox;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
 import java.util.List;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 public interface FeatureTransactions {
@@ -16,11 +19,23 @@ public interface FeatureTransactions {
   @Value.Immutable
   interface MutationResult extends FeatureStream.ResultBase {
 
+    enum Type {
+      CREATE,
+      REPLACE,
+      DELETE
+    }
+
     abstract class Builder extends ResultBase.Builder<MutationResult, MutationResult.Builder> {
       public abstract Builder addIds(String... ids);
     }
 
+    Type getType();
+
     List<String> getIds();
+
+    Optional<BoundingBox> getSpatialExtent();
+
+    Optional<Tuple<Long, Long>> getTemporalExtent();
 
     @Value.Default
     @Override
@@ -29,9 +44,11 @@ public interface FeatureTransactions {
     }
   }
 
-  MutationResult createFeatures(String featureType, FeatureTokenSource featureTokenSource);
+  MutationResult createFeatures(
+      String featureType, FeatureTokenSource featureTokenSource, EpsgCrs crs);
 
-  MutationResult updateFeature(String type, String id, FeatureTokenSource featureTokenSource);
+  MutationResult updateFeature(
+      String type, String id, FeatureTokenSource featureTokenSource, EpsgCrs crs);
 
   MutationResult deleteFeature(String featureType, String id);
 }

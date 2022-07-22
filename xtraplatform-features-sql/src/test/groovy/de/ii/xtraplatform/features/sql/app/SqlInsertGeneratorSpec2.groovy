@@ -57,7 +57,7 @@ class SqlInsertGeneratorSpec2 extends Specification {
 
         when:
 
-        String query = inserts.createInsert(schema, indices, id)
+        String query = inserts.createInsert(schema, indices, id, null)
                 .apply(feature)
                 .first()
 
