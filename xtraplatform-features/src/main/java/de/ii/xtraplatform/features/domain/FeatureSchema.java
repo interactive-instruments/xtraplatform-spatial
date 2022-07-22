@@ -339,7 +339,8 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
         || (isObject() && getProperties().stream().allMatch(FeatureSchema::isConstant));
   }
 
-  //TODO: does not work well for serialization, therefore sourcePaths has access = Access.WRITE_ONLY
+  // TODO: does not work well for serialization, therefore sourcePaths has access =
+  // Access.WRITE_ONLY
   // solution: move to NormalizePaths visitor that is applied after deserialization
   @Value.Check
   default FeatureSchema normalizeConstants() {
