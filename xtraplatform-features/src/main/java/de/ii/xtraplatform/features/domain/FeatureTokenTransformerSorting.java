@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -111,7 +112,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   @Override
   public void onFeatureEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (bufferIndex > 0) {
-      emptyBuffer(context);
+      emptyBuffer(context, Integer.MAX_VALUE);
     }
 
     super.onFeatureEnd(context);
@@ -121,36 +122,45 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   public void onObjectStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
 
-    checkBuffer(context, FeatureTokenType.OBJECT, index > bufferIndex);
+    checkBuffer(context, FeatureTokenType.OBJECT, index, index > bufferIndex);
   }
 
   @Override
   public void onObjectEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    checkBuffer(context, FeatureTokenType.OBJECT_END, startsWith(bufferParent, context.path()));
+    boolean isBufferParent = startsWith(bufferParent, context.path());
+    int triggerIndex = 0;
+    if (isBufferParent) {
+      triggerIndex = findLastStartsWith(context.path()) + 1;
+    }
+
+    checkBuffer(context, FeatureTokenType.OBJECT_END, triggerIndex, isBufferParent);
   }
 
   @Override
   public void onArrayStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
 
-    checkBuffer(context, FeatureTokenType.ARRAY, index > bufferIndex);
+    checkBuffer(context, FeatureTokenType.ARRAY, index, index > bufferIndex);
   }
 
   @Override
   public void onArrayEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    checkBuffer(context, FeatureTokenType.ARRAY_END, false);
+    int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
+
+    checkBuffer(context, FeatureTokenType.ARRAY_END, index, false);
   }
 
   @Override
   public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
 
-    checkBuffer(context, FeatureTokenType.VALUE, index > bufferIndex);
+    checkBuffer(context, FeatureTokenType.VALUE, index, index > bufferIndex);
   }
 
   private void checkBuffer(
       ModifiableContext<FeatureSchema, SchemaMapping> context,
       FeatureTokenType token,
+      int triggerIndex,
       boolean doEmptyBuffer) {
     int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
     boolean doRearrange = rearrange.containsKey(context.path());
@@ -159,7 +169,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
       buffer(context, index, token);
     } else {
       if (bufferIndex > 0 && doEmptyBuffer) {
-        emptyBuffer(context);
+        emptyBuffer(context, triggerIndex);
       }
 
       push(context, token);
@@ -167,18 +177,25 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   }
 
   private static boolean startsWith(List<String> a, List<String> b) {
-    return Objects.equals(a, b)
-        || (a.size() > b.size() && Objects.equals(a.subList(0, b.size()), b));
+    return a.size() > b.size() && Objects.equals(a.subList(0, b.size()), b);
+  }
+
+  private int findLastStartsWith(List<String> parent) {
+    return pathIndex.entrySet().stream()
+        .filter(entry -> startsWith(entry.getKey(), parent))
+        .mapToInt(Entry::getValue)
+        .max()
+        .orElse(-1);
   }
 
   private void buffer(
-      ModifiableContext<FeatureSchema, SchemaMapping> context, int order, FeatureTokenType token) {
+      ModifiableContext<FeatureSchema, SchemaMapping> context, int index, FeatureTokenType token) {
     if (bufferIndex <= 0) {
-      this.bufferIndex = order;
+      this.bufferIndex = index;
       this.bufferParent = context.path().subList(0, context.path().size() - 1);
     }
 
-    // indexQueue.add(order);
+    indexQueue.add(index);
     tokenQueue.add(token);
     pathQueue.add(context.path());
     indexesQueue.add(new ArrayList<>(context.indexes()));
@@ -190,11 +207,20 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
     inObjectQueue.add(context.inObject());
   }
 
-  private void emptyBuffer(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    this.bufferIndex = 0;
-    this.bufferParent = new ArrayList<>();
+  private void emptyBuffer(
+      ModifiableContext<FeatureSchema, SchemaMapping> context, int triggerIndex) {
 
-    while (!tokenQueue.isEmpty()) {
+    List<String> path = context.path();
+    ArrayList<Integer> indexes = new ArrayList<>(context.indexes());
+    String value = context.value();
+    Optional<SimpleFeatureGeometry> geometryType = context.geometryType();
+    OptionalInt geometryDimension = context.geometryDimension();
+    boolean inGeometry = context.inGeometry();
+    boolean inArray = context.inArray();
+    boolean inObject = context.inObject();
+
+    while (!indexQueue.isEmpty() && indexQueue.peek() < triggerIndex) {
+      int index = indexQueue.remove();
       FeatureTokenType token = tokenQueue.remove();
 
       context.pathTracker().track(pathQueue.remove());
@@ -208,6 +234,21 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
 
       push(context, token);
     }
+
+    context.pathTracker().track(path);
+    context.setIndexes(indexes);
+    context.setValue(value);
+    context.setGeometryType(geometryType);
+    context.setGeometryDimension(geometryDimension);
+    context.setInGeometry(inGeometry);
+    context.setInArray(inArray);
+    context.setInObject(inObject);
+
+    this.bufferIndex = Objects.requireNonNullElse(indexQueue.peek(), 0);
+    this.bufferParent =
+        Objects.nonNull(pathQueue.peek()) && pathQueue.peek().size() > 1
+            ? pathQueue.peek().subList(0, pathQueue.peek().size() - 1)
+            : new ArrayList<>();
   }
 
   private void push(
