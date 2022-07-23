@@ -209,7 +209,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                         entry.getValue().accept(WITH_SCOPE_MUTATIONS).accept(querySchemaDeriver)))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
-    Map<String, List<SqlQueryTemplates>> schemas =
+    Map<String, List<SqlQueryTemplates>> allQueryTemplates =
         getData().getTypes().entrySet().stream()
             .map(
                 entry ->
@@ -240,7 +240,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     this.queryTransformer =
-        new FeatureQueryEncoderSql(schemas, allQueryTemplatesMutations, getTypeInfos());
+        new FeatureQueryEncoderSql(allQueryTemplates, allQueryTemplatesMutations, tableSchemas);
 
     this.aggregateStatsReader =
         new AggregateStatsReaderSql(
@@ -627,9 +627,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   @Override
   public MutationResult deleteFeature(String featureType, String id) {
     Optional<FeatureSchema> schema = Optional.ofNullable(getData().getTypes().get(featureType));
-    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(featureType));
 
-    if (schema.isEmpty() || typeInfo.isEmpty()) {
+    if (schema.isEmpty()) {
       throw new IllegalArgumentException(
           String.format("Feature type '%s' not found.", featureType));
     }
@@ -682,9 +681,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
       EpsgCrs crs) {
 
     Optional<FeatureSchema> schema = Optional.ofNullable(getData().getTypes().get(featureType));
-    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(featureType));
 
-    if (schema.isEmpty() || typeInfo.isEmpty()) {
+    if (schema.isEmpty()) {
       throw new IllegalArgumentException(
           String.format("Feature type '%s' not found.", featureType));
     }

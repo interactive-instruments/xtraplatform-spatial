@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
-import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -20,8 +19,6 @@ public interface SqlQueries {
   Optional<String> getMetaQuery();
 
   Function<SqlRowMeta, Stream<String>> getValueQueries();
-
-  List<FeatureStoreInstanceContainer> getInstanceContainers();
 
   List<SchemaSql> getTableSchemas();
 }

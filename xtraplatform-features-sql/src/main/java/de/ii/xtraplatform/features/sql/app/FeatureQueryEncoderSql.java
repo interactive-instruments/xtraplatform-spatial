@@ -13,14 +13,12 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
-import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
-import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.ImmutableSortKey;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueries.Builder;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryOptions;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.sql.domain.SqlQueries;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRowMeta;
@@ -40,15 +38,15 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueries, SqlQuery
 
   private final Map<String, List<SqlQueryTemplates>> allQueryTemplates;
   private final Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations;
-  private final Map<String, FeatureStoreTypeInfo> typeInfos;
+  private final Map<String, List<SchemaSql>> tableSchemas;
 
   FeatureQueryEncoderSql(
       Map<String, List<SqlQueryTemplates>> allQueryTemplates,
       Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations,
-      Map<String, FeatureStoreTypeInfo> typeInfos) {
+      Map<String, List<SchemaSql>> tableSchemas) {
     this.allQueryTemplates = allQueryTemplates;
     this.allQueryTemplatesMutations = allQueryTemplatesMutations;
-    this.typeInfos = typeInfos;
+    this.tableSchemas = tableSchemas;
   }
 
   // TODO: rest of code in this class, so mainly the query multiplexing, goes to SqlConnector
@@ -57,14 +55,14 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueries, SqlQuery
   public SqlQueries encode(
       FeatureQuery featureQuery, Map<String, String> additionalQueryParameters) {
     // TODO: either pass as parameter, or check for null here
-    FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());
+    List<SchemaSql> typeInfo = tableSchemas.get(featureQuery.getType());
     List<SqlQueryTemplates> queryTemplates =
         featureQuery.getSchemaScope() == Scope.QUERIES
             ? allQueryTemplates.get(featureQuery.getType())
             : allQueryTemplatesMutations.get(featureQuery.getType());
 
     // TODO: implement for multiple main tables
-    FeatureStoreInstanceContainer mainTable = typeInfo.getInstanceContainers().get(0);
+    SchemaSql mainTable = typeInfo.get(0);
     SqlQueryTemplates queries = queryTemplates.get(0);
 
     List<SortKey> sortKeys = transformSortKeys(featureQuery.getSortKeys(), mainTable);
@@ -103,7 +101,6 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueries, SqlQuery
     return new Builder()
         .metaQuery(metaQuery)
         .valueQueries(valueQueries)
-        .instanceContainers(typeInfo.getInstanceContainers())
         .tableSchemas(queries.getQuerySchemas())
         .build();
   }
@@ -111,40 +108,42 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueries, SqlQuery
   @Override
   public SqlQueryOptions getOptions(FeatureQuery featureQuery) {
     // TODO: either pass as parameter, or check for null here
-    FeatureStoreTypeInfo typeInfo = typeInfos.get(featureQuery.getType());
+    List<SchemaSql> typeInfo = tableSchemas.get(featureQuery.getType());
 
     // TODO: implement for multiple main tables
-    FeatureStoreInstanceContainer mainTable = typeInfo.getInstanceContainers().get(0);
+    SchemaSql mainTable = typeInfo.get(0);
 
     List<SortKey> sortKeys = transformSortKeys(featureQuery.getSortKeys(), mainTable);
 
     return new ImmutableSqlQueryOptions.Builder().customSortKeys(sortKeys).build();
   }
 
-  private List<SortKey> transformSortKeys(
-      List<SortKey> sortKeys, FeatureStoreInstanceContainer instanceContainer) {
+  private List<SortKey> transformSortKeys(List<SortKey> sortKeys, SchemaSql mainTable) {
     return sortKeys.stream()
         .map(
             sortKey -> {
               // TODO: fast enough? maybe pass all typeInfos to constructor and create map?
-              Predicate<FeatureStoreAttribute> propertyMatches =
+              Predicate<SchemaSql> propertyMatches =
                   attribute ->
-                      Objects.equals(sortKey.getField(), attribute.getQueryable())
+                      (!attribute.getEffectiveSourcePaths().isEmpty()
+                              && Objects.equals(
+                                  sortKey.getField(),
+                                  String.join(".", attribute.getEffectiveSourcePaths().get(0))))
                           || (Objects.equals(sortKey.getField(), ID_PLACEHOLDER)
                               && attribute.isId());
 
               Optional<String> column =
-                  instanceContainer.getAttributes().stream()
+                  mainTable.getProperties().stream()
                       .filter(propertyMatches)
                       .filter(attribute -> !attribute.isSpatial() && !attribute.isConstant())
                       .findFirst()
-                      .map(FeatureStoreAttribute::getName);
+                      .map(SchemaSql::getName);
 
               if (!column.isPresent()) {
                 throw new IllegalArgumentException(
                     String.format(
                         "Sort key is invalid, property '%s' is either unknown or inapplicable.",
-                        sortKey.getField(), instanceContainer.getName()));
+                        sortKey.getField()));
               }
 
               return ImmutableSortKey.builder().from(sortKey).field(column.get()).build();

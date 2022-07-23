@@ -54,6 +54,13 @@ public interface SqlConnector
   @Override
   default Reactive.Source<SqlRow> getSourceStream(SqlQueries query, SqlQueryOptions options) {
 
+    //TODO:
+    // chunks: n * mq -> n * vqs
+    // tables: n * mq -> n * vqs
+    // types: n * mq -> n * vqs
+    // -> increment numberReturned + numberMatched
+    // -> sortBy for tables/types -> use union all?
+
     // TODO for chunking:
     // - List<SqlQueries>
     // - counter with limit, decreased in metaResult1.flatMapConcat(metaResult... by numberReturned
@@ -64,18 +71,12 @@ public interface SqlConnector
 
     // TODO for multiple main tables: should work exactly like chunking
 
-    Optional<String> metaQuery = query.getMetaQuery();
+    Reactive.Source<SqlRowMeta> metaSource = getMetaResult(query.getMetaQuery(), options);
 
-    Reactive.Source<SqlRowMeta> metaResult1 = getMetaResult(metaQuery, options);
-
-    // TODO: multiple main tables
-    FeatureStoreInstanceContainer mainTable = query.getInstanceContainers().get(0);
-    List<FeatureStoreAttributesContainer> attributesContainers =
-        mainTable.getAllAttributesContainers();
     List<SchemaSql> tableSchemas = query.getTableSchemas();
 
     Reactive.Source<SqlRow> sqlRowSource =
-        metaResult1.via(
+        metaSource.via(
             Reactive.Transformer.flatMap(
                 metaResult -> {
                   int[] i = {0};
