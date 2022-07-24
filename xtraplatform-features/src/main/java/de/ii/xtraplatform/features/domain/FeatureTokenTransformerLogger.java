@@ -16,9 +16,16 @@ public class FeatureTokenTransformerLogger extends FeatureTokenTransformer {
 
   @Override
   public void onFeatureStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    LOGGER.debug("START FEATURE");
+    LOGGER.debug("START FEATURE {} {}", context.pathAsString(), context.indexes());
 
     super.onFeatureStart(context);
+  }
+
+  @Override
+  public void onFeatureEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
+    LOGGER.debug("END FEATURE {} {}", context.pathAsString(), context.indexes());
+
+    super.onFeatureEnd(context);
   }
 
   @Override
