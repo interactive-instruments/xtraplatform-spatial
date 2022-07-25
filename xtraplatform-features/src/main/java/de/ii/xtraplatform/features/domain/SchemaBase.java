@@ -146,7 +146,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default Optional<T> getPrimaryGeometry() {
-    return getProperties().stream()
+    return getAllNestedProperties().stream()
         .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_GEOMETRY).isPresent())
         .findFirst()
         .or(() -> getProperties().stream().filter(SchemaBase::isSpatial).findFirst());
@@ -156,7 +156,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default Optional<T> getPrimaryInstant() {
-    return getProperties().stream()
+    return getAllNestedProperties().stream()
         .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_INSTANT).isPresent())
         .findFirst()
         .or(
@@ -171,12 +171,12 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default Optional<Tuple<T, T>> getPrimaryInterval() {
     Optional<T> start =
-        getProperties().stream()
+        getAllNestedProperties().stream()
             .filter(
                 t -> t.getRole().filter(role -> role == Role.PRIMARY_INTERVAL_START).isPresent())
             .findFirst();
     Optional<T> end =
-        getProperties().stream()
+        getAllNestedProperties().stream()
             .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_INTERVAL_END).isPresent())
             .findFirst();
 
