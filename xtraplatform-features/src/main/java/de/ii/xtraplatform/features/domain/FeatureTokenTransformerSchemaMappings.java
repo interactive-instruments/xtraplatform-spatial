@@ -112,6 +112,8 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
   @Override
   public void onFeatureStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
+    newContext.pathTracker().track(List.of());
+
     getDownstream().onFeatureStart(newContext);
   }
 
@@ -126,6 +128,8 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
         closeArray();
       }
     }
+
+    newContext.pathTracker().track(List.of());
 
     getDownstream().onFeatureEnd(newContext);
   }

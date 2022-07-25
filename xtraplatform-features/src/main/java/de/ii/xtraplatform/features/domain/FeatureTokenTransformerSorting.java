@@ -177,7 +177,8 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   }
 
   private static boolean startsWith(List<String> a, List<String> b) {
-    return a.size() > b.size() && Objects.equals(a.subList(0, b.size()), b);
+    return Objects.equals(a, b)
+        || (a.size() > b.size() && Objects.equals(a.subList(0, b.size()), b));
   }
 
   private int findLastStartsWith(List<String> parent) {
