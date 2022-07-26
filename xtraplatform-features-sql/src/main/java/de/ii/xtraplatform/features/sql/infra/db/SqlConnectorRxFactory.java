@@ -20,7 +20,7 @@ import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.sql.app.FeatureProviderSql;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
-import de.ii.xtraplatform.features.sql.domain.SqlQueries;
+import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.web.domain.DropwizardPlugin;
@@ -35,7 +35,7 @@ import javax.inject.Singleton;
 @Singleton
 @AutoBind
 public class SqlConnectorRxFactory
-    implements ConnectorFactory2<SqlRow, SqlQueries, SqlQueryOptions>, DropwizardPlugin {
+    implements ConnectorFactory2<SqlRow, SqlQueryBatch, SqlQueryOptions>, DropwizardPlugin {
 
   private final FactoryAssisted factoryAssisted;
   private final Map<String, SqlConnector> instances;
@@ -67,18 +67,18 @@ public class SqlConnectorRxFactory
   }
 
   @Override
-  public Optional<FeatureProviderConnector<SqlRow, SqlQueries, SqlQueryOptions>> instance(
+  public Optional<FeatureProviderConnector<SqlRow, SqlQueryBatch, SqlQueryOptions>> instance(
       String id) {
     return Optional.ofNullable(instances.get(id));
   }
 
   @Override
-  public Set<FeatureProviderConnector<SqlRow, SqlQueries, SqlQueryOptions>> instances() {
+  public Set<FeatureProviderConnector<SqlRow, SqlQueryBatch, SqlQueryOptions>> instances() {
     return ImmutableSet.copyOf(instances.values());
   }
 
   @Override
-  public FeatureProviderConnector<SqlRow, SqlQueries, SqlQueryOptions> createInstance(
+  public FeatureProviderConnector<SqlRow, SqlQueryBatch, SqlQueryOptions> createInstance(
       FeatureProviderDataV2 data) {
     SqlConnector sqlConnector =
         factoryAssisted.create(metricRegistry, healthCheckRegistry, (FeatureProviderSqlData) data);

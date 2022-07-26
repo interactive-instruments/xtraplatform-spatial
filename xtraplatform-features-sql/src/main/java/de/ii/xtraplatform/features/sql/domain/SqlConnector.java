@@ -8,11 +8,11 @@
 package de.ii.xtraplatform.features.sql.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
-import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlRowMeta.Builder;
 import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.Source;
+import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -29,7 +29,7 @@ import org.postgresql.util.PSQLState;
 
 // TODO: class
 public interface SqlConnector
-    extends FeatureProviderConnector<SqlRow, SqlQueries, SqlQueryOptions> {
+    extends FeatureProviderConnector<SqlRow, SqlQueryBatch, SqlQueryOptions> {
 
   // TODO
   SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
@@ -45,16 +45,77 @@ public interface SqlConnector
   SqlClient getSqlClient();
 
   @Override
-  default Reactive.Source<SqlRow> getSourceStream(SqlQueries query) {
-    return getSourceStream(query, NO_OPTIONS);
+  default Reactive.Source<SqlRow> getSourceStream(SqlQueryBatch queryBatch) {
+    return getSourceStream(queryBatch, NO_OPTIONS);
+  }
+
+  @Override
+  default Reactive.Source<SqlRow> getSourceStream(
+      SqlQueryBatch queryBatch, SqlQueryOptions options) {
+    final long[] featureCount = {queryBatch.getLimit()};
+
+    // TODO: Math.min(chunkSize, counter), Function<long,String> in getMetaQuery
+    Reactive.Source<SqlRow> sqlRowSource =
+        Source.iterable(queryBatch.getQuerySets())
+            .via(
+                Transformer.flatMap(
+                    querySet -> {
+                      if (featureCount[0] <= 0) {
+                        return Source.iterable(List.of());
+                      }
+
+                      List<SchemaSql> tableSchemas = querySet.getTableSchemas();
+
+                      return getMetaResult(
+                              querySet
+                                  .getMetaQuery()
+                                  .apply(Math.min(queryBatch.getChunkSize(), featureCount[0])),
+                              options,
+                              queryBatch.getChunkSize() >= queryBatch.getLimit())
+                          .via(
+                              Reactive.Transformer.flatMap(
+                                  metaResult -> {
+                                    int[] i = {0};
+
+                                    featureCount[0] -= metaResult.getNumberReturned();
+
+                                    Reactive.Source<SqlRow>[] sqlRows =
+                                        querySet
+                                            .getValueQueries()
+                                            .apply(metaResult)
+                                            .map(
+                                                valueQuery ->
+                                                    getSqlClient()
+                                                        .getSourceStream(
+                                                            valueQuery,
+                                                            new ImmutableSqlQueryOptions.Builder()
+                                                                .from(options)
+                                                                .tableSchema(tableSchemas.get(i[0]))
+                                                                .containerPriority(i[0]++)
+                                                                .build()))
+                                            .toArray(
+                                                (IntFunction<Reactive.Source<SqlRow>[]>)
+                                                    Reactive.Source[]::new);
+                                    return mergeAndSort(sqlRows)
+                                        .prepend(Reactive.Source.single(metaResult));
+                                  }));
+                    }));
+
+    return sqlRowSource.mapError(PSQL_CONTEXT);
   }
 
   // TODO: reuse instances of SqlRow, SqlColumn? (object pool, e.g.
   // https://github.com/chrisvest/stormpot, implement test with 100000 rows, measure)
-  @Override
-  default Reactive.Source<SqlRow> getSourceStream(SqlQueries query, SqlQueryOptions options) {
+  default Reactive.Source<SqlRow> getSourceStream(SqlQuerySet query, SqlQueryOptions options) {
 
-    //TODO:
+    /*
+    FeatureQuerySql
+    - limit, offset, etc.
+    - SqlQuerySet
+      - SqlQueries + SqlQueryOptions
+     */
+
+    // TODO:
     // chunks: n * mq -> n * vqs
     // tables: n * mq -> n * vqs
     // types: n * mq -> n * vqs
@@ -71,7 +132,8 @@ public interface SqlConnector
 
     // TODO for multiple main tables: should work exactly like chunking
 
-    Reactive.Source<SqlRowMeta> metaSource = getMetaResult(query.getMetaQuery(), options);
+    Reactive.Source<SqlRowMeta> metaSource =
+        getMetaResult(query.getMetaQuery().apply(0L), options, true);
 
     List<SchemaSql> tableSchemas = query.getTableSchemas();
 
@@ -103,7 +165,7 @@ public interface SqlConnector
 
   // TODO: simplify
   default Reactive.Source<SqlRowMeta> getMetaResult(
-      Optional<String> metaQuery, SqlQueryOptions options) {
+      Optional<String> metaQuery, SqlQueryOptions options, boolean isComplete) {
     if (!metaQuery.isPresent()) {
       return Reactive.Source.single(getMetaQueryResult(0L, 0L, 0L, 0L).build());
     }
@@ -117,7 +179,8 @@ public interface SqlConnector
 
     return getSqlClient()
         .getSourceStream(metaQuery.get(), SqlQueryOptions.withColumnTypes(columnTypes))
-        .via(Reactive.Transformer.map(sqlRow -> getMetaQueryResult(sqlRow.getValues())));
+        .via(
+            Reactive.Transformer.map(sqlRow -> getMetaQueryResult(sqlRow.getValues(), isComplete)));
   }
 
   default Builder getMetaQueryResult(
@@ -129,10 +192,11 @@ public interface SqlConnector
         .numberMatched(
             Objects.nonNull(numberMatched) && numberMatched > -1
                 ? OptionalLong.of(numberMatched)
-                : OptionalLong.empty());
+                : OptionalLong.empty())
+        .isComplete(true);
   }
 
-  default SqlRowMeta getMetaQueryResult(List<Object> values) {
+  default SqlRowMeta getMetaQueryResult(List<Object> values, boolean isComplete) {
     int size = values.size();
     Builder builder =
         getMetaQueryResult(
@@ -145,7 +209,7 @@ public interface SqlConnector
       builder.addCustomMinKeys(values.get(i)).addCustomMaxKeys(values.get(i + 1));
     }
 
-    return builder.build();
+    return builder.isComplete(isComplete).build();
   }
 
   static <T extends Comparable<T>> Reactive.Source<T> mergeAndSort(Reactive.Source<T>... sources) {

@@ -29,6 +29,8 @@ public interface SqlRowMeta extends SqlRow {
 
   List<Object> getCustomMaxKeys();
 
+  boolean isComplete();
+
   @Override
   default int compareTo(SqlRow row) {
     return -1;

@@ -116,13 +116,25 @@ public class FeatureDecoderSql
 
   private void handleMetaRow(SqlRowMeta sqlRow) {
 
-    context.metadata().numberReturned(sqlRow.getNumberReturned());
-    context.metadata().numberMatched(sqlRow.getNumberMatched());
+    context
+        .metadata()
+        .numberReturned(
+            context.metadata().getNumberReturned().orElse(0) + sqlRow.getNumberReturned());
+    if (sqlRow.getNumberMatched().isPresent()) {
+      context
+          .metadata()
+          .numberMatched(
+              context.metadata().getNumberMatched().orElse(0)
+                  + sqlRow.getNumberMatched().getAsLong());
+    }
     context.metadata().isSingleFeature(isSingleFeature);
+    context.metadata().isComplete(sqlRow.isComplete());
 
-    getDownstream().onStart(context);
+    if (!started) {
+      getDownstream().onStart(context);
 
-    this.started = true;
+      this.started = true;
+    }
   }
 
   private void handleValueRow(SqlRow sqlRow) {

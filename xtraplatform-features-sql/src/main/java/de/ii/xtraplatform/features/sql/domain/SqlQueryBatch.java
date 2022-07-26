@@ -8,17 +8,14 @@
 package de.ii.xtraplatform.features.sql.domain;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Stream;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface SqlQueries {
+public interface SqlQueryBatch {
 
-  Optional<String> getMetaQuery();
+  long getLimit();
 
-  Function<SqlRowMeta, Stream<String>> getValueQueries();
+  long getChunkSize();
 
-  List<SchemaSql> getTableSchemas();
+  List<SqlQuerySet> getQuerySets();
 }

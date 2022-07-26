@@ -26,6 +26,10 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
     return withColumnTypes(Arrays.asList(columnTypes));
   }
 
+  static SqlQueryOptions single() {
+    return withColumnTypes(String.class);
+  }
+
   static SqlQueryOptions ddl() {
     return withColumnTypes();
   }

@@ -64,7 +64,7 @@ import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg;
 import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.features.sql.domain.SqlPathDefaults;
 import de.ii.xtraplatform.features.sql.domain.SqlPathParser;
-import de.ii.xtraplatform.features.sql.domain.SqlQueries;
+import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.sql.infra.db.SqlTypeInfoValidator;
@@ -86,7 +86,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
-public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueries, SqlQueryOptions>
+public class FeatureProviderSql
+    extends AbstractFeatureProvider<SqlRow, SqlQueryBatch, SqlQueryOptions>
     implements FeatureProvider2, FeatureQueries, FeatureExtents, FeatureCrs, FeatureTransactions {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
@@ -432,7 +433,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   }
 
   @Override
-  protected FeatureQueryEncoder<SqlQueries, SqlQueryOptions> getQueryEncoder() {
+  protected FeatureQueryEncoder<SqlQueryBatch, SqlQueryOptions> getQueryEncoder() {
     return queryTransformer;
   }
 
