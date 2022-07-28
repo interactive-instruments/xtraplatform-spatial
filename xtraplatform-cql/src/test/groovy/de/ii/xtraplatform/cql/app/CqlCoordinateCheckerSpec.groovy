@@ -71,8 +71,6 @@ class CqlCoordinateCheckerSpec extends Specification {
         noExceptionThrown()
     }
 
-
-
     def "Native not present"() {
         when:
         CrsTransformerFactoryProj transformerFactoryOptionalEmpty = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
@@ -81,17 +79,6 @@ class CqlCoordinateCheckerSpec extends Specification {
         then:
         visitor1OptionalEmpty.crsTransformerFilterToNative.isEmpty()
         visitor2OptionalEmpty.crsTransformerFilterToNative.isEmpty()
-    }
-
-
-    def 'Test envelope 3D'() {
-
-        when:
-        SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Envelope.of(BoundingBox.of(2.00, 2.00, 2.00, 3.00, 3.00, 3.00, EpsgCrs.of(5555))))).accept(visitor1)
-
-        then:
-        thrown IllegalArgumentException
-
     }
 
     def 'Test crsTransformerFilterToCrs84 is present'() {
@@ -310,6 +297,4 @@ class CqlCoordinateCheckerSpec extends Specification {
         (double) 0.50   |    (double) 1000  |    (double) 0.03  |    (double) 1        |  (double) 0.00  |    (double) 100000  |    (double) 0.03  |    (double) 1      |    NullPointerException
 
     }
-
-
 }
