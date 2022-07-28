@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.cql.app
 
 import com.fasterxml.jackson.databind.annotation.JsonAppend
+import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.cql.domain.Accenti
 import de.ii.xtraplatform.cql.domain.ArrayOperator
@@ -20,6 +21,7 @@ import de.ii.xtraplatform.cql.domain.Cql2Expression
 import de.ii.xtraplatform.cql.domain.CqlFilter
 import de.ii.xtraplatform.cql.domain.CqlNode
 import de.ii.xtraplatform.cql.domain.CqlPredicate
+import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.Function
 import de.ii.xtraplatform.cql.domain.In
 import de.ii.xtraplatform.cql.domain.Interval
@@ -37,6 +39,7 @@ import de.ii.xtraplatform.cql.domain.SIntersects
 import de.ii.xtraplatform.cql.domain.Scalar
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.cql.domain.Spatial
+import de.ii.xtraplatform.cql.domain.SpatialLiteral
 import de.ii.xtraplatform.cql.domain.SpatialOperator
 import de.ii.xtraplatform.cql.domain.Temporal
 import de.ii.xtraplatform.cql.domain.Vector
@@ -155,11 +158,13 @@ class CqlTypeCheckerSpec extends Specification {
                 "T_BEFORE(event,DATE('2000-01-01'))"
 
         when: 'reading text'
+
         def test = cql.read(cqlText, Cql.Format.TEXT).accept(visitor)
 
         then:
 
         noExceptionThrown()
+
 
     }
 
@@ -414,28 +419,50 @@ class CqlTypeCheckerSpec extends Specification {
     def "Test Accenti"(){
         when:
 
-        Accenti.of(Property.of("name")).accept(visitor)
+            Accenti.of(Property.of("name")).accept(visitor)
 
         then:
 
-        noExceptionThrown()
+            noExceptionThrown()
 
         and:
 
         when:
 
-        Accenti.of(property).accept(vis)
+            Accenti.of(property).accept(vis)
 
         then:
 
-        thrown CqlIncompatibleTypes
+            thrown CqlIncompatibleTypes
 
         where:
 
-        property                         | vis
-        Property.of("location_geometry") | visitor2
-        Property.of("length")            | visitor
-        Property.of("event")             | visitor3
+            property                         | vis
+            Property.of("location_geometry") | visitor2
+            Property.of("length")            | visitor
+            Property.of("event")             | visitor3
     }
+
+    def "Test SpatialLiteral"(){
+        when:
+
+            SpatialLiteral.of("1").accept(visitor)
+
+        then:
+
+             noExceptionThrown()
+    }
+
+    def "Test function"(){
+
+        when:
+
+             Eq.ofFunction(Function.of("pos", ImmutableList.of()), ScalarLiteral.of(1)).accept(visitor)
+
+        then:
+
+              thrown CqlIncompatibleTypes
+    }
+
 
 }

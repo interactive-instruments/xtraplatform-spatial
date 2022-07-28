@@ -7,12 +7,24 @@
  */
 package de.ii.xtraplatform.cql.app
 
-
+import com.fasterxml.jackson.databind.annotation.JsonAppend
+import com.google.common.collect.ImmutableMap
+import de.ii.xtraplatform.cql.domain.Between
+import de.ii.xtraplatform.cql.domain.BinaryScalarOperation
 import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.Cql2Expression
 import de.ii.xtraplatform.cql.domain.CqlParseException
+import de.ii.xtraplatform.cql.domain.Eq
+import de.ii.xtraplatform.cql.domain.Geometry
+import de.ii.xtraplatform.cql.domain.Interval
+import de.ii.xtraplatform.cql.domain.Property
+import de.ii.xtraplatform.cql.domain.STouches
+import de.ii.xtraplatform.cql.domain.ScalarLiteral
+import de.ii.xtraplatform.cql.infra.CqlParser
 import spock.lang.Shared
 import spock.lang.Specification
+
+import java.awt.Polygon
 
 class CqlTextSpec extends Specification {
 
@@ -771,6 +783,20 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
+    def 'Array predicate with nested filter'() {
+        given:
+        String cqlText = "A_CONTAINS(theme[scheme = 'profile'].concept, ['DLKM','Basis-DLM','DLM50'])"
+        when: 'reading text'
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        then:
+        actual == CqlFilterExamples.EXAMPLE_NESTED_WITH_ARRAYS
+        and:
+        when: 'writing text'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_NESTED_WITH_ARRAYS, Cql.Format.TEXT)
+        then:
+        actual2 == cqlText
+    }
+
     def 'Nested filter with a function'() {
         given:
         String cqlText = "filterValues[position() IN (1,3)].measure BETWEEN 1 AND 5"
@@ -790,22 +816,368 @@ class CqlTextSpec extends Specification {
         actual2 == cqlText
     }
 
-    def 'Array predicate with nested filter'() {
+    def 'Nested filter with a function and BETWEEN'() {
+
         given:
-        String cqlText = "A_CONTAINS(theme[scheme = 'profile'].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+            String cqlText = "filterValues[position() BETWEEN 4 AND 8].measure BETWEEN 1 AND 5"
 
         when: 'reading text'
-        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_NESTED_WITH_ARRAYS
+
+            actual == CqlFilterExamples.EXAMPLE_NESTED_FUNCTION_BETWEEN
+
+        and:
+
+
+        when: 'writing text'
+
+            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_NESTED_FUNCTION_BETWEEN, Cql.Format.TEXT)
+
+        then:
+
+            actual2 == cqlText
+
+    }
+
+    def 'Array predicate with nested INTERVAL'() {
+
+        given:
+
+             String cqlText = "A_CONTAINS(theme[T_INTERSECTS(event, INTERVAL(start_date,end_date))].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+             Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+            actual == CqlFilterExamples.EXAMPLE_45
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_NESTED_WITH_ARRAYS, Cql.Format.TEXT)
+
+            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_45, Cql.Format.TEXT)
 
         then:
+
+            actual2 == cqlText
+    }
+
+    def 'Array predicate with nested LIKE filter'() {
+        given:
+
+            String cqlText = "A_CONTAINS(theme[scheme LIKE 'profile'].concept, ['DLKM','Basis-DLM','DLM50'])"
+        //A_CONTAINS(theme[INTERVAL(start_date,end_date)].concept, ['DLKM','Basis-DLM','DLM50'])
+
+        when: 'reading text'
+
+            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+            actual == CqlFilterExamples.EXAMPLE_44
+
+        and:
+
+        when: 'writing text'
+
+            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_44, Cql.Format.TEXT)
+
+        then:
+
+            actual2 == cqlText
+    }
+
+    def 'Array predicate with nested IS NULL filter'() {
+        given:
+
+        String cqlText = "A_CONTAINS(theme[scheme IS NULL].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        actual == CqlFilterExamples.EXAMPLE_46
+
+        and:
+
+        when: 'writing text'
+
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_46, Cql.Format.TEXT)
+
+        then:
+
+        actual2 == cqlText
+    }
+
+    def 'Array predicate with nested CASEI filter'() {
+        given:
+
+         String cqlText = "A_CONTAINS(theme[CASEI(schema) IN (CASEI('region'),CASEI('straße'))].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+            actual == CqlFilterExamples.EXAMPLE_47
+
+        and:
+
+        when: 'writing text'
+
+            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_47, Cql.Format.TEXT)
+
+        then:
+
+            actual2 == cqlText
+    }
+
+    def 'Array predicate with nested ACCENTI filter'() {
+        given:
+
+            String cqlText = "A_CONTAINS(theme[ACCENTI(schema) IN (ACCENTI('region'),ACCENTI('straße'))].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+            actual == CqlFilterExamples.EXAMPLE_48
+
+        and:
+
+        when: 'writing text'
+
+            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_48, Cql.Format.TEXT)
+
+        then:
+
+            actual2 == cqlText
+    }
+
+    def 'Array predicate with nested OR filter'() {
+        given:
+
+        String cqlText = "A_CONTAINS(theme[(schema = 'schema_1' OR schema = 'schema_2')].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        actual == CqlFilterExamples.EXAMPLE_49
+
+        and:
+
+        when: 'writing text'
+
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_49, Cql.Format.TEXT)
+
+        then:
+
+        actual2 == cqlText
+    }
+
+    def 'Array predicate with nested and filter'() {
+        given:
+
+            String cqlText = "A_CONTAINS(theme[(length > 5 AND count > 10)].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+            actual == CqlFilterExamples.EXAMPLE_50
+
+        and:
+
+        when: 'writing text'
+
+            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_50, Cql.Format.TEXT)
+
+        then:
+
+            actual2 == cqlText
+    }
+
+    def 'Array predicate with nested lt filter'() {
+        given:
+
+            String cqlText = "A_CONTAINS(theme[length < 5].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+            actual == CqlFilterExamples.EXAMPLE_51
+
+        and:
+
+        when: 'writing text'
+
+            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_51, Cql.Format.TEXT)
+
+        then:
+
+            actual2 == cqlText
+    }
+
+    def 'Array predicate with nested lte filter'() {
+        given:
+
+        String cqlText = "A_CONTAINS(theme[length <= 5].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        actual == CqlFilterExamples.EXAMPLE_53
+
+        and:
+
+        when: 'writing text'
+
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_53, Cql.Format.TEXT)
+
+        then:
+
+        actual2 == cqlText
+    }
+
+    def 'Array predicate with nested gte filter'() {
+        given:
+
+        String cqlText = "A_CONTAINS(theme[length >= 5].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        actual == CqlFilterExamples.EXAMPLE_52
+
+        and:
+
+        when: 'writing text'
+
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_52, Cql.Format.TEXT)
+
+        then:
+
+        actual2 == cqlText
+    }
+
+    def 'Array predicate with nested neq filter'() {
+        given:
+
+        String cqlText = "A_CONTAINS(theme[length <> 5].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        actual == CqlFilterExamples.EXAMPLE_54
+
+        and:
+
+        when: 'writing text'
+
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_54, Cql.Format.TEXT)
+
+        then:
+
+        actual2 == cqlText
+    }
+
+    def 'Array predicate with nested not filter'() {
+        given:
+
+            String cqlText = "A_CONTAINS(theme[NOT (length = 5)].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+            actual == CqlFilterExamples.EXAMPLE_55
+
+        and:
+
+        when: 'writing text'
+
+            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_55, Cql.Format.TEXT)
+
+        then:
+
+            actual2 == cqlText
+    }
+
+    def 'Array predicate with nested S_TOUCHES filter'() {
+        given:
+
+        String cqlText = "A_CONTAINS(theme[S_TOUCHES(event, location_geometry)].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        actual == CqlFilterExamples.EXAMPLE_56
+
+        and:
+
+        when: 'writing text'
+
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_56, Cql.Format.TEXT)
+
+        then:
+
+        actual2 == cqlText
+    }
+
+    def 'Array predicate with nested array operation filter and TemporalLiteral'() {
+        given:
+
+        String cqlText = "A_CONTAINS(theme[A_OVERLAPS(event, location_geometry)].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        actual == CqlFilterExamples.EXAMPLE_57
+
+        and:
+
+        when: 'writing text'
+
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_57, Cql.Format.TEXT)
+
+        then:
+
         actual2 == cqlText
     }
 
@@ -1064,40 +1436,148 @@ class CqlTextSpec extends Specification {
 
     def 'Case insensitive string comparison function CASEI'() {
         given:
-        String cqlText = "CASEI(road_class) IN (CASEI('Οδος'),CASEI('Straße'))"
+
+            String cqlText = "CASEI(road_class) IN (CASEI('Οδος'),CASEI('Straße'))"
 
         when: 'reading text'
-        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_CASEI
+
+            actual == CqlFilterExamples.EXAMPLE_CASEI
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_CASEI, Cql.Format.TEXT)
+
+            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_CASEI, Cql.Format.TEXT)
 
         then:
-        actual2 == cqlText
+
+            actual2 == cqlText
     }
 
     def 'Accent insensitive string comparison function ACCENTI'() {
         given:
-        String cqlText = "ACCENTI(road_class) IN (ACCENTI('Οδος'),ACCENTI('Straße'))"
+
+            String cqlText = "ACCENTI(road_class) IN (ACCENTI('Οδος'),ACCENTI('Straße'))"
 
         when: 'reading text'
-        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_ACCENTI
+
+            actual == CqlFilterExamples.EXAMPLE_ACCENTI
 
         and:
 
         when: 'writing text'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_ACCENTI, Cql.Format.TEXT)
+
+            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_ACCENTI, Cql.Format.TEXT)
 
         then:
+
+            actual2 == cqlText
+    }
+
+    def 'Array predicate with nested array operation T_BEFORE and TIMESTAMP'() {
+        given:
+
+            String cqlText = "A_CONTAINS(theme[T_BEFORE(built, TIMESTAMP('2012-06-05T00:00:00Z'))].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+            actual == CqlFilterExamples.EXAMPLE_58
+
+        and:
+
+        when: 'writing text'
+
+             String actual2 = cql.write(CqlFilterExamples.EXAMPLE_58, Cql.Format.TEXT)
+
+        then:
+
+             actual2 == cqlText
+    }
+
+    def 'Array predicate with nested array operation S_WITHIN'() {
+        given:
+
+            String cqlText = "A_CONTAINS(theme[S_WITHIN(location, ENVELOPE(-118.0,33.8,-117.9,34.0))].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+            actual == CqlFilterExamples.EXAMPLE_59
+
+        and:
+
+
+        when: 'writing text'
+
+            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_59, Cql.Format.TEXT)
+
+        then:
+
+            actual2 == cqlText
+    }
+
+    //TODO does not cover CqlVisitorCopy visit(Property...
+    def 'Array predicate with nested array operation Property comparison'() {
+        given:
+
+        String cqlText = "A_CONTAINS(theme[road_class = name].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        actual == CqlFilterExamples.EXAMPLE_60
+
+        and:
+
+        when: 'writing text'
+
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_60, Cql.Format.TEXT)
+
+        then:
+
         actual2 == cqlText
     }
 
+    def 'Array predicate with nested array operation and Geometry.LineString Geometry.Polygon '() {
+        given:
+
+            String cqlText = "A_CONTAINS(theme[S_WITHIN(LINESTRING(1.0 1.0), POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+            //TODO Crs is not given in cqlText
+            actual != CqlFilterExamples.EXAMPLE_61
+
+        and:
+
+        when: 'writing text'
+
+            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_61, Cql.Format.TEXT)
+
+        then:
+
+            actual2 == cqlText
+    }
 }
