@@ -53,6 +53,14 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
     this.tableSchemas = tableSchemas;
   }
 
+  /*
+  table1 100
+  table2 50
+  table3 100
+  ---
+  offset 90 limit 20 -> offset 0 on table2
+  offset 140 limit 20 -> skip table1, offset 40 on table2, offset 0 on table3
+   */
   public SqlQueryBatch encode(
       FeatureQuery featureQuery, Map<String, String> additionalQueryParameters) {
     int chunkSize = 2;
@@ -97,14 +105,14 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
     List<SortKey> sortKeys = transformSortKeys(featureQuery.getSortKeys(), mainTable);
 
     Function<Long, Optional<String>> metaQuery =
-        liveLimit ->
+        maxLimit ->
             featureQuery.returnsSingleFeature()
                 ? Optional.empty()
                 : Optional.of(
                     queries
                         .getMetaQueryTemplate()
                         .generateMetaQuery(
-                            liveLimit,
+                            Math.min(limit, maxLimit),
                             offset,
                             sortKeys,
                             featureQuery.getFilter(),

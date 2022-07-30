@@ -39,16 +39,12 @@ public class SqlQueryTemplatesDeriver
 
   private final SqlDialect sqlDialect;
   private final FilterEncoderSql filterEncoder;
-  private final AliasGenerator aliasGenerator;
-  private final JoinGenerator joinGenerator;
   private final boolean computeNumberMatched;
 
   public SqlQueryTemplatesDeriver(
       FilterEncoderSql filterEncoder, SqlDialect sqlDialect, boolean computeNumberMatched) {
     this.sqlDialect = sqlDialect;
     this.filterEncoder = filterEncoder;
-    this.aliasGenerator = new AliasGenerator();
-    this.joinGenerator = new JoinGenerator();
     this.computeNumberMatched = computeNumberMatched;
   }
 
@@ -121,7 +117,7 @@ public class SqlQueryTemplatesDeriver
   ValueQueryTemplate createValueQueryTemplate(SchemaSql schema, List<SchemaSql> parents) {
     return (limit, offset, additionalSortKeys, filter, minMaxKeys, virtualTables) -> {
       boolean isIdFilter = filter.filter(cql2Predicate -> cql2Predicate instanceof In).isPresent();
-      List<String> aliases = aliasGenerator.getAliases(schema);
+      List<String> aliases = AliasGenerator.getAliases(schema);
 
       SchemaSql rootSchema = parents.isEmpty() ? schema : parents.get(0);
       Optional<String> sqlFilter = getFilter(rootSchema, filter);
@@ -153,7 +149,7 @@ public class SqlQueryTemplatesDeriver
       List<SortKey> additionalSortKeys,
       List<SchemaSql> parents,
       Map<String, String> virtualTables) {
-    List<String> aliases = aliasGenerator.getAliases(parents, schema);
+    List<String> aliases = AliasGenerator.getAliases(parents, schema);
     String attributeContainerAlias = aliases.get(aliases.size() - 1);
 
     String mainTableName = parents.isEmpty() ? schema.getName() : parents.get(0).getName();
@@ -193,44 +189,14 @@ public class SqlQueryTemplatesDeriver
                         }))
             .collect(Collectors.joining(", "));
 
-    Optional<String> instanceFilter =
-        parents.isEmpty()
-            ? Optional.empty()
-            : parents
-                .get(0)
-                .getFilter()
-                .map(filter -> filterEncoder.encode(filter, parents.get(0)));
-
-    List<Optional<String>> relationFilters =
-        Stream.concat(
-                parents.stream().flatMap(parent -> parent.getRelation().stream()),
-                schema.getRelation().stream())
-            .map(
-                sqlRelation ->
-                    sqlRelation
-                        .getTargetFilter()
-                        .flatMap(
-                            filter ->
-                                filterEncoder.encodeRelationFilter(
-                                    Optional.of(schema), Optional.empty())))
-            .collect(Collectors.toList());
-
-    String join =
-        joinGenerator.getJoins(
-            schema,
-            parents,
-            aliases,
-            relationFilters,
-            Optional.empty(),
-            Optional.empty(),
-            instanceFilter);
+    String join = JoinGenerator.getJoins(schema, parents, aliases, filterEncoder);
 
     String where = whereClause.map(w -> " WHERE " + w).orElse("");
     String paging = pagingClause.filter(p -> join.isEmpty()).orElse("");
 
     if (!join.isEmpty() && pagingClause.isPresent()) {
       String where2 = " WHERE ";
-      List<String> aliasesNested = aliasGenerator.getAliases(schema, where.isEmpty() ? 1 : 2);
+      List<String> aliasesNested = AliasGenerator.getAliases(schema, where.isEmpty() ? 1 : 2);
       String orderBy =
           IntStream.range(0, sortFields.size())
               .boxed()

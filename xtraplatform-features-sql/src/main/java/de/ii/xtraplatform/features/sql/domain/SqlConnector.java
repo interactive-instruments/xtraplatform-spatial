@@ -31,9 +31,6 @@ import org.postgresql.util.PSQLState;
 public interface SqlConnector
     extends FeatureProviderConnector<SqlRow, SqlQueryBatch, SqlQueryOptions> {
 
-  // TODO
-  SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
-
   int getMaxConnections();
 
   int getMinConnections();
@@ -46,15 +43,16 @@ public interface SqlConnector
 
   @Override
   default Reactive.Source<SqlRow> getSourceStream(SqlQueryBatch queryBatch) {
-    return getSourceStream(queryBatch, NO_OPTIONS);
+    return getSourceStream(queryBatch, SqlQueryOptions.single());
   }
 
+  // TODO: multiple main tables, remove old typeInfo stuff, adjust path parsing
+  // TODO: aggregate metadata before pushing downstream?
   @Override
   default Reactive.Source<SqlRow> getSourceStream(
       SqlQueryBatch queryBatch, SqlQueryOptions options) {
     final long[] featureCount = {queryBatch.getLimit()};
 
-    // TODO: Math.min(chunkSize, counter), Function<long,String> in getMetaQuery
     Reactive.Source<SqlRow> sqlRowSource =
         Source.iterable(queryBatch.getQuerySets())
             .via(
@@ -67,16 +65,16 @@ public interface SqlConnector
                       List<SchemaSql> tableSchemas = querySet.getTableSchemas();
 
                       return getMetaResult(
-                              querySet
-                                  .getMetaQuery()
-                                  .apply(Math.min(queryBatch.getChunkSize(), featureCount[0])),
+                              querySet.getMetaQuery().apply(featureCount[0]),
                               options,
-                              queryBatch.getChunkSize() >= queryBatch.getLimit())
+                              queryBatch.getChunkSize() >= featureCount[0])
                           .via(
                               Reactive.Transformer.flatMap(
                                   metaResult -> {
                                     int[] i = {0};
 
+                                    // TODO: additional featureCount per table, override initial
+                                    // value with numberMatched if available
                                     featureCount[0] -= metaResult.getNumberReturned();
 
                                     Reactive.Source<SqlRow>[] sqlRows =

@@ -30,6 +30,10 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
     return withColumnTypes(String.class);
   }
 
+  static SqlQueryOptions tuple() {
+    return withColumnTypes(String.class, String.class);
+  }
+
   static SqlQueryOptions ddl() {
     return withColumnTypes();
   }

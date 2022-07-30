@@ -17,7 +17,6 @@ import de.ii.xtraplatform.features.domain.FeatureProviderConnector.QueryOptions;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
 import de.ii.xtraplatform.features.gml.infra.WfsConnectorHttp;
@@ -36,7 +35,6 @@ public class FeatureQueryEncoderWfs implements FeatureQueryEncoder<String, Query
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderWfs.class);
 
-  private final Map<String, FeatureStoreTypeInfo> typeInfos;
   private final Map<String, FeatureSchema> featureSchemas;
   private final XMLNamespaceNormalizer namespaceNormalizer;
   private final WfsRequestEncoder wfsRequestEncoder;
@@ -44,13 +42,11 @@ public class FeatureQueryEncoderWfs implements FeatureQueryEncoder<String, Query
   private final FilterEncoderWfs filterEncoder;
 
   public FeatureQueryEncoderWfs(
-      Map<String, FeatureStoreTypeInfo> typeInfos,
       Map<String, FeatureSchema> featureSchemas,
       ConnectionInfoWfsHttp connectionInfo,
       EpsgCrs nativeCrs,
       CrsTransformerFactory crsTransformerFactory,
       Cql cql) {
-    this.typeInfos = typeInfos;
     this.featureSchemas = featureSchemas;
     this.namespaceNormalizer = new XMLNamespaceNormalizer(connectionInfo.getNamespaces());
 
@@ -85,7 +81,7 @@ public class FeatureQueryEncoderWfs implements FeatureQueryEncoder<String, Query
   }
 
   public boolean isValid(final FeatureQuery query) {
-    return typeInfos.containsKey(query.getType());
+    return featureSchemas.containsKey(query.getType());
   }
 
   public QName getFeatureTypeName(final FeatureQuery query) {

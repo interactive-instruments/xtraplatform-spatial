@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
+import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -33,9 +34,7 @@ import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
-import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.FeatureTokenSource;
 import de.ii.xtraplatform.features.domain.FeatureTokenTransformer;
@@ -45,8 +44,9 @@ import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Bui
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Type;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
+import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
-import de.ii.xtraplatform.features.domain.TypeInfoValidator;
+import de.ii.xtraplatform.features.domain.SourceSchemaValidator;
 import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.features.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.features.sql.SqlPathSyntax;
@@ -54,6 +54,8 @@ import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
 import de.ii.xtraplatform.features.sql.domain.FeatureTokenStatsCollector;
+import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql;
+import de.ii.xtraplatform.features.sql.domain.ImmutablePoolSettings;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSchemaMappingSql;
 import de.ii.xtraplatform.features.sql.domain.SchemaMappingSql;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
@@ -67,7 +69,7 @@ import de.ii.xtraplatform.features.sql.domain.SqlPathParser;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
-import de.ii.xtraplatform.features.sql.infra.db.SqlTypeInfoValidator;
+import de.ii.xtraplatform.features.sql.infra.db.SourceSchemaValidatorSql;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
@@ -75,19 +77,21 @@ import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
 public class FeatureProviderSql
-    extends AbstractFeatureProvider<SqlRow, SqlQueryBatch, SqlQueryOptions>
+    extends AbstractFeatureProvider<SqlRow, SqlQueryBatch, SqlQueryOptions, SchemaSql>
     implements FeatureProvider2, FeatureQueries, FeatureExtents, FeatureCrs, FeatureTransactions {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
@@ -101,13 +105,13 @@ public class FeatureProviderSql
   private final EntityRegistry entityRegistry;
 
   private FeatureQueryEncoderSql queryTransformer;
-  private AggregateStatsReader aggregateStatsReader;
+  private AggregateStatsReader<SchemaSql> aggregateStatsReader;
   private FeatureMutationsSql featureMutationsSql;
   private FeatureSchemaSwapperSql schemaSwapperSql;
   private FeatureStorePathParser pathParser;
   private PathParserSql pathParser2;
   private SqlPathParser pathParser3;
-  private TypeInfoValidator typeInfoValidator;
+  private SourceSchemaValidator<SchemaSql> sourceSchemaValidator;
   private Map<String, List<SchemaSql>> tableSchemas;
   private Map<String, List<SchemaSql>> tableSchemasMutations;
 
@@ -157,7 +161,19 @@ public class FeatureProviderSql
                 && getData().getConnectionInfo().getSchemas().isEmpty()
             ? ImmutableList.of("public")
             : getData().getConnectionInfo().getSchemas();
-    this.typeInfoValidator = new SqlTypeInfoValidator(validationSchemas, this::getSqlClient);
+    this.sourceSchemaValidator =
+        new SourceSchemaValidatorSql(validationSchemas, this::getSqlClient);
+
+    this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql);
+    QuerySchemaDeriver querySchemaDeriver = new QuerySchemaDeriver(pathParser3);
+    this.tableSchemas =
+        getData().getTypes().entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(
+                        entry.getKey(),
+                        entry.getValue().accept(WITH_SCOPE_QUERIES).accept(querySchemaDeriver)))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     boolean success = super.onStartup();
 
@@ -165,7 +181,6 @@ public class FeatureProviderSql
       return false;
     }
 
-    // TODO: from config
     SqlDialect sqlDialect =
         getData().getConnectionInfo().getDialect() == Dialect.PGIS
             ? new SqlDialectPostGis()
@@ -182,24 +197,12 @@ public class FeatureProviderSql
             crsInfo,
             cql,
             accentiCollation);
-    FeatureStoreQueryGeneratorSql queryGeneratorSql =
-        new FeatureStoreQueryGeneratorSql(
-            sqlDialect, getData().getNativeCrs().orElse(OgcCrs.CRS84), crsTransformerFactory);
+    AggregateStatsQueryGenerator queryGeneratorSql =
+        new AggregateStatsQueryGenerator(sqlDialect, filterEncoder);
 
-    this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql);
-    QuerySchemaDeriver querySchemaDeriver = new QuerySchemaDeriver(pathParser3);
     SqlQueryTemplatesDeriver queryTemplatesDeriver =
         new SqlQueryTemplatesDeriver(
             filterEncoder, sqlDialect, getData().getQueryGeneration().getComputeNumberMatched());
-
-    this.tableSchemas =
-        getData().getTypes().entrySet().stream()
-            .map(
-                entry ->
-                    new SimpleImmutableEntry<>(
-                        entry.getKey(),
-                        entry.getValue().accept(WITH_SCOPE_QUERIES).accept(querySchemaDeriver)))
-            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     this.tableSchemasMutations =
         getData().getTypes().entrySet().stream()
@@ -293,19 +296,45 @@ public class FeatureProviderSql
 
     int runnerCapacity = Runtime.getRuntime().availableProcessors();
     if (maxConnections > 0) {
-      for (FeatureStoreTypeInfo typeInfo : getTypeInfos().values()) {
-        int numberOfQueries =
-            typeInfo.getInstanceContainers().get(0).getAllAttributesContainers().size();
-        int capacity = maxConnections / numberOfQueries;
-        // LOGGER.info("{}: {}", typeInfo.getName(), capacity);
-        if (capacity >= 0 && capacity < runnerCapacity) {
-          runnerCapacity = capacity;
-        }
+      int capacity = maxConnections / getMaxQueries();
+      // LOGGER.info("{}: {}", typeInfo.getName(), capacity);
+      if (capacity >= 0 && capacity < runnerCapacity) {
+        runnerCapacity = capacity;
       }
     }
     // LOGGER.info("RUNNER: {}", runnerCapacity);
 
     return runnerCapacity;
+  }
+
+  private List<SchemaSql> getAllSourceSchemas() {
+    return getSourceSchemas().values().stream()
+        .flatMap(Collection::stream)
+        .collect(Collectors.toList());
+  }
+
+  private int getMaxQueries() {
+    return getSourceSchemas().values().stream()
+        .flatMap(Collection::stream)
+        .mapToInt(s -> s.getAllObjects().size())
+        .max()
+        .orElse(1);
+  }
+
+  @Override
+  protected ConnectionInfo getConnectionInfo() {
+    ConnectionInfoSql connectionInfo = (ConnectionInfoSql) super.getConnectionInfo();
+
+    if (connectionInfo.getPool().getMaxConnections() <= 0) {
+      int maxConnections = getMaxQueries() * Runtime.getRuntime().availableProcessors();
+
+      return new ImmutableConnectionInfoSql.Builder()
+          .from(connectionInfo)
+          .pool(new ImmutablePoolSettings.Builder().maxConnections(maxConnections).build())
+          .build();
+    }
+
+    return connectionInfo;
   }
 
   @Override
@@ -327,36 +356,13 @@ public class FeatureProviderSql
     return queueSize;
   }
 
-  private int getMaxQueries() {
-    int maxQueries = 0;
-
-    for (FeatureStoreTypeInfo typeInfo : getTypeInfos().values()) {
-      int numberOfQueries =
-          typeInfo.getInstanceContainers().get(0).getAllAttributesContainers().size();
-
-      if (numberOfQueries > maxQueries) {
-        maxQueries = numberOfQueries;
-      }
-    }
-    return maxQueries <= 0 ? 1 : maxQueries;
-  }
-
   @Override
   protected Optional<String> getRunnerError(ConnectionInfo connectionInfo) {
     if (getStreamRunner().getCapacity() == 0) {
       ConnectionInfoSql connectionInfoSql = (ConnectionInfoSql) connectionInfo;
 
       int maxConnections = connectionInfoSql.getPool().getMaxConnections();
-
-      int minRequired = 0;
-
-      for (FeatureStoreTypeInfo typeInfo : getTypeInfos().values()) {
-        int numberOfQueries =
-            typeInfo.getInstanceContainers().get(0).getAllAttributesContainers().size();
-        if (numberOfQueries > minRequired) {
-          minRequired = numberOfQueries;
-        }
-      }
+      int minRequired = getMaxQueries();
 
       return Optional.of(
           String.format(
@@ -367,9 +373,8 @@ public class FeatureProviderSql
     return Optional.empty();
   }
 
-  @Override
-  protected FeatureStorePathParser getPathParser() {
-    return pathParser;
+  public Map<String, List<SchemaSql>> getSourceSchemas() {
+    return tableSchemas;
   }
 
   @Override
@@ -392,8 +397,8 @@ public class FeatureProviderSql
   }
 
   @Override
-  protected Optional<TypeInfoValidator> getTypeInfoValidator() {
-    return Optional.ofNullable(typeInfoValidator);
+  protected Optional<SourceSchemaValidator<SchemaSql>> getTypeInfoValidator() {
+    return Optional.ofNullable(sourceSchemaValidator);
   }
 
   @Override
@@ -404,7 +409,6 @@ public class FeatureProviderSql
         query.getSchemaScope() == Scope.QUERIES ? WITH_SCOPE_QUERIES : WITH_SCOPE_MUTATIONS;
 
     return new FeatureDecoderSql(
-        ImmutableList.of(getTypeInfos().get(query.getType())),
         query.getSchemaScope() == Scope.QUERIES
             ? tableSchemas.get(query.getType())
             : tableSchemasMutations.get(query.getType()),
@@ -468,19 +472,25 @@ public class FeatureProviderSql
 
   @Override
   public long getFeatureCount(String typeName) {
-    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
-
-    if (typeInfo.isEmpty()) {
+    if (!getSourceSchemas().containsKey(typeName)) {
       return -1;
     }
 
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Computing feature count for '{}'", typeName);
+    }
+
     try {
-      Stream<Long> countGraph = aggregateStatsReader.getCount(typeInfo.get());
+      Stream<Long> countGraph = aggregateStatsReader.getCount(getSourceSchemas().get(typeName));
 
       return countGraph
           .on(getStreamRunner())
           .run()
-          .exceptionally(throwable -> -1L)
+          .exceptionally(
+              throwable -> {
+                LogContext.errorAsWarn(LOGGER, throwable, "Cannot compute feature count");
+                return -1L;
+              })
           .toCompletableFuture()
           .join();
     } catch (Throwable e) {
@@ -492,31 +502,31 @@ public class FeatureProviderSql
 
   @Override
   public Optional<BoundingBox> getSpatialExtent(String typeName) {
-    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
-
-    if (typeInfo.isEmpty()) {
+    if (!getSourceSchemas().containsKey(typeName)) {
       return Optional.empty();
     }
 
-    // TODO do not use the first spatial attribute; if there is a primary one, use that
-    typeInfo
-        .get()
-        .getInstanceContainers()
-        .get(0)
-        .getSpatialAttribute()
-        .map(FeatureStoreAttribute::getName)
-        .ifPresent(
-            spatialProperty ->
-                LOGGER.debug("Computing spatial extent for '{}.{}'", typeName, spatialProperty));
+    if (LOGGER.isDebugEnabled()) {
+      Optional.ofNullable(getData().getTypes().get(typeName))
+          .flatMap(SchemaBase::getPrimaryGeometry)
+          .map(SchemaBase::getName)
+          .ifPresent(
+              spatialProperty ->
+                  LOGGER.debug("Computing spatial extent for '{}.{}'", typeName, spatialProperty));
+    }
 
     try {
       Stream<Optional<BoundingBox>> extentGraph =
-          aggregateStatsReader.getSpatialExtent(typeInfo.get(), is3dSupported());
+          aggregateStatsReader.getSpatialExtent(getSourceSchemas().get(typeName), is3dSupported());
 
       return extentGraph
           .on(getStreamRunner())
           .run()
-          .exceptionally(throwable -> Optional.empty())
+          .exceptionally(
+              throwable -> {
+                LogContext.errorAsWarn(LOGGER, throwable, "Cannot compute spatial extent");
+                return Optional.empty();
+              })
           .toCompletableFuture()
           .join();
     } catch (Throwable e) {
@@ -544,72 +554,51 @@ public class FeatureProviderSql
   }
 
   @Override
-  public Optional<Interval> getTemporalExtent(String typeName, String property) {
-    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
-
-    if (typeInfo.isEmpty()) {
+  public Optional<Interval> getTemporalExtent(String typeName) {
+    if (!getSourceSchemas().containsKey(typeName)) {
       return Optional.empty();
     }
 
-    LOGGER.debug("Computing temporal extent for '{}.{}'", typeName, property);
+    if (LOGGER.isDebugEnabled()) {
+      Optional.ofNullable(getData().getTypes().get(typeName))
+          .flatMap(SchemaBase::getPrimaryInstant)
+          .map(SchemaBase::getName)
+          .ifPresent(
+              temporalProperty ->
+                  LOGGER.debug(
+                      "Computing temporal extent for '{}.{}'", typeName, temporalProperty));
+
+      Optional.ofNullable(getData().getTypes().get(typeName))
+          .flatMap(SchemaBase::getPrimaryInterval)
+          .ifPresent(
+              temporalProperties ->
+                  LOGGER.debug(
+                      "Computing temporal extent for '{}.{}' and '{}.{}'",
+                      typeName,
+                      temporalProperties.first().getName(),
+                      typeName,
+                      temporalProperties.second().getName()));
+    }
 
     try {
       Stream<Optional<Interval>> extentGraph =
-          aggregateStatsReader.getTemporalExtent(typeInfo.get(), property);
+          aggregateStatsReader.getTemporalExtent(getSourceSchemas().get(typeName));
 
-      return computeTemporalExtent(extentGraph);
+      return extentGraph
+          .on(getStreamRunner())
+          .run()
+          .exceptionally(
+              throwable -> {
+                LogContext.errorAsWarn(LOGGER, throwable, "Cannot compute temporal extent");
+                return Optional.empty();
+              })
+          .toCompletableFuture()
+          .join();
     } catch (Throwable e) {
       // continue
     }
 
     return Optional.empty();
-  }
-
-  @Override
-  public Optional<Interval> getTemporalExtent(
-      String typeName, String startProperty, String endProperty) {
-    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
-
-    if (typeInfo.isEmpty()) {
-      return Optional.empty();
-    }
-
-    LOGGER.debug(
-        "Computing temporal extent for '{}.{}' and '{}.{}'",
-        typeName,
-        startProperty,
-        typeName,
-        endProperty);
-
-    try {
-      Stream<Optional<Interval>> extentGraph =
-          aggregateStatsReader.getTemporalExtent(typeInfo.get(), startProperty, endProperty);
-
-      return computeTemporalExtent(extentGraph);
-    } catch (Throwable e) {
-      // continue
-    }
-
-    return Optional.empty();
-  }
-
-  private Optional<Interval> computeTemporalExtent(Stream<Optional<Interval>> extentComputation) {
-    return getStreamRunner()
-        .run(extentComputation)
-        .exceptionally(
-            throwable -> {
-              LOGGER.warn(
-                  "Cannot compute temporal extent: {}",
-                  Objects.nonNull(throwable.getCause())
-                      ? throwable.getCause().getMessage()
-                      : throwable.getMessage());
-              if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Stacktrace:", throwable);
-              }
-              return Optional.empty();
-            })
-        .toCompletableFuture()
-        .join();
   }
 
   @Override

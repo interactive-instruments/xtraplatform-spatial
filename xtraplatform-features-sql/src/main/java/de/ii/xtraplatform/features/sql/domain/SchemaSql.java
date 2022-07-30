@@ -147,7 +147,7 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
     return keys.build();
   }
 
-  // TODO: to SchemaBase
+  @Override
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary

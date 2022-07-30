@@ -13,9 +13,7 @@ import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.ConnectorFactory2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.Tuple;
-import de.ii.xtraplatform.features.domain.WithConnectionInfo;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -47,11 +45,7 @@ public class ConnectorFactoryImpl implements ConnectorFactory {
 
   @Override
   public synchronized FeatureProviderConnector<?, ?, ?> createConnector(
-      FeatureProviderDataV2 featureProviderData) {
-    final String instanceId = featureProviderData.getId();
-    final String providerType = featureProviderData.getFeatureProviderType();
-    ConnectionInfo connectionInfo =
-        ((WithConnectionInfo<?>) featureProviderData).getConnectionInfo();
+      String providerType, String providerId, ConnectionInfo connectionInfo) {
     final String connectorType = connectionInfo.getConnectorType();
 
     if (getFactory(providerType, connectorType).isEmpty()) {
@@ -63,8 +57,8 @@ public class ConnectorFactoryImpl implements ConnectorFactory {
 
     ConnectorFactory2<?, ?, ?> connectorFactory2 = getFactory(providerType, connectorType).get();
 
-    if (connectorFactory2.instance(instanceId).isPresent()) {
-      return connectorFactory2.instance(instanceId).get();
+    if (connectorFactory2.instance(providerId).isPresent()) {
+      return connectorFactory2.instance(providerId).get();
     }
 
     if (connectionInfo.isShared()) {
@@ -88,7 +82,7 @@ public class ConnectorFactoryImpl implements ConnectorFactory {
     }
 
     try {
-      return connectorFactory2.createInstance(featureProviderData);
+      return connectorFactory2.createInstance(providerId, connectionInfo);
 
     } catch (Throwable e) {
       throw new IllegalStateException(

@@ -64,7 +64,6 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
@@ -76,8 +75,6 @@ public class FilterEncoderSql {
   static final String ROW_NUMBER = "row_number";
   static final Splitter ARRAY_SPLITTER = Splitter.on(",").trimResults().omitEmptyStrings();
 
-  private final AliasGenerator aliasGenerator;
-  private final JoinGenerator joinGenerator;
   private final EpsgCrs nativeCrs;
   private final SqlDialect sqlDialect;
   private final CrsTransformerFactory crsTransformerFactory;
@@ -93,8 +90,6 @@ public class FilterEncoderSql {
       CrsInfo crsInfo,
       Cql cql,
       String accentiCollation) {
-    this.aliasGenerator = new AliasGenerator();
-    this.joinGenerator = new JoinGenerator();
     this.nativeCrs = nativeCrs;
     this.sqlDialect = sqlDialect;
     this.crsTransformerFactory = crsTransformerFactory;
@@ -258,7 +253,7 @@ public class FilterEncoderSql {
 
       // TODO: pass all parents
       List<SchemaSql> parents = ImmutableList.of(rootSchema);
-      List<String> aliases = aliasGenerator.getAliases(parents, table, 1);
+      List<String> aliases = AliasGenerator.getAliases(parents, table, 1);
       String qualifiedColumn =
           getQualifiedColumn(table, propertyName, aliases.get(aliases.size() - 1), false);
 
@@ -266,9 +261,9 @@ public class FilterEncoderSql {
         LOGGER.trace("PROP {} {}", table.getName(), qualifiedColumn);
       }
 
+      boolean ignoreInstanceFilter = true;
       Optional<Cql2Expression> userFilter;
       Optional<SchemaSql> userFilterTable = Optional.empty();
-      Optional<String> instanceFilter = Optional.empty();
       if (!property.getNestedFilters().isEmpty()) {
         Optional<Entry<String, Cql2Expression>> nestedFilter =
             property.getNestedFilters().entrySet().stream().findFirst();
@@ -276,7 +271,7 @@ public class FilterEncoderSql {
         String userFilterPropertyName = getUserFilterPropertyName(userFilter.get());
         if (userFilterPropertyName.contains(ROW_NUMBER)) {
           userFilterTable = Optional.of(getTable(nestedFilter.get().getKey(), true));
-          instanceFilter = rootSchema.getFilter().map(cql -> encode(cql, rootSchema));
+          ignoreInstanceFilter = false;
         } else {
           userFilterTable = Optional.ofNullable(getTable(userFilterPropertyName, false));
         }
@@ -284,22 +279,16 @@ public class FilterEncoderSql {
         userFilter = Optional.empty();
       }
 
-      List<Optional<String>> relationFilters =
-          Stream.concat(
-                  parents.stream().flatMap(parent -> parent.getRelation().stream()),
-                  table.getRelation().stream())
-              .map(sqlRelation -> Optional.<String>empty())
-              .collect(Collectors.toList());
-
       String join =
-          joinGenerator.getJoins(
+          JoinGenerator.getJoins(
               table,
               parents,
               aliases,
-              relationFilters,
               userFilterTable,
               encodeRelationFilter(userFilterTable, userFilter),
-              instanceFilter);
+              ignoreInstanceFilter,
+              true,
+              FilterEncoderSql.this);
       if (!join.isEmpty()) join = join + " ";
 
       return String.format(
@@ -913,7 +902,7 @@ public class FilterEncoderSql {
 
       String propertyName = ((Property) arrayOperation.getArgs().get(notInverse ? 0 : 1)).getName();
       SchemaSql table = getTable(propertyName, false);
-      List<String> aliases = aliasGenerator.getAliases(table, 1);
+      List<String> aliases = AliasGenerator.getAliases(table, 1);
       String qualifiedColumn =
           getQualifiedColumn(table, propertyName, aliases.get(aliases.size() - 1), false);
 
@@ -1027,7 +1016,7 @@ public class FilterEncoderSql {
       String prefix = hasPrefix ? propertyName.substring(0, propertyName.lastIndexOf(".") + 1) : "";
       boolean hasAllowedPrefix = hasPrefix && allowedColumnPrefixes.contains(prefix);
       boolean allowColumnFallback = !hasPrefix || hasAllowedPrefix;
-      List<String> aliases = aliasGenerator.getAliases(schema, isUserFilter ? 1 : 0);
+      List<String> aliases = AliasGenerator.getAliases(schema, isUserFilter ? 1 : 0);
       String alias =
           hasAllowedPrefix
               ? aliases.get(allowedColumnPrefixes.indexOf(prefix))

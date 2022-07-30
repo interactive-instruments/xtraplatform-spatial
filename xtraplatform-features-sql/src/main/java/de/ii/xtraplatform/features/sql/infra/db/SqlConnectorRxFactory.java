@@ -14,11 +14,11 @@ import com.google.common.collect.ImmutableSet;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.AppConfiguration;
 import de.ii.xtraplatform.base.domain.AppContext;
+import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.sql.app.FeatureProviderSql;
-import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
+import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
@@ -79,9 +79,10 @@ public class SqlConnectorRxFactory
 
   @Override
   public FeatureProviderConnector<SqlRow, SqlQueryBatch, SqlQueryOptions> createInstance(
-      FeatureProviderDataV2 data) {
+      String providerId, ConnectionInfo connectionInfo) {
     SqlConnector sqlConnector =
-        factoryAssisted.create(metricRegistry, healthCheckRegistry, (FeatureProviderSqlData) data);
+        factoryAssisted.create(
+            metricRegistry, healthCheckRegistry, providerId, (ConnectionInfoSql) connectionInfo);
     sqlConnector.start();
     instances.put(sqlConnector.getProviderId(), sqlConnector);
 
@@ -99,6 +100,7 @@ public class SqlConnectorRxFactory
     SqlConnectorRx create(
         MetricRegistry metricRegistry,
         HealthCheckRegistry healthCheckRegistry,
-        FeatureProviderSqlData data);
+        String providerId,
+        ConnectionInfoSql connectionInfo);
   }
 }

@@ -11,7 +11,6 @@ import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreMultiplicityTracker;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
 import de.ii.xtraplatform.features.domain.NestingTracker;
@@ -52,10 +51,7 @@ public class FeatureDecoderSql
   private NestingTracker nestingTracker;
 
   public FeatureDecoderSql(
-      List<FeatureStoreTypeInfo> typeInfos,
-      List<SchemaSql> tableSchemas,
-      FeatureSchema featureSchema,
-      FeatureQuery query) {
+      List<SchemaSql> tableSchemas, FeatureSchema featureSchema, FeatureQuery query) {
     this.featureSchema = featureSchema;
     this.featureQuery = query;
 

@@ -41,7 +41,6 @@ import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.web.domain.ETag;
 import java.io.IOException;
-import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +53,8 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderConnector.QueryOptions>
+public abstract class AbstractFeatureProvider<
+        T, U, V extends FeatureProviderConnector.QueryOptions, W extends SchemaBase<W>>
     extends AbstractPersistentEntity<FeatureProviderDataV2>
     implements FeatureProvider2, FeatureQueries {
 
@@ -68,7 +68,6 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
   private final ProviderExtensionRegistry extensionRegistry;
   private final FeatureChangeHandler changeHandler;
   private Reactive.Runner streamRunner;
-  private Map<String, FeatureStoreTypeInfo> typeInfos;
   private FeatureProviderConnector<T, U, V> connector;
 
   protected AbstractFeatureProvider(
@@ -105,14 +104,15 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
         // ignore
       }
     }
-    this.typeInfos = createTypeInfos(getPathParser(), getData().getTypes());
     this.streamRunner =
         reactive.runner(
             getData().getId(),
             getRunnerCapacity(((WithConnectionInfo<?>) getData()).getConnectionInfo()),
             getRunnerQueueSize(((WithConnectionInfo<?>) getData()).getConnectionInfo()));
     this.connector =
-        (FeatureProviderConnector<T, U, V>) connectorFactory.createConnector(getData());
+        (FeatureProviderConnector<T, U, V>)
+            connectorFactory.createConnector(
+                getData().getFeatureProviderType(), getData().getId(), getConnectionInfo());
 
     if (!getConnector().isConnected()) {
       connectorFactory.disposeConnector(connector);
@@ -139,14 +139,19 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
     if (getTypeInfoValidator().isPresent() && getData().getTypeValidation() != MODE.NONE) {
       final boolean[] isSuccess = {true};
       try {
-        for (FeatureStoreTypeInfo typeInfo : getTypeInfos().values()) {
+        for (Map.Entry<String, List<W>> sourceSchema : getSourceSchemas().entrySet()) {
           LOGGER.info(
               "Validating type '{}' ({})",
-              typeInfo.getName(),
+              sourceSchema.getKey(),
               getData().getTypeValidation().name().toLowerCase());
 
           ValidationResult result =
-              getTypeInfoValidator().get().validate(typeInfo, getData().getTypeValidation());
+              getTypeInfoValidator()
+                  .get()
+                  .validate(
+                      sourceSchema.getKey(),
+                      sourceSchema.getValue(),
+                      getData().getTypeValidation());
 
           isSuccess[0] = isSuccess[0] && result.isSuccess();
           result.getErrors().forEach(LOGGER::error);
@@ -231,16 +236,16 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
     return Optional.empty();
   }
 
-  protected abstract FeatureStorePathParser getPathParser();
+  protected ConnectionInfo getConnectionInfo() {
+    return ((WithConnectionInfo<?>) getData()).getConnectionInfo();
+  }
+
+  protected abstract Map<String, List<W>> getSourceSchemas();
 
   protected abstract FeatureQueryEncoder<U, V> getQueryEncoder();
 
   protected FeatureProviderConnector<T, U, V> getConnector() {
     return Objects.requireNonNull(connector);
-  }
-
-  protected Map<String, FeatureStoreTypeInfo> getTypeInfos() {
-    return typeInfos;
   }
 
   protected Reactive.Runner getStreamRunner() {
@@ -251,7 +256,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
     return Optional.empty();
   }
 
-  protected Optional<TypeInfoValidator> getTypeInfoValidator() {
+  protected Optional<SourceSchemaValidator<W>> getTypeInfoValidator() {
     return Optional.empty();
   }
 
@@ -270,24 +275,6 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
   }
 
   protected abstract Map<String, Codelist> getCodelists();
-
-  public static Map<String, FeatureStoreTypeInfo> createTypeInfos(
-      FeatureStorePathParser pathParser, Map<String, FeatureSchema> featureTypes) {
-    return featureTypes.entrySet().stream()
-        .map(
-            entry -> {
-              List<FeatureStoreInstanceContainer> instanceContainers =
-                  pathParser.parse(entry.getValue());
-              FeatureStoreTypeInfo typeInfo =
-                  ImmutableFeatureStoreTypeInfo.builder()
-                      .name(entry.getKey())
-                      .instanceContainers(instanceContainers)
-                      .build();
-
-              return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), typeInfo);
-            })
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-  }
 
   @Override
   public FeatureStream getFeatureStream(FeatureQuery query) {
@@ -437,10 +424,7 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
     }
 
     protected FeatureTokenSource getFeatureTokenSource(Map<String, String> virtualTables) {
-      Optional<FeatureStoreTypeInfo> typeInfo =
-          Optional.ofNullable(getTypeInfos().get(query.getType()));
-
-      if (!typeInfo.isPresent()) {
+      if (!getSourceSchemas().containsKey(query.getType())) {
         throw new IllegalStateException("No features available for type");
       }
 
