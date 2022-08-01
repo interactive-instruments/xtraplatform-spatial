@@ -214,18 +214,14 @@ public class FeatureProviderSql
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     Map<String, List<SqlQueryTemplates>> allQueryTemplates =
-        getData().getTypes().entrySet().stream()
+        tableSchemas.entrySet().stream()
             .map(
                 entry ->
                     new SimpleImmutableEntry<>(
                         entry.getKey(),
-                        ImmutableList.of(
-                            entry
-                                .getValue()
-                                .accept(WITH_SCOPE_QUERIES)
-                                .accept(querySchemaDeriver)
-                                .get(0)
-                                .accept(queryTemplatesDeriver))))
+                        entry.getValue().stream()
+                            .map(schemaSql -> schemaSql.accept(queryTemplatesDeriver))
+                            .collect(Collectors.toList())))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations =

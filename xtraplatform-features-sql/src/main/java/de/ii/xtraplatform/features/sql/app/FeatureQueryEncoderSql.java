@@ -53,30 +53,36 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
     this.tableSchemas = tableSchemas;
   }
 
-  /*
-  table1 100
-  table2 50
-  table3 100
-  ---
-  offset 90 limit 20 -> offset 0 on table2
-  offset 140 limit 20 -> skip table1, offset 40 on table2, offset 0 on table3
-   */
+  // TODO: offset does not work for multiple tables/types
+  // that would require numberSkipped in the metaQuery when numberReturned == 0
   public SqlQueryBatch encode(
       FeatureQuery featureQuery, Map<String, String> additionalQueryParameters) {
+    List<SchemaSql> schemas = tableSchemas.get(featureQuery.getType());
+    List<SqlQueryTemplates> queryTemplates =
+        featureQuery.getSchemaScope() == Scope.QUERIES
+            ? allQueryTemplates.get(featureQuery.getType())
+            : allQueryTemplatesMutations.get(featureQuery.getType());
+
     int chunkSize = 2;
 
     int chunks =
         (featureQuery.getLimit() / chunkSize) + (featureQuery.getLimit() % chunkSize > 0 ? 1 : 0);
 
     List<SqlQuerySet> querySets =
-        IntStream.range(0, chunks)
+        IntStream.range(0, queryTemplates.size())
             .mapToObj(
-                chunk ->
-                    encode3(
-                        chunkSize,
-                        featureQuery.getOffset() + (chunk * chunkSize),
-                        featureQuery,
-                        additionalQueryParameters))
+                tableIndex -> {
+                  return IntStream.range(0, chunks)
+                      .mapToObj(
+                          chunk ->
+                              createQuerySet(
+                                  queryTemplates.get(tableIndex),
+                                  chunkSize,
+                                  featureQuery.getOffset() + (chunk * chunkSize),
+                                  featureQuery,
+                                  additionalQueryParameters));
+                })
+            .flatMap(s -> s)
             .collect(Collectors.toList());
 
     return new ImmutableSqlQueryBatch.Builder()
@@ -86,22 +92,13 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
         .build();
   }
 
-  private SqlQuerySet encode3(
+  private SqlQuerySet createQuerySet(
+      SqlQueryTemplates queryTemplates,
       int limit,
       int offset,
       FeatureQuery featureQuery,
       Map<String, String> additionalQueryParameters) {
-    // TODO: either pass as parameter, or check for null here
-    List<SchemaSql> typeInfo = tableSchemas.get(featureQuery.getType());
-    List<SqlQueryTemplates> queryTemplates =
-        featureQuery.getSchemaScope() == Scope.QUERIES
-            ? allQueryTemplates.get(featureQuery.getType())
-            : allQueryTemplatesMutations.get(featureQuery.getType());
-
-    // TODO: implement for multiple main tables
-    SchemaSql mainTable = typeInfo.get(0);
-    SqlQueryTemplates queries = queryTemplates.get(0);
-
+    SchemaSql mainTable = queryTemplates.getQuerySchemas().get(0);
     List<SortKey> sortKeys = transformSortKeys(featureQuery.getSortKeys(), mainTable);
 
     Function<Long, Optional<String>> metaQuery =
@@ -109,7 +106,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
             featureQuery.returnsSingleFeature()
                 ? Optional.empty()
                 : Optional.of(
-                    queries
+                    queryTemplates
                         .getMetaQueryTemplate()
                         .generateMetaQuery(
                             Math.min(limit, maxLimit),
@@ -120,7 +117,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
 
     Function<SqlRowMeta, Stream<String>> valueQueries =
         metaResult ->
-            queries.getValueQueryTemplates().stream()
+            queryTemplates.getValueQueryTemplates().stream()
                 .map(
                     valueQueryTemplate ->
                         valueQueryTemplate.generateValueQuery(
@@ -139,62 +136,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
     return new Builder()
         .metaQuery(metaQuery)
         .valueQueries(valueQueries)
-        .tableSchemas(queries.getQuerySchemas())
-        .options(getOptions(featureQuery))
-        .build();
-  }
-
-  public SqlQuerySet encode2(
-      FeatureQuery featureQuery, Map<String, String> additionalQueryParameters) {
-    // TODO: either pass as parameter, or check for null here
-    List<SchemaSql> typeInfo = tableSchemas.get(featureQuery.getType());
-    List<SqlQueryTemplates> queryTemplates =
-        featureQuery.getSchemaScope() == Scope.QUERIES
-            ? allQueryTemplates.get(featureQuery.getType())
-            : allQueryTemplatesMutations.get(featureQuery.getType());
-
-    // TODO: implement for multiple main tables
-    SchemaSql mainTable = typeInfo.get(0);
-    SqlQueryTemplates queries = queryTemplates.get(0);
-
-    List<SortKey> sortKeys = transformSortKeys(featureQuery.getSortKeys(), mainTable);
-
-    Function<Long, Optional<String>> metaQuery =
-        liveLimit ->
-            featureQuery.returnsSingleFeature()
-                ? Optional.empty()
-                : Optional.of(
-                    queries
-                        .getMetaQueryTemplate()
-                        .generateMetaQuery(
-                            featureQuery.getLimit(),
-                            featureQuery.getOffset(),
-                            sortKeys,
-                            featureQuery.getFilter(),
-                            additionalQueryParameters));
-
-    Function<SqlRowMeta, Stream<String>> valueQueries =
-        metaResult ->
-            queries.getValueQueryTemplates().stream()
-                .map(
-                    valueQueryTemplate ->
-                        valueQueryTemplate.generateValueQuery(
-                            featureQuery.getLimit(),
-                            featureQuery.getOffset(),
-                            sortKeys,
-                            featureQuery.getFilter(),
-                            ((Objects.nonNull(metaResult.getMinKey())
-                                        && Objects.nonNull(metaResult.getMaxKey()))
-                                    || metaResult.getNumberReturned() == 0)
-                                ? Optional.of(
-                                    Tuple.of(metaResult.getMinKey(), metaResult.getMaxKey()))
-                                : Optional.empty(),
-                            additionalQueryParameters));
-
-    return new Builder()
-        .metaQuery(metaQuery)
-        .valueQueries(valueQueries)
-        .tableSchemas(queries.getQuerySchemas())
+        .tableSchemas(queryTemplates.getQuerySchemas())
         .options(getOptions(featureQuery))
         .build();
   }

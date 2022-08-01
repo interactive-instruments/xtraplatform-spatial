@@ -37,7 +37,7 @@ public class FeatureDecoderSql
 
   private final FeatureSchema featureSchema;
   private final FeatureQuery featureQuery;
-  private final List<String> mainTablePath;
+  private final List<List<String>> mainTablePaths;
   private final FeatureStoreMultiplicityTracker multiplicityTracker;
   private final boolean isSingleFeature;
 
@@ -55,12 +55,11 @@ public class FeatureDecoderSql
     this.featureSchema = featureSchema;
     this.featureQuery = query;
 
-    // TODO: support multiple main tables
-    SchemaSql tableSchema = tableSchemas.get(0);
-
-    this.mainTablePath = tableSchema.getFullPath();
+    this.mainTablePaths =
+        tableSchemas.stream().map(SchemaBase::getFullPath).collect(Collectors.toList());
     List<List<String>> multiTables =
-        tableSchema.getAllObjects().stream()
+        tableSchemas.stream()
+            .flatMap(s -> s.getAllObjects().stream())
             .filter(schema -> !schema.getRelation().isEmpty())
             .map(SchemaBase::getFullPath)
             .collect(Collectors.toList());
@@ -76,7 +75,7 @@ public class FeatureDecoderSql
             .setQuery(featureQuery);
     this.geometryDecoder = new GeometryDecoderWkt(getDownstream(), context);
     this.nestingTracker =
-        new NestingTracker(getDownstream(), context, mainTablePath, false, false, false);
+        new NestingTracker(getDownstream(), context, mainTablePaths, false, false, false);
   }
 
   @Override

@@ -46,7 +46,6 @@ public interface SqlConnector
     return getSourceStream(queryBatch, SqlQueryOptions.single());
   }
 
-  // TODO: multiple main tables, remove old typeInfo stuff, adjust path parsing
   // TODO: aggregate metadata before pushing downstream?
   @Override
   default Reactive.Source<SqlRow> getSourceStream(
