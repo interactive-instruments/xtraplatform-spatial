@@ -9,11 +9,13 @@ package de.ii.xtraplatform.features.sql.domain;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.immutables.value.Value;
 
 public interface SqlRow extends Comparable<SqlRow> {
 
   List<Object> getValues();
 
+  @Value.Default
   default String getName() {
     return "unknown";
   }

@@ -341,6 +341,11 @@ public interface FeatureProviderSqlData
      * @default true
      */
     @Value.Default
+    default int getChunkSize() {
+      return 1000;
+    }
+
+    @Value.Default
     default boolean getComputeNumberMatched() {
       return true;
     }

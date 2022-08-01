@@ -7,12 +7,14 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
+import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlRowMeta.Builder;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -27,7 +29,6 @@ import java.util.stream.Stream;
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 
-// TODO: class
 public interface SqlConnector
     extends FeatureProviderConnector<SqlRow, SqlQueryBatch, SqlQueryOptions> {
 
@@ -46,40 +47,138 @@ public interface SqlConnector
     return getSourceStream(queryBatch, SqlQueryOptions.single());
   }
 
-  // TODO: aggregate metadata before pushing downstream?
+  // TODO: simplify, class SqlQueryRunner, remove options
   @Override
   default Reactive.Source<SqlRow> getSourceStream(
       SqlQueryBatch queryBatch, SqlQueryOptions options) {
     final long[] featureCount = {queryBatch.getLimit()};
+    final long[] numberSkipped = {0L};
+    final String[] lastTable = {""};
+    final long[] lastNumberReturned = {0L};
 
-    Reactive.Source<SqlRow> sqlRowSource =
+    Source<SqlRow> sqlRowSource1 =
         Source.iterable(queryBatch.getQuerySets())
             .via(
                 Transformer.flatMap(
                     querySet -> {
-                      if (featureCount[0] <= 0) {
-                        return Source.iterable(List.of());
+                      String currentTable = querySet.getTableSchemas().get(0).getName();
+
+                      if (featureCount[0] <= 0
+                          || (Objects.equals(lastTable[0], currentTable)
+                              && lastNumberReturned[0] < queryBatch.getChunkSize())) {
+                        return Source.empty();
                       }
 
-                      List<SchemaSql> tableSchemas = querySet.getTableSchemas();
-
                       return getMetaResult(
-                              querySet.getMetaQuery().apply(featureCount[0]),
+                              querySet.getMetaQuery().apply(featureCount[0], numberSkipped[0]),
                               options,
-                              queryBatch.getChunkSize() >= featureCount[0])
+                              currentTable)
                           .via(
-                              Reactive.Transformer.flatMap(
+                              Transformer.map(
                                   metaResult -> {
-                                    int[] i = {0};
-
-                                    // TODO: additional featureCount per table, override initial
-                                    // value with numberMatched if available
                                     featureCount[0] -= metaResult.getNumberReturned();
+                                    numberSkipped[0] =
+                                        Objects.equals(lastTable[0], currentTable)
+                                            ? numberSkipped[0]
+                                            : numberSkipped[0]
+                                                + metaResult.getNumberSkipped().orElse(0);
+                                    lastTable[0] = currentTable;
+                                    lastNumberReturned[0] = metaResult.getNumberReturned();
 
-                                    Reactive.Source<SqlRow>[] sqlRows =
-                                        querySet
+                                    return Tuple.of(querySet, metaResult);
+                                  }));
+                    }))
+            .via(
+                Transformer.reduce(
+                    Tuple.of(new ArrayList<SqlQuerySet>(), new ArrayList<SqlRowMeta>()),
+                    (reducedTuple, nextTuple) -> {
+                      List<SqlQuerySet> querySets = reducedTuple.first();
+                      List<SqlRowMeta> rows = reducedTuple.second();
+                      SqlQuerySet nextQuerySet = nextTuple.first();
+                      SqlRowMeta nextRow = nextTuple.second();
+
+                      if (rows.isEmpty()) {
+                        rows.add(new Builder().numberReturned(0).build());
+                      }
+
+                      long numberReturned =
+                          rows.get(0).getNumberReturned() + nextRow.getNumberReturned();
+                      OptionalLong numberMatched =
+                          rows.get(0).getNumberMatched().isEmpty()
+                                  && nextRow.getNumberMatched().isEmpty()
+                              ? OptionalLong.empty()
+                              : !Objects.equals(rows.get(0).getName(), nextRow.getName())
+                                  ? OptionalLong.of(
+                                      rows.get(0).getNumberMatched().orElse(0)
+                                          + nextRow.getNumberMatched().orElse(0))
+                                  : rows.get(0).getNumberMatched();
+                      OptionalLong numberSkipped3 =
+                          rows.get(0).getNumberSkipped().isEmpty()
+                                  && nextRow.getNumberSkipped().isEmpty()
+                              ? OptionalLong.empty()
+                              : !Objects.equals(rows.get(0).getName(), nextRow.getName())
+                                  ? OptionalLong.of(
+                                      rows.get(0).getNumberSkipped().orElse(0)
+                                          + nextRow.getNumberSkipped().orElse(0))
+                                  : rows.get(0).getNumberSkipped();
+
+                      rows.set(
+                          0,
+                          new Builder()
+                              .name(nextRow.getName())
+                              .numberReturned(numberReturned)
+                              .numberMatched(numberMatched)
+                              .numberSkipped(numberSkipped3)
+                              .build());
+
+                      querySets.add(nextQuerySet);
+                      rows.add(nextRow);
+
+                      return reducedTuple;
+                    }))
+            .via(
+                Transformer.flatMap(
+                    plan -> {
+                      List<SqlQuerySet> querySets = plan.first();
+                      SqlRowMeta aggregatedMetaResult = plan.second().get(0);
+                      List<SqlRowMeta> metaResults = plan.second().subList(1, plan.second().size());
+                      final long[] featureCount2 = {queryBatch.getLimit()};
+                      final long[] numberSkipped2 = {0L};
+                      final String[] lastTable2 = {""};
+
+                      return Source.iterable(
+                              IntStream.range(0, querySets.size())
+                                  .boxed()
+                                  .collect(Collectors.toList()))
+                          .via(
+                              Transformer.flatMap(
+                                  index -> {
+                                    String currentTable =
+                                        querySets.get(index).getTableSchemas().get(0).getName();
+                                    featureCount2[0] -= metaResults.get(index).getNumberReturned();
+                                    numberSkipped2[0] =
+                                        Objects.equals(lastTable2[0], currentTable)
+                                            ? numberSkipped2[0]
+                                            : numberSkipped2[0]
+                                                + metaResults
+                                                    .get(index)
+                                                    .getNumberSkipped()
+                                                    .orElse(0);
+                                    lastTable2[0] = currentTable;
+
+                                    if (metaResults.get(index).getNumberReturned() <= 0) {
+                                      return Source.empty();
+                                    }
+
+                                    int[] i = {0};
+                                    Source<SqlRow>[] sqlRows =
+                                        querySets
+                                            .get(index)
                                             .getValueQueries()
-                                            .apply(metaResult)
+                                            .apply(
+                                                metaResults.get(index),
+                                                featureCount2[0],
+                                                numberSkipped2[0])
                                             .map(
                                                 valueQuery ->
                                                     getSqlClient()
@@ -87,101 +186,44 @@ public interface SqlConnector
                                                             valueQuery,
                                                             new ImmutableSqlQueryOptions.Builder()
                                                                 .from(options)
-                                                                .tableSchema(tableSchemas.get(i[0]))
+                                                                .tableSchema(
+                                                                    querySets
+                                                                        .get(index)
+                                                                        .getTableSchemas()
+                                                                        .get(i[0]))
                                                                 .containerPriority(i[0]++)
                                                                 .build()))
-                                            .toArray(
-                                                (IntFunction<Reactive.Source<SqlRow>[]>)
-                                                    Reactive.Source[]::new);
-                                    return mergeAndSort(sqlRows)
-                                        .prepend(Reactive.Source.single(metaResult));
-                                  }));
+                                            .toArray((IntFunction<Source<SqlRow>[]>) Source[]::new);
+
+                                    return mergeAndSort(sqlRows);
+                                  }))
+                          .prepend(Source.single(aggregatedMetaResult));
                     }));
 
-    return sqlRowSource.mapError(PSQL_CONTEXT);
-  }
-
-  // TODO: reuse instances of SqlRow, SqlColumn? (object pool, e.g.
-  // https://github.com/chrisvest/stormpot, implement test with 100000 rows, measure)
-  default Reactive.Source<SqlRow> getSourceStream(SqlQuerySet query, SqlQueryOptions options) {
-
-    /*
-    FeatureQuerySql
-    - limit, offset, etc.
-    - SqlQuerySet
-      - SqlQueries + SqlQueryOptions
-     */
-
-    // TODO:
-    // chunks: n * mq -> n * vqs
-    // tables: n * mq -> n * vqs
-    // types: n * mq -> n * vqs
-    // -> increment numberReturned + numberMatched
-    // -> sortBy for tables/types -> use union all?
-
-    // TODO for chunking:
-    // - List<SqlQueries>
-    // - counter with limit, decreased in metaResult1.flatMapConcat(metaResult... by numberReturned
-    // - create List<Source<SqlRow, NotUsed>[]>, concat with  Source.combine(source1, source2,
-    // Collections.singletonList(source3), Concat::create)
-    // - return emptySource in metaResult1.flatMapConcat(metaResult... if counter < 0
-    // - adjust limit for metaQuery, Math.min(chunkSize, counter)
-
-    // TODO for multiple main tables: should work exactly like chunking
-
-    Reactive.Source<SqlRowMeta> metaSource =
-        getMetaResult(query.getMetaQuery().apply(0L), options, true);
-
-    List<SchemaSql> tableSchemas = query.getTableSchemas();
-
-    Reactive.Source<SqlRow> sqlRowSource =
-        metaSource.via(
-            Reactive.Transformer.flatMap(
-                metaResult -> {
-                  int[] i = {0};
-                  Reactive.Source<SqlRow>[] sqlRows =
-                      query
-                          .getValueQueries()
-                          .apply(metaResult)
-                          .map(
-                              valueQuery ->
-                                  getSqlClient()
-                                      .getSourceStream(
-                                          valueQuery,
-                                          new ImmutableSqlQueryOptions.Builder()
-                                              .from(options)
-                                              .tableSchema(tableSchemas.get(i[0]))
-                                              .containerPriority(i[0]++)
-                                              .build()))
-                          .toArray((IntFunction<Reactive.Source<SqlRow>[]>) Reactive.Source[]::new);
-                  return mergeAndSort(sqlRows).prepend(Reactive.Source.single(metaResult));
-                }));
-
-    return sqlRowSource.mapError(PSQL_CONTEXT);
+    return sqlRowSource1.mapError(PSQL_CONTEXT);
   }
 
   // TODO: simplify
   default Reactive.Source<SqlRowMeta> getMetaResult(
-      Optional<String> metaQuery, SqlQueryOptions options, boolean isComplete) {
+      Optional<String> metaQuery, SqlQueryOptions options, String table) {
     if (!metaQuery.isPresent()) {
-      return Reactive.Source.single(getMetaQueryResult(0L, 0L, 0L, 0L).build());
+      return Reactive.Source.single(getMetaQueryResult(0L, 0L, 0L, 0L, -1L).build());
     }
 
     List<Class<?>> columnTypes =
         Stream.concat(
                 IntStream.range(0, 2 + (options.getCustomSortKeys().size() * 2))
                     .mapToObj(i -> Object.class),
-                Stream.of(Long.class, Long.class))
+                Stream.of(Long.class, Long.class, Long.class))
             .collect(Collectors.toList());
 
     return getSqlClient()
         .getSourceStream(metaQuery.get(), SqlQueryOptions.withColumnTypes(columnTypes))
-        .via(
-            Reactive.Transformer.map(sqlRow -> getMetaQueryResult(sqlRow.getValues(), isComplete)));
+        .via(Reactive.Transformer.map(sqlRow -> getMetaQueryResult(sqlRow.getValues(), table)));
   }
 
   default Builder getMetaQueryResult(
-      Object minKey, Object maxKey, Long numberReturned, Long numberMatched) {
+      Object minKey, Object maxKey, Long numberReturned, Long numberMatched, Long numberSkipped) {
     return new ImmutableSqlRowMeta.Builder()
         .minKey(minKey)
         .maxKey(maxKey)
@@ -190,23 +232,27 @@ public interface SqlConnector
             Objects.nonNull(numberMatched) && numberMatched > -1
                 ? OptionalLong.of(numberMatched)
                 : OptionalLong.empty())
-        .isComplete(true);
+        .numberSkipped(
+            Objects.nonNull(numberSkipped) && numberSkipped > -1
+                ? OptionalLong.of(numberSkipped)
+                : OptionalLong.empty());
   }
 
-  default SqlRowMeta getMetaQueryResult(List<Object> values, boolean isComplete) {
+  default SqlRowMeta getMetaQueryResult(List<Object> values, String table) {
     int size = values.size();
     Builder builder =
         getMetaQueryResult(
+            values.get(size - 5),
             values.get(size - 4),
-            values.get(size - 3),
+            (Long) values.get(size - 3),
             (Long) values.get(size - 2),
             (Long) values.get(size - 1));
 
-    for (int i = 0; i < size - 4; i = i + 2) {
+    for (int i = 0; i < size - 5; i = i + 2) {
       builder.addCustomMinKeys(values.get(i)).addCustomMaxKeys(values.get(i + 1));
     }
 
-    return builder.isComplete(isComplete).build();
+    return builder.name(table).build();
   }
 
   static <T extends Comparable<T>> Reactive.Source<T> mergeAndSort(Reactive.Source<T>... sources) {

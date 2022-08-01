@@ -9,16 +9,17 @@ package de.ii.xtraplatform.features.sql.domain;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.function.TriFunction;
 import org.immutables.value.Value;
 
 @Value.Immutable
 public interface SqlQuerySet {
 
-  Function<Long, Optional<String>> getMetaQuery();
+  BiFunction<Long, Long, Optional<String>> getMetaQuery();
 
-  Function<SqlRowMeta, Stream<String>> getValueQueries();
+  TriFunction<SqlRowMeta, Long, Long, Stream<String>> getValueQueries();
 
   List<SchemaSql> getTableSchemas();
 

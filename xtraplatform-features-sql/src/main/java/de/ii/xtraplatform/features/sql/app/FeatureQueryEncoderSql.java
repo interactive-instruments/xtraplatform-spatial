@@ -28,11 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.function.TriFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,29 +43,24 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
 
   private final Map<String, List<SqlQueryTemplates>> allQueryTemplates;
   private final Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations;
-  private final Map<String, List<SchemaSql>> tableSchemas;
+  private final int chunkSize;
 
   FeatureQueryEncoderSql(
       Map<String, List<SqlQueryTemplates>> allQueryTemplates,
       Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations,
-      Map<String, List<SchemaSql>> tableSchemas) {
+      int chunkSize) {
     this.allQueryTemplates = allQueryTemplates;
     this.allQueryTemplatesMutations = allQueryTemplatesMutations;
-    this.tableSchemas = tableSchemas;
+    this.chunkSize = chunkSize;
   }
 
-  // TODO: offset does not work for multiple tables/types
-  // that would require numberSkipped in the metaQuery when numberReturned == 0
+  // TODO: options
   public SqlQueryBatch encode(
       FeatureQuery featureQuery, Map<String, String> additionalQueryParameters) {
-    List<SchemaSql> schemas = tableSchemas.get(featureQuery.getType());
     List<SqlQueryTemplates> queryTemplates =
         featureQuery.getSchemaScope() == Scope.QUERIES
             ? allQueryTemplates.get(featureQuery.getType())
             : allQueryTemplatesMutations.get(featureQuery.getType());
-
-    int chunkSize = 2;
-
     int chunks =
         (featureQuery.getLimit() / chunkSize) + (featureQuery.getLimit() % chunkSize > 0 ? 1 : 0);
 
@@ -101,8 +97,8 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
     SchemaSql mainTable = queryTemplates.getQuerySchemas().get(0);
     List<SortKey> sortKeys = transformSortKeys(featureQuery.getSortKeys(), mainTable);
 
-    Function<Long, Optional<String>> metaQuery =
-        maxLimit ->
+    BiFunction<Long, Long, Optional<String>> metaQuery =
+        (maxLimit, skipped) ->
             featureQuery.returnsSingleFeature()
                 ? Optional.empty()
                 : Optional.of(
@@ -110,19 +106,20 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
                         .getMetaQueryTemplate()
                         .generateMetaQuery(
                             Math.min(limit, maxLimit),
-                            offset,
+                            Math.max(0L, offset - skipped),
                             sortKeys,
                             featureQuery.getFilter(),
-                            additionalQueryParameters));
+                            additionalQueryParameters,
+                            featureQuery.getOffset() > 0));
 
-    Function<SqlRowMeta, Stream<String>> valueQueries =
-        metaResult ->
+    TriFunction<SqlRowMeta, Long, Long, Stream<String>> valueQueries =
+        (metaResult, maxLimit, skipped) ->
             queryTemplates.getValueQueryTemplates().stream()
                 .map(
                     valueQueryTemplate ->
                         valueQueryTemplate.generateValueQuery(
-                            limit,
-                            offset,
+                            Math.min(limit, maxLimit),
+                            Math.max(0L, offset - skipped),
                             sortKeys,
                             featureQuery.getFilter(),
                             ((Objects.nonNull(metaResult.getMinKey())
@@ -144,7 +141,8 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
   @Override
   public SqlQueryOptions getOptions(FeatureQuery featureQuery) {
     // TODO: either pass as parameter, or check for null here
-    List<SchemaSql> typeInfo = tableSchemas.get(featureQuery.getType());
+    List<SchemaSql> typeInfo =
+        allQueryTemplates.get(featureQuery.getType()).get(0).getQuerySchemas();
 
     // TODO: implement for multiple main tables
     SchemaSql mainTable = typeInfo.get(0);

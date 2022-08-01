@@ -25,11 +25,11 @@ public interface SqlRowMeta extends SqlRow {
 
   OptionalLong getNumberMatched();
 
+  OptionalLong getNumberSkipped();
+
   List<Object> getCustomMinKeys();
 
   List<Object> getCustomMaxKeys();
-
-  boolean isComplete();
 
   @Override
   default int compareTo(SqlRow row) {

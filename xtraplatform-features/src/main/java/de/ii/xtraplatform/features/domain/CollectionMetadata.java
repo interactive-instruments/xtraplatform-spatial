@@ -25,9 +25,4 @@ public interface CollectionMetadata {
   default boolean isSingleFeature() {
     return false;
   }
-
-  @Value.Default
-  default boolean isComplete() {
-    return false;
-  }
 }

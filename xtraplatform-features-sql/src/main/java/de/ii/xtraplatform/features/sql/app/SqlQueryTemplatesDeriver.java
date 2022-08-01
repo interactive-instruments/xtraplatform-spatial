@@ -40,12 +40,17 @@ public class SqlQueryTemplatesDeriver
   private final SqlDialect sqlDialect;
   private final FilterEncoderSql filterEncoder;
   private final boolean computeNumberMatched;
+  private final boolean computeNumberSkipped;
 
   public SqlQueryTemplatesDeriver(
-      FilterEncoderSql filterEncoder, SqlDialect sqlDialect, boolean computeNumberMatched) {
+      FilterEncoderSql filterEncoder,
+      SqlDialect sqlDialect,
+      boolean computeNumberMatched,
+      boolean computeNumberSkipped) {
     this.sqlDialect = sqlDialect;
     this.filterEncoder = filterEncoder;
     this.computeNumberMatched = computeNumberMatched;
+    this.computeNumberSkipped = computeNumberSkipped;
   }
 
   @Override
@@ -72,7 +77,7 @@ public class SqlQueryTemplatesDeriver
   }
 
   MetaQueryTemplate createMetaQueryTemplate(SchemaSql schema) {
-    return (limit, offset, additionalSortKeys, cqlFilter, virtualTables) -> {
+    return (limit, offset, additionalSortKeys, cqlFilter, virtualTables, withNumberSkipped) -> {
       String limitSql = limit > 0 ? String.format(" LIMIT %d", limit) : "";
       String offsetSql = offset > 0 ? String.format(" OFFSET %d", offset) : "";
       Optional<String> filter = getFilter(schema, cqlFilter);
@@ -98,19 +103,23 @@ public class SqlQueryTemplatesDeriver
               "SELECT %7$s, count(*) AS numberReturned FROM (SELECT %2$s FROM %1$s%6$s ORDER BY %3$s%4$s%5$s) AS IDS",
               table, columns, orderBy, limitSql, offsetSql, where, minMaxColumns);
 
-      if (computeNumberMatched) {
-        String numberMatched =
-            String.format(
-                "SELECT count(*) AS numberMatched FROM (SELECT A.%2$s AS %4$s FROM %1$s A%3$s ORDER BY 1) AS IDS",
-                tableName, schema.getSortKey().get(), where, SKEY);
-        return String.format(
-            "WITH\n%3$s%3$sNR AS (%s),\n%3$s%3$sNM AS (%s) \n%3$sSELECT * FROM NR, NM",
-            numberReturned, numberMatched, TAB);
-      }
+      String numberMatched =
+          computeNumberMatched
+              ? String.format(
+                  "SELECT count(*) AS numberMatched FROM (SELECT A.%2$s AS %4$s FROM %1$s A%3$s ORDER BY 1) AS IDS",
+                  tableName, schema.getSortKey().get(), where, SKEY)
+              : "SELECT -1::bigint AS numberMatched";
+
+      String numberSkipped =
+          computeNumberSkipped && withNumberSkipped
+              ? String.format(
+                  "SELECT CASE WHEN numberReturned = 0 THEN (SELECT count(*) AS numberSkipped FROM (SELECT %2$s FROM %1$s%5$s ORDER BY %3$s%4$s) AS IDS) ELSE -1::bigint END AS numberSkipped FROM NR",
+                  table, columns, orderBy, limitSql, where)
+              : "SELECT -1::bigint AS numberSkipped";
 
       return String.format(
-          "WITH\n%2$s%2$sNR AS (%s)\n%2$sSELECT *, -1::bigint AS numberMatched FROM NR",
-          numberReturned, TAB);
+          "WITH\n%4$s%4$sNR AS (%s),\n%4$s%4$sNM AS (%s),\n%4$s%4$sNS AS (%s)\n%4$sSELECT * FROM NR, NM, NS",
+          numberReturned, numberMatched, numberSkipped, TAB);
     };
   }
 

@@ -123,7 +123,6 @@ public class FeatureDecoderSql
                   + sqlRow.getNumberMatched().getAsLong());
     }
     context.metadata().isSingleFeature(isSingleFeature);
-    context.metadata().isComplete(sqlRow.isComplete());
 
     if (!started) {
       getDownstream().onStart(context);

@@ -202,7 +202,10 @@ public class FeatureProviderSql
 
     SqlQueryTemplatesDeriver queryTemplatesDeriver =
         new SqlQueryTemplatesDeriver(
-            filterEncoder, sqlDialect, getData().getQueryGeneration().getComputeNumberMatched());
+            filterEncoder,
+            sqlDialect,
+            getData().getQueryGeneration().getComputeNumberMatched(),
+            false);
 
     this.tableSchemasMutations =
         getData().getTypes().entrySet().stream()
@@ -220,7 +223,16 @@ public class FeatureProviderSql
                     new SimpleImmutableEntry<>(
                         entry.getKey(),
                         entry.getValue().stream()
-                            .map(schemaSql -> schemaSql.accept(queryTemplatesDeriver))
+                            .map(
+                                schemaSql ->
+                                    schemaSql.accept(
+                                        new SqlQueryTemplatesDeriver(
+                                            filterEncoder,
+                                            sqlDialect,
+                                            getData()
+                                                .getQueryGeneration()
+                                                .getComputeNumberMatched(),
+                                            entry.getValue().size() > 1)))
                             .collect(Collectors.toList())))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
@@ -240,7 +252,10 @@ public class FeatureProviderSql
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     this.queryTransformer =
-        new FeatureQueryEncoderSql(allQueryTemplates, allQueryTemplatesMutations, tableSchemas);
+        new FeatureQueryEncoderSql(
+            allQueryTemplates,
+            allQueryTemplatesMutations,
+            getData().getQueryGeneration().getChunkSize());
 
     this.aggregateStatsReader =
         new AggregateStatsReaderSql(
