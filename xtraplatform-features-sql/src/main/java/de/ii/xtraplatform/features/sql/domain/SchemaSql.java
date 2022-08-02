@@ -13,6 +13,7 @@ import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,15 +46,24 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
   @Value.Auxiliary
   @Value.Derived
   default List<String> getPath() {
-    return getRelation().isEmpty()
-        ? ImmutableList.of(
-            getName() + getFilterString().map(filter -> "{filter=" + filter + "}").orElse(""))
-        : // Stream.concat(
-        // Stream.of(getName() + getFilterString().map(filter -> "{filter=" + filter +
-        // "}").orElse("")),
-        getRelation().stream()
-            .flatMap(relation -> relation.asPath().stream()) // )
-            .collect(Collectors.toList());
+    List<String> path =
+        getRelation().isEmpty()
+            ? ImmutableList.of(
+                getName() + getFilterString().map(filter -> "{filter=" + filter + "}").orElse(""))
+            : // Stream.concat(
+            // Stream.of(getName() + getFilterString().map(filter -> "{filter=" + filter +
+            // "}").orElse("")),
+            getRelation().stream()
+                .flatMap(relation -> relation.asPath().stream()) // )
+                .collect(Collectors.toList());
+
+    if (!path.isEmpty()
+        && !getParentPath().isEmpty()
+        && Objects.equals(getParentPath().get(getParentPath().size() - 1), path.get(0))) {
+      return path.subList(1, path.size());
+    }
+
+    return path;
   }
 
   /*@Override

@@ -13,7 +13,7 @@ public interface FeatureQueryEncoder<T, V extends FeatureProviderConnector.Query
 
   String PROPERTY_NOT_AVAILABLE = "PROPERTY_NOT_AVAILABLE";
 
-  T encode(FeatureQuery featureQuery, Map<String, String> additionalQueryParameters);
+  T encode(Query query, Map<String, String> additionalQueryParameters);
 
-  V getOptions(FeatureQuery featureQuery);
+  V getOptions(TypeQuery typeQuery);
 }

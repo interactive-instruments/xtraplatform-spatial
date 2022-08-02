@@ -16,6 +16,6 @@ import java.util.function.BiFunction;
 public interface QueryRunner {
   <W extends ResultBase> CompletionStage<W> runQuery(
       BiFunction<FeatureTokenSource, Map<String, String>, Stream<W>> stream,
-      FeatureQuery query,
+      Query query,
       boolean passThrough);
 }

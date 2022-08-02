@@ -17,5 +17,10 @@ public interface SqlQueryBatch {
 
   long getChunkSize();
 
+  @Value.Default
+  default boolean isSingleFeature() {
+    return false;
+  }
+
   List<SqlQuerySet> getQuerySets();
 }

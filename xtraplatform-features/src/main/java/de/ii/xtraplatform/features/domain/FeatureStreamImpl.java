@@ -17,13 +17,17 @@ import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.Sink;
+import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.web.domain.ETag;
 import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,7 +36,7 @@ import java.util.function.BiFunction;
 
 public class FeatureStreamImpl implements FeatureStream {
 
-  private final FeatureQuery query;
+  private final Query query;
   private final FeatureProviderDataV2 data;
   private final CrsTransformerFactory crsTransformerFactory;
   private final Map<String, Codelist> codelists;
@@ -40,7 +44,7 @@ public class FeatureStreamImpl implements FeatureStream {
   private final boolean doTransform;
 
   public FeatureStreamImpl(
-      FeatureQuery query,
+      Query query,
       FeatureProviderDataV2 data,
       CrsTransformerFactory crsTransformerFactory,
       Map<String, Codelist> codelists,
@@ -56,7 +60,7 @@ public class FeatureStreamImpl implements FeatureStream {
 
   @Override
   public CompletionStage<Result> runWith(
-      Reactive.Sink<Object> sink, Optional<PropertyTransformations> propertyTransformations) {
+      Sink<Object> sink, Map<String, PropertyTransformations> propertyTransformations) {
 
     BiFunction<FeatureTokenSource, Map<String, String>, Stream<Result>> stream =
         (tokenSource, virtualTables) -> {
@@ -67,9 +71,17 @@ public class FeatureStreamImpl implements FeatureStream {
           ImmutableResult.Builder resultBuilder = ImmutableResult.builder();
           final ETag.Incremental eTag = ETag.incremental();
           final boolean strongETag =
-              query.getETag().filter(type -> type == ETag.Type.STRONG).isPresent();
+              query instanceof FeatureQuery
+                  && ((FeatureQuery) query)
+                      .getETag()
+                      .filter(type -> type == ETag.Type.STRONG)
+                      .isPresent();
 
-          if (query.getETag().filter(type -> type == ETag.Type.WEAK).isPresent()) {
+          if (query instanceof FeatureQuery
+              && ((FeatureQuery) query)
+                  .getETag()
+                  .filter(type -> type == ETag.Type.WEAK)
+                  .isPresent()) {
             source = source.via(new FeatureTokenTransformerWeakETag(resultBuilder));
           }
 
@@ -102,8 +114,7 @@ public class FeatureStreamImpl implements FeatureStream {
 
   @Override
   public <X> CompletionStage<ResultReduced<X>> runWith(
-      Reactive.SinkReduced<Object, X> sink,
-      Optional<PropertyTransformations> propertyTransformations) {
+      SinkReduced<Object, X> sink, Map<String, PropertyTransformations> propertyTransformations) {
 
     BiFunction<FeatureTokenSource, Map<String, String>, Reactive.Stream<ResultReduced<X>>> stream =
         (tokenSource, virtualTables) -> {
@@ -114,9 +125,17 @@ public class FeatureStreamImpl implements FeatureStream {
           ImmutableResultReduced.Builder<X> resultBuilder = ImmutableResultReduced.<X>builder();
           final ETag.Incremental eTag = ETag.incremental();
           final boolean strongETag =
-              query.getETag().filter(type -> type == ETag.Type.STRONG).isPresent();
+              query instanceof FeatureQuery
+                  && ((FeatureQuery) query)
+                      .getETag()
+                      .filter(type -> type == ETag.Type.STRONG)
+                      .isPresent();
 
-          if (query.getETag().filter(type -> type == ETag.Type.WEAK).isPresent()) {
+          if (query instanceof FeatureQuery
+              && ((FeatureQuery) query)
+                  .getETag()
+                  .filter(type -> type == ETag.Type.WEAK)
+                  .isPresent()) {
             source = source.via(new FeatureTokenTransformerWeakETag(resultBuilder));
           }
 
@@ -149,80 +168,12 @@ public class FeatureStreamImpl implements FeatureStream {
     return runner.runQuery(stream, query, !doTransform);
   }
 
-  // TODO multi
-  // - QueryEncoder
-  // - providerTransformations with full path, or map with type key and then matching with current
-  // targetSchema?
-  // - SchemaMapping with multiple schemas in decoded (maybe attach mapping to row, set in
-  // onValueRow)
-  // - query in GenericContext (use QueryParametersGeoAndPaging, for derived projection methods,
-  // maybe get matching query using current targetSchema)
-  // - QueryParameters(Presentation|Generic) + QueryParametersTyped
-
   private FeatureTokenSource getFeatureTokenSourceTransformed(
       FeatureTokenSource featureTokenSource,
-      Optional<PropertyTransformations> propertyTransformations) {
-    FeatureSchema featureSchema = data.getTypes().get(query.getType());
-    Map<String, List<PropertyTransformation>> providerTransformationMap =
-        featureSchema
-            .accept(AbstractFeatureProvider.WITH_SCOPE_QUERIES)
-            .accept(
-                (schema, visitedProperties) ->
-                    java.util.stream.Stream.concat(
-                            schema.getTransformations().isEmpty()
-                                ? schema.isTemporal()
-                                    ? java.util.stream.Stream.of(
-                                        new AbstractMap.SimpleImmutableEntry<
-                                            String, List<PropertyTransformation>>(
-                                            String.join(".", schema.getFullPath()),
-                                            ImmutableList.of(
-                                                new ImmutablePropertyTransformation.Builder()
-                                                    .dateFormat(
-                                                        schema.getType() == SchemaBase.Type.DATETIME
-                                                            ? DATETIME_FORMAT
-                                                            : DATE_FORMAT)
-                                                    .build())))
-                                    : java.util.stream.Stream.empty()
-                                : java.util.stream.Stream.of(
-                                    new AbstractMap.SimpleImmutableEntry<
-                                        String, List<PropertyTransformation>>(
-                                        schema.getFullPath().isEmpty()
-                                            ? WILDCARD
-                                            : String.join(".", schema.getFullPath()),
-                                        schema.getTransformations())),
-                            visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
-                        .collect(
-                            ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)));
-    Map<String, List<PropertyTransformation>> providerTransformationMapMutations =
-        featureSchema
-            .accept(AbstractFeatureProvider.WITH_SCOPE_MUTATIONS)
-            .accept(
-                (schema, visitedProperties) ->
-                    java.util.stream.Stream.concat(
-                            schema.isTemporal()
-                                ? java.util.stream.Stream.of(
-                                    new AbstractMap.SimpleImmutableEntry<
-                                        String, List<PropertyTransformation>>(
-                                        String.join(".", schema.getFullPath()),
-                                        ImmutableList.of(
-                                            new ImmutablePropertyTransformation.Builder()
-                                                .dateFormat(
-                                                    schema.getType() == SchemaBase.Type.DATETIME
-                                                        ? DATETIME_FORMAT
-                                                        : DATE_FORMAT)
-                                                .build())))
-                                : java.util.stream.Stream.empty(),
-                            visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
-                        .collect(
-                            ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)));
-    PropertyTransformations providerTransformations = () -> providerTransformationMap;
+      Map<String, PropertyTransformations> propertyTransformations) {
 
-    PropertyTransformations mergedTransformations =
-        query.getSchemaScope() == FeatureSchema.Scope.QUERIES
-            ? propertyTransformations
-                .map(p -> p.mergeInto(providerTransformations))
-                .orElse(providerTransformations)
-            : () -> providerTransformationMapMutations;
+    Map<String, PropertyTransformations> mergedTransformations =
+        getMergedTransformations(propertyTransformations);
 
     FeatureTokenTransformerSchemaMappings schemaMapper =
         new FeatureTokenTransformerSchemaMappings(mergedTransformations);
@@ -245,5 +196,107 @@ public class FeatureStreamImpl implements FeatureStream {
 
     return featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner);
     // .via(logger);
+  }
+
+  private Map<String, PropertyTransformations> getMergedTransformations(
+      Map<String, PropertyTransformations> propertyTransformations) {
+    if (query instanceof FeatureQuery) {
+      FeatureQuery featureQuery = (FeatureQuery) query;
+
+      return ImmutableMap.of(
+          featureQuery.getType(),
+          getPropertyTransformations(
+              (FeatureQuery) query,
+              Optional.ofNullable(propertyTransformations.get(featureQuery.getType()))));
+    }
+
+    if (query instanceof MultiFeatureQuery) {
+      MultiFeatureQuery multiFeatureQuery = (MultiFeatureQuery) query;
+
+      return multiFeatureQuery.getQueries().stream()
+          .map(
+              typeQuery ->
+                  new SimpleImmutableEntry<>(
+                      typeQuery.getType(),
+                      getPropertyTransformations(
+                          typeQuery,
+                          Optional.ofNullable(propertyTransformations.get(typeQuery.getType())))))
+          .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    return ImmutableMap.of();
+  }
+
+  private PropertyTransformations getPropertyTransformations(
+      TypeQuery typeQuery, Optional<PropertyTransformations> propertyTransformations) {
+    FeatureSchema featureSchema = data.getTypes().get(typeQuery.getType());
+
+    if (typeQuery instanceof FeatureQuery
+        && ((FeatureQuery) typeQuery).getSchemaScope() == Scope.MUTATIONS) {
+      return () -> getProviderTransformationsMutations(featureSchema);
+    }
+
+    PropertyTransformations providerTransformations =
+        () -> getProviderTransformations(featureSchema);
+
+    return propertyTransformations
+        .map(p -> p.mergeInto(providerTransformations))
+        .orElse(providerTransformations);
+  }
+
+  private Map<String, List<PropertyTransformation>> getProviderTransformations(
+      FeatureSchema featureSchema) {
+    return featureSchema
+        .accept(AbstractFeatureProvider.WITH_SCOPE_QUERIES)
+        .accept(
+            (schema, visitedProperties) ->
+                java.util.stream.Stream.concat(
+                        schema.getTransformations().isEmpty()
+                            ? schema.isTemporal()
+                                ? java.util.stream.Stream.of(
+                                    new AbstractMap.SimpleImmutableEntry<
+                                        String, List<PropertyTransformation>>(
+                                        String.join(".", schema.getFullPath()),
+                                        ImmutableList.of(
+                                            new ImmutablePropertyTransformation.Builder()
+                                                .dateFormat(
+                                                    schema.getType() == SchemaBase.Type.DATETIME
+                                                        ? DATETIME_FORMAT
+                                                        : DATE_FORMAT)
+                                                .build())))
+                                : java.util.stream.Stream.empty()
+                            : java.util.stream.Stream.of(
+                                new AbstractMap.SimpleImmutableEntry<
+                                    String, List<PropertyTransformation>>(
+                                    schema.getFullPath().isEmpty()
+                                        ? WILDCARD
+                                        : String.join(".", schema.getFullPath()),
+                                    schema.getTransformations())),
+                        visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
+                    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)));
+  }
+
+  private Map<String, List<PropertyTransformation>> getProviderTransformationsMutations(
+      FeatureSchema featureSchema) {
+    return featureSchema
+        .accept(AbstractFeatureProvider.WITH_SCOPE_MUTATIONS)
+        .accept(
+            (schema, visitedProperties) ->
+                java.util.stream.Stream.concat(
+                        schema.isTemporal()
+                            ? java.util.stream.Stream.of(
+                                new AbstractMap.SimpleImmutableEntry<
+                                    String, List<PropertyTransformation>>(
+                                    String.join(".", schema.getFullPath()),
+                                    ImmutableList.of(
+                                        new ImmutablePropertyTransformation.Builder()
+                                            .dateFormat(
+                                                schema.getType() == SchemaBase.Type.DATETIME
+                                                    ? DATETIME_FORMAT
+                                                    : DATE_FORMAT)
+                                            .build())))
+                            : java.util.stream.Stream.empty(),
+                        visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
+                    .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)));
   }
 }

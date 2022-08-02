@@ -47,7 +47,7 @@ public interface SqlConnector
     return getSourceStream(queryBatch, SqlQueryOptions.single());
   }
 
-  // TODO: simplify, class SqlQueryRunner, remove options
+  // TODO: simplify, class SqlQueryRunner, remove options, singleFeature
   @Override
   default Reactive.Source<SqlRow> getSourceStream(
       SqlQueryBatch queryBatch, SqlQueryOptions options) {
@@ -139,6 +139,50 @@ public interface SqlConnector
             .via(
                 Transformer.flatMap(
                     plan -> {
+                      if (queryBatch.isSingleFeature()) {
+                        List<SqlQuerySet> querySets = queryBatch.getQuerySets();
+                        ImmutableSqlRowMeta sqlRowMeta =
+                            getMetaQueryResult(0L, 0L, 0L, 0L, -1L).build();
+                        return Source.iterable(
+                                IntStream.range(0, querySets.size())
+                                    .boxed()
+                                    .collect(Collectors.toList()))
+                            .via(
+                                Transformer.flatMap(
+                                    index -> {
+                                      int[] i = {0};
+                                      Source<SqlRow>[] sqlRows =
+                                          querySets
+                                              .get(index)
+                                              .getValueQueries()
+                                              .apply(sqlRowMeta, 0L, 0L)
+                                              .map(
+                                                  valueQuery ->
+                                                      getSqlClient()
+                                                          .getSourceStream(
+                                                              valueQuery,
+                                                              new ImmutableSqlQueryOptions.Builder()
+                                                                  .from(options)
+                                                                  .tableSchema(
+                                                                      querySets
+                                                                          .get(index)
+                                                                          .getTableSchemas()
+                                                                          .get(i[0]))
+                                                                  .type(
+                                                                      querySets
+                                                                          .get(index)
+                                                                          .getOptions()
+                                                                          .getType())
+                                                                  .containerPriority(i[0]++)
+                                                                  .build()))
+                                              .toArray(
+                                                  (IntFunction<Source<SqlRow>[]>) Source[]::new);
+
+                                      return mergeAndSort(sqlRows);
+                                    }))
+                            .prepend(Source.single(sqlRowMeta));
+                      }
+
                       List<SqlQuerySet> querySets = plan.first();
                       SqlRowMeta aggregatedMetaResult = plan.second().get(0);
                       List<SqlRowMeta> metaResults = plan.second().subList(1, plan.second().size());
@@ -191,6 +235,11 @@ public interface SqlConnector
                                                                         .get(index)
                                                                         .getTableSchemas()
                                                                         .get(i[0]))
+                                                                .type(
+                                                                    querySets
+                                                                        .get(index)
+                                                                        .getOptions()
+                                                                        .getType())
                                                                 .containerPriority(i[0]++)
                                                                 .build()))
                                             .toArray((IntFunction<Source<SqlRow>[]>) Source[]::new);

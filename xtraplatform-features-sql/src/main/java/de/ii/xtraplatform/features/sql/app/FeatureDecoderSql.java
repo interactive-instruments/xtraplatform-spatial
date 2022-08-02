@@ -12,8 +12,8 @@ import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreMultiplicityTracker;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
-import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
 import de.ii.xtraplatform.features.domain.NestingTracker;
+import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
@@ -35,8 +35,8 @@ public class FeatureDecoderSql
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDecoderSql.class);
 
-  private final FeatureSchema featureSchema;
-  private final FeatureQuery featureQuery;
+  private final Map<String, SchemaMapping> mappings;
+  private final Query query;
   private final List<List<String>> mainTablePaths;
   private final FeatureStoreMultiplicityTracker multiplicityTracker;
   private final boolean isSingleFeature;
@@ -51,9 +51,9 @@ public class FeatureDecoderSql
   private NestingTracker nestingTracker;
 
   public FeatureDecoderSql(
-      List<SchemaSql> tableSchemas, FeatureSchema featureSchema, FeatureQuery query) {
-    this.featureSchema = featureSchema;
-    this.featureQuery = query;
+      Map<String, SchemaMapping> mappings, List<SchemaSql> tableSchemas, Query query) {
+    this.mappings = mappings;
+    this.query = query;
 
     this.mainTablePaths =
         tableSchemas.stream().map(SchemaBase::getFullPath).collect(Collectors.toList());
@@ -64,15 +64,13 @@ public class FeatureDecoderSql
             .map(SchemaBase::getFullPath)
             .collect(Collectors.toList());
     this.multiplicityTracker = new SqlMultiplicityTracker(multiTables);
-    this.isSingleFeature = query.returnsSingleFeature();
+    this.isSingleFeature =
+        query instanceof FeatureQuery && ((FeatureQuery) query).returnsSingleFeature();
   }
 
   @Override
   protected void init() {
-    this.context =
-        createContext()
-            .setMapping(new ImmutableSchemaMapping.Builder().targetSchema(featureSchema).build())
-            .setQuery(featureQuery);
+    this.context = createContext().setMappings(mappings).setQuery(query);
     this.geometryDecoder = new GeometryDecoderWkt(getDownstream(), context);
     this.nestingTracker =
         new NestingTracker(getDownstream(), context, mainTablePaths, false, false, false);
@@ -135,6 +133,10 @@ public class FeatureDecoderSql
 
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Sql row: {}", sqlRow);
+    }
+
+    if (sqlRow.getType().isPresent()) {
+      context.setType(sqlRow.getType().get());
     }
 
     Object featureId = sqlRow.getIds().get(0);

@@ -41,6 +41,7 @@ import de.ii.xtraplatform.features.domain.FeatureStreamImpl;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
+import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
@@ -152,23 +153,27 @@ public class FeatureProviderWfs
   @Override
   protected FeatureTokenDecoder<
           byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(FeatureQuery query) {
+      getDecoder(Query query) {
     return getDecoder(query, false);
   }
 
   @Override
   protected FeatureTokenDecoder<
           byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoderPassThrough(FeatureQuery query) {
+      getDecoderPassThrough(Query query) {
     return getDecoder(query, true);
   }
 
   private FeatureTokenDecoder<
           byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(FeatureQuery query, boolean passThrough) {
+      getDecoder(Query query, boolean passThrough) {
+    if (!(query instanceof FeatureQuery)) {
+      throw new IllegalArgumentException();
+    }
+    FeatureQuery featureQuery = (FeatureQuery) query;
     Map<String, String> namespaces = getData().getConnectionInfo().getNamespaces();
     XMLNamespaceNormalizer namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
-    FeatureSchema featureSchema = getData().getTypes().get(query.getType());
+    FeatureSchema featureSchema = getData().getTypes().get(featureQuery.getType());
     String name =
         featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
     QName qualifiedName =
@@ -176,7 +181,7 @@ public class FeatureProviderWfs
             namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)),
             namespaceNormalizer.getLocalName(name));
     return new FeatureTokenDecoderGml(
-        namespaces, ImmutableList.of(qualifiedName), featureSchema, query, passThrough);
+        namespaces, ImmutableList.of(qualifiedName), featureSchema, featureQuery, passThrough);
   }
 
   @Override

@@ -36,6 +36,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStream;
+import de.ii.xtraplatform.features.domain.FeatureStreamImpl;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.FeatureTokenSource;
 import de.ii.xtraplatform.features.domain.FeatureTokenTransformer;
@@ -44,9 +45,11 @@ import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Type;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
+import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
 import de.ii.xtraplatform.features.domain.MultiFeatureQueries;
 import de.ii.xtraplatform.features.domain.MultiFeatureQuery;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
+import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.SourceSchemaValidator;
@@ -423,16 +426,57 @@ public class FeatureProviderSql
   @Override
   protected FeatureTokenDecoder<
           SqlRow, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(FeatureQuery query) {
-    WithScope withScope =
-        query.getSchemaScope() == Scope.QUERIES ? WITH_SCOPE_QUERIES : WITH_SCOPE_MUTATIONS;
+      getDecoder(Query query) {
+    if (query instanceof FeatureQuery) {
+      FeatureQuery featureQuery = (FeatureQuery) query;
 
-    return new FeatureDecoderSql(
-        query.getSchemaScope() == Scope.QUERIES
-            ? tableSchemas.get(query.getType())
-            : tableSchemasMutations.get(query.getType()),
-        getData().getTypes().get(query.getType()).accept(withScope),
-        query);
+      WithScope withScope =
+          featureQuery.getSchemaScope() == Scope.QUERIES
+              ? WITH_SCOPE_QUERIES
+              : WITH_SCOPE_MUTATIONS;
+
+      Map<String, SchemaMapping> mappings =
+          ImmutableMap.of(
+              featureQuery.getType(),
+              new ImmutableSchemaMapping.Builder()
+                  .targetSchema(getData().getTypes().get(featureQuery.getType()).accept(withScope))
+                  .build());
+
+      List<SchemaSql> schemas =
+          featureQuery.getSchemaScope() == Scope.QUERIES
+              ? tableSchemas.get(featureQuery.getType())
+              : tableSchemasMutations.get(featureQuery.getType());
+
+      return new FeatureDecoderSql(mappings, schemas, query);
+    }
+
+    if (query instanceof MultiFeatureQuery) {
+      MultiFeatureQuery multiFeatureQuery = (MultiFeatureQuery) query;
+
+      Map<String, SchemaMapping> mappings =
+          multiFeatureQuery.getQueries().stream()
+              .map(
+                  typeQuery ->
+                      new SimpleImmutableEntry<>(
+                          typeQuery.getType(),
+                          new ImmutableSchemaMapping.Builder()
+                              .targetSchema(
+                                  getData()
+                                      .getTypes()
+                                      .get(typeQuery.getType())
+                                      .accept(WITH_SCOPE_QUERIES))
+                              .build()))
+              .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+      List<SchemaSql> schemas =
+          multiFeatureQuery.getQueries().stream()
+              .flatMap(typeQuery -> tableSchemas.get(typeQuery.getType()).stream())
+              .collect(Collectors.toList());
+
+      return new FeatureDecoderSql(mappings, schemas, query);
+    }
+
+    throw new IllegalArgumentException();
   }
 
   @Override
@@ -757,7 +801,10 @@ public class FeatureProviderSql
 
   @Override
   public FeatureStream getFeatureStream(MultiFeatureQuery query) {
-    return MultiFeatureQueries.super.getFeatureStream(query);
+    validateQuery(query);
+
+    return new FeatureStreamImpl(
+        query, getData(), crsTransformerFactory, getCodelists(), this::runQuery, true);
   }
 
   @Override

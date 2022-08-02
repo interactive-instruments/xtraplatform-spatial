@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.sql.app;
 
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureObjectTransformerBase;
 import de.ii.xtraplatform.features.domain.FeatureTokenEmitter2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery;
@@ -48,7 +49,8 @@ public class FeatureEncoderSql2
   @Override
   public ModifiableContext<SchemaSql, SchemaMappingSql> createContext() {
     return ModifiableSqlMutationContext.create()
-        .setMapping(mapping)
+        .setType(mapping.getTargetSchema().getName())
+        .setMappings(ImmutableMap.of(mapping.getTargetSchema().getName(), mapping))
         .setQuery(ImmutableFeatureQuery.builder().type("xyz").build());
   }
 }

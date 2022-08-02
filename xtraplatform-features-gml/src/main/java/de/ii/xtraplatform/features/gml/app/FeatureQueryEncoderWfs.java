@@ -17,6 +17,8 @@ import de.ii.xtraplatform.features.domain.FeatureProviderConnector.QueryOptions;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.Query;
+import de.ii.xtraplatform.features.domain.TypeQuery;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
 import de.ii.xtraplatform.features.gml.infra.WfsConnectorHttp;
@@ -71,12 +73,16 @@ public class FeatureQueryEncoderWfs implements FeatureQueryEncoder<String, Query
   }
 
   @Override
-  public String encode(FeatureQuery featureQuery, Map<String, String> additionalQueryParameters) {
-    return encodeFeatureQuery(featureQuery, additionalQueryParameters);
+  public String encode(Query query, Map<String, String> additionalQueryParameters) {
+    if (query instanceof FeatureQuery) {
+      return encodeFeatureQuery((FeatureQuery) query, additionalQueryParameters);
+    }
+
+    throw new IllegalArgumentException();
   }
 
   @Override
-  public QueryOptions getOptions(FeatureQuery featureQuery) {
+  public QueryOptions getOptions(TypeQuery typeQuery) {
     return new QueryOptions() {};
   }
 

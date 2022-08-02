@@ -23,9 +23,9 @@ import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
-import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureChange;
+import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
@@ -100,7 +100,7 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
       QUERY_HOOK hook,
       FeatureProviderDataV2 data,
       FeatureProviderConnector<?, ?, ?> connector,
-      FeatureQuery query,
+      Query query,
       BiConsumer<String, String> aliasResolver) {}
 
   private Optional<FeatureChangesPgConfiguration> getConfiguration(FeatureProviderDataV2 data) {

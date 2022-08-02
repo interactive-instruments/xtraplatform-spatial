@@ -33,8 +33,8 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FeatureTokenTransformerSorting.class);
 
-  private final Map<List<String>, Integer> pathIndex;
-  private final Map<List<String>, Integer> rearrange;
+  private final Map<String, Map<List<String>, Integer>> pathIndex;
+  private final Map<String, Map<List<String>, Integer>> rearrange;
   private final Queue<Integer> indexQueue;
   private final Queue<List<String>> pathQueue;
   private final Queue<List<Integer>> indexesQueue;
@@ -46,6 +46,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   private final Queue<Boolean> inObjectQueue;
   private final Queue<FeatureTokenType> tokenQueue;
 
+  private String currentType;
   private int bufferIndex;
   private List<String> bufferParent;
 
@@ -62,50 +63,22 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
     this.inArrayQueue = new LinkedList<>();
     this.inObjectQueue = new LinkedList<>();
     this.tokenQueue = new LinkedList<>();
+    this.currentType = null;
     this.bufferIndex = 0;
     this.bufferParent = new ArrayList<>();
   }
 
   @Override
   public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    int index = 0;
-    Set<List<String>> parents = new HashSet<>();
-    List<String> lastParent = null;
-    boolean doRearrange = false;
-
-    for (List<String> path : context.mapping().getTargetSchemasByPath().keySet()) {
-      if (path.size() > 1) {
-        List<String> parent = path.subList(0, path.size() - 1);
-        if (!doRearrange
-            && !Objects.equals(parent, lastParent)
-            && parents.contains(parent)
-            && !path.get(path.size() - 1).startsWith("[")) {
-          doRearrange = true;
-        } else if (doRearrange
-            && (!Objects.equals(parent, lastParent) || path.get(path.size() - 1).startsWith("["))) {
-          doRearrange = false;
-        }
-
-        parents.add(parent);
-        lastParent = parent;
-        if (doRearrange) {
-          rearrange.put(path, index);
-        }
-      }
-
-      if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace("{}: {}{}", index, doRearrange ? "QUEUE " : "", path);
-      }
-
-      pathIndex.put(path, index);
-      index++;
-    }
+    analyzeMapping(context.mapping());
 
     super.onStart(context);
   }
 
   @Override
   public void onFeatureStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
+    analyzeMapping(context.mapping());
+
     super.onFeatureStart(context);
   }
 
@@ -120,7 +93,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
 
   @Override
   public void onObjectStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
+    int index = getIndex(context.path());
 
     checkBuffer(context, FeatureTokenType.OBJECT, index, index > bufferIndex);
   }
@@ -138,23 +111,78 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
 
   @Override
   public void onArrayStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
+    int index = getIndex(context.path());
 
     checkBuffer(context, FeatureTokenType.ARRAY, index, index > bufferIndex);
   }
 
   @Override
   public void onArrayEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
+    int index = getIndex(context.path());
 
     checkBuffer(context, FeatureTokenType.ARRAY_END, index, false);
   }
 
   @Override
   public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
+    int index = getIndex(context.path());
 
     checkBuffer(context, FeatureTokenType.VALUE, index, index > bufferIndex);
+  }
+
+  private int getIndex(List<String> path) {
+    if (Objects.nonNull(currentType)) {
+      return Objects.requireNonNullElse(pathIndex.get(currentType).get(path), -1);
+    }
+    return -1;
+  }
+
+  private void analyzeMapping(SchemaMapping mapping) {
+    if (Objects.isNull(mapping)) {
+      return;
+    }
+
+    this.currentType = mapping.getTargetSchema().getName();
+
+    if (pathIndex.containsKey(currentType) || rearrange.containsKey(currentType)) {
+      return;
+    }
+
+    pathIndex.put(currentType, new LinkedHashMap<>());
+    rearrange.put(currentType, new LinkedHashMap<>());
+
+    int index = 0;
+    Set<List<String>> parents = new HashSet<>();
+    List<String> lastParent = null;
+    boolean doRearrange = false;
+
+    for (List<String> path : mapping.getTargetSchemasByPath().keySet()) {
+      if (path.size() > 1) {
+        List<String> parent = path.subList(0, path.size() - 1);
+        if (!doRearrange
+            && !Objects.equals(parent, lastParent)
+            && parents.contains(parent)
+            && !path.get(path.size() - 1).startsWith("[")) {
+          doRearrange = true;
+        } else if (doRearrange
+            && (!Objects.equals(parent, lastParent) || path.get(path.size() - 1).startsWith("["))) {
+          doRearrange = false;
+        }
+
+        parents.add(parent);
+        lastParent = parent;
+        if (doRearrange) {
+          this.rearrange.get(currentType).put(path, index);
+        }
+      }
+
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("{}: {}{}", index, doRearrange ? "QUEUE " : "", path);
+      }
+
+      this.pathIndex.get(currentType).put(path, index);
+      index++;
+    }
   }
 
   private void checkBuffer(
@@ -162,8 +190,10 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
       FeatureTokenType token,
       int triggerIndex,
       boolean doEmptyBuffer) {
-    int index = Objects.requireNonNullElse(pathIndex.get(context.path()), -1);
-    boolean doRearrange = rearrange.containsKey(context.path());
+    int index = getIndex(context.path());
+    boolean doRearrange =
+        rearrange.containsKey(currentType)
+            && rearrange.get(currentType).containsKey(context.path());
 
     if (doRearrange) {
       buffer(context, index, token);
@@ -182,7 +212,10 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   }
 
   private int findLastStartsWith(List<String> parent) {
-    return pathIndex.entrySet().stream()
+    if (!pathIndex.containsKey(currentType)) {
+      return -1;
+    }
+    return pathIndex.get(currentType).entrySet().stream()
         .filter(entry -> startsWith(entry.getKey(), parent))
         .mapToInt(Entry::getValue)
         .max()

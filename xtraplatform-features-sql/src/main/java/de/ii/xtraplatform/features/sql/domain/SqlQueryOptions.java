@@ -52,6 +52,8 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
 
   Optional<SchemaSql> getTableSchema();
 
+  Optional<String> getType();
+
   List<SortKey> getCustomSortKeys();
 
   List<Class<?>> getCustomColumnTypes();

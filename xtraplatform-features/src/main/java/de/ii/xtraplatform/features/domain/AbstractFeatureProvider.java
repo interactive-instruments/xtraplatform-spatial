@@ -242,11 +242,11 @@ public abstract class AbstractFeatureProvider<
 
   protected abstract FeatureTokenDecoder<
           T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(FeatureQuery query);
+      getDecoder(Query query);
 
   protected FeatureTokenDecoder<
           T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoderPassThrough(FeatureQuery query) {
+      getDecoderPassThrough(Query query) {
     return getDecoder(query);
   }
 
@@ -258,8 +258,26 @@ public abstract class AbstractFeatureProvider<
 
   @Override
   public FeatureStream getFeatureStream(FeatureQuery query) {
+    validateQuery(query);
+
     return new FeatureStreamImpl(
         query, getData(), crsTransformerFactory, getCodelists(), this::runQuery, true);
+  }
+
+  // TODO: more tests
+  protected final void validateQuery(Query query) {
+    if (query instanceof FeatureQuery) {
+      if (!getSourceSchemas().containsKey(((FeatureQuery) query).getType())) {
+        throw new IllegalArgumentException("No features available for type");
+      }
+    }
+    if (query instanceof MultiFeatureQuery) {
+      for (TypeQuery typeQuery : ((MultiFeatureQuery) query).getQueries()) {
+        if (!getSourceSchemas().containsKey(typeQuery.getType())) {
+          throw new IllegalArgumentException("No features available for type");
+        }
+      }
+    }
   }
 
   @Override
@@ -268,13 +286,14 @@ public abstract class AbstractFeatureProvider<
   }
 
   private FeatureTokenSource getFeatureTokenSource(
-      FeatureQuery query, Map<String, String> virtualTables, boolean passThrough) {
-    if (!getSourceSchemas().containsKey(query.getType())) {
-      throw new IllegalStateException("No features available for type");
-    }
-
+      Query query, Map<String, String> virtualTables, boolean passThrough) {
     U transformedQuery = getQueryEncoder().encode(query, virtualTables);
-    V options = getQueryEncoder().getOptions(query);
+    // TODO: remove options, already embedded in SqlQuerySet
+    TypeQuery typeQuery =
+        query instanceof MultiFeatureQuery
+            ? ((MultiFeatureQuery) query).getQueries().get(0)
+            : (FeatureQuery) query;
+    V options = getQueryEncoder().getOptions(typeQuery);
     Reactive.Source<T> source = getConnector().getSourceStream(transformedQuery, options);
 
     FeatureTokenDecoder<
@@ -295,7 +314,7 @@ public abstract class AbstractFeatureProvider<
 
   protected <W extends ResultBase> CompletionStage<W> runQuery(
       BiFunction<FeatureTokenSource, Map<String, String>, Stream<W>> stream,
-      FeatureQuery query,
+      Query query,
       boolean passThrough) {
     Map<String, String> virtualTables = beforeQuery(query);
 
@@ -307,7 +326,7 @@ public abstract class AbstractFeatureProvider<
     return runnableStream.run().whenComplete((result, throwable) -> afterQuery(query));
   }
 
-  private Map<String, String> beforeQuery(FeatureQuery query) {
+  private Map<String, String> beforeQuery(Query query) {
     Map<String, String> virtualTables = new HashMap<>();
 
     extensionRegistry
@@ -327,7 +346,7 @@ public abstract class AbstractFeatureProvider<
     return virtualTables;
   }
 
-  private void afterQuery(FeatureQuery query) {
+  private void afterQuery(Query query) {
     extensionRegistry
         .getAll()
         .forEach(

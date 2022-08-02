@@ -11,7 +11,7 @@ import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface MultiFeatureQuery extends QueryParameters {
+public interface MultiFeatureQuery extends Query {
 
   @Value.Immutable
   interface SubQuery extends TypeQuery {}

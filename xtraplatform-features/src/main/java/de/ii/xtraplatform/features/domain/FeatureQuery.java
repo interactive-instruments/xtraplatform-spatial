@@ -17,7 +17,7 @@ import org.immutables.value.Value;
  * @author zahnen
  */
 @Value.Immutable
-public interface FeatureQuery extends TypeQuery, QueryParameters {
+public interface FeatureQuery extends TypeQuery, Query {
 
   @Value.Default
   default boolean hitsOnly() {

@@ -11,6 +11,7 @@ import com.fasterxml.aalto.AsyncByteArrayFeeder;
 import com.fasterxml.aalto.AsyncXMLStreamReader;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -95,7 +96,11 @@ public class FeatureTokenDecoderGml
   protected void init() {
     this.context =
         createContext()
-            .setMapping(new ImmutableSchemaMapping.Builder().targetSchema(featureSchema).build())
+            .setType(featureSchema.getName())
+            .setMappings(
+                ImmutableMap.of(
+                    featureSchema.getName(),
+                    new ImmutableSchemaMapping.Builder().targetSchema(featureSchema).build()))
             .setQuery(featureQuery);
   }
 

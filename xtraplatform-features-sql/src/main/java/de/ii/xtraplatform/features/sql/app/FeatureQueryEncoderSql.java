@@ -14,8 +14,11 @@ import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.features.domain.ImmutableSortKey;
+import de.ii.xtraplatform.features.domain.MultiFeatureQuery;
+import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.Tuple;
+import de.ii.xtraplatform.features.domain.TypeQuery;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQuerySet.Builder;
@@ -54,35 +57,87 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
     this.chunkSize = chunkSize;
   }
 
-  // TODO: options
-  public SqlQueryBatch encode(
-      FeatureQuery featureQuery, Map<String, String> additionalQueryParameters) {
+  // TODO: cleanup options
+  @Override
+  public SqlQueryBatch encode(Query query, Map<String, String> additionalQueryParameters) {
+    if (query instanceof FeatureQuery) {
+      return encode((FeatureQuery) query, additionalQueryParameters);
+    }
+
+    if (query instanceof MultiFeatureQuery) {
+      return encode((MultiFeatureQuery) query, additionalQueryParameters);
+    }
+
+    throw new IllegalArgumentException();
+  }
+
+  private SqlQueryBatch encode(FeatureQuery query, Map<String, String> additionalQueryParameters) {
     List<SqlQueryTemplates> queryTemplates =
-        featureQuery.getSchemaScope() == Scope.QUERIES
-            ? allQueryTemplates.get(featureQuery.getType())
-            : allQueryTemplatesMutations.get(featureQuery.getType());
+        query.getSchemaScope() == Scope.QUERIES
+            ? allQueryTemplates.get(query.getType())
+            : allQueryTemplatesMutations.get(query.getType());
     int chunks =
-        (featureQuery.getLimit() / chunkSize) + (featureQuery.getLimit() % chunkSize > 0 ? 1 : 0);
+        query.returnsSingleFeature()
+            ? 1
+            : (query.getLimit() / chunkSize) + (query.getLimit() % chunkSize > 0 ? 1 : 0);
 
     List<SqlQuerySet> querySets =
         IntStream.range(0, queryTemplates.size())
             .mapToObj(
-                tableIndex -> {
-                  return IntStream.range(0, chunks)
-                      .mapToObj(
-                          chunk ->
-                              createQuerySet(
-                                  queryTemplates.get(tableIndex),
-                                  chunkSize,
-                                  featureQuery.getOffset() + (chunk * chunkSize),
-                                  featureQuery,
-                                  additionalQueryParameters));
-                })
+                tableIndex ->
+                    IntStream.range(0, chunks)
+                        .mapToObj(
+                            chunk ->
+                                createQuerySet(
+                                    queryTemplates.get(tableIndex),
+                                    chunkSize,
+                                    query.getOffset() + (chunk * chunkSize),
+                                    query,
+                                    query,
+                                    additionalQueryParameters,
+                                    query.returnsSingleFeature())))
             .flatMap(s -> s)
             .collect(Collectors.toList());
 
     return new ImmutableSqlQueryBatch.Builder()
-        .limit(featureQuery.getLimit())
+        .limit(query.getLimit())
+        .chunkSize(chunkSize)
+        .isSingleFeature(query.returnsSingleFeature())
+        .querySets(querySets)
+        .build();
+  }
+
+  private SqlQueryBatch encode(
+      MultiFeatureQuery query, Map<String, String> additionalQueryParameters) {
+    int chunks = (query.getLimit() / chunkSize) + (query.getLimit() % chunkSize > 0 ? 1 : 0);
+
+    List<SqlQuerySet> querySets =
+        query.getQueries().stream()
+            .flatMap(
+                typeQuery -> {
+                  List<SqlQueryTemplates> queryTemplates =
+                      allQueryTemplates.get(typeQuery.getType());
+
+                  return IntStream.range(0, queryTemplates.size())
+                      .mapToObj(
+                          tableIndex ->
+                              IntStream.range(0, chunks)
+                                  .mapToObj(
+                                      chunk ->
+                                          createQuerySet(
+                                              queryTemplates.get(tableIndex),
+                                              chunkSize,
+                                              query.getOffset() + (chunk * chunkSize),
+                                              typeQuery,
+                                              query,
+                                              additionalQueryParameters,
+                                              false)))
+                      .flatMap(s -> s);
+                })
+            .collect(Collectors.toList());
+
+    return new ImmutableSqlQueryBatch.Builder()
+        .limit(query.getLimit())
         .chunkSize(chunkSize)
         .querySets(querySets)
         .build();
@@ -92,14 +147,16 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
       SqlQueryTemplates queryTemplates,
       int limit,
       int offset,
-      FeatureQuery featureQuery,
-      Map<String, String> additionalQueryParameters) {
+      TypeQuery typeQuery,
+      Query query,
+      Map<String, String> additionalQueryParameters,
+      boolean skipMetaQuery) {
     SchemaSql mainTable = queryTemplates.getQuerySchemas().get(0);
-    List<SortKey> sortKeys = transformSortKeys(featureQuery.getSortKeys(), mainTable);
+    List<SortKey> sortKeys = transformSortKeys(typeQuery.getSortKeys(), mainTable);
 
     BiFunction<Long, Long, Optional<String>> metaQuery =
         (maxLimit, skipped) ->
-            featureQuery.returnsSingleFeature()
+            skipMetaQuery
                 ? Optional.empty()
                 : Optional.of(
                     queryTemplates
@@ -108,9 +165,9 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
                             Math.min(limit, maxLimit),
                             Math.max(0L, offset - skipped),
                             sortKeys,
-                            featureQuery.getFilter(),
+                            typeQuery.getFilter(),
                             additionalQueryParameters,
-                            featureQuery.getOffset() > 0));
+                            query.getOffset() > 0));
 
     TriFunction<SqlRowMeta, Long, Long, Stream<String>> valueQueries =
         (metaResult, maxLimit, skipped) ->
@@ -121,7 +178,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
                             Math.min(limit, maxLimit),
                             Math.max(0L, offset - skipped),
                             sortKeys,
-                            featureQuery.getFilter(),
+                            typeQuery.getFilter(),
                             ((Objects.nonNull(metaResult.getMinKey())
                                         && Objects.nonNull(metaResult.getMaxKey()))
                                     || metaResult.getNumberReturned() == 0)
@@ -134,22 +191,24 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
         .metaQuery(metaQuery)
         .valueQueries(valueQueries)
         .tableSchemas(queryTemplates.getQuerySchemas())
-        .options(getOptions(featureQuery))
+        .options(getOptions(typeQuery))
         .build();
   }
 
   @Override
-  public SqlQueryOptions getOptions(FeatureQuery featureQuery) {
+  public SqlQueryOptions getOptions(TypeQuery typeQuery) {
     // TODO: either pass as parameter, or check for null here
-    List<SchemaSql> typeInfo =
-        allQueryTemplates.get(featureQuery.getType()).get(0).getQuerySchemas();
+    List<SchemaSql> typeInfo = allQueryTemplates.get(typeQuery.getType()).get(0).getQuerySchemas();
 
     // TODO: implement for multiple main tables
     SchemaSql mainTable = typeInfo.get(0);
 
-    List<SortKey> sortKeys = transformSortKeys(featureQuery.getSortKeys(), mainTable);
+    List<SortKey> sortKeys = transformSortKeys(typeQuery.getSortKeys(), mainTable);
 
-    return new ImmutableSqlQueryOptions.Builder().customSortKeys(sortKeys).build();
+    return new ImmutableSqlQueryOptions.Builder()
+        .type(typeQuery.getType())
+        .customSortKeys(sortKeys)
+        .build();
   }
 
   private List<SortKey> transformSortKeys(List<SortKey> sortKeys, SchemaSql mainTable) {
