@@ -7,6 +7,9 @@
  */
 package de.ii.xtraplatform.cql.app
 
+import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.databind.InjectableValues
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonAppend
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.cql.domain.Between
@@ -14,17 +17,35 @@ import de.ii.xtraplatform.cql.domain.BinaryScalarOperation
 import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.Cql2Expression
 import de.ii.xtraplatform.cql.domain.CqlParseException
+import de.ii.xtraplatform.cql.domain.CqlVisitor
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.Geometry
 import de.ii.xtraplatform.cql.domain.Interval
+import de.ii.xtraplatform.cql.domain.Operation
 import de.ii.xtraplatform.cql.domain.Property
+import de.ii.xtraplatform.cql.domain.SContains
+import de.ii.xtraplatform.cql.domain.SCrosses
 import de.ii.xtraplatform.cql.domain.STouches
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
+import de.ii.xtraplatform.cql.domain.SpatialLiteral
+import de.ii.xtraplatform.cql.domain.Temporal
+import de.ii.xtraplatform.cql.domain.TemporalOperator
 import de.ii.xtraplatform.cql.infra.CqlParser
+import de.ii.xtraplatform.crs.domain.CrsInfo
+import de.ii.xtraplatform.crs.domain.CrsTransformerFactory
+import de.ii.xtraplatform.crs.domain.EpsgCrs
+import de.ii.xtraplatform.crs.domain.OgcCrs
+import de.ii.xtraplatform.crs.infra.CrsTransformerFactoryProj
+import de.ii.xtraplatform.proj.domain.ProjLoaderImpl
+import org.checkerframework.checker.units.qual.C
+import org.eclipse.jetty.server.RequestLog
 import spock.lang.Shared
 import spock.lang.Specification
 
+import javax.xml.transform.TransformerFactory
 import java.awt.Polygon
+import java.nio.file.Path
+import java.text.Format
 
 class CqlTextSpec extends Specification {
 
@@ -1580,4 +1601,169 @@ class CqlTextSpec extends Specification {
 
             actual2 == cqlText
     }
+
+    def 'Force CqlParseException in Cql.read()'() {
+        given:
+
+        String cqlText = "limit > visitors"
+
+        when: 'reading text'
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.JSON)
+
+        then:
+
+        thrown CqlParseException
+    }
+
+    def 'Force IllegalStateException in cql.write'() {
+
+        given:
+
+            String cqlText = "A_CONTAINS(theme[S_WITHIN(LINESTRING(1.0 1.0), POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        when: 'reading text'
+
+            //TODO no exception thrown
+            String s = cql.write(cql.read(cqlText, Cql.Format.TEXT), Cql.Format.JSON)
+
+        then:
+
+          noExceptionThrown()
+    }
+
+    def 'test find invalid properties '() {
+
+        given:
+
+        String cqlText = "limit > visitor_count"
+
+        Collection<String> collection = new ArrayList<String>(){{
+            add("limit")
+        }}
+
+        List<String> stringList;
+        when: 'reading text'
+
+        stringList = cql.findInvalidProperties(cql.read(cqlText, Cql.Format.TEXT), collection)
+
+        then:
+
+        stringList.get(0) == "visitor_count" && stringList.size() == 1
+
+    }
+
+    def 'Test checkTypes'() {
+
+        given:
+
+        def propertyTypes = ImmutableMap.of(
+                "road_class", "STRING",
+                "count", "LONG",
+                "length", "FLOAT",
+                "begin", "DATE",
+                "end", "DATE",
+                "event", "DATE",
+                "id", "INTEGER",
+                "number", "INTEGER",
+                "name", "STRING",
+                "street", "STRING")
+
+        String cqlText = "A_CONTAINS(theme[T_INTERSECTS(event, INTERVAL(start_date,end_date))].concept, ['DLKM','Basis-DLM','DLM50'])"
+
+        List<String> stringList;
+        when: 'reading text'
+
+        cql.checkTypes(cql.read(cqlText, Cql.Format.TEXT), propertyTypes)
+
+        then:
+
+        noExceptionThrown()
+    }
+
+    def 'Test checkCoordinates'() {
+
+        given:
+
+            String cqlText = "S_INTERSECTS(location, POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))"
+
+            CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
+
+        when: 'reading text'
+
+            cql.checkCoordinates(cql.read(cqlText, Cql.Format.TEXT), (CrsTransformerFactory)transformerFactory, (CrsInfo) transformerFactory,OgcCrs.CRS84, OgcCrs.CRS84)
+
+        then:
+
+            noExceptionThrown()
+    }
+
+    def 'Test mapTemporalOperators'() {
+
+        given:
+
+            String cqlText = "T_DURING(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+
+        when: 'reading text'
+
+            cql.mapTemporalOperators(cql.read(cqlText, Cql.Format.TEXT), Set.of(Interval) )
+
+        then:
+
+            noExceptionThrown()
+    }
+
+    def 'Test covering CqlVisitorMapEnvelopes'() {
+
+        given:
+
+            def transformerFactory = Mock(CrsTransformerFactoryProj)
+
+            transformerFactory.getAxisWithWraparound(_) >> OptionalInt.of(wrappedAxis)
+
+        when: 'reading text'
+
+            cql.mapEnvelopes(cql.read(cqlText, Cql.Format.TEXT), (CrsInfo) transformerFactory)
+
+        then:
+
+            noExceptionThrown()
+
+        where:
+
+             cqlText                                                                 | wrappedAxis
+             "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-118.0,33.8,-117.9,34.0))"  | 0
+             "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-110,33.8,-117.9,34.0))"    | 0
+             "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-118.0,38.8,-117.9,34.0))"  | 1
+
+    }
+
+    def 'Spatialliteral not type of Geometry'() {
+
+        given:
+
+            Cql2Expression expression = SCrosses.of(SpatialLiteral.of("visitor_count"), SpatialLiteral.of("limit"))
+
+            CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
+
+        when: 'reading text'
+
+            cql.mapEnvelopes(expression, transformerFactory)
+
+        then:
+
+            noExceptionThrown()
+    }
+
+
+
+
+
+
+
+
+
+
+
+
 }

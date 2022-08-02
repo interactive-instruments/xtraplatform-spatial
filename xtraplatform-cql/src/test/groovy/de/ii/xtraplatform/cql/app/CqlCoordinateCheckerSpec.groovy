@@ -372,15 +372,5 @@ class CqlCoordinateCheckerSpec extends Specification {
 
     }
 
-    def 'getCrsInfo'(){
-        when:
-
-             CrsTransformerFactoryProj test = visitor1.getCrsInfo()
-
-        then:
-
-            visitor1.getCrsInfo() == transformerFactory
-    }
-
 }
 
