@@ -7,4 +7,17 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-public interface FeatureQueriesMultiType {}
+public interface MultiFeatureQueries {
+
+  default boolean supportsCql2() {
+    return false;
+  }
+
+  default boolean supportsAccenti() {
+    return false;
+  }
+
+  default FeatureStream getFeatureStream(MultiFeatureQuery query) {
+    throw new UnsupportedOperationException();
+  }
+}

@@ -7,9 +7,6 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.cql.domain.Cql2Expression;
-import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.web.domain.ETag;
 import java.util.List;
@@ -20,67 +17,29 @@ import org.immutables.value.Value;
  * @author zahnen
  */
 @Value.Immutable
-public abstract class FeatureQuery {
-
-  public abstract String getType();
-
-  public abstract Optional<EpsgCrs> getCrs();
+public interface FeatureQuery extends TypeQuery, QueryParameters {
 
   @Value.Default
-  public int getLimit() {
-    return 0;
-  }
-
-  @Value.Default
-  public int getOffset() {
-    return 0;
-  }
-
-  public abstract Optional<Cql2Expression> getFilter();
-
-  public abstract List<SortKey> getSortKeys();
-
-  @Value.Default
-  public boolean hitsOnly() {
+  default boolean hitsOnly() {
     return false;
   }
 
   @Value.Default
-  public boolean propertyOnly() {
+  default boolean propertyOnly() {
     return false;
   }
 
   @Value.Default
-  public double getMaxAllowableOffset() {
-    return 0;
-  }
-
-  @Value.Default
-  public List<Integer> getGeometryPrecision() {
-    return ImmutableList.of(0, 0, 0);
-  }
-
-  @Value.Default
-  public List<String> getFields() {
-    return ImmutableList.of("*");
-  }
-
-  @Value.Default
-  public boolean skipGeometry() {
+  default boolean returnsSingleFeature() {
     return false;
   }
 
-  @Value.Default
-  public boolean returnsSingleFeature() {
-    return false;
-  }
-
-  public abstract List<FeatureQueryExtension> getExtensions();
+  List<FeatureQueryExtension> getExtensions();
 
   @Value.Default
-  public Scope getSchemaScope() {
+  default Scope getSchemaScope() {
     return Scope.QUERIES;
   }
 
-  public abstract Optional<ETag.Type> getETag();
+  Optional<ETag.Type> getETag();
 }

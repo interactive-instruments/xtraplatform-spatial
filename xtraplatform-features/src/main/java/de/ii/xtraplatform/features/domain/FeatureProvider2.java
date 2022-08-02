@@ -101,6 +101,17 @@ public interface FeatureProvider2 extends PersistentEntity {
     return (FeatureMetadata) this;
   }
 
+  default boolean supportsMultiQueries() {
+    return this instanceof MultiFeatureQueries;
+  }
+
+  default MultiFeatureQueries multiQueries() {
+    if (!supportsMultiQueries()) {
+      throw new UnsupportedOperationException("MultiQueries not supported");
+    }
+    return (MultiFeatureQueries) this;
+  }
+
   default boolean supportsSorting() {
     return false;
   }

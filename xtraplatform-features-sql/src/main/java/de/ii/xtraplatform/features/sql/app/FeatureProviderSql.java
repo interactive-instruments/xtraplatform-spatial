@@ -35,6 +35,7 @@ import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
+import de.ii.xtraplatform.features.domain.FeatureStream;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.FeatureTokenSource;
 import de.ii.xtraplatform.features.domain.FeatureTokenTransformer;
@@ -43,6 +44,8 @@ import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Type;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
+import de.ii.xtraplatform.features.domain.MultiFeatureQueries;
+import de.ii.xtraplatform.features.domain.MultiFeatureQuery;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
@@ -92,7 +95,12 @@ import org.threeten.extra.Interval;
 
 public class FeatureProviderSql
     extends AbstractFeatureProvider<SqlRow, SqlQueryBatch, SqlQueryOptions, SchemaSql>
-    implements FeatureProvider2, FeatureQueries, FeatureExtents, FeatureCrs, FeatureTransactions {
+    implements FeatureProvider2,
+        FeatureQueries,
+        FeatureExtents,
+        FeatureCrs,
+        FeatureTransactions,
+        MultiFeatureQueries {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
 
@@ -745,6 +753,11 @@ public class FeatureProviderSql
             .on(getStreamRunner());
 
     return mutationStream.run().toCompletableFuture().join();
+  }
+
+  @Override
+  public FeatureStream getFeatureStream(MultiFeatureQuery query) {
+    return MultiFeatureQueries.super.getFeatureStream(query);
   }
 
   @Override
