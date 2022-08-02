@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.cql.domain.*
 import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes
 import de.ii.xtraplatform.crs.domain.BoundingBox
+import de.ii.xtraplatform.crs.domain.CoordinateTuple
 import de.ii.xtraplatform.crs.domain.CrsInfo
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory
 import de.ii.xtraplatform.crs.domain.EpsgCrs
@@ -24,6 +25,7 @@ import spock.lang.Specification
 
 import javax.xml.transform.TransformerFactory
 import java.nio.file.Path
+import java.util.stream.IntStream
 
 class CqlCoordinateCheckerSpec extends Specification {
 
@@ -297,4 +299,88 @@ class CqlCoordinateCheckerSpec extends Specification {
         (double) 0.50   |    (double) 1000  |    (double) 0.03  |    (double) 1        |  (double) 0.00  |    (double) 100000  |    (double) 0.03  |    (double) 1      |    NullPointerException
 
     }
+
+    def 'Coordinates > Maximums crs'(){
+        given:
+
+        List<Optional<Double>> doubles1 = new ArrayList<>()
+        doubles1.add(Optional.of((double)1.00))
+        doubles1.add(Optional.of((double)2.00))
+
+        List<Optional<Double>> doubles2 = new ArrayList<>()
+        doubles2.add(Optional.of((double)3.00))
+        doubles2.add(Optional.of((double)4.00))
+
+
+
+        def transformerFactory3 = Mock(CrsTransformerFactoryProj)
+        transformerFactory3.getAxisMinimums(_) >> doubles1
+        transformerFactory3.getAxisMaximums(_) >> doubles2
+
+        CqlCoordinateChecker visitor4 = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactory3, (CrsInfo) transformerFactory3, OgcCrs.CRS84, EpsgCrs.of(5555))
+
+        when:
+
+        double xmin = 6.00
+        double ymin = 6.00
+        double xmax = 12.00
+        double ymax = 12.00
+
+        SpatialLiteral.of(Geometry.Envelope.of(xmin, ymin, xmax, ymax, OgcCrs.CRS84)).accept(visitor4)
+
+
+
+        then:
+
+        thrown IllegalArgumentException
+
+    }
+
+    def 'Coordinate < Minimums crs'(){
+        given:
+
+        List<Optional<Double>> doubles1 = new ArrayList<>()
+        doubles1.add(Optional.of((double)1.00))
+        doubles1.add(Optional.of((double)2.00))
+
+        List<Optional<Double>> doubles2 = new ArrayList<>()
+        doubles2.add(Optional.of((double)3.00))
+        doubles2.add(Optional.of((double)4.00))
+
+
+
+        def transformerFactory4 = Mock(CrsTransformerFactoryProj)
+        transformerFactory4.getAxisMinimums(_) >> doubles1
+        transformerFactory4.getAxisMaximums(_) >> doubles2
+
+        CqlCoordinateChecker visitor4 = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactory4, (CrsInfo) transformerFactory4, OgcCrs.CRS84, EpsgCrs.of(5555))
+
+        when:
+
+        double xmin = 0.50
+        double ymin = 0.50
+        double xmax = 2.00
+        double ymax = 2.00
+
+        SpatialLiteral.of(Geometry.Envelope.of(xmin, ymin, xmax, ymax, OgcCrs.CRS84)).accept(visitor4)
+
+
+
+        then:
+
+        thrown IllegalArgumentException
+
+    }
+
+    def 'getCrsInfo'(){
+        when:
+
+             CrsTransformerFactoryProj test = visitor1.getCrsInfo()
+
+        then:
+
+            visitor1.getCrsInfo() == transformerFactory
+    }
+
 }
+
