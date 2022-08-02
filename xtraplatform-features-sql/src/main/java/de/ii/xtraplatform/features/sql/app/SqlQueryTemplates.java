@@ -30,6 +30,7 @@ public interface SqlQueryTemplates {
     String generateMetaQuery(
         long limit,
         long offset,
+        long skipOffset,
         List<SortKey> additionalSortKeys,
         Optional<Cql2Expression> filter,
         Map<String, String> virtualTables,

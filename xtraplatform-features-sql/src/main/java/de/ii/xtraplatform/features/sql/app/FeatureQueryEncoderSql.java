@@ -92,6 +92,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
                                     queryTemplates.get(tableIndex),
                                     chunkSize,
                                     query.getOffset() + (chunk * chunkSize),
+                                    chunk,
                                     query,
                                     query,
                                     additionalQueryParameters,
@@ -101,6 +102,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
 
     return new ImmutableSqlQueryBatch.Builder()
         .limit(query.getLimit())
+        .offset(query.getOffset())
         .chunkSize(chunkSize)
         .isSingleFeature(query.returnsSingleFeature())
         .querySets(querySets)
@@ -128,6 +130,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
                                               queryTemplates.get(tableIndex),
                                               chunkSize,
                                               query.getOffset() + (chunk * chunkSize),
+                                              chunk,
                                               typeQuery,
                                               query,
                                               additionalQueryParameters,
@@ -138,6 +141,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
 
     return new ImmutableSqlQueryBatch.Builder()
         .limit(query.getLimit())
+        .offset(query.getOffset())
         .chunkSize(chunkSize)
         .querySets(querySets)
         .build();
@@ -145,8 +149,9 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
 
   private SqlQuerySet createQuerySet(
       SqlQueryTemplates queryTemplates,
-      int limit,
-      int offset,
+      long limit,
+      long offset,
+      int chunk,
       TypeQuery typeQuery,
       Query query,
       Map<String, String> additionalQueryParameters,
@@ -164,6 +169,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
                         .generateMetaQuery(
                             Math.min(limit, maxLimit),
                             Math.max(0L, offset - skipped),
+                            chunk * limit,
                             sortKeys,
                             typeQuery.getFilter(),
                             additionalQueryParameters,

@@ -55,6 +55,8 @@ public interface SqlConnector
     final long[] numberSkipped = {0L};
     final String[] lastTable = {""};
     final long[] lastNumberReturned = {0L};
+    final long[] lastNumberSkipped = {0L};
+    final boolean[] noOffset = {false};
 
     Source<SqlRow> sqlRowSource1 =
         Source.iterable(queryBatch.getQuerySets())
@@ -63,14 +65,30 @@ public interface SqlConnector
                     querySet -> {
                       String currentTable = querySet.getTableSchemas().get(0).getName();
 
+                      long found = lastNumberReturned[0] + lastNumberSkipped[0];
+
                       if (featureCount[0] <= 0
                           || (Objects.equals(lastTable[0], currentTable)
-                              && lastNumberReturned[0] < queryBatch.getChunkSize())) {
+                              && found < queryBatch.getChunkSize())) {
                         return Source.empty();
                       }
 
+                      long ns = numberSkipped[0];
+                      // same table, nothing returned yet
+                      if (Objects.equals(lastTable[0], currentTable)
+                          && featureCount[0] == queryBatch.getLimit()) {
+                        ns = 0L;
+                      }
+                      // next table, something returned before, and every following round
+                      else if (noOffset[0]
+                          || (!Objects.equals(lastTable[0], currentTable)
+                              && featureCount[0] < queryBatch.getLimit())) {
+                        ns = queryBatch.getOffset();
+                        noOffset[0] = true;
+                      }
+
                       return getMetaResult(
-                              querySet.getMetaQuery().apply(featureCount[0], numberSkipped[0]),
+                              querySet.getMetaQuery().apply(featureCount[0], ns),
                               options,
                               currentTable)
                           .via(
@@ -78,12 +96,10 @@ public interface SqlConnector
                                   metaResult -> {
                                     featureCount[0] -= metaResult.getNumberReturned();
                                     numberSkipped[0] =
-                                        Objects.equals(lastTable[0], currentTable)
-                                            ? numberSkipped[0]
-                                            : numberSkipped[0]
-                                                + metaResult.getNumberSkipped().orElse(0);
+                                        numberSkipped[0] + metaResult.getNumberSkipped().orElse(0);
                                     lastTable[0] = currentTable;
                                     lastNumberReturned[0] = metaResult.getNumberReturned();
+                                    lastNumberSkipped[0] = metaResult.getNumberSkipped().orElse(0);
 
                                     return Tuple.of(querySet, metaResult);
                                   }));
@@ -208,6 +224,13 @@ public interface SqlConnector
                                                     .get(index)
                                                     .getNumberSkipped()
                                                     .orElse(0);
+                                    // TODO
+                                    long ns =
+                                        Objects.equals(lastTable2[0], currentTable)
+                                            ? numberSkipped2[0]
+                                            : featureCount2[0] < queryBatch.getLimit()
+                                                ? queryBatch.getOffset()
+                                                : numberSkipped2[0];
                                     lastTable2[0] = currentTable;
 
                                     if (metaResults.get(index).getNumberReturned() <= 0) {
@@ -219,10 +242,7 @@ public interface SqlConnector
                                         querySets
                                             .get(index)
                                             .getValueQueries()
-                                            .apply(
-                                                metaResults.get(index),
-                                                featureCount2[0],
-                                                numberSkipped2[0])
+                                            .apply(metaResults.get(index), featureCount2[0], ns)
                                             .map(
                                                 valueQuery ->
                                                     getSqlClient()

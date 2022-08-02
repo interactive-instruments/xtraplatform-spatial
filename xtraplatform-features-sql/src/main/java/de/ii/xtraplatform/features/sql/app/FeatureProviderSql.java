@@ -243,7 +243,7 @@ public class FeatureProviderSql
                                             getData()
                                                 .getQueryGeneration()
                                                 .getComputeNumberMatched(),
-                                            entry.getValue().size() > 1)))
+                                            true)))
                             .collect(Collectors.toList())))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 

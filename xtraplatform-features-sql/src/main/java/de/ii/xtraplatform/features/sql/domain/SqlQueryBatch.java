@@ -15,6 +15,8 @@ public interface SqlQueryBatch {
 
   long getLimit();
 
+  long getOffset();
+
   long getChunkSize();
 
   @Value.Default

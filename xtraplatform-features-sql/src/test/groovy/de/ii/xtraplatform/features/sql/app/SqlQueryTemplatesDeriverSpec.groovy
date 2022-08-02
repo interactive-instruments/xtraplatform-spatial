@@ -83,7 +83,7 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
     }
 
     static String meta(SqlQueryTemplates templates, List<SortKey> sortBy, Optional<Cql2Expression> userFilter) {
-        return templates.getMetaQueryTemplate().generateMetaQuery(10, 10, sortBy, userFilter, com.google.common.collect.ImmutableMap.of(), false)
+        return templates.getMetaQueryTemplate().generateMetaQuery(10, 10, 0, sortBy, userFilter, com.google.common.collect.ImmutableMap.of(), false)
     }
 
     static List<String> values(SqlQueryTemplates templates, int limit, int offset, List<SortKey> sortBy, Cql2Expression filter) {
