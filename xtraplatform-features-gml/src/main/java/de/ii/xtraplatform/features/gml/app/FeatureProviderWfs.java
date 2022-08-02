@@ -37,6 +37,7 @@ import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStream;
+import de.ii.xtraplatform.features.domain.FeatureStreamImpl;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
@@ -290,6 +291,7 @@ public class FeatureProviderWfs
 
   @Override
   public FeatureStream getFeatureStreamPassThrough(FeatureQuery query) {
-    return new FeatureStreamImpl(query, false);
+    return new FeatureStreamImpl(
+        query, getData(), crsTransformerFactory, getCodelists(), this::runQuery, false);
   }
 }
