@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.sql.app;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
+import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.SchemaBase;
@@ -54,7 +55,7 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
   }
 
   public Function<FeatureSql, Tuple<String, Consumer<String>>> createInsert(
-      SchemaSql schema, List<Integer> parentRows, Optional<String> id) {
+      SchemaSql schema, List<Integer> parentRows, Optional<String> id, EpsgCrs crs) {
 
     Optional<SqlRelation> parentRelation = schema.getRelation().stream().findFirst();
 
@@ -157,12 +158,18 @@ class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
         return Tuple.of(null, null);
       }
 
+      // TODO: crs can be null, refactor FeatureProviderSql2.createFeatures
+      Optional<CrsTransformer> crsTransformer =
+          Objects.nonNull(crs)
+              ? crsTransformerFactory.getTransformer(crs, nativeCrs)
+              : Optional.empty();
+
       // TODO: pass id to getValues if given
       String values =
           getColumnValues(
               sortKeys,
               columns,
-              currentRow.get().getValues(nativeCrs, crsTransformerFactory),
+              currentRow.get().getValues(crsTransformer, nativeCrs),
               currentRow.get().getIds(),
               valueOverrides);
 

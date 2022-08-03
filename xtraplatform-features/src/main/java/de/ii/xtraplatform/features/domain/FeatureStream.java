@@ -13,6 +13,7 @@ import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import javax.annotation.Nullable;
+import javax.ws.rs.core.EntityTag;
 import org.immutables.value.Value;
 
 public interface FeatureStream {
@@ -21,6 +22,8 @@ public interface FeatureStream {
   interface Result extends ResultBase {
 
     abstract class Builder extends ResultBase.Builder<Result, Builder> {}
+
+    Optional<EntityTag> getETag();
   }
 
   @Value.Immutable
@@ -33,6 +36,8 @@ public interface FeatureStream {
 
     @Nullable
     T reduced();
+
+    Optional<EntityTag> getETag();
   }
 
   interface ResultBase {
