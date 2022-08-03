@@ -53,11 +53,17 @@ import org.slf4j.LoggerFactory;
   "objectType",
   "label",
   "description",
+  "unit",
   "transformations",
   "constraints",
   "properties"
 })
 public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<FeatureSchema> {
+
+  enum Scope {
+    QUERIES,
+    MUTATIONS
+  }
 
   Logger LOGGER = LoggerFactory.getLogger(FeatureSchema.class);
 
@@ -191,12 +197,27 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
   Optional<String> getDescription();
 
   /**
+   * @langEn The unit of measurement of the value, only relevant for numeric properties.
+   * @langDe Die Maßeinheit des Wertes, nur relevant bei numerischen Eigenschaften.
+   */
+  Optional<String> getUnit();
+
+  /**
    * @langEn Might be used instead of `sourcePath` to define a property with a constant value.
    * @langDe Alternativ zu `sourcePath` kann diese Eigenschaft verwendet werden, um im
    *     Feature-Provider eine Eigenschaft mit einem festen Wert zu belegen.
    * @default `null`
    */
   Optional<String> getConstantValue();
+
+  /**
+   * @langEn Optional scope for properties that should only be used when either reading (`QUERIES`)
+   *     or writing (`MUTATIONS`) features.
+   * @langDe Optionaler Geltungsbereich für Eigenschaften die entweder nur beim Lesen (`QUERIES`) *
+   *     oder beim Schreiben (`MUTATIONS`) verwendet werden sollen.
+   * @default null
+   */
+  Optional<Scope> getScope();
 
   /**
    * @langEn Optional transformations for the property, see

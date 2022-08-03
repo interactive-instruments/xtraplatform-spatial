@@ -105,8 +105,9 @@ public class FilterEncoderWfs {
   }
 
   public FesFilter encode(Cql2Expression filter, FeatureSchema schema) {
-    return (FesFilter)
-        cql.mapTemporalOperators(filter, ImmutableSet.of()).accept(new CqlToFes(schema));
+    return new FesFilter(
+        ImmutableList.of(
+            cql.mapTemporalOperators(filter, ImmutableSet.of()).accept(new CqlToFes(schema))));
   }
 
   private List<Double> transformCoordinatesIfNecessary(
@@ -342,6 +343,10 @@ public class FilterEncoderWfs {
 
     @Override
     public FesExpression visit(ArrayLiteral arrayLiteral, List<FesExpression> children) {
+      if (((List<?>) arrayLiteral.getValue()).size() == 1) {
+        // support id queries with a single id
+        return ((CqlNode) ((List<?>) arrayLiteral.getValue()).get(0)).accept(this);
+      }
       throw new IllegalArgumentException(
           "Array expressions are not supported in filter expressions for WFS feature providers.");
     }

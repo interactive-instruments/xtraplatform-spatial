@@ -32,22 +32,28 @@ import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.features.domain.FeatureStoreAttribute;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.FeatureTokenSource;
+import de.ii.xtraplatform.features.domain.FeatureTokenTransformer;
+import de.ii.xtraplatform.features.domain.FeatureTokenTransformerSorting;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
+import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Type;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.TypeInfoValidator;
+import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.features.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.features.sql.SqlPathSyntax;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
+import de.ii.xtraplatform.features.sql.domain.FeatureTokenStatsCollector;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSchemaMappingSql;
 import de.ii.xtraplatform.features.sql.domain.SchemaMappingSql;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
@@ -102,6 +108,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   private SqlPathParser pathParser3;
   private TypeInfoValidator typeInfoValidator;
   private Map<String, List<SchemaSql>> tableSchemas;
+  private Map<String, List<SchemaSql>> tableSchemasMutations;
 
   @AssistedInject
   public FeatureProviderSql(
@@ -189,7 +196,17 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
             .map(
                 entry ->
                     new SimpleImmutableEntry<>(
-                        entry.getKey(), entry.getValue().accept(querySchemaDeriver)))
+                        entry.getKey(),
+                        entry.getValue().accept(WITH_SCOPE_QUERIES).accept(querySchemaDeriver)))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+    this.tableSchemasMutations =
+        getData().getTypes().entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(
+                        entry.getKey(),
+                        entry.getValue().accept(WITH_SCOPE_MUTATIONS).accept(querySchemaDeriver)))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     Map<String, List<SqlQueryTemplates>> schemas =
@@ -201,12 +218,29 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
                         ImmutableList.of(
                             entry
                                 .getValue()
+                                .accept(WITH_SCOPE_QUERIES)
                                 .accept(querySchemaDeriver)
                                 .get(0)
                                 .accept(queryTemplatesDeriver))))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
-    this.queryTransformer = new FeatureQueryEncoderSql(schemas, getTypeInfos());
+    Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations =
+        getData().getTypes().entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(
+                        entry.getKey(),
+                        ImmutableList.of(
+                            entry
+                                .getValue()
+                                .accept(WITH_SCOPE_MUTATIONS)
+                                .accept(querySchemaDeriver)
+                                .get(0)
+                                .accept(queryTemplatesDeriver))))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+    this.queryTransformer =
+        new FeatureQueryEncoderSql(schemas, allQueryTemplatesMutations, getTypeInfos());
 
     this.aggregateStatsReader =
         new AggregateStatsReaderSql(
@@ -239,7 +273,9 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     try {
       for (FeatureSchema fs : getData().getTypes().values()) {
         sourceSchema.put(
-            fs.getName(), fs.accept(new MutationSchemaDeriver(pathParser2, pathParser3)));
+            fs.getName(),
+            fs.accept(WITH_SCOPE_MUTATIONS)
+                .accept(new MutationSchemaDeriver(pathParser2, pathParser3)));
       }
     } catch (Throwable e) {
       boolean br = true;
@@ -363,11 +399,21 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   protected FeatureTokenDecoder<
           SqlRow, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
       getDecoder(FeatureQuery query) {
+    WithScope withScope =
+        query.getSchemaScope() == Scope.QUERIES ? WITH_SCOPE_QUERIES : WITH_SCOPE_MUTATIONS;
+
     return new FeatureDecoderSql(
         ImmutableList.of(getTypeInfos().get(query.getType())),
-        tableSchemas.get(query.getType()),
-        getData().getTypes().get(query.getType()),
+        query.getSchemaScope() == Scope.QUERIES
+            ? tableSchemas.get(query.getType())
+            : tableSchemasMutations.get(query.getType()),
+        getData().getTypes().get(query.getType()).accept(withScope),
         query);
+  }
+
+  @Override
+  protected List<FeatureTokenTransformer> getDecoderTransformers() {
+    return ImmutableList.of(new FeatureTokenTransformerSorting());
   }
 
   @Override
@@ -566,17 +612,16 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   }
 
   @Override
-  public MutationResult createFeatures(String featureType, FeatureTokenSource featureTokenSource) {
+  public MutationResult createFeatures(
+      String featureType, FeatureTokenSource featureTokenSource, EpsgCrs crs) {
 
-    // TODO: where does crs transformation happen?
-    // decoder should write source crs to Feature, encoder should transform to target crs
-    return writeFeatures(featureType, featureTokenSource, Optional.empty());
+    return writeFeatures(featureType, featureTokenSource, Optional.empty(), crs);
   }
 
   @Override
   public MutationResult updateFeature(
-      String featureType, String featureId, FeatureTokenSource featureTokenSource) {
-    return writeFeatures(featureType, featureTokenSource, Optional.of(featureId));
+      String featureType, String featureId, FeatureTokenSource featureTokenSource, EpsgCrs crs) {
+    return writeFeatures(featureType, featureTokenSource, Optional.of(featureId), crs);
   }
 
   @Override
@@ -591,7 +636,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     FeatureSchema migrated = schema.get(); // FeatureSchemaNamePathSwapper.migrate(schema.get());
 
-    List<SchemaSql> sqlSchema = migrated.accept(new MutationSchemaDeriver(pathParser2, null));
+    List<SchemaSql> sqlSchema =
+        migrated.accept(WITH_SCOPE_MUTATIONS).accept(new MutationSchemaDeriver(pathParser2, null));
 
     if (sqlSchema.isEmpty()) {
       throw new IllegalStateException(
@@ -600,7 +646,7 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     SchemaSql mutationSchemaSql = sqlSchema.get(0).accept(new MutationSchemaBuilderSql());
 
-    Reactive.Source<SqlRow> deletionSource =
+    Reactive.Source<String> deletionSource =
         featureMutationsSql.getDeletionSource(mutationSchemaSql, id)
         /*.watchTermination(
         (Function2<NotUsed, CompletionStage<Done>, CompletionStage<MutationResult>>) (notUsed, completionStage) -> completionStage
@@ -617,12 +663,12 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     .emptyResult(ImmutableMutationResult.builder())
     .build();*/
 
-    // TODO: test
     RunnableStream<MutationResult> deletionStream =
         deletionSource
             .to(Sink.ignore())
-            .withResult(ImmutableMutationResult.builder())
+            .withResult(ImmutableMutationResult.builder().type(Type.DELETE))
             .handleError(ImmutableMutationResult.Builder::error)
+            .handleItem(ImmutableMutationResult.Builder::addIds)
             .handleEnd(Builder::build)
             .on(getStreamRunner());
 
@@ -630,7 +676,10 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
   }
 
   private MutationResult writeFeatures(
-      String featureType, FeatureTokenSource featureTokenSource, Optional<String> featureId) {
+      String featureType,
+      FeatureTokenSource featureTokenSource,
+      Optional<String> featureId,
+      EpsgCrs crs) {
 
     Optional<FeatureSchema> schema = Optional.ofNullable(getData().getTypes().get(featureType));
     Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(featureType));
@@ -650,7 +699,8 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
     // Multimap<List<String>, FeatureSchema> mapping2 = migrated.accept(new
     // SchemaToMappingVisitor<>());
 
-    List<SchemaSql> sqlSchema = migrated.accept(new MutationSchemaDeriver(pathParser2, null));
+    List<SchemaSql> sqlSchema =
+        migrated.accept(WITH_SCOPE_MUTATIONS).accept(new MutationSchemaDeriver(pathParser2, null));
 
     if (sqlSchema.isEmpty()) {
       throw new IllegalStateException(
@@ -667,17 +717,22 @@ public class FeatureProviderSql extends AbstractFeatureProvider<SqlRow, SqlQueri
 
     Transformer<FeatureSql, String> featureWriter =
         featureId.isPresent()
-            ? featureMutationsSql.getUpdaterFlow(mutationSchemaSql, null, featureId.get())
-            : featureMutationsSql.getCreatorFlow(mutationSchemaSql, null);
+            ? featureMutationsSql.getUpdaterFlow(mutationSchemaSql, null, featureId.get(), crs)
+            : featureMutationsSql.getCreatorFlow(mutationSchemaSql, null, crs);
+
+    ImmutableMutationResult.Builder builder =
+        ImmutableMutationResult.builder().type(featureId.isPresent() ? Type.REPLACE : Type.CREATE);
+    FeatureTokenStatsCollector statsCollector = new FeatureTokenStatsCollector(builder, crs);
 
     RunnableStream<MutationResult> mutationStream =
         featureTokenSource
+            .via(statsCollector)
             .via(new FeatureEncoderSql2(mapping4))
             // TODO: support generic encoders, not only to byte[]
             .via(Transformer.map(feature -> (FeatureSql) feature))
             .via(featureWriter)
             .to(Sink.ignore())
-            .withResult((Builder) ImmutableMutationResult.builder())
+            .withResult((Builder) builder)
             .handleError(
                 (result, throwable) -> {
                   Throwable error =
