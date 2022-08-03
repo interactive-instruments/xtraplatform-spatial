@@ -20,6 +20,7 @@ import de.ii.xtraplatform.cql.domain.CqlParseException
 import de.ii.xtraplatform.cql.domain.CqlVisitor
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.Geometry
+import de.ii.xtraplatform.cql.domain.In
 import de.ii.xtraplatform.cql.domain.Interval
 import de.ii.xtraplatform.cql.domain.Operation
 import de.ii.xtraplatform.cql.domain.Property
@@ -28,7 +29,11 @@ import de.ii.xtraplatform.cql.domain.SCrosses
 import de.ii.xtraplatform.cql.domain.STouches
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.cql.domain.SpatialLiteral
+import de.ii.xtraplatform.cql.domain.TBefore
+import de.ii.xtraplatform.cql.domain.TDuring
+import de.ii.xtraplatform.cql.domain.TFinishedBy
 import de.ii.xtraplatform.cql.domain.Temporal
+import de.ii.xtraplatform.cql.domain.TemporalLiteral
 import de.ii.xtraplatform.cql.domain.TemporalOperator
 import de.ii.xtraplatform.cql.infra.CqlParser
 import de.ii.xtraplatform.crs.domain.CrsInfo
@@ -39,6 +44,7 @@ import de.ii.xtraplatform.crs.infra.CrsTransformerFactoryProj
 import de.ii.xtraplatform.proj.domain.ProjLoaderImpl
 import org.checkerframework.checker.units.qual.C
 import org.eclipse.jetty.server.RequestLog
+import org.spockframework.runtime.model.INameable
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -46,6 +52,7 @@ import javax.xml.transform.TransformerFactory
 import java.awt.Polygon
 import java.nio.file.Path
 import java.text.Format
+import java.time.LocalDate
 
 class CqlTextSpec extends Specification {
 
@@ -841,26 +848,26 @@ class CqlTextSpec extends Specification {
 
         given:
 
-            String cqlText = "filterValues[position() BETWEEN 4 AND 8].measure BETWEEN 1 AND 5"
+        String cqlText = "filterValues[position() BETWEEN 4 AND 8].measure BETWEEN 1 AND 5"
 
         when: 'reading text'
 
-            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            actual == CqlFilterExamples.EXAMPLE_NESTED_FUNCTION_BETWEEN
+        actual == CqlFilterExamples.EXAMPLE_NESTED_FUNCTION_BETWEEN
 
         and:
 
 
         when: 'writing text'
 
-            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_NESTED_FUNCTION_BETWEEN, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_NESTED_FUNCTION_BETWEEN, Cql.Format.TEXT)
 
         then:
 
-            actual2 == cqlText
+        actual2 == cqlText
 
     }
 
@@ -868,50 +875,50 @@ class CqlTextSpec extends Specification {
 
         given:
 
-             String cqlText = "A_CONTAINS(theme[T_INTERSECTS(event, INTERVAL(start_date,end_date))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[T_INTERSECTS(event, INTERVAL(start_date,end_date))].concept, ['DLKM','Basis-DLM','DLM50'])"
 
         when: 'reading text'
 
-             Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            actual == CqlFilterExamples.EXAMPLE_45
+        actual == CqlFilterExamples.EXAMPLE_45
 
         and:
 
         when: 'writing text'
 
-            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_45, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_45, Cql.Format.TEXT)
 
         then:
 
-            actual2 == cqlText
+        actual2 == cqlText
     }
 
     def 'Array predicate with nested LIKE filter'() {
         given:
 
-            String cqlText = "A_CONTAINS(theme[scheme LIKE 'profile'].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[scheme LIKE 'profile'].concept, ['DLKM','Basis-DLM','DLM50'])"
         //A_CONTAINS(theme[INTERVAL(start_date,end_date)].concept, ['DLKM','Basis-DLM','DLM50'])
 
         when: 'reading text'
 
-            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            actual == CqlFilterExamples.EXAMPLE_44
+        actual == CqlFilterExamples.EXAMPLE_44
 
         and:
 
         when: 'writing text'
 
-            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_44, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_44, Cql.Format.TEXT)
 
         then:
 
-            actual2 == cqlText
+        actual2 == cqlText
     }
 
     def 'Array predicate with nested IS NULL filter'() {
@@ -941,49 +948,49 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested CASEI filter'() {
         given:
 
-         String cqlText = "A_CONTAINS(theme[CASEI(schema) IN (CASEI('region'),CASEI('straße'))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[CASEI(schema) IN (CASEI('region'),CASEI('straße'))].concept, ['DLKM','Basis-DLM','DLM50'])"
 
         when: 'reading text'
 
-            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            actual == CqlFilterExamples.EXAMPLE_47
+        actual == CqlFilterExamples.EXAMPLE_47
 
         and:
 
         when: 'writing text'
 
-            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_47, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_47, Cql.Format.TEXT)
 
         then:
 
-            actual2 == cqlText
+        actual2 == cqlText
     }
 
     def 'Array predicate with nested ACCENTI filter'() {
         given:
 
-            String cqlText = "A_CONTAINS(theme[ACCENTI(schema) IN (ACCENTI('region'),ACCENTI('straße'))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[ACCENTI(schema) IN (ACCENTI('region'),ACCENTI('straße'))].concept, ['DLKM','Basis-DLM','DLM50'])"
 
         when: 'reading text'
 
-            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            actual == CqlFilterExamples.EXAMPLE_48
+        actual == CqlFilterExamples.EXAMPLE_48
 
         and:
 
         when: 'writing text'
 
-            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_48, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_48, Cql.Format.TEXT)
 
         then:
 
-            actual2 == cqlText
+        actual2 == cqlText
     }
 
     def 'Array predicate with nested OR filter'() {
@@ -1013,49 +1020,49 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested and filter'() {
         given:
 
-            String cqlText = "A_CONTAINS(theme[(length > 5 AND count > 10)].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[(length > 5 AND count > 10)].concept, ['DLKM','Basis-DLM','DLM50'])"
 
         when: 'reading text'
 
-            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            actual == CqlFilterExamples.EXAMPLE_50
+        actual == CqlFilterExamples.EXAMPLE_50
 
         and:
 
         when: 'writing text'
 
-            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_50, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_50, Cql.Format.TEXT)
 
         then:
 
-            actual2 == cqlText
+        actual2 == cqlText
     }
 
     def 'Array predicate with nested lt filter'() {
         given:
 
-            String cqlText = "A_CONTAINS(theme[length < 5].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[length < 5].concept, ['DLKM','Basis-DLM','DLM50'])"
 
         when: 'reading text'
 
-            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            actual == CqlFilterExamples.EXAMPLE_51
+        actual == CqlFilterExamples.EXAMPLE_51
 
         and:
 
         when: 'writing text'
 
-            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_51, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_51, Cql.Format.TEXT)
 
         then:
 
-            actual2 == cqlText
+        actual2 == cqlText
     }
 
     def 'Array predicate with nested lte filter'() {
@@ -1133,25 +1140,25 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested not filter'() {
         given:
 
-            String cqlText = "A_CONTAINS(theme[NOT (length = 5)].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[NOT (length = 5)].concept, ['DLKM','Basis-DLM','DLM50'])"
 
         when: 'reading text'
 
-            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            actual == CqlFilterExamples.EXAMPLE_55
+        actual == CqlFilterExamples.EXAMPLE_55
 
         and:
 
         when: 'writing text'
 
-            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_55, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_55, Cql.Format.TEXT)
 
         then:
 
-            actual2 == cqlText
+        actual2 == cqlText
     }
 
     def 'Array predicate with nested S_TOUCHES filter'() {
@@ -1458,98 +1465,98 @@ class CqlTextSpec extends Specification {
     def 'Case insensitive string comparison function CASEI'() {
         given:
 
-            String cqlText = "CASEI(road_class) IN (CASEI('Οδος'),CASEI('Straße'))"
+        String cqlText = "CASEI(road_class) IN (CASEI('Οδος'),CASEI('Straße'))"
 
         when: 'reading text'
 
-            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            actual == CqlFilterExamples.EXAMPLE_CASEI
+        actual == CqlFilterExamples.EXAMPLE_CASEI
 
         and:
 
         when: 'writing text'
 
-            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_CASEI, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_CASEI, Cql.Format.TEXT)
 
         then:
 
-            actual2 == cqlText
+        actual2 == cqlText
     }
 
     def 'Accent insensitive string comparison function ACCENTI'() {
         given:
 
-            String cqlText = "ACCENTI(road_class) IN (ACCENTI('Οδος'),ACCENTI('Straße'))"
+        String cqlText = "ACCENTI(road_class) IN (ACCENTI('Οδος'),ACCENTI('Straße'))"
 
         when: 'reading text'
 
-            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            actual == CqlFilterExamples.EXAMPLE_ACCENTI
+        actual == CqlFilterExamples.EXAMPLE_ACCENTI
 
         and:
 
         when: 'writing text'
 
-            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_ACCENTI, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_ACCENTI, Cql.Format.TEXT)
 
         then:
 
-            actual2 == cqlText
+        actual2 == cqlText
     }
 
     def 'Array predicate with nested array operation T_BEFORE and TIMESTAMP'() {
         given:
 
-            String cqlText = "A_CONTAINS(theme[T_BEFORE(built, TIMESTAMP('2012-06-05T00:00:00Z'))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[T_BEFORE(built, TIMESTAMP('2012-06-05T00:00:00Z'))].concept, ['DLKM','Basis-DLM','DLM50'])"
 
         when: 'reading text'
 
-            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            actual == CqlFilterExamples.EXAMPLE_58
+        actual == CqlFilterExamples.EXAMPLE_58
 
         and:
 
         when: 'writing text'
 
-             String actual2 = cql.write(CqlFilterExamples.EXAMPLE_58, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_58, Cql.Format.TEXT)
 
         then:
 
-             actual2 == cqlText
+        actual2 == cqlText
     }
 
     def 'Array predicate with nested array operation S_WITHIN'() {
         given:
 
-            String cqlText = "A_CONTAINS(theme[S_WITHIN(location, ENVELOPE(-118.0,33.8,-117.9,34.0))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[S_WITHIN(location, ENVELOPE(-118.0,33.8,-117.9,34.0))].concept, ['DLKM','Basis-DLM','DLM50'])"
 
         when: 'reading text'
 
-            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            actual == CqlFilterExamples.EXAMPLE_59
+        actual == CqlFilterExamples.EXAMPLE_59
 
         and:
 
 
         when: 'writing text'
 
-            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_59, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_59, Cql.Format.TEXT)
 
         then:
 
-            actual2 == cqlText
+        actual2 == cqlText
     }
 
     //TODO does not cover CqlVisitorCopy visit(Property...
@@ -1580,26 +1587,26 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested array operation and Geometry.LineString Geometry.Polygon '() {
         given:
 
-            String cqlText = "A_CONTAINS(theme[S_WITHIN(LINESTRING(1.0 1.0), POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[S_WITHIN(LINESTRING(1.0 1.0), POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))].concept, ['DLKM','Basis-DLM','DLM50'])"
 
         when: 'reading text'
 
-            Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
 
         then:
 
-            //TODO Crs is not given in cqlText
-            actual != CqlFilterExamples.EXAMPLE_61
+        //TODO Crs is not given in cqlText
+        actual != CqlFilterExamples.EXAMPLE_61
 
         and:
 
         when: 'writing text'
 
-            String actual2 = cql.write(CqlFilterExamples.EXAMPLE_61, Cql.Format.TEXT)
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_61, Cql.Format.TEXT)
 
         then:
 
-            actual2 == cqlText
+        actual2 == cqlText
     }
 
     def 'Force CqlParseException in Cql.read()'() {
@@ -1620,16 +1627,16 @@ class CqlTextSpec extends Specification {
 
         given:
 
-            String cqlText = "A_CONTAINS(theme[S_WITHIN(LINESTRING(1.0 1.0), POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[S_WITHIN(LINESTRING(1.0 1.0), POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))].concept, ['DLKM','Basis-DLM','DLM50'])"
 
         when: 'reading text'
 
-            //TODO no exception thrown
-            String s = cql.write(cql.read(cqlText, Cql.Format.TEXT), Cql.Format.JSON)
+        //TODO no exception thrown
+        String s = cql.write(cql.read(cqlText, Cql.Format.TEXT), Cql.Format.JSON)
 
         then:
 
-          noExceptionThrown()
+        noExceptionThrown()
     }
 
     def 'test find invalid properties '() {
@@ -1638,9 +1645,11 @@ class CqlTextSpec extends Specification {
 
         String cqlText = "limit > visitor_count"
 
-        Collection<String> collection = new ArrayList<String>(){{
-            add("limit")
-        }}
+        Collection<String> collection = new ArrayList<String>() {
+            {
+                add("limit")
+            }
+        }
 
         List<String> stringList;
         when: 'reading text'
@@ -1685,56 +1694,56 @@ class CqlTextSpec extends Specification {
 
         given:
 
-            String cqlText = "S_INTERSECTS(location, POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))"
+        String cqlText = "S_INTERSECTS(location, POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))"
 
-            CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
+        CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
 
         when: 'reading text'
 
-            cql.checkCoordinates(cql.read(cqlText, Cql.Format.TEXT), (CrsTransformerFactory)transformerFactory, (CrsInfo) transformerFactory,OgcCrs.CRS84, OgcCrs.CRS84)
+        cql.checkCoordinates(cql.read(cqlText, Cql.Format.TEXT), (CrsTransformerFactory) transformerFactory, (CrsInfo) transformerFactory, OgcCrs.CRS84, OgcCrs.CRS84)
 
         then:
 
-            noExceptionThrown()
+        noExceptionThrown()
     }
 
     def 'Test mapTemporalOperators'() {
 
         given:
 
-            String cqlText = "T_DURING(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        String cqlText = "T_DURING(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
 
         when: 'reading text'
 
-            cql.mapTemporalOperators(cql.read(cqlText, Cql.Format.TEXT), Set.of(Interval) )
+        cql.mapTemporalOperators(cql.read(cqlText, Cql.Format.TEXT), Set.of(Interval))
 
         then:
 
-            noExceptionThrown()
+        noExceptionThrown()
     }
 
     def 'Test covering CqlVisitorMapEnvelopes'() {
 
         given:
 
-            def transformerFactory = Mock(CrsTransformerFactoryProj)
+        def transformerFactory = Mock(CrsTransformerFactoryProj)
 
-            transformerFactory.getAxisWithWraparound(_) >> OptionalInt.of(wrappedAxis)
+        transformerFactory.getAxisWithWraparound(_) >> OptionalInt.of(wrappedAxis)
 
         when: 'reading text'
 
-            cql.mapEnvelopes(cql.read(cqlText, Cql.Format.TEXT), (CrsInfo) transformerFactory)
+        cql.mapEnvelopes(cql.read(cqlText, Cql.Format.TEXT), (CrsInfo) transformerFactory)
 
         then:
 
-            noExceptionThrown()
+        noExceptionThrown()
 
         where:
 
-             cqlText                                                                 | wrappedAxis
-             "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-118.0,33.8,-117.9,34.0))"  | 0
-             "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-110,33.8,-117.9,34.0))"    | 0
-             "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-118.0,38.8,-117.9,34.0))"  | 1
+        cqlText                                                                | wrappedAxis
+        "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-118.0,33.8,-117.9,34.0))" | 0
+        "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-110,33.8,-117.9,34.0))"   | 0
+        "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-118.0,38.8,-117.9,34.0))" | 1
 
     }
 
@@ -1742,27 +1751,73 @@ class CqlTextSpec extends Specification {
 
         given:
 
-            Cql2Expression expression = SCrosses.of(SpatialLiteral.of("visitor_count"), SpatialLiteral.of("limit"))
+        Cql2Expression expression = SCrosses.of(SpatialLiteral.of("visitor_count"), SpatialLiteral.of("limit"))
 
-            CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
+        CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
 
         when: 'reading text'
 
-            cql.mapEnvelopes(expression, transformerFactory)
+        cql.mapEnvelopes(expression, transformerFactory)
 
         then:
 
-            noExceptionThrown()
+        noExceptionThrown()
     }
 
+    def 'Test cover mapTemporalOperators'() {
+
+        when: 'reading text'
+
+        cql.mapTemporalOperators(cql.read(cqlText, Cql.Format.TEXT), setTemporal)
+
+        then:
+
+        noExceptionThrown()
+
+        where:
+
+        setTemporal                                                                                                                                                                           | cqlText
+
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY)                              | "updated IN (TIMESTAMP('2017-06-10T07:30:00Z'),TIMESTAMP('2018-06-10T07:30:00Z'),TIMESTAMP('2019-06-10T07:30:00Z'),TIMESTAMP('2020-06-10T07:30:00Z'))"
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY)                              | "T_BEFORE(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), updated)"
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY)                              | "T_BEFORE(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_BEFORE)                                                                                                                                                     | "T_BEFORE(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_BEFORE, TemporalOperator.T_AFTER, TemporalOperator.T_CONTAINS, TemporalOperator.T_DISJOINT, TemporalOperator.T_EQUALS, TemporalOperator.T_FINISHEDBY)       | "T_OVERLAPPEDBY(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_STARTS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_BEFORE)                                                                                                                                                     | "T_AFTER(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_AFTER, TemporalOperator.T_DISJOINT, TemporalOperator.T_EQUALS, TemporalOperator.T_FINISHEDBY)                                                               | "T_BEFORE(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_CONTAINS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_EQUALS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS)                               | "T_STARTEDBY(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_OVERLAPS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_FINISHEDBY(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_FINISHES(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS)                                                              | "T_INTERSECTS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_DISJOINT(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY)                                                          | "T_MEETS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_MEETS, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS)                                                                                        | "T_METBY(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY)                              | "T_OVERLAPS(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), event_Date)"
+        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY)                              | "T_OVERLAPS(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
 
 
 
+    }
 
+    //In
+    def 'Test mapTemporalOperators with Interval'() {
 
+        given:
 
+        String cqlText = "T_INTERSECTS(event_date, INTERVAL(startDate,endDate))"
 
+        when: 'reading text'
 
+        cql.mapTemporalOperators(cql.read(cqlText, Cql.Format.TEXT), Set.of(In))
+
+        then:
+
+        noExceptionThrown()
+    }
 
 
 
