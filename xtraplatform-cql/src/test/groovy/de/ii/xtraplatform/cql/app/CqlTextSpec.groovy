@@ -1799,8 +1799,6 @@ class CqlTextSpec extends Specification {
         Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY)                              | "T_OVERLAPS(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), event_Date)"
         Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY)                              | "T_OVERLAPS(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
 
-
-
     }
 
     //In

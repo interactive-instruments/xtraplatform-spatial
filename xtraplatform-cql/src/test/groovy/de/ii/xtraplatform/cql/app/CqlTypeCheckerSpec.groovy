@@ -10,7 +10,10 @@ package de.ii.xtraplatform.cql.app
 import com.fasterxml.jackson.databind.annotation.JsonAppend
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
+import de.ii.xtraplatform.cql.domain.AContainedBy
 import de.ii.xtraplatform.cql.domain.Accenti
+import de.ii.xtraplatform.cql.domain.And
+import de.ii.xtraplatform.cql.domain.ArrayLiteral
 import de.ii.xtraplatform.cql.domain.ArrayOperator
 import de.ii.xtraplatform.cql.domain.Between
 import de.ii.xtraplatform.cql.domain.BinaryArrayOperation
@@ -23,10 +26,14 @@ import de.ii.xtraplatform.cql.domain.CqlNode
 import de.ii.xtraplatform.cql.domain.CqlPredicate
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.Function
+import de.ii.xtraplatform.cql.domain.Geometry
+import de.ii.xtraplatform.cql.domain.Gte
 import de.ii.xtraplatform.cql.domain.In
 import de.ii.xtraplatform.cql.domain.Interval
 import de.ii.xtraplatform.cql.domain.IsNull
 import de.ii.xtraplatform.cql.domain.Like
+import de.ii.xtraplatform.cql.domain.Lte
+import de.ii.xtraplatform.cql.domain.Neq
 import de.ii.xtraplatform.cql.domain.NonBinaryScalarOperation
 import de.ii.xtraplatform.cql.domain.Not
 import de.ii.xtraplatform.cql.domain.Operand
@@ -37,17 +44,24 @@ import de.ii.xtraplatform.cql.domain.Gt
 import de.ii.xtraplatform.cql.domain.Property
 import de.ii.xtraplatform.cql.domain.SIntersects
 import de.ii.xtraplatform.cql.domain.Scalar
+import de.ii.xtraplatform.cql.domain.ScalarExpression
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.cql.domain.Spatial
 import de.ii.xtraplatform.cql.domain.SpatialLiteral
 import de.ii.xtraplatform.cql.domain.SpatialOperator
 import de.ii.xtraplatform.cql.domain.Temporal
+import de.ii.xtraplatform.cql.domain.TemporalLiteral
 import de.ii.xtraplatform.cql.domain.Vector
 import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes
+import de.ii.xtraplatform.crs.domain.BoundingBox
+import de.ii.xtraplatform.crs.domain.EpsgCrs
+import de.ii.xtraplatform.crs.domain.OgcCrs
+import org.eclipse.jetty.util.ssl.AliasedX509ExtendedKeyManager
 import spock.lang.Shared
 import spock.lang.Specification
 
 import java.lang.reflect.Array
+import java.time.Instant
 import java.util.stream.IntStream
 
 class CqlTypeCheckerSpec extends Specification {
@@ -123,7 +137,7 @@ class CqlTypeCheckerSpec extends Specification {
                 Or.of(
                         Lt.of(Property.of("length"), ScalarLiteral.of(1)),
                         Lt.of(Property.of("length"), Property.of("count")),
-                        Gt.of(Property.of("road_class"), ScalarLiteral.of(1))
+                        Gt.of(Property.of("road_class"), ScalarLiteral.of(1),)
                 ).accept(visitor)
 
         then:
@@ -231,11 +245,12 @@ class CqlTypeCheckerSpec extends Specification {
 
         where:
 
-        property11 | property12 | vis1     | property21   | property22          | vis2
-        "begin"    | "end"      | visitor  | "number"     | "id"                | visitor
-        "end"      | "event"    | visitor  | "begin"      | "id"                | visitor
-        "event"    | "day"      | visitor2 | "day"        | "location_geometry" | visitor2
-        "day"      | "event"    | visitor2 | "has_ticket" | "event"             | visitor2
+        property11           | property12 | vis1     | property21   | property22          | vis2
+        Property.of("begin") | "end"      | visitor  | "number"     | "id"                | visitor
+        Property.of("end")   | "event"    | visitor  | "begin"      | "id"                | visitor
+        Property.of("event") | "day"      | visitor2 | "day"        | "location_geometry" | visitor2
+        Property.of("day")   | "event"    | visitor2 | "has_ticket" | "event"             | visitor2
+
     }
 
     def 'Test isNull'() {
@@ -282,10 +297,11 @@ class CqlTypeCheckerSpec extends Specification {
         where:
 
             property << [
-            Lt.of(Property.of("number"), Property.of("id")),
-            Gt.of(Property.of("number"), Property.of("id")),
-            In.of(Property.of("end"), Property.of("begin")),
-            Between.of(Property.of("count"), ScalarLiteral.of("1"), ScalarLiteral.of("3"))]
+                    Lt.of(Property.of("number"), Property.of("id")),
+                    Gt.of(Property.of("number"), Property.of("id")),
+                    In.of(Property.of("end"), Property.of("begin")),
+                    Between.of(Property.of("count"), ScalarLiteral.of("1"), ScalarLiteral.of("3")),
+                    CqlPredicate.of(Eq.of("swimming_pool", ScalarLiteral.of(true))),]
 
     }
 
@@ -465,4 +481,324 @@ class CqlTypeCheckerSpec extends Specification {
     }
 
 
+    def "Test Neq"(){
+
+        when:
+
+        boolean b = Neq.of(value1, value2).accept(visitor)
+
+        then:
+
+        b == true
+
+        where:
+
+        value1              | value2                | boolValue
+        Property.of("name") | Property.of("street") | true
+        "test"              | "test"                | false
+        "1"                 | ScalarLiteral.of("1") | false
+    }
+
+    def "Test Neq with function"(){
+
+        when:
+
+        boolean b = Neq.ofFunction(Function.of("filterValues.measure", ImmutableList.of()), ScalarLiteral.of(1)).accept(visitor)
+
+        then:
+
+        thrown CqlIncompatibleTypes
+
+    }
+
+    def "Test covering Temporal with function"(){
+
+        when:
+
+        In.of(expression).accept(visitor)
+
+        then:
+
+        noExceptionThrown()
+
+        where:
+
+        expression << [Interval.intervalOf(TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")), TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z"))),
+                       Interval.intervalOf(TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")), Property.of("event")),
+                       Interval.intervalOf(Property.of("event"), TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")))]
+
+
+    }
+
+    def 'Test Temporal throws IllegalStateException'(){
+        when:
+
+        In.of(Interval.intervalOf(TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")), ScalarLiteral.of(true) as Temporal)).accept(visitor)
+
+        then:
+
+        thrown IllegalStateException
+
+    }
+
+    def 'Test Envelope with Bbox'(){
+        when:
+
+        SpatialLiteral.of(Geometry.Envelope.of(BoundingBox.of(2,2,4,4, OgcCrs.CRS84))).accept(visitor)
+
+        then:
+
+        noExceptionThrown()
+
+    }
+
+    def 'Test Envelope getType'(){
+        when:
+
+        def type = Geometry.Envelope.of(BoundingBox.of(2,2,4,4, OgcCrs.CRS84)).getType()
+
+        then:
+
+        type == Geometry.Type.Envelope
+
+    }
+
+    def 'Test Point getType'(){
+
+        when:
+
+        def type = Geometry.Point.of(1 as double, 1 as double, EpsgCrs.of(555)).getType()
+
+        then:
+
+        type == Geometry.Type.Point
+
+    }
+
+    def 'Test LineString getType'(){
+
+        when:
+
+        def type = Geometry.LineString.of(Geometry.Coordinate.of(1 as double, 1 as double)).getType()
+
+        then:
+
+        type == Geometry.Type.LineString
+
+    }
+
+    def 'Test MultiLineString getType'(){
+
+        when:
+
+        def type = Geometry.MultiLineString.of(Geometry.LineString.of(Geometry.Coordinate.of(1 as double, 1 as double)),
+                Geometry.LineString.of(Geometry.Coordinate.of(1 as double, 1 as double))).getType()
+
+        then:
+
+        type == Geometry.Type.MultiLineString
+
+    }
+
+    def 'Test MultiPolygon getType'(){
+
+        when:
+
+        def type = Geometry.MultiPolygon.of(Geometry.Polygon.of(ImmutableList.of(Geometry.Coordinate.of(1 as double, 1 as double))),
+                Geometry.Polygon.of(ImmutableList.of(Geometry.Coordinate.of(1 as double, 1 as double)))).getType()
+
+        then:
+
+        type == Geometry.Type.MultiPolygon
+
+    }
+
+    def 'Test Gte'(){
+
+        when:
+
+        boolean b = Gte.of(value1, value2).accept(visitor)
+
+        then:
+
+        b == result
+
+        where:
+
+        value1                | value2                | result
+
+        "name"                | "name"                | true
+        "1"                   | ScalarLiteral.of("1") | true
+        Property.of("number") | Property.of("id")     | true
+    }
+
+    def 'Test Lte'(){
+
+        when:
+
+        boolean b = Lte.of(value1, value2).accept(visitor)
+
+        then:
+
+        b == result
+
+        where:
+
+        value1                                 | value2                | result
+
+        "name"                                 | "name"                | true
+        Property.of("number")                  | Property.of("id")     | true
+    }
+
+    def 'Test Coordinate 3D'(){
+
+        when:
+
+        SpatialLiteral.of(Geometry.Point.of(Geometry.Coordinate.of(1.00 as double, 2 as double, 3 as double))).accept(visitor)
+
+        then:
+
+        noExceptionThrown()
+
+    }
+
+    def 'Test Point with Crs'(){
+
+        when:
+
+        SpatialLiteral.of(Geometry.Point.of(1 as double, 1 as double, EpsgCrs.of(555))).accept(visitor)
+
+        then:
+
+        noExceptionThrown()
+
+    }
+
+    def 'Test In with List'(){
+        when:
+
+        In.of(ImmutableList.of(ScalarLiteral.of(1))).accept(visitor)
+        In.of(ScalarLiteral.of("name"), ImmutableList.of("name")).accept(visitor)
+
+        then:
+
+        noExceptionThrown()
+    }
+
+    def 'Test Gt with 2 Property Strings'(){
+        when:
+
+        Gt.of(value1, value2).accept(visitor)
+
+        then:
+
+        noExceptionThrown()
+
+        where:
+
+        value1 | value2
+
+        Property.of("number") | Property.of("id")
+        "name"                | "name"
+
+
+    }
+    def 'Test Eq'(){
+        when:
+
+        Eq.of(Property.of("name"), Property.of("street")).accept(visitor)
+
+        then:
+
+        noExceptionThrown()
+
+    }
+
+    def 'Gt List throws IllegalStateException'(){
+        when:
+
+        Gt.of(ImmutableList.of(ScalarLiteral.of(1), ScalarLiteral.of("d"), ScalarLiteral.of(false)))
+
+        then:
+
+        thrown IllegalStateException
+
+    }
+
+    def 'Gt List throws CqlIncompatibleTypes'(){
+        when:
+
+        Gt.of(ImmutableList.of(Property.of("number"), ScalarLiteral.of("1"))).accept(visitor)
+
+        then:
+
+        thrown CqlIncompatibleTypes
+
+    }
+
+    def 'Test Gt'(){
+        when:
+
+        Gt.of(ImmutableList.of(Property.of("number"), ScalarLiteral.of("1"))).accept(visitor)
+
+        then:
+
+        thrown CqlIncompatibleTypes
+
+    }
+
+    def 'Test Like with Function'(){
+        when:
+
+        Like.ofFunction(Function.of("position", ImmutableList.of()), ScalarLiteral.of(1 as double))
+
+        then:
+
+        noExceptionThrown()
+
+    }
+
+    def 'Test IsNUl with Function'(){
+        when:
+
+        IsNull.of(Function.of("position", ImmutableList.of()))
+
+        then:
+
+        noExceptionThrown()
+
+    }
+
+    def 'Test Lt with Function'(){
+        when:
+
+        Lt.ofFunction(Function.of("position", ImmutableList.of()), ScalarLiteral.of("1"))
+
+        then:
+
+        noExceptionThrown()
+
+    }
+
+    def 'Test Lte with Function'(){
+        when:
+
+        Lte.ofFunction(Function.of("position", ImmutableList.of()), ScalarLiteral.of("1"))
+
+        then:
+
+        noExceptionThrown()
+
+    }
+
+    def 'Test Gt with Function'(){
+        when:
+
+        Gt.ofFunction(Function.of("position", ImmutableList.of()), ScalarLiteral.of("1"))
+
+        then:
+
+        noExceptionThrown()
+
+    }
 }
