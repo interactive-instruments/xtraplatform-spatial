@@ -173,6 +173,8 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
     return MODE.NONE;
   }
 
+  Optional<String> getLabelTemplate();
+
   // TODO: document together with routes
   @DocIgnore
   @Override
