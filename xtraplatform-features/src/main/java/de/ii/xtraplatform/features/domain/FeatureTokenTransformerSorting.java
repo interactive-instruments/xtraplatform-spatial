@@ -37,6 +37,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   private final Map<List<String>, Integer> rearrange;
   private final Queue<Integer> indexQueue;
   private final Queue<List<String>> pathQueue;
+  private final Queue<Integer> schemaIndexQueue;
   private final Queue<List<Integer>> indexesQueue;
   private final Queue<String> valueQueue;
   private final Queue<Optional<SimpleFeatureGeometry>> geoTypeQueue;
@@ -54,6 +55,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
     this.rearrange = new LinkedHashMap<>();
     this.indexQueue = new LinkedList<>();
     this.pathQueue = new LinkedList<>();
+    this.schemaIndexQueue = new LinkedList<>();
     this.indexesQueue = new LinkedList<>();
     this.valueQueue = new LinkedList<>();
     this.geoTypeQueue = new LinkedList<>();
@@ -199,6 +201,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
     indexQueue.add(index);
     tokenQueue.add(token);
     pathQueue.add(context.path());
+    schemaIndexQueue.add(context.schemaIndex());
     indexesQueue.add(new ArrayList<>(context.indexes()));
     valueQueue.add(context.value());
     geoTypeQueue.add(context.geometryType());
@@ -225,6 +228,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
       FeatureTokenType token = tokenQueue.remove();
 
       context.pathTracker().track(pathQueue.remove());
+      context.setSchemaIndex(schemaIndexQueue.remove());
       context.setIndexes(indexesQueue.remove());
       context.setValue(valueQueue.remove());
       context.setGeometryType(geoTypeQueue.remove());
