@@ -162,6 +162,20 @@ class StringTemplateFiltersSpec extends Specification {
             result == "foo<em>bar</em>"
     }
 
+    def 'markdown test with link'() {
+        given:
+
+        String value = "[example](http://www.example.com)"
+        String template = "{{value | markdown}}"
+
+        when:
+
+        String result = StringTemplateFilters.applyTemplate(template, value)
+        then:
+
+        result == "<a href=\"http://www.example.com\" target=\"_blank\">example</a>"
+    }
+
     def 'assignTo test'() {
         given:
             String template = "{{value | append:'bar' | assignTo:'foobar' | toUpper | append:' {{foobar}}'}}"
