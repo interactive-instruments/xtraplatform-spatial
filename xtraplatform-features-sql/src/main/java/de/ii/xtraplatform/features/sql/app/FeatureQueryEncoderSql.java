@@ -118,7 +118,10 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueries, SqlQuery
 
     List<SortKey> sortKeys = transformSortKeys(featureQuery.getSortKeys(), mainTable);
 
-    return new ImmutableSqlQueryOptions.Builder().customSortKeys(sortKeys).build();
+    return new ImmutableSqlQueryOptions.Builder()
+        .customSortKeys(sortKeys)
+        .isHitsOnly(featureQuery.hitsOnly())
+        .build();
   }
 
   private List<SortKey> transformSortKeys(

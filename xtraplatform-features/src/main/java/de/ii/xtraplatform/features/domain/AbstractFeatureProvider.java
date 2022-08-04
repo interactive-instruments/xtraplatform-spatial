@@ -301,7 +301,8 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
 
     public FeatureStreamImpl(FeatureQuery query, boolean doTransform) {
       this.query = query;
-      this.doTransform = doTransform;
+      // skip property transformations, if no features are returned
+      this.doTransform = doTransform && !query.hitsOnly();
     }
 
     public FeatureStreamImpl(FeatureQuery query) {
