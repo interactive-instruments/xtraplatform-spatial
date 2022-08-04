@@ -31,6 +31,6 @@ public interface FeatureQueriesExtension {
       QUERY_HOOK hook,
       FeatureProviderDataV2 data,
       FeatureProviderConnector<?, ?, ?> connector,
-      FeatureQuery query,
+      Query query,
       BiConsumer<String, String> aliasResolver);
 }

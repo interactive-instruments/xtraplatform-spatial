@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 
 class AliasGenerator {
 
-  public List<String> getAliases(List<SchemaSql> parents, SchemaSql schema) {
+  public static List<String> getAliases(List<SchemaSql> parents, SchemaSql schema) {
     char alias = 'A';
 
     if (parents.isEmpty() && schema.getRelation().isEmpty()) {
@@ -44,7 +44,7 @@ class AliasGenerator {
     return aliases.build();
   }
 
-  public List<String> getAliases(SchemaSql schema) {
+  public static List<String> getAliases(SchemaSql schema) {
     char alias = 'A';
 
     if (schema.getParentPath().isEmpty()) {
@@ -62,7 +62,7 @@ class AliasGenerator {
     return aliases.build();
   }
 
-  public List<String> getAliases(SchemaSql schema, int level) {
+  public static List<String> getAliases(SchemaSql schema, int level) {
     if (level > 0) {
       String prefix = IntStream.range(0, level).mapToObj(i -> "A").collect(Collectors.joining());
 
@@ -72,7 +72,7 @@ class AliasGenerator {
     return getAliases(schema);
   }
 
-  public List<String> getAliases(List<SchemaSql> parents, SchemaSql schema, int level) {
+  public static List<String> getAliases(List<SchemaSql> parents, SchemaSql schema, int level) {
     if (level > 0) {
       String prefix = IntStream.range(0, level).mapToObj(i -> "A").collect(Collectors.joining());
 

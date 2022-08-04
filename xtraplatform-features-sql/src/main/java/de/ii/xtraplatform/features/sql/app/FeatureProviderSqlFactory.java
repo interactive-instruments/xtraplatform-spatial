@@ -132,7 +132,10 @@ public class FeatureProviderSqlFactory
 
   private FeatureProviderSqlData generateTypesIfNecessary(FeatureProviderSqlData data) {
     if (data.isAuto() && data.getTypes().isEmpty()) {
-      SqlConnector connector = (SqlConnector) connectorFactory.createConnector(data);
+      SqlConnector connector =
+          (SqlConnector)
+              connectorFactory.createConnector(
+                  data.getFeatureProviderType(), data.getId(), data.getConnectionInfo());
 
       if (!connector.isConnected()) {
         connectorFactory.disposeConnector(connector);

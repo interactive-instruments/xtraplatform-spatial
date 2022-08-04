@@ -11,10 +11,9 @@ import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStoreMultiplicityTracker;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
-import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
 import de.ii.xtraplatform.features.domain.NestingTracker;
+import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
@@ -36,9 +35,9 @@ public class FeatureDecoderSql
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDecoderSql.class);
 
-  private final FeatureSchema featureSchema;
-  private final FeatureQuery featureQuery;
-  private final List<String> mainTablePath;
+  private final Map<String, SchemaMapping> mappings;
+  private final Query query;
+  private final List<List<String>> mainTablePaths;
   private final FeatureStoreMultiplicityTracker multiplicityTracker;
   private final boolean isSingleFeature;
 
@@ -52,35 +51,29 @@ public class FeatureDecoderSql
   private NestingTracker nestingTracker;
 
   public FeatureDecoderSql(
-      List<FeatureStoreTypeInfo> typeInfos,
-      List<SchemaSql> tableSchemas,
-      FeatureSchema featureSchema,
-      FeatureQuery query) {
-    this.featureSchema = featureSchema;
-    this.featureQuery = query;
+      Map<String, SchemaMapping> mappings, List<SchemaSql> tableSchemas, Query query) {
+    this.mappings = mappings;
+    this.query = query;
 
-    // TODO: support multiple main tables
-    SchemaSql tableSchema = tableSchemas.get(0);
-
-    this.mainTablePath = tableSchema.getFullPath();
+    this.mainTablePaths =
+        tableSchemas.stream().map(SchemaBase::getFullPath).collect(Collectors.toList());
     List<List<String>> multiTables =
-        tableSchema.getAllObjects().stream()
+        tableSchemas.stream()
+            .flatMap(s -> s.getAllObjects().stream())
             .filter(schema -> !schema.getRelation().isEmpty())
             .map(SchemaBase::getFullPath)
             .collect(Collectors.toList());
     this.multiplicityTracker = new SqlMultiplicityTracker(multiTables);
-    this.isSingleFeature = query.returnsSingleFeature();
+    this.isSingleFeature =
+        query instanceof FeatureQuery && ((FeatureQuery) query).returnsSingleFeature();
   }
 
   @Override
   protected void init() {
-    this.context =
-        createContext()
-            .setMapping(new ImmutableSchemaMapping.Builder().targetSchema(featureSchema).build())
-            .setQuery(featureQuery);
+    this.context = createContext().setMappings(mappings).setQuery(query);
     this.geometryDecoder = new GeometryDecoderWkt(getDownstream(), context);
     this.nestingTracker =
-        new NestingTracker(getDownstream(), context, mainTablePath, false, false, false);
+        new NestingTracker(getDownstream(), context, mainTablePaths, false, false, false);
   }
 
   @Override
@@ -116,19 +109,34 @@ public class FeatureDecoderSql
 
   private void handleMetaRow(SqlRowMeta sqlRow) {
 
-    context.metadata().numberReturned(sqlRow.getNumberReturned());
-    context.metadata().numberMatched(sqlRow.getNumberMatched());
+    context
+        .metadata()
+        .numberReturned(
+            context.metadata().getNumberReturned().orElse(0) + sqlRow.getNumberReturned());
+    if (sqlRow.getNumberMatched().isPresent()) {
+      context
+          .metadata()
+          .numberMatched(
+              context.metadata().getNumberMatched().orElse(0)
+                  + sqlRow.getNumberMatched().getAsLong());
+    }
     context.metadata().isSingleFeature(isSingleFeature);
 
-    getDownstream().onStart(context);
+    if (!started) {
+      getDownstream().onStart(context);
 
-    this.started = true;
+      this.started = true;
+    }
   }
 
   private void handleValueRow(SqlRow sqlRow) {
 
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Sql row: {}", sqlRow);
+    }
+
+    if (sqlRow.getType().isPresent()) {
+      context.setType(sqlRow.getType().get());
     }
 
     Object featureId = sqlRow.getIds().get(0);

@@ -101,7 +101,10 @@ public class FeatureProviderWfsFactory
           data.getId());
     }
 
-    WfsConnectorHttp connector = (WfsConnectorHttp) connectorFactory.createConnector(data);
+    WfsConnectorHttp connector =
+        (WfsConnectorHttp)
+            connectorFactory.createConnector(
+                data.getFeatureProviderType(), data.getId(), data.getConnectionInfo());
 
     try {
       if (!connector.isConnected()) {

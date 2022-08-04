@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.sql.domain;
 
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
+import de.ii.xtraplatform.features.domain.SourcePath;
 import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +17,7 @@ import java.util.stream.Stream;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface SqlPath {
+public interface SqlPath extends SourcePath {
 
   String getName();
 
@@ -76,6 +77,7 @@ public interface SqlPath {
     return getParentTables().stream().map(SqlPath::asPath).collect(Collectors.toList());
   }
 
+  @Override
   @Value.Derived
   default List<String> getFullPath() {
     return Stream.concat(getParentPath().stream(), Stream.of(asPath()))

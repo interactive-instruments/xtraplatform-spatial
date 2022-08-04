@@ -137,8 +137,15 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default Optional<T> getIdProperty() {
-    return getProperties().stream()
-        .filter(t -> t.getRole().filter(role -> role == Role.ID).isPresent())
+    return getAllNestedProperties().stream().filter(SchemaBase::isId).findFirst();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default Optional<T> getIdParent() {
+    return getAllObjects().stream()
+        .filter(schema -> schema.getProperties().stream().anyMatch(SchemaBase::isId))
         .findFirst();
   }
 
@@ -147,7 +154,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default Optional<T> getPrimaryGeometry() {
     return getAllNestedProperties().stream()
-        .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_GEOMETRY).isPresent())
+        .filter(SchemaBase::isPrimaryGeometry)
         .findFirst()
         .or(() -> getProperties().stream().filter(SchemaBase::isSpatial).findFirst());
   }
@@ -155,9 +162,18 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  default Optional<T> getPrimaryGeometryParent() {
+    return getAllObjects().stream()
+        .filter(schema -> schema.getProperties().stream().anyMatch(SchemaBase::isPrimaryGeometry))
+        .findFirst();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default Optional<T> getPrimaryInstant() {
     return getAllNestedProperties().stream()
-        .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_INSTANT).isPresent())
+        .filter(SchemaBase::isPrimaryInstant)
         .findFirst()
         .or(
             () ->
@@ -169,20 +185,44 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  default Optional<T> getPrimaryInstantParent() {
+    return getAllObjects().stream()
+        .filter(schema -> schema.getProperties().stream().anyMatch(SchemaBase::isPrimaryInstant))
+        .findFirst();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default Optional<Tuple<T, T>> getPrimaryInterval() {
     Optional<T> start =
-        getAllNestedProperties().stream()
-            .filter(
-                t -> t.getRole().filter(role -> role == Role.PRIMARY_INTERVAL_START).isPresent())
-            .findFirst();
+        getAllNestedProperties().stream().filter(SchemaBase::isPrimaryIntervalStart).findFirst();
     Optional<T> end =
-        getAllNestedProperties().stream()
-            .filter(t -> t.getRole().filter(role -> role == Role.PRIMARY_INTERVAL_END).isPresent())
-            .findFirst();
+        getAllNestedProperties().stream().filter(SchemaBase::isPrimaryIntervalEnd).findFirst();
 
     return start.isPresent() && end.isPresent()
         ? Optional.of(Tuple.of(start.get(), end.get()))
         : Optional.empty();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default Optional<T> getPrimaryIntervalStartParent() {
+    return getAllObjects().stream()
+        .filter(
+            schema -> schema.getProperties().stream().anyMatch(SchemaBase::isPrimaryIntervalStart))
+        .findFirst();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default Optional<T> getPrimaryIntervalEndParent() {
+    return getAllObjects().stream()
+        .filter(
+            schema -> schema.getProperties().stream().anyMatch(SchemaBase::isPrimaryIntervalEnd))
+        .findFirst();
   }
 
   @JsonIgnore

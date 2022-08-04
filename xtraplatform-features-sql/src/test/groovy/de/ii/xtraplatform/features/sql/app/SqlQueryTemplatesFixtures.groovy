@@ -14,32 +14,39 @@ class SqlQueryTemplatesFixtures {
 
     static String META = "WITH\n" +
             "    NR AS (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
-            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS) \n" +
-            "  SELECT * FROM NR, NM"
+            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS),\n" +
+            "    NS AS (SELECT -1::bigint AS numberSkipped)\n" +
+            "  SELECT * FROM NR, NM, NS"
 
     static String META_WITHOUT_NUMBER_MATCHED = "WITH\n" +
-                    "    NR AS (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY SKEY LIMIT 10 OFFSET 10) AS IDS)\n" +
-                    "  SELECT *, -1::bigint AS numberMatched FROM NR"
+                    "    NR AS (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
+                    "    NM AS (SELECT -1::bigint AS numberMatched),\n" +
+                    "    NS AS (SELECT -1::bigint AS numberSkipped)\n" +
+                    "  SELECT * FROM NR, NM, NS"
 
     static String META_SORT_BY = "WITH\n" +
             "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
-            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS) \n" +
-            "  SELECT * FROM NR, NM"
+            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS),\n" +
+            "    NS AS (SELECT -1::bigint AS numberSkipped)\n" +
+            "  SELECT * FROM NR, NM, NS"
 
     static String META_SORT_BY_DESC = "WITH\n" +
             "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0 DESC, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
-            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS) \n" +
-            "  SELECT * FROM NR, NM"
+            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS),\n" +
+            "    NS AS (SELECT -1::bigint AS numberSkipped)\n" +
+            "  SELECT * FROM NR, NM, NS"
 
     static String META_SORT_BY_MIXED = "WITH\n" +
             "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.lastModified AS CSKEY_1, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0 DESC, CSKEY_1, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
-            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS) \n" +
-            "  SELECT * FROM NR, NM"
+            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS),\n" +
+            "    NS AS (SELECT -1::bigint AS numberSkipped)\n" +
+            "  SELECT * FROM NR, NM, NS"
 
     static String META_FILTER = "WITH\n" +
             "    NR AS (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A WHERE A.id IN (SELECT AA.id FROM externalprovider AA WHERE AA.type = 1) ORDER BY SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
-            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A WHERE A.id IN (SELECT AA.id FROM externalprovider AA WHERE AA.type = 1) ORDER BY 1) AS IDS) \n" +
-            "  SELECT * FROM NR, NM"
+            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A WHERE A.id IN (SELECT AA.id FROM externalprovider AA WHERE AA.type = 1) ORDER BY 1) AS IDS),\n" +
+            "    NS AS (SELECT -1::bigint AS numberSkipped)\n" +
+            "  SELECT * FROM NR, NM, NS"
 
     static List<String> VALUE_ARRAY = [
             "SELECT A.id AS SKEY, A.id FROM externalprovider A ORDER BY 1",

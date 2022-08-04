@@ -18,15 +18,11 @@ import com.zaxxer.hikari.HikariDataSource;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
-import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
-import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.app.FeatureProviderSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
-import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
@@ -35,7 +31,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
@@ -77,58 +72,35 @@ public class SqlConnectorRx implements SqlConnector {
       AppContext appContext,
       @Assisted MetricRegistry metricRegistry,
       @Assisted HealthCheckRegistry healthCheckRegistry,
-      @Assisted FeatureProviderSqlData data) {
-    this.connectionInfo = (ConnectionInfoSql) data.getConnectionInfo();
-    this.poolName = String.format("db.%s", data.getId());
+      @Assisted String providerId,
+      @Assisted ConnectionInfoSql connectionInfo) {
+    this.connectionInfo = connectionInfo;
+    this.poolName = String.format("db.%s", providerId);
     this.metricRegistry = metricRegistry;
     this.healthCheckRegistry = healthCheckRegistry;
 
-    int maxQueries = getMaxQueries(data);
-    if (connectionInfo.getPool().getMaxConnections() > 0) {
-      this.maxConnections = connectionInfo.getPool().getMaxConnections();
-    } else {
-      this.maxConnections = maxQueries * Runtime.getRuntime().availableProcessors();
-    }
-    if (connectionInfo.getPool().getMinConnections() >= 0) {
-      this.minConnections = connectionInfo.getPool().getMinConnections();
-    } else {
-      this.minConnections = maxConnections;
-    }
-    int capacity = maxConnections / maxQueries;
+    this.maxConnections = connectionInfo.getPool().getMaxConnections();
+    this.minConnections =
+        connectionInfo.getPool().getMinConnections() >= 0
+            ? connectionInfo.getPool().getMinConnections()
+            : maxConnections;
+
+    // int capacity = maxConnections / maxQueries;
     // TODO
-    this.queueSize = Math.max(1024, maxConnections * capacity * 2);
+    this.queueSize = 1024; // Math.max(1024, maxConnections * capacity * 2);
 
     this.dataDir = appContext.getDataDir();
     // LOGGER.debug("QUEUE {} {} {} {} {}", connectionInfo.getDatabase(), maxQueries,
     // maxConnections, capacity, maxConnections * capacity * 2);
 
     this.applicationName =
-        String.format("%s %s - %s", appContext.getName(), appContext.getVersion(), data.getId());
-    this.providerId = data.getId();
+        String.format("%s %s - %s", appContext.getName(), appContext.getVersion(), providerId);
+    this.providerId = providerId;
   }
 
   @Override
   public String getType() {
     return String.format("%s/%s", FeatureProviderSql.PROVIDER_TYPE, CONNECTOR_TYPE);
-  }
-
-  // TODO: better way to get maxQueries
-  private int getMaxQueries(FeatureProviderSqlData data) {
-    FeatureStorePathParser pathParser =
-        FeatureProviderSql.createPathParser(data.getSourcePathDefaults(), null);
-    Map<String, FeatureStoreTypeInfo> typeInfos =
-        AbstractFeatureProvider.createTypeInfos(pathParser, data.getTypes());
-    int maxQueries = 0;
-
-    for (FeatureStoreTypeInfo typeInfo : typeInfos.values()) {
-      int numberOfQueries =
-          typeInfo.getInstanceContainers().get(0).getAllAttributesContainers().size();
-
-      if (numberOfQueries > maxQueries) {
-        maxQueries = numberOfQueries;
-      }
-    }
-    return maxQueries <= 0 ? 1 : maxQueries;
   }
 
   @Override

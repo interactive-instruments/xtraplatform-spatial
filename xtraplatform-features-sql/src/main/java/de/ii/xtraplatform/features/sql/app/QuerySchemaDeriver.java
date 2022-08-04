@@ -54,11 +54,9 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
       List<SqlPath> parentPaths) {
 
     List<String> fullParentPath =
-        targetSchema.isObject()
-            ? parentPaths.isEmpty() ? ImmutableList.of() : parentPaths.get(0).getFullPath()
-            : parentPaths.stream()
-                .flatMap(sqlPath -> sqlPath.getFullPath().stream())
-                .collect(Collectors.toList());
+        parentPaths.stream()
+            .flatMap(sqlPath -> sqlPath.getFullPath().stream())
+            .collect(Collectors.toList());
 
     List<SqlRelation> relations =
         parentPaths.isEmpty()
@@ -313,6 +311,8 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                         property.getSourcePaths().stream()
                             .map(sourcePath -> targetSchema.getName() + "." + sourcePath)
                             .collect(Collectors.toList()))
+                    .parentPath(parentPath.getFullPath())
+                    .addAllParentPath(property.getParentPath())
                     .build())
         .collect(Collectors.toList());
   }

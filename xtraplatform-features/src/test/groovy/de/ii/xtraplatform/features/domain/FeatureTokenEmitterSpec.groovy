@@ -25,7 +25,8 @@ class FeatureTokenEmitterSpec extends Specification {
         FeatureEventHandler.ModifiableContext<FeatureSchema, SchemaMapping> context = ModifiableGenericContext.create();
         SchemaMapping mapping = Mock()
         mapping.getPathSeparator() >> Optional.empty()
-        context.setMapping(mapping)
+        context.setMappings([ft: mapping])
+        context.setType('ft')
         tokenReader = new FeatureTokenReader(eventHandler, context)
     }
 

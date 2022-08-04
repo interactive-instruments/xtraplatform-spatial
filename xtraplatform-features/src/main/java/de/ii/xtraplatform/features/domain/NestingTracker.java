@@ -25,7 +25,7 @@ public class NestingTracker {
 
   private final FeatureEventHandler<?, ?, ModifiableContext<?, ?>> downstream;
   private final ModifiableContext<?, ?> context;
-  private final List<String> mainPath;
+  private final List<List<String>> mainPaths;
   private final boolean flattenObjects;
   private final boolean flattenArrays;
   private final List<String> nestingStack;
@@ -36,13 +36,13 @@ public class NestingTracker {
   public <T extends ModifiableContext<?, ?>> NestingTracker(
       FeatureEventHandler<?, ?, T> downstream,
       T context,
-      List<String> mainPath,
+      List<List<String>> mainPaths,
       boolean flattenObjects,
       boolean flattenArrays,
       boolean skippable) {
     this.downstream = (FeatureEventHandler<?, ?, ModifiableContext<?, ?>>) downstream;
     this.context = context;
-    this.mainPath = mainPath;
+    this.mainPaths = mainPaths;
     this.flattenObjects = flattenObjects;
     this.flattenArrays = flattenArrays;
     this.skippable = skippable;
@@ -187,7 +187,7 @@ public class NestingTracker {
   }
 
   public boolean isNotMain(List<String> nextPath) {
-    return !Objects.equals(nextPath, mainPath);
+    return !mainPaths.contains(nextPath);
   }
 
   public boolean isFirst(List<Integer> indexes) {

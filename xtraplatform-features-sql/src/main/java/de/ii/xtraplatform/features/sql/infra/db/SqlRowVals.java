@@ -25,6 +25,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,7 @@ class SqlRowVals implements SqlRow {
   private final List<Object> values;
   private int priority;
   private SchemaSql tableSchema;
+  private Optional<String> type;
 
   SqlRowVals() {
     this.ids = new ArrayList<>(32);
@@ -91,6 +93,11 @@ class SqlRowVals implements SqlRow {
   }
 
   @Override
+  public Optional<String> getType() {
+    return type;
+  }
+
+  @Override
   public List<List<String>> getColumnPaths() {
     if (Objects.nonNull(tableSchema)) {
       return tableSchema.getColumnPaths();
@@ -128,6 +135,7 @@ class SqlRowVals implements SqlRow {
 
     if (queryOptions.getTableSchema().isPresent()) {
       this.tableSchema = queryOptions.getTableSchema().get();
+      this.type = queryOptions.getType();
       this.sortKeyNames = queryOptions.getSortKeys();
       this.sortKeyDirections = queryOptions.getSortDirections();
       columnTypes = queryOptions.getColumnTypes();

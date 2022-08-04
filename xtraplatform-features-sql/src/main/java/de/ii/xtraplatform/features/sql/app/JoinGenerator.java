@@ -18,19 +18,34 @@ import java.util.stream.Stream;
 
 public class JoinGenerator {
 
-  public String getJoins(
+  public static String getJoins(
       SchemaSql table,
       List<SchemaSql> parents,
       List<String> aliases,
-      List<Optional<String>> relationFilters,
+      FilterEncoderSql filterEncoder) {
+    return getJoins(
+        table, parents, aliases, Optional.empty(), Optional.empty(), false, false, filterEncoder);
+  }
+
+  public static String getJoins(
+      SchemaSql table,
+      List<SchemaSql> parents,
+      List<String> aliases,
       Optional<SchemaSql> userFilterTable,
       Optional<String> userFilter,
-      Optional<String> instanceFilter) {
+      boolean ignoreInstanceFilter,
+      boolean ignoreRelationFilters,
+      FilterEncoderSql filterEncoder) {
 
     if (table.getRelation().isEmpty() && parents.isEmpty()) {
       return "";
     }
     ListIterator<String> aliasesIterator = aliases.listIterator();
+
+    Optional<String> instanceFilter =
+        getInstanceFilter(parents, filterEncoder, ignoreInstanceFilter);
+    List<Optional<String>> relationFilters =
+        getRelationFilters(table, parents, filterEncoder, ignoreRelationFilters);
 
     Optional<SqlRelation> userFilterRelation =
         userFilterTable.map(t -> t.getRelation().get(t.getRelation().size() - 1));
@@ -56,7 +71,35 @@ public class JoinGenerator {
         userFilterJoin, join, userFilterJoin.isEmpty() || join.isEmpty() ? "" : " ");
   }
 
-  private Stream<String> toJoins(
+  private static Optional<String> getInstanceFilter(
+      List<SchemaSql> parents, FilterEncoderSql filterEncoder, boolean ignoreInstanceFilter) {
+    return parents.isEmpty() || ignoreInstanceFilter
+        ? Optional.empty()
+        : parents.get(0).getFilter().map(filter -> filterEncoder.encode(filter, parents.get(0)));
+  }
+
+  private static List<Optional<String>> getRelationFilters(
+      SchemaSql schema,
+      List<SchemaSql> parents,
+      FilterEncoderSql filterEncoder,
+      boolean ignoreRelationFilters) {
+    return Stream.concat(
+            parents.stream().flatMap(parent -> parent.getRelation().stream()),
+            schema.getRelation().stream())
+        .map(
+            sqlRelation ->
+                ignoreRelationFilters
+                    ? Optional.<String>empty()
+                    : sqlRelation
+                        .getTargetFilter()
+                        .flatMap(
+                            filter ->
+                                filterEncoder.encodeRelationFilter(
+                                    Optional.of(schema), Optional.empty())))
+        .collect(Collectors.toList());
+  }
+
+  private static Stream<String> toJoins(
       SqlRelation relation,
       ListIterator<String> aliases,
       Optional<String> sqlFilter,
@@ -110,7 +153,7 @@ public class JoinGenerator {
     return joins.stream();
   }
 
-  private String toJoin(
+  private static String toJoin(
       String targetContainer,
       String targetAlias,
       String targetField,

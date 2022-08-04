@@ -41,6 +41,22 @@ public interface BoundingBox {
         .build();
   }
 
+  static BoundingBox merge(BoundingBox first, BoundingBox second) {
+    if (!Objects.equals(first.getEpsgCrs(), second.getEpsgCrs())) {
+      return first;
+    }
+
+    return new ImmutableBoundingBox.Builder()
+        .xmin(Math.min(first.getXmin(), second.getXmin()))
+        .ymin(Math.min(first.getYmin(), second.getYmin()))
+        .zmin(first.is3d() && second.is3d() ? Math.min(first.getZmin(), second.getZmin()) : null)
+        .xmax(Math.max(first.getXmax(), second.getXmax()))
+        .ymax(Math.max(first.getYmax(), second.getYmax()))
+        .zmax(first.is3d() && second.is3d() ? Math.max(first.getZmax(), second.getZmax()) : null)
+        .epsgCrs(first.getEpsgCrs())
+        .build();
+  }
+
   double getXmin();
 
   double getYmin();

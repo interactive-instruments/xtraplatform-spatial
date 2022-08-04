@@ -7,13 +7,14 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import java.util.Map;
+import java.util.List;
+import org.immutables.value.Value;
 
-public interface FeatureQueryEncoder<T, V extends FeatureProviderConnector.QueryOptions> {
+@Value.Immutable
+public interface MultiFeatureQuery extends Query {
 
-  String PROPERTY_NOT_AVAILABLE = "PROPERTY_NOT_AVAILABLE";
+  @Value.Immutable
+  interface SubQuery extends TypeQuery {}
 
-  T encode(Query query, Map<String, String> additionalQueryParameters);
-
-  V getOptions(TypeQuery typeQuery);
+  List<SubQuery> getQueries();
 }

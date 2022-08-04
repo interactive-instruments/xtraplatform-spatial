@@ -12,7 +12,8 @@ package de.ii.xtraplatform.features.domain;
  */
 public interface ConnectorFactory {
 
-  FeatureProviderConnector<?, ?, ?> createConnector(FeatureProviderDataV2 featureProviderData);
+  FeatureProviderConnector<?, ?, ?> createConnector(
+      String providerType, String providerId, ConnectionInfo connectionInfo);
 
   void disposeConnector(FeatureProviderConnector<?, ?, ?> connector);
 

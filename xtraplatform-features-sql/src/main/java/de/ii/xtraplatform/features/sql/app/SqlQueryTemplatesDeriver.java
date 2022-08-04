@@ -39,17 +39,18 @@ public class SqlQueryTemplatesDeriver
 
   private final SqlDialect sqlDialect;
   private final FilterEncoderSql filterEncoder;
-  private final AliasGenerator aliasGenerator;
-  private final JoinGenerator joinGenerator;
   private final boolean computeNumberMatched;
+  private final boolean computeNumberSkipped;
 
   public SqlQueryTemplatesDeriver(
-      FilterEncoderSql filterEncoder, SqlDialect sqlDialect, boolean computeNumberMatched) {
+      FilterEncoderSql filterEncoder,
+      SqlDialect sqlDialect,
+      boolean computeNumberMatched,
+      boolean computeNumberSkipped) {
     this.sqlDialect = sqlDialect;
     this.filterEncoder = filterEncoder;
-    this.aliasGenerator = new AliasGenerator();
-    this.joinGenerator = new JoinGenerator();
     this.computeNumberMatched = computeNumberMatched;
+    this.computeNumberSkipped = computeNumberSkipped;
   }
 
   @Override
@@ -76,9 +77,16 @@ public class SqlQueryTemplatesDeriver
   }
 
   MetaQueryTemplate createMetaQueryTemplate(SchemaSql schema) {
-    return (limit, offset, additionalSortKeys, cqlFilter, virtualTables) -> {
+    return (limit,
+        offset,
+        skipOffset,
+        additionalSortKeys,
+        cqlFilter,
+        virtualTables,
+        withNumberSkipped) -> {
       String limitSql = limit > 0 ? String.format(" LIMIT %d", limit) : "";
       String offsetSql = offset > 0 ? String.format(" OFFSET %d", offset) : "";
+      String skipOffsetSql = skipOffset > 0 ? String.format(" OFFSET %d", skipOffset) : "";
       Optional<String> filter = getFilter(schema, cqlFilter);
       String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
 
@@ -102,26 +110,30 @@ public class SqlQueryTemplatesDeriver
               "SELECT %7$s, count(*) AS numberReturned FROM (SELECT %2$s FROM %1$s%6$s ORDER BY %3$s%4$s%5$s) AS IDS",
               table, columns, orderBy, limitSql, offsetSql, where, minMaxColumns);
 
-      if (computeNumberMatched) {
-        String numberMatched =
-            String.format(
-                "SELECT count(*) AS numberMatched FROM (SELECT A.%2$s AS %4$s FROM %1$s A%3$s ORDER BY 1) AS IDS",
-                tableName, schema.getSortKey().get(), where, SKEY);
-        return String.format(
-            "WITH\n%3$s%3$sNR AS (%s),\n%3$s%3$sNM AS (%s) \n%3$sSELECT * FROM NR, NM",
-            numberReturned, numberMatched, TAB);
-      }
+      String numberMatched =
+          computeNumberMatched
+              ? String.format(
+                  "SELECT count(*) AS numberMatched FROM (SELECT A.%2$s AS %4$s FROM %1$s A%3$s ORDER BY 1) AS IDS",
+                  tableName, schema.getSortKey().get(), where, SKEY)
+              : "SELECT -1::bigint AS numberMatched";
+
+      String numberSkipped =
+          computeNumberSkipped && withNumberSkipped
+              ? String.format(
+                  "SELECT CASE WHEN numberReturned = 0 THEN (SELECT count(*) AS numberSkipped FROM (SELECT %2$s FROM %1$s%6$s ORDER BY %3$s%4$s%5$s) AS IDS) ELSE -1::bigint END AS numberSkipped FROM NR",
+                  table, columns, orderBy, limitSql, skipOffsetSql, where)
+              : "SELECT -1::bigint AS numberSkipped";
 
       return String.format(
-          "WITH\n%2$s%2$sNR AS (%s)\n%2$sSELECT *, -1::bigint AS numberMatched FROM NR",
-          numberReturned, TAB);
+          "WITH\n%4$s%4$sNR AS (%s),\n%4$s%4$sNM AS (%s),\n%4$s%4$sNS AS (%s)\n%4$sSELECT * FROM NR, NM, NS",
+          numberReturned, numberMatched, numberSkipped, TAB);
     };
   }
 
   ValueQueryTemplate createValueQueryTemplate(SchemaSql schema, List<SchemaSql> parents) {
     return (limit, offset, additionalSortKeys, filter, minMaxKeys, virtualTables) -> {
       boolean isIdFilter = filter.filter(cql2Predicate -> cql2Predicate instanceof In).isPresent();
-      List<String> aliases = aliasGenerator.getAliases(schema);
+      List<String> aliases = AliasGenerator.getAliases(schema);
 
       SchemaSql rootSchema = parents.isEmpty() ? schema : parents.get(0);
       Optional<String> sqlFilter = getFilter(rootSchema, filter);
@@ -153,7 +165,7 @@ public class SqlQueryTemplatesDeriver
       List<SortKey> additionalSortKeys,
       List<SchemaSql> parents,
       Map<String, String> virtualTables) {
-    List<String> aliases = aliasGenerator.getAliases(parents, schema);
+    List<String> aliases = AliasGenerator.getAliases(parents, schema);
     String attributeContainerAlias = aliases.get(aliases.size() - 1);
 
     String mainTableName = parents.isEmpty() ? schema.getName() : parents.get(0).getName();
@@ -193,44 +205,14 @@ public class SqlQueryTemplatesDeriver
                         }))
             .collect(Collectors.joining(", "));
 
-    Optional<String> instanceFilter =
-        parents.isEmpty()
-            ? Optional.empty()
-            : parents
-                .get(0)
-                .getFilter()
-                .map(filter -> filterEncoder.encode(filter, parents.get(0)));
-
-    List<Optional<String>> relationFilters =
-        Stream.concat(
-                parents.stream().flatMap(parent -> parent.getRelation().stream()),
-                schema.getRelation().stream())
-            .map(
-                sqlRelation ->
-                    sqlRelation
-                        .getTargetFilter()
-                        .flatMap(
-                            filter ->
-                                filterEncoder.encodeRelationFilter(
-                                    Optional.of(schema), Optional.empty())))
-            .collect(Collectors.toList());
-
-    String join =
-        joinGenerator.getJoins(
-            schema,
-            parents,
-            aliases,
-            relationFilters,
-            Optional.empty(),
-            Optional.empty(),
-            instanceFilter);
+    String join = JoinGenerator.getJoins(schema, parents, aliases, filterEncoder);
 
     String where = whereClause.map(w -> " WHERE " + w).orElse("");
     String paging = pagingClause.filter(p -> join.isEmpty()).orElse("");
 
     if (!join.isEmpty() && pagingClause.isPresent()) {
       String where2 = " WHERE ";
-      List<String> aliasesNested = aliasGenerator.getAliases(schema, where.isEmpty() ? 1 : 2);
+      List<String> aliasesNested = AliasGenerator.getAliases(schema, where.isEmpty() ? 1 : 2);
       String orderBy =
           IntStream.range(0, sortFields.size())
               .boxed()

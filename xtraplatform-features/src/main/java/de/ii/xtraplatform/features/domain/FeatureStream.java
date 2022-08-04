@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.domain;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import javax.annotation.Nullable;
@@ -62,10 +63,10 @@ public interface FeatureStream {
   }
 
   CompletionStage<Result> runWith(
-      Sink<Object> sink, Optional<PropertyTransformations> propertyTransformations);
+      Sink<Object> sink, Map<String, PropertyTransformations> propertyTransformations);
 
   <X> CompletionStage<ResultReduced<X>> runWith(
-      SinkReduced<Object, X> sink, Optional<PropertyTransformations> propertyTransformations);
+      SinkReduced<Object, X> sink, Map<String, PropertyTransformations> propertyTransformations);
 
   // CompletionStage<Result> runWith(SinkTransformed<Object, byte[]> sink,
   // Optional<PropertyTransformations> propertyTransformations);

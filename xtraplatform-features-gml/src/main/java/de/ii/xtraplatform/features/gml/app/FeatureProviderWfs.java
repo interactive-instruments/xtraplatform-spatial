@@ -36,11 +36,12 @@ import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
 import de.ii.xtraplatform.features.domain.FeatureStream;
+import de.ii.xtraplatform.features.domain.FeatureStreamImpl;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
+import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
@@ -50,6 +51,7 @@ import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -60,7 +62,8 @@ import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
 public class FeatureProviderWfs
-    extends AbstractFeatureProvider<byte[], String, FeatureProviderConnector.QueryOptions>
+    extends AbstractFeatureProvider<
+        byte[], String, FeatureProviderConnector.QueryOptions, FeatureSchema>
     implements FeatureProvider2,
         FeatureQueries,
         FeatureCrs,
@@ -79,7 +82,7 @@ public class FeatureProviderWfs
   private final EntityRegistry entityRegistry;
 
   private FeatureQueryEncoderWfs queryTransformer;
-  private AggregateStatsReader aggregateStatsReader;
+  private AggregateStatsReader<FeatureSchema> aggregateStatsReader;
   private FeatureStorePathParser pathParser;
 
   @AssistedInject
@@ -110,7 +113,6 @@ public class FeatureProviderWfs
 
     this.queryTransformer =
         new FeatureQueryEncoderWfs(
-            getTypeInfos(),
             getData().getTypes(),
             getData().getConnectionInfo(),
             getData().getNativeCrs().orElse(OgcCrs.CRS84),
@@ -121,6 +123,11 @@ public class FeatureProviderWfs
             this, crsTransformerFactory, getData().getNativeCrs().orElse(OgcCrs.CRS84));
 
     return true;
+  }
+
+  @Override
+  protected Map<String, List<FeatureSchema>> getSourceSchemas() {
+    return ImmutableMap.of();
   }
 
   private static FeatureStorePathParser createPathParser(
@@ -139,11 +146,6 @@ public class FeatureProviderWfs
   }
 
   @Override
-  protected FeatureStorePathParser getPathParser() {
-    return pathParser;
-  }
-
-  @Override
   protected FeatureQueryEncoder<String, QueryOptions> getQueryEncoder() {
     return queryTransformer;
   }
@@ -151,23 +153,27 @@ public class FeatureProviderWfs
   @Override
   protected FeatureTokenDecoder<
           byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(FeatureQuery query) {
+      getDecoder(Query query) {
     return getDecoder(query, false);
   }
 
   @Override
   protected FeatureTokenDecoder<
           byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoderPassThrough(FeatureQuery query) {
+      getDecoderPassThrough(Query query) {
     return getDecoder(query, true);
   }
 
   private FeatureTokenDecoder<
           byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(FeatureQuery query, boolean passThrough) {
+      getDecoder(Query query, boolean passThrough) {
+    if (!(query instanceof FeatureQuery)) {
+      throw new IllegalArgumentException();
+    }
+    FeatureQuery featureQuery = (FeatureQuery) query;
     Map<String, String> namespaces = getData().getConnectionInfo().getNamespaces();
     XMLNamespaceNormalizer namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
-    FeatureSchema featureSchema = getData().getTypes().get(query.getType());
+    FeatureSchema featureSchema = getData().getTypes().get(featureQuery.getType());
     String name =
         featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
     QName qualifiedName =
@@ -175,7 +181,7 @@ public class FeatureProviderWfs
             namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)),
             namespaceNormalizer.getLocalName(name));
     return new FeatureTokenDecoderGml(
-        namespaces, ImmutableList.of(qualifiedName), featureSchema, query, passThrough);
+        namespaces, ImmutableList.of(qualifiedName), featureSchema, featureQuery, passThrough);
   }
 
   @Override
@@ -210,14 +216,13 @@ public class FeatureProviderWfs
 
   @Override
   public long getFeatureCount(String typeName) {
-    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
-
-    if (!typeInfo.isPresent()) {
+    if (getData().getTypes().containsKey(typeName)) {
       return -1;
     }
 
     try {
-      Stream<Long> countGraph = aggregateStatsReader.getCount(typeInfo.get());
+      Stream<Long> countGraph =
+          aggregateStatsReader.getCount(List.of(getData().getTypes().get(typeName)));
 
       return countGraph
           .on(getStreamRunner())
@@ -234,15 +239,14 @@ public class FeatureProviderWfs
 
   @Override
   public Optional<BoundingBox> getSpatialExtent(String typeName) {
-    Optional<FeatureStoreTypeInfo> typeInfo = Optional.ofNullable(getTypeInfos().get(typeName));
-
-    if (typeInfo.isEmpty()) {
+    if (getData().getTypes().containsKey(typeName)) {
       return Optional.empty();
     }
 
     try {
       Stream<Optional<BoundingBox>> extentGraph =
-          aggregateStatsReader.getSpatialExtent(typeInfo.get(), is3dSupported());
+          aggregateStatsReader.getSpatialExtent(
+              List.of(getData().getTypes().get(typeName)), is3dSupported());
 
       return extentGraph
           .on(getStreamRunner())
@@ -276,13 +280,7 @@ public class FeatureProviderWfs
   }
 
   @Override
-  public Optional<Interval> getTemporalExtent(String typeName, String property) {
-    return Optional.empty();
-  }
-
-  @Override
-  public Optional<Interval> getTemporalExtent(
-      String typeName, String startProperty, String endProperty) {
+  public Optional<Interval> getTemporalExtent(String typeName) {
     return Optional.empty();
   }
 
@@ -298,6 +296,7 @@ public class FeatureProviderWfs
 
   @Override
   public FeatureStream getFeatureStreamPassThrough(FeatureQuery query) {
-    return new FeatureStreamImpl(query, false);
+    return new FeatureStreamImpl(
+        query, getData(), crsTransformerFactory, getCodelists(), this::runQuery, false);
   }
 }

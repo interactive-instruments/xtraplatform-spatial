@@ -7,13 +7,9 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import java.util.Map;
+import java.util.List;
 
-public interface FeatureQueryEncoder<T, V extends FeatureProviderConnector.QueryOptions> {
+public interface SourcePath {
 
-  String PROPERTY_NOT_AVAILABLE = "PROPERTY_NOT_AVAILABLE";
-
-  T encode(Query query, Map<String, String> additionalQueryParameters);
-
-  V getOptions(TypeQuery typeQuery);
+  List<String> getFullPath();
 }
