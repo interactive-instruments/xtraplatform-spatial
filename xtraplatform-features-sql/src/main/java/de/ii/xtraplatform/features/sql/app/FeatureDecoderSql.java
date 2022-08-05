@@ -135,10 +135,7 @@ public class FeatureDecoderSql
       LOGGER.trace("Sql row: {}", sqlRow);
     }
 
-    if (sqlRow.getType().isPresent()) {
-      context.setType(sqlRow.getType().get());
-    }
-
+    String featureType = sqlRow.getType().orElse("");
     Object featureId = sqlRow.getIds().get(0);
 
     if (nestingTracker.isNotMain(sqlRow.getPath())) {
@@ -152,13 +149,14 @@ public class FeatureDecoderSql
       }
     }
 
-    if (!Objects.equals(currentId, featureId)) {
+    if (!Objects.equals(currentId, featureId) || !Objects.equals(context.type(), featureType)) {
       if (featureStarted) {
         getDownstream().onFeatureEnd(context);
         this.featureStarted = false;
         multiplicityTracker.reset();
       }
 
+      context.setType(featureType);
       context.pathTracker().track(sqlRow.getPath());
       getDownstream().onFeatureStart(context);
       this.featureStarted = true;
