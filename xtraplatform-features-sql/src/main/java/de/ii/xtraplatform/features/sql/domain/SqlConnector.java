@@ -47,16 +47,66 @@ public interface SqlConnector
     return getSourceStream(queryBatch, SqlQueryOptions.single());
   }
 
+  class Paging {
+    private final long limit;
+    private final long offset;
+    private final long chunkSize;
+    private long featureCountdown;
+    private long numberSkipped;
+    private String lastTable;
+    private long lastNumberReturned;
+    private long lastNumberSkipped;
+    private boolean noOffset;
+
+    public Paging(long limit, long offset, long chunkSize) {
+      this.limit = limit;
+      this.offset = offset;
+      this.chunkSize = chunkSize;
+
+      this.featureCountdown = limit;
+      this.numberSkipped = 0L;
+      this.lastTable = "";
+      this.lastNumberReturned = 0L;
+      this.lastNumberSkipped = 0L;
+      this.noOffset = false;
+    }
+
+    Optional<Tuple<Long, Long>> get(String currentTable) {
+      long found = lastNumberReturned + lastNumberSkipped;
+
+      if (featureCountdown <= 0 || (Objects.equals(lastTable, currentTable) && found < chunkSize)) {
+        return Optional.empty();
+      }
+
+      long ns = numberSkipped;
+      // same table, nothing returned yet
+      if (Objects.equals(lastTable, currentTable) && featureCountdown == limit) {
+        ns = 0L;
+      }
+      // next table, something returned before, and every following round
+      else if (noOffset || (!Objects.equals(lastTable, currentTable) && featureCountdown < limit)) {
+        ns = offset;
+        noOffset = true;
+      }
+
+      return Optional.of(Tuple.of(featureCountdown, ns));
+    }
+
+    void register(String currentTable, SqlRowMeta metaResult) {
+      featureCountdown -= metaResult.getNumberReturned();
+      numberSkipped = numberSkipped + metaResult.getNumberSkipped().orElse(0);
+      lastTable = currentTable;
+      lastNumberReturned = metaResult.getNumberReturned();
+      lastNumberSkipped = metaResult.getNumberSkipped().orElse(0);
+    }
+  }
+
   // TODO: simplify, class SqlQueryRunner, remove options, singleFeature
   @Override
   default Reactive.Source<SqlRow> getSourceStream(
       SqlQueryBatch queryBatch, SqlQueryOptions options) {
-    final long[] featureCount = {queryBatch.getLimit()};
-    final long[] numberSkipped = {0L};
-    final String[] lastTable = {""};
-    final long[] lastNumberReturned = {0L};
-    final long[] lastNumberSkipped = {0L};
-    final boolean[] noOffset = {false};
+    Paging paging =
+        new Paging(queryBatch.getLimit(), queryBatch.getOffset(), queryBatch.getChunkSize());
 
     Source<SqlRow> sqlRowSource1 =
         Source.iterable(queryBatch.getQuerySets())
@@ -65,41 +115,24 @@ public interface SqlConnector
                     querySet -> {
                       String currentTable = querySet.getTableSchemas().get(0).getName();
 
-                      long found = lastNumberReturned[0] + lastNumberSkipped[0];
+                      Optional<Tuple<Long, Long>> maxLimitAndSkipped = paging.get(currentTable);
 
-                      if (featureCount[0] <= 0
-                          || (Objects.equals(lastTable[0], currentTable)
-                              && found < queryBatch.getChunkSize())) {
+                      if (maxLimitAndSkipped.isEmpty()) {
                         return Source.empty();
                       }
 
-                      long ns = numberSkipped[0];
-                      // same table, nothing returned yet
-                      if (Objects.equals(lastTable[0], currentTable)
-                          && featureCount[0] == queryBatch.getLimit()) {
-                        ns = 0L;
-                      }
-                      // next table, something returned before, and every following round
-                      else if (noOffset[0]
-                          || (!Objects.equals(lastTable[0], currentTable)
-                              && featureCount[0] < queryBatch.getLimit())) {
-                        ns = queryBatch.getOffset();
-                        noOffset[0] = true;
-                      }
-
                       return getMetaResult(
-                              querySet.getMetaQuery().apply(featureCount[0], ns),
+                              querySet
+                                  .getMetaQuery()
+                                  .apply(
+                                      maxLimitAndSkipped.get().first(),
+                                      maxLimitAndSkipped.get().second()),
                               options,
                               currentTable)
                           .via(
                               Transformer.map(
                                   metaResult -> {
-                                    featureCount[0] -= metaResult.getNumberReturned();
-                                    numberSkipped[0] =
-                                        numberSkipped[0] + metaResult.getNumberSkipped().orElse(0);
-                                    lastTable[0] = currentTable;
-                                    lastNumberReturned[0] = metaResult.getNumberReturned();
-                                    lastNumberSkipped[0] = metaResult.getNumberSkipped().orElse(0);
+                                    paging.register(currentTable, metaResult);
 
                                     return Tuple.of(querySet, metaResult);
                                   }));
@@ -202,9 +235,12 @@ public interface SqlConnector
                       List<SqlQuerySet> querySets = plan.first();
                       SqlRowMeta aggregatedMetaResult = plan.second().get(0);
                       List<SqlRowMeta> metaResults = plan.second().subList(1, plan.second().size());
-                      final long[] featureCount2 = {queryBatch.getLimit()};
-                      final long[] numberSkipped2 = {0L};
-                      final String[] lastTable2 = {""};
+                      Paging paging2 =
+                          new Paging(
+                              queryBatch.getLimit(),
+                              queryBatch.getOffset(),
+                              queryBatch.getChunkSize());
+                      int[] i = {0};
 
                       return Source.iterable(
                               IntStream.range(0, querySets.size())
@@ -215,34 +251,23 @@ public interface SqlConnector
                                   index -> {
                                     String currentTable =
                                         querySets.get(index).getTableSchemas().get(0).getName();
-                                    featureCount2[0] -= metaResults.get(index).getNumberReturned();
-                                    numberSkipped2[0] =
-                                        Objects.equals(lastTable2[0], currentTable)
-                                            ? numberSkipped2[0]
-                                            : numberSkipped2[0]
-                                                + metaResults
-                                                    .get(index)
-                                                    .getNumberSkipped()
-                                                    .orElse(0);
-                                    // TODO
-                                    long ns =
-                                        Objects.equals(lastTable2[0], currentTable)
-                                            ? numberSkipped2[0]
-                                            : featureCount2[0] < queryBatch.getLimit()
-                                                ? queryBatch.getOffset()
-                                                : numberSkipped2[0];
-                                    lastTable2[0] = currentTable;
+                                    int[] j = {0};
 
                                     if (metaResults.get(index).getNumberReturned() <= 0) {
                                       return Source.empty();
                                     }
 
-                                    int[] i = {0};
+                                    Optional<Tuple<Long, Long>> maxLimitAndSkipped =
+                                        paging2.get(currentTable);
+
                                     Source<SqlRow>[] sqlRows =
                                         querySets
                                             .get(index)
                                             .getValueQueries()
-                                            .apply(metaResults.get(index), featureCount2[0], ns)
+                                            .apply(
+                                                metaResults.get(index),
+                                                maxLimitAndSkipped.get().first(),
+                                                maxLimitAndSkipped.get().second())
                                             .map(
                                                 valueQuery ->
                                                     getSqlClient()
@@ -254,7 +279,7 @@ public interface SqlConnector
                                                                     querySets
                                                                         .get(index)
                                                                         .getTableSchemas()
-                                                                        .get(i[0]))
+                                                                        .get(j[0]++))
                                                                 .type(
                                                                     querySets
                                                                         .get(index)
@@ -263,6 +288,8 @@ public interface SqlConnector
                                                                 .containerPriority(i[0]++)
                                                                 .build()))
                                             .toArray((IntFunction<Source<SqlRow>[]>) Source[]::new);
+
+                                    paging2.register(currentTable, metaResults.get(index));
 
                                     return mergeAndSort(sqlRows);
                                   }))

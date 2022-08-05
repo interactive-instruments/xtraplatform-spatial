@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.features.sql.app;
 
+import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -44,14 +46,17 @@ import de.ii.xtraplatform.features.domain.FeatureTokenTransformerSorting;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Type;
+import de.ii.xtraplatform.features.domain.ImmutableMultiFeatureQuery;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
 import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
+import de.ii.xtraplatform.features.domain.ImmutableSubQuery;
 import de.ii.xtraplatform.features.domain.MultiFeatureQueries;
 import de.ii.xtraplatform.features.domain.MultiFeatureQuery;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
+import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SourceSchemaValidator;
 import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.features.sql.ImmutableSqlPathSyntax;
@@ -90,7 +95,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -802,6 +809,34 @@ public class FeatureProviderSql
   @Override
   public FeatureStream getFeatureStream(MultiFeatureQuery query) {
     validateQuery(query);
+
+    // TODO: this is a workaround to support subqueries with different numbers of sort keys
+    // to remove this, we have to
+    // - disable optimized paging as soon as a sort key is specified for at least one subquery
+    // - fix a bug in SqlRowVals or transformations, it seems that the same number of columns is
+    // expected for all queries
+    OptionalInt maxSortKeys =
+        query.getQueries().stream().mapToInt(subQuery -> subQuery.getSortKeys().size()).max();
+    if (maxSortKeys.orElse(0) > 0) {
+      query =
+          ImmutableMultiFeatureQuery.builder()
+              .from(query)
+              .queries(
+                  query.getQueries().stream()
+                      .map(
+                          subQuery ->
+                              ImmutableSubQuery.builder()
+                                  .from(subQuery)
+                                  .sortKeys(
+                                      subQuery.getSortKeys().size() < maxSortKeys.getAsInt()
+                                          ? IntStream.range(0, maxSortKeys.getAsInt())
+                                              .mapToObj(i -> SortKey.of(ID_PLACEHOLDER))
+                                              .collect(Collectors.toList())
+                                          : subQuery.getSortKeys())
+                                  .build())
+                      .collect(Collectors.toList()))
+              .build();
+    }
 
     return new FeatureStreamImpl(
         query, getData(), crsTransformerFactory, getCodelists(), this::runQuery, true);
