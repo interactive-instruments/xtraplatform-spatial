@@ -68,6 +68,14 @@ public interface SqlConnector
 
     Reactive.Source<SqlRowMeta> metaResult1 = getMetaResult(metaQuery, options);
 
+    if (options.isHitsOnly()) {
+      return metaResult1
+          .via(
+              Reactive.Transformer.flatMap(
+                  metaResult -> Reactive.Source.single((SqlRow) metaResult)))
+          .mapError(PSQL_CONTEXT);
+    }
+
     // TODO: multiple main tables
     FeatureStoreInstanceContainer mainTable = query.getInstanceContainers().get(0);
     List<FeatureStoreAttributesContainer> attributesContainers =
