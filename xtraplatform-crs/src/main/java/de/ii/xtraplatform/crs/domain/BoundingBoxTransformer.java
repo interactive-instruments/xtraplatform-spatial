@@ -124,7 +124,7 @@ public abstract class BoundingBoxTransformer implements CrsTransformer {
 
   private static double max(double... vals) {
     assert vals.length > 0;
-    double ret = Double.MIN_VALUE;
+    double ret = -Double.MAX_VALUE;
     for (double val : vals) {
       if (val > ret) {
         ret = val;
