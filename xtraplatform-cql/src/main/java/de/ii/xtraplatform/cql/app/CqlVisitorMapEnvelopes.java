@@ -10,10 +10,7 @@ package de.ii.xtraplatform.cql.app;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.Geometry;
-import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
-import de.ii.xtraplatform.cql.domain.ImmutableLineString;
 import de.ii.xtraplatform.cql.domain.ImmutableMultiPolygon;
-import de.ii.xtraplatform.cql.domain.ImmutablePoint;
 import de.ii.xtraplatform.cql.domain.ImmutablePolygon;
 import de.ii.xtraplatform.cql.domain.SpatialLiteral;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -43,24 +40,10 @@ public class CqlVisitorMapEnvelopes extends CqlVisitorCopy {
   @Override
   public CqlNode visit(Geometry.Envelope envelope, List<CqlNode> children) {
     List<Double> c = envelope.getCoordinates();
-    EpsgCrs crs = envelope.getCrs().orElse(OgcCrs.CRS84);
-
-    // if the bbox is degenerate (vertical or horizontal line, point), reduce
-    // the geometry
-    if (c.get(0).equals(c.get(2)) && c.get(1).equals(c.get(3))) {
-      return new ImmutablePoint.Builder()
-          .addCoordinates(Coordinate.of(c.get(0), c.get(1)))
-          .crs(crs)
-          .build();
-    } else if (c.get(0).equals(c.get(2)) || c.get(1).equals(c.get(3))) {
-      return new ImmutableLineString.Builder()
-          .addCoordinates(Coordinate.of(c.get(0), c.get(1)), Coordinate.of(c.get(2), c.get(3)))
-          .crs(crs)
-          .build();
-    }
 
     // if the bbox crosses the antimeridian, we create a MultiPolygon with a polygon
     // on each side of the antimeridian
+    EpsgCrs crs = envelope.getCrs().orElse(OgcCrs.CRS84);
     if (Objects.nonNull(crsInfo)) {
       int axisWithWraparaound = crsInfo.getAxisWithWraparound(crs).orElse(-1);
       if (axisWithWraparaound == 0 && c.get(0) > c.get(2)) {
