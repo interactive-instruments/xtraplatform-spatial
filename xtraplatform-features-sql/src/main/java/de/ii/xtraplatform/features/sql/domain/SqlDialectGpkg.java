@@ -107,7 +107,12 @@ public class SqlDialectGpkg implements SqlDialect {
   public String applyToInstantMax() {
     return "9999-12-31T23:59:59Z";
   }
-  ;
+
+  @Override
+  public String applyToDiameter(String geomExpression) {
+    throw new IllegalArgumentException(
+        "DIAMETER() is not supported for GeoPackage feature providers.");
+  }
 
   @Override
   public String escapeString(String value) {

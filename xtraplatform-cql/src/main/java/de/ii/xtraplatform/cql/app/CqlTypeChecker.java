@@ -107,6 +107,7 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
           .put("UPPER", ImmutableSet.of(TEXT))
           .put("LOWER", ImmutableSet.of(TEXT))
           .put("POSITION", ImmutableSet.of(INTEGER))
+          .put("DIAMETER", ImmutableSet.of(SPATIAL))
           .build();
 
   private final Map<String, String> propertyTypes;

@@ -135,7 +135,19 @@ public class SqlDialectPostGis implements SqlDialect {
   public String applyToInstantMax() {
     return "infinity";
   }
-  ;
+
+  @Override
+  public String applyToDiameter(String geomExpression) {
+    if (geomExpression.contains("%1$s") && geomExpression.contains("%2$s")) {
+      return String.format(
+          geomExpression,
+          "%1$sST_3DLength(ST_BoundingDiagonal(Box3D(ST_Transform(ST_Force3DZ(",
+          "),4978))))%2$s");
+    }
+    return String.format(
+        "ST_3DLength(ST_BoundingDiagonal(Box3D(ST_Transform(ST_Force3DZ(%s),4978))))",
+        geomExpression);
+  }
 
   @Override
   public String escapeString(String value) {
