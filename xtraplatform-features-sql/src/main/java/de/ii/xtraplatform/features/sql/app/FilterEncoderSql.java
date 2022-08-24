@@ -186,11 +186,13 @@ public class FilterEncoderSql {
       this.rootSchema = rootSchema;
     }
 
-    protected SchemaSql getTable(String propertyName, boolean isObject) {
+    protected SchemaSql getTable(
+        String propertyName, boolean isObject, boolean allowColumnFallback) {
       if (isObject) {
         return rootSchema.getAllObjects().stream()
             .filter(getPropertyNameMatcher(propertyName, true))
             .findFirst()
+            .or(() -> allowColumnFallback ? Optional.of(rootSchema) : Optional.empty())
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
@@ -202,6 +204,7 @@ public class FilterEncoderSql {
                   obj.getProperties().stream()
                       .anyMatch(getPropertyNameMatcher(propertyName, false)))
           .findFirst()
+          .or(() -> allowColumnFallback ? Optional.of(rootSchema) : Optional.empty())
           .orElseThrow(
               () ->
                   new IllegalArgumentException(
@@ -249,13 +252,15 @@ public class FilterEncoderSql {
     public String visit(Property property, List<String> children) {
       // strip double quotes from the property name
       String propertyName = property.getName().replaceAll("^\"|\"$", "");
-      SchemaSql table = getTable(propertyName, false);
+      boolean allowColumnFallback = !propertyName.contains(".");
+      SchemaSql table = getTable(propertyName, false, allowColumnFallback);
 
       // TODO: pass all parents
       List<SchemaSql> parents = ImmutableList.of(rootSchema);
       List<String> aliases = AliasGenerator.getAliases(parents, table, 1);
       String qualifiedColumn =
-          getQualifiedColumn(table, propertyName, aliases.get(aliases.size() - 1), false);
+          getQualifiedColumn(
+              table, propertyName, aliases.get(aliases.size() - 1), allowColumnFallback);
 
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace("PROP {} {}", table.getName(), qualifiedColumn);
@@ -270,10 +275,10 @@ public class FilterEncoderSql {
         userFilter = nestedFilter.map(Entry::getValue);
         String userFilterPropertyName = getUserFilterPropertyName(userFilter.get());
         if (userFilterPropertyName.contains(ROW_NUMBER)) {
-          userFilterTable = Optional.of(getTable(nestedFilter.get().getKey(), true));
+          userFilterTable = Optional.of(getTable(nestedFilter.get().getKey(), true, false));
           ignoreInstanceFilter = false;
         } else {
-          userFilterTable = Optional.ofNullable(getTable(userFilterPropertyName, false));
+          userFilterTable = Optional.ofNullable(getTable(userFilterPropertyName, false, false));
         }
       } else {
         userFilter = Optional.empty();
@@ -901,7 +906,7 @@ public class FilterEncoderSql {
       int elementCount = secondExpression.split(",").length;
 
       String propertyName = ((Property) arrayOperation.getArgs().get(notInverse ? 0 : 1)).getName();
-      SchemaSql table = getTable(propertyName, false);
+      SchemaSql table = getTable(propertyName, false, false);
       List<String> aliases = AliasGenerator.getAliases(table, 1);
       String qualifiedColumn =
           getQualifiedColumn(table, propertyName, aliases.get(aliases.size() - 1), false);
