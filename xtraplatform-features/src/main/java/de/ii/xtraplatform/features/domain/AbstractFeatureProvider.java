@@ -261,7 +261,7 @@ public abstract class AbstractFeatureProvider<
     validateQuery(query);
 
     return new FeatureStreamImpl(
-        query, getData(), crsTransformerFactory, getCodelists(), this::runQuery, true);
+        query, getData(), crsTransformerFactory, getCodelists(), this::runQuery, !query.hitsOnly());
   }
 
   // TODO: more tests
@@ -293,7 +293,7 @@ public abstract class AbstractFeatureProvider<
         query instanceof MultiFeatureQuery
             ? ((MultiFeatureQuery) query).getQueries().get(0)
             : (FeatureQuery) query;
-    V options = getQueryEncoder().getOptions(typeQuery);
+    V options = getQueryEncoder().getOptions(typeQuery, query);
     Reactive.Source<T> source = getConnector().getSourceStream(transformedQuery, options);
 
     FeatureTokenDecoder<

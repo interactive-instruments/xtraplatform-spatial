@@ -56,7 +56,13 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
       return parentPaths1.stream()
           .flatMap(
               parentPath ->
-                  merge(schema, parentPath.get(parentPath.size() - 1), properties).stream())
+                  merge(
+                      schema,
+                      parentPath.isEmpty()
+                          ? List.of()
+                          : parentPath.get(parentPath.size() - 1).getFullPath(),
+                      properties)
+                      .stream())
           .collect(Collectors.toList());
     }
 
@@ -95,5 +101,5 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
 
   T create(FeatureSchema targetSchema, U path, List<T> visitedProperties, List<U> parentPaths);
 
-  List<T> merge(FeatureSchema targetSchema, U parentPath, List<T> visitedProperties);
+  List<T> merge(FeatureSchema targetSchema, List<String> parentPath, List<T> visitedProperties);
 }

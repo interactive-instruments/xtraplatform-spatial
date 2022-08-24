@@ -242,6 +242,10 @@ public interface SqlConnector
                               queryBatch.getChunkSize());
                       int[] i = {0};
 
+                      if (options.isHitsOnly()) {
+                        return Source.single(aggregatedMetaResult);
+                      }
+
                       return Source.iterable(
                               IntStream.range(0, querySets.size())
                                   .boxed()

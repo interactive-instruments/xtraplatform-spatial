@@ -82,7 +82,7 @@ public class FeatureQueryEncoderWfs implements FeatureQueryEncoder<String, Query
   }
 
   @Override
-  public QueryOptions getOptions(TypeQuery typeQuery) {
+  public QueryOptions getOptions(TypeQuery typeQuery, Query query) {
     return new QueryOptions() {};
   }
 

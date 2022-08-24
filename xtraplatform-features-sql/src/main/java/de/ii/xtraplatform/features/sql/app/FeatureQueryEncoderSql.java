@@ -197,12 +197,12 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
         .metaQuery(metaQuery)
         .valueQueries(valueQueries)
         .tableSchemas(queryTemplates.getQuerySchemas())
-        .options(getOptions(typeQuery))
+        .options(getOptions(typeQuery, query))
         .build();
   }
 
   @Override
-  public SqlQueryOptions getOptions(TypeQuery typeQuery) {
+  public SqlQueryOptions getOptions(TypeQuery typeQuery, Query query) {
     // TODO: either pass as parameter, or check for null here
     List<SchemaSql> typeInfo = allQueryTemplates.get(typeQuery.getType()).get(0).getQuerySchemas();
 
@@ -214,6 +214,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
     return new ImmutableSqlQueryOptions.Builder()
         .type(typeQuery.getType())
         .customSortKeys(sortKeys)
+        .isHitsOnly(query.hitsOnly())
         .build();
   }
 

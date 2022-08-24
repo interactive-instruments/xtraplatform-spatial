@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.sql.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.docs.DocMarker;
@@ -20,11 +21,17 @@ import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import de.ii.xtraplatform.features.domain.WithConnectionInfo;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
+import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -301,6 +308,53 @@ public interface FeatureProviderSqlData
       return new ImmutableFeatureProviderSqlData.Builder()
           .from(this)
           .extensions(distinctExtensions)
+          .build();
+    }
+
+    return this;
+  }
+
+  @Value.Check
+  default FeatureProviderSqlData applyLabelTemplate() {
+    if (getLabelTemplate().isPresent()) {
+
+      Map<String, FeatureSchema> types =
+          getTypes().entrySet().stream()
+              .map(
+                  entry ->
+                      new SimpleImmutableEntry<>(
+                          entry.getKey(),
+                          entry
+                              .getValue()
+                              .accept(
+                                  (SchemaVisitorTopDown<FeatureSchema, FeatureSchema>)
+                                      (schema, parents, visitedProperties) -> {
+                                        ImmutableFeatureSchema.Builder builder =
+                                            new ImmutableFeatureSchema.Builder().from(schema);
+                                        visitedProperties.forEach(
+                                            prop -> builder.putPropertyMap(prop.getName(), prop));
+                                        if (schema.getLabel().isPresent()) {
+                                          Map<String, String> lookup = new HashMap<>();
+                                          schema
+                                              .getLabel()
+                                              .ifPresent(label -> lookup.put("value", label));
+                                          schema
+                                              .getUnit()
+                                              .ifPresent(unit -> lookup.put("unit", unit));
+
+                                          builder.label(
+                                              StringTemplateFilters.applyTemplate(
+                                                  getLabelTemplate().get(), lookup::get));
+                                        }
+
+                                        return builder.build();
+                                      })))
+              .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+      return new ImmutableFeatureProviderSqlData.Builder()
+          .from(this)
+          .types(types)
+          .labelTemplate(Optional.empty())
           .build();
     }
 

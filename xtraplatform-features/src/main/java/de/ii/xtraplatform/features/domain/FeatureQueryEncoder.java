@@ -15,5 +15,5 @@ public interface FeatureQueryEncoder<T, V extends FeatureProviderConnector.Query
 
   T encode(Query query, Map<String, String> additionalQueryParameters);
 
-  V getOptions(TypeQuery typeQuery);
+  V getOptions(TypeQuery typeQuery, Query query);
 }
