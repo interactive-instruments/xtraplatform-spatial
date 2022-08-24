@@ -803,7 +803,7 @@ public class FeatureProviderSql
     validateQuery(query);
 
     return new FeatureStreamImpl(
-        query, getData(), crsTransformerFactory, getCodelists(), this::runQuery, true);
+        query, getData(), crsTransformerFactory, getCodelists(), this::runQuery, !query.hitsOnly());
   }
 
   @Override

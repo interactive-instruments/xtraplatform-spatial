@@ -20,11 +20,6 @@ import org.immutables.value.Value;
 public interface FeatureQuery extends TypeQuery, Query {
 
   @Value.Default
-  default boolean hitsOnly() {
-    return false;
-  }
-
-  @Value.Default
   default boolean propertyOnly() {
     return false;
   }

@@ -206,6 +206,10 @@ public interface SqlConnector
                       final long[] numberSkipped2 = {0L};
                       final String[] lastTable2 = {""};
 
+                      if (options.isHitsOnly()) {
+                        return Source.single(aggregatedMetaResult);
+                      }
+
                       return Source.iterable(
                               IntStream.range(0, querySets.size())
                                   .boxed()

@@ -36,4 +36,9 @@ public interface Query {
   default int getOffset() {
     return 0;
   }
+
+  @Value.Default
+  default boolean hitsOnly() {
+    return false;
+  }
 }

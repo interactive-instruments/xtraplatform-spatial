@@ -59,6 +59,11 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
   List<Class<?>> getCustomColumnTypes();
 
   @Value.Default
+  default boolean isHitsOnly() {
+    return false;
+  }
+
+  @Value.Default
   default int getContainerPriority() {
     return 0;
   }
