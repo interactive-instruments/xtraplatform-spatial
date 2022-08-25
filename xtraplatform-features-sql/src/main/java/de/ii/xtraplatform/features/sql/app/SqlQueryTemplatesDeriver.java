@@ -83,7 +83,8 @@ public class SqlQueryTemplatesDeriver
         additionalSortKeys,
         cqlFilter,
         virtualTables,
-        withNumberSkipped) -> {
+        withNumberSkipped,
+        withNumberReturned) -> {
       String limitSql = limit > 0 ? String.format(" LIMIT %d", limit) : "";
       String offsetSql = offset > 0 ? String.format(" OFFSET %d", offset) : "";
       String skipOffsetSql = skipOffset > 0 ? String.format(" OFFSET %d", skipOffset) : "";
@@ -106,9 +107,11 @@ public class SqlQueryTemplatesDeriver
       String minMaxColumns = getMinMaxColumns(additionalSortKeys);
 
       String numberReturned =
-          String.format(
-              "SELECT %7$s, count(*) AS numberReturned FROM (SELECT %2$s FROM %1$s%6$s ORDER BY %3$s%4$s%5$s) AS IDS",
-              table, columns, orderBy, limitSql, offsetSql, where, minMaxColumns);
+          withNumberReturned
+              ? String.format(
+                  "SELECT %7$s, count(*) AS numberReturned FROM (SELECT %2$s FROM %1$s%6$s ORDER BY %3$s%4$s%5$s) AS IDS",
+                  table, columns, orderBy, limitSql, offsetSql, where, minMaxColumns)
+              : "SELECT NULL AS minKey, NULL AS maxKey, 0::bigint AS numberReturned";
 
       String numberMatched =
           computeNumberMatched

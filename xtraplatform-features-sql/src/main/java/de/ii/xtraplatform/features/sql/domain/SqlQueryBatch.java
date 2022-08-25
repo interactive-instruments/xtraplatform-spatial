@@ -24,5 +24,10 @@ public interface SqlQueryBatch {
     return false;
   }
 
+  @Value.Default
+  default boolean isAllowSkipMetaQueries() {
+    return false;
+  }
+
   List<SqlQuerySet> getQuerySets();
 }

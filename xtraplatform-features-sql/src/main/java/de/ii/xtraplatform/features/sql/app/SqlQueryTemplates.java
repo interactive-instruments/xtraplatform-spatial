@@ -34,7 +34,8 @@ public interface SqlQueryTemplates {
         List<SortKey> additionalSortKeys,
         Optional<Cql2Expression> filter,
         Map<String, String> virtualTables,
-        boolean withNumberSkipped);
+        boolean withNumberSkipped,
+        boolean withNumberReturned);
   }
 
   @FunctionalInterface

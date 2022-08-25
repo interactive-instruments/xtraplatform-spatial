@@ -51,6 +51,7 @@ public interface SqlConnector
     private final long limit;
     private final long offset;
     private final long chunkSize;
+    private final boolean allowSkipMetaQueries;
     private long featureCountdown;
     private long numberSkipped;
     private String lastTable;
@@ -58,10 +59,11 @@ public interface SqlConnector
     private long lastNumberSkipped;
     private boolean noOffset;
 
-    public Paging(long limit, long offset, long chunkSize) {
+    public Paging(long limit, long offset, long chunkSize, boolean allowSkipMetaQueries) {
       this.limit = limit;
       this.offset = offset;
       this.chunkSize = chunkSize;
+      this.allowSkipMetaQueries = allowSkipMetaQueries;
 
       this.featureCountdown = limit;
       this.numberSkipped = 0L;
@@ -75,7 +77,7 @@ public interface SqlConnector
       long found = lastNumberReturned + lastNumberSkipped;
 
       if (featureCountdown <= 0 || (Objects.equals(lastTable, currentTable) && found < chunkSize)) {
-        return Optional.empty();
+        return allowSkipMetaQueries ? Optional.empty() : Optional.of(Tuple.of(0L, offset));
       }
 
       long ns = numberSkipped;
@@ -106,7 +108,11 @@ public interface SqlConnector
   default Reactive.Source<SqlRow> getSourceStream(
       SqlQueryBatch queryBatch, SqlQueryOptions options) {
     Paging paging =
-        new Paging(queryBatch.getLimit(), queryBatch.getOffset(), queryBatch.getChunkSize());
+        new Paging(
+            queryBatch.getLimit(),
+            queryBatch.getOffset(),
+            queryBatch.getChunkSize(),
+            queryBatch.isAllowSkipMetaQueries());
 
     Source<SqlRow> sqlRowSource1 =
         Source.iterable(queryBatch.getQuerySets())
@@ -239,7 +245,8 @@ public interface SqlConnector
                           new Paging(
                               queryBatch.getLimit(),
                               queryBatch.getOffset(),
-                              queryBatch.getChunkSize());
+                              queryBatch.getChunkSize(),
+                              queryBatch.isAllowSkipMetaQueries());
                       int[] i = {0};
 
                       if (options.isHitsOnly()) {

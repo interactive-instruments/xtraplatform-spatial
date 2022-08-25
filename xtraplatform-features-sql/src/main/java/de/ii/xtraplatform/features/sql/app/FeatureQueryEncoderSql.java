@@ -19,6 +19,7 @@ import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.domain.TypeQuery;
+import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData.QueryGeneratorSettings;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQuerySet.Builder;
@@ -47,14 +48,16 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
   private final Map<String, List<SqlQueryTemplates>> allQueryTemplates;
   private final Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations;
   private final int chunkSize;
+  private final boolean skipRedundantMetaQueries;
 
   FeatureQueryEncoderSql(
       Map<String, List<SqlQueryTemplates>> allQueryTemplates,
       Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations,
-      int chunkSize) {
+      QueryGeneratorSettings queryGeneratorSettings) {
     this.allQueryTemplates = allQueryTemplates;
     this.allQueryTemplatesMutations = allQueryTemplatesMutations;
-    this.chunkSize = chunkSize;
+    this.chunkSize = queryGeneratorSettings.getChunkSize();
+    this.skipRedundantMetaQueries = !queryGeneratorSettings.getComputeNumberMatched();
   }
 
   // TODO: cleanup options
@@ -105,6 +108,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
         .offset(query.getOffset())
         .chunkSize(chunkSize)
         .isSingleFeature(query.returnsSingleFeature())
+        .isAllowSkipMetaQueries(skipRedundantMetaQueries)
         .querySets(querySets)
         .build();
   }
@@ -173,7 +177,8 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
                             sortKeys,
                             typeQuery.getFilter(),
                             additionalQueryParameters,
-                            query.getOffset() > 0));
+                            query.getOffset() > 0,
+                            maxLimit > 0));
 
     TriFunction<SqlRowMeta, Long, Long, Stream<String>> valueQueries =
         (metaResult, maxLimit, skipped) ->
