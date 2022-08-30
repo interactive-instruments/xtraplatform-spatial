@@ -248,6 +248,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
       ModifiableContext<FeatureSchema, SchemaMapping> context, int triggerIndex) {
 
     List<String> path = context.path();
+    int schemaIndex = context.schemaIndex();
     ArrayList<Integer> indexes = new ArrayList<>(context.indexes());
     String value = context.value();
     Optional<SimpleFeatureGeometry> geometryType = context.geometryType();
@@ -274,6 +275,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
     }
 
     context.pathTracker().track(path);
+    context.setSchemaIndex(schemaIndex);
     context.setIndexes(indexes);
     context.setValue(value);
     context.setGeometryType(geometryType);
