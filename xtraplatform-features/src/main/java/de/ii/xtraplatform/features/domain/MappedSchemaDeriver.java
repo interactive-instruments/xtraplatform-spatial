@@ -86,6 +86,10 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
       return children.stream().map(List::of).collect(Collectors.toList());
     }
 
+    if (children.isEmpty()) {
+      return parents;
+    }
+
     return parents.stream()
         .flatMap(
             parent ->

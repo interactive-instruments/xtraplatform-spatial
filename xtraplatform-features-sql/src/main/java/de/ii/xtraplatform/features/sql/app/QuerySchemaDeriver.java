@@ -371,8 +371,6 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                         property.getSourcePaths().stream()
                             .map(sourcePath -> targetSchema.getName() + "." + sourcePath)
                             .collect(Collectors.toList()))
-                    .parentPath(parentPath)
-                    .addAllParentPath(property.getParentPath())
                     .build())
         .collect(Collectors.toList());
   }
