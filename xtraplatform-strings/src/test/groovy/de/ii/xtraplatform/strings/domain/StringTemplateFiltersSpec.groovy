@@ -162,6 +162,16 @@ class StringTemplateFiltersSpec extends Specification {
             result == "foo<em>bar</em>"
     }
 
+    def 'markdown with newline'() {
+        given:
+        String template = "{{value | markdown}}"
+        String value = "foo\\\n*bar*"
+        when:
+        String result = StringTemplateFilters.applyTemplate(template, value)
+        then:
+        result == "foo<br />\n<em>bar</em>"
+    }
+
     def 'markdown test with link'() {
         given:
 
