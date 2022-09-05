@@ -9,17 +9,15 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
+import java.util.List;
 import java.util.Optional;
 import org.threeten.extra.Interval;
 
-public interface AggregateStatsReader {
+public interface AggregateStatsReader<T extends SchemaBase<T>> {
 
-  Stream<Long> getCount(FeatureStoreTypeInfo typeInfo);
+  Stream<Long> getCount(List<T> sourceSchemas);
 
-  Stream<Optional<BoundingBox>> getSpatialExtent(FeatureStoreTypeInfo typeInfo, boolean is3d);
+  Stream<Optional<BoundingBox>> getSpatialExtent(List<T> sourceSchemas, boolean is3d);
 
-  Stream<Optional<Interval>> getTemporalExtent(FeatureStoreTypeInfo typeInfo, String property);
-
-  Stream<Optional<Interval>> getTemporalExtent(
-      FeatureStoreTypeInfo typeInfo, String startProperty, String endProperty);
+  Stream<Optional<Interval>> getTemporalExtent(List<T> sourceSchemas);
 }

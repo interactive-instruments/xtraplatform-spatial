@@ -23,7 +23,8 @@ class FeatureTokenTransformerRemoveEmptyOptionalsSpec extends Specification {
         FeatureQuery query = ImmutableFeatureQuery.builder().type("test").build()
         FeatureEventHandler.ModifiableContext context = mapper.createContext()
                 .setQuery(query)
-                .setMapping(FeatureTokenFixtures.MAPPING)
+                .setMappings([test: FeatureTokenFixtures.MAPPING])
+                .setType('test')
 
         tokenReader = new FeatureTokenReader(mapper, context)
         tokens = []

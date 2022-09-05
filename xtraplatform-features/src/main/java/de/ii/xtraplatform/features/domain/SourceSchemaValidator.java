@@ -7,13 +7,11 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import java.util.Map;
+import de.ii.xtraplatform.store.domain.entities.ValidationResult;
+import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
+import java.util.List;
 
-public interface FeatureQueryEncoder<T, V extends FeatureProviderConnector.QueryOptions> {
+public interface SourceSchemaValidator<T extends SchemaBase<T>> {
 
-  String PROPERTY_NOT_AVAILABLE = "PROPERTY_NOT_AVAILABLE";
-
-  T encode(Query query, Map<String, String> additionalQueryParameters);
-
-  V getOptions(TypeQuery typeQuery, Query query);
+  ValidationResult validate(String typeName, List<T> sourceSchemas, MODE mode);
 }

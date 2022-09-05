@@ -10,11 +10,11 @@ package de.ii.xtraplatform.features.gml.infra;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableSet;
 import dagger.assisted.AssistedFactory;
+import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.gml.app.FeatureProviderWfs;
-import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
+import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.WfsConnector;
 import de.ii.xtraplatform.web.domain.Http;
 import java.util.LinkedHashMap;
@@ -64,8 +64,9 @@ public class WfsConnectorHttpFactory
 
   @Override
   public FeatureProviderConnector<byte[], String, FeatureProviderConnector.QueryOptions>
-      createInstance(FeatureProviderDataV2 data) {
-    WfsConnector wfsConnector = factoryAssisted.create((FeatureProviderWfsData) data);
+      createInstance(String providerId, ConnectionInfo connectionInfo) {
+    WfsConnector wfsConnector =
+        factoryAssisted.create(providerId, (ConnectionInfoWfsHttp) connectionInfo);
     wfsConnector.start();
     instances.put(wfsConnector.getProviderId(), wfsConnector);
 
@@ -80,6 +81,6 @@ public class WfsConnectorHttpFactory
 
   @AssistedFactory
   public interface FactoryAssisted {
-    WfsConnectorHttp create(FeatureProviderWfsData data);
+    WfsConnectorHttp create(String providerId, ConnectionInfoWfsHttp connectionInfo);
   }
 }

@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureEventHandlerGeneric.GenericContext;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
@@ -105,10 +106,7 @@ public abstract class FeatureTokenDecoder<
 
     return (W)
         ModifiableGenericContext.create()
-            .setMapping(
-                new ImmutableSchemaMapping.Builder()
-                    .targetSchema(new ImmutableFeatureSchema.Builder().name("default").build())
-                    .build())
+            .setMappings(ImmutableMap.of())
             .setQuery(ImmutableFeatureQuery.builder().type("default").build());
   }
 

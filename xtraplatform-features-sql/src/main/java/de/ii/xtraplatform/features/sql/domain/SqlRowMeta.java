@@ -25,6 +25,8 @@ public interface SqlRowMeta extends SqlRow {
 
   OptionalLong getNumberMatched();
 
+  OptionalLong getNumberSkipped();
+
   List<Object> getCustomMinKeys();
 
   List<Object> getCustomMaxKeys();

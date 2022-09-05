@@ -7,54 +7,34 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerDateFormat.DATETIME_FORMAT;
-import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerDateFormat.DATE_FORMAT;
-import static de.ii.xtraplatform.features.domain.transform.PropertyTransformations.WILDCARD;
-
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.codelists.domain.Codelist;
-import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
-import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.app.FeatureChangeHandlerImpl;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.LIFECYCLE_HOOK;
-import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.QUERY_HOOK;
 import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
-import de.ii.xtraplatform.features.domain.ImmutableResult.Builder;
-import de.ii.xtraplatform.features.domain.SchemaBase.Type;
-import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
-import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
-import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
 import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.streams.domain.Reactive;
-import de.ii.xtraplatform.streams.domain.Reactive.BasicStream;
-import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
-import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
-import de.ii.xtraplatform.streams.domain.Reactive.SinkReducedTransformed;
-import de.ii.xtraplatform.streams.domain.Reactive.SinkTransformed;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
-import de.ii.xtraplatform.web.domain.ETag;
 import java.io.IOException;
-import java.util.AbstractMap;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderConnector.QueryOptions>
+public abstract class AbstractFeatureProvider<
+        T, U, V extends FeatureProviderConnector.QueryOptions, W extends SchemaBase<W>>
     extends AbstractPersistentEntity<FeatureProviderDataV2>
     implements FeatureProvider2, FeatureQueries {
 
@@ -68,7 +48,6 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
   private final ProviderExtensionRegistry extensionRegistry;
   private final FeatureChangeHandler changeHandler;
   private Reactive.Runner streamRunner;
-  private Map<String, FeatureStoreTypeInfo> typeInfos;
   private FeatureProviderConnector<T, U, V> connector;
 
   protected AbstractFeatureProvider(
@@ -105,14 +84,15 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
         // ignore
       }
     }
-    this.typeInfos = createTypeInfos(getPathParser(), getData().getTypes());
     this.streamRunner =
         reactive.runner(
             getData().getId(),
             getRunnerCapacity(((WithConnectionInfo<?>) getData()).getConnectionInfo()),
             getRunnerQueueSize(((WithConnectionInfo<?>) getData()).getConnectionInfo()));
     this.connector =
-        (FeatureProviderConnector<T, U, V>) connectorFactory.createConnector(getData());
+        (FeatureProviderConnector<T, U, V>)
+            connectorFactory.createConnector(
+                getData().getFeatureProviderType(), getData().getId(), getConnectionInfo());
 
     if (!getConnector().isConnected()) {
       connectorFactory.disposeConnector(connector);
@@ -139,14 +119,19 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
     if (getTypeInfoValidator().isPresent() && getData().getTypeValidation() != MODE.NONE) {
       final boolean[] isSuccess = {true};
       try {
-        for (FeatureStoreTypeInfo typeInfo : getTypeInfos().values()) {
+        for (Map.Entry<String, List<W>> sourceSchema : getSourceSchemas().entrySet()) {
           LOGGER.info(
               "Validating type '{}' ({})",
-              typeInfo.getName(),
+              sourceSchema.getKey(),
               getData().getTypeValidation().name().toLowerCase());
 
           ValidationResult result =
-              getTypeInfoValidator().get().validate(typeInfo, getData().getTypeValidation());
+              getTypeInfoValidator()
+                  .get()
+                  .validate(
+                      sourceSchema.getKey(),
+                      sourceSchema.getValue(),
+                      getData().getTypeValidation());
 
           isSuccess[0] = isSuccess[0] && result.isSuccess();
           result.getErrors().forEach(LOGGER::error);
@@ -231,16 +216,16 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
     return Optional.empty();
   }
 
-  protected abstract FeatureStorePathParser getPathParser();
+  protected ConnectionInfo getConnectionInfo() {
+    return ((WithConnectionInfo<?>) getData()).getConnectionInfo();
+  }
+
+  protected abstract Map<String, List<W>> getSourceSchemas();
 
   protected abstract FeatureQueryEncoder<U, V> getQueryEncoder();
 
   protected FeatureProviderConnector<T, U, V> getConnector() {
     return Objects.requireNonNull(connector);
-  }
-
-  protected Map<String, FeatureStoreTypeInfo> getTypeInfos() {
-    return typeInfos;
   }
 
   protected Reactive.Runner getStreamRunner() {
@@ -251,17 +236,17 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
     return Optional.empty();
   }
 
-  protected Optional<TypeInfoValidator> getTypeInfoValidator() {
+  protected Optional<SourceSchemaValidator<W>> getTypeInfoValidator() {
     return Optional.empty();
   }
 
   protected abstract FeatureTokenDecoder<
           T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(FeatureQuery query);
+      getDecoder(Query query);
 
   protected FeatureTokenDecoder<
           T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoderPassThrough(FeatureQuery query) {
+      getDecoderPassThrough(Query query) {
     return getDecoder(query);
   }
 
@@ -271,289 +256,109 @@ public abstract class AbstractFeatureProvider<T, U, V extends FeatureProviderCon
 
   protected abstract Map<String, Codelist> getCodelists();
 
-  public static Map<String, FeatureStoreTypeInfo> createTypeInfos(
-      FeatureStorePathParser pathParser, Map<String, FeatureSchema> featureTypes) {
-    return featureTypes.entrySet().stream()
-        .map(
-            entry -> {
-              List<FeatureStoreInstanceContainer> instanceContainers =
-                  pathParser.parse(entry.getValue());
-              FeatureStoreTypeInfo typeInfo =
-                  ImmutableFeatureStoreTypeInfo.builder()
-                      .name(entry.getKey())
-                      .instanceContainers(instanceContainers)
-                      .build();
-
-              return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), typeInfo);
-            })
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-  }
-
   @Override
   public FeatureStream getFeatureStream(FeatureQuery query) {
-    return new FeatureStreamImpl(query);
+    validateQuery(query);
+
+    return new FeatureStreamImpl(
+        query, getData(), crsTransformerFactory, getCodelists(), this::runQuery, !query.hitsOnly());
   }
 
-  protected class FeatureStreamImpl implements FeatureStream {
-
-    private final FeatureQuery query;
-    private final boolean doTransform;
-
-    public FeatureStreamImpl(FeatureQuery query, boolean doTransform) {
-      this.query = query;
-      // skip property transformations, if no features are returned
-      this.doTransform = doTransform && !query.hitsOnly();
-    }
-
-    public FeatureStreamImpl(FeatureQuery query) {
-      this(query, true);
-    }
-
-    private <W extends ResultBase> CompletionStage<W> run(
-        Function<FeatureTokenSource, Stream<W>> stream,
-        Optional<PropertyTransformations> propertyTransformations) {
-      // TODO: pass aliases to getFeatureTokenSource, use for query generation
-      Map<String, String> virtualTables = new HashMap<>();
-
-      extensionRegistry
-          .getAll()
-          .forEach(
-              extension -> {
-                if (extension.isSupported(getConnector())) {
-                  extension.on(
-                      QUERY_HOOK.BEFORE, getData(), getConnector(), query, virtualTables::put);
-                }
-              });
-
-      FeatureTokenSource tokenSource =
-          doTransform
-              ? getFeatureTokenSourceTransformed(propertyTransformations, virtualTables)
-              : getFeatureTokenSource(virtualTables);
-
-      RunnableStream<W> runnableStream = stream.apply(tokenSource).on(streamRunner);
-
-      return runnableStream
-          .run()
-          .whenComplete(
-              (result, throwable) -> {
-                extensionRegistry
-                    .getAll()
-                    .forEach(
-                        extension -> {
-                          if (extension.isSupported(getConnector())) {
-                            extension.on(
-                                QUERY_HOOK.AFTER, getData(), getConnector(), query, (a, t) -> {});
-                          }
-                        });
-              });
-    }
-
-    @Override
-    public CompletionStage<Result> runWith(
-        Reactive.Sink<Object> sink, Optional<PropertyTransformations> propertyTransformations) {
-
-      Function<FeatureTokenSource, Stream<Result>> stream =
-          tokenSource -> {
-            FeatureTokenSource source = tokenSource;
-            Builder resultBuilder = ImmutableResult.builder();
-            final ETag.Incremental eTag = ETag.incremental();
-            final boolean strongETag =
-                query.getETag().filter(type -> type == ETag.Type.STRONG).isPresent();
-
-            if (query.getETag().filter(type -> type == ETag.Type.WEAK).isPresent()) {
-              source = source.via(new FeatureTokenTransformerWeakETag(resultBuilder));
-            }
-
-            BasicStream<?, Void> basicStream =
-                sink instanceof SinkTransformed
-                    ? source.to((SinkTransformed<Object, ?>) sink)
-                    : source.to(sink);
-
-            return basicStream
-                .withResult(resultBuilder.isEmpty(true))
-                .handleError(ImmutableResult.Builder::error)
-                .handleItem(
-                    (builder, x) -> {
-                      if (strongETag && x instanceof byte[]) {
-                        eTag.put((byte[]) x);
-                      }
-                      return builder.isEmpty(
-                          x instanceof byte[] ? ((byte[]) x).length <= 0 : false);
-                    })
-                .handleEnd(
-                    (Builder builder1) -> {
-                      if (strongETag) {
-                        builder1.eTag(eTag.build(ETag.Type.STRONG));
-                      }
-                      return builder1.build();
-                    });
-          };
-
-      return run(stream, propertyTransformations);
-    }
-
-    @Override
-    public <X> CompletionStage<ResultReduced<X>> runWith(
-        SinkReduced<Object, X> sink, Optional<PropertyTransformations> propertyTransformations) {
-
-      Function<FeatureTokenSource, Stream<ResultReduced<X>>> stream =
-          tokenSource -> {
-            FeatureTokenSource source = tokenSource;
-            ImmutableResultReduced.Builder<X> resultBuilder = ImmutableResultReduced.<X>builder();
-            final ETag.Incremental eTag = ETag.incremental();
-            final boolean strongETag =
-                query.getETag().filter(type -> type == ETag.Type.STRONG).isPresent();
-
-            if (query.getETag().filter(type -> type == ETag.Type.WEAK).isPresent()) {
-              source = source.via(new FeatureTokenTransformerWeakETag(resultBuilder));
-            }
-
-            BasicStream<?, X> basicStream =
-                sink instanceof SinkReducedTransformed
-                    ? source.to((SinkReducedTransformed<Object, ?, X>) sink)
-                    : source.to(sink);
-
-            return basicStream
-                .withResult(resultBuilder.isEmpty(true))
-                .handleError(ImmutableResultReduced.Builder::error)
-                .handleItem(
-                    (builder, x) -> {
-                      if (strongETag && x instanceof byte[]) {
-                        eTag.put((byte[]) x);
-                      }
-                      return builder
-                          .reduced((X) x)
-                          .isEmpty(x instanceof byte[] && ((byte[]) x).length <= 0);
-                    })
-                .handleEnd(
-                    (ImmutableResultReduced.Builder<X> xBuilder) -> {
-                      if (strongETag) {
-                        xBuilder.eTag(eTag.build(ETag.Type.STRONG));
-                      }
-                      return xBuilder.build();
-                    });
-          };
-
-      return run(stream, propertyTransformations);
-    }
-
-    protected FeatureTokenSource getFeatureTokenSource(Map<String, String> virtualTables) {
-      Optional<FeatureStoreTypeInfo> typeInfo =
-          Optional.ofNullable(getTypeInfos().get(query.getType()));
-
-      if (!typeInfo.isPresent()) {
-        throw new IllegalStateException("No features available for type");
+  // TODO: more tests
+  protected final void validateQuery(Query query) {
+    if (query instanceof FeatureQuery) {
+      if (!getSourceSchemas().containsKey(((FeatureQuery) query).getType())) {
+        throw new IllegalArgumentException("No features available for type");
       }
-
-      // TODO: encapsulate in FeatureQueryRunnerSql
-      U transformedQuery = getQueryEncoder().encode(query, virtualTables);
-      V options = getQueryEncoder().getOptions(query);
-      Reactive.Source<T> source = getConnector().getSourceStream(transformedQuery, options);
-
-      FeatureTokenDecoder<
-              T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-          decoder = doTransform ? getDecoder(query) : getDecoderPassThrough(query);
-
-      FeatureTokenSource featureSource = source.via(decoder);
-
-      for (FeatureTokenTransformer transformer : getDecoderTransformers()) {
-        featureSource = featureSource.via(transformer);
-      }
-
-      return featureSource;
     }
-
-    private FeatureTokenSource getFeatureTokenSourceTransformed(
-        Optional<PropertyTransformations> propertyTransformations,
-        Map<String, String> virtualTables) {
-      FeatureTokenSource featureTokenSource = getFeatureTokenSource(virtualTables);
-
-      FeatureSchema featureSchema = getData().getTypes().get(query.getType());
-      Map<String, List<PropertyTransformation>> providerTransformationMap =
-          featureSchema
-              .accept(WITH_SCOPE_QUERIES)
-              .accept(
-                  (schema, visitedProperties) ->
-                      java.util.stream.Stream.concat(
-                              schema.getTransformations().isEmpty()
-                                  ? schema.isTemporal()
-                                      ? java.util.stream.Stream.of(
-                                          new SimpleImmutableEntry<
-                                              String, List<PropertyTransformation>>(
-                                              String.join(".", schema.getFullPath()),
-                                              ImmutableList.of(
-                                                  new ImmutablePropertyTransformation.Builder()
-                                                      .dateFormat(
-                                                          schema.getType() == Type.DATETIME
-                                                              ? DATETIME_FORMAT
-                                                              : DATE_FORMAT)
-                                                      .build())))
-                                      : java.util.stream.Stream.empty()
-                                  : java.util.stream.Stream.of(
-                                      new SimpleImmutableEntry<
-                                          String, List<PropertyTransformation>>(
-                                          schema.getFullPath().isEmpty()
-                                              ? WILDCARD
-                                              : String.join(".", schema.getFullPath()),
-                                          schema.getTransformations())),
-                              visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
-                          .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue)));
-      Map<String, List<PropertyTransformation>> providerTransformationMapMutations =
-          featureSchema
-              .accept(WITH_SCOPE_MUTATIONS)
-              .accept(
-                  (schema, visitedProperties) ->
-                      java.util.stream.Stream.concat(
-                              schema.isTemporal()
-                                  ? java.util.stream.Stream.of(
-                                      new SimpleImmutableEntry<
-                                          String, List<PropertyTransformation>>(
-                                          String.join(".", schema.getFullPath()),
-                                          ImmutableList.of(
-                                              new ImmutablePropertyTransformation.Builder()
-                                                  .dateFormat(
-                                                      schema.getType() == Type.DATETIME
-                                                          ? DATETIME_FORMAT
-                                                          : DATE_FORMAT)
-                                                  .build())))
-                                  : java.util.stream.Stream.empty(),
-                              visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
-                          .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue)));
-      PropertyTransformations providerTransformations = () -> providerTransformationMap;
-
-      PropertyTransformations mergedTransformations =
-          query.getSchemaScope() == Scope.QUERIES
-              ? propertyTransformations
-                  .map(p -> p.mergeInto(providerTransformations))
-                  .orElse(providerTransformations)
-              : () -> providerTransformationMapMutations;
-
-      FeatureTokenTransformerSchemaMappings schemaMapper =
-          new FeatureTokenTransformerSchemaMappings(mergedTransformations);
-
-      Optional<CrsTransformer> crsTransformer =
-          query
-              .getCrs()
-              .flatMap(
-                  targetCrs ->
-                      crsTransformerFactory.getTransformer(
-                          getData().getNativeCrs().orElse(OgcCrs.CRS84), targetCrs));
-      FeatureTokenTransformerValueMappings valueMapper =
-          new FeatureTokenTransformerValueMappings(
-              mergedTransformations, getCodelists(), getData().getNativeTimeZone(), crsTransformer);
-
-      FeatureTokenTransformerRemoveEmptyOptionals cleaner =
-          new FeatureTokenTransformerRemoveEmptyOptionals();
-
-      FeatureTokenTransformerLogger logger = new FeatureTokenTransformerLogger();
-
-      return featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner);
-      // .via(logger);
+    if (query instanceof MultiFeatureQuery) {
+      for (TypeQuery typeQuery : ((MultiFeatureQuery) query).getQueries()) {
+        if (!getSourceSchemas().containsKey(typeQuery.getType())) {
+          throw new IllegalArgumentException("No features available for type");
+        }
+      }
     }
   }
 
   @Override
   public FeatureChangeHandler getFeatureChangeHandler() {
     return changeHandler;
+  }
+
+  private FeatureTokenSource getFeatureTokenSource(
+      Query query, Map<String, String> virtualTables, boolean passThrough) {
+    U transformedQuery = getQueryEncoder().encode(query, virtualTables);
+    // TODO: remove options, already embedded in SqlQuerySet
+    TypeQuery typeQuery =
+        query instanceof MultiFeatureQuery
+            ? ((MultiFeatureQuery) query).getQueries().get(0)
+            : (FeatureQuery) query;
+    V options = getQueryEncoder().getOptions(typeQuery, query);
+    Reactive.Source<T> source = getConnector().getSourceStream(transformedQuery, options);
+
+    FeatureTokenDecoder<
+            T,
+            FeatureSchema,
+            SchemaMapping,
+            FeatureEventHandler.ModifiableContext<FeatureSchema, SchemaMapping>>
+        decoder = passThrough ? getDecoderPassThrough(query) : getDecoder(query);
+
+    FeatureTokenSource featureSource = source.via(decoder);
+
+    for (FeatureTokenTransformer transformer : getDecoderTransformers()) {
+      featureSource = featureSource.via(transformer);
+    }
+
+    return featureSource;
+  }
+
+  protected <W extends ResultBase> CompletionStage<W> runQuery(
+      BiFunction<FeatureTokenSource, Map<String, String>, Stream<W>> stream,
+      Query query,
+      boolean passThrough) {
+    Map<String, String> virtualTables = beforeQuery(query);
+
+    FeatureTokenSource tokenSource = getFeatureTokenSource(query, virtualTables, passThrough);
+
+    Reactive.RunnableStream<W> runnableStream =
+        stream.apply(tokenSource, virtualTables).on(streamRunner);
+
+    return runnableStream.run().whenComplete((result, throwable) -> afterQuery(query));
+  }
+
+  private Map<String, String> beforeQuery(Query query) {
+    Map<String, String> virtualTables = new HashMap<>();
+
+    extensionRegistry
+        .getAll()
+        .forEach(
+            extension -> {
+              if (extension.isSupported(getConnector())) {
+                extension.on(
+                    FeatureQueriesExtension.QUERY_HOOK.BEFORE,
+                    getData(),
+                    getConnector(),
+                    query,
+                    virtualTables::put);
+              }
+            });
+
+    return virtualTables;
+  }
+
+  private void afterQuery(Query query) {
+    extensionRegistry
+        .getAll()
+        .forEach(
+            extension -> {
+              if (extension.isSupported(getConnector())) {
+                extension.on(
+                    FeatureQueriesExtension.QUERY_HOOK.AFTER,
+                    getData(),
+                    getConnector(),
+                    query,
+                    (a, t) -> {});
+              }
+            });
   }
 }

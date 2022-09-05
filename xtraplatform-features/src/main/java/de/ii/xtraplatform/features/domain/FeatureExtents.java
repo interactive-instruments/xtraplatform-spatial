@@ -18,7 +18,5 @@ public interface FeatureExtents {
 
   Optional<BoundingBox> getSpatialExtent(String typeName, EpsgCrs crs);
 
-  Optional<Interval> getTemporalExtent(String typeName, String property);
-
-  Optional<Interval> getTemporalExtent(String typeName, String startProperty, String endProperty);
+  Optional<Interval> getTemporalExtent(String typeName);
 }

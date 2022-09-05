@@ -22,9 +22,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +36,11 @@ import org.slf4j.LoggerFactory;
 class SqlRowVals implements SqlRow {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SqlRowVals.class);
+  /* NOTE: If the db uses e.g. the DE collation and some sort key actually contains e.g. umlauts
+           this might lead to wrong results.
+           To cover such cases, the locale would need to be configurable.
+  */
+  private static final Collator COLLATOR = Collator.getInstance(Locale.US);
 
   private final List<Comparable<?>> ids;
   private final List<Comparable<?>> sortKeys;
@@ -41,6 +49,7 @@ class SqlRowVals implements SqlRow {
   private final List<Object> values;
   private int priority;
   private SchemaSql tableSchema;
+  private Optional<String> type;
 
   SqlRowVals() {
     this.ids = new ArrayList<>(32);
@@ -91,6 +100,11 @@ class SqlRowVals implements SqlRow {
   }
 
   @Override
+  public Optional<String> getType() {
+    return type;
+  }
+
+  @Override
   public List<List<String>> getColumnPaths() {
     if (Objects.nonNull(tableSchema)) {
       return tableSchema.getColumnPaths();
@@ -128,6 +142,7 @@ class SqlRowVals implements SqlRow {
 
     if (queryOptions.getTableSchema().isPresent()) {
       this.tableSchema = queryOptions.getTableSchema().get();
+      this.type = queryOptions.getType();
       this.sortKeyNames = queryOptions.getSortKeys();
       this.sortKeyDirections = queryOptions.getSortDirections();
       columnTypes = queryOptions.getColumnTypes();
@@ -272,7 +287,7 @@ class SqlRowVals implements SqlRow {
       } else if (id1 instanceof Timestamp) {
         result = ((Timestamp) id1).compareTo((Timestamp) id2);
       } else {
-        result = ((String) id1).compareTo((String) id2);
+        result = COLLATOR.compare((String) id1, (String) id2);
       }
       if (result != 0) {
         return result * direction;

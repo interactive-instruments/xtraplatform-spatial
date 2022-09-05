@@ -41,6 +41,10 @@ public class SqlDialectGpkg implements SqlDialect {
 
   @Override
   public Optional<BoundingBox> parseExtent(String extent, EpsgCrs crs) {
+    if (Objects.isNull(extent)) {
+      return Optional.empty();
+    }
+
     List<String> bbox = BBOX_SPLITTER.splitToList(extent);
 
     if (bbox.size() > 6) {

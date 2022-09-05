@@ -561,6 +561,11 @@ class SqlRowFixtures {
         }
 
         @Override
+        Optional<String> getType() {
+            return Optional.of('ft')
+        }
+
+        @Override
         List<List<String>> getColumnPaths() {
             return attributesContainer.getAttributePaths();
         }

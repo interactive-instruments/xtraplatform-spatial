@@ -7,15 +7,9 @@
  */
 package de.ii.xtraplatform.features.sql.app
 
-import com.google.common.collect.ImmutableList
+
 import de.ii.xtraplatform.features.domain.FeatureSchema
-import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer
-import de.ii.xtraplatform.features.domain.FeatureStoreRelation
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema
-import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreAttribute
-import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreInstanceContainer
-import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelatedContainer
-import de.ii.xtraplatform.features.domain.ImmutableFeatureStoreRelation
 import de.ii.xtraplatform.features.domain.SchemaBase
 import de.ii.xtraplatform.features.domain.SchemaBase.Type
 
@@ -204,7 +198,6 @@ class FeatureSchemaFixtures {
                             .valueType(Type.STRING)))
             .build()
 
-    //TODO: objects without sourcePath
     static FeatureSchema OBJECT_WITHOUT_SOURCE_PATH = new ImmutableFeatureSchema.Builder()
             .name("explorationsite")
             .sourcePath("/explorationsite")
@@ -222,6 +215,28 @@ class FeatureSchemaFixtures {
                     .putProperties2("href", new ImmutableFeatureSchema.Builder()
                             .sourcePath("legalavailability_fk")
                             .type(Type.STRING)))
+            .build()
+
+    static FeatureSchema OBJECT_WITHOUT_SOURCE_PATH2 = new ImmutableFeatureSchema.Builder()
+            .name("building")
+            .sourcePath("/o31001")
+            .type(Type.OBJECT)
+            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("id")
+                    .type(Type.STRING)
+                    .role(SchemaBase.Role.ID))
+            .putProperties2("geometry2D", new ImmutableFeatureSchema.Builder()
+                    .type(Type.OBJECT)
+                    .objectType("BuildingGeometry2D")
+                    .putProperties2("geometry", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("position")
+                            .type(Type.STRING))
+                    .putProperties2("horizontalGeometryReference", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("[id=id]bu2d_building__horizontalgeometryreference")
+                            .type(Type.OBJECT)
+                            .putProperties2("href", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("classifier")
+                                    .type(Type.STRING))))
             .build()
 
     //TODO: flags

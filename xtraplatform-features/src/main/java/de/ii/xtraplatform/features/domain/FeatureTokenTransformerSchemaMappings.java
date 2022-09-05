@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyContextTransformer;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertySchemaTransformer;
@@ -16,8 +17,12 @@ import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFl
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerObjectReduce;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.features.domain.transform.TransformerChain;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -29,54 +34,115 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FeatureTokenTransformerSchemaMappings.class);
 
-  private final PropertyTransformations propertyTransformations;
+  private final Map<String, PropertyTransformations> propertyTransformations;
   private ModifiableContext<FeatureSchema, SchemaMapping> newContext;
+  private Map<String, NestingTracker> nestingTrackers;
+  private Map<String, TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer>>
+      schemaTransformerChains;
+  private Map<
+          String,
+          TransformerChain<
+              ModifiableContext<FeatureSchema, SchemaMapping>, FeaturePropertyContextTransformer>>
+      contextTransformerChains;
   private NestingTracker nestingTracker;
   private TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> schemaTransformerChain;
   private TransformerChain<
           ModifiableContext<FeatureSchema, SchemaMapping>, FeaturePropertyContextTransformer>
       contextTransformerChain;
+  private Map<String, Boolean> flattened;
   private final List<List<String>> indexedArrays;
   private final List<List<String>> openedArrays;
 
-  public FeatureTokenTransformerSchemaMappings(PropertyTransformations propertyTransformations) {
+  public FeatureTokenTransformerSchemaMappings(
+      Map<String, PropertyTransformations> propertyTransformations) {
     this.propertyTransformations = propertyTransformations;
     this.indexedArrays = new ArrayList<>();
     this.openedArrays = new ArrayList<>();
+    this.schemaTransformerChains = new LinkedHashMap<>();
+    this.contextTransformerChains = new LinkedHashMap<>();
+    this.nestingTrackers = new LinkedHashMap<>();
   }
 
   @Override
   public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
+    // TODO: who uses original, simplify
     // TODO: slow, precompute, same for original in decoder
-    SchemaMapping schemaMapping = SchemaMapping.withTargetPaths(getContext().mapping());
+    ImmutableMap<String, SchemaMapping> mappings =
+        getContext().mappings().entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(
+                        entry.getKey(), SchemaMapping.withTargetPaths(entry.getValue())))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+    // SchemaMapping schemaMapping = SchemaMapping.withTargetPaths(getContext().mapping());
     this.newContext =
         createContext()
-            .setMapping(schemaMapping)
+            .setMappings(mappings)
             .setQuery(getContext().query())
             .setMetadata(getContext().metadata());
 
-    // this.propertySchemaTransformers =
-    // propertyTransformations.getSchemaTransformations(isOverview, this::getFlattenedPropertyPath);
-    this.schemaTransformerChain =
-        propertyTransformations.getSchemaTransformations(
-            schemaMapping, !context.query().returnsSingleFeature(), this::getFlattenedPropertyPath);
-    this.contextTransformerChain = propertyTransformations.getContextTransformations(schemaMapping);
+    this.schemaTransformerChains =
+        mappings.entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(
+                        entry.getKey(),
+                        propertyTransformations
+                            .get(entry.getKey())
+                            .getSchemaTransformations(
+                                entry.getValue(),
+                                (!(context.query() instanceof FeatureQuery)
+                                    || !((FeatureQuery) context.query()).returnsSingleFeature()),
+                                this::getFlattenedPropertyPath)))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
-    boolean flattenObjects =
-        schemaTransformerChain.has(PropertyTransformations.WILDCARD)
-            && schemaTransformerChain.get(PropertyTransformations.WILDCARD).stream()
-                .anyMatch(
-                    featurePropertySchemaTransformer ->
-                        featurePropertySchemaTransformer
-                                instanceof FeaturePropertyTransformerFlatten
-                            && (((FeaturePropertyTransformerFlatten)
-                                            featurePropertySchemaTransformer)
-                                        .include()
-                                    == INCLUDE.ALL
-                                || ((FeaturePropertyTransformerFlatten)
-                                            featurePropertySchemaTransformer)
-                                        .include()
-                                    == INCLUDE.OBJECTS));
+    this.contextTransformerChains =
+        mappings.entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(
+                        entry.getKey(),
+                        propertyTransformations
+                            .get(entry.getKey())
+                            .getContextTransformations(entry.getValue())))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+    this.nestingTrackers =
+        schemaTransformerChains.entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(entry.getKey(), getNestingTracker(entry.getValue())))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+    this.flattened =
+        schemaTransformerChains.entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(entry.getKey(), flattenObjects(entry.getValue())))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+    getDownstream().onStart(newContext);
+  }
+
+  private boolean flattenObjects(
+      TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> schemaTransformerChain) {
+    return schemaTransformerChain.has(PropertyTransformations.WILDCARD)
+        && schemaTransformerChain.get(PropertyTransformations.WILDCARD).stream()
+            .anyMatch(
+                featurePropertySchemaTransformer ->
+                    featurePropertySchemaTransformer instanceof FeaturePropertyTransformerFlatten
+                        && (((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer)
+                                    .include()
+                                == INCLUDE.ALL
+                            || ((FeaturePropertyTransformerFlatten)
+                                        featurePropertySchemaTransformer)
+                                    .include()
+                                == INCLUDE.OBJECTS));
+  }
+
+  private NestingTracker getNestingTracker(
+      TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> schemaTransformerChain) {
+    boolean flattenObjects = flattenObjects(schemaTransformerChain);
 
     boolean flattenArrays =
         schemaTransformerChain.has(PropertyTransformations.WILDCARD)
@@ -94,15 +160,8 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
                                         .include()
                                     == INCLUDE.ARRAYS));
 
-    this.nestingTracker =
-        new NestingTracker(
-            getDownstream(), newContext, ImmutableList.of(), flattenObjects, flattenArrays, true);
-
-    if (flattenObjects) {
-      newContext.putTransformed(FeaturePropertyTransformerFlatten.TYPE, "TRUE");
-    }
-
-    getDownstream().onStart(newContext);
+    return new NestingTracker(
+        getDownstream(), newContext, ImmutableList.of(), flattenObjects, flattenArrays, true);
   }
 
   @Override
@@ -112,7 +171,26 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
   @Override
   public void onFeatureStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
+    this.nestingTracker = nestingTrackers.get(context.type());
+    this.schemaTransformerChain = schemaTransformerChains.get(context.type());
+    this.contextTransformerChain = contextTransformerChains.get(context.type());
+
+    if (flattened.get(context.type())) {
+      newContext.putTransformed(FeaturePropertyTransformerFlatten.TYPE, "TRUE");
+    } else {
+      newContext.transformed().remove(FeaturePropertyTransformerFlatten.TYPE);
+    }
+
     newContext.pathTracker().track(List.of());
+
+    newContext.setType(context.type());
+
+    // TODO: why is this needed at all, what does withTargetPaths do?
+    // if (context.query() instanceof MultiFeatureQuery) {
+    // TODO: slow, precompute, same for original in decoder
+    // SchemaMapping schemaMapping = SchemaMapping.withTargetPaths(context.mapping());
+    // newContext.setMapping(schemaMapping);
+    // }
 
     getDownstream().onFeatureStart(newContext);
   }
@@ -249,7 +327,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
               new ArrayList<>(
                   index == 0
                       ? context.indexes()
-                      : context.indexes().subList(0, context.indexes().size() - 1));
+                      : context.indexes().subList(0, Math.max(0, context.indexes().size() - 1)));
           indexes.add(index + 1);
           context.setIndexes(indexes);
         }

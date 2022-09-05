@@ -52,9 +52,8 @@ public class WfsConnectorHttp implements WfsConnector {
   private final String providerId;
 
   @AssistedInject
-  WfsConnectorHttp(Http http, @Assisted FeatureProviderWfsData data) {
-    ConnectionInfoWfsHttp connectionInfo = data.getConnectionInfo();
-
+  WfsConnectorHttp(
+      Http http, @Assisted String providerId, @Assisted ConnectionInfoWfsHttp connectionInfo) {
     this.useHttpPost = connectionInfo.getMethod() == ConnectionInfoWfsHttp.METHOD.POST;
 
     Map<String, Map<WFS.METHOD, URI>> urls =
@@ -92,7 +91,7 @@ public class WfsConnectorHttp implements WfsConnector {
     this.httpClient = http.getHostClient(host, 16, 30);
 
     this.metadata = crawlMetadata();
-    this.providerId = data.getId();
+    this.providerId = providerId;
   }
 
   WfsConnectorHttp() {

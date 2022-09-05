@@ -20,6 +20,7 @@ import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
+import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
@@ -92,10 +93,13 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
       QUERY_HOOK hook,
       FeatureProviderDataV2 data,
       FeatureProviderConnector<?, ?, ?> connector,
-      FeatureQuery query,
+      Query query,
       BiConsumer<String, String> aliasResolver) {
+    if (!(query instanceof FeatureQuery)) {
+      return;
+    }
     Optional<RoutesConfiguration> routesConfiguration = getRoutesConfiguration(data);
-    Optional<RouteQuery> routeQuery = getRouteQuery(query);
+    Optional<RouteQuery> routeQuery = getRouteQuery((FeatureQuery) query);
 
     if (routesConfiguration.isPresent() && routeQuery.isPresent()) {
       SqlClient sqlClient = ((SqlConnector) connector).getSqlClient();

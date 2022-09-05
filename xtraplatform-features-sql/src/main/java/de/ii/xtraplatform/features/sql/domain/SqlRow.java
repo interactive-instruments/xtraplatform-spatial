@@ -9,11 +9,14 @@ package de.ii.xtraplatform.features.sql.domain;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.Optional;
+import org.immutables.value.Value;
 
 public interface SqlRow extends Comparable<SqlRow> {
 
   List<Object> getValues();
 
+  @Value.Default
   default String getName() {
     return "unknown";
   }
@@ -37,6 +40,8 @@ public interface SqlRow extends Comparable<SqlRow> {
   default int getPriority() {
     return 0;
   }
+
+  Optional<String> getType();
 
   default List<List<String>> getColumnPaths() {
     return ImmutableList.of();

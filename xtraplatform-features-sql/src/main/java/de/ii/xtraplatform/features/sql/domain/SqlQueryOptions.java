@@ -26,6 +26,14 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
     return withColumnTypes(Arrays.asList(columnTypes));
   }
 
+  static SqlQueryOptions single() {
+    return withColumnTypes(String.class);
+  }
+
+  static SqlQueryOptions tuple() {
+    return withColumnTypes(String.class, String.class);
+  }
+
   static SqlQueryOptions ddl() {
     return withColumnTypes();
   }
@@ -43,6 +51,8 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
   }
 
   Optional<SchemaSql> getTableSchema();
+
+  Optional<String> getType();
 
   List<SortKey> getCustomSortKeys();
 
