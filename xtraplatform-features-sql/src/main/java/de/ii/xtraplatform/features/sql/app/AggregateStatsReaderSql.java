@@ -10,28 +10,29 @@ package de.ii.xtraplatform.features.sql.app;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.AggregateStatsReader;
-import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
-import de.ii.xtraplatform.features.domain.FeatureStoreInstanceContainer;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
+import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.threeten.extra.Interval;
 
-class AggregateStatsReaderSql implements AggregateStatsReader {
+class AggregateStatsReaderSql implements AggregateStatsReader<SchemaSql> {
 
   private final Supplier<SqlClient> sqlClient;
-  private final FeatureStoreQueryGeneratorSql queryGenerator;
+  private final AggregateStatsQueryGenerator queryGenerator;
   private final SqlDialect sqlDialect;
   private final EpsgCrs crs;
 
   AggregateStatsReaderSql(
       Supplier<SqlClient> sqlClient,
-      FeatureStoreQueryGeneratorSql queryGenerator,
+      AggregateStatsQueryGenerator queryGenerator,
       SqlDialect sqlDialect,
       EpsgCrs crs) {
     this.sqlClient = sqlClient;
@@ -41,99 +42,102 @@ class AggregateStatsReaderSql implements AggregateStatsReader {
   }
 
   @Override
-  public Stream<Long> getCount(FeatureStoreTypeInfo typeInfo) {
-    // TODO: multiple main tables
-    FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers().get(0);
-    String query = queryGenerator.getCountQuery(instanceContainer);
-
-    return sqlClient
-        .get()
-        .getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class))
+  public Stream<Long> getCount(List<SchemaSql> sourceSchemas) {
+    return Reactive.Source.iterable(sourceSchemas)
+        .via(
+            Reactive.Transformer.flatMap(
+                schemaSql ->
+                    sqlClient
+                        .get()
+                        .getSourceStream(
+                            queryGenerator.getCountQuery(schemaSql), SqlQueryOptions.single())))
         .via(Reactive.Transformer.map(sqlRow -> Long.parseLong((String) sqlRow.getValues().get(0))))
-        .to(Reactive.Sink.head());
+        .to(Reactive.Sink.reduce(0L, Long::sum));
   }
 
   @Override
   public Stream<Optional<BoundingBox>> getSpatialExtent(
-      FeatureStoreTypeInfo typeInfo, boolean is3d) {
-    // TODO: multiple main tables
-    FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers().get(0);
-    Optional<FeatureStoreAttributesContainer> spatialAttributesContainer =
-        instanceContainer.getSpatialAttributesContainer();
-
-    if (spatialAttributesContainer.isEmpty()) {
-      throw new IllegalArgumentException("feature type has no geometry:" + typeInfo.getName());
-    }
-
-    String query =
-        queryGenerator.getExtentQuery(instanceContainer, spatialAttributesContainer.get(), is3d);
-
-    return sqlClient
-        .get()
-        .getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class))
+      List<SchemaSql> sourceSchemas, boolean is3d) {
+    return Source.iterable(sourceSchemas)
         .via(
-            Reactive.Transformer.map(
+            Transformer.flatMap(
+                main -> {
+                  Optional<SchemaSql> spatial = main.getPrimaryGeometryParent();
+
+                  if (spatial.isEmpty()) {
+                    return Source.empty();
+                  }
+
+                  return sqlClient
+                      .get()
+                      .getSourceStream(
+                          queryGenerator.getSpatialExtentQuery(main, spatial.get(), is3d),
+                          SqlQueryOptions.single());
+                }))
+        .via(
+            Transformer.map(
                 sqlRow -> sqlDialect.parseExtent((String) sqlRow.getValues().get(0), crs)))
-        .to(Reactive.Sink.head());
+        .to(
+            Reactive.Sink.reduce(
+                Optional.empty(),
+                (prev, next) -> {
+                  if (next.isEmpty()) {
+                    return prev;
+                  }
+                  if (prev.isEmpty()) {
+                    return next;
+                  }
+
+                  return Optional.of(BoundingBox.merge(prev.get(), next.get()));
+                }));
   }
 
   @Override
-  public Stream<Optional<Interval>> getTemporalExtent(
-      FeatureStoreTypeInfo typeInfo, String property) {
-    FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers().get(0);
-    Optional<FeatureStoreAttributesContainer> temporalAttributesContainer =
-        instanceContainer.getTemporalAttributesContainer(property);
-
-    if (!temporalAttributesContainer.isPresent()) {
-      throw new IllegalArgumentException("temporal property not found:" + property);
-    }
-
-    String query =
-        queryGenerator.getTemporalExtentQuery(
-            instanceContainer, temporalAttributesContainer.get(), property);
-
-    return sqlClient
-        .get()
-        .getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class, String.class))
+  public Stream<Optional<Interval>> getTemporalExtent(List<SchemaSql> sourceSchemas) {
+    return Source.iterable(sourceSchemas)
         .via(
-            Reactive.Transformer.map(
+            Transformer.flatMap(
+                main -> {
+                  if (main.getPrimaryInstantParent().isPresent()) {
+                    return sqlClient
+                        .get()
+                        .getSourceStream(
+                            queryGenerator.getTemporalExtentQuery(
+                                main, main.getPrimaryInstantParent().get()),
+                            SqlQueryOptions.tuple());
+                  }
+
+                  if (main.getPrimaryIntervalStartParent().isPresent()
+                      && main.getPrimaryIntervalEndParent().isPresent()) {
+                    return sqlClient
+                        .get()
+                        .getSourceStream(
+                            queryGenerator.getTemporalExtentQuery(
+                                main,
+                                main.getPrimaryIntervalStartParent().get(),
+                                main.getPrimaryIntervalEndParent().get()),
+                            SqlQueryOptions.tuple());
+                  }
+
+                  return Source.empty();
+                }))
+        .via(
+            Transformer.map(
                 sqlRow ->
                     sqlDialect.parseTemporalExtent(
                         (String) sqlRow.getValues().get(0), (String) sqlRow.getValues().get(1))))
-        .to(Reactive.Sink.head());
-  }
+        .to(
+            Reactive.Sink.reduce(
+                Optional.empty(),
+                (prev, next) -> {
+                  if (next.isEmpty()) {
+                    return prev;
+                  }
+                  if (prev.isEmpty()) {
+                    return next;
+                  }
 
-  @Override
-  public Stream<Optional<Interval>> getTemporalExtent(
-      FeatureStoreTypeInfo typeInfo, String startProperty, String endProperty) {
-    FeatureStoreInstanceContainer instanceContainer = typeInfo.getInstanceContainers().get(0);
-    Optional<FeatureStoreAttributesContainer> startAttributesContainer =
-        instanceContainer.getTemporalAttributesContainer(startProperty);
-    if (!startAttributesContainer.isPresent()) {
-      throw new IllegalArgumentException("temporal property not found:" + startProperty);
-    }
-    Optional<FeatureStoreAttributesContainer> endAttributesContainer =
-        instanceContainer.getTemporalAttributesContainer(endProperty);
-    if (!endAttributesContainer.isPresent()) {
-      throw new IllegalArgumentException("temporal property not found:" + endProperty);
-    }
-
-    String query =
-        queryGenerator.getTemporalExtentQuery(
-            instanceContainer,
-            startAttributesContainer.get(),
-            endAttributesContainer.get(),
-            startProperty,
-            endProperty);
-
-    return sqlClient
-        .get()
-        .getSourceStream(query, SqlQueryOptions.withColumnTypes(String.class, String.class))
-        .via(
-            Reactive.Transformer.map(
-                sqlRow ->
-                    sqlDialect.parseTemporalExtent(
-                        (String) sqlRow.getValues().get(0), (String) sqlRow.getValues().get(1))))
-        .to(Reactive.Sink.head());
+                  return Optional.of(prev.get().span(next.get()));
+                }));
   }
 }

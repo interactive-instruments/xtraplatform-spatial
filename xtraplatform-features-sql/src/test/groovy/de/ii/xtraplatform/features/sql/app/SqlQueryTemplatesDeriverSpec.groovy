@@ -9,7 +9,6 @@ package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlImpl
 import de.ii.xtraplatform.cql.domain.Cql2Expression
-import de.ii.xtraplatform.cql.domain.CqlFilter
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.Property
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
@@ -25,9 +24,9 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
     @Shared
     FilterEncoderSql filterEncoder = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), null, null, new CqlImpl(), null)
     @Shared
-    SqlQueryTemplatesDeriver td = new SqlQueryTemplatesDeriver(filterEncoder, new SqlDialectPostGis(), true)
+    SqlQueryTemplatesDeriver td = new SqlQueryTemplatesDeriver(filterEncoder, new SqlDialectPostGis(), true, false)
     @Shared
-    SqlQueryTemplatesDeriver tdNoNm = new SqlQueryTemplatesDeriver(filterEncoder, new SqlDialectPostGis(), false)
+    SqlQueryTemplatesDeriver tdNoNm = new SqlQueryTemplatesDeriver(filterEncoder, new SqlDialectPostGis(), false, false)
 
     static Optional<Cql2Expression> noFilter = Optional.empty()
 
@@ -84,7 +83,7 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
     }
 
     static String meta(SqlQueryTemplates templates, List<SortKey> sortBy, Optional<Cql2Expression> userFilter) {
-        return templates.getMetaQueryTemplate().generateMetaQuery(10, 10, sortBy, userFilter, com.google.common.collect.ImmutableMap.of())
+        return templates.getMetaQueryTemplate().generateMetaQuery(10, 10, 0, sortBy, userFilter, com.google.common.collect.ImmutableMap.of(), false, true)
     }
 
     static List<String> values(SqlQueryTemplates templates, int limit, int offset, List<SortKey> sortBy, Cql2Expression filter) {

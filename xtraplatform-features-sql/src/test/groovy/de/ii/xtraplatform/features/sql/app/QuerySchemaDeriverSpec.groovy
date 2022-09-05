@@ -8,9 +8,9 @@
 package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlImpl
+import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults
 import de.ii.xtraplatform.features.sql.domain.SchemaSql
 import de.ii.xtraplatform.features.sql.domain.SqlPathParser
-import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -38,17 +38,18 @@ class QuerySchemaDeriverSpec extends Specification {
 
         where:
 
-        casename                               | source                                                    || expected
-        "value array"                          | FeatureSchemaFixtures.VALUE_ARRAY                         || QuerySchemaFixtures.VALUE_ARRAY
-        "object array"                         | FeatureSchemaFixtures.OBJECT_ARRAY                        || QuerySchemaFixtures.OBJECT_ARRAY
-        "merge"                                | FeatureSchemaFixtures.MERGE                               || QuerySchemaFixtures.MERGE
-        "self joins"                           | FeatureSchemaFixtures.SELF_JOINS                          || QuerySchemaFixtures.SELF_JOINS
+        casename                                     | source                                                    || expected
+        "value array"                                | FeatureSchemaFixtures.VALUE_ARRAY                         || QuerySchemaFixtures.VALUE_ARRAY
+        "object array"                               | FeatureSchemaFixtures.OBJECT_ARRAY                        || QuerySchemaFixtures.OBJECT_ARRAY
+        "merge"                                      | FeatureSchemaFixtures.MERGE                               || QuerySchemaFixtures.MERGE
+        "self joins"                                 | FeatureSchemaFixtures.SELF_JOINS                          || QuerySchemaFixtures.SELF_JOINS
         //"self joins with filters"              | FeatureSchemaFixtures.SELF_JOINS_FILTER                   || QuerySchemaFixtures.SELF_JOINS_FILTER
-        "self join with nested duplicate join" | FeatureSchemaFixtures.SELF_JOIN_NESTED_DUPLICATE          || QuerySchemaFixtures.SELF_JOIN_NESTED_DUPLICATE
-        "object without sourcePath"            | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH
-        "multiple sourcePaths"                 | FeatureSchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
-        "nested joins"                         | FeatureSchemaFixtures.NESTED_JOINS                        || QuerySchemaFixtures.NESTED_JOINS
-        "nested value array"                   | FeatureSchemaFixtures.NESTED_VALUE_ARRAY                  || QuerySchemaFixtures.NESTED_VALUE_ARRAY
+        "self join with nested duplicate join"       | FeatureSchemaFixtures.SELF_JOIN_NESTED_DUPLICATE          || QuerySchemaFixtures.SELF_JOIN_NESTED_DUPLICATE
+        "object without sourcePath"                  | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH
+        "object without sourcePath with nested join" | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH2         || QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH2
+        "multiple sourcePaths"                       | FeatureSchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
+        "nested joins"                               | FeatureSchemaFixtures.NESTED_JOINS                        || QuerySchemaFixtures.NESTED_JOINS
+        "nested value array"                         | FeatureSchemaFixtures.NESTED_VALUE_ARRAY                  || QuerySchemaFixtures.NESTED_VALUE_ARRAY
     }
 
 

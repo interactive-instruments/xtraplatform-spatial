@@ -32,7 +32,8 @@ public interface ConnectorFactory2<T, U, V extends FeatureProviderConnector.Quer
 
   Set<FeatureProviderConnector<T, U, V>> instances();
 
-  FeatureProviderConnector<T, U, V> createInstance(FeatureProviderDataV2 data);
+  FeatureProviderConnector<T, U, V> createInstance(
+      String providerId, ConnectionInfo connectionInfo);
 
   void deleteInstance(String id);
 }

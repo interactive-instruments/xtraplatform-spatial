@@ -9,28 +9,26 @@ package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.features.domain.FeatureStoreAttributesContainer;
-import de.ii.xtraplatform.features.domain.FeatureStoreRelatedContainer;
-import de.ii.xtraplatform.features.domain.FeatureStoreRelation;
-import de.ii.xtraplatform.features.domain.TypeInfoValidator;
+import de.ii.xtraplatform.features.domain.SourceSchemaValidator;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
+import de.ii.xtraplatform.features.sql.domain.SqlRelation;
 import de.ii.xtraplatform.store.domain.entities.ImmutableValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import schemacrawler.schema.Catalog;
-import schemacrawler.schema.Table;
 import schemacrawler.schemacrawler.SchemaCrawlerException;
 
-public class SqlTypeInfoValidator implements TypeInfoValidator {
+public class SourceSchemaValidatorSql implements SourceSchemaValidator<SchemaSql> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SqlTypeInfoValidator.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SourceSchemaValidatorSql.class);
   public static final String TABLE_DOES_NOT_EXIST = "%s: table '%s' does not exist";
   public static final String COLUMN_DOES_NOT_EXIST = "%s: column '%s' in table '%s' does not exist";
   public static final String COLUMN_NOT_UNIQUE =
@@ -41,38 +39,36 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
   private final List<String> schemas;
   private Supplier<SqlClient> sqlClient;
 
-  public SqlTypeInfoValidator(List<String> schemas, Supplier<SqlClient> sqlClient) {
+  public SourceSchemaValidatorSql(List<String> schemas, Supplier<SqlClient> sqlClient) {
     this.schemas = schemas;
     this.sqlClient = sqlClient;
   }
 
   @Override
-  public ValidationResult validate(
-      String typeName, FeatureStoreAttributesContainer attributesContainer, MODE mode) {
+  public ValidationResult validate(String typeName, List<SchemaSql> sourceSchemas, MODE mode) {
     try (SqlSchemaCrawler schemaCrawler = new SqlSchemaCrawler(sqlClient.get().getConnection())) {
       Catalog catalog =
-          schemaCrawler.getCatalog(schemas, getUsedTables(attributesContainer), ImmutableList.of());
-      Collection<Table> tables = catalog.getTables();
+          schemaCrawler.getCatalog(schemas, getAllUsedTables(sourceSchemas), ImmutableList.of());
+      SchemaInfo schemaInfo = new SchemaInfo(catalog.getTables());
 
-      return validate(typeName, attributesContainer, mode, new SchemaInfo(tables));
+      return sourceSchemas.stream()
+          .flatMap(sourceSchema -> sourceSchema.getAllObjects().stream())
+          .map(tableSchema -> validate(typeName, tableSchema, mode, schemaInfo))
+          .reduce(ValidationResult.of(), ValidationResult::mergeWith);
     } catch (SchemaCrawlerException | IOException e) {
       throw new IllegalStateException("could not parse schema");
     }
   }
 
   private ValidationResult validate(
-      String typeName,
-      FeatureStoreAttributesContainer attributesContainer,
-      MODE mode,
-      SchemaInfo schemaInfo) {
+      String typeName, SchemaSql tableSchema, MODE mode, SchemaInfo schemaInfo) {
     ImmutableValidationResult.Builder result = ImmutableValidationResult.builder().mode(mode);
 
-    if (attributesContainer instanceof FeatureStoreRelatedContainer) {
-      List<FeatureStoreRelation> relations =
-          ((FeatureStoreRelatedContainer) attributesContainer).getInstanceConnection();
+    if (!tableSchema.getRelation().isEmpty()) {
+      List<SqlRelation> relations = tableSchema.getRelation();
 
       for (int i = 0; i < relations.size(); i++) {
-        FeatureStoreRelation relation = relations.get(i);
+        SqlRelation relation = relations.get(i);
         String context =
             String.format(
                 "Invalid sourcePath '%s' in type '%s'",
@@ -134,9 +130,9 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
           }
         }
       }
-    } else if (!schemaInfo.tableExists(attributesContainer.getName())) {
+    } else if (!schemaInfo.tableExists(tableSchema.getName())) {
       String context = String.format("Invalid sourcePath in type '%s'", typeName);
-      result.addErrors(String.format(TABLE_DOES_NOT_EXIST, context, attributesContainer.getName()));
+      result.addErrors(String.format(TABLE_DOES_NOT_EXIST, context, tableSchema.getName()));
     }
 
     ValidationResult intermediateResult = result.build();
@@ -145,80 +141,76 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
     }
 
     String context = String.format("Invalid sort key for type '%s'", typeName);
-    if (!schemaInfo.columnExists(attributesContainer.getSortKey(), attributesContainer.getName())) {
+    if (!schemaInfo.columnExists(tableSchema.getSortKey().get(), tableSchema.getName())) {
       result.addErrors(
           String.format(
               COLUMN_DOES_NOT_EXIST,
               context,
-              attributesContainer.getSortKey(),
-              attributesContainer.getName()));
-    } else if (!schemaInfo.isColumnUnique(
-        attributesContainer.getSortKey(), attributesContainer.getName())) {
+              tableSchema.getSortKey().get(),
+              tableSchema.getName()));
+    } else if (!schemaInfo.isColumnUnique(tableSchema.getSortKey().get(), tableSchema.getName())) {
       result.addStrictErrors(
           String.format(
               COLUMN_NOT_UNIQUE,
               context,
-              attributesContainer.getSortKey(),
-              attributesContainer.getName(),
+              tableSchema.getSortKey().get(),
+              tableSchema.getName(),
               "sort key"));
     }
 
-    attributesContainer
-        .getAttributes()
+    tableSchema
+        .getProperties()
         .forEach(
             attribute -> {
-              if (!attribute.isConstant()) {
+              if (attribute.isValue() && !attribute.isConstant()) {
                 String context2 =
                     String.format(
                         "Invalid sourcePath for property '%s' in type '%s'",
-                        attribute.getQueryable(), typeName);
+                        attribute.getSourcePath().orElse("???"), typeName);
 
-                if (!schemaInfo.columnExists(attribute.getName(), attributesContainer.getName())) {
+                if (!schemaInfo.columnExists(attribute.getName(), tableSchema.getName())) {
                   result.addErrors(
                       String.format(
                           COLUMN_DOES_NOT_EXIST,
                           context2,
                           attribute.getName(),
-                          attributesContainer.getName()));
+                          tableSchema.getName()));
                 } else {
                   if (attribute.isId()
-                      && !schemaInfo.isColumnUnique(
-                          attribute.getName(), attributesContainer.getName())) {
+                      && !schemaInfo.isColumnUnique(attribute.getName(), tableSchema.getName())) {
                     String context3 =
                         String.format(
                             "Invalid role ID for property '%s' in type '%s'",
-                            attribute.getQueryable(), typeName);
+                            attribute.getSourcePath().orElse("???"), typeName);
                     result.addStrictErrors(
                         String.format(
                             COLUMN_NOT_UNIQUE,
                             context3,
                             attribute.getName(),
-                            attributesContainer.getName(),
+                            tableSchema.getName(),
                             "feature id"));
                   }
 
                   if (attribute.isSpatial()
-                      && !schemaInfo.isColumnSpatial(
-                          attributesContainer.getName(), attribute.getName())) {
+                      && !schemaInfo.isColumnSpatial(tableSchema.getName(), attribute.getName())) {
                     result.addErrors(
                         String.format(
                             COLUMN_CANNOT_BE_USED_AS,
                             context2,
                             attribute.getName(),
-                            attributesContainer.getName(),
+                            tableSchema.getName(),
                             "geometry"));
                   }
 
                   // TODO: strictError on string
                   if (attribute.isTemporal()
-                      && !schemaInfo.isColumnTemporal(
-                          attributesContainer.getName(), attribute.getName())) {
+                      && !schemaInfo.isColumnTemporal(tableSchema.getName(), attribute.getName())) {
                     result.addErrors(
                         String.format(
                             COLUMN_CANNOT_BE_USED_AS,
                             context2,
                             attribute.getName(),
-                            attributesContainer.getName(),
+                            tableSchema.getName(),
                             "datetime"));
                   }
                 }
@@ -228,21 +220,25 @@ public class SqlTypeInfoValidator implements TypeInfoValidator {
     return result.build();
   }
 
-  private List<String> getUsedTables(FeatureStoreAttributesContainer attributesContainer) {
+  private List<String> getAllUsedTables(List<SchemaSql> schemaSql) {
+    return schemaSql.stream()
+        .flatMap(schemaSql1 -> schemaSql1.getAllObjects().stream())
+        .flatMap(schemaSql1 -> getUsedTables(schemaSql1).stream())
+        .distinct()
+        .collect(Collectors.toList());
+  }
+
+  private List<String> getUsedTables(SchemaSql schemaSql) {
     List<String> usedTables = new ArrayList<>();
 
-    usedTables.add(attributesContainer.getName());
-    if (attributesContainer instanceof FeatureStoreRelatedContainer) {
-      List<FeatureStoreRelation> relations =
-          ((FeatureStoreRelatedContainer) attributesContainer).getInstanceConnection();
+    usedTables.add(schemaSql.getName());
 
-      for (int i = 0; i < relations.size(); i++) {
-        FeatureStoreRelation relation = relations.get(i);
-        usedTables.add(relation.getSourceContainer());
-        usedTables.add(relation.getTargetContainer());
-        if (relation.getJunction().isPresent()) {
-          usedTables.add(relation.getJunction().get());
-        }
+    for (int i = 0; i < schemaSql.getRelation().size(); i++) {
+      SqlRelation relation = schemaSql.getRelation().get(i);
+      usedTables.add(relation.getSourceContainer());
+      usedTables.add(relation.getTargetContainer());
+      if (relation.getJunction().isPresent()) {
+        usedTables.add(relation.getJunction().get());
       }
     }
 

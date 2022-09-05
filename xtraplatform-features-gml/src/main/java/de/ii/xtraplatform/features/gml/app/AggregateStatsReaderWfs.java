@@ -16,14 +16,15 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.FeatureMetadata;
-import de.ii.xtraplatform.features.domain.FeatureStoreTypeInfo;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
+import java.util.List;
 import java.util.Optional;
 import org.threeten.extra.Interval;
 
-public class AggregateStatsReaderWfs implements AggregateStatsReader {
+public class AggregateStatsReaderWfs implements AggregateStatsReader<FeatureSchema> {
 
   private final FeatureMetadata featureMetadata;
   private final Optional<CrsTransformer> crsTransformer;
@@ -37,20 +38,23 @@ public class AggregateStatsReaderWfs implements AggregateStatsReader {
   }
 
   @Override
-  public Stream<Long> getCount(FeatureStoreTypeInfo typeInfo) {
+  public Stream<Long> getCount(List<FeatureSchema> sourceSchemas) {
     // TODO: hits query
     return Reactive.Source.single(-1L).to(Reactive.Sink.head());
   }
 
   @Override
   public Stream<Optional<BoundingBox>> getSpatialExtent(
-      FeatureStoreTypeInfo typeInfo, boolean is3d) {
+      List<FeatureSchema> sourceSchemas, boolean is3d) {
 
     Optional<BoundingBox> boundingBox =
         featureMetadata
             .getMetadata()
             .map(Metadata::getFeatureTypesBoundingBox)
-            .flatMap(boundingBoxes -> Optional.ofNullable(boundingBoxes.get(typeInfo.getName())))
+            .flatMap(
+                boundingBoxes ->
+                    Optional.ofNullable(
+                        boundingBoxes.get(sourceSchemas.get(0).getSourcePath().get().substring(1))))
             .flatMap(
                 boundingBox1 ->
                     crsTransformer.map(
@@ -62,14 +66,7 @@ public class AggregateStatsReaderWfs implements AggregateStatsReader {
   }
 
   @Override
-  public Stream<Optional<Interval>> getTemporalExtent(
-      FeatureStoreTypeInfo typeInfo, String property) {
-    return Reactive.Source.single(Optional.<Interval>empty()).to(Reactive.Sink.head());
-  }
-
-  @Override
-  public Stream<Optional<Interval>> getTemporalExtent(
-      FeatureStoreTypeInfo typeInfo, String startProperty, String endProperty) {
+  public Stream<Optional<Interval>> getTemporalExtent(List<FeatureSchema> sourceSchemas) {
     return Reactive.Source.single(Optional.<Interval>empty()).to(Reactive.Sink.head());
   }
 }

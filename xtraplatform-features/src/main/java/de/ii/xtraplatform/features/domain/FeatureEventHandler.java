@@ -13,6 +13,7 @@ import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import javax.annotation.Nullable;
@@ -66,9 +67,18 @@ public interface FeatureEventHandler<
       return indexes().isEmpty() ? 0 : indexes().get(indexes().size() - 1);
     }
 
-    FeatureQuery query();
+    Query query();
 
-    U mapping();
+    @Nullable
+    String type();
+
+    Map<String, U> mappings();
+
+    @Nullable
+    @Value.Lazy
+    default U mapping() {
+      return Objects.isNull(type()) ? null : mappings().get(type());
+    }
 
     @Value.Default
     default int schemaIndex() {
@@ -91,6 +101,10 @@ public interface FeatureEventHandler<
 
     @Value.Lazy
     default Optional<T> currentSchema() {
+      if (Objects.isNull(mapping())) {
+        return Optional.empty();
+      }
+
       List<String> path = path();
 
       if (path.isEmpty()) {
@@ -117,6 +131,10 @@ public interface FeatureEventHandler<
 
     @Value.Lazy
     default List<T> parentSchemas() {
+      if (Objects.isNull(mapping())) {
+        return ImmutableList.of();
+      }
+
       List<String> path = path();
 
       if (path.isEmpty()) {
@@ -191,16 +209,30 @@ public interface FeatureEventHandler<
 
     private boolean shouldInclude(T schema, List<T> parentSchemas, String path) {
       return schema.isId()
-          || (schema.isSpatial() && !query().skipGeometry())
+          || (schema.isSpatial() && (Objects.isNull(typeQuery()) || !typeQuery().skipGeometry()))
           // TODO: enable if projected output needs to be schema valid
           // || isRequired(schema, parentSchemas)
           || (!schema.isId() && !schema.isSpatial() && propertyIsInFields(path));
     }
 
+    private TypeQuery typeQuery() {
+      return query() instanceof FeatureQuery
+          ? (FeatureQuery) query()
+          : query() instanceof MultiFeatureQuery
+              ? ((MultiFeatureQuery) query())
+                  .getQueries().stream()
+                      .filter(subQuery -> Objects.equals(subQuery.getType(), type()))
+                      .findFirst()
+                      .orElse(null)
+              : null;
+    }
+
     default boolean propertyIsInFields(String property) {
-      return query().getFields().isEmpty()
-          || query().getFields().contains("*")
-          || query().getFields().stream().anyMatch(field -> field.startsWith(property));
+      TypeQuery typeQuery = typeQuery();
+      return Objects.nonNull(typeQuery)
+          && (typeQuery.getFields().isEmpty()
+              || typeQuery.getFields().contains("*")
+              || typeQuery.getFields().stream().anyMatch(field -> field.startsWith(property)));
     }
 
     default boolean isRequired(T schema, List<T> parentSchemas) {
@@ -237,9 +269,11 @@ public interface FeatureEventHandler<
 
     ModifiableContext<T, U> setIndexes(Iterable<Integer> indexes);
 
-    ModifiableContext<T, U> setQuery(FeatureQuery query);
+    ModifiableContext<T, U> setQuery(Query query);
 
-    ModifiableContext<T, U> setMapping(U mapping);
+    ModifiableContext<T, U> setType(String type);
+
+    ModifiableContext<T, U> setMappings(Map<String, ? extends U> mappings);
 
     ModifiableContext<T, U> setSchemaIndex(int schemaIndex);
 
