@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.InjectableValues
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonAppend
+import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.cql.domain.Between
 import de.ii.xtraplatform.cql.domain.BinaryScalarOperation
@@ -19,6 +20,7 @@ import de.ii.xtraplatform.cql.domain.Cql2Expression
 import de.ii.xtraplatform.cql.domain.CqlParseException
 import de.ii.xtraplatform.cql.domain.CqlVisitor
 import de.ii.xtraplatform.cql.domain.Eq
+import de.ii.xtraplatform.cql.domain.Function
 import de.ii.xtraplatform.cql.domain.Geometry
 import de.ii.xtraplatform.cql.domain.In
 import de.ii.xtraplatform.cql.domain.Interval
@@ -32,6 +34,8 @@ import de.ii.xtraplatform.cql.domain.SpatialLiteral
 import de.ii.xtraplatform.cql.domain.TBefore
 import de.ii.xtraplatform.cql.domain.TDuring
 import de.ii.xtraplatform.cql.domain.TFinishedBy
+import de.ii.xtraplatform.cql.domain.TFinishes
+import de.ii.xtraplatform.cql.domain.TIntersects
 import de.ii.xtraplatform.cql.domain.Temporal
 import de.ii.xtraplatform.cql.domain.TemporalLiteral
 import de.ii.xtraplatform.cql.domain.TemporalOperator
@@ -42,6 +46,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.crs.infra.CrsTransformerFactoryProj
 import de.ii.xtraplatform.proj.domain.ProjLoaderImpl
+import io.swagger.v3.oas.models.security.SecurityScheme
 import org.checkerframework.checker.units.qual.C
 import org.eclipse.jetty.server.RequestLog
 import org.spockframework.runtime.model.INameable
@@ -1763,7 +1768,16 @@ class CqlTextSpec extends Specification {
 
         noExceptionThrown()
     }
+    def 'Test cover mapTemporalOfdperators'() {
 
+        when:
+        String actual = cql.write(CqlFilterExamples.EXAMPLE_25x, Cql.Format.TEXT)
+        cql.mapTemporalOperators(cql.read(actual, Cql.Format.TEXT), Set.of(TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY))
+        then:
+
+        noExceptionThrown()
+
+    }
     def 'Test cover mapTemporalOperators'() {
 
         when: 'reading text'
@@ -1817,6 +1831,15 @@ class CqlTextSpec extends Specification {
         noExceptionThrown()
     }
 
+    def 'Test mapTemporalOperators with de.ii.xtraplatform.cql.domain.Interval'() {
 
+        when: 'reading text'
+
+        cql.mapTemporalOperators(de.ii.xtraplatform.cql.app.CqlFilterExamples.EXAMPLE_25z, Set.of(In))
+
+        then:
+
+        noExceptionThrown()
+    }
 
 }
