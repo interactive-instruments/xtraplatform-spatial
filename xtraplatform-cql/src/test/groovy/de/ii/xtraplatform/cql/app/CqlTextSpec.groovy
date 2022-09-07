@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonAppend
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
+import de.ii.xtraplatform.cql.domain.And
 import de.ii.xtraplatform.cql.domain.Between
 import de.ii.xtraplatform.cql.domain.BinaryScalarOperation
 import de.ii.xtraplatform.cql.domain.Cql
@@ -22,14 +23,18 @@ import de.ii.xtraplatform.cql.domain.CqlVisitor
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.Function
 import de.ii.xtraplatform.cql.domain.Geometry
+import de.ii.xtraplatform.cql.domain.Gt
 import de.ii.xtraplatform.cql.domain.In
 import de.ii.xtraplatform.cql.domain.Interval
 import de.ii.xtraplatform.cql.domain.Operation
+import de.ii.xtraplatform.cql.domain.Or
 import de.ii.xtraplatform.cql.domain.Property
 import de.ii.xtraplatform.cql.domain.SContains
 import de.ii.xtraplatform.cql.domain.SCrosses
+import de.ii.xtraplatform.cql.domain.SIntersects
 import de.ii.xtraplatform.cql.domain.STouches
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
+import de.ii.xtraplatform.cql.domain.Spatial
 import de.ii.xtraplatform.cql.domain.SpatialLiteral
 import de.ii.xtraplatform.cql.domain.TBefore
 import de.ii.xtraplatform.cql.domain.TDuring
@@ -391,6 +396,141 @@ class CqlTextSpec extends Specification {
 
         then:
         actual2 == cqlText
+
+    }
+
+    def 'VisitMultipoint'() {
+
+        given:
+
+        String cqlText = "S_INTERSECTS(bbox, MULTIPOINT(12.0 55.09,11.0 54.09))"
+
+        when: 'reading text'
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        noExceptionThrown()
+
+        and:
+
+        when:
+
+        String actual2 = cql.write( SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.MultiPoint.of(Geometry.Point.of((double)12.00, (double)55.09), Geometry.Point.of((double)11.00, (double)54.09)))), Cql.Format.TEXT)
+
+        then:
+
+        actual2 == cqlText
+    }
+
+    def 'VisitMultiLineString'() {
+
+        given:
+
+        String cqlText = "S_INTERSECTS(bbox, MULTILINESTRING((6.0 47.27),(11.0 50.27)))"
+
+        Geometry.LineString lineString1 =  Geometry.LineString.of(Geometry.Coordinate.of((double)6.00, (double)47.27))
+        Geometry.LineString lineString2 =  Geometry.LineString.of(Geometry.Coordinate.of((double)11.00, (double)50.27))
+
+        when: 'reading text'
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        noExceptionThrown()
+
+        and:
+
+        when:
+
+        String actual2 = cql.write( SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.MultiLineString.of(lineString1, lineString2))), Cql.Format.TEXT)
+
+        then:
+
+        actual2 == cqlText
+
+    }
+
+    def 'VisitMultiPolygon'() {
+
+        given:
+
+        String cqlText = "S_INTERSECTS(bbox, MULTIPOLYGON(((6.0 47.27,11.0 50.27)),((6.0 47.27,11.0 50.27))))"
+
+        List<Geometry.Coordinate> coordinateList = new ArrayList<>()
+        coordinateList.add(Geometry.Coordinate.of((double)6.00, (double)47.27))
+        coordinateList.add(Geometry.Coordinate.of((double)11.00, (double)50.27))
+        Geometry.Polygon polygon1 =  Geometry.Polygon.of(coordinateList)
+        Geometry.Polygon polygon2 =  Geometry.Polygon.of(coordinateList)
+
+
+        when:
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        noExceptionThrown()
+
+        and:
+
+        when:
+
+        String actual2 = cql.write( SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.MultiPolygon.of(polygon1, polygon2))), Cql.Format.TEXT)
+
+        then:
+
+        actual2 == cqlText
+
+
+
+
+    }
+
+
+    def 'VisitPoint'() {
+
+        given:
+
+        String cqlText = "S_INTERSECTS(bbox, POINT(5.0 42.27))"
+
+        when:
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        noExceptionThrown()
+
+        and:
+
+        when:
+
+        String actual2 = cql.write( SIntersects.of(Property.of("bbox"), SpatialLiteral.of(Geometry.Point.of(5.00, 42.27))) , Cql.Format.TEXT)
+
+        then:
+
+        actual2 == cqlText
+
+    }
+
+
+
+    def 'Test with "AND" as predicate1'() {
+
+        //TODO no coverage de.ii.xtraplatform.cql.infra.CqlTextVisitor line 118
+
+        when:
+
+        String cqlText = "true AND false"
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        noExceptionThrown()
+
 
     }
 
@@ -1815,7 +1955,6 @@ class CqlTextSpec extends Specification {
 
     }
 
-    //In
     def 'Test mapTemporalOperators with Interval'() {
 
         given:
