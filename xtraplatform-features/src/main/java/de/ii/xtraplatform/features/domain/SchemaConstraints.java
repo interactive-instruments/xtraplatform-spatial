@@ -174,10 +174,40 @@ public interface SchemaConstraints {
    */
   Optional<Integer> getMaxOccurrence();
 
+  /**
+   * @langEn Flag to indicate that all geometry components are connected. Only relevant for
+   *     properties with MultiLineString and MultiPolygon geometries.
+   * @langDe Indikator, dass alle Einzelgeometrien zusammenhängen. Nur bei MultiLineString- und
+   *     MultiPolygon-Eigenschaften sinnvoll.
+   */
+  Optional<Boolean> getComposite();
+
+  /**
+   * @langEn Flag to indicate that all geometry values are closed. Only relevant for geometry
+   *     properties.
+   * @langDe Indikator, dass die Geometrie geschlossen ist. Nur bei Geometrie-Eigenschaften
+   *     sinnvoll.
+   */
+  Optional<Boolean> getClosed();
+
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
   default boolean isRequired() {
     return getRequired().filter(required -> Objects.equals(required, true)).isPresent();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isComposite() {
+    return getComposite().filter(composite -> Objects.equals(composite, true)).isPresent();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isClosed() {
+    return getClosed().filter(closed -> Objects.equals(closed, true)).isPresent();
   }
 }
