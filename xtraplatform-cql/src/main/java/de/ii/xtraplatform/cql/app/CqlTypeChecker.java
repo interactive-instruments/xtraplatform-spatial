@@ -287,7 +287,8 @@ public class CqlTypeChecker extends CqlVisitorBase<Type> {
   private void checkFunction(Function function, List<Type> types) {
     final Set<List<Type>> expectedTypes =
         Objects.requireNonNullElse(
-            COMPATIBILITY_FUNCTION.get(function.getName()), ImmutableSet.of());
+            COMPATIBILITY_FUNCTION.get(function.getName().toUpperCase(Locale.ROOT)),
+            ImmutableSet.of());
     if (expectedTypes.stream()
         .noneMatch(
             typeList ->
