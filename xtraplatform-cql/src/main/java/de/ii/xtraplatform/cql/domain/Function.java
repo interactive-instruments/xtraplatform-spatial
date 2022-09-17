@@ -90,7 +90,7 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
   @JsonIgnore
   @Value.Lazy
   default boolean isDiameter() {
-    return "diameter".equalsIgnoreCase(getName());
+    return "diameter2d".equalsIgnoreCase(getName()) || "diameter3d".equalsIgnoreCase(getName());
   }
 
   class Serializer extends StdSerializer<Function> {

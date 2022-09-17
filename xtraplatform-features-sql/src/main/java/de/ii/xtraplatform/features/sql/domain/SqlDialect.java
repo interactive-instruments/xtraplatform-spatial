@@ -39,7 +39,7 @@ public interface SqlDialect {
 
   String applyToInstantMax();
 
-  String applyToDiameter(String geomExpression);
+  String applyToDiameter(String geomExpression, boolean is3d);
 
   Optional<BoundingBox> parseExtent(String extent, EpsgCrs crs);
 

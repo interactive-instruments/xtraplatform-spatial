@@ -113,7 +113,7 @@ public class SqlDialectGpkg implements SqlDialect {
   }
 
   @Override
-  public String applyToDiameter(String geomExpression) {
+  public String applyToDiameter(String geomExpression, boolean is3d) {
     throw new IllegalArgumentException(
         "DIAMETER() is not supported for GeoPackage feature providers.");
   }

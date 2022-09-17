@@ -82,7 +82,7 @@ public class SqlDialectPostGis implements SqlDialect {
   @Override
   public String getSpatialOperator(SpatialOperator spatialOperator) {
     if (spatialOperator.equals(SpatialOperator.S_INTERSECTS)) {
-      // TODO temporary hack to support 3D primary geometries (in PostGIS)
+      // TODO temporary override to support 3D primary geometries (in PostGIS)
       return "ST_3DIntersects";
     }
     return SqlDialect.super.getSpatialOperator(spatialOperator);
@@ -151,16 +151,24 @@ public class SqlDialectPostGis implements SqlDialect {
   }
 
   @Override
-  public String applyToDiameter(String geomExpression) {
+  public String applyToDiameter(String geomExpression, boolean is3d) {
+    if (is3d) {
+      if (geomExpression.contains("%1$s") && geomExpression.contains("%2$s")) {
+        return String.format(
+            geomExpression,
+            "%1$sST_3DLength(ST_BoundingDiagonal(Box3D(ST_Transform(ST_Force3DZ(",
+            "),4978))))%2$s");
+      }
+      return String.format(
+          "ST_3DLength(ST_BoundingDiagonal(Box3D(ST_Transform(ST_Force3DZ(%s),4978))))",
+          geomExpression);
+    }
     if (geomExpression.contains("%1$s") && geomExpression.contains("%2$s")) {
       return String.format(
-          geomExpression,
-          "%1$sST_3DLength(ST_BoundingDiagonal(Box3D(ST_Transform(ST_Force3DZ(",
-          "),4978))))%2$s");
+          geomExpression, "%1$sST_Length(ST_BoundingDiagonal(Box2D(ST_Transform(", ",3857))))%2$s");
     }
     return String.format(
-        "ST_3DLength(ST_BoundingDiagonal(Box3D(ST_Transform(ST_Force3DZ(%s),4978))))",
-        geomExpression);
+        "ST_Length(ST_BoundingDiagonal(Box2D(ST_Transform(%s,3857))))", geomExpression);
   }
 
   @Override

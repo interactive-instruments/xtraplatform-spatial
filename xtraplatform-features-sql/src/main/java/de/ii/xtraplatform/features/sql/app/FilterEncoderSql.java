@@ -437,7 +437,8 @@ public class FilterEncoderSql {
         }
         return String.format("LOWER(%s)", children.get(0));
       } else if (function.isDiameter()) {
-        return sqlDialect.applyToDiameter(children.get(0));
+        return sqlDialect.applyToDiameter(
+            children.get(0), "diameter3d".equalsIgnoreCase(function.getName()));
       }
 
       return super.visit(function, children);
