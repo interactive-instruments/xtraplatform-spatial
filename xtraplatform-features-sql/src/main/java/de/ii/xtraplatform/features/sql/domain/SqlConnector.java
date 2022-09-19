@@ -265,6 +265,7 @@ public interface SqlConnector
                                     int[] j = {0};
 
                                     if (metaResults.get(index).getNumberReturned() <= 0) {
+                                      paging2.register(currentTable, metaResults.get(index));
                                       return Source.empty();
                                     }
 
