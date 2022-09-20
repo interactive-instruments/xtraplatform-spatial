@@ -66,3 +66,8 @@ publishing {
         }
     }
 }
+
+project.afterEvaluate {
+    project.test.jacoco.excludes += ['CqlLexer*', 'CqlParser*']
+}
+
