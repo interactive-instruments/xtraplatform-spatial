@@ -235,7 +235,8 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       }
 
       if (!newContext.shouldSkip()) {
-        FeatureSchema transform1 = schemaTransformerChain.transform(newContext.pathAsString(), context.schema().get());
+        FeatureSchema transform1 =
+            schemaTransformerChain.transform(newContext.pathAsString(), context.schema().get());
         if (Objects.isNull(transform1)) {
           newContext.setCustomSchema(null);
           return;
@@ -308,7 +309,8 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       newContext.setValue(context.value());
       newContext.setValueType(context.valueType());
 
-      FeatureSchema transformed = schemaTransformerChain.transform(newContext.pathAsString(), context.schema().get());
+      FeatureSchema transformed =
+          schemaTransformerChain.transform(newContext.pathAsString(), context.schema().get());
       if (Objects.isNull(transformed)) {
         clearValueContext();
         return;
