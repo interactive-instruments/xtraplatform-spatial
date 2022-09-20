@@ -10,10 +10,12 @@ package de.ii.xtraplatform.cql.app;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.AContains;
+import de.ii.xtraplatform.cql.domain.AOverlaps;
 import de.ii.xtraplatform.cql.domain.Accenti;
 import de.ii.xtraplatform.cql.domain.And;
 import de.ii.xtraplatform.cql.domain.ArrayLiteral;
 import de.ii.xtraplatform.cql.domain.Between;
+import de.ii.xtraplatform.cql.domain.BinarySpatialOperation;
 import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import de.ii.xtraplatform.cql.domain.Casei;
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
@@ -22,6 +24,7 @@ import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.Eq;
 import de.ii.xtraplatform.cql.domain.Function;
 import de.ii.xtraplatform.cql.domain.Geometry;
+import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
 import de.ii.xtraplatform.cql.domain.Gt;
 import de.ii.xtraplatform.cql.domain.Gte;
 import de.ii.xtraplatform.cql.domain.In;
@@ -439,6 +442,274 @@ public class CqlFilterExamples {
                   ScalarLiteral.of("John"),
                   ScalarLiteral.of("Tom"))));
 
+  public static final Cql2Expression EXAMPLE_43 =
+      Between.ofFunction(
+          Function.of("position", ImmutableList.of()), ScalarLiteral.of(4), ScalarLiteral.of(8));
+
+  public static final CqlFilter EXAMPLE_43_OLD =
+      CqlFilter.of(
+          Between.ofFunction(
+              Function.of("position", ImmutableList.of()),
+              ScalarLiteral.of(4),
+              ScalarLiteral.of(8)));
+
+  public static final Cql2Expression EXAMPLE_44 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of("theme", Like.of("theme.scheme", ScalarLiteral.of("profile")))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_45 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of(
+                  "theme",
+                  TIntersects.of(
+                      Property.of("theme.event"),
+                      Interval.of(
+                          ImmutableList.of(
+                              Property.of("theme.start_date"), Property.of("theme.end_date")))))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_46 =
+      AContains.of(
+          Property.of(
+              "theme.concept", ImmutableMap.of("theme", IsNull.of(Property.of("theme.scheme")))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_47 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of(
+                  "theme",
+                  In.of(
+                      Casei.of(Property.of("theme.schema")),
+                      ImmutableList.of(
+                          Casei.of(ScalarLiteral.of("region")),
+                          Casei.of(ScalarLiteral.of("straße")))))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_48 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of(
+                  "theme",
+                  In.of(
+                      Accenti.of(Property.of("theme.schema")),
+                      ImmutableList.of(
+                          Accenti.of(ScalarLiteral.of("region")),
+                          Accenti.of(ScalarLiteral.of("straße")))))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_49 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of(
+                  "theme",
+                  Or.of(
+                      Eq.of(
+                          ImmutableList.of(
+                              Property.of("theme.schema"), ScalarLiteral.of("schema_1"))),
+                      Eq.of(
+                          ImmutableList.of(
+                              Property.of("theme.schema"), ScalarLiteral.of("schema_2")))))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_50 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of(
+                  "theme",
+                  And.of(
+                      Gt.of(ImmutableList.of(Property.of("theme.length"), ScalarLiteral.of(5))),
+                      Gt.of(ImmutableList.of(Property.of("theme.count"), ScalarLiteral.of(10)))))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_51 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of("theme", Lt.of(Property.of("theme.length"), ScalarLiteral.of(5)))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_52 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of("theme", Gte.of(Property.of("theme.length"), ScalarLiteral.of(5)))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_53 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of("theme", Lte.of(Property.of("theme.length"), ScalarLiteral.of(5)))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_54 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of("theme", Neq.of(Property.of("theme.length"), ScalarLiteral.of(5)))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_55 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of(
+                  "theme", Not.of(Eq.of(Property.of("theme.length"), ScalarLiteral.of(5))))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_56 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of(
+                  "theme",
+                  BinarySpatialOperation.of(
+                      SpatialOperator.S_TOUCHES,
+                      Property.of("theme.event"),
+                      Property.of("theme.location_geometry")))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+  public static final Cql2Expression EXAMPLE_57 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of(
+                  "theme",
+                  AOverlaps.of(
+                      Property.of("theme.event"), Property.of("theme.location_geometry")))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+  public static final Cql2Expression EXAMPLE_58 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of(
+                  "theme",
+                  TBefore.of(
+                      Property.of("theme.built"), TemporalLiteral.of("2012-06-05T00:00:00Z")))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_59 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of(
+                  "theme",
+                  SWithin.of(
+                      Property.of("theme.location"),
+                      SpatialLiteral.of(
+                          Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_60 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of(
+                  "theme",
+                  Eq.of(
+                      ImmutableList.of(
+                          Property.of("theme.road_class"), Property.of("theme.name"))))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
+  public static final Cql2Expression EXAMPLE_61 =
+      AContains.of(
+          Property.of(
+              "theme.concept",
+              ImmutableMap.of(
+                  "theme",
+                  SWithin.of(
+                      SpatialLiteral.of(Geometry.LineString.of(Coordinate.of(1.00, 1.00))),
+                      SpatialLiteral.of(
+                          Geometry.Polygon.of(
+                              OgcCrs.CRS84,
+                              ImmutableList.of(
+                                  Geometry.Coordinate.of(-10.0, -10.0),
+                                  Geometry.Coordinate.of(10.0, -10.0),
+                                  Geometry.Coordinate.of(10.0, 10.0),
+                                  Geometry.Coordinate.of(-10.0, -10.0))))))),
+          ArrayLiteral.of(
+              ImmutableList.of(
+                  ScalarLiteral.of("DLKM"),
+                  ScalarLiteral.of("Basis-DLM"),
+                  ScalarLiteral.of("DLM50"))));
+
   public static final CqlFilter EXAMPLE_TEQUALS =
       CqlFilter.of(
           Eq.of(
@@ -511,7 +782,7 @@ public class CqlFilterExamples {
                               TemporalLiteral.of("2012-06-05T00:00:00Z"))))),
               ScalarLiteral.of(0.1)));
 
-  public static final CqlFilter EXAMPLE_NESTED_SPATIAL =
+  public static final CqlFilter EXAMPLE_NESTED_SPATIAL_OLD =
       CqlFilter.of(
           Gt.of(
               Property.of(
@@ -539,6 +810,13 @@ public class CqlFilterExamples {
               "filterValues.measure", ImmutableMap.of("filterValues", EXAMPLE_IN_WITH_FUNCTION)),
           ScalarLiteral.of(1),
           ScalarLiteral.of(5));
+
+  public static final Cql2Expression EXAMPLE_NESTED_FUNCTION_BETWEEN =
+      Between.of(
+          Property.of("filterValues.measure", ImmutableMap.of("filterValues", EXAMPLE_43)),
+          ScalarLiteral.of(1),
+          ScalarLiteral.of(5));
+
   public static final CqlFilter EXAMPLE_NESTED_FUNCTION_OLD =
       CqlFilter.of(
           Between.of(

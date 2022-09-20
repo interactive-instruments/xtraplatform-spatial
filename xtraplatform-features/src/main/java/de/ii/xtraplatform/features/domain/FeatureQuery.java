@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.web.domain.ETag;
 import java.util.List;
@@ -37,4 +38,18 @@ public interface FeatureQuery extends TypeQuery, Query {
   }
 
   Optional<ETag.Type> getETag();
+
+  abstract class Builder {
+    public abstract Builder addFilters(Cql2Expression element);
+
+    public ImmutableFeatureQuery.Builder filter(Optional<? extends Cql2Expression> filter) {
+      filter.ifPresent(this::addFilters);
+      return (ImmutableFeatureQuery.Builder) this;
+    }
+
+    public ImmutableFeatureQuery.Builder filter(Cql2Expression filter) {
+      this.addFilters(filter);
+      return (ImmutableFeatureQuery.Builder) this;
+    }
+  }
 }

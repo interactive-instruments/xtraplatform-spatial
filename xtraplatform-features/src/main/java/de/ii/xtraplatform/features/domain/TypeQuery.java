@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.cql.domain.And;
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +18,13 @@ public interface TypeQuery {
 
   String getType();
 
-  Optional<Cql2Expression> getFilter();
+  List<Cql2Expression> getFilters();
+
+  @Value.Derived
+  @Value.Auxiliary
+  default Optional<Cql2Expression> getFilter() {
+    return getFilters().isEmpty() ? Optional.empty() : Optional.of(And.of(getFilters()));
+  }
 
   List<SortKey> getSortKeys();
 
