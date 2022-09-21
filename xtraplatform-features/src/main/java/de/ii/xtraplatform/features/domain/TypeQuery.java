@@ -23,11 +23,7 @@ public interface TypeQuery {
   @Value.Derived
   @Value.Auxiliary
   default Optional<Cql2Expression> getFilter() {
-    return getFilters().isEmpty()
-        ? Optional.empty()
-        : (getFilters().size() > 1
-            ? Optional.of(And.of(getFilters()))
-            : Optional.of(getFilters().get(0)));
+    return getFilters().isEmpty() ? Optional.empty() : Optional.of(And.of(getFilters()));
   }
 
   List<SortKey> getSortKeys();
