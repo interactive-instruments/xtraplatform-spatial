@@ -85,6 +85,7 @@ import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
+import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -673,13 +674,17 @@ public class FeatureProviderSql
   public MutationResult createFeatures(
       String featureType, FeatureTokenSource featureTokenSource, EpsgCrs crs) {
 
-    return writeFeatures(featureType, featureTokenSource, Optional.empty(), crs);
+    return writeFeatures(featureType, featureTokenSource, Optional.empty(), crs, false);
   }
 
   @Override
   public MutationResult updateFeature(
-      String featureType, String featureId, FeatureTokenSource featureTokenSource, EpsgCrs crs) {
-    return writeFeatures(featureType, featureTokenSource, Optional.of(featureId), crs);
+      String featureType,
+      String featureId,
+      FeatureTokenSource featureTokenSource,
+      EpsgCrs crs,
+      boolean partial) {
+    return writeFeatures(featureType, featureTokenSource, Optional.of(featureId), crs, partial);
   }
 
   @Override
@@ -736,7 +741,8 @@ public class FeatureProviderSql
       String featureType,
       FeatureTokenSource featureTokenSource,
       Optional<String> featureId,
-      EpsgCrs crs) {
+      EpsgCrs crs,
+      boolean partial) {
 
     Optional<FeatureSchema> schema = Optional.ofNullable(getData().getTypes().get(featureType));
 
@@ -777,15 +783,27 @@ public class FeatureProviderSql
             : featureMutationsSql.getCreatorFlow(mutationSchemaSql, null, crs);
 
     ImmutableMutationResult.Builder builder =
-        ImmutableMutationResult.builder().type(featureId.isPresent() ? Type.REPLACE : Type.CREATE);
+        ImmutableMutationResult.builder()
+            .type(featureId.isPresent() ? partial ? Type.UPDATE : Type.REPLACE : Type.CREATE);
     FeatureTokenStatsCollector statsCollector = new FeatureTokenStatsCollector(builder, crs);
 
-    RunnableStream<MutationResult> mutationStream =
+    Source<FeatureSql> featureSqlSource =
         featureTokenSource
             .via(statsCollector)
             .via(new FeatureEncoderSql2(mapping4))
             // TODO: support generic encoders, not only to byte[]
-            .via(Transformer.map(feature -> (FeatureSql) feature))
+            .via(Transformer.map(feature -> (FeatureSql) feature));
+
+    if (partial) {
+      featureSqlSource =
+          featureSqlSource.via(
+              Transformer.reduce(
+                  ModifiableFeatureSql.create(),
+                  (a, b) -> a.getProperties().isEmpty() ? b : a.patchWith(b)));
+    }
+
+    RunnableStream<MutationResult> mutationStream =
+        featureSqlSource
             .via(featureWriter)
             .to(Sink.ignore())
             .withResult((Builder) builder)
