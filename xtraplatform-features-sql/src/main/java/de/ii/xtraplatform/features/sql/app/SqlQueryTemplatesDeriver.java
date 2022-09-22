@@ -123,8 +123,8 @@ public class SqlQueryTemplatesDeriver
       String numberSkipped =
           computeNumberSkipped && withNumberSkipped
               ? String.format(
-                  "SELECT CASE WHEN numberReturned = 0 THEN (SELECT count(*) AS numberSkipped FROM (SELECT %2$s FROM %1$s%6$s ORDER BY %3$s%4$s%5$s) AS IDS) ELSE -1::bigint END AS numberSkipped FROM NR",
-                  table, columns, orderBy, limitSql, skipOffsetSql, where)
+                  "SELECT CASE WHEN numberReturned = 0 THEN (SELECT count(*) AS numberSkipped FROM (SELECT %2$s FROM %1$s%5$s ORDER BY %3$s%4$s) AS IDS) ELSE -1::bigint END AS numberSkipped FROM NR",
+                  table, columns, orderBy, skipOffsetSql, where)
               : "SELECT -1::bigint AS numberSkipped";
 
       return String.format(
