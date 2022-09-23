@@ -108,6 +108,7 @@ public class SqlClientRx implements SqlClient {
       flowable =
           flowable.doOnComplete(
               () -> {
+                LOGGER.debug(MARKER.SQL, "Executed statement: {}", query);
                 for (int i = 0; i < logBuffer.size(); i++) {
                   if (i == 0) {
                     String columns =
