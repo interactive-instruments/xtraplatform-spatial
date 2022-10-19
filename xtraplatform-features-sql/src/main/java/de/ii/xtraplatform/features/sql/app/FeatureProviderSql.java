@@ -790,7 +790,10 @@ public class FeatureProviderSql
     Source<FeatureSql> featureSqlSource =
         featureTokenSource
             .via(statsCollector)
-            .via(new FeatureEncoderSql2(mapping4))
+            .via(
+                new FeatureEncoderSql2(
+                    mapping4,
+                    partial ? Optional.of(FeatureTransactions.PATCH_NULL_VALUE) : Optional.empty()))
             // TODO: support generic encoders, not only to byte[]
             .via(Transformer.map(feature -> (FeatureSql) feature));
 

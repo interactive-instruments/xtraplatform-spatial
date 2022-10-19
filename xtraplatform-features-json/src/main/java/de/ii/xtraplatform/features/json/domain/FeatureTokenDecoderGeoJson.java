@@ -300,8 +300,13 @@ public class FeatureTokenDecoderGeoJson
           }
           if (nextToken == JsonToken.VALUE_NULL
               && nullValue.isPresent()
-              && Objects.equals(currentName, "geometry")) {
-            context.pathTracker().track(currentName, 0);
+              && (Objects.equals(currentName, "geometry")
+                  || Objects.equals(currentName, "properties"))) {
+            if (Objects.equals(currentName, "properties")) {
+              context.pathTracker().track(0);
+            } else {
+              context.pathTracker().track(currentName, 0);
+            }
             context.setValue(nullValue.get());
             getDownstream().onValue(context);
           }

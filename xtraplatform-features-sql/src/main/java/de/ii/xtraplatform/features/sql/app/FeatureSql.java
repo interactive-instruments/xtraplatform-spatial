@@ -54,7 +54,7 @@ public interface FeatureSql extends FeatureBase<PropertySql, SchemaSql>, ObjectS
           continue;
         }
 
-      } else {
+      } else if (!Objects.equals(patch.getValue(), FeatureTransactions.PATCH_NULL_VALUE)) {
         merged.addProperties(patch);
       }
     }
