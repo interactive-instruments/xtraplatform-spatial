@@ -23,6 +23,8 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
@@ -49,6 +51,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -120,8 +123,9 @@ public class FeatureProviderSqlFactory
     }
 
     try {
-      return cleanupAutoPersist(
-          cleanupAdditionalInfo(generateNativeCrsIfNecessary(generateTypesIfNecessary(data))));
+      return normalizeConstants(
+          cleanupAutoPersist(
+              cleanupAdditionalInfo(generateNativeCrsIfNecessary(generateTypesIfNecessary(data)))));
     } catch (Throwable e) {
       LogContext.error(
           LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
@@ -312,10 +316,74 @@ public class FeatureProviderSqlFactory
     return data;
   }
 
+  private FeatureProviderSqlData normalizeConstants(FeatureProviderSqlData data) {
+    boolean hasConstants =
+        data.getTypes().values().stream()
+            .flatMap(t -> t.getAllNestedProperties().stream())
+            .anyMatch(p -> p.isConstant() && p.getSourcePaths().isEmpty());
+
+    if (hasConstants) {
+      Map<String, FeatureSchema> types =
+          data.getTypes().entrySet().stream()
+              .map(
+                  entry ->
+                      new SimpleImmutableEntry<>(
+                          entry.getKey(), entry.getValue().accept(new NormalizeConstants())))
+              .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+      return new Builder().from(data).types(types).build();
+    }
+
+    return data;
+  }
+
   @AssistedFactory
   public interface ProviderSqlFactoryAssisted
       extends FactoryAssisted<FeatureProviderDataV2, FeatureProviderSql> {
     @Override
     FeatureProviderSql create(FeatureProviderDataV2 data);
+  }
+
+  public class NormalizeConstants implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
+    final int[] constantCounter = {0};
+
+    @Override
+    public FeatureSchema visit(
+        FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
+      Map<String, FeatureSchema> visitedPropertiesMap =
+          visitedProperties.stream()
+              .filter(Objects::nonNull)
+              .map(
+                  featureSchema ->
+                      new SimpleImmutableEntry<>(
+                          featureSchema.getName(),
+                          normalizeConstants(schema.getName(), featureSchema)))
+              .collect(
+                  ImmutableMap.toImmutableMap(
+                      Entry::getKey, Entry::getValue, (first, second) -> second));
+
+      return new ImmutableFeatureSchema.Builder()
+          .from(schema)
+          .propertyMap(visitedPropertiesMap)
+          .build();
+    }
+
+    private FeatureSchema normalizeConstants(String parent, FeatureSchema schema) {
+      if (schema.getConstantValue().isPresent() && schema.getSourcePaths().isEmpty()) {
+        String constantValue =
+            schema.getType() == Type.STRING
+                ? String.format("'%s'", schema.getConstantValue().get())
+                : schema.getConstantValue().get();
+        String constantSourcePath =
+            String.format(
+                "constant_%s_%d{constant=%s}", parent, constantCounter[0]++, constantValue);
+
+        return new ImmutableFeatureSchema.Builder()
+            .from(schema)
+            .addSourcePaths(constantSourcePath)
+            .build();
+      }
+      return schema;
+    }
   }
 }

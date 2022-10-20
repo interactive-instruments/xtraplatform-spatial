@@ -11,12 +11,10 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.OptBoolean;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
@@ -25,7 +23,6 @@ import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +94,6 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
    * @default [sourcePath]
    */
   @JsonMerge(OptBoolean.FALSE)
-  @JsonProperty(access = Access.WRITE_ONLY, value = "sourcePaths")
   @Override
   List<String> getSourcePaths();
 
@@ -337,50 +333,6 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
   default boolean isConstant() {
     return (isValue() && getConstantValue().isPresent())
         || (isObject() && getProperties().stream().allMatch(FeatureSchema::isConstant));
-  }
-
-  // TODO: does not work well for serialization, therefore sourcePaths has access =
-  // Access.WRITE_ONLY
-  // solution: move to NormalizePaths visitor that is applied after deserialization
-  @Value.Check
-  default FeatureSchema normalizeConstants() {
-    if (!getPropertyMap().isEmpty()
-        && getPropertyMap().values().stream()
-            .anyMatch(
-                property ->
-                    property.getConstantValue().isPresent()
-                        && property.getSourcePaths().isEmpty())) {
-      final int[] constantCounter = {0};
-
-      Map<String, FeatureSchema> properties =
-          getPropertyMap().entrySet().stream()
-              .map(
-                  entry -> {
-                    if (entry.getValue().getConstantValue().isPresent()
-                        && !entry.getValue().getSourcePath().isPresent()) {
-                      String constantValue =
-                          entry.getValue().getType() == Type.STRING
-                              ? String.format("'%s'", entry.getValue().getConstantValue().get())
-                              : entry.getValue().getConstantValue().get();
-                      String constantSourcePath =
-                          String.format(
-                              "constant_%s_%d{constant=%s}",
-                              getName(), constantCounter[0]++, constantValue);
-                      return new AbstractMap.SimpleEntry<>(
-                          entry.getKey(),
-                          new ImmutableFeatureSchema.Builder()
-                              .from(entry.getValue())
-                              .addSourcePaths(constantSourcePath)
-                              .build());
-                    }
-                    return entry;
-                  })
-              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-
-      return new ImmutableFeatureSchema.Builder().from(this).propertyMap(properties).build();
-    }
-
-    return this;
   }
 
   @Value.Check
