@@ -125,7 +125,7 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
                 subscribe(provider.getId(), channel, connectionSupplier, notificationPoller));
 
     executorService.scheduleWithFixedDelay(
-        () -> poll(provider.getId(), provider.getFeatureChangeHandler()), 15, 5, TimeUnit.SECONDS);
+        () -> poll(provider.getId(), provider.getChangeHandler()), 15, 5, TimeUnit.SECONDS);
   }
 
   private void subscribe(
