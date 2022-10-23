@@ -8,6 +8,8 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -21,6 +23,7 @@ import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.streams.domain.Reactive.Runner;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.io.IOException;
 import java.util.HashMap;
@@ -29,6 +32,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +55,8 @@ public abstract class AbstractFeatureProvider<
   private final CrsTransformerFactory crsTransformerFactory;
   private final ProviderExtensionRegistry extensionRegistry;
   private final FeatureChangeHandler changeHandler;
+  private final AtomicInteger activeStreams;
+  private final ScheduledExecutorService delayedDisposer;
   private Reactive.Runner streamRunner;
   private FeatureProviderConnector<T, U, V> connector;
 
@@ -62,28 +72,20 @@ public abstract class AbstractFeatureProvider<
     this.crsTransformerFactory = crsTransformerFactory;
     this.extensionRegistry = extensionRegistry;
     this.changeHandler = new FeatureChangeHandlerImpl();
-  }
-
-  private void onConnectorDispose() {
-    if (getState() != STATE.RELOADING) {
-      LOGGER.debug("CONNECTOR GONE {}", getId());
-      doReload();
-    }
+    this.activeStreams = new AtomicInteger(0);
+    this.delayedDisposer =
+        MoreExecutors.getExitingScheduledExecutorService(
+            (ScheduledThreadPoolExecutor)
+                Executors.newScheduledThreadPool(
+                    1, new ThreadFactoryBuilder().setNameFormat("entity.lifecycle-%d").build()));
   }
 
   @Override
   protected boolean onStartup() throws InterruptedException {
-    // TODO: delay disposing old connector and streamRunner until all queries are finished
-    if (Objects.nonNull(connector)) {
-      connectorFactory.disposeConnector(connector);
-    }
-    if (Objects.nonNull(streamRunner)) {
-      try {
-        streamRunner.close();
-      } catch (IOException e) {
-        // ignore
-      }
-    }
+    boolean previousAlive = softClosePrevious(streamRunner, connector);
+    boolean isShared = ((WithConnectionInfo<?>) getData()).getConnectionInfo().isShared();
+    String connectorId = getConnectorId(previousAlive, isShared);
+
     this.streamRunner =
         reactive.runner(
             getData().getId(),
@@ -92,7 +94,7 @@ public abstract class AbstractFeatureProvider<
     this.connector =
         (FeatureProviderConnector<T, U, V>)
             connectorFactory.createConnector(
-                getData().getFeatureProviderType(), getData().getId(), getConnectionInfo());
+                getData().getFeatureProviderType(), connectorId, getConnectionInfo());
 
     if (!getConnector().isConnected()) {
       connectorFactory.disposeConnector(connector);
@@ -105,7 +107,10 @@ public abstract class AbstractFeatureProvider<
       }
       return false;
     }
-    connectorFactory.onDispose(connector, this::onConnectorDispose);
+
+    if (isShared) {
+      connectorFactory.onDispose(connector, LogContext.withMdc(this::onSharedConnectorDispose));
+    }
 
     Optional<String> runnerError =
         getRunnerError(((WithConnectionInfo<?>) getData()).getConnectionInfo());
@@ -117,40 +122,9 @@ public abstract class AbstractFeatureProvider<
     }
 
     if (getTypeInfoValidator().isPresent() && getData().getTypeValidation() != MODE.NONE) {
-      final boolean[] isSuccess = {true};
-      try {
-        for (Map.Entry<String, List<W>> sourceSchema : getSourceSchemas().entrySet()) {
-          LOGGER.info(
-              "Validating type '{}' ({})",
-              sourceSchema.getKey(),
-              getData().getTypeValidation().name().toLowerCase());
+      final boolean isSuccess = validate();
 
-          ValidationResult result =
-              getTypeInfoValidator()
-                  .get()
-                  .validate(
-                      sourceSchema.getKey(),
-                      sourceSchema.getValue(),
-                      getData().getTypeValidation());
-
-          isSuccess[0] = isSuccess[0] && result.isSuccess();
-          result.getErrors().forEach(LOGGER::error);
-          result
-              .getStrictErrors()
-              .forEach(result.getMode() == MODE.STRICT ? LOGGER::error : LOGGER::warn);
-          result.getWarnings().forEach(LOGGER::warn);
-
-          checkForStartupCancel();
-        }
-      } catch (Throwable e) {
-        if (e instanceof InterruptedException) {
-          throw e;
-        }
-        LogContext.error(LOGGER, e, "Cannot validate types");
-        isSuccess[0] = false;
-      }
-
-      if (!isSuccess[0]) {
+      if (!isSuccess) {
         LOGGER.error(
             "Feature provider with id '{}' could not be started: {} {}",
             getId(),
@@ -190,12 +164,113 @@ public abstract class AbstractFeatureProvider<
             .orElse("");
 
     LOGGER.info("Feature provider with id '{}' reloaded successfully.{}", getId(), startupInfo);
+
+    changeHandler.handle(
+        ImmutableDatasetChange.builder().featureTypes(getData().getTypes().keySet()).build());
   }
 
   @Override
   protected void onStopped() {
     connectorFactory.disposeConnector(connector);
     LOGGER.info("Feature provider with id '{}' stopped.", getId());
+  }
+
+  private boolean softClosePrevious(
+      Runner previousRunner, FeatureProviderConnector<T, U, V> previousConnector) {
+    if (Objects.nonNull(previousConnector) || Objects.nonNull(previousRunner)) {
+      if (activeStreams.get() > 0) {
+        LOGGER.debug("Active streams found, keeping previous connection pool alive.");
+        delayedDisposer.schedule(
+            LogContext.withMdc(() -> softClosePrevious(previousRunner, previousConnector)),
+            10,
+            TimeUnit.SECONDS);
+        return true;
+      }
+
+      if (Objects.nonNull(previousConnector)) {
+        LOGGER.debug("Disposing previous connection pool.");
+        connectorFactory.disposeConnector(previousConnector);
+      }
+      if (Objects.nonNull(previousRunner)) {
+        try {
+          previousRunner.close();
+        } catch (IOException e) {
+          // ignore
+        }
+      }
+    }
+    return false;
+  }
+
+  private void onSharedConnectorDispose() {
+    if (((WithConnectionInfo<?>) getData()).getConnectionInfo().isShared()
+        && getState() != STATE.RELOADING) {
+      LOGGER.debug("Shared connector has changed, reloading.");
+      doReload();
+    }
+  }
+
+  private String getConnectorId(boolean previousAlive, boolean isShared) {
+    Optional<Integer> previousIteration =
+        previousAlive
+            ? connector.getProviderId().contains(".")
+                ? Optional.of(
+                        connector
+                            .getProviderId()
+                            .substring(connector.getProviderId().lastIndexOf('.') + 1))
+                    .flatMap(
+                        i -> {
+                          try {
+                            return Optional.of(Integer.parseInt(i));
+                          } catch (Throwable e) {
+                          }
+                          return Optional.of(1);
+                        })
+                : Optional.of(1)
+            : Optional.empty();
+
+    return String.format(
+        "%s%s%s",
+        getData().getId(),
+        isShared ? ".shared" : "",
+        previousIteration.map(i -> "." + (i + 1)).orElse(""));
+  }
+
+  private boolean validate() throws InterruptedException {
+    boolean isSuccess = true;
+
+    try {
+      for (Map.Entry<String, List<W>> sourceSchema : getSourceSchemas().entrySet()) {
+        LOGGER.info(
+            "Validating type '{}' ({})",
+            sourceSchema.getKey(),
+            getData().getTypeValidation().name().toLowerCase());
+
+        ValidationResult result =
+            getTypeInfoValidator()
+                .get()
+                .validate(
+                    sourceSchema.getKey(), sourceSchema.getValue(), getData().getTypeValidation());
+
+        isSuccess = isSuccess && result.isSuccess();
+
+        result.getErrors().forEach(LOGGER::error);
+        result
+            .getStrictErrors()
+            .forEach(result.getMode() == MODE.STRICT ? LOGGER::error : LOGGER::warn);
+        result.getWarnings().forEach(LOGGER::warn);
+
+        checkForStartupCancel();
+      }
+    } catch (Throwable e) {
+      if (e instanceof InterruptedException) {
+        throw e;
+      }
+      LogContext.error(LOGGER, e, "Cannot validate types");
+      isSuccess = false;
+    }
+
+    return isSuccess;
   }
 
   @Override
@@ -281,7 +356,7 @@ public abstract class AbstractFeatureProvider<
   }
 
   @Override
-  public FeatureChangeHandler getFeatureChangeHandler() {
+  public FeatureChangeHandler getChangeHandler() {
     return changeHandler;
   }
 
@@ -327,6 +402,11 @@ public abstract class AbstractFeatureProvider<
   }
 
   private Map<String, String> beforeQuery(Query query) {
+    int i = activeStreams.incrementAndGet();
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Active streams: {}", i);
+    }
+
     Map<String, String> virtualTables = new HashMap<>();
 
     extensionRegistry
@@ -347,6 +427,11 @@ public abstract class AbstractFeatureProvider<
   }
 
   private void afterQuery(Query query) {
+    int i = activeStreams.decrementAndGet();
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Active streams: {}", i);
+    }
+
     extensionRegistry
         .getAll()
         .forEach(
