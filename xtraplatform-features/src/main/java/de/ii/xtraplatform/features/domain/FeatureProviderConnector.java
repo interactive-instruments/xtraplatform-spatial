@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import de.ii.xtraplatform.base.domain.JacksonProvider;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author zahnen
@@ -50,5 +51,9 @@ public interface FeatureProviderConnector<T, U, V extends FeatureProviderConnect
   default Tuple<Boolean, String> canBeSharedWith(
       ConnectionInfo connectionInfo, boolean checkAllParameters) {
     return Tuple.of(false, null);
+  }
+
+  default Optional<AtomicInteger> getRefCounter() {
+    return Optional.empty();
   }
 }

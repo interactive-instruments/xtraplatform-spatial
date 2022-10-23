@@ -57,10 +57,6 @@ public class ConnectorFactoryImpl implements ConnectorFactory {
 
     ConnectorFactory2<?, ?, ?> connectorFactory2 = getFactory(providerType, connectorType).get();
 
-    if (connectorFactory2.instance(providerId).isPresent()) {
-      return connectorFactory2.instance(providerId).get();
-    }
-
     if (connectionInfo.isShared()) {
       Optional<? extends FeatureProviderConnector<?, ?, ?>> match =
           connectorFactory2.instances().stream()
@@ -71,6 +67,12 @@ public class ConnectorFactoryImpl implements ConnectorFactory {
         Tuple<Boolean, String> fullMatch = match.get().canBeSharedWith(connectionInfo, true);
 
         if (fullMatch.first()) {
+          LOGGER.debug("Joining shared pool.");
+          match
+              .get()
+              .getRefCounter()
+              .ifPresent(refs -> LOGGER.debug("Shared pool consumers: {}", refs.incrementAndGet()));
+
           return match.get();
         } else {
           throw new IllegalStateException(
@@ -82,7 +84,17 @@ public class ConnectorFactoryImpl implements ConnectorFactory {
     }
 
     try {
-      return connectorFactory2.createInstance(providerId, connectionInfo);
+      LOGGER.debug("Creating new pool.");
+      FeatureProviderConnector<?, ?, ?> connector =
+          connectorFactory2.createInstance(providerId, connectionInfo);
+
+      if (connectionInfo.isShared()) {
+        connector
+            .getRefCounter()
+            .ifPresent(refs -> LOGGER.debug("Shared pool consumers: {}", refs.incrementAndGet()));
+      }
+
+      return connector;
 
     } catch (Throwable e) {
       throw new IllegalStateException(
@@ -95,7 +107,18 @@ public class ConnectorFactoryImpl implements ConnectorFactory {
 
   @Override
   public synchronized void disposeConnector(FeatureProviderConnector<?, ?, ?> connector) {
-    getFactory(connector.getType()).get().deleteInstance(connector.getProviderId());
+    int refs = 0;
+    if (connector.getRefCounter().isPresent()) {
+      LOGGER.debug("Leaving shared pool.");
+      refs = connector.getRefCounter().get().decrementAndGet();
+      LOGGER.debug("Shared pool consumers: {}", refs);
+    }
+
+    if (refs == 0) {
+      getFactory(connector.getType()).get().deleteInstance(connector.getProviderId());
+      LOGGER.debug("Deleted unused pool.");
+    }
+
     if (disposeListeners.containsKey(connector.getProviderId())) {
       disposeListeners.get(connector.getProviderId()).forEach(Runnable::run);
       disposeListeners.get(connector.getProviderId()).clear();

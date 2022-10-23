@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.pool.DatabaseType;
@@ -61,6 +62,7 @@ public class SqlConnectorRx implements SqlConnector {
   private final Path dataDir;
   private final String applicationName;
   private final String providerId;
+  private final AtomicInteger refCounter;
 
   private Database session;
   private HikariDataSource dataSource;
@@ -96,6 +98,7 @@ public class SqlConnectorRx implements SqlConnector {
     this.applicationName =
         String.format("%s %s - %s", appContext.getName(), appContext.getVersion(), providerId);
     this.providerId = providerId;
+    this.refCounter = new AtomicInteger(0);
   }
 
   @Override
@@ -254,6 +257,14 @@ public class SqlConnectorRx implements SqlConnector {
   @Override
   public SqlClient getSqlClient() {
     return sqlClient;
+  }
+
+  @Override
+  public Optional<AtomicInteger> getRefCounter() {
+    if (connectionInfo.isShared()) {
+      return Optional.of(refCounter);
+    }
+    return Optional.empty();
   }
 
   private HikariConfig createHikariConfig() {
