@@ -48,6 +48,8 @@ public interface FeatureProviderConnector<T, U, V extends FeatureProviderConnect
 
   Reactive.Source<T> getSourceStream(U query, V options);
 
+  boolean isSameDataset(ConnectionInfo connectionInfo);
+
   default Tuple<Boolean, String> canBeSharedWith(
       ConnectionInfo connectionInfo, boolean checkAllParameters) {
     return Tuple.of(false, null);

@@ -59,6 +59,7 @@ public abstract class AbstractFeatureProvider<
   private final ScheduledExecutorService delayedDisposer;
   private Reactive.Runner streamRunner;
   private FeatureProviderConnector<T, U, V> connector;
+  private boolean datasetChanged;
 
   protected AbstractFeatureProvider(
       ConnectorFactory connectorFactory,
@@ -82,15 +83,17 @@ public abstract class AbstractFeatureProvider<
 
   @Override
   protected boolean onStartup() throws InterruptedException {
+    this.datasetChanged =
+        Objects.nonNull(connector) && !connector.isSameDataset(getConnectionInfo());
     boolean previousAlive = softClosePrevious(streamRunner, connector);
-    boolean isShared = ((WithConnectionInfo<?>) getData()).getConnectionInfo().isShared();
+    boolean isShared = getConnectionInfo().isShared();
     String connectorId = getConnectorId(previousAlive, isShared);
 
     this.streamRunner =
         reactive.runner(
             getData().getId(),
-            getRunnerCapacity(((WithConnectionInfo<?>) getData()).getConnectionInfo()),
-            getRunnerQueueSize(((WithConnectionInfo<?>) getData()).getConnectionInfo()));
+            getRunnerCapacity(getConnectionInfo()),
+            getRunnerQueueSize(getConnectionInfo()));
     this.connector =
         (FeatureProviderConnector<T, U, V>)
             connectorFactory.createConnector(
@@ -112,8 +115,7 @@ public abstract class AbstractFeatureProvider<
       connectorFactory.onDispose(connector, LogContext.withMdc(this::onSharedConnectorDispose));
     }
 
-    Optional<String> runnerError =
-        getRunnerError(((WithConnectionInfo<?>) getData()).getConnectionInfo());
+    Optional<String> runnerError = getRunnerError(getConnectionInfo());
 
     if (runnerError.isPresent()) {
       LOGGER.error(
@@ -165,8 +167,12 @@ public abstract class AbstractFeatureProvider<
 
     LOGGER.info("Feature provider with id '{}' reloaded successfully.{}", getId(), startupInfo);
 
-    changeHandler.handle(
-        ImmutableDatasetChange.builder().featureTypes(getData().getTypes().keySet()).build());
+    if (datasetChanged) {
+      LOGGER.debug("Dataset has changed.");
+      changeHandler.handle(
+          ImmutableDatasetChange.builder().featureTypes(getData().getTypes().keySet()).build());
+    }
+    this.datasetChanged = false;
   }
 
   @Override

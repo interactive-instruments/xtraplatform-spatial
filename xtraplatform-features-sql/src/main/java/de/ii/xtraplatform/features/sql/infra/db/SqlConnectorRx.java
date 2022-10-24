@@ -182,6 +182,12 @@ public class SqlConnectorRx implements SqlConnector {
   }
 
   @Override
+  public boolean isSameDataset(ConnectionInfo connectionInfo) {
+    return Objects.equals(
+        connectionInfo.getDatasetIdentifier(), this.connectionInfo.getDatasetIdentifier());
+  }
+
+  @Override
   public Tuple<Boolean, String> canBeSharedWith(
       ConnectionInfo connectionInfo, boolean checkAllParameters) {
     if (!(connectionInfo instanceof ConnectionInfoSql)) {
