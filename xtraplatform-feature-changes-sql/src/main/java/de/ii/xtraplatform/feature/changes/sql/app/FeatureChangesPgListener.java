@@ -118,22 +118,20 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
   }
 
   private void subscribe(String provider, Subscription unconnected) {
-    try {
-      Subscription connected = unconnected.connect();
-      subscriptions.get(provider).put(connected.getChannel(), connected);
+    Subscription subscription = unconnected.connect();
+    subscriptions.get(provider).put(subscription.getChannel(), subscription);
 
-      Statement stmt = connected.getConnection().createStatement();
-      stmt.execute(connected.getCreateFunction());
-      stmt.execute(connected.getCreateTrigger());
-      stmt.execute(connected.getListen());
-      stmt.close();
+    try (Statement statement = subscription.getConnection().createStatement()) {
+      statement.execute(subscription.getCreateFunction());
+      statement.execute(subscription.getCreateTrigger());
+      statement.execute(subscription.getListen());
 
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Subscribed to feature changes for {}", connected.getChannel());
+        LOGGER.debug("Subscribed to feature changes for {}", subscription.getChannel());
       }
     } catch (SQLException e) {
       LogContext.error(
-          LOGGER, e, "Could not subscribe to feature changes for {}", unconnected.getChannel());
+          LOGGER, e, "Could not subscribe to feature changes for {}", subscription.getChannel());
     }
   }
 
@@ -156,9 +154,9 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
     }
 
     for (String notification : subscription.pollNotifications()) {
-      // if (LOGGER.isTraceEnabled()) {
-      LOGGER.debug("Feature change notification received: " + notification);
-      // }
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("Feature change notification received: {}", notification);
+      }
       onFeatureChange(subscription.getType(), featureChangeHandler, notification);
     }
   }
@@ -167,6 +165,11 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
       String featureType, FeatureChangeHandler featureChangeHandler, String payload) {
     try {
       FeatureChange featureChange = Notification.from(featureType, payload).asFeatureChange();
+
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("Publishing feature change: {}", featureChange);
+      }
+
       featureChangeHandler.handle(featureChange);
     } catch (Throwable e) {
       LogContext.errorAsInfo(
@@ -180,31 +183,28 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
       Supplier<Connection> connectionSupplier,
       Function<Connection, List<String>> notificationPoller) {
     return types.entrySet().stream()
-        .filter(entry -> includes.isEmpty() || includes.contains(entry.getKey()))
+        .filter(type -> includes.isEmpty() || includes.contains(type.getKey()))
         .flatMap(
-            entry ->
-                entry.getValue().getEffectiveSourcePaths().stream()
+            type ->
+                type.getValue().getEffectiveSourcePaths().stream()
                     .map(
                         sourcePath ->
                             ImmutableSubscription.builder()
                                 .connectionFactory(connectionSupplier)
                                 .notificationPoller(notificationPoller)
-                                .type(entry.getKey())
+                                .type(type.getKey())
                                 .table(sourcePath.substring(1))
                                 .idColumn(
-                                    entry
-                                        .getValue()
+                                    type.getValue()
                                         .getIdProperty()
                                         .flatMap(FeatureSchema::getSourcePath)
                                         .orElseThrow())
                                 .geometryColumn(
-                                    entry
-                                        .getValue()
+                                    type.getValue()
                                         .getPrimaryGeometry()
                                         .map(s -> s.getSourcePath().orElseThrow()))
                                 .intervalColumns(
-                                    entry
-                                        .getValue()
+                                    type.getValue()
                                         .getPrimaryInterval()
                                         .map(
                                             t ->
@@ -212,8 +212,7 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
                                                     t.first().getSourcePath().orElseThrow(),
                                                     t.second().getSourcePath().orElseThrow())))
                                 .instantColumn(
-                                    entry
-                                        .getValue()
+                                    type.getValue()
                                         .getPrimaryInstant()
                                         .map(s -> s.getSourcePath().orElseThrow()))
                                 .build()))

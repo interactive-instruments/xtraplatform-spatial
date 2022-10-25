@@ -64,9 +64,25 @@ interface Subscription {
     return getNotificationPoller().apply(getConnection());
   }
 
-  // TODO: handle empty geo, begin, end
   @Value.Derived
   default String getCreateFunction() {
+    String delete =
+        getBlock(
+            true,
+            getChannel(),
+            getIdColumn(),
+            getInstantColumn().or(() -> getIntervalColumns().map(Tuple::first)),
+            getInstantColumn().or(() -> getIntervalColumns().map(Tuple::second)),
+            getGeometryColumn());
+    String insertOrUpdate =
+        getBlock(
+            false,
+            getChannel(),
+            getIdColumn(),
+            getInstantColumn().or(() -> getIntervalColumns().map(Tuple::first)),
+            getInstantColumn().or(() -> getIntervalColumns().map(Tuple::second)),
+            getGeometryColumn());
+
     String template =
         "CREATE OR REPLACE FUNCTION pg_temp.%1$s_trigger()\n"
             + " RETURNS trigger\n"
@@ -76,25 +92,53 @@ interface Subscription {
             + "      bbox box2d;\n"
             + "   BEGIN\n"
             + "        IF (TG_OP = 'DELETE') THEN\n"
-            + "            bbox = box2d(ST_Transform(OLD.%4$s,4326));\n"
-            + "            PERFORM pg_notify('%1$s', concat_ws(',', TG_OP, OLD.%5$s, COALESCE(to_char(OLD.%2$s, 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"'),'NULL'), COALESCE(to_char(OLD.%3$s, 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"'),'NULL'), st_xmin(bbox), st_ymin(bbox), st_xmax(bbox), st_ymax(bbox)));\n"
-            + "            RETURN OLD;\n"
+            + "            %2$s"
             + "        ELSE\n"
-            + "            bbox = box2d(ST_Transform(NEW.%4$s,4326));\n"
-            + "            PERFORM pg_notify('%1$s', concat_ws(',', TG_OP, NEW.%5$s, COALESCE(to_char(NEW.%2$s, 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"'),'NULL'), COALESCE(to_char(NEW.%3$s, 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"'),'NULL'), st_xmin(bbox), st_ymin(bbox), st_xmax(bbox), st_ymax(bbox)));\n"
-            + "            RETURN NEW;\n"
+            + "            %3$s"
             + "        END IF;\n"
             + "    END;\n"
             + "$function$\n"
             + ";";
 
+    return String.format(template, getChannel(), delete, insertOrUpdate);
+  }
+
+  private static String getBlock(
+      boolean old,
+      String channel,
+      String idColumn,
+      Optional<String> startColumn,
+      Optional<String> endColumn,
+      Optional<String> geometryColumn) {
+    String prefix = old ? "OLD" : "NEW";
+    String id = String.format("%s.%s", prefix, idColumn);
+    String temporalStart =
+        startColumn.isPresent()
+            ? String.format(
+                "COALESCE(to_char(%s.%s, 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"'),'NULL')",
+                prefix, startColumn.get())
+            : "''";
+    String temporalEnd =
+        endColumn.isPresent()
+            ? String.format(
+                "COALESCE(to_char(%s.%s, 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"'),'NULL')",
+                prefix, endColumn.get())
+            : "''";
+    String spatial =
+        geometryColumn.isPresent()
+            ? "st_xmin(bbox), st_ymin(bbox), st_xmax(bbox), st_ymax(bbox)"
+            : "'', '', '', ''";
+    String bbox =
+        geometryColumn.isPresent()
+            ? String.format(
+                "bbox = box2d(ST_Transform(%s.%s,4326));\n", prefix, geometryColumn.get())
+            : "";
+
     return String.format(
-        template,
-        getChannel(),
-        getIntervalColumns().get().first(),
-        getIntervalColumns().get().second(),
-        getGeometryColumn().get(),
-        getIdColumn());
+        "%6$s"
+            + "            PERFORM pg_notify('%1$s', concat_ws(',', TG_OP, %2$s, %3$s, %4$s, %5$s));\n"
+            + "            RETURN %7$s;\n",
+        channel, id, temporalStart, temporalEnd, spatial, bbox, prefix);
   }
 
   @Value.Derived
