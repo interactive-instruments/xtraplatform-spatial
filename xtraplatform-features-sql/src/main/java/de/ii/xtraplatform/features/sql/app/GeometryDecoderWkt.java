@@ -142,17 +142,36 @@ public class GeometryDecoderWkt {
     if (!Objects.equals(nextToken, EMPTY)) {
       nextToken = getNextWord(tokenizer);
       handler.onArrayStart(context);
-      COMMA_SPLITTER
-          .splitToList(nextToken)
-          .forEach(
-              LambdaWithException.consumerMayThrow(
-                  point -> {
-                    context.setValueType(Type.STRING);
-                    context.setValue(point);
-                    handler.onValue(context);
-                  }));
+      // two variants of MULTIPOLYGON are used in the standard and in practice
+      if (nextToken.equals(L_PAREN)) {
+        // MULTIPOINT((0 0),(1 1))
+
+        // read first point, we have already seen the opening '('
+        context.setValueType(Type.STRING);
+        context.setValue(getNextWord(tokenizer));
+        handler.onValue(context);
+        getNextCloserOrComma(tokenizer);
+
+        // read all following points
+        nextToken = getNextCloserOrComma(tokenizer);
+        while (Objects.equals(nextToken, COMMA)) {
+          readCoordinates(tokenizer);
+          nextToken = getNextCloserOrComma(tokenizer);
+        }
+      } else {
+        // MULTIPOINT(0 0,1 1)
+        COMMA_SPLITTER
+            .splitToList(nextToken)
+            .forEach(
+                LambdaWithException.consumerMayThrow(
+                    point -> {
+                      context.setValueType(Type.STRING);
+                      context.setValue(point);
+                      handler.onValue(context);
+                    }));
+      }
       handler.onArrayEnd(context);
-      nextToken = getNextCloserOrComma(tokenizer);
+      getNextCloserOrComma(tokenizer);
     }
   }
 
