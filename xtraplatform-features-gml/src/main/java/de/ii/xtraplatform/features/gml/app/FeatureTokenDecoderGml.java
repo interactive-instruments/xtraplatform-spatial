@@ -140,7 +140,9 @@ public class FeatureTokenDecoderGml
     boolean feedMeMore = false;
 
     try {
-      if (!parser.hasNext()) return true;
+      if (!parser.hasNext()) {
+        return true;
+      }
 
       switch (parser.next()) {
         case AsyncXMLStreamReader.EVENT_INCOMPLETE:
@@ -174,6 +176,10 @@ public class FeatureTokenDecoderGml
 
             context.metadata().numberReturned(numberReturned);
             context.metadata().numberMatched(numberMatched);
+
+            if (numberReturned.orElse(0) == 1 && numberMatched.orElse(1) == 1) {
+              context.metadata().isSingleFeature(true);
+            }
 
             context.additionalInfo().clear();
             for (int i = 0; i < parser.getAttributeCount(); i++) {
@@ -327,7 +333,9 @@ public class FeatureTokenDecoderGml
   }
 
   private void onGeometryPart(final String localName, boolean startOfGeometry) throws Exception {
-    if (Objects.isNull(currentGeometrySchema)) return;
+    if (Objects.isNull(currentGeometrySchema)) {
+      return;
+    }
 
     if (currentGeometryType == SimpleFeatureGeometry.NONE) {
       final SimpleFeatureGeometry geometryType =
@@ -359,22 +367,43 @@ public class FeatureTokenDecoderGml
         context.pathTracker().track(path.get(path.size() - 1));
       }
     }
-    if (GEOMETRY_PARTS.contains(localName)
-        || (startOfGeometry && currentGeometryType == SimpleFeatureGeometry.MULTI_POLYGON)) {
-      getDownstream().onArrayStart(context);
-    } else if (passThrough) {
-      getDownstream().onObjectStart(context);
+
+    if (!passThrough) {
+      switch (GmlGeometryType.fromString(localName).toSimpleFeatureGeometry()) {
+        case MULTI_LINE_STRING:
+        case POLYGON:
+        case MULTI_POLYGON:
+          getDownstream().onArrayStart(context);
+          break;
+      }
+    } else {
+      if (GEOMETRY_PARTS.contains(localName)) {
+        getDownstream().onArrayStart(context);
+      } else {
+        getDownstream().onObjectStart(context);
+      }
     }
   }
 
   private void onGeometryPartEnd(final String localName, boolean endOfGeometry) throws Exception {
-    if (Objects.isNull(currentGeometrySchema)) return;
+    if (Objects.isNull(currentGeometrySchema)) {
+      return;
+    }
 
-    if (GEOMETRY_PARTS.contains(localName)
-        || (endOfGeometry && currentGeometryType == SimpleFeatureGeometry.MULTI_POLYGON)) {
-      getDownstream().onArrayEnd(context);
-    } else if (passThrough) {
-      getDownstream().onObjectEnd(context);
+    if (!passThrough) {
+      switch (GmlGeometryType.fromString(localName).toSimpleFeatureGeometry()) {
+        case MULTI_LINE_STRING:
+        case POLYGON:
+        case MULTI_POLYGON:
+          getDownstream().onArrayEnd(context);
+          break;
+      }
+    } else {
+      if (GEOMETRY_PARTS.contains(localName)) {
+        getDownstream().onArrayEnd(context);
+      } else {
+        getDownstream().onObjectEnd(context);
+      }
     }
   }
 }

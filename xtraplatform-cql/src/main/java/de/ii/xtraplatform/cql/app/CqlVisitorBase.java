@@ -39,6 +39,7 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
 
   @Override
   public T visit(Not not, List<T> children) {
+
     return null;
   }
 

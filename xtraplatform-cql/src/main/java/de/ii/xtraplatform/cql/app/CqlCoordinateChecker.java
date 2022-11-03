@@ -112,13 +112,8 @@ public class CqlCoordinateChecker extends CqlVisitorBase<Object> {
     List<Double> doubles = envelope.getCoordinates();
     Geometry.Coordinate ll;
     Geometry.Coordinate ur;
-    if (doubles.size() == 4) {
-      ll = Geometry.Coordinate.of(doubles.get(0), doubles.get(1));
-      ur = Geometry.Coordinate.of(doubles.get(2), doubles.get(3));
-    } else {
-      ll = Geometry.Coordinate.of(doubles.get(0), doubles.get(1), doubles.get(2));
-      ur = Geometry.Coordinate.of(doubles.get(3), doubles.get(4), doubles.get(5));
-    }
+    ll = Geometry.Coordinate.of(doubles.get(0), doubles.get(1));
+    ur = Geometry.Coordinate.of(doubles.get(2), doubles.get(3));
     visit(ll, ImmutableList.of());
     visit(ur, ImmutableList.of());
 

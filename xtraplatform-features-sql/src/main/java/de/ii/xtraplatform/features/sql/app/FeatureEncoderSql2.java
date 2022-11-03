@@ -13,6 +13,7 @@ import de.ii.xtraplatform.features.domain.FeatureTokenEmitter2;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery;
 import de.ii.xtraplatform.features.sql.domain.SchemaMappingSql;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
+import java.util.Optional;
 
 public class FeatureEncoderSql2
     extends FeatureObjectTransformerBase<SchemaSql, SchemaMappingSql, PropertySql, FeatureSql> {
@@ -20,6 +21,11 @@ public class FeatureEncoderSql2
   private final SchemaMappingSql mapping;
 
   public FeatureEncoderSql2(SchemaMappingSql mapping) {
+    this(mapping, Optional.empty());
+  }
+
+  public FeatureEncoderSql2(SchemaMappingSql mapping, Optional<String> nullValue) {
+    super(nullValue);
     this.mapping = mapping;
   }
 

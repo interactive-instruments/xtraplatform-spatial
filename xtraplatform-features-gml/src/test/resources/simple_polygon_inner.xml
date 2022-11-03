@@ -1,0 +1,33 @@
+<wfs:FeatureCollection numberReturned="1" xmlns:bag="http://bag.geonovum.nl"
+  xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:wfs="http://www.opengis.net/wfs/2.0">
+  <wfs:member>
+    <bag:pand gml:id="pand.4bad2970-2214-486c-a475-a04300136d94">
+      <bag:geom>
+        <gml:Polygon gml:id="pand.4bad2970-2214-486c-a475-a04300136d94.1"
+          srsName="urn:ogc:def:crs:EPSG::28992">
+          <gml:exterior>
+            <gml:LinearRing>
+              <gml:posList srsDimension="2">
+                206476.339000 475299.692000 206475.466000 475298.741000 206465.324000 475308.48000
+                206456.806000 475208.767000 206469.818000 475286.826000 206468.873000 475285.762000
+                206470.851000 475284.005000 206471.768000 475285.037000 206471.924000 475285.206000
+                206473.055000 475285.251000 206473.224000 475285.096000 206474.219000 475284.173000
+                206475.856000 475285.939000 206474.852000 475286.870000 206481.919000 475294.571000
+                206476.339000 475299.692000
+              </gml:posList>
+            </gml:LinearRing>
+          </gml:exterior>
+          <gml:interior>
+            <gml:LinearRing>
+              <gml:posList srsDimension="2">
+                206475.281000 475298.053000 206477.379000 475296.023000 206474.715000 475293.270000
+                206472.617000 475295.300000 206475.281000 475298.053000
+              </gml:posList>
+            </gml:LinearRing>
+          </gml:interior>
+        </gml:Polygon>
+      </bag:geom>
+      <bag:identificatie>0150100000004952</bag:identificatie>
+    </bag:pand>
+  </wfs:member>
+</wfs:FeatureCollection>
