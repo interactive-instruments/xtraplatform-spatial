@@ -253,6 +253,48 @@ class FeatureTokenFixtures {
             FeatureTokenType.INPUT_END
     ]
 
+    public static final List<Object> SINGLE_FEATURE_POLYGON_INNER = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            ["bag:pand"],
+            FeatureTokenType.VALUE,
+            ["bag:pand", "gml:@id"],
+            "pand.4bad2970-2214-486c-a475-a04300136d94",
+            Type.STRING,
+            FeatureTokenType.OBJECT,
+            ["bag:pand", "bag:geom"],
+            SimpleFeatureGeometry.POLYGON,
+            FeatureTokenType.ARRAY,
+            ["bag:pand", "bag:geom", "gml:Polygon"],
+            FeatureTokenType.VALUE,
+            ["bag:pand", "bag:geom", "gml:Polygon", "gml:exterior", "gml:LinearRing", "gml:posList"],
+            "\n" +
+                    "                206476.339000 475299.692000 206475.466000 475298.741000 206465.324000 475308.48000\n" +
+                    "                206456.806000 475208.767000 206469.818000 475286.826000 206468.873000 475285.762000\n" +
+                    "                206470.851000 475284.005000 206471.768000 475285.037000 206471.924000 475285.206000\n" +
+                    "                206473.055000 475285.251000 206473.224000 475285.096000 206474.219000 475284.173000\n" +
+                    "                206475.856000 475285.939000 206474.852000 475286.870000 206481.919000 475294.571000\n" +
+                    "                206476.339000 475299.692000\n" +
+                    "              ",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["bag:pand", "bag:geom", "gml:Polygon", "gml:interior", "gml:LinearRing", "gml:posList"],
+            "\n" +
+                    "                206475.281000 475298.053000 206477.379000 475296.023000 206474.715000 475293.270000\n" +
+                    "                206472.617000 475295.300000 206475.281000 475298.053000\n" +
+                    "              ",
+            Type.STRING,
+            FeatureTokenType.ARRAY_END,
+            FeatureTokenType.OBJECT_END,
+            FeatureTokenType.VALUE,
+            ["bag:pand", "bag:identificatie"],
+            "0150100000004952",
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
     public static final List<Object> SINGLE_FEATURE_NESTED_OBJECT = [
             FeatureTokenType.INPUT,
             true,

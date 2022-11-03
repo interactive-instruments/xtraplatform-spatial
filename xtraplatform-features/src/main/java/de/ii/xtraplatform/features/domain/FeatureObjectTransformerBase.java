@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public abstract class FeatureObjectTransformerBase<
         T extends SchemaBase<T>,
@@ -22,8 +23,18 @@ public abstract class FeatureObjectTransformerBase<
         V extends PropertyBase<V, T>,
         W extends FeatureBase<V, T>>
     extends FeatureTokenTransformerBase<T, U, ModifiableContext<T, U>> {
+
+  private final Optional<String> nullValue;
   private W currentFeature;
   private V currentObjectOrArray;
+
+  protected FeatureObjectTransformerBase() {
+    this(Optional.empty());
+  }
+
+  protected FeatureObjectTransformerBase(Optional<String> nullValue) {
+    this.nullValue = nullValue;
+  }
 
   public abstract W createFeature();
 
@@ -96,7 +107,16 @@ public abstract class FeatureObjectTransformerBase<
 
   @Override
   public final void onValue(ModifiableContext<T, U> context) {
-    if (context.schema().isEmpty() || Objects.isNull(context.value())) {
+    if (context.schema().isEmpty()
+        || context.schema().get().isFeature()
+        || Objects.isNull(context.value())) {
+      if (nullValue.isPresent() && Objects.equals(context.value(), nullValue.get())) {
+        Map<List<String>, T> childMappings = getChildMappings(context.mapping(), context.path());
+
+        childMappings.forEach(
+            (path, schema) ->
+                createProperty(Type.VALUE, path, schema, nullValue.get(), context.transformed()));
+      }
       return;
     }
 
@@ -160,5 +180,20 @@ public abstract class FeatureObjectTransformerBase<
     return Objects.nonNull(currentObjectOrArray) && currentObjectOrArray.getParent().isPresent()
         ? currentObjectOrArray.getParent().get()
         : null;
+  }
+
+  private Map<List<String>, T> getChildMappings(U mapping, List<String> path) {
+    if (path.isEmpty()) {
+      return mapping.getTargetSchemasByPath().entrySet().stream()
+          .filter(e -> e.getKey().size() > path.size() && !e.getValue().get(0).isPrimaryGeometry())
+          .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(0)));
+    }
+
+    return mapping.getTargetSchemasByPath().entrySet().stream()
+        .filter(
+            e ->
+                e.getKey().size() >= path.size()
+                    && Objects.equals(path, e.getKey().subList(0, path.size())))
+        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(0)));
   }
 }

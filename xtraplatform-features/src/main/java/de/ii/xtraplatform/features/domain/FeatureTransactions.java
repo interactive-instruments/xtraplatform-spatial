@@ -15,6 +15,7 @@ import java.util.Optional;
 import org.immutables.value.Value;
 
 public interface FeatureTransactions {
+  String PATCH_NULL_VALUE = "###NULL###";
 
   @Value.Immutable
   interface MutationResult extends FeatureStream.ResultBase {
@@ -22,6 +23,7 @@ public interface FeatureTransactions {
     enum Type {
       CREATE,
       REPLACE,
+      UPDATE,
       DELETE
     }
 
@@ -48,7 +50,7 @@ public interface FeatureTransactions {
       String featureType, FeatureTokenSource featureTokenSource, EpsgCrs crs);
 
   MutationResult updateFeature(
-      String type, String id, FeatureTokenSource featureTokenSource, EpsgCrs crs);
+      String type, String id, FeatureTokenSource featureTokenSource, EpsgCrs crs, boolean partial);
 
   MutationResult deleteFeature(String featureType, String id);
 }

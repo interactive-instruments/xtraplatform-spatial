@@ -324,6 +324,29 @@ class StringTemplateFiltersSpec extends Specification {
 
     }
 
+    def 'Test orElse where the value is present'() {
+        given:
+        String template = "{{title | orElse:'{{id | prepend:\"#\"}}'}}"
+        Map<String, String> lookup = new HashMap<>();
+        lookup.put("title", "test")
+        lookup.put("id", "1")
+        when:
+        String result = StringTemplateFilters.applyTemplate(template, lookup::get)
 
+        then:
+        result == "test"
+    }
+
+    def 'Test orElse where the value is not present'() {
+        given:
+        String template = "{{title | orElse:'{{id | prepend:\"#\"}}'}}"
+        Map<String, String> lookup = new HashMap<>();
+        lookup.put("id", "1")
+        when:
+        String result = StringTemplateFilters.applyTemplate(template, lookup::get)
+
+        then:
+        result == "#1"
+    }
 
 }

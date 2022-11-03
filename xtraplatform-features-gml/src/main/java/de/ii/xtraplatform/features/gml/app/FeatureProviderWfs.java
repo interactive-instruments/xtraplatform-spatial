@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.ws.rs.core.MediaType;
 import javax.xml.namespace.QName;
 import org.slf4j.Logger;
@@ -127,7 +128,11 @@ public class FeatureProviderWfs
 
   @Override
   protected Map<String, List<FeatureSchema>> getSourceSchemas() {
-    return ImmutableMap.of();
+    Map<String, List<FeatureSchema>> types =
+        getData().getTypes().entrySet().stream()
+            .map(entry -> new SimpleImmutableEntry<>(entry.getKey(), List.of(entry.getValue())))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    return types;
   }
 
   private static FeatureStorePathParser createPathParser(
