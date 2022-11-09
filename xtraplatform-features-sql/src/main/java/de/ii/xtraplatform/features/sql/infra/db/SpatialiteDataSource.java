@@ -10,7 +10,7 @@ package de.ii.xtraplatform.features.sql.infra.db;
 import static de.ii.xtraplatform.base.domain.Constants.TMP_DIR_PROP;
 
 import com.google.common.io.Resources;
-import de.ii.xtraplatform.spatialite.domain.SpatialiteLoader;
+import de.ii.xtraplatform.spatialite.domain.SpatiaLiteLoader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -81,7 +81,7 @@ public class SpatialiteDataSource extends SQLiteDataSource {
     if (!lib.exists()) {
       try {
         Resources.copy(
-            Resources.getResource(SpatialiteLoader.class, "/" + libName),
+            Resources.getResource(SpatiaLiteLoader.class, "/" + libName),
             new FileOutputStream(lib));
       } catch (IOException e) {
         throw new IllegalStateException("Could not create file: " + lib);
