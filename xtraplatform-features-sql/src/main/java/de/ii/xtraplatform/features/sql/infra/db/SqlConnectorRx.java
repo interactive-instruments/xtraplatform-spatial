@@ -38,8 +38,10 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import javax.sql.DataSource;
 import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.pool.DatabaseType;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +54,7 @@ public class SqlConnectorRx implements SqlConnector {
   private static final SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
   private static final Logger LOGGER = LoggerFactory.getLogger(SqlConnectorRx.class);
 
+  private final SqlDataSourceFactory sqlDataSourceFactory;
   private final ConnectionInfoSql connectionInfo;
   private final String poolName;
   private final MetricRegistry metricRegistry;
@@ -71,11 +74,13 @@ public class SqlConnectorRx implements SqlConnector {
 
   @AssistedInject
   public SqlConnectorRx(
+      SqlDataSourceFactory sqlDataSourceFactory,
       AppContext appContext,
       @Assisted MetricRegistry metricRegistry,
       @Assisted HealthCheckRegistry healthCheckRegistry,
       @Assisted String providerId,
       @Assisted ConnectionInfoSql connectionInfo) {
+    this.sqlDataSourceFactory = sqlDataSourceFactory;
     this.connectionInfo = connectionInfo;
     this.poolName = String.format("db.%s", providerId);
     this.metricRegistry = metricRegistry;
@@ -278,7 +283,7 @@ public class SqlConnectorRx implements SqlConnector {
 
     config.setUsername(connectionInfo.getUser().orElse(""));
     config.setPassword(getPassword(connectionInfo));
-    config.setDataSourceClassName(getDataSourceClass(connectionInfo));
+    // config.setDataSourceClassName(getDataSourceClass(connectionInfo));
     config.setMaximumPoolSize(maxConnections);
     config.setMinimumIdle(minConnections);
     config.setInitializationFailTimeout(getInitFailTimeout(connectionInfo));
@@ -286,9 +291,13 @@ public class SqlConnectorRx implements SqlConnector {
     config.setPoolName(poolName);
     config.setKeepaliveTime(300000);
 
-    getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
+    DataSource ds = sqlDataSourceFactory.create(providerId, connectionInfo);
+    config.setDataSource(ds);
+    sqlDataSourceFactory.getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
 
-    config.setDataSourceProperties(getDriverOptions(connectionInfo, dataDir, applicationName));
+    // getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
+
+    // config.setDataSourceProperties(getDriverOptions(connectionInfo, dataDir, applicationName));
 
     config.setMetricRegistry(metricRegistry);
     config.setHealthCheckRegistry(healthCheckRegistry);
@@ -347,15 +356,13 @@ public class SqlConnectorRx implements SqlConnector {
     return password;
   }
 
-  // TODO: instantiate dataSource, apply driverOptions
   private static String getDataSourceClass(ConnectionInfoSql connectionInfo) {
 
     switch (connectionInfo.getDialect()) {
       case PGIS:
-        return "org.postgresql.ds.PGSimpleDataSource";
+        return PGSimpleDataSource.class.getName();
       case GPKG:
-        return "de.ii.xtraplatform.features.sql.infra.db.SpatialiteDataSource";
-        // return "org.sqlite.SQLiteDataSource";
+        return SpatiaLiteDataSource.class.getName();
     }
 
     throw new IllegalStateException("SQL dialect not implemented: " + connectionInfo.getDialect());

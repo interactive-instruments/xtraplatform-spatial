@@ -44,7 +44,9 @@ public class SqlConnectorRxFactory
 
   @Inject
   public SqlConnectorRxFactory(
-      AppContext appContext, // TODO: needed because dagger-auto does not parse SqlConnectorSlick
+      SqlDataSourceFactory
+          sqlDataSourceFactory, // TODO: needed because dagger-auto does not parse SqlConnectorRx
+      AppContext appContext, // TODO: needed because dagger-auto does not parse SqlConnectorRx
       FactoryAssisted factoryAssisted) {
     this.factoryAssisted = factoryAssisted;
     this.instances = new LinkedHashMap<>();
