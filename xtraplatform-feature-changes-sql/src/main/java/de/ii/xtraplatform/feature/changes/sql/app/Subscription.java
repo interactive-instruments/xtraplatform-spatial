@@ -144,7 +144,7 @@ interface Subscription {
   @Value.Derived
   default String getCreateTrigger() {
     String template =
-        "CREATE TRIGGER %1$s_trigger\n"
+        "CREATE OR REPLACE TRIGGER %1$s_trigger\n"
             + "AFTER INSERT OR UPDATE OR DELETE ON %2$s\n"
             + "    FOR EACH ROW EXECUTE PROCEDURE pg_temp.%1$s_trigger();";
 
