@@ -48,6 +48,11 @@ public class SqlDialectPostGis implements SqlDialect {
   }
 
   @Override
+  public String castToBigInt(int value) {
+    return String.format("%d::bigint", value);
+  }
+
+  @Override
   public Optional<BoundingBox> parseExtent(String extent, EpsgCrs crs) {
     if (Objects.isNull(extent)) {
       return Optional.empty();
