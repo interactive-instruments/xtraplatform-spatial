@@ -310,8 +310,8 @@ public class SqlConnectorRx implements SqlConnector {
     DatabaseType healthCheck =
         connectionInfo.getDialect() == Dialect.GPKG ? DatabaseType.SQLITE : DatabaseType.POSTGRES;
     int idleTimeBeforeHealthCheck = 60;
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace(
           "rxjava2-jdbc - maxIdleTime: {}, healthCheck: {},  idleTimeBeforeHealthCheck: {}",
           maxIdleTime,
           healthCheck,

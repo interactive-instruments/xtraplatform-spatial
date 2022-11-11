@@ -115,8 +115,11 @@ public class ConnectorFactoryImpl implements ConnectorFactory {
     }
 
     if (refs == 0) {
-      getFactory(connector.getType()).get().deleteInstance(connector.getProviderId());
-      LOGGER.debug("Deleted unused pool.");
+      boolean deleted =
+          getFactory(connector.getType()).get().deleteInstance(connector.getProviderId());
+      if (deleted && LOGGER.isDebugEnabled()) {
+        LOGGER.debug("Deleted unused pool.");
+      }
     }
 
     if (disposeListeners.containsKey(connector.getProviderId())) {
