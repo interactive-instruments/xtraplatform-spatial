@@ -19,6 +19,7 @@ import de.ii.xtraplatform.features.domain.SchemaMapping;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +33,7 @@ public class FeatureTokenDecoderGeoJson
 
   private final JsonParser parser;
   private final ByteArrayFeeder feeder;
+  private final Optional<String> nullValue;
 
   private boolean started;
   private int depth = -1;
@@ -45,12 +47,17 @@ public class FeatureTokenDecoderGeoJson
   private ModifiableContext<FeatureSchema, SchemaMapping> context;
 
   public FeatureTokenDecoderGeoJson() {
+    this(Optional.empty());
+  }
+
+  public FeatureTokenDecoderGeoJson(Optional<String> nullValue) {
     try {
       this.parser = JSON_FACTORY.createNonBlockingByteArrayParser();
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }
     this.feeder = (ByteArrayFeeder) parser.getNonBlockingInputFeeder();
+    this.nullValue = nullValue;
   }
 
   @Override
@@ -270,8 +277,10 @@ public class FeatureTokenDecoderGeoJson
         case VALUE_NUMBER_FLOAT:
         case VALUE_TRUE:
         case VALUE_FALSE:
+        case VALUE_NULL:
           switch (nextToken) {
             case VALUE_STRING:
+            case VALUE_NULL:
               context.setValueType(Type.STRING);
               break;
             case VALUE_NUMBER_INT:
@@ -284,6 +293,22 @@ public class FeatureTokenDecoderGeoJson
             case VALUE_FALSE:
               context.setValueType(Type.BOOLEAN);
               break;
+          }
+
+          if (nextToken == JsonToken.VALUE_NULL && nullValue.isEmpty()) {
+            break;
+          }
+          if (nextToken == JsonToken.VALUE_NULL
+              && nullValue.isPresent()
+              && (Objects.equals(currentName, "geometry")
+                  || Objects.equals(currentName, "properties"))) {
+            if (Objects.equals(currentName, "properties")) {
+              context.pathTracker().track(0);
+            } else {
+              context.pathTracker().track(currentName, 0);
+            }
+            context.setValue(nullValue.get());
+            getDownstream().onValue(context);
           }
 
           // feature or collection prop value
@@ -335,7 +360,11 @@ public class FeatureTokenDecoderGeoJson
               startArray = 0;
             }
 
-            context.setValue(parser.getValueAsString());
+            if (nextToken == JsonToken.VALUE_NULL && nullValue.isPresent()) {
+              context.setValue(nullValue.get());
+            } else {
+              context.setValue(parser.getValueAsString());
+            }
 
             getDownstream().onValue(context);
 
