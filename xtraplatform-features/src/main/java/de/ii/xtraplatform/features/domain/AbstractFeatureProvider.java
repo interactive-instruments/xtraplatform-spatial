@@ -36,7 +36,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +54,6 @@ public abstract class AbstractFeatureProvider<
   private final CrsTransformerFactory crsTransformerFactory;
   private final ProviderExtensionRegistry extensionRegistry;
   private final FeatureChangeHandler changeHandler;
-  private final AtomicInteger activeStreams;
   private final ScheduledExecutorService delayedDisposer;
   private Reactive.Runner streamRunner;
   private FeatureProviderConnector<T, U, V> connector;
@@ -73,7 +71,6 @@ public abstract class AbstractFeatureProvider<
     this.crsTransformerFactory = crsTransformerFactory;
     this.extensionRegistry = extensionRegistry;
     this.changeHandler = new FeatureChangeHandlerImpl();
-    this.activeStreams = new AtomicInteger(0);
     this.delayedDisposer =
         MoreExecutors.getExitingScheduledExecutorService(
             (ScheduledThreadPoolExecutor)
@@ -184,7 +181,7 @@ public abstract class AbstractFeatureProvider<
   private boolean softClosePrevious(
       Runner previousRunner, FeatureProviderConnector<T, U, V> previousConnector) {
     if (Objects.nonNull(previousConnector) || Objects.nonNull(previousRunner)) {
-      if (activeStreams.get() > 0) {
+      if (previousRunner.getActiveStreams() > 0) {
         LOGGER.debug("Active streams found, keeping previous connection pool alive.");
         delayedDisposer.schedule(
             LogContext.withMdc(() -> softClosePrevious(previousRunner, previousConnector)),
@@ -408,11 +405,6 @@ public abstract class AbstractFeatureProvider<
   }
 
   private Map<String, String> beforeQuery(Query query) {
-    int i = activeStreams.incrementAndGet();
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Active streams: {}", i);
-    }
-
     Map<String, String> virtualTables = new HashMap<>();
 
     extensionRegistry
@@ -433,11 +425,6 @@ public abstract class AbstractFeatureProvider<
   }
 
   private void afterQuery(Query query) {
-    int i = activeStreams.decrementAndGet();
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Active streams: {}", i);
-    }
-
     extensionRegistry
         .getAll()
         .forEach(
