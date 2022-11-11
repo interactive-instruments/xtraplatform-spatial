@@ -10,8 +10,6 @@ package de.ii.xtraplatform.features.sql.infra.db;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheckRegistry;
 import com.google.common.base.Charsets;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -27,21 +25,17 @@ import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
 import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.pool.DatabaseType;
-import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -283,7 +277,6 @@ public class SqlConnectorRx implements SqlConnector {
 
     config.setUsername(connectionInfo.getUser().orElse(""));
     config.setPassword(getPassword(connectionInfo));
-    // config.setDataSourceClassName(getDataSourceClass(connectionInfo));
     config.setMaximumPoolSize(maxConnections);
     config.setMinimumIdle(minConnections);
     config.setInitializationFailTimeout(getInitFailTimeout(connectionInfo));
@@ -291,13 +284,8 @@ public class SqlConnectorRx implements SqlConnector {
     config.setPoolName(poolName);
     config.setKeepaliveTime(300000);
 
-    DataSource ds = sqlDataSourceFactory.create(providerId, connectionInfo);
-    config.setDataSource(ds);
+    config.setDataSource(sqlDataSourceFactory.create(providerId, connectionInfo));
     sqlDataSourceFactory.getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
-
-    // getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
-
-    // config.setDataSourceProperties(getDriverOptions(connectionInfo, dataDir, applicationName));
 
     config.setMetricRegistry(metricRegistry);
     config.setHealthCheckRegistry(healthCheckRegistry);
@@ -354,103 +342,5 @@ public class SqlConnectorRx implements SqlConnector {
     }
 
     return password;
-  }
-
-  private static String getDataSourceClass(ConnectionInfoSql connectionInfo) {
-
-    switch (connectionInfo.getDialect()) {
-      case PGIS:
-        return PGSimpleDataSource.class.getName();
-      case GPKG:
-        return SpatiaLiteDataSource.class.getName();
-    }
-
-    throw new IllegalStateException("SQL dialect not implemented: " + connectionInfo.getDialect());
-  }
-
-  private static Optional<String> getInitSql(ConnectionInfoSql connectionInfo) {
-
-    switch (connectionInfo.getDialect()) {
-      case PGIS:
-        String initSql =
-            "SET datestyle TO ISO, MDY; SET client_encoding TO UTF8; SET timezone TO UTC;";
-        if (!connectionInfo.getSchemas().isEmpty()) {
-          String schemas =
-              connectionInfo.getSchemas().stream()
-                  .map(
-                      schema -> {
-                        if (!Objects.equals(schema, schema.toLowerCase())) {
-                          return String.format("\"%s\"", schema);
-                        }
-                        return schema;
-                      })
-                  .collect(Collectors.joining(","));
-
-          return Optional.of(String.format("SET search_path TO %s,public; %s", schemas, initSql));
-        }
-        return Optional.of(initSql);
-      case GPKG:
-        return Optional.of(
-            "SELECT CASE CheckGeoPackageMetaData() WHEN 1 THEN EnableGpkgMode() END;");
-    }
-
-    return Optional.empty();
-  }
-
-  private static Properties getDriverOptions(
-      ConnectionInfoSql connectionInfo, Path dataDir, String applicationName) {
-    Properties properties = new Properties();
-
-    switch (connectionInfo.getDialect()) {
-      case PGIS:
-        properties.setProperty(
-            "serverName",
-            connectionInfo
-                .getHost()
-                .orElseThrow(
-                    () ->
-                        new IllegalArgumentException(
-                            "No 'host' given, required for PGIS connection")));
-        properties.setProperty(
-            "databaseName",
-            Optional.ofNullable(Strings.emptyToNull(connectionInfo.getDatabase()))
-                .orElseThrow(
-                    () ->
-                        new IllegalArgumentException(
-                            "No 'database' given, required for PGIS connection")));
-        properties.setProperty("assumeMinServerVersion", "9.6");
-        properties.setProperty("ApplicationName", applicationName);
-
-        connectionInfo.getDriverOptions().entrySet().stream()
-            .filter(
-                option ->
-                    ImmutableList.of(
-                            "gssEncMode",
-                            "ssl",
-                            "sslmode",
-                            "sslcert",
-                            "sslkey",
-                            "sslrootcert",
-                            "sslpassword")
-                        .contains(option.getKey()))
-            .forEach(
-                option ->
-                    properties.setProperty(option.getKey(), String.valueOf(option.getValue())));
-        break;
-      case GPKG:
-        Path path =
-            Paths.get(connectionInfo.getDatabase()).isAbsolute()
-                ? Paths.get(connectionInfo.getDatabase())
-                : dataDir.resolve(connectionInfo.getDatabase());
-        if (!path.toFile().exists()) {
-          throw new IllegalArgumentException("GPKG database does not exist: " + path);
-        }
-
-        properties.setProperty("loadExtension", String.valueOf(true));
-        properties.setProperty("url", String.format("jdbc:sqlite:%s", path));
-        break;
-    }
-
-    return properties;
   }
 }
