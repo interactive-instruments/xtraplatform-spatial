@@ -7,17 +7,19 @@
  */
 package de.ii.xtraplatform.features.sql.app
 
+import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.cql.app.CqlImpl
+import de.ii.xtraplatform.cql.domain.And
 import de.ii.xtraplatform.cql.domain.Cql2Expression
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.Property
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.crs.domain.OgcCrs
-import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis
 import de.ii.xtraplatform.features.domain.SortKey
+import de.ii.xtraplatform.features.domain.Tuple
+import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis
 import spock.lang.Shared
 import spock.lang.Specification
-import de.ii.xtraplatform.features.domain.Tuple;
 
 class SqlQueryTemplatesDeriverSpec extends Specification {
 
@@ -65,29 +67,29 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
 
         where:
 
-        casename                             | deriver | limit | offset | sortBy                  | filter                                                     | source                                                  || expected
-        "value array"                        | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.VALUE_ARRAY                         || SqlQueryTemplatesFixtures.VALUE_ARRAY
-        "object array"                       | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY
-        "merge"                              | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.MERGE                               || SqlQueryTemplatesFixtures.MERGE
-        "self joins"                         | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.SELF_JOINS                          || SqlQueryTemplatesFixtures.SELF_JOINS
-        "self joins with filters"            | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.SELF_JOINS_FILTER                   || SqlQueryTemplatesFixtures.SELF_JOINS_FILTER
-        "self join with nested duplicate"    | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.SELF_JOIN_NESTED_DUPLICATE          || SqlQueryTemplatesFixtures.SELF_JOIN_NESTED_DUPLICATE
-        "object without sourcePath"          | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || SqlQueryTemplatesFixtures.OBJECT_WITHOUT_SOURCE_PATH
-        "paging"                             | td      | 10    | 10     | []                      | null                                                       | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_PAGING
-        "sortBy"                             | td      | 0     | 0      | [SortKey.of("created")] | null                                                       | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY
+        casename                             | deriver | limit | offset | sortBy                  | filter                                                                                                                      | source                                                  || expected
+        "value array"                        | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.VALUE_ARRAY                         || SqlQueryTemplatesFixtures.VALUE_ARRAY
+        "object array"                       | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY
+        "merge"                              | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.MERGE                               || SqlQueryTemplatesFixtures.MERGE
+        "self joins"                         | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.SELF_JOINS                          || SqlQueryTemplatesFixtures.SELF_JOINS
+        "self joins with filters"            | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.SELF_JOINS_FILTER                   || SqlQueryTemplatesFixtures.SELF_JOINS_FILTER
+        "self join with nested duplicate"    | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.SELF_JOIN_NESTED_DUPLICATE          || SqlQueryTemplatesFixtures.SELF_JOIN_NESTED_DUPLICATE
+        "object without sourcePath"          | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || SqlQueryTemplatesFixtures.OBJECT_WITHOUT_SOURCE_PATH
+        "paging"                             | td      | 10    | 10     | []                      | null                                                                                                                        | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_PAGING
+        "sortBy"                             | td      | 0     | 0      | [SortKey.of("created")] | null                                                                                                                        | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY
         "sortBy + filter"                    | td      | 0     | 0      | [SortKey.of("created")] | Eq.of(Property.of("task.title"), ScalarLiteral.of("foo")) | QuerySchemaFixtures.OBJECT_ARRAY || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_FILTER
-        "sortBy + paging"                    | td      | 10    | 10     | [SortKey.of("created")] | null                                                       | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING
-        "sortBy + paging + filter"           | td      | 10    | 10     | [SortKey.of("created")] | Eq.of(Property.of("task.title"), ScalarLiteral.of("foo")) | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING_FILTER
-        "property with multiple sourcePaths" | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || SqlQueryTemplatesFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
-        "nested joins"                       | td      | 0     | 0      | []                      | null                                                       | QuerySchemaFixtures.NESTED_JOINS                        || SqlQueryTemplatesFixtures.NESTED_JOINS
+        "sortBy + paging"                    | td      | 10    | 10     | [SortKey.of("created")] | null                                                                                                                        | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING
+        "sortBy + paging + filter"           | td      | 10    | 10     | [SortKey.of("created")] | And.of(Eq.of(Property.of("task.title"), ScalarLiteral.of("foo")), Eq.of(Property.of("task.href"), ScalarLiteral.of("bar"))) | QuerySchemaFixtures.OBJECT_ARRAY || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING_FILTER
+        "property with multiple sourcePaths" | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || SqlQueryTemplatesFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
+        "nested joins"                       | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.NESTED_JOINS                        || SqlQueryTemplatesFixtures.NESTED_JOINS
     }
 
     static String meta(SqlQueryTemplates templates, List<SortKey> sortBy, Optional<Cql2Expression> userFilter) {
-        return templates.getMetaQueryTemplate().generateMetaQuery(10, 10, 0, sortBy, userFilter, com.google.common.collect.ImmutableMap.of(), false, true)
+        return templates.getMetaQueryTemplate().generateMetaQuery(10, 10, 0, sortBy, userFilter, ImmutableMap.of(), false, true)
     }
 
     static List<String> values(SqlQueryTemplates templates, int limit, int offset, List<SortKey> sortBy, Cql2Expression filter) {
-        return templates.getValueQueryTemplates().collect { it.generateValueQuery(limit, offset, sortBy, Optional.ofNullable(filter), limit == 0 ? Optional.<Tuple<Object, Object>> empty() : Optional.of(Tuple.of(offset, offset + limit - 1)), com.google.common.collect.ImmutableMap.of()) }
+        return templates.getValueQueryTemplates().collect { it.generateValueQuery(limit, offset, sortBy, Optional.ofNullable(filter), limit == 0 ? Optional.<Tuple<Object, Object>> empty() : Optional.of(Tuple.of(offset, offset + limit - 1)), ImmutableMap.of()) }
     }
 
 }
