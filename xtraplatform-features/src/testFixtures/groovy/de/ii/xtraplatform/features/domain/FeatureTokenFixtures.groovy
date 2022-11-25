@@ -62,6 +62,7 @@ class FeatureTokenFixtures {
     public static final SchemaMapping MAPPING = new ImmutableSchemaMapping.Builder()
             .targetSchema(SCHEMA)
             .useTargetPaths(true)
+            .sourcePathTransformer((path, isValue) -> path)
             .build()
 
     public static final List<Object> SINGLE_FEATURE = [
