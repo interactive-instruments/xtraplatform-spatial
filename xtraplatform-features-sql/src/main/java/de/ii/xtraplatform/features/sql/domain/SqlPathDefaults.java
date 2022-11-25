@@ -49,6 +49,13 @@ public interface SqlPathDefaults {
     return "id";
   }
 
+  /**
+   * @langEn The default schema that is applied to tables without prefix in
+   *     [sourcePaths](#path-syntax).
+   * @langDe Das Standard-Schema das Tabellen ohne Präfix in `sourcePath` vorangestellt wird.
+   */
+  Optional<String> getSchema();
+
   @DocIgnore
   Optional<String> getJunctionTablePattern();
 }
