@@ -239,7 +239,9 @@ public class SqlQueryTemplatesDeriver
               mainTableName,
               aliasesNested.get(0),
               mainTableSortKey,
-              where.replace("(A.", "(" + aliasesNested.get(0) + "."),
+              where
+                  .replace("(A.", "(" + aliasesNested.get(0) + ".")
+                  .replace(" A.", " " + aliasesNested.get(0) + "."),
               orderBy,
               pagingClause.get());
 

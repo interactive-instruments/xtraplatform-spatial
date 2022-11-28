@@ -57,6 +57,20 @@ public interface BoundingBox {
         .build();
   }
 
+  static BoundingBox intersect2d(BoundingBox first, BoundingBox second, double buffer) {
+    if (!Objects.equals(first.getEpsgCrs(), second.getEpsgCrs())) {
+      return first;
+    }
+
+    return new ImmutableBoundingBox.Builder()
+        .xmin(Math.max(first.getXmin(), second.getXmin() - buffer))
+        .ymin(Math.max(first.getYmin(), second.getYmin() - buffer))
+        .xmax(Math.min(first.getXmax(), second.getXmax() + buffer))
+        .ymax(Math.min(first.getYmax(), second.getYmax() + buffer))
+        .epsgCrs(first.getEpsgCrs())
+        .build();
+  }
+
   double getXmin();
 
   double getYmin();
