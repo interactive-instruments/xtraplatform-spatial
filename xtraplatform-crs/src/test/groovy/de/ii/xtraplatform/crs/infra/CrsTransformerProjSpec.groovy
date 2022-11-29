@@ -21,6 +21,8 @@ class CrsTransformerProjSpec extends Specification {
     @Shared
     CrsTransformerFactoryProj transformerFactory
 
+    //NOTE: if tests fail after a proj upgrade, you might copy the previous proj data directory
+    // to the location below to find out if the failures result from changes in the code or the data
     def setupSpec() {
         transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
     }
@@ -191,10 +193,10 @@ class CrsTransformerProjSpec extends Specification {
         EpsgCrs.of(5555)  | Units.METRE | ["E", "N", "H"]     | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)] | Optional.of(BoundingBox.of(6.0, 47.27, 12.0, 55.09, OgcCrs.CRS84))
         EpsgCrs.of(5556)  | Units.METRE | ["E", "N", "H"]     | [Units.METRE, Units.METRE, Units.METRE]   | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)] | Optional.of(BoundingBox.of(12.0, 47.46, 15.04, 54.74, OgcCrs.CRS84))
         EpsgCrs.of(4979)  | Units.DEGREE | ["Lat", "Lon", "h"] | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.NORTH, AxisDirection.EAST, AxisDirection.UP] | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)] | Optional.of(BoundingBox.of(-180.0, -90.0, 180.0, 90.0, OgcCrs.CRS84))
-        EpsgCrs.of(25832) | Units.METRE | ["E", "N"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]                                        | Optional.of(BoundingBox.of(6.0, 38.76, 12.0, 84.33, OgcCrs.CRS84))
+        EpsgCrs.of(25832) | Units.METRE | ["E", "N"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]                                        | Optional.of(BoundingBox.of(6.0, 38.76, 12.01, 84.33, OgcCrs.CRS84))
         EpsgCrs.of(4326)  | Units.DEGREE | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]                                        | Optional.of(BoundingBox.of(-180.0, -90.0, 180.0, 90.0, OgcCrs.CRS84))
         EpsgCrs.of(3857)  | Units.METRE | ["X", "Y"]          | [Units.METRE, Units.METRE]                | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.empty() | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]                                        | Optional.of(BoundingBox.of(-180.0, -85.06, 180.0, 85.06, OgcCrs.CRS84))
-        EpsgCrs.of(4269)  | Units.DEGREE | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]                                        | Optional.of(BoundingBox.of(167.65, 14.92, -47.74, 86.46, OgcCrs.CRS84))
+        EpsgCrs.of(4269)  | Units.DEGREE | ["Lat", "Lon"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.NORTH, AxisDirection.EAST]                   | OptionalInt.of(1)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]                                        | Optional.of(BoundingBox.of(167.65, 14.92, -40.73, 86.45, OgcCrs.CRS84))
         OgcCrs.CRS84      | Units.DEGREE | ["Lon", "Lat"]      | [Units.DEGREE, Units.DEGREE]              | [AxisDirection.EAST, AxisDirection.NORTH]                   | OptionalInt.of(0)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)]                                        | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)]                                        | Optional.of(BoundingBox.of(-180.0, -90.0, 180.0, 90.0, OgcCrs.CRS84))
         OgcCrs.CRS84h     | Units.DEGREE | ["Lon", "Lat", "h"] | [Units.DEGREE, Units.DEGREE, Units.METRE] | [AxisDirection.EAST, AxisDirection.NORTH, AxisDirection.UP] | OptionalInt.of(0)   | [Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY), Optional.of(Double.NEGATIVE_INFINITY)] | [Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY), Optional.of(Double.POSITIVE_INFINITY)] | Optional.of(BoundingBox.of(-180.0, -90.0, 180.0, 90.0, OgcCrs.CRS84))
 
@@ -330,8 +332,8 @@ class CrsTransformerProjSpec extends Specification {
     }
 
     static void compareValueInMeter(double val1, double val2) {
-        // compare µm
-        assert Math.abs(val1-val2) < 1e-6;
+        // compare mm
+        assert Math.abs(val1-val2) < 1e-3;
     }
 
     static void compareValueInDegree(double val1, double val2) {
