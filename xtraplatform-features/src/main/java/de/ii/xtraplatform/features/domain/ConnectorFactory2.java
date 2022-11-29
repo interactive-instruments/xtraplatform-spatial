@@ -35,5 +35,5 @@ public interface ConnectorFactory2<T, U, V extends FeatureProviderConnector.Quer
   FeatureProviderConnector<T, U, V> createInstance(
       String providerId, ConnectionInfo connectionInfo);
 
-  void deleteInstance(String id);
+  boolean deleteInstance(String id);
 }

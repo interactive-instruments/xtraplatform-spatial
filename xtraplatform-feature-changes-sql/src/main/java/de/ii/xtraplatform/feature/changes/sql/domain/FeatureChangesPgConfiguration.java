@@ -9,6 +9,7 @@ package de.ii.xtraplatform.feature.changes.sql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
+import io.dropwizard.util.Duration;
 import java.util.List;
 import org.immutables.value.Value;
 
@@ -18,6 +19,11 @@ import org.immutables.value.Value;
 public interface FeatureChangesPgConfiguration extends ExtensionConfiguration {
 
   List<String> getListenForTypes();
+
+  @Value.Default
+  default Duration getPollingInterval() {
+    return Duration.seconds(60);
+  }
 
   abstract class Builder extends ExtensionConfiguration.Builder {}
 

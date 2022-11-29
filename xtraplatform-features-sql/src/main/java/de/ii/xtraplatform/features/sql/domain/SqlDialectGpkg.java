@@ -111,7 +111,11 @@ public class SqlDialectGpkg implements SqlDialect {
   public String applyToInstantMax() {
     return "9999-12-31T23:59:59Z";
   }
-  ;
+
+  @Override
+  public String castToBigInt(int value) {
+    return String.format("CAST(%d AS BIGINT)", value);
+  }
 
   @Override
   public String escapeString(String value) {

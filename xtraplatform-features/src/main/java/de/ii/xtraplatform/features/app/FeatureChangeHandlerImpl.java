@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.features.app;
 
+import de.ii.xtraplatform.features.domain.DatasetChange;
+import de.ii.xtraplatform.features.domain.DatasetChangeListener;
 import de.ii.xtraplatform.features.domain.FeatureChange;
 import de.ii.xtraplatform.features.domain.FeatureChangeHandler;
 import de.ii.xtraplatform.features.domain.FeatureChangeListener;
@@ -15,19 +17,31 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class FeatureChangeHandlerImpl implements FeatureChangeHandler {
 
-  private final List<FeatureChangeListener> listeners;
+  private final List<DatasetChangeListener> datasetListeners;
+  private final List<FeatureChangeListener> featureListeners;
 
   public FeatureChangeHandlerImpl() {
-    this.listeners = new CopyOnWriteArrayList<>();
+    this.datasetListeners = new CopyOnWriteArrayList<>();
+    this.featureListeners = new CopyOnWriteArrayList<>();
+  }
+
+  @Override
+  public void addListener(DatasetChangeListener listener) {
+    datasetListeners.add(listener);
   }
 
   @Override
   public void addListener(FeatureChangeListener listener) {
-    listeners.add(listener);
+    featureListeners.add(listener);
+  }
+
+  @Override
+  public void handle(DatasetChange change) {
+    datasetListeners.forEach(listener -> listener.onDatasetChange(change));
   }
 
   @Override
   public void handle(FeatureChange change) {
-    listeners.forEach(listener -> listener.onFeatureChange(change));
+    featureListeners.forEach(listener -> listener.onFeatureChange(change));
   }
 }

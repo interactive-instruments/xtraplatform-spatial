@@ -349,6 +349,7 @@ public class FeatureProviderSql
         .orElse(1);
   }
 
+  // TODO: move to hydration
   @Override
   protected ConnectionInfo getConnectionInfo() {
     ConnectionInfoSql connectionInfo = (ConnectionInfoSql) super.getConnectionInfo();
@@ -358,7 +359,11 @@ public class FeatureProviderSql
 
       return new ImmutableConnectionInfoSql.Builder()
           .from(connectionInfo)
-          .pool(new ImmutablePoolSettings.Builder().maxConnections(maxConnections).build())
+          .pool(
+              new ImmutablePoolSettings.Builder()
+                  .from(connectionInfo.getPool())
+                  .maxConnections(maxConnections)
+                  .build())
           .build();
     }
 

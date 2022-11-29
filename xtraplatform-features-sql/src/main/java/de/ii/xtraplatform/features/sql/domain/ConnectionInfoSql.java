@@ -139,6 +139,13 @@ public interface ConnectionInfoSql extends ConnectionInfo {
     return Objects.nonNull(getPool()) && getPool().getShared();
   }
 
+  @Override
+  @JsonIgnore
+  @Value.Lazy
+  default String getDatasetIdentifier() {
+    return String.format("%s/%s", getHost().orElse(""), getDatabase());
+  }
+
   /**
    * @langEn *Deprecated* See `pool.maxConnections`.
    * @langDe *Deprecated* Siehe `pool.maxConnections`.
