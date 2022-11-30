@@ -126,6 +126,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     String propertyName = schema.getName();
     Optional<String> label = schema.getLabel();
     Optional<String> description = schema.getDescription();
+    Optional<String> unit = schema.getUnit();
 
     switch (propertyType) {
       case FLOAT:
@@ -134,11 +135,12 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       case BOOLEAN:
       case DATETIME:
       case DATE:
-        valueSchema = getSchemaForLiteralType(propertyType, label, description);
+        valueSchema = getSchemaForLiteralType(propertyType, label, description, unit);
         break;
       case VALUE_ARRAY:
         valueSchema =
-            getSchemaForLiteralType(schema.getValueType().orElse(Type.UNKNOWN), label, description);
+            getSchemaForLiteralType(
+                schema.getValueType().orElse(Type.UNKNOWN), label, description, unit);
         break;
       case GEOMETRY:
         valueSchema = getSchemaForGeometry(schema);
@@ -189,7 +191,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       FeatureSchema schema, Map<String, T> properties, List<String> requiredProperties);
 
   protected abstract T getSchemaForLiteralType(
-      Type type, Optional<String> label, Optional<String> description);
+      Type type, Optional<String> label, Optional<String> description, Optional<String> unit);
 
   protected abstract T getSchemaForGeometry(FeatureSchema schema);
 
