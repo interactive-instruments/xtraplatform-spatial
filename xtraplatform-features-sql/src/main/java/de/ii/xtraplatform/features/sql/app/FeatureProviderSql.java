@@ -36,7 +36,6 @@ import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
-import de.ii.xtraplatform.features.domain.FeatureStorePathParser;
 import de.ii.xtraplatform.features.domain.FeatureStream;
 import de.ii.xtraplatform.features.domain.FeatureStreamImpl;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
@@ -126,8 +125,6 @@ public class FeatureProviderSql
   private FeatureQueryEncoderSql queryTransformer;
   private AggregateStatsReader<SchemaSql> aggregateStatsReader;
   private FeatureMutationsSql featureMutationsSql;
-  private FeatureSchemaSwapperSql schemaSwapperSql;
-  private FeatureStorePathParser pathParser;
   private PathParserSql pathParser2;
   private SqlPathParser pathParser3;
   private SourceSchemaValidator<SchemaSql> sourceSchemaValidator;
@@ -152,17 +149,6 @@ public class FeatureProviderSql
     this.entityRegistry = entityRegistry;
   }
 
-  public static FeatureStorePathParser createPathParser(SqlPathDefaults sqlPathDefaults, Cql cql) {
-    SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder().options(sqlPathDefaults).build();
-    return new FeatureStorePathParserSql(syntax, cql);
-  }
-
-  private static FeatureSchemaSwapperSql createSchemaSwapper(
-      SqlPathDefaults sqlPathDefaults, Cql cql) {
-    SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder().options(sqlPathDefaults).build();
-    return new FeatureSchemaSwapperSql(syntax, cql);
-  }
-
   private static PathParserSql createPathParser2(SqlPathDefaults sqlPathDefaults, Cql cql) {
     SqlPathSyntax syntax = ImmutableSqlPathSyntax.builder().options(sqlPathDefaults).build();
     return new PathParserSql(syntax, cql);
@@ -174,7 +160,6 @@ public class FeatureProviderSql
 
   @Override
   protected boolean onStartup() throws InterruptedException {
-    this.pathParser = createPathParser(getData().getSourcePathDefaults(), cql);
     List<String> validationSchemas =
         getData().getConnectionInfo().getDialect() == Dialect.PGIS
                 && getData().getConnectionInfo().getSchemas().isEmpty()
@@ -287,7 +272,6 @@ public class FeatureProviderSql
                 getData().getNativeCrs().orElse(OgcCrs.CRS84),
                 crsTransformerFactory,
                 getData().getSourcePathDefaults()));
-    this.schemaSwapperSql = createSchemaSwapper(getData().getSourcePathDefaults(), cql);
     this.pathParser2 = createPathParser2(getData().getSourcePathDefaults(), cql);
 
     return true;
@@ -434,6 +418,14 @@ public class FeatureProviderSql
     return Optional.ofNullable(sourceSchemaValidator);
   }
 
+  private String applySourcePathDefaults(String path, boolean isValue) {
+    Optional<String> schemaPrefix = getData().getSourcePathDefaults().getSchema();
+    if (schemaPrefix.isPresent() && !isValue) {
+      return pathParser3.tablePathWithDefaults(path);
+    }
+    return path;
+  }
+
   @Override
   protected FeatureTokenDecoder<
           SqlRow, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
@@ -451,6 +443,7 @@ public class FeatureProviderSql
               featureQuery.getType(),
               new ImmutableSchemaMapping.Builder()
                   .targetSchema(getData().getTypes().get(featureQuery.getType()).accept(withScope))
+                  .sourcePathTransformer(this::applySourcePathDefaults)
                   .build());
 
       List<SchemaSql> schemas =
@@ -756,31 +749,24 @@ public class FeatureProviderSql
           String.format("Feature type '%s' not found.", featureType));
     }
 
-    FeatureSchema migrated = schema.get(); // FeatureSchemaNamePathSwapper.migrate(schema.get());
-
-    // SchemaMapping<FeatureSchema> mapping = new
-    // ImmutableSchemaMappingSql.Builder().targetSchema(migrated)
-    //                                                                              .build();
-
-    // TODO: multiple mappings per path
-    // Multimap<List<String>, FeatureSchema> mapping2 = migrated.accept(new
-    // SchemaToMappingVisitor<>());
-
     List<SchemaSql> sqlSchema =
-        migrated.accept(WITH_SCOPE_MUTATIONS).accept(new MutationSchemaDeriver(pathParser2, null));
+        schema
+            .get()
+            .accept(WITH_SCOPE_MUTATIONS)
+            .accept(new MutationSchemaDeriver(pathParser2, null));
 
     if (sqlSchema.isEmpty()) {
       throw new IllegalStateException(
           "Mutation mapping could not be derived from provider schema.");
     }
 
-    // Multimap<List<String>, SchemaSql> mapping3 = sqlSchema.accept(new
-    // SchemaToMappingVisitor<>());
-
     SchemaSql mutationSchemaSql = sqlSchema.get(0).accept(new MutationSchemaBuilderSql());
 
     SchemaMappingSql mapping4 =
-        new ImmutableSchemaMappingSql.Builder().targetSchema(mutationSchemaSql).build();
+        new ImmutableSchemaMappingSql.Builder()
+            .targetSchema(mutationSchemaSql)
+            .sourcePathTransformer(this::applySourcePathDefaults)
+            .build();
 
     Transformer<FeatureSql, String> featureWriter =
         featureId.isPresent()

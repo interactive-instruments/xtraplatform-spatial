@@ -100,7 +100,10 @@ public class FeatureTokenDecoderGml
             .setMappings(
                 ImmutableMap.of(
                     featureSchema.getName(),
-                    new ImmutableSchemaMapping.Builder().targetSchema(featureSchema).build()))
+                    new ImmutableSchemaMapping.Builder()
+                        .targetSchema(featureSchema)
+                        .sourcePathTransformer((path, isValue) -> path)
+                        .build()))
             .setQuery(featureQuery);
   }
 

@@ -44,13 +44,19 @@ public class MutationSchemaDeriver implements ReverseSchemaDeriver<SchemaSql> {
 
   @Override
   public SchemaSql create(List<String> path, FeatureSchema targetSchema) {
+    List<String> path2 =
+        path.stream()
+            .map(
+                path1 -> !targetSchema.isValue() ? pathParser3.tablePathWithDefaults(path1) : path1)
+            .collect(Collectors.toList());
+
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("OLD {} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path);
+      LOGGER.trace("OLD {} {}", targetSchema.isObject() ? "OBJECT" : "VALUE", path2);
     }
 
     return new Builder()
-        .name(path.get(path.size() - 1))
-        .parentPath(path.subList(0, path.size() - 1))
+        .name(path2.get(path2.size() - 1))
+        .parentPath(path2.subList(0, path2.size() - 1))
         .type(targetSchema.getType())
         .valueType(targetSchema.getValueType())
         .geometryType(targetSchema.getGeometryType())

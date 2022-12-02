@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,14 +25,17 @@ public class SchemaToSourcePathsVisitor<T extends SchemaBase<T>>
 
   static final Splitter SPLITTER = Splitter.on('/').omitEmptyStrings();
 
+  private final BiFunction<String, Boolean, String> sourcePathTransformer;
   private final boolean useTargetPath;
   private int counter;
 
-  public SchemaToSourcePathsVisitor() {
-    this(false);
+  public SchemaToSourcePathsVisitor(BiFunction<String, Boolean, String> sourcePathTransformer) {
+    this(false, sourcePathTransformer);
   }
 
-  public SchemaToSourcePathsVisitor(boolean useTargetPath) {
+  private SchemaToSourcePathsVisitor(
+      boolean useTargetPath, BiFunction<String, Boolean, String> sourcePathTransformer) {
+    this.sourcePathTransformer = sourcePathTransformer;
     this.useTargetPath = useTargetPath;
     this.counter = 0;
   }
@@ -45,7 +49,10 @@ public class SchemaToSourcePathsVisitor<T extends SchemaBase<T>>
             // TODO: static cleanup method in PathParser
             : schema.getEffectiveSourcePaths().stream()
                 .map(
-                    sourcePath -> {
+                    sourcePath1 -> {
+                      String sourcePath =
+                          sourcePathTransformer.apply(sourcePath1, schema.isValue());
+
                       int i = sourcePath.indexOf('{');
 
                       if (i > 0) {

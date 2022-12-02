@@ -15,6 +15,8 @@ import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SchemaToMappingVisitor<T extends SchemaBase<T>>
@@ -22,20 +24,23 @@ public class SchemaToMappingVisitor<T extends SchemaBase<T>>
 
   static final Splitter SPLITTER = Splitter.on('/').omitEmptyStrings();
 
+  private final BiFunction<String, Boolean, String> sourcePathTransformer;
   private final boolean useTargetPath;
 
-  public SchemaToMappingVisitor() {
-    this(false);
+  public SchemaToMappingVisitor(BiFunction<String, Boolean, String> sourcePathTransformer) {
+    this(false, sourcePathTransformer);
   }
 
-  public SchemaToMappingVisitor(boolean useTargetPath) {
+  public SchemaToMappingVisitor(
+      boolean useTargetPath, BiFunction<String, Boolean, String> sourcePathTransformer) {
+    this.sourcePathTransformer = sourcePathTransformer;
     this.useTargetPath = useTargetPath;
   }
 
   @Override
   public Multimap<List<String>, T> visit(
       T schema, List<Multimap<List<String>, T>> visitedProperties) {
-    List<String> path =
+    List<String> path2 =
         useTargetPath
             ? schema.getPath()
             // TODO: static cleanup method in PathParser
@@ -44,6 +49,11 @@ public class SchemaToMappingVisitor<T extends SchemaBase<T>>
                     .getSourcePath()
                     .map(sourcePath -> sourcePath.replaceAll("\\{constant=.*?\\}", ""))
                     .orElse(""));
+
+    List<String> path =
+        path2.stream()
+            .map(path1 -> sourcePathTransformer.apply(path1, schema.isValue()))
+            .collect(Collectors.toList());
 
     return Stream.concat(
             path.isEmpty()
