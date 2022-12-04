@@ -1,0 +1,27 @@
+
+maturity = 'EXPERIMENTAL'
+
+repositories {
+    maven {
+        url "https://ecc-mvn.ams3.digitaloceanspaces.com/releases"
+    }
+}
+
+dependencies {
+    provided project(':xtraplatform-cql')
+    provided project(':xtraplatform-crs')
+    provided project(':xtraplatform-features')
+    provided project(':xtraplatform-geometries')
+    provided project(':xtraplatform-strings')
+
+    embedded (group: 'no.ecc.vectortile', name: 'java-vector-tile', version: '1.3.21') {
+        exclude module: 'jts-core'
+        exclude module: 'jts-io-common'
+    }
+}
+
+moduleInfo {
+    requires = [
+            'java.sql'
+    ]
+}
