@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
- * # WFS Features
+ * # WFS
  *
  * @langEn The specifics of the WFS feature provider.
  * @langDe Hier werden die Besonderheiten des WFS-Feature-Providers beschrieben.
@@ -52,7 +52,7 @@ import org.immutables.value.Value;
  * @ref:example {@link de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp}
  */
 @DocFile(
-    path = "providers",
+    path = "providers/feature",
     name = "wfs.md",
     tables = {
       @DocTable(

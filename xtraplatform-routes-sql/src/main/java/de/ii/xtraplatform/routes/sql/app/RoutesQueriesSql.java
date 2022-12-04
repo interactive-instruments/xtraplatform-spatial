@@ -39,6 +39,11 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @title Routing
+ * @langEn [pgRouting](https://pgrouting.org)
+ * @langDe [pgRouting](https://pgrouting.org)
+ */
 @Singleton
 @AutoBind
 public class RoutesQueriesSql implements FeatureQueriesExtension {

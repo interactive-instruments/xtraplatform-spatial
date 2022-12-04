@@ -63,7 +63,7 @@ import org.immutables.value.Value;
  * @propertyTable:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
  */
 @DocFile(
-    path = "providers",
+    path = "providers/feature",
     name = "README.md",
     tables = {
       @DocTable(
