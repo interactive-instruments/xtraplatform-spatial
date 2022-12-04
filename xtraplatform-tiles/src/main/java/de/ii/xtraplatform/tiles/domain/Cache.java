@@ -14,7 +14,7 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableCache.Builder.class)
-public interface Cache extends WithTmsLevels {
+public interface Cache extends WithTmsLevels, WithLayerTmsLevels {
   enum Type {
     DYNAMIC,
     IMMUTABLE;
@@ -40,4 +40,7 @@ public interface Cache extends WithTmsLevels {
 
   @Override
   Map<String, MinMax> getLevels();
+
+  @Override
+  Map<String, Map<String, MinMax>> getLayerLevels();
 }
