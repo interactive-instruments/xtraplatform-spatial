@@ -40,6 +40,7 @@ import java.nio.file.Path;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -146,11 +147,28 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     this.combinerProviderChain = current;
   }
 
-  // TODO: layer levels
   private Map<String, Map<String, Range<Integer>>> getCacheRanges(Cache cache) {
     return getData().getLayers().entrySet().stream()
-        .map(entry -> new SimpleImmutableEntry<>(entry.getKey(), cache.getTmsRanges()))
+        .map(
+            entry ->
+                new SimpleImmutableEntry<>(
+                    entry.getKey(),
+                    mergeCacheRanges(
+                        cache.getTmsRanges(), cache.getLayerTmsRanges().get(entry.getKey()))))
         .collect(MapStreams.toMap());
+  }
+
+  private Map<String, Range<Integer>> mergeCacheRanges(
+      Map<String, Range<Integer>> defaults, Map<String, Range<Integer>> layer) {
+    if (Objects.isNull(layer)) {
+      return defaults;
+    }
+    Map<String, Range<Integer>> merged = new LinkedHashMap<>();
+
+    merged.putAll(defaults);
+    merged.putAll(layer);
+
+    return merged;
   }
 
   interface MapStreams {
