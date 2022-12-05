@@ -14,6 +14,7 @@ import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
+import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import java.util.Map;
 import java.util.Objects;
 import org.immutables.value.Value;
@@ -46,16 +47,6 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches {
 
   String PROVIDER_SUBTYPE = "FEATURES";
   String ENTITY_SUBTYPE = String.format("%s/%s", PROVIDER_TYPE, PROVIDER_SUBTYPE).toLowerCase();
-
-  /**
-   * @langEn Fixed value, identifies the tile provider type.
-   * @langDe Fester Wert, identifiziert die Tile-Provider-Art.
-   * @default `FEATURES`
-   */
-  @Override
-  default String getTileProviderType() {
-    return PROVIDER_SUBTYPE;
-  }
 
   // TODO: error when using interface
   @Value.Default
@@ -137,5 +128,13 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches {
     return builder.build();
   }
 
-  abstract class Builder implements EntityDataBuilder<TileProviderFeaturesData> {}
+  abstract class Builder extends TileProviderData.Builder<ImmutableTileProviderFeaturesData.Builder>
+      implements EntityDataBuilder<TileProviderData> {
+    @Override
+    public ImmutableTileProviderFeaturesData.Builder fillRequiredFieldsWithPlaceholders() {
+      return this.id(EntityDataDefaults.PLACEHOLDER)
+          .providerType(EntityDataDefaults.PLACEHOLDER)
+          .providerSubType(EntityDataDefaults.PLACEHOLDER);
+    }
+  }
 }

@@ -34,16 +34,19 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
   private final TileStore tileStore;
   private final ChainedTileProvider delegate;
   private final Map<String, Map<String, Range<Integer>>> tmsRanges;
+  private final boolean isSeeded;
 
   public TileCacheDynamic(
       TileWalker tileWalker,
       TileStore tileStore,
       ChainedTileProvider delegate,
-      Map<String, Map<String, Range<Integer>>> tmsRanges) {
+      Map<String, Map<String, Range<Integer>>> tmsRanges,
+      boolean seeded) {
     this.tileWalker = tileWalker;
     this.tileStore = tileStore;
     this.delegate = delegate;
     this.tmsRanges = tmsRanges;
+    this.isSeeded = seeded;
   }
 
   @Override
@@ -84,6 +87,10 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
       String tileSourceLabel,
       TaskContext taskContext)
       throws IOException {
+    if (!isSeeded) {
+      return;
+    }
+
     doSeed(
         layers,
         mediaTypes,
@@ -104,6 +111,9 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
       String tileSourceLabel,
       TaskContext taskContext)
       throws IOException {
+    if (!isSeeded) {
+      return;
+    }
 
     Map<String, Optional<BoundingBox>> boundingBoxes = getBoundingBoxes(layers);
 

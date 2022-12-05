@@ -10,7 +10,6 @@ package de.ii.xtraplatform.tiles.app;
 import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
-import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
 import de.ii.xtraplatform.tiles.domain.TileProviderHttpData;
@@ -26,7 +25,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TileProviderHttp extends AbstractPersistentEntity<TileProviderHttpData>
+public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
     implements TileProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderHttp.class);

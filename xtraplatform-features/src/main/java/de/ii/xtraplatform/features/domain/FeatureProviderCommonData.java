@@ -41,7 +41,7 @@ public interface FeatureProviderCommonData
     public Builder fillRequiredFieldsWithPlaceholders() {
       return this.id(EntityDataDefaults.PLACEHOLDER)
           .providerType(EntityDataDefaults.PLACEHOLDER)
-          .featureProviderType(EntityDataDefaults.PLACEHOLDER);
+          .providerSubType(EntityDataDefaults.PLACEHOLDER);
     }
   }
 }

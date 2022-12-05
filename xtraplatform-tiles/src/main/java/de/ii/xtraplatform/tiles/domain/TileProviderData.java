@@ -15,11 +15,11 @@ import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
-import de.ii.xtraplatform.store.domain.entities.EntityData;
+import de.ii.xtraplatform.features.domain.ProviderData;
+import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.immutables.value.Value;
 
 /**
@@ -48,25 +48,16 @@ import org.immutables.value.Value;
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
     })
-public interface TileProviderData extends EntityData {
+public interface TileProviderData extends ProviderData {
 
   String ENTITY_TYPE = "providers";
   String PROVIDER_TYPE = "TILE";
 
-  @Value.Derived
-  default String getProviderType() {
-    return PROVIDER_TYPE;
-  }
-
-  String getTileProviderType();
-
-  @JsonIgnore
-  @Value.Derived
   @Override
-  default Optional<String> getEntitySubType() {
-    return Optional.of(
-        String.format("%s/%s", getProviderType(), getTileProviderType()).toLowerCase());
-  }
+  String getProviderType();
+
+  @Override
+  String getProviderSubType();
 
   LayerOptionsCommonDefault getLayerDefaults();
 
@@ -89,4 +80,14 @@ public interface TileProviderData extends EntityData {
   }
 
   TileProviderData mergeInto(TileProviderData tileProvider);
+
+  abstract class Builder<T extends TileProviderData.Builder<T>>
+      implements EntityDataBuilder<TileProviderData> {
+
+    public abstract T id(String id);
+
+    public abstract T providerType(String providerType);
+
+    public abstract T providerSubType(String featureProviderType);
+  }
 }

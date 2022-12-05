@@ -11,7 +11,6 @@ import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
-import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
 import de.ii.xtraplatform.tiles.domain.TileProviderMbtilesData;
@@ -28,7 +27,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TileProviderMbTiles extends AbstractPersistentEntity<TileProviderMbtilesData>
+public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtilesData>
     implements TileProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderMbTiles.class);

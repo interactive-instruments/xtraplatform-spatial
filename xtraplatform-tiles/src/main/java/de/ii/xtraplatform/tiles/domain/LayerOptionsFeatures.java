@@ -8,12 +8,14 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
+@JsonDeserialize(builder = ImmutableLayerOptionsFeatures.Builder.class)
 public interface LayerOptionsFeatures extends LayerOptionsCommon, TileGenerationOptions {
   String COMBINE_ALL = "*";
 

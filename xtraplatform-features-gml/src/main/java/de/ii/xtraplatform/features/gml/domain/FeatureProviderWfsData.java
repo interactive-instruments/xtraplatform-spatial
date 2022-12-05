@@ -135,7 +135,7 @@ public interface FeatureProviderWfsData
     public ImmutableFeatureProviderWfsData.Builder fillRequiredFieldsWithPlaceholders() {
       return this.id(EntityDataDefaults.PLACEHOLDER)
           .providerType(EntityDataDefaults.PLACEHOLDER)
-          .featureProviderType(EntityDataDefaults.PLACEHOLDER)
+          .providerSubType(EntityDataDefaults.PLACEHOLDER)
           .connectionInfo(
               new ImmutableConnectionInfoWfsHttp.Builder()
                   .uri(URI.create("http://www.example.com"))

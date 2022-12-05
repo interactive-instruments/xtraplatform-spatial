@@ -9,7 +9,7 @@ package de.ii.xtraplatform.tiles.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.assisted.AssistedFactory;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData;
+import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.store.domain.entities.AbstractEntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
@@ -52,14 +52,13 @@ public class TileProviderHttpFactory
   }
 
   @Override
-  public EntityDataBuilder<TileProviderHttpData> dataBuilder() {
+  public EntityDataBuilder<TileProviderData> dataBuilder() {
     return new ImmutableTileProviderHttpData.Builder();
   }
 
   @Override
   public EntityDataBuilder<? extends EntityData> superDataBuilder() {
-    // TODO
-    return new ImmutableFeatureProviderCommonData.Builder();
+    return new ImmutableProviderCommonData.Builder();
   }
 
   @Override

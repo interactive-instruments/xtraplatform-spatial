@@ -14,6 +14,7 @@ import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
+import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import java.util.Map;
 import java.util.Objects;
 import org.immutables.value.Value;
@@ -51,16 +52,6 @@ public interface TileProviderMbtilesData extends TileProviderData {
   String PROVIDER_SUBTYPE = "MBTILES";
   String ENTITY_SUBTYPE = String.format("%s/%s", PROVIDER_TYPE, PROVIDER_SUBTYPE).toLowerCase();
 
-  /**
-   * @langEn Fixed value, identifies the tile provider type.
-   * @langDe Fester Wert, identifiziert die Tile-Provider-Art.
-   * @default `MBTILES`
-   */
-  @Override
-  default String getTileProviderType() {
-    return PROVIDER_SUBTYPE;
-  }
-
   // TODO: error when using interface
   @Value.Default
   @Override
@@ -87,5 +78,13 @@ public interface TileProviderMbtilesData extends TileProviderData {
     return builder.build();
   }
 
-  abstract class Builder implements EntityDataBuilder<TileProviderMbtilesData> {}
+  abstract class Builder extends TileProviderData.Builder<ImmutableTileProviderMbtilesData.Builder>
+      implements EntityDataBuilder<TileProviderData> {
+    @Override
+    public ImmutableTileProviderMbtilesData.Builder fillRequiredFieldsWithPlaceholders() {
+      return this.id(EntityDataDefaults.PLACEHOLDER)
+          .providerType(EntityDataDefaults.PLACEHOLDER)
+          .providerSubType(EntityDataDefaults.PLACEHOLDER);
+    }
+  }
 }

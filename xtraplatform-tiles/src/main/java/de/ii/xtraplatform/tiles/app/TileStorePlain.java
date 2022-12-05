@@ -27,7 +27,7 @@ import javax.ws.rs.core.MediaType;
 class TileStorePlain implements TileStore {
 
   private static Map<MediaType, String> EXTENSIONS =
-      ImmutableMap.of(FeatureEncoderMVT.FORMAT, "pbf");
+      ImmutableMap.of(FeatureEncoderMVT.FORMAT, "mvt");
 
   private final BlobStore blobStore;
 

@@ -372,7 +372,7 @@ public interface FeatureProviderSqlData
     public ImmutableFeatureProviderSqlData.Builder fillRequiredFieldsWithPlaceholders() {
       return this.id(EntityDataDefaults.PLACEHOLDER)
           .providerType(EntityDataDefaults.PLACEHOLDER)
-          .featureProviderType(EntityDataDefaults.PLACEHOLDER)
+          .providerSubType(EntityDataDefaults.PLACEHOLDER)
           .connectionInfo(
               new ImmutableConnectionInfoSql.Builder()
                   .database(EntityDataDefaults.PLACEHOLDER)

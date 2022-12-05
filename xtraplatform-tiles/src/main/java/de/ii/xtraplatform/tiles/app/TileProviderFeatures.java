@@ -16,7 +16,6 @@ import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.services.domain.TaskContext;
 import de.ii.xtraplatform.store.domain.BlobStore;
-import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.tiles.domain.Cache;
 import de.ii.xtraplatform.tiles.domain.Cache.Storage;
@@ -37,8 +36,10 @@ import de.ii.xtraplatform.tiles.domain.TileSeeding;
 import de.ii.xtraplatform.tiles.domain.TileStore;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -51,7 +52,7 @@ import javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TileProviderFeatures extends AbstractPersistentEntity<TileProviderFeaturesData>
+public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeaturesData>
     implements TileProvider, TileSeeding {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderFeatures.class);
@@ -64,6 +65,7 @@ public class TileProviderFeatures extends AbstractPersistentEntity<TileProviderF
   private final List<TileStore> tileStores;
   private final List<TileCache> generatorCaches;
   private final List<TileCache> combinerCaches;
+  private final BlobStore tilesStore;
 
   @AssistedInject
   public TileProviderFeatures(
@@ -81,7 +83,7 @@ public class TileProviderFeatures extends AbstractPersistentEntity<TileProviderF
     this.generatorCaches = new ArrayList<>();
     this.combinerCaches = new ArrayList<>();
 
-    BlobStore tilesStore = blobStore.with(TILES_DIR_NAME, clean(data.getId()));
+    this.tilesStore = blobStore.with(TILES_DIR_NAME, clean(data.getId()));
     ChainedTileProvider current = tileGenerator;
 
     for (int i = 0; i < data.getCaches().size(); i++) {
@@ -101,7 +103,9 @@ public class TileProviderFeatures extends AbstractPersistentEntity<TileProviderF
 
         tileStores.add(tileStore);
         // TODO: cacheLevels
-        current = new TileCacheDynamic(tileWalker, tileStore, current, getCacheRanges(cache));
+        current =
+            new TileCacheDynamic(
+                tileWalker, tileStore, current, getCacheRanges(cache), cache.getSeeded());
         generatorCaches.add((TileCache) current);
       } else if (cache.getType() == Type.IMMUTABLE) {
         TileStore tileStore =
@@ -128,7 +132,8 @@ public class TileProviderFeatures extends AbstractPersistentEntity<TileProviderF
       if (cache.getType() == Type.DYNAMIC) {
         // TODO: cacheLevels
         current =
-            new TileCacheDynamic(tileWalker, tileStores.get(i), current, getCacheRanges(cache));
+            new TileCacheDynamic(
+                tileWalker, tileStores.get(i), current, getCacheRanges(cache), cache.getSeeded());
         combinerCaches.add((TileCache) current);
       } else if (cache.getType() == Type.IMMUTABLE) {
         // TODO: cacheLevels
@@ -200,6 +205,9 @@ public class TileProviderFeatures extends AbstractPersistentEntity<TileProviderF
 
   @Override
   protected boolean onStartup() throws InterruptedException {
+
+    cleanupCache32();
+
     return super.onStartup();
   }
 
@@ -319,5 +327,51 @@ public class TileProviderFeatures extends AbstractPersistentEntity<TileProviderF
                 getData().getLayers().containsKey(entry.getKey())
                     && getData().getLayers().get(entry.getKey()).isCombined())
         .collect(MapStreams.toMap());
+  }
+
+  @Deprecated(since = "3.3")
+  private void cleanupCache32() {
+    try {
+      List<Path> unknownDirs = getUnknownDirs(tilesStore);
+
+      for (Path unknownDir : unknownDirs) {
+        deleteDir(tilesStore, unknownDir);
+      }
+
+    } catch (IOException e) {
+      // ignore
+    }
+  }
+
+  private List<Path> getUnknownDirs(BlobStore tileStore) throws IOException {
+    try (Stream<Path> paths = tileStore.walk(Path.of(""), 1, (p, a) -> !a.isValue()).skip(1)) {
+      return paths
+          .map(Path::getFileName)
+          .filter(
+              path ->
+                  !Objects.equals(
+                          path.toString(), String.format("cache_%s", Type.DYNAMIC.getSuffix()))
+                      && !Objects.equals(
+                          path.toString(), String.format("cache_%s", Type.IMMUTABLE.getSuffix())))
+          .collect(Collectors.toList());
+    }
+  }
+
+  private void deleteDir(BlobStore blobStore, Path dir) {
+    try (Stream<Path> paths = blobStore.walk(dir, 6, (p, a) -> true)) {
+      paths
+          .sorted(Comparator.reverseOrder())
+          .forEach(
+              path -> {
+                Path path1 = dir.resolve(path);
+                try {
+                  blobStore.delete(path1);
+                } catch (IOException e) {
+                  // ignore
+                }
+              });
+    } catch (IOException e) {
+      // ignore
+    }
   }
 }

@@ -12,7 +12,7 @@ import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData;
+import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.store.domain.entities.AbstractEntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
@@ -67,14 +67,13 @@ public class TileProviderFeaturesFactory
   }
 
   @Override
-  public EntityDataBuilder<TileProviderFeaturesData> dataBuilder() {
+  public EntityDataBuilder<TileProviderData> dataBuilder() {
     return new ImmutableTileProviderFeaturesData.Builder();
   }
 
   @Override
   public EntityDataBuilder<? extends EntityData> superDataBuilder() {
-    // TODO
-    return new ImmutableFeatureProviderCommonData.Builder();
+    return new ImmutableProviderCommonData.Builder();
   }
 
   @Override

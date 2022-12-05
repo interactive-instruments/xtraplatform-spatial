@@ -94,7 +94,7 @@ public abstract class AbstractFeatureProvider<
     this.connector =
         (FeatureProviderConnector<T, U, V>)
             connectorFactory.createConnector(
-                getData().getFeatureProviderType(), connectorId, getConnectionInfo());
+                getData().getProviderSubType(), connectorId, getConnectionInfo());
 
     if (!getConnector().isConnected()) {
       connectorFactory.disposeConnector(connector);

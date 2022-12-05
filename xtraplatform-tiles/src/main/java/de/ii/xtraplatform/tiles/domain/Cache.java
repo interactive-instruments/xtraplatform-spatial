@@ -34,8 +34,8 @@ public interface Cache extends WithTmsLevels, WithLayerTmsLevels {
   Storage getStorage();
 
   @Value.Default
-  default boolean doNotSeed() {
-    return false;
+  default boolean getSeeded() {
+    return true;
   }
 
   @Override
