@@ -41,6 +41,11 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @title Change Listener
+ * @langEn Description
+ * @langDe Beschreibung
+ */
 @Singleton
 @AutoBind
 public class FeatureChangesPgListener implements FeatureQueriesExtension {

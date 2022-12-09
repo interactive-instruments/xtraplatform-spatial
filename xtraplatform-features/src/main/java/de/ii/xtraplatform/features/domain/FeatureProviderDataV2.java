@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -19,7 +20,6 @@ import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
 import de.ii.xtraplatform.store.domain.entities.AutoEntity;
-import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
@@ -63,7 +63,7 @@ import org.immutables.value.Value;
  * @propertyTable:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
  */
 @DocFile(
-    path = "providers",
+    path = "providers/feature",
     name = "README.md",
     tables = {
       @DocTable(
@@ -91,8 +91,8 @@ import org.immutables.value.Value;
         @DocI18n(language = "de", value = "{@body}")
     }
 )*/
-@JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
-public interface FeatureProviderDataV2 extends EntityData, AutoEntity, ExtendableConfiguration {
+// @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
+public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, ExtendableConfiguration {
 
   @Override
   @Value.Derived
@@ -111,15 +111,9 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
    * @langDe `SQL` für ein SQL-DBMS als Datenquelle, `WFS` für einen OGC Web Feature Service als
    *     Datenquelle.
    */
-  String getFeatureProviderType();
-
-  @JsonIgnore
-  @Value.Derived
+  @JsonAlias("featureProviderType")
   @Override
-  default Optional<String> getEntitySubType() {
-    return Optional.of(
-        String.format("%s/%s", getProviderType(), getFeatureProviderType()).toLowerCase());
-  }
+  String getProviderSubType();
 
   /**
    * @langEn Coordinate reference system of geometries in the dataset. The EPSG code of the
@@ -251,7 +245,7 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
 
     public abstract T providerType(String providerType);
 
-    public abstract T featureProviderType(String featureProviderType);
+    public abstract T providerSubType(String featureProviderType);
 
     // jackson should append to instead of replacing extensions
     @JsonIgnore

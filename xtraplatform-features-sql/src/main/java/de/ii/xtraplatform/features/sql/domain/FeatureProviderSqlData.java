@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
- * # SQL Features
+ * # SQL
  *
  * @langEn The specifics of the SQL feature provider.
  * @langDe Hier werden die Besonderheiten des SQL-Feature-Providers beschrieben.
@@ -121,7 +121,7 @@ import org.immutables.value.Value;
  *     de.ii.xtraplatform.features.sql.domain.ImmutableQueryGeneratorSettings}
  */
 @DocFile(
-    path = "providers",
+    path = "providers/feature",
     name = "sql.md",
     tables = {
       @DocTable(
@@ -372,7 +372,7 @@ public interface FeatureProviderSqlData
     public ImmutableFeatureProviderSqlData.Builder fillRequiredFieldsWithPlaceholders() {
       return this.id(EntityDataDefaults.PLACEHOLDER)
           .providerType(EntityDataDefaults.PLACEHOLDER)
-          .featureProviderType(EntityDataDefaults.PLACEHOLDER)
+          .providerSubType(EntityDataDefaults.PLACEHOLDER)
           .connectionInfo(
               new ImmutableConnectionInfoSql.Builder()
                   .database(EntityDataDefaults.PLACEHOLDER)

@@ -20,8 +20,8 @@ import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
@@ -106,7 +106,7 @@ public class FeatureProviderSqlFactory
 
   @Override
   public EntityDataBuilder<? extends EntityData> superDataBuilder() {
-    return new ImmutableFeatureProviderCommonData.Builder();
+    return new ImmutableProviderCommonData.Builder();
   }
 
   @Override
@@ -141,7 +141,7 @@ public class FeatureProviderSqlFactory
       SqlConnector connector =
           (SqlConnector)
               connectorFactory.createConnector(
-                  data.getFeatureProviderType(),
+                  data.getProviderSubType(),
                   data.getId(),
                   getConnectionInfoWith4Connections(data.getConnectionInfo()));
 
