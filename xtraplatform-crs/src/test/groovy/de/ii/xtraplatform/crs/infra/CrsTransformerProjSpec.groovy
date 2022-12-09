@@ -25,6 +25,7 @@ class CrsTransformerProjSpec extends Specification {
     // to the location below to find out if the failures result from changes in the code or the data
     def setupSpec() {
         transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
+        transformerFactory.onStart()
     }
 
     def 'find transformer - #dim (#src, #trgt)'() {
