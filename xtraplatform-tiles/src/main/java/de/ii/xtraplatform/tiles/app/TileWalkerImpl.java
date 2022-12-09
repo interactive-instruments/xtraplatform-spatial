@@ -135,23 +135,7 @@ public class TileWalkerImpl implements TileWalker {
       throws IOException {
     for (Map.Entry<String, Range<Integer>> entry : tmsRanges.entrySet()) {
       TileMatrixSetBase tileMatrixSet = getTileMatrixSetById(entry.getKey());
-      BoundingBox bbox =
-          boundingBox
-              .flatMap(
-                  b ->
-                      Objects.equals(b.getEpsgCrs(), tileMatrixSet.getCrs())
-                          ? Optional.of(b)
-                          : crsTransformerFactory
-                              .getTransformer(b.getEpsgCrs(), tileMatrixSet.getCrs())
-                              .map(
-                                  transformer -> {
-                                    try {
-                                      return transformer.transformBoundingBox(b);
-                                    } catch (CrsTransformationException e) {
-                                      return tileMatrixSet.getBoundingBox();
-                                    }
-                                  }))
-              .orElse(tileMatrixSet.getBoundingBox());
+      BoundingBox bbox = getBbox(boundingBox, tileMatrixSet);
 
       List<? extends TileMatrixSetLimits> allLimits =
           tileMatrixSet.getLimitsList(MinMax.of(entry.getValue()), bbox);
@@ -188,21 +172,7 @@ public class TileWalkerImpl implements TileWalker {
     for (MediaType outputFormat : outputFormats) {
       for (Map.Entry<String, Range<Integer>> entry : tmsRanges.entrySet()) {
         TileMatrixSetBase tileMatrixSet = getTileMatrixSetById(entry.getKey());
-        BoundingBox bbox =
-            boundingBox
-                .flatMap(
-                    b ->
-                        crsTransformerFactory
-                            .getTransformer(b.getEpsgCrs(), tileMatrixSet.getCrs())
-                            .map(
-                                transformer -> {
-                                  try {
-                                    return transformer.transformBoundingBox(b);
-                                  } catch (CrsTransformationException e) {
-                                    return tileMatrixSet.getBoundingBox();
-                                  }
-                                }))
-                .orElse(tileMatrixSet.getBoundingBox());
+        BoundingBox bbox = getBbox(boundingBox, tileMatrixSet);
 
         List<? extends TileMatrixSetLimits> allLimits =
             tileMatrixSet.getLimitsList(MinMax.of(entry.getValue()), bbox);
@@ -225,6 +195,25 @@ public class TileWalkerImpl implements TileWalker {
         }
       }
     }
+  }
+
+  private BoundingBox getBbox(Optional<BoundingBox> boundingBox, TileMatrixSetBase tileMatrixSet) {
+    return boundingBox
+        .flatMap(
+            b ->
+                Objects.equals(b.getEpsgCrs(), tileMatrixSet.getCrs())
+                    ? Optional.of(b)
+                    : crsTransformerFactory
+                        .getTransformer(b.getEpsgCrs(), tileMatrixSet.getCrs())
+                        .map(
+                            transformer -> {
+                              try {
+                                return transformer.transformBoundingBox(b);
+                              } catch (CrsTransformationException e) {
+                                return tileMatrixSet.getBoundingBox();
+                              }
+                            }))
+        .orElse(tileMatrixSet.getBoundingBox());
   }
 
   private TileMatrixSetBase getTileMatrixSetById(String tileMatrixSetId) {
