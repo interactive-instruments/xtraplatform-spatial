@@ -18,6 +18,10 @@ dependencies {
         exclude module: 'jts-core'
         exclude module: 'jts-io-common'
     }
+    //TODO: move to xtraplatform-proj
+    embedded (group: 'tec.units', name: 'unit-ri', version: '1.0.3') {
+        exclude module: 'unit-api'
+    }
 }
 
 moduleInfo {
