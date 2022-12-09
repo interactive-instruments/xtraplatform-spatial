@@ -21,6 +21,7 @@ import de.ii.xtraplatform.tiles.domain.TileWalker;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import javax.inject.Inject;
@@ -138,16 +139,18 @@ public class TileWalkerImpl implements TileWalker {
           boundingBox
               .flatMap(
                   b ->
-                      crsTransformerFactory
-                          .getTransformer(b.getEpsgCrs(), tileMatrixSet.getCrs())
-                          .map(
-                              transformer -> {
-                                try {
-                                  return transformer.transformBoundingBox(b);
-                                } catch (CrsTransformationException e) {
-                                  return tileMatrixSet.getBoundingBox();
-                                }
-                              }))
+                      Objects.equals(b.getEpsgCrs(), tileMatrixSet.getCrs())
+                          ? Optional.of(b)
+                          : crsTransformerFactory
+                              .getTransformer(b.getEpsgCrs(), tileMatrixSet.getCrs())
+                              .map(
+                                  transformer -> {
+                                    try {
+                                      return transformer.transformBoundingBox(b);
+                                    } catch (CrsTransformationException e) {
+                                      return tileMatrixSet.getBoundingBox();
+                                    }
+                                  }))
               .orElse(tileMatrixSet.getBoundingBox());
 
       List<? extends TileMatrixSetLimits> allLimits =
