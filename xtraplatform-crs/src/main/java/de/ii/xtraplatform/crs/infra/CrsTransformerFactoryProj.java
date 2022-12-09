@@ -10,6 +10,7 @@ package de.ii.xtraplatform.crs.infra;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.base.domain.AppLifeCycle;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -59,10 +60,11 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 @AutoBind
-public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo {
+public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo, AppLifeCycle {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CrsTransformerFactoryProj.class);
 
+  private final ProjLoader projLoader;
   private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
   private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
   private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCacheForce2d;
@@ -70,10 +72,14 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
 
   @Inject
   public CrsTransformerFactoryProj(ProjLoader projLoader) {
+    this.projLoader = projLoader;
     this.crsCache = new ConcurrentHashMap<>();
     this.transformerCache = new ConcurrentHashMap<>();
     this.transformerCacheForce2d = new ConcurrentHashMap<>();
+  }
 
+  @Override
+  public void onStart() {
     try {
       projLoader.load();
       // TODO: to projLoader?

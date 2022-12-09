@@ -227,7 +227,7 @@ public class SqlConnectorRx implements SqlConnector {
               "dialect",
               Objects.equals(this.connectionInfo.getDialect(), connectionInfoSql.getDialect()))
           .put(
-              "schema",
+              "schemas",
               Objects.equals(this.connectionInfo.getSchemas(), connectionInfoSql.getSchemas()))
           .put(
               "initFailFast",

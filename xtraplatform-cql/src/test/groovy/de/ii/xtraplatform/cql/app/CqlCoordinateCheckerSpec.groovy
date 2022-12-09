@@ -48,6 +48,7 @@ class CqlCoordinateCheckerSpec extends Specification {
     def setupSpec() {
         cql = new CqlImpl()
         transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
+        transformerFactory.onStart()
         visitor1 = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactory, (CrsInfo) transformerFactory, OgcCrs.CRS84, EpsgCrs.of(5555))
         visitor2 = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactory, (CrsInfo) transformerFactory, OgcCrs.CRS84, OgcCrs.CRS84)
         visitor3 = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactory, (CrsInfo) transformerFactory, EpsgCrs.of(25830), EpsgCrs.of(5555))
