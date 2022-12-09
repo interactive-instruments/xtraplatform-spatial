@@ -14,6 +14,7 @@ import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.spatialite.domain.SpatiaLiteLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,6 +22,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.sql.DataSource;
 import org.postgresql.ds.PGSimpleDataSource;
+import org.sqlite.SQLiteConnection;
 import org.sqlite.SQLiteDataSource;
 
 @Singleton
@@ -78,9 +80,7 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
         return Optional.of(initSql);
       case GPKG:
         return Optional.of(
-            String.format(
-                "SELECT load_extension('%s'); SELECT CASE CheckGeoPackageMetaData() WHEN 1 THEN EnableGpkgMode() END;",
-                spatiaLiteLoader.getExtensionPath()));
+            "SELECT CASE CheckGeoPackageMetaData() WHEN 1 THEN EnableGpkgMode() END;");
     }
 
     return Optional.empty();
@@ -154,8 +154,24 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
       this.spatiaLiteInitialized = true;
     }
 
-    // SpatiaLiteDataSource ds = new SpatiaLiteDataSource(spatiaLiteLoader.getExtensionPath());
-    SQLiteDataSource ds = new SQLiteDataSource();
+    SQLiteDataSource ds =
+        new SQLiteDataSource() {
+          @Override
+          public SQLiteConnection getConnection(String username, String password)
+              throws SQLException {
+            SQLiteConnection connection = super.getConnection(username, password);
+
+            try (var statement = connection.createStatement()) {
+              // connection was created a few milliseconds before, so set query timeout is omitted
+              // (we assume it will succeed)
+              statement.execute(
+                  String.format(
+                      "SELECT load_extension('%s');", spatiaLiteLoader.getExtensionPath()));
+            }
+
+            return connection;
+          }
+        };
 
     ds.setLoadExtension(true);
     ds.setUrl(String.format("jdbc:sqlite:%s", path));
