@@ -20,6 +20,8 @@ import de.ii.xtraplatform.cql.domain.SIntersects;
 import de.ii.xtraplatform.cql.domain.SpatialLiteral;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
+import de.ii.xtraplatform.crs.domain.CrsTransformationException;
+import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
@@ -51,6 +53,7 @@ import de.ii.xtraplatform.tiles.domain.TileResult;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
@@ -79,14 +82,20 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
   private static final double BUFFER_METRE = 10.0;
 
   private final CrsInfo crsInfo;
+  private final CrsTransformerFactory crsTransformerFactory;
   private final EntityRegistry entityRegistry;
   private final TileProviderFeaturesData data;
   private final Cql cql;
 
   public TileGeneratorFeatures(
-      TileProviderFeaturesData data, CrsInfo crsInfo, EntityRegistry entityRegistry, Cql cql) {
+      TileProviderFeaturesData data,
+      CrsInfo crsInfo,
+      CrsTransformerFactory crsTransformerFactory,
+      EntityRegistry entityRegistry,
+      Cql cql) {
     this.data = data;
     this.crsInfo = crsInfo;
+    this.crsTransformerFactory = crsTransformerFactory;
     this.entityRegistry = entityRegistry;
     this.cql = cql;
   }
@@ -181,12 +190,33 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
             layer,
             types,
             nativeCrs,
-            tileQuery
-                .getGenerationParameters()
-                .flatMap(TileGenerationParameters::getClipBoundingBox),
+            getBounds(tileQuery),
             tileQuery.getGenerationParametersTransient());
 
     return featureProvider.queries().getFeatureStream(featureQuery);
+  }
+
+  private Optional<BoundingBox> getBounds(TileQuery tileQuery) {
+    return tileQuery
+        .getGenerationParameters()
+        .flatMap(TileGenerationParameters::getClipBoundingBox)
+        .flatMap(
+            clipBoundingBox ->
+                Objects.equals(
+                        tileQuery.getBoundingBox().getEpsgCrs(), clipBoundingBox.getEpsgCrs())
+                    ? Optional.of(clipBoundingBox)
+                    : crsTransformerFactory
+                        .getTransformer(
+                            clipBoundingBox.getEpsgCrs(), tileQuery.getBoundingBox().getEpsgCrs())
+                        .map(
+                            transformer -> {
+                              try {
+                                return transformer.transformBoundingBox(clipBoundingBox);
+                              } catch (CrsTransformationException e) {
+                                // ignore
+                                return clipBoundingBox;
+                              }
+                            }));
   }
 
   private ResultReduced<byte[]> generateTile(

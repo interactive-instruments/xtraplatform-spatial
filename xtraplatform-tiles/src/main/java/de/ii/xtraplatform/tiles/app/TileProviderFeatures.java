@@ -14,6 +14,7 @@ import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
+import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.services.domain.TaskContext;
 import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
@@ -71,6 +72,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   @AssistedInject
   public TileProviderFeatures(
       CrsInfo crsInfo,
+      CrsTransformerFactory crsTransformerFactory,
       EntityRegistry entityRegistry,
       AppContext appContext,
       Cql cql,
@@ -79,7 +81,8 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       @Assisted TileProviderFeaturesData data) {
     super(data);
 
-    this.tileGenerator = new TileGeneratorFeatures(data, crsInfo, entityRegistry, cql);
+    this.tileGenerator =
+        new TileGeneratorFeatures(data, crsInfo, crsTransformerFactory, entityRegistry, cql);
     this.tileStores = new ArrayList<>();
     this.generatorCaches = new ArrayList<>();
     this.combinerCaches = new ArrayList<>();
