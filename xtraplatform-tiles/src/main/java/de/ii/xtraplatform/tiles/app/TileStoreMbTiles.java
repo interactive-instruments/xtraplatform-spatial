@@ -307,7 +307,7 @@ public class TileStoreMbTiles implements TileStore {
       List<VectorLayer> vectorLayers)
       throws IOException {
     Path relPath = Path.of(layer).resolve(tileMatrixSet + MBTILES_SUFFIX);
-    Optional<Path> filePath = rootStore.path(relPath, true);
+    Optional<Path> filePath = rootStore.asLocalPath(relPath, true);
 
     if (filePath.isEmpty()) {
       throw new IllegalStateException(
