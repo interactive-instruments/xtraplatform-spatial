@@ -65,9 +65,9 @@ public interface ConnectionInfoSql extends ConnectionInfo {
 
   /**
    * @langEn The name of the database. For `GPKG` the file path, either absolute or relative to the
-   *     [data folder](../application/30-data-folder.md).
+   *     [data folder](../../application/30-data-folder.md).
    * @langDe Der Name der Datenbank. Für `GPKG` der Pfad zur Datei, entweder absolut oder relativ
-   *     zum [Daten-Verzeichnis](../application/30-data-folder.md).
+   *     zum [Daten-Verzeichnis](../../application/30-data-folder.md).
    */
   String getDatabase();
 

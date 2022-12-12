@@ -217,18 +217,18 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
 
   /**
    * @langEn Optional transformations for the property, see
-   *     [transformations](details/transformations.md).
+   *     [transformations](../details/transformations.md).
    * @langDe Optionale Transformationen für die Eigenschaft, siehe
-   *     [Transformationen](details/transformations.md).
+   *     [Transformationen](../details/transformations.md).
    * @default []
    */
   List<PropertyTransformation> getTransformations();
 
   /**
    * @langEn Optional description of schema constraints, especially for JSON schema generation. See
-   *     [Constraints](details/constraints.md).
+   *     [Constraints](../details/constraints.md).
    * @langDe Optionale Beschreibung von Schema-Einschränkungen, vor allem für die Erzeugung von
-   *     JSON-Schemas. Siehe [Constraints](details/constraints.md).
+   *     JSON-Schemas. Siehe [Constraints](../details/constraints.md).
    * @default `{}`
    */
   @Override

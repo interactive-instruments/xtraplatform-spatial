@@ -177,15 +177,15 @@ public interface PropertyTransformation
   Optional<String> getDateFormat();
 
   /**
-   * @langEn Maps the value according to the given [codelist](../../codelists/README.md). If the
-   *     value is not found in the codelist or the codelist does not exist, the original value is
-   *     passed through. Falls der Wert nicht in der Codelist enthalten ist oder die Codelist nicht
-   *     gefunden wird, bleibt der Wert unverändert. Not applicable for properties containing
+   * @langEn Maps the value according to the given [codelist](../../auxiliaries/codelists.md). If
+   *     the value is not found in the codelist or the codelist does not exist, the original value
+   *     is passed through. Falls der Wert nicht in der Codelist enthalten ist oder die Codelist
+   *     nicht gefunden wird, bleibt der Wert unverändert. Not applicable for properties containing
    *     objects.
-   * @langDe Bildet den Wert anhand der genannten [Codelist](../../codelists/README.md) ab. Falls
-   *     der Wert nicht in der Codelist enthalten ist oder die Codelist nicht gefunden wird, bleibt
-   *     der Wert unverändert. Diese Transformation ist nicht bei objektwertigen Eigenschaften
-   *     anwendbar.
+   * @langDe Bildet den Wert anhand der genannten [Codelist](../../auxiliaries/codelists.md) ab.
+   *     Falls der Wert nicht in der Codelist enthalten ist oder die Codelist nicht gefunden wird,
+   *     bleibt der Wert unverändert. Diese Transformation ist nicht bei objektwertigen
+   *     Eigenschaften anwendbar.
    */
   Optional<String> getCodelist();
 
