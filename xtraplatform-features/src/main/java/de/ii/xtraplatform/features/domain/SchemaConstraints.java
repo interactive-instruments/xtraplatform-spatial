@@ -123,8 +123,8 @@ public interface SchemaConstraints {
 
   /**
    * @langEn TODO
-   * @langDe Identifiziert eine [Codelist](../../codelists/README.md), die für die Eigenschaft gilt.
-   *     Nur bei String- oder Integer-Eigenschaften sinnvoll.
+   * @langDe Identifiziert eine [Codelist](../../auxiliaries/codelists.md), die für die Eigenschaft
+   *     gilt. Nur bei String- oder Integer-Eigenschaften sinnvoll.
    */
   Optional<String> getCodelist();
 
