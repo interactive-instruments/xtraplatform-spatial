@@ -36,11 +36,13 @@ import de.ii.xtraplatform.cql.domain.Geometry.MultiPolygon;
 import de.ii.xtraplatform.cql.domain.Geometry.Point;
 import de.ii.xtraplatform.cql.domain.Geometry.Polygon;
 import de.ii.xtraplatform.cql.domain.Gt;
+import de.ii.xtraplatform.cql.domain.Gte;
 import de.ii.xtraplatform.cql.domain.In;
 import de.ii.xtraplatform.cql.domain.IsNull;
 import de.ii.xtraplatform.cql.domain.Like;
 import de.ii.xtraplatform.cql.domain.LogicalOperation;
 import de.ii.xtraplatform.cql.domain.Lt;
+import de.ii.xtraplatform.cql.domain.Lte;
 import de.ii.xtraplatform.cql.domain.Not;
 import de.ii.xtraplatform.cql.domain.Or;
 import de.ii.xtraplatform.cql.domain.Property;
@@ -201,6 +203,26 @@ public class FilterEncoderWfs {
                   new FesPropertyIsGreaterThan(
                       (FesLiteral) children.get(0),
                       ((FesTemporalLiteral) children.get(1)).toInstantLiteral()),
+                  new FesNot(
+                      ImmutableList.of(new FesPropertyIsNull((FesLiteral) children.get(0))))));
+        } else if (scalarOperation instanceof Lte) {
+          return new FesAnd(
+              ImmutableList.of(
+                  new FesNot(
+                      ImmutableList.of(
+                          new FesPropertyIsGreaterThan(
+                              (FesLiteral) children.get(0),
+                              ((FesTemporalLiteral) children.get(1)).toInstantLiteral()))),
+                  new FesNot(
+                      ImmutableList.of(new FesPropertyIsNull((FesLiteral) children.get(0))))));
+        } else if (scalarOperation instanceof Gte) {
+          return new FesAnd(
+              ImmutableList.of(
+                  new FesNot(
+                      ImmutableList.of(
+                          new FesPropertyIsLessThan(
+                              (FesLiteral) children.get(0),
+                              ((FesTemporalLiteral) children.get(1)).toInstantLiteral()))),
                   new FesNot(
                       ImmutableList.of(new FesPropertyIsNull((FesLiteral) children.get(0))))));
         }
