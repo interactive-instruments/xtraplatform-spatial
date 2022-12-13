@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,7 +65,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   private final TileEncoders tileEncoders;
   private final ChainedTileProvider generatorProviderChain;
   private final ChainedTileProvider combinerProviderChain;
-  private final List<TileStore> tileStores;
+  private final Map<Type, Map<Storage, TileStore>> tileStores;
   private final List<TileCache> generatorCaches;
   private final List<TileCache> combinerCaches;
   private final BlobStore tilesStore;
@@ -83,7 +84,13 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     this.tileGenerator =
         new TileGeneratorFeatures(data, crsInfo, crsTransformerFactory, entityRegistry, cql);
-    this.tileStores = new ArrayList<>();
+    this.tileStores =
+        new ConcurrentHashMap<>(
+            Map.of(
+                Type.DYNAMIC,
+                new ConcurrentHashMap<>(),
+                Type.IMMUTABLE,
+                new ConcurrentHashMap<>()));
     this.generatorCaches = new ArrayList<>();
     this.combinerCaches = new ArrayList<>();
 
@@ -92,34 +99,16 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     for (int i = 0; i < data.getCaches().size(); i++) {
       Cache cache = data.getCaches().get(i);
-      // TODO: stay backwards compatible? or move to new dir? or cleanup old in routine?
       BlobStore cacheStore =
-          /*data.getCaches().size() == 1 && cache.getType() == Type.DYNAMIC
-          ? tilesStore
-          :*/ tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
+          tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
+      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getLayers());
 
       if (cache.getType() == Type.DYNAMIC) {
-        TileStore tileStore =
-            cache.getStorage() == Storage.MBTILES
-                ? TileStoreMbTiles.readWrite(
-                    cacheStore, data.getId(), getTileSchemas(tileGenerator, data.getLayers()))
-                : new TileStorePlain(cacheStore);
-
-        tileStores.add(tileStore);
-        // TODO: cacheLevels
         current =
             new TileCacheDynamic(
                 tileWalker, tileStore, current, getCacheRanges(cache), cache.getSeeded());
         generatorCaches.add((TileCache) current);
       } else if (cache.getType() == Type.IMMUTABLE) {
-        TileStore tileStore =
-            new TileStoreMulti(
-                cacheStore,
-                cache.getStorage(),
-                data.getId(),
-                getTileSchemas(tileGenerator, data.getLayers()));
-        tileStores.add(tileStore);
-        // TODO: cacheLevels
         current = new TileCacheImmutable(tileWalker, tileStore, current, getCacheRanges(cache));
         generatorCaches.add((TileCache) current);
       }
@@ -132,22 +121,41 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     for (int i = 0; i < data.getCaches().size(); i++) {
       Cache cache = data.getCaches().get(i);
+      BlobStore cacheStore =
+          tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
+      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getLayers());
 
       if (cache.getType() == Type.DYNAMIC) {
-        // TODO: cacheLevels
         current =
             new TileCacheDynamic(
-                tileWalker, tileStores.get(i), current, getCacheRanges(cache), cache.getSeeded());
+                tileWalker, tileStore, current, getCacheRanges(cache), cache.getSeeded());
         combinerCaches.add((TileCache) current);
       } else if (cache.getType() == Type.IMMUTABLE) {
-        // TODO: cacheLevels
-        current =
-            new TileCacheImmutable(tileWalker, tileStores.get(i), current, getCacheRanges(cache));
+        current = new TileCacheImmutable(tileWalker, tileStore, current, getCacheRanges(cache));
         combinerCaches.add((TileCache) current);
       }
     }
 
     this.combinerProviderChain = current;
+  }
+
+  private TileStore getTileStore(
+      Cache cache, BlobStore cacheStore, String id, Map<String, LayerOptionsFeatures> layers) {
+    return tileStores
+        .get(cache.getType())
+        .computeIfAbsent(
+            cache.getStorage(),
+            storage -> {
+              if (cache.getType() == Type.IMMUTABLE) {
+                return new TileStoreMulti(
+                    cacheStore, cache.getStorage(), id, getTileSchemas(tileGenerator, layers));
+              }
+
+              return storage == Storage.MBTILES
+                  ? TileStoreMbTiles.readWrite(
+                      cacheStore, id, getTileSchemas(tileGenerator, layers))
+                  : new TileStorePlain(cacheStore);
+            });
   }
 
   private Map<String, Map<String, Range<Integer>>> getCacheRanges(Cache cache) {
@@ -255,7 +263,10 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   @Override
   public void deleteFromCache(
       String layer, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits) {
-    for (TileStore cache : tileStores) {
+    for (TileStore cache :
+        tileStores.values().stream()
+            .flatMap(m -> m.values().stream())
+            .collect(Collectors.toList())) {
       try {
         cache.delete(layer, tileMatrixSet, limits, false);
       } catch (IOException e) {
