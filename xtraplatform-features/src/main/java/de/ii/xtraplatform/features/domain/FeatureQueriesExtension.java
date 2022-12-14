@@ -82,7 +82,7 @@ import java.util.function.BiConsumer;
                   + "{@scopeEn |||}\n\n"
                   + "## Configuration\n\n"
                   + "{@docTable:properties ### Options\n\n||| This extension has no configuration options.}\n\n"
-                  + "{@docVar:example ### Example\n\n||| foo}\n"),
+                  + "{@docVar:example ### Example\n\n|||}\n"),
       @DocI18n(
           language = "de",
           value =
@@ -110,7 +110,7 @@ import java.util.function.BiConsumer;
           name = "example",
           value = {
             @DocStep(type = Step.TAG_REFS, params = "{@ref:example}"),
-            @DocStep(type = Step.TAG, params = "{@example}")
+            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
           })
     })
 @AutoMultiBind

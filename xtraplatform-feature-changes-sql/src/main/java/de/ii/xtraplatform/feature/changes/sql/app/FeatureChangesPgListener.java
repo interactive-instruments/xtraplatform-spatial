@@ -53,9 +53,16 @@ import org.slf4j.LoggerFactory;
  *     <p>You do not need this extension when changes are only made via
  *     [CRUD](../../../services/building-blocks/crud.md) or when a new iteration of the database is
  *     used after external updates.
- * @scopeDe TODO
+ * @scopeDe Diese Erweiterung ist hilfreich falls inkrementelle Änderungen an der Datenbank durch
+ *     andere Anwendungen vorgenommen werden. Wenn eine für einen Feature-Type relevante Änderung
+ *     stattfindet, werden registrierte Aktionen ausgelöst, z.B. die Aktualisierung des
+ *     Spatial-Extents oder Feature-Counts einer API.
+ *     <p>Diese Erweiterung wird nicht benötigt, wenn Änderungen nur via
+ *     [CRUD](../../../services/building-blocks/crud.md) vorgenommen werden oder wenn nach externen
+ *     Updates eine neue Iteration der Datenbank verwendet wird.
  * @ref:propertyTable {@link
  *     de.ii.xtraplatform.feature.changes.sql.domain.ImmutableFeatureChangesPgConfiguration}
+ * @ref:example {@link de.ii.xtraplatform.feature.changes.sql.domain.FeatureChangesPgConfiguration}
  */
 @Singleton
 @AutoBind
@@ -152,11 +159,11 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
       statement.execute(listen);
 
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Subscribed to feature changes for {}", subscription.getChannel());
+        LOGGER.debug("Subscribed to feature changes for {}", subscription.getLabel());
       }
     } catch (SQLException e) {
       LogContext.error(
-          LOGGER, e, "Could not subscribe to feature changes for {}", subscription.getChannel());
+          LOGGER, e, "Could not subscribe to feature changes for {}", subscription.getLabel());
     }
   }
 
@@ -171,7 +178,7 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
   private void poll(
       String provider, FeatureChangeHandler featureChangeHandler, Subscription subscription) {
     if (!subscription.isConnected()) {
-      LOGGER.debug("Lost connection to retrieve feature changes for {}", subscription.getChannel());
+      LOGGER.debug("Lost connection to retrieve feature changes for {}", subscription.getLabel());
       subscriptions.get(provider).remove(subscription.getChannel());
       subscribe(provider, subscription);
 
@@ -214,6 +221,8 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
           }
         });
 
+    final int[] count = {1};
+
     return types.entrySet().stream()
         .filter(type -> includes.isEmpty() || includes.contains(type.getKey()))
         .flatMap(
@@ -224,6 +233,7 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
                             ImmutableSubscription.builder()
                                 .connectionFactory(connectionSupplier)
                                 .notificationPoller(notificationPoller)
+                                .index(count[0]++)
                                 .type(type.getKey())
                                 .table(
                                     sourcePath.substring(

@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.feature.changes.sql.app;
 
+import com.google.common.base.Strings;
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -18,6 +19,8 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 interface Subscription {
+
+  int getIndex();
 
   String getType();
 
@@ -38,8 +41,16 @@ interface Subscription {
   Function<Connection, List<String>> getNotificationPoller();
 
   @Value.Derived
-  default String getChannel() {
+  default String getLabel() {
     return String.format("%s_%s", getType(), getTable());
+  }
+
+  @Value.Derived
+  default String getChannel() {
+    return String.format(
+        "%s_%s",
+        getLabel().substring(0, Math.min(48, getLabel().length())),
+        Strings.padStart(String.valueOf(getIndex()), 3, '0'));
   }
 
   @Value.Lazy

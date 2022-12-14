@@ -41,8 +41,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @title Routing
- * @langEn [pgRouting](https://pgrouting.org)
- * @langDe [pgRouting](https://pgrouting.org)
+ * @langEn Support for [pgRouting](https://pgrouting.org).
+ * @langDe Unterstützung für [pgRouting](https://pgrouting.org).
+ * @ref:propertyTable {@link de.ii.xtraplatform.routes.sql.domain.ImmutableRoutesConfiguration}
+ * @ref:example {@link de.ii.xtraplatform.routes.sql.domain.RoutesConfiguration}
  */
 @Singleton
 @AutoBind

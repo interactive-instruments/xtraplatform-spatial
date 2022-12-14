@@ -13,6 +13,17 @@ import io.dropwizard.util.Duration;
 import java.util.List;
 import org.immutables.value.Value;
 
+/**
+ * @langAll <code>
+ * ```yaml
+ * - type: FEATURE_CHANGES_PG
+ *   enabled: true
+ *   listenForTypes: # optional, default is to listen for all types
+ *   - governmentalservice
+ *   pollingInterval: 30s # optional, default is 60s
+ * ```
+ * </code>
+ */
 @Value.Immutable
 @Value.Style(builder = "new")
 @JsonDeserialize(builder = ImmutableFeatureChangesPgConfiguration.Builder.class)
