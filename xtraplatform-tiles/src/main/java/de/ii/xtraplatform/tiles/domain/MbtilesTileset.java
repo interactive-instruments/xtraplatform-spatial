@@ -368,11 +368,33 @@ public class MbtilesTileset {
     return result;
   }
 
-  public boolean tileExists(TileCoordinates tile) throws SQLException, IOException {
+  @FunctionalInterface
+  public interface Walker {
+    void walk(int level, int row, int col);
+  }
+
+  public void walk(Walker walker) throws SQLException, IOException {
     Connection connection = getConnection(true);
+    String sql = "SELECT zoom_level, tile_row, tile_column FROM tile_map";
+    ResultSet rs = SqlHelper.executeQuery(connection, sql);
+
+    while (rs.next()) {
+      walker.walk(rs.getInt(1), rs.getInt(2), rs.getInt(3));
+    }
+
+    releaseConnection(connection);
+  }
+
+  public boolean tileExists(TileCoordinates tile) throws SQLException, IOException {
     int level = tile.getLevel();
     int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
+
+    return tileExists(level, row, col);
+  }
+
+  public boolean tileExists(int level, int row, int col) throws SQLException, IOException {
+    Connection connection = getConnection(true);
     String sql =
         String.format(
             "SELECT tile_data FROM tiles WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
@@ -380,6 +402,15 @@ public class MbtilesTileset {
     boolean exists = SqlHelper.executeQuery(connection, sql).next();
     releaseConnection(connection);
     return exists;
+  }
+
+  public boolean hasAnyTiles() throws SQLException, IOException {
+    Connection connection = getConnection(true);
+    String sql = "SELECT COUNT(*) FROM tile_blobs";
+    ResultSet resultSet = SqlHelper.executeQuery(connection, sql);
+    long count = resultSet.getLong(1);
+    releaseConnection(connection);
+    return count > 1;
   }
 
   public void writeTile(TileQuery tile, byte[] content) throws SQLException, IOException {
@@ -475,17 +506,26 @@ public class MbtilesTileset {
   }
 
   public void deleteTile(TileQuery tile) throws SQLException, IOException {
-    boolean supportsEmtpyTile = Objects.equals(tile.getMediaType(), FeatureEncoderMVT.FORMAT);
     int level = tile.getLevel();
     int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
-    LOGGER.trace(
-        "Delete tile {}/{}/{}/{} from MBTiles cache {}.",
-        tile.getTileMatrixSet().getId(),
-        level,
-        tile.getRow(),
-        col,
-        tilesetPath);
+    boolean supportsEmtpyTile = Objects.equals(tile.getMediaType(), FeatureEncoderMVT.FORMAT);
+
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace(
+          "Delete tile {}/{}/{}/{} from MBTiles cache {}.",
+          tile.getTileMatrixSet().getId(),
+          level,
+          tile.getRow(),
+          col,
+          tilesetPath);
+    }
+
+    deleteTile(level, row, col, supportsEmtpyTile);
+  }
+
+  public void deleteTile(int level, int row, int col, boolean supportsEmtpyTile)
+      throws SQLException, IOException {
     Connection connection = null;
     boolean aquired = false;
     try {

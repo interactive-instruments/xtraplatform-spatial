@@ -17,4 +17,15 @@ public interface TileStoreReadOnly {
   TileResult get(TileQuery tile) throws IOException;
 
   Optional<Boolean> isEmpty(TileQuery tile) throws IOException;
+
+  boolean isEmpty() throws IOException;
+
+  void walk(Walker walker);
+
+  boolean has(String layer, String tms, int level, int row, int col) throws IOException;
+
+  @FunctionalInterface
+  interface Walker {
+    void walk(String layer, String tms, int level, int row, int col);
+  }
 }

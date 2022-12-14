@@ -86,6 +86,19 @@ public class TileStoreHttp implements TileStoreReadOnly {
     return Optional.empty();
   }
 
+  @Override
+  public boolean isEmpty() throws IOException {
+    return false;
+  }
+
+  @Override
+  public void walk(Walker walker) {}
+
+  @Override
+  public boolean has(String layer, String tms, int level, int row, int col) throws IOException {
+    return false;
+  }
+
   private static String getUrl(TileQuery tile, String template) {
     return StringTemplateFilters.applyTemplate(
         template,

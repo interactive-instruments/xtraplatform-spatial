@@ -192,6 +192,11 @@ public class WfsConnectorHttp implements WfsConnector {
   }
 
   @Override
+  public String getDatasetIdentifier() {
+    return this.connectionInfo.getDatasetIdentifier();
+  }
+
+  @Override
   public InputStream runWfsOperation(final WfsOperation operation) {
     return httpClient.getAsInputStream(wfsRequestEncoder.getAsUrl(operation));
   }
