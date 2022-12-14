@@ -187,6 +187,11 @@ public class SqlConnectorRx implements SqlConnector {
   }
 
   @Override
+  public String getDatasetIdentifier() {
+    return this.connectionInfo.getDatasetIdentifier();
+  }
+
+  @Override
   public Tuple<Boolean, String> canBeSharedWith(
       ConnectionInfo connectionInfo, boolean checkAllParameters) {
     if (!(connectionInfo instanceof ConnectionInfoSql)) {

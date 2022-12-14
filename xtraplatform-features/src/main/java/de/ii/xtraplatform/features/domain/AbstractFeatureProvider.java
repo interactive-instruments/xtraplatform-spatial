@@ -58,6 +58,7 @@ public abstract class AbstractFeatureProvider<
   private Reactive.Runner streamRunner;
   private FeatureProviderConnector<T, U, V> connector;
   private boolean datasetChanged;
+  private String previousDataset;
 
   protected AbstractFeatureProvider(
       ConnectorFactory connectorFactory,
@@ -82,6 +83,10 @@ public abstract class AbstractFeatureProvider<
   protected boolean onStartup() throws InterruptedException {
     this.datasetChanged =
         Objects.nonNull(connector) && !connector.isSameDataset(getConnectionInfo());
+    this.previousDataset =
+        Optional.ofNullable(connector)
+            .map(FeatureProviderConnector::getDatasetIdentifier)
+            .orElse("");
     boolean previousAlive = softClosePrevious(streamRunner, connector);
     boolean isShared = getConnectionInfo().isShared();
     String connectorId = getConnectorId(previousAlive, isShared);
@@ -165,7 +170,10 @@ public abstract class AbstractFeatureProvider<
     LOGGER.info("Feature provider with id '{}' reloaded successfully.{}", getId(), startupInfo);
 
     if (datasetChanged) {
-      LOGGER.debug("Dataset has changed.");
+      LOGGER.info(
+          "Dataset has changed ({} -> {}).",
+          previousDataset,
+          getConnectionInfo().getDatasetIdentifier());
       changeHandler.handle(
           ImmutableDatasetChange.builder().featureTypes(getData().getTypes().keySet()).build());
     }

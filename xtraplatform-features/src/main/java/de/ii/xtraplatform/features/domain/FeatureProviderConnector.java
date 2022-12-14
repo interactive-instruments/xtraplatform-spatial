@@ -50,6 +50,8 @@ public interface FeatureProviderConnector<T, U, V extends FeatureProviderConnect
 
   boolean isSameDataset(ConnectionInfo connectionInfo);
 
+  String getDatasetIdentifier();
+
   default Tuple<Boolean, String> canBeSharedWith(
       ConnectionInfo connectionInfo, boolean checkAllParameters) {
     return Tuple.of(false, null);
