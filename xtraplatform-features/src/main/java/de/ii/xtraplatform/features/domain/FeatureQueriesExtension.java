@@ -21,9 +21,15 @@ import de.ii.xtraplatform.docs.DocVar;
 import java.util.function.BiConsumer;
 
 /**
- * @langEn # Overview
+ * @langEn # Extensions
+ *     <p>Extensions for Feature Providers add support for some uncommon use cases that are not
+ *     covered by the core modules.
+ *     <p>## Overview
  *     <p>{@docTable:overview}
- * @langDe # Overview
+ * @langDe # Erweiterungen
+ *     <p>Erweiterungen für Feature Provider unterstützen eher seltene Anwendungsfälle die nicht
+ *     Teil der Kernfunktionalität sind.
+ *     <p>## Übersicht
  *     <p>{@docTable:overview}
  */
 @DocFile(
@@ -32,8 +38,9 @@ import java.util.function.BiConsumer;
     tables = {
       @DocTable(
           name = "overview",
-          rows = {@DocStep(type = Step.IMPLEMENTATIONS)
-            // @DocStep(type = Step.SORTED, params = "{@sortPriority}")
+          rows = {
+            @DocStep(type = Step.IMPLEMENTATIONS),
+            @DocStep(type = Step.SORTED, params = "{@title}")
           },
           columns = {
             @DocColumn(
@@ -72,10 +79,10 @@ import java.util.function.BiConsumer;
                   + "<SplitBadge type=\"{@module.maturity}\" left=\"impl\" right=\"{@module.maturity}\" vertical=\"super\" />\n\n"
                   + "{@body}\n\n"
                   + "## Scope\n\n"
-                  + "{@scopeEn}\n\n"
+                  + "{@scopeEn |||}\n\n"
                   + "## Configuration\n\n"
                   + "{@docTable:properties ### Options\n\n||| This extension has no configuration options.}\n\n"
-                  + "{@docVar:example ### Example\n\n|||}\n"),
+                  + "{@docVar:example ### Example\n\n||| foo}\n"),
       @DocI18n(
           language = "de",
           value =
@@ -83,7 +90,7 @@ import java.util.function.BiConsumer;
                   + "<SplitBadge type=\"{@module.maturity}\" left=\"impl\" right=\"{@module.maturity}\" vertical=\"super\" />\n\n"
                   + "{@body}\n\n"
                   + "## Umfang\n\n"
-                  + "{@scopeDe}\n\n"
+                  + "{@scopeDe |||}\n\n"
                   + "## Konfiguration\n\n"
                   + "{@docTable:properties ### Optionen\n\n||| Diese Erweiterung hat keine Konfigurationsoptionen.}\n\n"
                   + "{@docVar:example ### Beispiel\n\n|||}\n")
@@ -92,7 +99,7 @@ import java.util.function.BiConsumer;
       @DocTable(
           name = "properties",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:propertyTable}"),
             @DocStep(type = Step.JSON_PROPERTIES),
             @DocStep(type = Step.UNMARKED)
           },
@@ -102,7 +109,7 @@ import java.util.function.BiConsumer;
       @DocVar(
           name = "example",
           value = {
-            @DocStep(type = Step.TAG_REFS, params = "{@example}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:example}"),
             @DocStep(type = Step.TAG, params = "{@example}")
           })
     })

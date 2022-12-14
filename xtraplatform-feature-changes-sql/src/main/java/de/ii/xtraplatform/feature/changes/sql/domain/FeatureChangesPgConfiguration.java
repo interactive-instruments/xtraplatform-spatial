@@ -18,8 +18,22 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableFeatureChangesPgConfiguration.Builder.class)
 public interface FeatureChangesPgConfiguration extends ExtensionConfiguration {
 
+  /**
+   * @langEn List of types that should be observed. An empty list means all types.
+   * @langDe Liste der Typen, die überwacht werden sollen. Eine leere Liste bedeutet alle Typen.
+   * @default []
+   * @since v3.3
+   */
   List<String> getListenForTypes();
 
+  /**
+   * @langEn Since the JDBC driver for PostgreSQL does not support real reactivity, it has to be
+   *     polled for changes with the given interval.
+   * @langDe Da der JDBC-Treiber für PostgreSQL keine richtige Reaktivität unterstützt, müssen
+   *     Änderungen mit dem angegebenen Intervall abgefragt werden.
+   * @default 60s
+   * @since v3.3
+   */
   @Value.Default
   default Duration getPollingInterval() {
     return Duration.seconds(60);

@@ -43,8 +43,19 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @title Change Listener
- * @langEn Description
- * @langDe Beschreibung
+ * @langEn Listens for incremental changes in a PostgreSQL database and triggers feature change
+ *     actions.
+ * @langDe Registriert inkrementelle Änderungen in einer PostgreSQL Datenbank und löst
+ *     Feature-Change-Aktionen aus.
+ * @scopeEn This extension can be useful when the database is changed incrementally by other
+ *     applications. When a change happens that is relevant for a feature type, registered actions
+ *     will be triggered, for example to update the spatial extent or the feature count of an API.
+ *     <p>You do not need this extension when changes are only made via
+ *     [CRUD](../../../services/building-blocks/crud.md) or when a new iteration of the database is
+ *     used after external updates.
+ * @scopeDe TODO
+ * @ref:propertyTable {@link
+ *     de.ii.xtraplatform.feature.changes.sql.domain.ImmutableFeatureChangesPgConfiguration}
  */
 @Singleton
 @AutoBind
@@ -127,9 +138,18 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
     subscriptions.get(provider).put(subscription.getChannel(), subscription);
 
     try (Statement statement = subscription.getConnection().createStatement()) {
-      statement.execute(subscription.getCreateFunction());
-      statement.execute(subscription.getCreateTrigger());
-      statement.execute(subscription.getListen());
+      String createFunction = subscription.getCreateFunction();
+      String createTrigger = subscription.getCreateTrigger();
+      String listen = subscription.getListen();
+
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("Change listener function: \n{}", createFunction);
+        LOGGER.trace("Change listener trigger: \n{}", createTrigger);
+      }
+
+      statement.execute(createFunction);
+      statement.execute(createTrigger);
+      statement.execute(listen);
 
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug("Subscribed to feature changes for {}", subscription.getChannel());
@@ -187,6 +207,13 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
       List<String> includes,
       Supplier<Connection> connectionSupplier,
       Function<Connection, List<String>> notificationPoller) {
+    includes.forEach(
+        include -> {
+          if (!types.containsKey(include)) {
+            LOGGER.warn("Change listener: unknown type '{}' in listenForTypes", include);
+          }
+        });
+
     return types.entrySet().stream()
         .filter(type -> includes.isEmpty() || includes.contains(type.getKey()))
         .flatMap(
@@ -198,7 +225,12 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
                                 .connectionFactory(connectionSupplier)
                                 .notificationPoller(notificationPoller)
                                 .type(type.getKey())
-                                .table(sourcePath.substring(1))
+                                .table(
+                                    sourcePath.substring(
+                                        1,
+                                        sourcePath.contains("{")
+                                            ? sourcePath.indexOf("{")
+                                            : sourcePath.length()))
                                 .idColumn(
                                     type.getValue()
                                         .getIdProperty()
