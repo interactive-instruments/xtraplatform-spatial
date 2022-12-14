@@ -1,4 +1,6 @@
 
+maturity = 'CANDIDATE'
+
 dependencies {
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-features')
