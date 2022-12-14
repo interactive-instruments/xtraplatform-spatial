@@ -31,9 +31,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +50,7 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   private final String tileSetName;
   private final Map<String, Map<String, TileGenerationSchema>> tileSchemas;
   private final List<Tuple<TileStore, BlobStore>> active;
+  private final Map<String, Map<String, List<TileMatrixSetLimits>>> dirty;
   private Tuple<TileStore, BlobStore> staging;
 
   // TODO: how to sync active on non-seeding node in multi-node setup
@@ -62,6 +65,8 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
     this.tileSchemas = tileSchemas;
     this.staging = null;
     this.active = getActive();
+    this.dirty = new ConcurrentHashMap<>();
+    tileSchemas.keySet().forEach(layer -> dirty.put(layer, new ConcurrentHashMap<>()));
   }
 
   private List<Tuple<TileStore, BlobStore>> getActive() {
@@ -121,6 +126,21 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   }
 
   @Override
+  public boolean isEmpty() throws IOException {
+    return false;
+  }
+
+  @Override
+  public void walk(Walker walker) {
+    throw new NotImplementedException();
+  }
+
+  @Override
+  public boolean has(String layer, String tms, int level, int row, int col) throws IOException {
+    throw new NotImplementedException();
+  }
+
+  @Override
   public void put(TileQuery tile, InputStream content) throws IOException {
     if (!inProgress()) {
       throw new IllegalStateException("Writing is only allowed during staging.");
@@ -130,7 +150,7 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
 
   @Override
   public void delete(TileQuery tile) throws IOException {
-    // TODO: deletes not allowed, only by internal cleanup?
+    throw new NotImplementedException();
   }
 
   @Override
@@ -138,6 +158,12 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
       String layer, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits, boolean inverse)
       throws IOException {
     if (!inverse) {
+      if (!dirty.get(layer).containsKey(tileMatrixSet.getId())) {
+        dirty.get(layer).put(tileMatrixSet.getId(), new CopyOnWriteArrayList<>());
+      }
+
+      dirty.get(layer).get(tileMatrixSet.getId()).add(limits);
+
       return;
     }
 
@@ -162,6 +188,22 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
       }
       throw e;
     }
+  }
+
+  @Override
+  public void delete(String layer, String tms, int level, int row, int col) throws IOException {
+    throw new NotImplementedException();
+  }
+
+  @Override
+  public boolean isDirty(TileQuery tile) {
+    return dirty.containsKey(tile.getLayer())
+        && dirty.get(tile.getLayer()).containsKey(tile.getTileMatrixSet().getId())
+        && dirty.get(tile.getLayer()).get(tile.getTileMatrixSet().getId()).stream()
+            .anyMatch(
+                limits ->
+                    Objects.equals(limits.getTileMatrix(), String.valueOf(tile.getLevel()))
+                        && limits.contains(tile.getRow(), tile.getCol()));
   }
 
   @Override
@@ -206,6 +248,12 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
 
       this.active.add(0, staging);
       this.staging = null;
+
+      for (String layer : dirty.keySet()) {
+        for (String tms : dirty.get(layer).keySet()) {
+          dirty.get(layer).get(tms).clear();
+        }
+      }
     }
   }
 
@@ -244,39 +292,45 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   }
 
   private void cleanupDuplicates() {
-    try (Stream<BlobStore> activeLevels = getActiveLevels()) {
-      List<BlobStore> reverseLevels = Lists.reverse(activeLevels.collect(Collectors.toList()));
+    List<Tuple<TileStore, BlobStore>> reverseLevels = Lists.reverse(active);
 
-      for (int i = 0; i < reverseLevels.size() - 1; i++) {
-        List<BlobStore> others = reverseLevels.subList(i + 1, reverseLevels.size());
+    for (int i = 0; i < reverseLevels.size() - 1; i++) {
+      TileStore current = reverseLevels.get(i).first();
+      List<Tuple<TileStore, BlobStore>> others = reverseLevels.subList(i + 1, reverseLevels.size());
 
-        deleteCacheLevelTiles(
-            reverseLevels.get(i),
-            path -> {
-              for (BlobStore level : others) {
-                try {
-                  if (level.has(path)) {
-                    return true;
+      current.walk(
+          ((layer, tms, level, row, col) -> {
+            for (Tuple<TileStore, BlobStore> other : others) {
+              try {
+                if (other.first().has(layer, tms, level, row, col)) {
+                  try {
+                    current.delete(layer, tms, level, row, col);
+                    break;
+                  } catch (IOException e) {
+                    LogContext.errorAsDebug(
+                        LOGGER,
+                        e,
+                        "Could not delete cache level duplicate {} {}/{}/{}/{}.",
+                        layer,
+                        tms,
+                        level,
+                        row,
+                        col);
                   }
-                } catch (IOException e) {
-                  // ignore
                 }
+              } catch (IOException e) {
+                // ignore
               }
-              return false;
-            });
+            }
+          }));
 
-        boolean deleted = deleteCacheLevelIfEmpty(reverseLevels.get(i));
-        if (deleted) {
-          // TODO: remove from active
-        }
+      boolean deleted = deleteCacheLevelIfEmpty(reverseLevels.get(i));
+      if (deleted) {
+        active.remove(reverseLevels.get(i));
       }
-
-    } catch (IOException e) {
-      LogContext.errorAsDebug(LOGGER, e, "Error during cleanup of duplicate tiles.");
     }
   }
 
-  // TODO: works also for MbTiles?
   private void deleteCacheLevel(BlobStore cacheLevel) {
     try (Stream<Path> paths = cacheStore.walk(cacheLevel.getPrefix(), 5, (p, a) -> true)) {
       paths
@@ -297,40 +351,17 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
     }
   }
 
-  // TODO: to Plain? also for MbTiles!
-  private boolean deleteCacheLevelIfEmpty(BlobStore cacheLevel) {
-    try (Stream<Path> paths = cacheStore.walk(cacheLevel.getPrefix(), 5, (p, a) -> a.isValue())) {
-      boolean isEmpty = paths.findAny().isEmpty();
-
-      if (isEmpty) {
-        deleteCacheLevel(cacheLevel);
+  private boolean deleteCacheLevelIfEmpty(Tuple<TileStore, BlobStore> cacheLevel) {
+    try {
+      if (cacheLevel.first().isEmpty()) {
+        deleteCacheLevel(cacheLevel.second());
         return true;
       }
     } catch (IOException e) {
-      // ignore
+
     }
 
     return false;
-  }
-
-  // TODO: to Plain? also for MbTiles!
-  private void deleteCacheLevelTiles(BlobStore cacheLevel, Predicate<Path> when) {
-    try (Stream<Path> paths = cacheLevel.walk(Path.of(""), 5, (p, a) -> a.isValue())) {
-      paths
-          .filter(when)
-          .forEach(
-              path -> {
-                try {
-                  cacheLevel.delete(path);
-                } catch (IOException e) {
-                  LogContext.errorAsDebug(
-                      LOGGER, e, "Could not delete cache level entry {}.", path);
-                }
-              });
-    } catch (IOException e) {
-      LogContext.errorAsDebug(
-          LOGGER, e, "Could not delete cache level tiles {}.", cacheLevel.getPrefix());
-    }
   }
 
   private Stream<BlobStore> getCacheLevels() throws IOException {

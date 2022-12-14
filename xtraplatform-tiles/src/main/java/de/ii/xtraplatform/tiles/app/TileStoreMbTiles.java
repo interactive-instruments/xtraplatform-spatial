@@ -177,6 +177,20 @@ public class TileStoreMbTiles implements TileStore {
   }
 
   @Override
+  public boolean isEmpty() throws IOException {
+    return tileSets.isEmpty()
+        || tileSets.values().stream()
+            .allMatch(
+                mbtilesTileset -> {
+                  try {
+                    return !mbtilesTileset.hasAnyTiles();
+                  } catch (SQLException | IOException e) {
+                    return false;
+                  }
+                });
+  }
+
+  @Override
   public void put(TileQuery tile, InputStream content) throws IOException {
     try {
       synchronized (tileSets) {
@@ -257,6 +271,43 @@ public class TileStoreMbTiles implements TileStore {
           LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
         }
       }
+    }
+  }
+
+  @Override
+  public void walk(Walker walker) {
+    tileSets.forEach(
+        (key, mbtiles) -> {
+          String[] fromKey = fromKey(key);
+          try {
+            mbtiles.walk(
+                (level, row, col) -> {
+                  walker.walk(fromKey[0], fromKey[1], level, row, col);
+                });
+          } catch (SQLException | IOException e) {
+            // ignore
+          }
+        });
+  }
+
+  @Override
+  public boolean has(String layer, String tms, int level, int row, int col) throws IOException {
+    try {
+      return tileSets.containsKey(key(layer, tms))
+          && tileSets.get(key(layer, tms)).tileExists(level, row, col);
+    } catch (SQLException | IOException e) {
+      // ignore
+    }
+    return false;
+  }
+
+  @Override
+  public void delete(String layer, String tms, int level, int row, int col) throws IOException {
+    try {
+      if (tileSets.containsKey(key(layer, tms)))
+        tileSets.get(key(layer, tms)).deleteTile(level, row, col, false);
+    } catch (SQLException | IOException e) {
+      // ignore
     }
   }
 
@@ -342,5 +393,9 @@ public class TileStoreMbTiles implements TileStore {
 
   private static String key(String layer, String tileMatrixSet) {
     return String.join("/", layer, tileMatrixSet);
+  }
+
+  private static String[] fromKey(String key) {
+    return key.split("/");
   }
 }

@@ -22,6 +22,12 @@ public interface TileStore extends TileStoreReadOnly {
       String layer, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits, boolean inverse)
       throws IOException;
 
+  void delete(String layer, String tms, int level, int row, int col) throws IOException;
+
+  default boolean isDirty(TileQuery tile) {
+    return false;
+  }
+
   interface Staging {
 
     boolean inProgress();

@@ -87,7 +87,7 @@ public interface TileCache {
                   "currently processing -> %s, %s/%s/%s/%s, %s",
                   layer, tileMatrixSet.getId(), level, row, col, mediaType));
 
-          if (reseed || !tileStore.has(tile)) {
+          if (reseed || tileStore.isDirty(tile) || !tileStore.has(tile)) {
             TileResult result = delegate.get(tile);
 
             if (shouldCache(tile) && result.isAvailable()) {
