@@ -753,7 +753,7 @@ public class FeatureProviderSql
         schema
             .get()
             .accept(WITH_SCOPE_MUTATIONS)
-            .accept(new MutationSchemaDeriver(pathParser2, null));
+            .accept(new MutationSchemaDeriver(pathParser2, pathParser3));
 
     if (sqlSchema.isEmpty()) {
       throw new IllegalStateException(
