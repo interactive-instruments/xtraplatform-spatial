@@ -9,6 +9,8 @@ package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,7 +18,8 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableLayerOptionsFeatures.Builder.class)
-public interface LayerOptionsFeatures extends LayerOptionsCommon, TileGenerationOptions {
+public interface LayerOptionsFeatures
+    extends LayerOptionsCommon, TileGenerationOptions, Buildable<LayerOptionsFeatures> {
   String COMBINE_ALL = "*";
 
   Optional<String> getFeatureProvider();
@@ -34,4 +37,11 @@ public interface LayerOptionsFeatures extends LayerOptionsCommon, TileGeneration
   }
 
   // TODO: check
+
+  @Override
+  default ImmutableLayerOptionsFeatures.Builder getBuilder() {
+    return new ImmutableLayerOptionsFeatures.Builder().from(this);
+  }
+
+  abstract class Builder implements BuildableBuilder<LayerOptionsFeatures> {}
 }

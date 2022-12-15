@@ -5,6 +5,8 @@
  * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 @Value.Style(deepImmutablesDetection = true, attributeBuilderDetection = true, builder = "new")
+@BuildableMapEncodingEnabled
 package de.ii.xtraplatform.tiles;
 
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import org.immutables.value.Value;

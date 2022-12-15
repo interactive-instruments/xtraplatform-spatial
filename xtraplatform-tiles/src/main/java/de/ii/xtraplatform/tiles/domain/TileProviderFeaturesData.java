@@ -15,7 +15,7 @@ import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
-import java.util.Map;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import java.util.Objects;
 import org.immutables.value.Value;
 
@@ -49,15 +49,12 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches {
   String ENTITY_SUBTYPE = String.format("%s/%s", PROVIDER_TYPE, PROVIDER_SUBTYPE).toLowerCase();
 
   // TODO: error when using interface
-  @Value.Default
   @Override
-  default ImmutableLayerOptionsFeaturesDefault getLayerDefaults() {
-    return new ImmutableLayerOptionsFeaturesDefault.Builder().build();
-  }
+  LayerOptionsFeaturesDefault getLayerDefaults();
 
-  // TODO: Buildable, merge defaults into layers
   @Override
-  Map<String, LayerOptionsFeatures> getLayers();
+  // Map<String, LayerOptionsFeatures> getLayers();
+  BuildableMap<LayerOptionsFeatures, ImmutableLayerOptionsFeatures.Builder> getLayers();
 
   @Override
   default TileProviderData mergeInto(TileProviderData source) {
