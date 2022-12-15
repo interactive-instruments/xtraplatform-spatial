@@ -58,8 +58,7 @@ public interface TileProvider extends PersistentEntity {
           TileResult.error(String.format("Layer '%s' is not supported.", tile.getLayer())));
     }
 
-    Map<String, Range<Integer>> tmsRanges =
-        getData().getLayers().get(tile.getLayer()).getTmsRanges();
+    Map<String, Range<Integer>> tmsRanges = getData().getTmsRanges().get(tile.getLayer());
 
     if (!tmsRanges.containsKey(tile.getTileMatrixSet().getId())) {
       return Optional.of(
