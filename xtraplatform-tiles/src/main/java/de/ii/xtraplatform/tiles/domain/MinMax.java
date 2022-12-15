@@ -9,13 +9,15 @@ package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.Range;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(builder = "new")
 @JsonDeserialize(builder = ImmutableMinMax.Builder.class)
-public interface MinMax {
+public interface MinMax extends Buildable<MinMax> {
 
   static MinMax of(Range<Integer> range) {
     return new ImmutableMinMax.Builder()
@@ -29,4 +31,11 @@ public interface MinMax {
   int getMax();
 
   Optional<Integer> getDefault();
+
+  @Override
+  default ImmutableMinMax.Builder getBuilder() {
+    return new ImmutableMinMax.Builder().from(this);
+  }
+
+  abstract class Builder implements BuildableBuilder<MinMax> {}
 }
