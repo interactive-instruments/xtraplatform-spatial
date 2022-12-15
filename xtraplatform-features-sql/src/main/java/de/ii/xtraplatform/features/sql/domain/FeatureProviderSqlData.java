@@ -384,6 +384,12 @@ public interface FeatureProviderSqlData
   @JsonDeserialize(builder = ImmutableQueryGeneratorSettings.Builder.class)
   interface QueryGeneratorSettings {
 
+    @DocIgnore
+    @Value.Default
+    default int getChunkSize() {
+      return 10000;
+    }
+
     /**
      * @langEn Option to disable computation of the number of selected features for performance
      *     reasons that are returned in `numberMatched`. As a general rule this should be disabled
@@ -394,11 +400,6 @@ public interface FeatureProviderSqlData
      *     deaktivieren.
      * @default true
      */
-    @Value.Default
-    default int getChunkSize() {
-      return 1000;
-    }
-
     @Value.Default
     default boolean getComputeNumberMatched() {
       return true;
