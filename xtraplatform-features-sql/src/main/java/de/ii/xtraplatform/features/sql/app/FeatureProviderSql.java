@@ -469,6 +469,7 @@ public class FeatureProviderSql
                                       .getTypes()
                                       .get(typeQuery.getType())
                                       .accept(WITH_SCOPE_QUERIES))
+                              .sourcePathTransformer(this::applySourcePathDefaults)
                               .build()))
               .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
