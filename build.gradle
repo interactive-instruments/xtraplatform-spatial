@@ -1,5 +1,5 @@
 plugins {
-    id 'de.interactive_instruments.xtraplatform-layer' version '4.4.4'
+    id 'de.interactive_instruments.xtraplatform-layer' version '4.4.5'
     id "com.diffplug.spotless" version "6.7.2" apply false
 }
 
@@ -7,7 +7,7 @@ allprojects {
     group = 'de.interactive_instruments'
 }
 
-version = '6.1.1' + versionSuffix
+version = '6.2.0' + versionSuffix
 
 //TODO
 layer {
@@ -22,7 +22,7 @@ layer {
 }
 
 dependencies {
-    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '5.1.0'
+    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '5.2.0-SNAPSHOT'
     layers group: 'de.interactive_instruments', name: 'xtraplatform-native', version: "2.1.0-${platform}"
 
     modules subprojects
