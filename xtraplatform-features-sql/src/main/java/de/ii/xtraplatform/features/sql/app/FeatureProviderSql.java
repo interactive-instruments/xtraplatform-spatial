@@ -697,7 +697,9 @@ public class FeatureProviderSql
     FeatureSchema migrated = schema.get(); // FeatureSchemaNamePathSwapper.migrate(schema.get());
 
     List<SchemaSql> sqlSchema =
-        migrated.accept(WITH_SCOPE_MUTATIONS).accept(new MutationSchemaDeriver(pathParser2, null));
+        migrated
+            .accept(WITH_SCOPE_MUTATIONS)
+            .accept(new MutationSchemaDeriver(pathParser2, pathParser3));
 
     if (sqlSchema.isEmpty()) {
       throw new IllegalStateException(
