@@ -8,8 +8,6 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
-import de.ii.xtraplatform.tiles.domain.ImmutableMinMax.Builder;
 import java.util.Locale;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -41,7 +39,7 @@ public interface Cache extends WithTmsLevels, WithLayerTmsLevels {
   }
 
   @Override
-  BuildableMap<MinMax, Builder> getLevels();
+  Map<String, MinMax> getLevels();
 
   @Override
   Map<String, Map<String, MinMax>> getLayerLevels();

@@ -9,14 +9,13 @@ package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Range;
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 public interface WithTmsLevels {
-  BuildableMap<MinMax, ImmutableMinMax.Builder> getLevels();
+  Map<String, MinMax> getLevels();
 
   @JsonIgnore
   @Value.Derived
