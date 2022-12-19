@@ -7,4 +7,9 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-public interface LayerOptionsCommonDefault extends WithTmsLevelsMergeable {}
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
+
+public interface WithTmsLevelsMergeable extends WithTmsLevels {
+  @Override
+  BuildableMap<MinMax, ImmutableMinMax.Builder> getLevels();
+}
