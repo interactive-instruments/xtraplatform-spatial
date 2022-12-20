@@ -68,7 +68,7 @@ import org.immutables.value.Value;
           name = "example",
           value = {
             @DocStep(type = Step.TAG_REFS, params = "{@ref:example}"),
-            @DocStep(type = Step.TAG, params = "{@example}")
+            @DocStep(type = Step.TAG, params = "{@examplesAll}")
           })
     })
 @Value.Immutable

@@ -43,7 +43,7 @@ import org.immutables.value.Value;
       @DocTable(
           name = "properties",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
@@ -61,7 +61,6 @@ public interface TileProviderData extends ProviderData {
 
   LayerOptionsCommonDefault getLayerDefaults();
 
-  // TODO: Buildable, merge defaults into layers
   Map<String, ? extends LayerOptionsCommon> getLayers();
 
   @JsonIgnore

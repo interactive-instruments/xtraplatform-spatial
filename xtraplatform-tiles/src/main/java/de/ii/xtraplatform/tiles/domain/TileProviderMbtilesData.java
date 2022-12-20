@@ -31,7 +31,7 @@ import org.immutables.value.Value;
  *     alle anderen Eigenschaften der Tileset-Ressource ergeben sich aus dem Inhalt der
  *     MBTiles-Datei. Unterstützt wird nur das Kachelschema "WebMercatorQuad".
  *     <p>{@docTable:properties}
- * @propertyTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderMbtilesData}
+ * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderMbtilesData}
  */
 @DocFile(
     path = "providers/tile",
@@ -40,7 +40,7 @@ import org.immutables.value.Value;
       @DocTable(
           name = "properties",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
@@ -59,7 +59,6 @@ public interface TileProviderMbtilesData extends TileProviderData {
     return new ImmutableLayerOptionsMbTilesDefault.Builder().build();
   }
 
-  // TODO: Buildable, merge defaults into layers
   @Override
   Map<String, LayerOptionsMbTiles> getLayers();
 

@@ -27,7 +27,7 @@ import org.immutables.value.Value;
  * @langDe Bei diesem Tile-Provider werden die Kacheln im Format Mapbox Vector Tiles aus den von der
  *     API bereitgestellten Features im Gebiet der Kachel abgeleitet.
  *     <p>{@docTable:properties}
- * @propertyTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderFeaturesData}
+ * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderFeaturesData}
  */
 @DocFile(
     path = "providers/tile",
@@ -36,7 +36,7 @@ import org.immutables.value.Value;
       @DocTable(
           name = "properties",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
@@ -48,12 +48,10 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches {
   String PROVIDER_SUBTYPE = "FEATURES";
   String ENTITY_SUBTYPE = String.format("%s/%s", PROVIDER_TYPE, PROVIDER_SUBTYPE).toLowerCase();
 
-  // TODO: error when using interface
   @Override
   LayerOptionsFeaturesDefault getLayerDefaults();
 
   @Override
-  // Map<String, LayerOptionsFeatures> getLayers();
   BuildableMap<LayerOptionsFeatures, ImmutableLayerOptionsFeatures.Builder> getLayers();
 
   @Override

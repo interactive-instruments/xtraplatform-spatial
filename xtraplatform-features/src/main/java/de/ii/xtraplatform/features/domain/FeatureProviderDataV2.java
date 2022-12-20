@@ -59,8 +59,8 @@ import org.immutables.value.Value;
  *     <p>Als Beispiel siehe die
  *     [Provider-Konfiguration](https://github.com/interactive-instruments/ldproxy/blob/master/demo/vineyards/store/entities/providers/vineyards.yml)
  *     der API [Weinlagen in Rheinland-Pfalz](https://demo.ldproxy.net/vineyards).
- * @propertyTable {@link de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData}
- * @propertyTable:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
+ * @ref:cfgProperties {@link de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData}
+ * @ref:cfgProperties:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
  */
 @DocFile(
     path = "providers/feature",
@@ -69,14 +69,14 @@ import org.immutables.value.Value;
       @DocTable(
           name = "properties",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
       @DocTable(
           name = "types",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@propertyTable:types}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties:types}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
@@ -94,6 +94,7 @@ import org.immutables.value.Value;
 // @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
 public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, ExtendableConfiguration {
 
+  /** */
   @Override
   @Value.Derived
   default long getEntitySchemaVersion() {
