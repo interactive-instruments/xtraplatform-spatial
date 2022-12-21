@@ -29,19 +29,26 @@ import org.immutables.value.Value;
  * - [Features](features.md): The tiles are derived from a feature provider.
  * - [MbTiles](mbtiles.md): The tiles are retrieved from one or more MBTiles files.
  * - [HTTP](http.md): The tiles are retrieved via HTTP, e.g. from a TileServer GL instance.
- * </code>
+ *     </code>
+ *     <p>## Configuration
+ *     <p>{@docTable:cfgProperties}
  * @langDe # Tiles
  *     <p>Es werden aktuell drei Arten von Tile-Providern unterstützt:
- *     <p>- `FEATURES`: Die Kacheln werden aus einem Feature-Provider abgeleitet. - `MBTILES`: Die
- *     Kacheln eines Tileset im Kachelschema "WebMercatorQuad" liegen in einem MBTiles-Archiv vor. -
- *     `TILESERVER`: Die Kacheln werden von einer TileServer-GL-Instanz abgerufen.
+ *     <p><code>
+ * - [Features](features.md): Die Kacheln werden aus einem Feature-Provider abgeleitet.
+ * - [MbTiles](mbtiles.md): Die Kacheln liegen in einer oder mehreren MBTiles-Dateien vor.
+ * - [HTTP](http.md): Die Kacheln werden via HTTP abgerufen, z.B. von einer TileServer GL Instanz.
+ *     </code>
+ *     <p>## Konfiguration
+ *     <p>{@docTable:cfgProperties}
+ * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderCommonData}
  */
 @DocFile(
     path = "providers/tile",
     name = "README.md",
     tables = {
       @DocTable(
-          name = "properties",
+          name = "cfgProperties",
           rows = {
             @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
             @DocStep(type = Step.JSON_PROPERTIES)
@@ -53,6 +60,10 @@ public interface TileProviderData extends ProviderData {
   String ENTITY_TYPE = "providers";
   String PROVIDER_TYPE = "TILE";
 
+  /**
+   * @langEn Always `TILE`.
+   * @langDe Immer `TILE`.
+   */
   @Override
   String getProviderType();
 

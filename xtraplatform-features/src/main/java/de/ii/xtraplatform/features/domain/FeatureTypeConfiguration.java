@@ -15,26 +15,24 @@ import java.util.Optional;
 public interface FeatureTypeConfiguration {
 
   /**
-   * @langEn *REQUIRED* API identifier. Allowed characters are (A-Z, a-z), numbers (0-9), underscore
-   *     and hyphen.
-   * @langDe *REQUIRED* Eindeutiger Identifikator der API. Typischerweise identisch mit dem
-   *     Identifikator des Feature-Providers. Erlaubt sind Buchstaben (A-Z, a-z), Ziffern (0-9), der
+   * @langEn Unique identifier, allowed characters are (A-Z, a-z), numbers (0-9), underscore and
+   *     hyphen.
+   * @langDe Eindeutiger Identifikator, erlaubt sind Buchstaben (A-Z, a-z), Ziffern (0-9), der
    *     Unterstrich ("_") und der Bindestrich ("-").
-   * @default
    */
   String getId();
 
   /**
    * @langEn Human readable label.
-   * @langDe Eine Bezeichnung der API, z.B. für die Präsentation zu Nutzern.
-   * @default The `id`
+   * @langDe Menschenlesbare Bezeichnung.
+   * @default {id}
    */
   String getLabel();
 
   /**
    * @langEn Human readable description.
-   * @langDe Eine Beschreibung des Schemaobjekts, z.B. für die Präsentation zu Nutzern.
-   * @default `null`
+   * @langDe Menschenlesbare Beschreibung.
+   * @default ""
    */
   Optional<String> getDescription();
 }

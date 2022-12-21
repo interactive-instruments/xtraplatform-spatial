@@ -34,7 +34,12 @@ import org.immutables.value.Value;
  * @langDe Bei diesem Tile-Provider werden die Kacheln über HTTP bezogen, z.B. von einer
  *     [TileServer-GL](https://github.com/maptiler/tileserver-gl) Instanz.
  *     <p>## Konfiguration
+ *     <p>### Optionen
  *     <p>{@docTable:properties}
+ *     <p>### Layer Defaults
+ *     <p>{@docTable:layerDefaults}
+ *     <p>### Layer
+ *     <p>{@docTable:layer}
  * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderHttpData}
  * @ref:layerDefaultsTable {@link de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsHttpDefault}
  * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsHttp}

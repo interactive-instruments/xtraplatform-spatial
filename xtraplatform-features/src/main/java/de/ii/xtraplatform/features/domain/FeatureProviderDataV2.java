@@ -94,7 +94,7 @@ import org.immutables.value.Value;
 // @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
 public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, ExtendableConfiguration {
 
-  /** */
+  @JsonIgnore
   @Override
   @Value.Derived
   default long getEntitySchemaVersion() {

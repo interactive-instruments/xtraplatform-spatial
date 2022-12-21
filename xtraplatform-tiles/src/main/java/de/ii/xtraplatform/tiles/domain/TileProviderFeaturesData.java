@@ -22,12 +22,28 @@ import org.immutables.value.Value;
 /**
  * # Features
  *
- * @langEn In this tile provider, the tiles in Mapbox Vector Tiles format are derived from the
- *     features provided by the API in the area of the tile.
- * @langDe Bei diesem Tile-Provider werden die Kacheln im Format Mapbox Vector Tiles aus den von der
- *     API bereitgestellten Features im Gebiet der Kachel abgeleitet.
+ * @langEn In this tile provider, the tiles in Mapbox Vector Tiles format are derived from a
+ *     [Feature Provider](../feature/README.md).
+ *     <p>## Configuration
+ *     <p>### Options
  *     <p>{@docTable:properties}
+ *     <p>### Layer Defaults
+ *     <p>{@docTable:layerDefaults}
+ *     <p>### Layer
+ *     <p>{@docTable:layer}
+ * @langDe Bei diesem Tile-Provider werden die Kacheln im Format Mapbox Vector Tiles aus einem
+ *     [Feature Provider](../feature/README.md) abgeleitet.
+ *     <p>## Konfiguration
+ *     <p>### Optionen
+ *     <p>{@docTable:properties}
+ *     <p>### Layer Defaults
+ *     <p>{@docTable:layerDefaults}
+ *     <p>### Layer
+ *     <p>{@docTable:layer}
  * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderFeaturesData}
+ * @ref:layerDefaultsTable {@link
+ *     de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsFeaturesDefault}
+ * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsFeatures}
  */
 @DocFile(
     path = "providers/tile",
@@ -37,6 +53,20 @@ import org.immutables.value.Value;
           name = "properties",
           rows = {
             @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "layerDefaults",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:layerDefaultsTable}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "layer",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:layerTable}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
