@@ -75,7 +75,7 @@ import org.immutables.value.Value;
  * @langDe ## Speicherung
  *     <p>Die Codelisten liegen als YAML-Dateien im ldproxy-Datenverzeichnis unter dem relativen
  *     Pfad `store/entities/codelists/{codelistId}.yml`.
- * @propertyTable {@link de.ii.xtraplatform.codelists.domain.ImmutableCodelistData}
+ * @ref:cfgProperties {@link de.ii.xtraplatform.codelists.domain.ImmutableCodelistData}
  */
 @DocFile(
     path = "auxiliaries",
@@ -84,7 +84,7 @@ import org.immutables.value.Value;
       @DocTable(
           name = "properties",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES)

@@ -20,7 +20,7 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
- * @example <code>
+ * @examplesAll <code>
  * ```yaml
  * connectorType: HTTP
  * version: 2.0.0

@@ -23,12 +23,27 @@ import java.util.function.BiConsumer;
 /**
  * @langEn # Extensions
  *     <p>Extensions for Feature Providers add support for some uncommon use cases that are not
- *     covered by the core modules.
+ *     covered by the core modules. The extensions are classified according to:
+ *     <p><code>
+ * - The state of the **implementation**
+ *   - **mature**: no known limitations regarding generally supported use cases,
+ *     adheres to code quality and testing standards
+ *   - **candidate**: no known limitations regarding generally supported use cases,
+ *      might not adhere to code quality and testing standards
+ *   - **proposal**: stable core functionality, but might have limitations regarding generally
+ *     supported use cases, might not adhere to code quality and testing standards
+ *     </code>
  *     <p>## Overview
  *     <p>{@docTable:overview}
  * @langDe # Erweiterungen
  *     <p>Erweiterungen für Feature Provider unterstützen eher seltene Anwendungsfälle die nicht
- *     Teil der Kernfunktionalität sind.
+ *     Teil der Kernfunktionalität sind. Die Erweiterungen sind klassifiziert nach: - Dem Status der
+ *     **Implementierung** - **mature**: keine Limitierungen bezogen auf allgemein unterstützte
+ *     Anwendungsfälle, hält alle Code-Quality und Testing Standards ein - **candidate**: keine
+ *     Limitierungen bezogen auf allgemein unterstützte Anwendungsfälle, hält eventuell nicht alle
+ *     Code-Quality und Testing Standards ein - **proposal**: stabile Kernfunktionalität, aber kann
+ *     Limitierungen bezogen auf allgemein unterstützte Anwendungsfälle enthalten, hält eventuell
+ *     nicht alle Code-Quality und Testing Standards ein </code>
  *     <p>## Übersicht
  *     <p>{@docTable:overview}
  */

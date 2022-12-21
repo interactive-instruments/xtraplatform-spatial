@@ -26,12 +26,28 @@ import org.immutables.value.Value;
  *     file](https://github.com/mapbox/mbtiles-spec). The tile format and all other properties of
  *     the tileset resource are derived from the contents of the MBTiles file. Only the
  *     "WebMercatorQuad" tiling scheme is supported.
+ *     <p>## Configuration
+ *     <p>### Options
+ *     <p>{@docTable:properties}
+ *     <p>### Layer Defaults
+ *     <p>{@docTable:layerDefaults}
+ *     <p>### Layer
+ *     <p>{@docTable:layer}
  * @langDe Bei diesem Tile-Provider werden die Kacheln über eine
  *     [MBTiles-Datei](https://github.com/mapbox/mbtiles-spec) bereitgestellt. Das Kachelformat und
  *     alle anderen Eigenschaften der Tileset-Ressource ergeben sich aus dem Inhalt der
  *     MBTiles-Datei. Unterstützt wird nur das Kachelschema "WebMercatorQuad".
+ *     <p>## Konfiguration
+ *     <p>### Optionen
  *     <p>{@docTable:properties}
- * @propertyTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderMbtilesData}
+ *     <p>### Layer Defaults
+ *     <p>{@docTable:layerDefaults}
+ *     <p>### Layer
+ *     <p>{@docTable:layer}
+ * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderMbtilesData}
+ * @ref:layerDefaultsTable {@link
+ *     de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsMbTilesDefault}
+ * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsMbTiles}
  */
 @DocFile(
     path = "providers/tile",
@@ -40,7 +56,21 @@ import org.immutables.value.Value;
       @DocTable(
           name = "properties",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "layerDefaults",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:layerDefaultsTable}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "layer",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:layerTable}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
@@ -59,7 +89,6 @@ public interface TileProviderMbtilesData extends TileProviderData {
     return new ImmutableLayerOptionsMbTilesDefault.Builder().build();
   }
 
-  // TODO: Buildable, merge defaults into layers
   @Override
   Map<String, LayerOptionsMbTiles> getLayers();
 

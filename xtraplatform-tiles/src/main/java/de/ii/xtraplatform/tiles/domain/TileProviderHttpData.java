@@ -22,12 +22,27 @@ import org.immutables.value.Value;
 /**
  * # HTTP
  *
- * @langEn With this tile provider, the tiles are obtained from [TileServer-GL
- *     instance](https://github.com/maptiler/tileserver-gl).
- * @langDe Bei diesem Tile-Provider werden die Kacheln über eine
- *     [TileServer-GL-Instanz](https://github.com/maptiler/tileserver-gl) bezogen.
+ * @langEn With this tile provider, the tiles are obtained via HTTP, e.g. from a
+ *     [TileServer-GL](https://github.com/maptiler/tileserver-gl) instance.
+ *     <p>## Configuration
+ *     <p>### Options
  *     <p>{@docTable:properties}
- * @propertyTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderHttpData}
+ *     <p>### Layer Defaults
+ *     <p>{@docTable:layerDefaults}
+ *     <p>### Layer
+ *     <p>{@docTable:layer}
+ * @langDe Bei diesem Tile-Provider werden die Kacheln über HTTP bezogen, z.B. von einer
+ *     [TileServer-GL](https://github.com/maptiler/tileserver-gl) Instanz.
+ *     <p>## Konfiguration
+ *     <p>### Optionen
+ *     <p>{@docTable:properties}
+ *     <p>### Layer Defaults
+ *     <p>{@docTable:layerDefaults}
+ *     <p>### Layer
+ *     <p>{@docTable:layer}
+ * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderHttpData}
+ * @ref:layerDefaultsTable {@link de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsHttpDefault}
+ * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsHttp}
  */
 @DocFile(
     path = "providers/tile",
@@ -36,7 +51,21 @@ import org.immutables.value.Value;
       @DocTable(
           name = "properties",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "layerDefaults",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:layerDefaultsTable}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "layer",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:layerTable}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
@@ -54,7 +83,6 @@ public interface TileProviderHttpData extends TileProviderData {
     return new ImmutableLayerOptionsHttpDefault.Builder().build();
   }
 
-  // TODO: Buildable, merge defaults into layers
   @Override
   Map<String, LayerOptionsHttp> getLayers();
 
