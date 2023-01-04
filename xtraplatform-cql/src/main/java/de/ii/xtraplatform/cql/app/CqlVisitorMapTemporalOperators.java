@@ -218,12 +218,13 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
       type2 = ((TemporalLiteral) temporal2).getType();
     }
 
-    // if one is a property and the other a literal, we assume that both are of the same type
-    if (Objects.isNull(type1) && Objects.nonNull(type2)) {
+    // if one is a property and the other a literal instant, we assume that both are of the same
+    // type
+    if (temporal1 instanceof Property && Objects.nonNull(type2)) {
       if (type2.equals(LocalDate.class) || type2.equals(Instant.class)) {
         type1 = type2;
       }
-    } else if (Objects.nonNull(type1) && Objects.isNull(type2)) {
+    } else if (Objects.nonNull(type1) && temporal2 instanceof Property) {
       if (type1.equals(LocalDate.class) || type1.equals(Instant.class)) {
         type2 = type1;
       }
