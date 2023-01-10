@@ -7,7 +7,7 @@ allprojects {
     group = 'de.interactive_instruments'
 }
 
-version = '6.1.2' + versionSuffix
+version = '6.1.3' + versionSuffix
 
 //TODO
 layer {
@@ -22,7 +22,7 @@ layer {
 }
 
 dependencies {
-    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '5.1.0'
+    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '5.1.1-maintenance-5.1-SNAPSHOT'
     layers group: 'de.interactive_instruments', name: 'xtraplatform-native', version: "2.1.0-${platform}"
 
     modules subprojects
