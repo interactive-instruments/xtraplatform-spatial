@@ -25,6 +25,8 @@ import de.ii.xtraplatform.cql.domain.Eq;
 import de.ii.xtraplatform.cql.domain.Function;
 import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
+import de.ii.xtraplatform.cql.domain.Geometry.LineString;
+import de.ii.xtraplatform.cql.domain.Geometry.Polygon;
 import de.ii.xtraplatform.cql.domain.Gt;
 import de.ii.xtraplatform.cql.domain.Gte;
 import de.ii.xtraplatform.cql.domain.In;
@@ -51,6 +53,7 @@ import de.ii.xtraplatform.cql.domain.TIntersects;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.cql.domain.TemporalOperator;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import java.util.Objects;
 
@@ -171,6 +174,11 @@ public class CqlFilterExamples {
       TDuring.of(
           Property.of("updated"),
           TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")));
+
+  public static final Cql2Expression EXAMPLE_14_Negation =
+      Not.of(TDuring.of(
+          Property.of("updated"),
+          TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z"))));
   public static final CqlFilter EXAMPLE_14_OLD =
       CqlFilter.of(
           TemporalOperation.of(
@@ -183,6 +191,12 @@ public class CqlFilterExamples {
       SWithin.of(
           Property.of("location"),
           SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84)));
+
+  public static final Cql2Expression EXAMPLE_15_RandomCrs =
+      SWithin.of(
+          Property.of("location"),
+          SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, EpsgCrs.of(8888))));
+
   public static final CqlFilter EXAMPLE_15_OLD =
       CqlFilter.of(
           SpatialOperation.of(
@@ -201,6 +215,42 @@ public class CqlFilterExamples {
                       Geometry.Coordinate.of(10.0, -10.0),
                       Geometry.Coordinate.of(10.0, 10.0),
                       Geometry.Coordinate.of(-10.0, -10.0)))));
+
+  public static final Cql2Expression EXAMPLE_16_MultiPolygon =
+      SIntersects.of(
+          Property.of("location"),
+          SpatialLiteral.of(
+              Geometry.MultiPolygon.of(
+                  Polygon.of(OgcCrs.CRS84,
+                  ImmutableList.of(
+                      Geometry.Coordinate.of(-10.0, -10.0),
+                      Geometry.Coordinate.of(10.0, -10.0),
+                      Geometry.Coordinate.of(10.0, 10.0),
+                      Geometry.Coordinate.of(-10.0, -10.0))),
+                  Polygon.of(OgcCrs.CRS84,
+                      ImmutableList.of(
+                          Geometry.Coordinate.of(-15.0, -15.0),
+                          Geometry.Coordinate.of(15.0, -15.0),
+                          Geometry.Coordinate.of(15.0, 15.0),
+                          Geometry.Coordinate.of(-15.0, -15.0)))
+                  )));
+
+  public static final Cql2Expression EXAMPLE_16_MultiLineString =
+      SIntersects.of(
+          Property.of("location"),
+          SpatialLiteral.of(
+              Geometry.MultiLineString.of(
+                  LineString.of(
+                      Geometry.Coordinate.of(-10.0, -10.0),
+                      Geometry.Coordinate.of(10.0, -10.0),
+                      Geometry.Coordinate.of(10.0, 10.0),
+                      Geometry.Coordinate.of(-10.0, -10.0)),
+                  LineString.of(
+                      Geometry.Coordinate.of(-15.0, -15.0),
+                      Geometry.Coordinate.of(15.0, -15.0),
+                      Geometry.Coordinate.of(15.0, 15.0),
+                      Geometry.Coordinate.of(-15.0, -15.0))
+              )));
   public static final CqlFilter EXAMPLE_16_OLD =
       CqlFilter.of(
           SpatialOperation.of(
@@ -508,6 +558,7 @@ public class CqlFilterExamples {
                   ScalarLiteral.of("Basis-DLM"),
                   ScalarLiteral.of("DLM50"))));
 
+
   public static final Cql2Expression EXAMPLE_48 =
       AContains.of(
           Property.of(
@@ -810,6 +861,7 @@ public class CqlFilterExamples {
               "filterValues.measure", ImmutableMap.of("filterValues", EXAMPLE_IN_WITH_FUNCTION)),
           ScalarLiteral.of(1),
           ScalarLiteral.of(5));
+
 
   public static final Cql2Expression EXAMPLE_NESTED_FUNCTION_BETWEEN =
       Between.of(
