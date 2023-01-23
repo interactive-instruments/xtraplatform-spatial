@@ -17,8 +17,7 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
- * @examplesAll
- *     <p><code>
+ * @langAll <code>
  * ```yaml
  * extensions:
  *   - type: ROUTES
