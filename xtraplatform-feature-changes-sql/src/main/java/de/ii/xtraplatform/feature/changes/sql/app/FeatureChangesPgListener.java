@@ -53,8 +53,8 @@ import org.slf4j.LoggerFactory;
  *     <p>You do not need this extension when changes are only made via
  *     [CRUD](../../../services/building-blocks/crud.md) or when a new iteration of the database is
  *     used after external updates.
- * @scopeDe Diese Erweiterung ist hilfreich falls inkrementelle Änderungen an der Datenbank durch
- *     andere Anwendungen vorgenommen werden. Wenn eine für einen Feature-Type relevante Änderung
+ * @scopeDe Diese Erweiterung ist hilfreich, falls inkrementelle Änderungen an der Datenbank durch
+ *     andere Anwendungen vorgenommen werden. Wenn eine für eine Objektart relevante Änderung
  *     stattfindet, werden registrierte Aktionen ausgelöst, z.B. die Aktualisierung des
  *     Spatial-Extents oder Feature-Counts einer API.
  *     <p>Diese Erweiterung wird nicht benötigt, wenn Änderungen nur via

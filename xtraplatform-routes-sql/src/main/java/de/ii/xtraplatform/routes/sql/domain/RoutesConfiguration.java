@@ -17,42 +17,6 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
- * @langEn The routing extension requires that the feature provider includes a feature type that
- *     meets the following conditions:
- *     <p><code>
- * - Each feature is a route segment / edge of the route. The edges are returned in sequence from start to end.
- * - The name of the feature table is "_route_".
- * - The feature type has an INTEGER property `node` that identifies the node at the start of the route segment. The value is either the same as `data/source` (traveling in positive edge direction) or as `data/target` (traveling in negative edge direction).
- * - The feature type has a FLOAT property `cost` that states the cost of the edge in the direction of travel.
- * - The feature type has an OBJECT property `data`.
- * - The `data` object has a INTEGER property `source` with the node identifier at the start of edge.
- * - The `data` object has a INTEGER property `target` with the node identifier at the end of edge.
- * - The `data` object has a FLOAT property `length_m` with the length of the edge in meter.
- * - The `data` object can have a FLOAT property `duration_forward_s` with the duration for traveling the edge in positive direction.
- * - The `data` object can have a FLOAT property `duration_backward_s` with the duration for traveling the edge in negative direction.
- * - The `data` object can have a FLOAT property `maxHeight_m` with the maximum vehicle height in meter for the edge.
- * - The `data` object can have a FLOAT property `maxWeight_m` with the maximum vehicle weight in metric tons for the edge.
- * - The `data` object can have a FLOAT property `maxspeed_forward` with the speed limit on the edge in positive direction.
- * - The `data` object can have a FLOAT property `maxspeed_backward` with the speed limit on the edge in negative direction.
- *     </code>
- * @langDe Die Routing-Erweiterung erfordert, dass der Feature Provider eine Objektart mit den
- *     Eigenschaften definiert:
- *     <p><code>
- * - Jedes Feature ist ein Routensegment / eine Kante der Route. Die Kanten werden der Reihe nach von Anfang bis Ende zurückgegeben.
- * - Der Name der Feature-Tabelle ist "_route_".
- * - Die Objektart hat eine INTEGER-Eigenschaft `node`, die den Knoten am Anfang des Routensegments identifiziert. Der Wert ist entweder gleich `data/source` (Route in positiver Richtung der Kante) oder gleich `data/target` (Route in negativer Richtung der Kante).
- * - Die Objektart hat eine FLOAT-Eigenschaft `cost`, die die Kosten der Kante in Fahrtrichtung angibt.
- * - Die Objektart hat eine OBJECT-Eigenschaft `data`.
- * - Das `data`-Objekt hat eine INTEGER-Eigenschaft `source` mit der Knoten-Id am Anfang der Kante.
- * - Das `data`-Objekt hat eine INTEGER-Eigenschaft `target` mit der Knoten-Id am Ende der Kante.
- * - Das `data`-Objekt hat eine FLOAT-Eigenschaft `length_m` mit der Länge der Kante in Meter.
- * - Das `data`-Objekt kann eine FLOAT-Eigenschaft `duration_forward_s` mit der Dauer für das Fahren der Kante in positiver Richtung haben.
- * - Das `data`-Objekt kann eine FLOAT-Eigenschaft `duration_backward_s` mit der Dauer für das Fahren der Kante in negativer Richtung haben.
- * - Das `data`-Objekt kann eine FLOAT-Eigenschaft `maxHeight_m` mit der maximalen Fahrzeughöhe in Meter für die Kante haben.
- * - Das `data`-Objekt kann eine FLOAT-Eigenschaft `maxWeight_m` mit dem maximalen Fahrzeuggewicht in Tonnen für die Kante haben.
- * - Das `data`-Objekt kann eine FLOAT-Eigenschaft `maxspeed_forward` mit der Geschwindigkeitsbegrenzung auf der Kante in positiver Richtung haben.
- * - Das `data`-Objekt kann eine FLOAT-Eigenschaft `maxspeed_backward` mit der Geschwindigkeitsbegrenzung am Rand in negativer Richtung haben.
- *     </code>
  * @examplesAll
  *     <p><code>
  * ```yaml
