@@ -41,8 +41,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @title Routing
- * @langEn Support for [pgRouting](https://pgrouting.org).
- * @langDe Unterstützung für [pgRouting](https://pgrouting.org).
+ * @langEn Support for [pgRouting](https://pgrouting.org) to compute routes.
+ * @langDe Unterstützung für [pgRouting](https://pgrouting.org) zur Berechnung von Routen.
+ * @scopeEn This feature provider extension defines a template for a feature type representing a
+ *     route segment (edge of a route). pgRouting creates a table for each route according to this
+ *     specification (see `routeQuery`).
+ * @scopeDe Diese Feature-Provider-Erweiterung definiert eine Vorlage für einen Feature-Typ, der ein
+ *     Routensegment (die Kante einer Route) darstellt. pgRouting erzeugt für jede Route eine
+ *     Tabelle nach dieser Vorgabe (siehe `routeQuery`).
  * @ref:propertyTable {@link de.ii.xtraplatform.routes.sql.domain.ImmutableRoutesConfiguration}
  * @ref:example {@link de.ii.xtraplatform.routes.sql.domain.RoutesConfiguration}
  */
