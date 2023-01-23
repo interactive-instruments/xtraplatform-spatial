@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  *     <p>The route segment feature type has to meet the following conditions:
  *     <p><code>
  *  * - Each feature is a route segment / edge of the route. The edges are returned in sequence from start to end.
- *  * - The name of the feature table is "_route_".
+ *  * - The name of the feature table is "\_route\_".
  *  * - The feature type has an INTEGER property `node` that identifies the node at the start of the route segment. The value is either the same as `data/source` (traveling in positive edge direction) or as `data/target` (traveling in negative edge direction).
  *  * - The feature type has a FLOAT property `cost` that states the cost of the edge in the direction of travel.
  *  * - The feature type has an OBJECT property `data`.
@@ -71,7 +71,7 @@ import org.slf4j.LoggerFactory;
  *     <p>Das Schema der Routensegmente muss die folgenden Bedingungen erfüllen:
  *     <p><code>
  * - Jedes Feature ist ein Routensegment / eine Kante der Route. Die Kanten werden der Reihe nach von Anfang bis Ende zurückgegeben.
- * - Der Name der Feature-Tabelle ist "_route_".
+ * - Der Name der Feature-Tabelle ist "\_route\_".
  * - Die Objektart hat eine INTEGER-Eigenschaft `node`, die den Knoten am Anfang des Routensegments identifiziert. Der Wert ist entweder gleich `data/source` (Route in positiver Richtung der Kante) oder gleich `data/target` (Route in negativer Richtung der Kante).
  * - Die Objektart hat eine FLOAT-Eigenschaft `cost`, die die Kosten der Kante in Fahrtrichtung angibt.
  * - Die Objektart hat eine OBJECT-Eigenschaft `data`.
