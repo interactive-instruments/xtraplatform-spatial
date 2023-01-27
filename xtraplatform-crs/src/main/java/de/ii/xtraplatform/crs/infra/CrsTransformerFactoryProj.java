@@ -37,6 +37,7 @@ import org.kortforsyningen.proj.CoordinateOperationContext;
 import org.kortforsyningen.proj.GridAvailabilityUse;
 import org.kortforsyningen.proj.Proj;
 import org.kortforsyningen.proj.SpatialCriterion;
+import org.kortforsyningen.proj.Units;
 import org.kortforsyningen.proj.spi.EPSG;
 import org.opengis.metadata.extent.Extent;
 import org.opengis.metadata.extent.GeographicBoundingBox;
@@ -287,6 +288,30 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
             : createCrsTransformer(sourceCrs, targetCrs, sourceProjCrs, targetProjCrs);
 
     return Optional.of(transformer);
+  }
+
+  @Override
+  public List<Integer> getPrecisionList(EpsgCrs crs, Map<String, Integer> coordinatePrecision) {
+    ImmutableList.Builder<Integer> precisionListBuilder = new ImmutableList.Builder<>();
+    getAxisUnits(crs)
+        .forEach(
+            unit -> {
+              if (unit.equals(Units.METRE)) {
+                precisionListBuilder.add(
+                    coordinatePrecision.getOrDefault(
+                        "meter", coordinatePrecision.getOrDefault("metre", 0)));
+              } else if (unit.equals(Units.DEGREE)) {
+                precisionListBuilder.add(coordinatePrecision.getOrDefault("degree", 0));
+              } else {
+                if (LOGGER.isWarnEnabled()) {
+                  LOGGER.warn(
+                      "Coordinate precision could not be set, unrecognised unit found: '{}'.",
+                      unit.getName());
+                }
+                precisionListBuilder.add(0);
+              }
+            });
+    return precisionListBuilder.build();
   }
 
   private Optional<CoordinateReferenceSystem> getCrs(EpsgCrs crs) {
