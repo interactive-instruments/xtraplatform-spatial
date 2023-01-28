@@ -10,8 +10,6 @@ package de.ii.xtraplatform.features.sql.infra.db;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheckRegistry;
 import com.google.common.base.Charsets;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -27,15 +25,14 @@ import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.pool.DatabaseType;
@@ -51,6 +48,7 @@ public class SqlConnectorRx implements SqlConnector {
   private static final SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
   private static final Logger LOGGER = LoggerFactory.getLogger(SqlConnectorRx.class);
 
+  private final SqlDataSourceFactory sqlDataSourceFactory;
   private final ConnectionInfoSql connectionInfo;
   private final String poolName;
   private final MetricRegistry metricRegistry;
@@ -61,6 +59,7 @@ public class SqlConnectorRx implements SqlConnector {
   private final Path dataDir;
   private final String applicationName;
   private final String providerId;
+  private final AtomicInteger refCounter;
 
   private Database session;
   private HikariDataSource dataSource;
@@ -69,11 +68,13 @@ public class SqlConnectorRx implements SqlConnector {
 
   @AssistedInject
   public SqlConnectorRx(
+      SqlDataSourceFactory sqlDataSourceFactory,
       AppContext appContext,
       @Assisted MetricRegistry metricRegistry,
       @Assisted HealthCheckRegistry healthCheckRegistry,
       @Assisted String providerId,
       @Assisted ConnectionInfoSql connectionInfo) {
+    this.sqlDataSourceFactory = sqlDataSourceFactory;
     this.connectionInfo = connectionInfo;
     this.poolName = String.format("db.%s", providerId);
     this.metricRegistry = metricRegistry;
@@ -96,6 +97,7 @@ public class SqlConnectorRx implements SqlConnector {
     this.applicationName =
         String.format("%s %s - %s", appContext.getName(), appContext.getVersion(), providerId);
     this.providerId = providerId;
+    this.refCounter = new AtomicInteger(0);
   }
 
   @Override
@@ -179,6 +181,17 @@ public class SqlConnectorRx implements SqlConnector {
   }
 
   @Override
+  public boolean isSameDataset(ConnectionInfo connectionInfo) {
+    return Objects.equals(
+        connectionInfo.getDatasetIdentifier(), this.connectionInfo.getDatasetIdentifier());
+  }
+
+  @Override
+  public String getDatasetIdentifier() {
+    return this.connectionInfo.getDatasetIdentifier();
+  }
+
+  @Override
   public Tuple<Boolean, String> canBeSharedWith(
       ConnectionInfo connectionInfo, boolean checkAllParameters) {
     if (!(connectionInfo instanceof ConnectionInfoSql)) {
@@ -219,7 +232,7 @@ public class SqlConnectorRx implements SqlConnector {
               "dialect",
               Objects.equals(this.connectionInfo.getDialect(), connectionInfoSql.getDialect()))
           .put(
-              "schema",
+              "schemas",
               Objects.equals(this.connectionInfo.getSchemas(), connectionInfoSql.getSchemas()))
           .put(
               "initFailFast",
@@ -256,12 +269,19 @@ public class SqlConnectorRx implements SqlConnector {
     return sqlClient;
   }
 
+  @Override
+  public Optional<AtomicInteger> getRefCounter() {
+    if (connectionInfo.isShared()) {
+      return Optional.of(refCounter);
+    }
+    return Optional.empty();
+  }
+
   private HikariConfig createHikariConfig() {
     HikariConfig config = new HikariConfig();
 
     config.setUsername(connectionInfo.getUser().orElse(""));
     config.setPassword(getPassword(connectionInfo));
-    config.setDataSourceClassName(getDataSourceClass(connectionInfo));
     config.setMaximumPoolSize(maxConnections);
     config.setMinimumIdle(minConnections);
     config.setInitializationFailTimeout(getInitFailTimeout(connectionInfo));
@@ -269,9 +289,8 @@ public class SqlConnectorRx implements SqlConnector {
     config.setPoolName(poolName);
     config.setKeepaliveTime(300000);
 
-    getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
-
-    config.setDataSourceProperties(getDriverOptions(connectionInfo, dataDir, applicationName));
+    config.setDataSource(sqlDataSourceFactory.create(providerId, connectionInfo));
+    sqlDataSourceFactory.getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
 
     config.setMetricRegistry(metricRegistry);
     config.setHealthCheckRegistry(healthCheckRegistry);
@@ -284,8 +303,8 @@ public class SqlConnectorRx implements SqlConnector {
     DatabaseType healthCheck =
         connectionInfo.getDialect() == Dialect.GPKG ? DatabaseType.SQLITE : DatabaseType.POSTGRES;
     int idleTimeBeforeHealthCheck = 60;
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace(
           "rxjava2-jdbc - maxIdleTime: {}, healthCheck: {},  idleTimeBeforeHealthCheck: {}",
           maxIdleTime,
           healthCheck,
@@ -328,105 +347,5 @@ public class SqlConnectorRx implements SqlConnector {
     }
 
     return password;
-  }
-
-  // TODO: instantiate dataSource, apply driverOptions
-  private static String getDataSourceClass(ConnectionInfoSql connectionInfo) {
-
-    switch (connectionInfo.getDialect()) {
-      case PGIS:
-        return "org.postgresql.ds.PGSimpleDataSource";
-      case GPKG:
-        return "de.ii.xtraplatform.features.sql.infra.db.SpatialiteDataSource";
-        // return "org.sqlite.SQLiteDataSource";
-    }
-
-    throw new IllegalStateException("SQL dialect not implemented: " + connectionInfo.getDialect());
-  }
-
-  private static Optional<String> getInitSql(ConnectionInfoSql connectionInfo) {
-
-    switch (connectionInfo.getDialect()) {
-      case PGIS:
-        String initSql =
-            "SET datestyle TO ISO, MDY; SET client_encoding TO UTF8; SET timezone TO UTC;";
-        if (!connectionInfo.getSchemas().isEmpty()) {
-          String schemas =
-              connectionInfo.getSchemas().stream()
-                  .map(
-                      schema -> {
-                        if (!Objects.equals(schema, schema.toLowerCase())) {
-                          return String.format("\"%s\"", schema);
-                        }
-                        return schema;
-                      })
-                  .collect(Collectors.joining(","));
-
-          return Optional.of(String.format("SET search_path TO %s,public; %s", schemas, initSql));
-        }
-        return Optional.of(initSql);
-      case GPKG:
-        return Optional.of(
-            "SELECT CASE CheckGeoPackageMetaData() WHEN 1 THEN EnableGpkgMode() END;");
-    }
-
-    return Optional.empty();
-  }
-
-  private static Properties getDriverOptions(
-      ConnectionInfoSql connectionInfo, Path dataDir, String applicationName) {
-    Properties properties = new Properties();
-
-    switch (connectionInfo.getDialect()) {
-      case PGIS:
-        properties.setProperty(
-            "serverName",
-            connectionInfo
-                .getHost()
-                .orElseThrow(
-                    () ->
-                        new IllegalArgumentException(
-                            "No 'host' given, required for PGIS connection")));
-        properties.setProperty(
-            "databaseName",
-            Optional.ofNullable(Strings.emptyToNull(connectionInfo.getDatabase()))
-                .orElseThrow(
-                    () ->
-                        new IllegalArgumentException(
-                            "No 'database' given, required for PGIS connection")));
-        properties.setProperty("assumeMinServerVersion", "9.6");
-        properties.setProperty("ApplicationName", applicationName);
-
-        connectionInfo.getDriverOptions().entrySet().stream()
-            .filter(
-                option ->
-                    ImmutableList.of(
-                            "gssEncMode",
-                            "ssl",
-                            "sslmode",
-                            "sslcert",
-                            "sslkey",
-                            "sslrootcert",
-                            "sslpassword")
-                        .contains(option.getKey()))
-            .forEach(
-                option ->
-                    properties.setProperty(option.getKey(), String.valueOf(option.getValue())));
-        break;
-      case GPKG:
-        Path path =
-            Paths.get(connectionInfo.getDatabase()).isAbsolute()
-                ? Paths.get(connectionInfo.getDatabase())
-                : dataDir.resolve(connectionInfo.getDatabase());
-        if (!path.toFile().exists()) {
-          throw new IllegalArgumentException("GPKG database does not exist: " + path);
-        }
-
-        properties.setProperty("loadExtension", String.valueOf(true));
-        properties.setProperty("url", String.format("jdbc:sqlite:%s", path));
-        break;
-    }
-
-    return properties;
   }
 }

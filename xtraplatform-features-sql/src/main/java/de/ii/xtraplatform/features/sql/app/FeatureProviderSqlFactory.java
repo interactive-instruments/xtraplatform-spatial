@@ -20,16 +20,18 @@ import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
+import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData;
 import de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData.Builder;
+import de.ii.xtraplatform.features.sql.domain.ImmutablePoolSettings;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg;
 import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis;
@@ -104,7 +106,7 @@ public class FeatureProviderSqlFactory
 
   @Override
   public EntityDataBuilder<? extends EntityData> superDataBuilder() {
-    return new ImmutableFeatureProviderCommonData.Builder();
+    return new ImmutableProviderCommonData.Builder();
   }
 
   @Override
@@ -139,7 +141,9 @@ public class FeatureProviderSqlFactory
       SqlConnector connector =
           (SqlConnector)
               connectorFactory.createConnector(
-                  data.getFeatureProviderType(), data.getId(), data.getConnectionInfo());
+                  data.getProviderSubType(),
+                  data.getId(),
+                  getConnectionInfoWith4Connections(data.getConnectionInfo()));
 
       if (!connector.isConnected()) {
         connectorFactory.disposeConnector(connector);
@@ -244,6 +248,11 @@ public class FeatureProviderSqlFactory
           } catch (Throwable e) {
             // ignore
           }
+          try {
+            connectorFactory.disposeConnector(connector);
+          } catch (Throwable e) {
+            // ignore
+          }
         }
       }
     }
@@ -335,6 +344,22 @@ public class FeatureProviderSqlFactory
     }
 
     return data;
+  }
+
+  protected ConnectionInfoSql getConnectionInfoWith4Connections(ConnectionInfoSql connectionInfo) {
+
+    if (connectionInfo.getPool().getMaxConnections() <= 0) {
+      return new ImmutableConnectionInfoSql.Builder()
+          .from(connectionInfo)
+          .pool(
+              new ImmutablePoolSettings.Builder()
+                  .from(connectionInfo.getPool())
+                  .maxConnections(4)
+                  .build())
+          .build();
+    }
+
+    return connectionInfo;
   }
 
   @AssistedFactory

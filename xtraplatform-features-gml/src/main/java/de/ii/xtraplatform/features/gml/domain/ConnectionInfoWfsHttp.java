@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.gml.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocIgnore;
@@ -19,7 +20,7 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
- * @example <code>
+ * @examplesAll <code>
  * ```yaml
  * connectorType: HTTP
  * version: 2.0.0
@@ -97,4 +98,11 @@ public interface ConnectionInfoWfsHttp extends ConnectionInfo, WfsInfo {
 
   @DocIgnore
   Map<String, String> getOtherUrls();
+
+  @Override
+  @JsonIgnore
+  @Value.Lazy
+  default String getDatasetIdentifier() {
+    return Optional.ofNullable(getUri()).map(URI::toString).orElse("");
+  }
 }

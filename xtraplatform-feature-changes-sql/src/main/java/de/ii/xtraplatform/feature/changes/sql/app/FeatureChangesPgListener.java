@@ -8,35 +8,25 @@
 package de.ii.xtraplatform.feature.changes.sql.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.base.domain.util.Triple;
 import de.ii.xtraplatform.base.domain.util.Tuple;
-import de.ii.xtraplatform.crs.domain.BoundingBox;
-import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.feature.changes.sql.domain.FeatureChangesPgConfiguration;
 import de.ii.xtraplatform.features.domain.FeatureChange;
-import de.ii.xtraplatform.features.domain.FeatureChange.Action;
 import de.ii.xtraplatform.features.domain.FeatureChangeHandler;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureChange;
 import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -50,8 +40,30 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.threeten.extra.Interval;
 
+/**
+ * @title Change Listener
+ * @langEn Listens for incremental changes in a PostgreSQL database and triggers feature change
+ *     actions.
+ * @langDe Registriert inkrementelle Änderungen in einer PostgreSQL Datenbank und löst
+ *     Feature-Change-Aktionen aus.
+ * @scopeEn This extension can be useful when the database is changed incrementally by other
+ *     applications. When a change happens that is relevant for a feature type, registered actions
+ *     will be triggered, for example to update the spatial extent or the feature count of an API.
+ *     <p>You do not need this extension when changes are only made via
+ *     [CRUD](../../../services/building-blocks/crud.md) or when a new iteration of the database is
+ *     used after external updates.
+ * @scopeDe Diese Erweiterung ist hilfreich, falls inkrementelle Änderungen an der Datenbank durch
+ *     andere Anwendungen vorgenommen werden. Wenn eine für eine Objektart relevante Änderung
+ *     stattfindet, werden registrierte Aktionen ausgelöst, z.B. die Aktualisierung des
+ *     Spatial-Extents oder Feature-Counts einer API.
+ *     <p>Diese Erweiterung wird nicht benötigt, wenn Änderungen nur via
+ *     [CRUD](../../../services/building-blocks/crud.md) vorgenommen werden oder wenn nach externen
+ *     Updates eine neue Iteration der Datenbank verwendet wird.
+ * @ref:propertyTable {@link
+ *     de.ii.xtraplatform.feature.changes.sql.domain.ImmutableFeatureChangesPgConfiguration}
+ * @ref:example {@link de.ii.xtraplatform.feature.changes.sql.domain.FeatureChangesPgConfiguration}
+ */
 @Singleton
 @AutoBind
 public class FeatureChangesPgListener implements FeatureQueriesExtension {
@@ -59,12 +71,7 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureChangesPgListener.class);
 
   private final ScheduledExecutorService executorService;
-  private final Map<
-          String,
-          Map<
-              Tuple<String, String>,
-              Triple<Connection, Function<Connection, List<String>>, Supplier<Connection>>>>
-      subscriptions;
+  private final Map<String, Map<String, Subscription>> subscriptions;
 
   @Inject
   public FeatureChangesPgListener() {
@@ -119,33 +126,44 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
       Function<Connection, List<String>> notificationPoller) {
     subscriptions.put(provider.getId(), new ConcurrentHashMap<>());
 
-    getChannels(provider.getData().getTypes(), configuration.getListenForTypes())
-        .forEach(
-            channel ->
-                subscribe(provider.getId(), channel, connectionSupplier, notificationPoller));
+    getSubscriptions(
+            provider.getData().getTypes(),
+            configuration.getListenForTypes(),
+            connectionSupplier,
+            notificationPoller)
+        .forEach(subscription -> subscribe(provider.getId(), subscription));
 
     executorService.scheduleWithFixedDelay(
-        () -> poll(provider.getId(), provider.getFeatureChangeHandler()), 15, 5, TimeUnit.SECONDS);
+        () -> poll(provider.getId(), provider.getChangeHandler()),
+        configuration.getPollingInterval().toSeconds(),
+        configuration.getPollingInterval().toSeconds(),
+        TimeUnit.SECONDS);
   }
 
-  private void subscribe(
-      String provider,
-      Tuple<String, String> channel,
-      Supplier<Connection> connectionSupplier,
-      Function<Connection, List<String>> notificationPoller) {
-    try {
-      Connection connection = connectionSupplier.get();
-      Statement stmt = connection.createStatement();
-      stmt.execute("LISTEN " + String.format("%s_%s", channel.first(), channel.second()));
-      stmt.close();
-      subscriptions
-          .get(provider)
-          .put(channel, Triple.of(connection, notificationPoller, connectionSupplier));
+  private void subscribe(String provider, Subscription unconnected) {
+    Subscription subscription = unconnected.connect();
+    subscriptions.get(provider).put(subscription.getChannel(), subscription);
+
+    try (Statement statement = subscription.getConnection().createStatement()) {
+      String createFunction = subscription.getCreateFunction();
+      String createTrigger = subscription.getCreateTrigger();
+      String listen = subscription.getListen();
+
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("Change listener function: \n{}", createFunction);
+        LOGGER.trace("Change listener trigger: \n{}", createTrigger);
+      }
+
+      statement.execute(createFunction);
+      statement.execute(createTrigger);
+      statement.execute(listen);
+
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Subscribed to feature changes for {}", channel);
+        LOGGER.debug("Subscribed to feature changes for {}", subscription.getLabel());
       }
     } catch (SQLException e) {
-      LogContext.error(LOGGER, e, "Could not subscribe to feature changes for {}", channel);
+      LogContext.error(
+          LOGGER, e, "Could not subscribe to feature changes for {}", subscription.getLabel());
     }
   }
 
@@ -153,64 +171,37 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
     if (subscriptions.containsKey(provider)) {
       subscriptions
           .get(provider)
-          .forEach(
-              (channel, connection) -> {
-                poll(
-                    provider,
-                    featureChangeHandler,
-                    channel,
-                    connection.first(),
-                    connection.second(),
-                    connection.third());
-              });
+          .forEach((channel, subscription) -> poll(provider, featureChangeHandler, subscription));
     }
   }
 
   private void poll(
-      String provider,
-      FeatureChangeHandler featureChangeHandler,
-      Tuple<String, String> channel,
-      Connection connection,
-      Function<Connection, List<String>> notificationPoller,
-      Supplier<Connection> connectionSupplier) {
-    try {
-      // need to poll the notification queue using a dummy query
-      Statement stmt = connection.createStatement();
-      ResultSet rs = stmt.executeQuery("SELECT 1");
-      rs.close();
-      stmt.close();
+      String provider, FeatureChangeHandler featureChangeHandler, Subscription subscription) {
+    if (!subscription.isConnected()) {
+      LOGGER.debug("Lost connection to retrieve feature changes for {}", subscription.getLabel());
+      subscriptions.get(provider).remove(subscription.getChannel());
+      subscribe(provider, subscription);
 
-      List<String> notifications = notificationPoller.apply(connection);
-      for (String notification : notifications) {
-        if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("Feature change notification received: " + notification);
-        }
-        onFeatureChange(channel.first(), featureChangeHandler, notification);
-      }
-    } catch (SQLException e) {
-      try {
-        if (connection.isValid(1)) {
-          // assume a temporary issue
-          LogContext.errorAsDebug(
-              LOGGER, e, "Temporary failure to retrieve feature changes for {}", channel);
-          return;
-        }
-      } catch (SQLException ex) {
-        // continue
-      }
+      return;
+    }
 
-      // try to establish a new connection
-      LogContext.errorAsDebug(
-          LOGGER, e, "Lost connection to retrieve feature changes for {}", channel);
-      subscriptions.get(provider).remove(channel);
-      subscribe(provider, channel, connectionSupplier, notificationPoller);
+    for (String notification : subscription.pollNotifications()) {
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("Feature change notification received: {}", notification);
+      }
+      onFeatureChange(subscription.getType(), featureChangeHandler, notification);
     }
   }
 
   private void onFeatureChange(
-      String featureType, FeatureChangeHandler featureChangeHandler, String notification) {
+      String featureType, FeatureChangeHandler featureChangeHandler, String payload) {
     try {
-      FeatureChange featureChange = parseFeatureChange(featureType, notification);
+      FeatureChange featureChange = Notification.from(featureType, payload).asFeatureChange();
+
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("Publishing feature change: {}", featureChange);
+      }
+
       featureChangeHandler.handle(featureChange);
     } catch (Throwable e) {
       LogContext.errorAsInfo(
@@ -218,92 +209,60 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
     }
   }
 
-  private List<Tuple<String, String>> getChannels(
-      Map<String, FeatureSchema> types, List<String> subscriptions) {
+  private List<Subscription> getSubscriptions(
+      Map<String, FeatureSchema> types,
+      List<String> includes,
+      Supplier<Connection> connectionSupplier,
+      Function<Connection, List<String>> notificationPoller) {
+    includes.forEach(
+        include -> {
+          if (!types.containsKey(include)) {
+            LOGGER.warn("Change listener: unknown type '{}' in listenForTypes", include);
+          }
+        });
+
+    final int[] count = {1};
+
     return types.entrySet().stream()
-        .filter(entry -> subscriptions.isEmpty() || subscriptions.contains(entry.getKey()))
+        .filter(type -> includes.isEmpty() || includes.contains(type.getKey()))
         .flatMap(
-            entry ->
-                entry.getValue().getEffectiveSourcePaths().stream()
+            type ->
+                type.getValue().getEffectiveSourcePaths().stream()
                     .map(
                         sourcePath ->
-                            Tuple.of(entry.getKey(), sourcePath.substring(1, sourcePath.length()))))
+                            ImmutableSubscription.builder()
+                                .connectionFactory(connectionSupplier)
+                                .notificationPoller(notificationPoller)
+                                .index(count[0]++)
+                                .type(type.getKey())
+                                .table(
+                                    sourcePath.substring(
+                                        1,
+                                        sourcePath.contains("{")
+                                            ? sourcePath.indexOf("{")
+                                            : sourcePath.length()))
+                                .idColumn(
+                                    type.getValue()
+                                        .getIdProperty()
+                                        .flatMap(FeatureSchema::getSourcePath)
+                                        .orElseThrow())
+                                .geometryColumn(
+                                    type.getValue()
+                                        .getPrimaryGeometry()
+                                        .map(s -> s.getSourcePath().orElseThrow()))
+                                .intervalColumns(
+                                    type.getValue()
+                                        .getPrimaryInterval()
+                                        .map(
+                                            t ->
+                                                Tuple.of(
+                                                    t.first().getSourcePath().orElseThrow(),
+                                                    t.second().getSourcePath().orElseThrow())))
+                                .instantColumn(
+                                    type.getValue()
+                                        .getPrimaryInstant()
+                                        .map(s -> s.getSourcePath().orElseThrow()))
+                                .build()))
         .collect(Collectors.toList());
-  }
-
-  private static final Splitter SPLITTER = Splitter.on(",").trimResults();
-
-  private FeatureChange parseFeatureChange(String featureType, String notification) {
-    List<String> parameters = SPLITTER.splitToList(notification);
-
-    if (parameters.size() < 9) {
-      throw new IllegalArgumentException("incomplete parameters - " + notification);
-    }
-
-    Action action = Action.fromString(parameters.get(0));
-
-    if (action == Action.UNKNOWN) {
-      throw new IllegalArgumentException("unknown action - " + parameters.get(0));
-    }
-
-    return ImmutableFeatureChange.builder()
-        .action(action)
-        .featureType(featureType)
-        .featureIds(parseFeatureId(parameters.get(2)))
-        .interval(parseInterval(parameters.subList(3, 5)))
-        .boundingBox(parseBbox(parameters.subList(5, 9)))
-        .build();
-  }
-
-  private static List<String> parseFeatureId(String featureId) {
-    if (featureId.isEmpty() || featureId.equalsIgnoreCase("NULL")) return ImmutableList.of();
-
-    return ImmutableList.of(featureId);
-  }
-
-  private static Optional<Interval> parseInterval(List<String> interval) {
-    if (interval.get(0).isEmpty()) {
-      // no instant or interval, ignore
-    } else if (interval.get(1).isEmpty()) {
-      // an instant
-      try {
-        Instant instant = parseTimestamp(interval.get(0));
-        if (Objects.nonNull(instant)) return Optional.of(Interval.of(instant, instant));
-      } catch (Exception e) {
-        // ignore
-      }
-    } else {
-      // an interval
-      try {
-        Instant begin = parseTimestamp(interval.get(0));
-        Instant end = parseTimestamp(interval.get(1));
-        return Optional.of(Interval.of(begin, end));
-      } catch (Exception e) {
-        // ignore
-      }
-    }
-    return Optional.empty();
-  }
-
-  private static Instant parseTimestamp(String timestamp) {
-    try {
-      return Instant.parse(timestamp);
-    } catch (Exception e) {
-      return null;
-    }
-  }
-
-  private static Optional<BoundingBox> parseBbox(List<String> bbox) {
-    try {
-      return Optional.of(
-          BoundingBox.of(
-              Double.parseDouble(bbox.get(0)),
-              Double.parseDouble(bbox.get(1)),
-              Double.parseDouble(bbox.get(2)),
-              Double.parseDouble(bbox.get(3)),
-              OgcCrs.CRS84));
-    } catch (Exception e) {
-      return Optional.empty();
-    }
   }
 }

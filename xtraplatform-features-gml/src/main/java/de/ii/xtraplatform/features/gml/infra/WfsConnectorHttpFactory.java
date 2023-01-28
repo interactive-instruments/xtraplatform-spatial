@@ -74,9 +74,13 @@ public class WfsConnectorHttpFactory
   }
 
   @Override
-  public void deleteInstance(String id) {
-    instance(id).ifPresent(FeatureProviderConnector::stop);
-    instances.remove(id);
+  public boolean deleteInstance(String id) {
+    if (instances.containsKey(id)) {
+      instance(id).ifPresent(FeatureProviderConnector::stop);
+      instances.remove(id);
+      return true;
+    }
+    return false;
   }
 
   @AssistedFactory

@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -19,7 +20,6 @@ import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
 import de.ii.xtraplatform.store.domain.entities.AutoEntity;
-import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
@@ -59,24 +59,24 @@ import org.immutables.value.Value;
  *     <p>Als Beispiel siehe die
  *     [Provider-Konfiguration](https://github.com/interactive-instruments/ldproxy/blob/master/demo/vineyards/store/entities/providers/vineyards.yml)
  *     der API [Weinlagen in Rheinland-Pfalz](https://demo.ldproxy.net/vineyards).
- * @propertyTable {@link de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData}
- * @propertyTable:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
+ * @ref:cfgProperties {@link de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData}
+ * @ref:cfgProperties:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
  */
 @DocFile(
-    path = "providers",
+    path = "providers/feature",
     name = "README.md",
     tables = {
       @DocTable(
           name = "properties",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
       @DocTable(
           name = "types",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@propertyTable:types}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties:types}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
@@ -91,9 +91,10 @@ import org.immutables.value.Value;
         @DocI18n(language = "de", value = "{@body}")
     }
 )*/
-@JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
-public interface FeatureProviderDataV2 extends EntityData, AutoEntity, ExtendableConfiguration {
+// @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
+public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, ExtendableConfiguration {
 
+  @JsonIgnore
   @Override
   @Value.Derived
   default long getEntitySchemaVersion() {
@@ -111,15 +112,9 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
    * @langDe `SQL` für ein SQL-DBMS als Datenquelle, `WFS` für einen OGC Web Feature Service als
    *     Datenquelle.
    */
-  String getFeatureProviderType();
-
-  @JsonIgnore
-  @Value.Derived
+  @JsonAlias("featureProviderType")
   @Override
-  default Optional<String> getEntitySubType() {
-    return Optional.of(
-        String.format("%s/%s", getProviderType(), getFeatureProviderType()).toLowerCase());
-  }
+  String getProviderSubType();
 
   /**
    * @langEn Coordinate reference system of geometries in the dataset. The EPSG code of the
@@ -251,7 +246,7 @@ public interface FeatureProviderDataV2 extends EntityData, AutoEntity, Extendabl
 
     public abstract T providerType(String providerType);
 
-    public abstract T featureProviderType(String featureProviderType);
+    public abstract T providerSubType(String featureProviderType);
 
     // jackson should append to instead of replacing extensions
     @JsonIgnore

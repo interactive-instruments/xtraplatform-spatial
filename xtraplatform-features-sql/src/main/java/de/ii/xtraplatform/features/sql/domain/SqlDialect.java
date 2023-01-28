@@ -41,6 +41,8 @@ public interface SqlDialect {
 
   String applyToDiameter(String geomExpression, boolean is3d);
 
+  String castToBigInt(int value);
+
   Optional<BoundingBox> parseExtent(String extent, EpsgCrs crs);
 
   Optional<Interval> parseTemporalExtent(String start, String end);

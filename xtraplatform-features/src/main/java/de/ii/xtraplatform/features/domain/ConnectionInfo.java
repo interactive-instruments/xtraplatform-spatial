@@ -29,4 +29,6 @@ public interface ConnectionInfo {
   default boolean isShared() {
     return false;
   }
+
+  String getDatasetIdentifier();
 }

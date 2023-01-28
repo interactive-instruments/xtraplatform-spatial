@@ -111,21 +111,23 @@ public class SqlQueryTemplatesDeriver
               ? String.format(
                   "SELECT %7$s, count(*) AS numberReturned FROM (SELECT %2$s FROM %1$s%6$s ORDER BY %3$s%4$s%5$s) AS IDS",
                   table, columns, orderBy, limitSql, offsetSql, where, minMaxColumns)
-              : "SELECT NULL AS minKey, NULL AS maxKey, 0::bigint AS numberReturned";
+              : String.format(
+                  "SELECT NULL AS minKey, NULL AS maxKey, %s AS numberReturned",
+                  sqlDialect.castToBigInt(0));
 
       String numberMatched =
           computeNumberMatched
               ? String.format(
                   "SELECT count(*) AS numberMatched FROM (SELECT A.%2$s AS %4$s FROM %1$s A%3$s ORDER BY 1) AS IDS",
                   tableName, schema.getSortKey().get(), where, SKEY)
-              : "SELECT -1::bigint AS numberMatched";
+              : String.format("SELECT %s AS numberMatched", sqlDialect.castToBigInt(-1));
 
       String numberSkipped =
           computeNumberSkipped && withNumberSkipped
               ? String.format(
-                  "SELECT CASE WHEN numberReturned = 0 THEN (SELECT count(*) AS numberSkipped FROM (SELECT %2$s FROM %1$s%5$s ORDER BY %3$s%4$s) AS IDS) ELSE -1::bigint END AS numberSkipped FROM NR",
-                  table, columns, orderBy, skipOffsetSql, where)
-              : "SELECT -1::bigint AS numberSkipped";
+                  "SELECT CASE WHEN numberReturned = 0 THEN (SELECT count(*) AS numberSkipped FROM (SELECT %2$s FROM %1$s%5$s ORDER BY %3$s%4$s) AS IDS) ELSE %6$s END AS numberSkipped FROM NR",
+                  table, columns, orderBy, skipOffsetSql, where, sqlDialect.castToBigInt(-1))
+              : String.format("SELECT %s AS numberSkipped", sqlDialect.castToBigInt(-1));
 
       return String.format(
           "WITH\n%4$s%4$sNR AS (%s),\n%4$s%4$sNM AS (%s),\n%4$s%4$sNS AS (%s)\n%4$sSELECT * FROM NR, NM, NS",
@@ -237,7 +239,9 @@ public class SqlQueryTemplatesDeriver
               mainTableName,
               aliasesNested.get(0),
               mainTableSortKey,
-              where.replace("(A.", "(" + aliasesNested.get(0) + "."),
+              where
+                  .replace("(A.", "(" + aliasesNested.get(0) + ".")
+                  .replace(" A.", " " + aliasesNested.get(0) + "."),
               orderBy,
               pagingClause.get());
 

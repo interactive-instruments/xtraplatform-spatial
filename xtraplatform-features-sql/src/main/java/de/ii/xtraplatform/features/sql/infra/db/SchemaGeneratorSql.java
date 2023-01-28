@@ -60,14 +60,18 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
   public List<FeatureSchema> generate() {
     try {
       LOGGER.debug("Crawling SQL schema");
+
       Tuple<Catalog, List<String>> catalogAndMatching =
           schemaCrawler.getCatalogAndMatching(schemas, includeTables, dialect.getSystemTables());
-      LOGGER.debug("Finished crawling SQL schema");
 
       Map<String, List<String>> geometryInfos = getGeometryInfos();
 
-      return getFeatureTypes(
-          catalogAndMatching.first(), catalogAndMatching.second(), geometryInfos);
+      List<FeatureSchema> featureTypes =
+          getFeatureTypes(catalogAndMatching.first(), catalogAndMatching.second(), geometryInfos);
+
+      LOGGER.debug("Finished crawling SQL schema");
+
+      return featureTypes;
     } catch (Throwable e) {
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug("Stacktrace:", e);

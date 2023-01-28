@@ -12,6 +12,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
+import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.features.gml.app.FeatureProviderWfs;
 import de.ii.xtraplatform.features.gml.app.WfsRequestEncoder;
@@ -28,6 +29,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.apache.http.client.utils.URIBuilder;
 import org.codehaus.staxmate.SMInputFactory;
@@ -50,6 +52,7 @@ public class WfsConnectorHttp implements WfsConnector {
   private final Optional<Metadata> metadata;
   private Optional<Throwable> connectionError;
   private final String providerId;
+  private final ConnectionInfoWfsHttp connectionInfo;
 
   @AssistedInject
   WfsConnectorHttp(
@@ -92,6 +95,7 @@ public class WfsConnectorHttp implements WfsConnector {
 
     this.metadata = crawlMetadata();
     this.providerId = providerId;
+    this.connectionInfo = connectionInfo;
   }
 
   WfsConnectorHttp() {
@@ -100,6 +104,7 @@ public class WfsConnectorHttp implements WfsConnector {
     useHttpPost = false;
     metadata = Optional.empty();
     providerId = null;
+    connectionInfo = null;
   }
 
   public static URI parseAndCleanWfsUrl(URI inUri) {
@@ -178,6 +183,17 @@ public class WfsConnectorHttp implements WfsConnector {
   @Override
   public Reactive.Source<byte[]> getSourceStream(String query, QueryOptions options) {
     return httpClient.get(query);
+  }
+
+  @Override
+  public boolean isSameDataset(ConnectionInfo connectionInfo) {
+    return Objects.equals(
+        connectionInfo.getDatasetIdentifier(), this.connectionInfo.getDatasetIdentifier());
+  }
+
+  @Override
+  public String getDatasetIdentifier() {
+    return this.connectionInfo.getDatasetIdentifier();
   }
 
   @Override

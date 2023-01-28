@@ -21,10 +21,10 @@ import java.util.Optional;
 import org.immutables.value.Value;
 
 /**
- * @langEn # Common
+ * @langEn # Codelists
  *     <p>Codelists allow to map property values to a different value. This is useful especially for
  *     HTML representations.
- * @langDe # Allgemein
+ * @langDe # Codelisten
  *     <p>Codelisten können zum Übersetzen von Eigenschaftswerten in einen anderen Wert genutzt
  *     werden, meist für die HTML-Ausgabe.
  * @langEn ## Configuration
@@ -75,16 +75,16 @@ import org.immutables.value.Value;
  * @langDe ## Speicherung
  *     <p>Die Codelisten liegen als YAML-Dateien im ldproxy-Datenverzeichnis unter dem relativen
  *     Pfad `store/entities/codelists/{codelistId}.yml`.
- * @propertyTable {@link de.ii.xtraplatform.codelists.domain.ImmutableCodelistData}
+ * @ref:cfgProperties {@link de.ii.xtraplatform.codelists.domain.ImmutableCodelistData}
  */
 @DocFile(
-    path = "codelists",
-    name = "README.md",
+    path = "auxiliaries",
+    name = "codelists.md",
     tables = {
       @DocTable(
           name = "properties",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@propertyTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES)

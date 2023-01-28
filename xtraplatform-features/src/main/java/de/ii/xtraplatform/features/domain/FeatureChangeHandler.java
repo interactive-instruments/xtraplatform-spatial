@@ -9,7 +9,11 @@ package de.ii.xtraplatform.features.domain;
 
 public interface FeatureChangeHandler {
 
+  void addListener(DatasetChangeListener listener);
+
   void addListener(FeatureChangeListener listener);
+
+  void handle(DatasetChange change);
 
   void handle(FeatureChange change);
 }

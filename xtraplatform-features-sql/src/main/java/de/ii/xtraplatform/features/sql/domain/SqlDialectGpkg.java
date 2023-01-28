@@ -119,6 +119,11 @@ public class SqlDialectGpkg implements SqlDialect {
   }
 
   @Override
+  public String castToBigInt(int value) {
+    return String.format("CAST(%d AS BIGINT)", value);
+  }
+
+  @Override
   public String escapeString(String value) {
     return value.replaceAll("'", "''");
   }

@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
- * # SQL Features
+ * # SQL
  *
  * @langEn The specifics of the SQL feature provider.
  * @langDe Hier werden die Besonderheiten des SQL-Feature-Providers beschrieben.
@@ -74,7 +74,7 @@ import org.immutables.value.Value;
  *     <p>Rows for a table can be filtered by adding `{filter=expression}` after the table name,
  *     where `expression` is a [CQL
  *     Text](http://docs.opengeospatial.org/DRAFTS/19-079.html#cql-text) expression. For details see
- *     the module [Filter / CQL](../services/building-blocks/filter.md), which provides the
+ *     the module [Filter / CQL](../../services/building-blocks/filter.md), which provides the
  *     implementation but does not have to be enabled.
  *     <p>To select capacity information only when the value is not NULL and greater than zero in
  *     the example above, the filter would look like this: `[oid=kita_fk]plaetze{filter=anzahl IS
@@ -99,7 +99,7 @@ import org.immutables.value.Value;
  *     Tabelle) kann zusätzlich ein einschränkender Filter durch den Zusatz `{filter=ausdruck}`
  *     angegeben werden, wobei `ausdruck` das Selektionskriertium in [CQL
  *     Text](http://docs.opengeospatial.org/DRAFTS/19-079.html#cql-text) spezifiziert. Für Details
- *     siehe das Modul [Filter / CQL](../services/building-blocks/filter.md), welches die
+ *     siehe das Modul [Filter / CQL](../../services/building-blocks/filter.md), welches die
  *     Implementierung bereitstellt, aber nicht aktiviert sein muss.
  *     <p>Wenn z.B. in dem Beispiel oben nur Angaben zur Belegungskapazität selektiert werden
  *     sollen, deren Wert nicht NULL und gleichzeitig größer als Null ist, dann könnte man
@@ -121,7 +121,7 @@ import org.immutables.value.Value;
  *     de.ii.xtraplatform.features.sql.domain.ImmutableQueryGeneratorSettings}
  */
 @DocFile(
-    path = "providers",
+    path = "providers/feature",
     name = "sql.md",
     tables = {
       @DocTable(
@@ -372,7 +372,7 @@ public interface FeatureProviderSqlData
     public ImmutableFeatureProviderSqlData.Builder fillRequiredFieldsWithPlaceholders() {
       return this.id(EntityDataDefaults.PLACEHOLDER)
           .providerType(EntityDataDefaults.PLACEHOLDER)
-          .featureProviderType(EntityDataDefaults.PLACEHOLDER)
+          .providerSubType(EntityDataDefaults.PLACEHOLDER)
           .connectionInfo(
               new ImmutableConnectionInfoSql.Builder()
                   .database(EntityDataDefaults.PLACEHOLDER)
@@ -384,6 +384,12 @@ public interface FeatureProviderSqlData
   @JsonDeserialize(builder = ImmutableQueryGeneratorSettings.Builder.class)
   interface QueryGeneratorSettings {
 
+    @DocIgnore
+    @Value.Default
+    default int getChunkSize() {
+      return 10000;
+    }
+
     /**
      * @langEn Option to disable computation of the number of selected features for performance
      *     reasons that are returned in `numberMatched`. As a general rule this should be disabled
@@ -394,11 +400,6 @@ public interface FeatureProviderSqlData
      *     deaktivieren.
      * @default true
      */
-    @Value.Default
-    default int getChunkSize() {
-      return 1000;
-    }
-
     @Value.Default
     default boolean getComputeNumberMatched() {
       return true;

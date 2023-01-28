@@ -15,16 +15,23 @@ import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 public interface SchemaMappingSql extends SchemaMappingBase<SchemaSql> {
 
+  BiFunction<String, Boolean, String> getSourcePathTransformer();
+
   @Value.Derived
   @Value.Auxiliary
   default Map<List<String>, List<SchemaSql>> getTargetSchemasByPath() {
-    return getTargetSchema().accept(new SchemaToMappingVisitor<>()).asMap().entrySet().stream()
+    return getTargetSchema()
+        .accept(new SchemaToMappingVisitor<>(getSourcePathTransformer()))
+        .asMap()
+        .entrySet()
+        .stream()
         // TODO: removal of first path element only makes sense for geojson, so change in parser
         .map(
             entry ->

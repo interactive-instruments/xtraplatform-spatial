@@ -19,6 +19,7 @@ import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
@@ -87,6 +88,11 @@ public class FeatureProviderWfsFactory
   }
 
   @Override
+  public EntityDataBuilder<? extends EntityData> superDataBuilder() {
+    return new ImmutableProviderCommonData.Builder();
+  }
+
+  @Override
   public Class<? extends EntityData> dataClass() {
     return FeatureProviderWfsData.class;
   }
@@ -104,7 +110,7 @@ public class FeatureProviderWfsFactory
     WfsConnectorHttp connector =
         (WfsConnectorHttp)
             connectorFactory.createConnector(
-                data.getFeatureProviderType(), data.getId(), data.getConnectionInfo());
+                data.getProviderSubType(), data.getId(), data.getConnectionInfo());
 
     try {
       if (!connector.isConnected()) {

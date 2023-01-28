@@ -18,11 +18,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
+
+  BiFunction<String, Boolean, String> getSourcePathTransformer();
 
   @Override
   default FeatureSchema schemaWithGeometryType(
@@ -32,7 +35,7 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
 
   default SchemaMapping mappingWithTargetPaths() {
     Multimap<List<String>, FeatureSchema> accept =
-        getTargetSchema().accept(new SchemaToMappingVisitor<>(true));
+        getTargetSchema().accept(new SchemaToMappingVisitor<>(true, getSourcePathTransformer()));
 
     return null;
   }
@@ -53,7 +56,7 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
 
     ImmutableMap<List<String>, List<FeatureSchema>> original =
         getTargetSchema()
-            .accept(new SchemaToMappingVisitor<>(useTargetPaths()))
+            .accept(new SchemaToMappingVisitor<>(useTargetPaths(), getSourcePathTransformer()))
             .asMap()
             .entrySet()
             .stream()
@@ -64,7 +67,11 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     ImmutableMap<List<String>, List<FeatureSchema>> newer =
-        getTargetSchema().accept(new SchemaToSourcePathsVisitor<>()).asMap().entrySet().stream()
+        getTargetSchema()
+            .accept(new SchemaToSourcePathsVisitor<>(getSourcePathTransformer()))
+            .asMap()
+            .entrySet()
+            .stream()
             .map(
                 entry ->
                     new SimpleImmutableEntry<>(
