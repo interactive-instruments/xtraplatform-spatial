@@ -140,7 +140,54 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'Not operation'() {
+    def 'temporal operation, interval 2'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
+        def filter = CqlFilterExamples.EXAMPLE_14_B
+
+        when:
+        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE TIMESTAMP '2017-06-10T07:30:00Z' > AA.updated::timestamp(0)) AND A.id IN (SELECT AA.id FROM building AA WHERE TIMESTAMP '2017-06-11T10:30:00Z' < AA.updated::timestamp(0)))"
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+    def 'temporal operation, interval 3'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
+        def filter = CqlFilterExamples.EXAMPLE_Interval
+
+        when:
+        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE TIMESTAMP '2017-06-10T07:30:00Z' > AA.updated::timestamp(0)) AND A.id IN (SELECT AA.id FROM building AA WHERE TIMESTAMP '2017-06-11T10:30:00Z' < AA.updated::timestamp(0)))"
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual != expected
+
+    }
+
+    def 'temporal operation, interval 4'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
+        def filter = CqlFilterExamples.EXAMPLE_Illegal_Interval
+
+        when:
+        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE TIMESTAMP '2017-06-10T07:30:00Z' > AA.updated::timestamp(0)) AND A.id IN (SELECT AA.id FROM building AA WHERE TIMESTAMP '2017-06-11T10:30:00Z' < AA.updated::timestamp(0)))"
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        thrown(IllegalStateException)
+
+    }
+
+    def 'not operation'() {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
@@ -148,72 +195,6 @@ class FilterEncoderSqlSpec extends Specification {
 
         when:
         String expected = "NOT ((A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) > TIMESTAMP '2017-06-10T07:30:00Z') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) < TIMESTAMP '2017-06-11T10:30:00Z')))"
-        String actual = filterEncoder.encode(filter, instanceContainer)
-
-        then:
-
-        actual == expected
-
-    }
-
-    def ' operation test'() {
-
-        given:
-        def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
-        def filter = CqlFilterExamples.EXAMPLE_17
-
-        when:
-        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE AA.floors > 5) AND A.id IN (SELECT AA.id FROM building AA WHERE ST_Within(AA.geometry, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326))))"
-        String actual = filterEncoder.encode(filter, instanceContainer)
-
-        then:
-
-        actual == expected
-
-    }
-
-    def 'In operation test 2'() {
-
-        given:
-        def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
-        def filter = CqlFilterExamples.EXAMPLE_18
-
-        when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.floors BETWEEN 4 AND 8)"
-        String actual = filterEncoder.encode(filter, instanceContainer)
-
-        then:
-
-        actual == expected
-
-    }
-
-    def 'In list test'() {
-
-        given:
-        def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
-        def filter = CqlFilterExamples.EXAMPLE_19
-
-        when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.owner IN ('Mike','John','Tom'))"
-
-        String actual = filterEncoder.encode(filter, instanceContainer)
-
-        then:
-
-        actual == expected
-
-    }
-
-    def 'In list test'() {
-
-        given:
-        def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
-        def filter = CqlFilterExamples.EXAMPLE_19
-
-        when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.owner IN ('Mike','John','Tom'))"
-
         String actual = filterEncoder.encode(filter, instanceContainer)
 
         then:
@@ -239,7 +220,7 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'Not in list test'() {
+    def 'not in list test'() {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
@@ -273,7 +254,7 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'CASEI test'() {
+    def 'casei test'() {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
@@ -290,7 +271,7 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'ACCENTI test'() {
+    def 'accenti test'() {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
@@ -307,7 +288,7 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'Polygon test'() {
+    def 'polygon test'() {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
@@ -324,7 +305,74 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'Interval list test'() {
+    def 'test AContains'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.JOINED_GEOMETRY
+        def filter = CqlFilterExamples.EXAMPLE_AContains_ValidFor_JOINED_GEOMETRY
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA JOIN geometry AB ON (AA.id=AB.id) WHERE AB.location IN ('id','location') GROUP BY AA.id HAVING count(distinct AB.location) = 2)"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'test AEquals'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.JOINED_GEOMETRY
+        def filter = CqlFilterExamples.EXAMPLE_AEquals_ValidFor_JOINED_GEOMETRY
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA JOIN geometry AB ON (AA.id=AB.id) WHERE AB.location IS NOT NULL GROUP BY AA.id HAVING count(distinct AB.location) = 2 AND count(case when AB.location not in ('id','location') then AB.location else null end) = 0)"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'test AOverlaps'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.JOINED_GEOMETRY
+        def filter = CqlFilterExamples.EXAMPLE_AOverlaps_ValidFor_JOINED_GEOMETRY
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA JOIN geometry AB ON (AA.id=AB.id) WHERE AB.location IN ('id','location') GROUP BY AA.id)"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'test AContainedBy'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.JOINED_GEOMETRY
+        def filter = CqlFilterExamples.EXAMPLE_AContainedBy_ValidFor_JOINED_GEOMETRY
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA JOIN geometry AB ON (AA.id=AB.id) WHERE AB.location IS NOT NULL GROUP BY AA.id HAVING count(case when AB.location not in ('id','location') then AB.location else null end) = 0)"
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'interval list test'() {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
@@ -341,7 +389,7 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'temnpdssdsoral test'() {
+    def 'interval test'() {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_DATE
@@ -358,7 +406,7 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'MultiPolygon test'() {
+    def 'multiPolygon test'() {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
@@ -375,7 +423,7 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'MultiLineString test'() {
+    def 'multiLineString test'() {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
@@ -391,6 +439,108 @@ class FilterEncoderSqlSpec extends Specification {
         actual == expected
 
     }
+
+    def 'lineString test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
+        def filter = CqlFilterExamples.EXAMPLE_16_LineString
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_Intersects(AA.location, ST_GeomFromText('LINESTRING(-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)',4326)))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'point test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
+        def filter = CqlFilterExamples.EXAMPLE_16_Point
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_Intersects(AA.location, ST_GeomFromText('POINT(10.0 -10.0)',4326)))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'multiPoint test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
+        def filter = CqlFilterExamples.EXAMPLE_16_MultiPoint
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_Intersects(AA.location, ST_GeomFromText('MULTIPOINT(10.0 -10.0,10.0 10.0)',4326)))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'temporal with list test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_DATE
+        def filter = CqlFilterExamples.EXAMPLE_26
+
+        when:
+        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE AA.updated > TIMESTAMP '2017-06-10T07:30:00Z') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.updated < TIMESTAMP 'infinity'))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'function test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_DATE
+        def filter = CqlFilterExamples.EXAMPLE_43
+
+        when:
+        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE AA.updated > TIMESTAMP '2017-06-10T07:30:00Z') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.updated < TIMESTAMP 'infinity'))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual != expected
+
+    }
+    def 'function 2 test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_DATE
+        def filter = CqlFilterExamples.EXAMPLE_31
+
+        when:
+        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE AA.updated > TIMESTAMP '2017-06-10T07:30:00Z') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.updated < TIMESTAMP 'infinity'))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual != expected
+
+    }
+
 
 
 }

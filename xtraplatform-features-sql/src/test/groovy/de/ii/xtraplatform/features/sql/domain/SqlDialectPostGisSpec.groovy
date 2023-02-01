@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.sql.domain
 
 import de.ii.xtraplatform.crs.domain.BoundingBox
 import de.ii.xtraplatform.crs.domain.EpsgCrs
+import de.ii.xtraplatform.features.sql.infra.db.SchemaGeneratorSql
 import org.threeten.extra.Interval
 import spock.lang.Ignore
 import spock.lang.Shared
@@ -88,6 +89,27 @@ class SqlDialectPostGisSpec extends Specification {
         then:
             extent.get().toArray().toString() == "[2.336059, 50.664734, 7.304131, 55.433815]"
             extent.get().getEpsgCrs().getCode() == 4326
+    }
+
+    def 'Spatial extent and CRS both present 2'() {
+        given:
+        String bbox = "BOX(2.336059,50.664734,7.304131,55.433815, 50.664734,7.304131 )"
+        EpsgCrs crs = EpsgCrs.of(4326)
+        when:
+        Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(bbox, crs)
+        then:
+        extent.get().toArray().toString() != "[2.336059, 50.664734, 7.304131, 55.433815]"
+        extent.get().getEpsgCrs().getCode() == 4326
+    }
+
+    def 'Spatial extent and CRS both present 3'() {
+        given:
+        String bbox = null
+        EpsgCrs crs = EpsgCrs.of(4326)
+        when:
+        Optional<BoundingBox> extent = sqlDialectPostGis.parseExtent(bbox, crs)
+        then:
+        extent.isPresent() == false
     }
 
     @Ignore
