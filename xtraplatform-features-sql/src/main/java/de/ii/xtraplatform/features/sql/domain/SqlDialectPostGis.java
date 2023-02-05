@@ -157,6 +157,7 @@ public class SqlDialectPostGis implements SqlDialect {
 
   @Override
   public String applyToDiameter(String geomExpression, boolean is3d) {
+    // the bounding box is transformed to a CRS that uses meter for all axes
     if (is3d) {
       if (geomExpression.contains("%1$s") && geomExpression.contains("%2$s")) {
         return String.format(
