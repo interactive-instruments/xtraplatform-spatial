@@ -246,11 +246,36 @@ public class FeatureTokenDecoderGml
                 context.setInGeometry(true);
               }
               onGeometryPart(parser.getLocalName(), depth - featureDepth == 2);
+            } else if (context.schema().filter(FeatureSchema::isObject).isPresent()) {
+              if (context.schema().filter(FeatureSchema::isArray).isPresent()
+                  && context.index() == 1) {
+                getDownstream().onArrayStart(context);
+              }
+              getDownstream().onObjectStart(context);
             } else if (passThrough) {
               getDownstream().onObjectStart(context);
             }
           }
           depth += 1;
+
+          if (inFeature
+              && depth > featureDepth + 1
+              && !context.inGeometry()
+              && context.schema().filter(FeatureSchema::isObject).isPresent()) {
+            context
+                .additionalInfo()
+                .forEach(
+                    (prop, value) -> {
+                      context.pathTracker().track(prop.replace(":", ":@"), depth - featureDepth);
+                      multiplicityTracker.track(context.pathTracker().asList());
+                      context.setIndexes(
+                          multiplicityTracker.getMultiplicitiesForPath(
+                              context.pathTracker().asList()));
+                      context.setValue(value);
+                      context.setValueType(Type.STRING);
+                      getDownstream().onValue(context);
+                    });
+          }
           break;
 
         case XMLStreamConstants.END_ELEMENT:
@@ -283,6 +308,8 @@ public class FeatureTokenDecoderGml
 
                 getDownstream().onObjectEnd(context);
               }
+            } else if (context.schema().filter(FeatureSchema::isObject).isPresent()) {
+              getDownstream().onObjectEnd(context);
             } else if (passThrough) {
               getDownstream().onObjectEnd(context);
             }

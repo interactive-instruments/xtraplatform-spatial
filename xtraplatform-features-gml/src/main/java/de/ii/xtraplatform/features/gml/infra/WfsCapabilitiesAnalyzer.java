@@ -37,7 +37,7 @@ public class WfsCapabilitiesAnalyzer extends AbstractFeatureProviderMetadataCons
 
   @Override
   public void analyzeNamespace(String prefix, String uri) {
-    if (!namespaceNormalizer.getNamespaces().containsKey(prefix)) {
+    if (!prefix.isBlank() && !namespaceNormalizer.getNamespaces().containsKey(prefix)) {
       metadata.putNamespaces(prefix, uri);
       namespaceNormalizer.addNamespace(prefix, uri);
     }

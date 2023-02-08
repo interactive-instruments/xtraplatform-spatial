@@ -72,6 +72,7 @@ public class GML extends VersionedVocabulary {
     LOWER_CORNER,
     UPPER_CORNER,
     ABSTRACT_OBJECT,
+    ABSTRACT_FEATURE,
     OUTPUTFORMAT_VALUE,
     POLYGON,
     EXTERIOR,
@@ -101,6 +102,7 @@ public class GML extends VersionedVocabulary {
     addWord(VERSION._3_2_1, NAMESPACE.PREFIX, "gml");
     addWord(VERSION._3_2_1, NAMESPACE.URI, "http://www.opengis.net/gml/3.2");
 
+    addWord(VERSION._2_1_1, VOCABULARY.ABSTRACT_FEATURE, "_Feature");
     addWord(VERSION._2_1_1, VOCABULARY.ABSTRACT_OBJECT, "_Object");
     addWord(VERSION._2_1_1, VOCABULARY.ENVELOPE, "Envelope");
     addWord(VERSION._2_1_1, VOCABULARY.SRSNAME, "srsName");
@@ -122,6 +124,7 @@ public class GML extends VersionedVocabulary {
 
     addWord(VERSION._3_1_1, VOCABULARY.OUTPUTFORMAT_VALUE, "text/xml; subtype=gml/3.1.1");
 
+    addWord(VERSION._3_2_1_OLD, VOCABULARY.ABSTRACT_FEATURE, "AbstractFeature");
     addWord(VERSION._3_2_1_OLD, VOCABULARY.ABSTRACT_OBJECT, "AbstractObject");
     addWord(VERSION._3_2_1_OLD, VOCABULARY.OUTPUTFORMAT_VALUE, "text/xml; subtype=gml/3.2.1");
 
