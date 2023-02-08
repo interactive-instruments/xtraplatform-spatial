@@ -14,9 +14,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.OptBoolean;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.docs.DocIgnore;
-import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
@@ -335,7 +333,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
         || (isObject() && getProperties().stream().allMatch(FeatureSchema::isConstant));
   }
 
-  @Value.Check
+  /*@Value.Check
   default FeatureSchema backwardsCompatibility() {
     // migrate double column syntax to multiple sourcePaths, ignore wfs mappings
     if (!getParentPath().isEmpty()
@@ -366,7 +364,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     }
 
     return this;
-  }
+  }*/
 
   @Value.Check
   default FeatureSchema primaryGeometry() {
