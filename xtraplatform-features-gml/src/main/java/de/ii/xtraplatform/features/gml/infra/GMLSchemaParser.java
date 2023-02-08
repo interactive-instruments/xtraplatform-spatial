@@ -27,7 +27,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.EntityResolver;
@@ -45,6 +47,7 @@ public class GMLSchemaParser {
   private final List<FeatureProviderSchemaConsumer> analyzers;
   private final XMLPathTracker currentPath;
   private final List<XSElementDecl> abstractObjectDecl;
+  private final List<XSElementDecl> abstractFeatureDecl;
   private XSType gcoObjectType;
   private Set<String> complexTypes;
   private final URI baseURI;
@@ -59,6 +62,7 @@ public class GMLSchemaParser {
     this.analyzers = analyzers;
     this.currentPath = new XMLPathTracker();
     this.abstractObjectDecl = new ArrayList<XSElementDecl>();
+    this.abstractFeatureDecl = new ArrayList<XSElementDecl>();
     this.baseURI = baseURI;
     this.entityResolver = entityResolver;
   }
@@ -122,10 +126,15 @@ public class GMLSchemaParser {
       for (GML.VERSION version : GML.VERSION.values()) {
         XSSchema schema0 = schemas.getSchema(GML.getWord(version, GML.NAMESPACE.URI));
         if (schema0 != null) {
-          XSElementDecl a =
+          XSElementDecl ao =
               schema0.getElementDecl(GML.getWord(version, GML.VOCABULARY.ABSTRACT_OBJECT));
-          if (a != null) {
-            abstractObjectDecl.add(a);
+          if (ao != null) {
+            abstractObjectDecl.add(ao);
+          }
+          XSElementDecl af =
+              schema0.getElementDecl(GML.getWord(version, GML.VOCABULARY.ABSTRACT_FEATURE));
+          if (af != null) {
+            abstractFeatureDecl.add(af);
           }
         }
       }
@@ -184,7 +193,8 @@ public class GMLSchemaParser {
                     att.getDecl().getTargetNamespace(),
                     att.getDecl().getName(),
                     att.getDecl().getType().getName(),
-                    att.isRequired());
+                    att.isRequired(),
+                    0);
               }
             }
             XSParticle particle = elem.getType().asComplexType().getContentType().asParticle();
@@ -192,7 +202,7 @@ public class GMLSchemaParser {
               XSTerm term = particle.getTerm();
               if (term.isModelGroup()) {
                 complexTypes = new HashSet<String>();
-                parseGroup(term.asModelGroup(), 1, false);
+                parseGroup(term.asModelGroup(), 1, false, i -> {});
               }
             }
           }
@@ -223,7 +233,8 @@ public class GMLSchemaParser {
     }
   }
 
-  private void parseGroup(XSModelGroup xsModelGroup, int depth, boolean isParentMultible) {
+  private void parseGroup(
+      XSModelGroup xsModelGroup, int depth, boolean isParentMultiple, Consumer<Integer> onFeature) {
     // LOGGER.debug(new String(new char[depth]).replace("\0", "  ") + " - {}",
     // xsModelGroup.getCompositor());
 
@@ -245,22 +256,29 @@ public class GMLSchemaParser {
               p.getMinOccurs().longValue(),
               p.getMaxOccurs().longValue(),
               depth,
-              isParentMultible);
+              isParentMultiple,
+              onFeature);
         } else if (pterm.isModelGroup()) {
-          parseGroup(pterm.asModelGroup(), depth, isParentMultible);
+          parseGroup(pterm.asModelGroup(), depth, false, onFeature);
         } else if (pterm.isModelGroupDecl()) {
-          parseGroup(pterm.asModelGroupDecl().getModelGroup(), depth, isParentMultible);
+          parseGroup(pterm.asModelGroupDecl().getModelGroup(), depth, false, onFeature);
         }
       }
     }
   }
 
   private void parseElementDecl(
-      XSElementDecl decl, long minOccurs, long maxOccurs, int depth, boolean isParentMultible) {
+      XSElementDecl decl,
+      long minOccurs,
+      long maxOccurs,
+      int depth,
+      boolean isParentMultible,
+      Consumer<Integer> onFeature) {
 
     String propertyName = null;
     XSType propertyType = null;
     boolean isObject = false;
+    boolean isFeature = false;
 
     propertyName = decl.getName();
 
@@ -273,6 +291,16 @@ public class GMLSchemaParser {
       XSElementDecl decl0 = decl.getSubstAffiliation();
 
       while (decl0 != null) {
+        for (XSElementDecl e : abstractFeatureDecl) {
+          if (decl0.equals(e)) {
+            isFeature = true;
+            break;
+          }
+        }
+        if (isFeature) {
+          break;
+        }
+
         for (XSElementDecl e : abstractObjectDecl) {
           if (decl0.equals(e)) {
             isObject = true;
@@ -294,6 +322,12 @@ public class GMLSchemaParser {
 
     } else if (!decl.getType().getBaseType().getName().equals("anyType")) {
       propertyType = decl.getType().getBaseType();
+    }
+
+    if (isFeature && depth > 0) {
+      // LOGGER.debug("AF {} {}", propertyName, propertyType);
+      onFeature.accept(depth);
+      return;
     }
 
     String propertyTypeName = propertyType.getName();
@@ -323,9 +357,11 @@ public class GMLSchemaParser {
       }
     }
 
-    if (propertyType.isComplexType() && (maxOccurs > 1 || maxOccurs == -1)) {
+    boolean isMultiple = maxOccurs > 1 || maxOccurs == -1;
+
+    /*if (propertyType.isComplexType() && (maxOccurs > 1 || maxOccurs == -1)) {
       isParentMultible = true;
-    }
+    }*/
 
     /*
     LOGGER.debug(new String(new char[depth]).replace("\0", "  ") + " - property, name: {}, type: {}, min: {}, max: {}, ns: {}",
@@ -346,14 +382,59 @@ public class GMLSchemaParser {
           isParentMultible,
           isComplex,
           isObject);
+
+      if (isComplex && Objects.equals(propertyTypeName, "ReferenceType")) {
+        for (XSAttributeUse att : propertyType.asComplexType().getAttributeUses()) {
+          // LOGGER.debug("   - attribute {}, required: {}, type: {}, ns: {}",
+          // att.getDecl().getName(), att.isRequired(), att.getDecl().getType().getName(),
+          // att.getDecl().getTargetNamespace());
+
+          analyzer.analyzeAttribute(
+              att.getDecl().getTargetNamespace(),
+              att.getDecl().getName(),
+              att.getDecl().getType().getName(),
+              att.isRequired(),
+              depth);
+        }
+      }
     }
 
     if (propertyType.isComplexType()) {
-      parseComplexType(propertyType.asComplexType(), depth + 1, isParentMultible);
+      XSComplexType type = propertyType.asComplexType();
+      String finalPropertyName = propertyName;
+      Consumer<Integer> onFeature2 =
+          !type.getAttGroups().isEmpty()
+                  && Objects.equals(
+                      type.getAttGroups().iterator().next().getName(), "AssociationAttributeGroup")
+              ? nextDepth -> {
+                if (depth == nextDepth - 1) {
+                  for (FeatureProviderSchemaConsumer analyzer : analyzers) {
+                    analyzer.analyzeProperty(
+                        decl.getTargetNamespace(),
+                        finalPropertyName,
+                        "ReferenceType",
+                        minOccurs,
+                        maxOccurs,
+                        depth,
+                        isParentMultible,
+                        true,
+                        true);
+
+                    analyzer.analyzeAttribute(
+                        "http://www.w3.org/1999/xlink", "href", "", false, depth);
+                  }
+                }
+                // LOGGER.debug("ADD HREF {} {}->{}", type.getTargetNamespace() + ":" +
+                // type.getName(), depth, nextDepth)
+              }
+              : nextDepth -> {};
+
+      parseComplexType(type, depth + 1, isMultiple, onFeature2);
     }
   }
 
-  private void parseComplexType(XSComplexType type, int depth, boolean isParenMultible) {
+  private void parseComplexType(
+      XSComplexType type, int depth, boolean isParenMultiple, Consumer<Integer> onFeature) {
     if (type != null) {
       /*for (XSAttributeUse att : elem.getAttributeUses()) {
       LOGGER.debug("   - attribute {}, required: {}, type: {}, ns: {}", att.getDecl().getName(), att.isRequired(), att.getDecl().getType().getName(), att.getDecl().getTargetNamespace());
@@ -366,7 +447,7 @@ public class GMLSchemaParser {
         if (particle != null) {
           XSTerm term = particle.getTerm();
           if (term.isModelGroup()) {
-            parseGroup(term.asModelGroup(), depth, isParenMultible);
+            parseGroup(term.asModelGroup(), depth, isParenMultiple, onFeature);
           }
         }
       }

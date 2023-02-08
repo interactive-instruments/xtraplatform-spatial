@@ -133,7 +133,8 @@ public class FeatureProviderWfsFactory
           cleanupAdditionalInfo(
               completeConnectionInfoIfNecessary(
                   connector,
-                  generateNativeCrsIfNecessary(generateTypesIfNecessary(connector, data)))));
+                  generateNativeCrsIfNecessary(
+                      connector, generateTypesIfNecessary(connector, data)))));
 
     } catch (Throwable e) {
       LogContext.error(
@@ -185,17 +186,14 @@ public class FeatureProviderWfsFactory
     return data;
   }
 
-  private FeatureProviderWfsData generateNativeCrsIfNecessary(FeatureProviderWfsData data) {
+  private FeatureProviderWfsData generateNativeCrsIfNecessary(
+      WfsConnectorHttp connector, FeatureProviderWfsData data) {
     if (data.isAuto() && !data.getNativeCrs().isPresent()) {
-      EpsgCrs nativeCrs =
-          data.getTypes().values().stream()
-              .flatMap(type -> type.getProperties().stream())
-              .filter(
-                  property ->
-                      property.isSpatial() && property.getAdditionalInfo().containsKey("crs"))
-              .findFirst()
-              .map(property -> EpsgCrs.fromString(property.getAdditionalInfo().get("crs")))
-              .orElseGet(() -> OgcCrs.CRS84);
+      ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
+
+      WfsSchemaCrawler schemaCrawler = new WfsSchemaCrawler(connector, connectionInfo);
+
+      EpsgCrs nativeCrs = schemaCrawler.getNativeCrs().orElse(OgcCrs.CRS84);
 
       return new ImmutableFeatureProviderWfsData.Builder().from(data).nativeCrs(nativeCrs).build();
     }

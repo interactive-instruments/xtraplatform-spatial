@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.gml.infra;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.Metadata;
@@ -56,16 +57,26 @@ public class WfsSchemaCrawler {
     return connectionInfo;
   }
 
+  public Optional<EpsgCrs> getNativeCrs() {
+    Optional<Metadata> metadata = connector.getMetadata();
+
+    if (metadata.isPresent()) {
+      return metadata.get().getFeatureTypesCrs().values().stream()
+          .findFirst()
+          .map(EpsgCrs::fromString);
+    }
+
+    return Optional.empty();
+  }
+
   public List<FeatureSchema> parseSchema() {
     Optional<Metadata> metadata = connector.getMetadata();
 
     List<QName> featureTypes = metadata.map(Metadata::getFeatureTypes).orElse(ImmutableList.of());
-    Map<QName, String> crsMap =
-        metadata.map(Metadata::getFeatureTypesCrs).orElse(ImmutableMap.of());
     Map<String, String> namespaces =
         metadata.map(Metadata::getNamespaces).orElse(ImmutableMap.of());
 
-    WfsSchemaAnalyzer schemaConsumer = new WfsSchemaAnalyzer(featureTypes, crsMap, namespaces);
+    WfsSchemaAnalyzer schemaConsumer = new WfsSchemaAnalyzer(featureTypes, namespaces);
     analyzeFeatureTypes(schemaConsumer, featureTypes, new TaskProgressNoop());
 
     return schemaConsumer.getFeatureTypes();
