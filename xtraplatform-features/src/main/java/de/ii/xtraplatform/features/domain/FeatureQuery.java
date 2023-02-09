@@ -21,11 +21,6 @@ import org.immutables.value.Value;
 public interface FeatureQuery extends TypeQuery, Query {
 
   @Value.Default
-  default boolean propertyOnly() {
-    return false;
-  }
-
-  @Value.Default
   default boolean returnsSingleFeature() {
     return false;
   }

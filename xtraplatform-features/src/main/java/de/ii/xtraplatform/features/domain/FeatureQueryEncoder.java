@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import de.ii.xtraplatform.features.domain.FeatureProviderCapabilities.Operation;
 import java.util.Map;
 
 public interface FeatureQueryEncoder<T, V extends FeatureProviderConnector.QueryOptions> {
@@ -16,4 +17,24 @@ public interface FeatureQueryEncoder<T, V extends FeatureProviderConnector.Query
   T encode(Query query, Map<String, String> additionalQueryParameters);
 
   V getOptions(TypeQuery typeQuery, Query query);
+
+  FeatureProviderCapabilities getCapabilities();
+
+  // TODO: validate filters
+  // TODO: anything else?
+  default void validate(TypeQuery typeQuery, Query query) {
+    if (query.hitsOnly() && !getCapabilities().supportsQueryOp(Operation.COUNTING)) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Feature provider has level %s,  below level %s do not support COUNT",
+              FeatureProviderCapabilities.Level.DEFAULT));
+    }
+    if (!typeQuery.getSortKeys().isEmpty()
+        && !getCapabilities().supportsQueryOp(Operation.SORTING)) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Feature providers with level %s do not support SORTING",
+              getCapabilities().getLevel()));
+    }
+  }
 }

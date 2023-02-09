@@ -13,10 +13,13 @@ import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.features.domain.FeatureProviderCapabilities;
+import de.ii.xtraplatform.features.domain.FeatureProviderCapabilities.Level;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector.QueryOptions;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCapabilities;
 import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.TypeQuery;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
@@ -70,6 +73,12 @@ public class FeatureQueryEncoderWfs implements FeatureQueryEncoder<String, Query
     this.nativeCrs = nativeCrs;
     this.filterEncoder =
         new FilterEncoderWfs(nativeCrs, crsTransformerFactory, cql, namespaceNormalizer);
+  }
+
+  // TODO: add cql2 classes
+  @Override
+  public FeatureProviderCapabilities getCapabilities() {
+    return ImmutableFeatureProviderCapabilities.builder().level(Level.DEFAULT).build();
   }
 
   @Override

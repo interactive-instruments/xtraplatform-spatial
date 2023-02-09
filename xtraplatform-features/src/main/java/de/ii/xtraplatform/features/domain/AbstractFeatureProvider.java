@@ -343,6 +343,11 @@ public abstract class AbstractFeatureProvider<
   protected abstract Map<String, Codelist> getCodelists();
 
   @Override
+  public final FeatureProviderCapabilities getCapabilities() {
+    return getQueryEncoder().getCapabilities();
+  }
+
+  @Override
   public FeatureStream getFeatureStream(FeatureQuery query) {
     validateQuery(query);
 
@@ -371,14 +376,18 @@ public abstract class AbstractFeatureProvider<
     return changeHandler;
   }
 
+  // TODO: encodingOptions vs executionOptions
   private FeatureTokenSource getFeatureTokenSource(
       Query query, Map<String, String> virtualTables, boolean passThrough) {
-    U transformedQuery = getQueryEncoder().encode(query, virtualTables);
-    // TODO: remove options, already embedded in SqlQuerySet
     TypeQuery typeQuery =
         query instanceof MultiFeatureQuery
             ? ((MultiFeatureQuery) query).getQueries().get(0)
             : (FeatureQuery) query;
+
+    getQueryEncoder().validate(typeQuery, query);
+
+    U transformedQuery = getQueryEncoder().encode(query, virtualTables);
+    // TODO: remove options, already embedded in SqlQuerySet
     V options = getQueryEncoder().getOptions(typeQuery, query);
     Reactive.Source<T> source = getConnector().getSourceStream(transformedQuery, options);
 
@@ -402,6 +411,7 @@ public abstract class AbstractFeatureProvider<
       BiFunction<FeatureTokenSource, Map<String, String>, Stream<W>> stream,
       Query query,
       boolean passThrough) {
+    // TODO: rename to context?
     Map<String, String> virtualTables = beforeQuery(query);
 
     FeatureTokenSource tokenSource = getFeatureTokenSource(query, virtualTables, passThrough);

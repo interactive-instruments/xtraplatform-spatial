@@ -10,9 +10,12 @@ package de.ii.xtraplatform.features.sql.app;
 import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.features.domain.FeatureProviderCapabilities;
+import de.ii.xtraplatform.features.domain.FeatureProviderCapabilities.Level;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCapabilities;
 import de.ii.xtraplatform.features.domain.ImmutableSortKey;
 import de.ii.xtraplatform.features.domain.MultiFeatureQuery;
 import de.ii.xtraplatform.features.domain.Query;
@@ -58,6 +61,12 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
     this.allQueryTemplatesMutations = allQueryTemplatesMutations;
     this.chunkSize = queryGeneratorSettings.getChunkSize();
     this.skipRedundantMetaQueries = !queryGeneratorSettings.getComputeNumberMatched();
+  }
+
+  // TODO: add cql2 classes
+  @Override
+  public FeatureProviderCapabilities getCapabilities() {
+    return ImmutableFeatureProviderCapabilities.builder().level(Level.FULL).build();
   }
 
   // TODO: cleanup options
