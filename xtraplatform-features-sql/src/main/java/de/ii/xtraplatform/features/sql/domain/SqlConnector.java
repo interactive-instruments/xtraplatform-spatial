@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
+import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
@@ -25,7 +26,6 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 
@@ -319,11 +319,7 @@ public interface SqlConnector
     }
 
     List<Class<?>> columnTypes =
-        Stream.concat(
-                IntStream.range(0, 2 + (options.getCustomSortKeys().size() * 2))
-                    .mapToObj(i -> Object.class),
-                Stream.of(Long.class, Long.class, Long.class))
-            .collect(Collectors.toList());
+        ImmutableList.of(Object.class, Object.class, Long.class, Long.class, Long.class);
 
     return getSqlClient()
         .getSourceStream(metaQuery.get(), SqlQueryOptions.withColumnTypes(columnTypes))

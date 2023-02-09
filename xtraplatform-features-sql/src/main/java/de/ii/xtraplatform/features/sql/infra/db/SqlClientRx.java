@@ -23,10 +23,12 @@ import io.reactivex.Flowable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -48,12 +50,20 @@ public class SqlClientRx implements SqlClient {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SqlClientRx.class);
 
+  /* NOTE: If the db uses e.g. the DE collation and some sort key actually contains e.g. umlauts
+           this might lead to wrong results.
+           To cover such cases, the locale would need to be configurable.
+  */
+  private static final Collator COLLATOR_DEFAULT = Collator.getInstance(Locale.US);
+
   private final Database session;
   private final Dialect dialect;
+  private final Collator collator;
 
   public SqlClientRx(Database session, Dialect dialect) {
     this.session = session;
     this.dialect = dialect;
+    this.collator = dialect == Dialect.PGIS ? COLLATOR_DEFAULT : null;
   }
 
   @Override
@@ -74,7 +84,7 @@ public class SqlClientRx implements SqlClient {
 
     session
         .select(query)
-        .get(resultSet -> new SqlRowVals().read(resultSet, options))
+        .get(resultSet -> new SqlRowVals(collator).read(resultSet, options))
         .toList()
         .subscribe(result::complete, result::completeExceptionally);
 
@@ -93,7 +103,7 @@ public class SqlClientRx implements SqlClient {
             .select(query)
             .get(
                 resultSet -> {
-                  SqlRow row = new SqlRowVals().read(resultSet, options);
+                  SqlRow row = new SqlRowVals(collator).read(resultSet, options);
 
                   if (LOGGER.isDebugEnabled(MARKER.SQL_RESULT) && logBuffer.size() < 5) {
                     logBuffer.add(row);
