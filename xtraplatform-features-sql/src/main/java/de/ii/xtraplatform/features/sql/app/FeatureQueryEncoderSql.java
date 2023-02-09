@@ -14,7 +14,7 @@ import de.ii.xtraplatform.features.domain.FeatureProviderCapabilities;
 import de.ii.xtraplatform.features.domain.FeatureProviderCapabilities.Level;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
-import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
+import de.ii.xtraplatform.features.domain.FeatureSchemaBase;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCapabilities;
 import de.ii.xtraplatform.features.domain.ImmutableSortKey;
 import de.ii.xtraplatform.features.domain.MultiFeatureQuery;
@@ -85,7 +85,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
 
   private SqlQueryBatch encode(FeatureQuery query, Map<String, String> additionalQueryParameters) {
     List<SqlQueryTemplates> queryTemplates =
-        query.getSchemaScope() == Scope.QUERIES
+        query.getSchemaScope() == FeatureSchemaBase.Scope.QUERIES
             ? allQueryTemplates.get(query.getType())
             : allQueryTemplatesMutations.get(query.getType());
     int chunks =

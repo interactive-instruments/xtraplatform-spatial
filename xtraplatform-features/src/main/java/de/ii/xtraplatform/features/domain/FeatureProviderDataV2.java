@@ -182,6 +182,13 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
   @JsonMerge
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
 
+  /**
+   * @langEn Definition of external feature types, see [below](#types).
+   * @langDe Definition of external object types, see [below](#types).
+   */
+  @JsonMerge
+  BuildableMap<FeatureSchemaExt, ImmutableFeatureSchemaExt.Builder> getExternalTypes();
+
   @DocIgnore
   Map<String, Map<String, String>> getCodelists();
 
@@ -240,6 +247,23 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
     @JsonProperty(value = "types")
     public T putTypes2(String key, ImmutableFeatureSchema.Builder builder) {
       return putTypes(key, builder.name(key));
+    }
+
+    @JsonIgnore
+    public abstract Map<String, ImmutableFeatureSchemaExt.Builder> getExternalTypes();
+
+    @JsonProperty(value = "externalTypes")
+    public Map<String, ImmutableFeatureSchemaExt.Builder> getExternalTypes2() {
+      Map<String, ImmutableFeatureSchemaExt.Builder> types = getExternalTypes();
+
+      return new ApplyKeyToValueMap<>(types, (key, builder) -> builder.name(key));
+    }
+
+    public abstract T putExternalTypes(String key, ImmutableFeatureSchemaExt.Builder builder);
+
+    @JsonProperty(value = "externalTypes")
+    public T putExternalTypes2(String key, ImmutableFeatureSchemaExt.Builder builder) {
+      return putExternalTypes(key, builder.name(key));
     }
 
     public abstract T id(String id);
