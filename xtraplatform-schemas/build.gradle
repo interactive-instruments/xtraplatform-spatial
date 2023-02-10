@@ -7,7 +7,7 @@ repositories {
 }
 
 dependencies {
-    embedded('net.jimblackler.jsonschemafriend:core:0.11.4') {
+    embeddedExport('net.jimblackler.jsonschemafriend:core:0.11.4') {
         exclude module: 'jackson-databind'
         exclude module: 'joda-time'
         exclude module: 'commons-logging'
