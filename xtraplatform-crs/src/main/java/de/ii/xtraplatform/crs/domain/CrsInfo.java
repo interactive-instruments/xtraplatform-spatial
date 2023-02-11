@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.crs.domain;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import javax.measure.Unit;
@@ -34,4 +35,6 @@ public interface CrsInfo {
   List<AxisDirection> getAxisDirections(EpsgCrs crs);
 
   Optional<BoundingBox> getDomainOfValidity(EpsgCrs crs);
+
+  List<Integer> getPrecisionList(EpsgCrs crs, Map<String, Integer> coordinatePrecision);
 }
