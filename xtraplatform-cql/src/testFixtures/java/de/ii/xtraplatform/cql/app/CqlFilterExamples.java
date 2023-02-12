@@ -9,7 +9,9 @@ package de.ii.xtraplatform.cql.app;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.cql.domain.AContainedBy;
 import de.ii.xtraplatform.cql.domain.AContains;
+import de.ii.xtraplatform.cql.domain.AEquals;
 import de.ii.xtraplatform.cql.domain.AOverlaps;
 import de.ii.xtraplatform.cql.domain.Accenti;
 import de.ii.xtraplatform.cql.domain.And;
@@ -25,6 +27,10 @@ import de.ii.xtraplatform.cql.domain.Eq;
 import de.ii.xtraplatform.cql.domain.Function;
 import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
+import de.ii.xtraplatform.cql.domain.Geometry.LineString;
+import de.ii.xtraplatform.cql.domain.Geometry.MultiPoint;
+import de.ii.xtraplatform.cql.domain.Geometry.Point;
+import de.ii.xtraplatform.cql.domain.Geometry.Polygon;
 import de.ii.xtraplatform.cql.domain.Gt;
 import de.ii.xtraplatform.cql.domain.Gte;
 import de.ii.xtraplatform.cql.domain.In;
@@ -51,6 +57,7 @@ import de.ii.xtraplatform.cql.domain.TIntersects;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.cql.domain.TemporalOperator;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import java.util.Objects;
 
@@ -171,6 +178,18 @@ public class CqlFilterExamples {
       TDuring.of(
           Property.of("updated"),
           TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")));
+
+  public static final Cql2Expression EXAMPLE_14_B =
+      TDuring.of(
+          TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")),
+          Property.of("updated"));
+
+  public static final Cql2Expression EXAMPLE_14_Negation =
+      Not.of(
+          TDuring.of(
+              Property.of("updated"),
+              TemporalLiteral.of(
+                  ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z"))));
   public static final CqlFilter EXAMPLE_14_OLD =
       CqlFilter.of(
           TemporalOperation.of(
@@ -183,6 +202,12 @@ public class CqlFilterExamples {
       SWithin.of(
           Property.of("location"),
           SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84)));
+
+  public static final Cql2Expression EXAMPLE_15_RandomCrs =
+      SWithin.of(
+          Property.of("location"),
+          SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, EpsgCrs.of(8888))));
+
   public static final CqlFilter EXAMPLE_15_OLD =
       CqlFilter.of(
           SpatialOperation.of(
@@ -201,6 +226,59 @@ public class CqlFilterExamples {
                       Geometry.Coordinate.of(10.0, -10.0),
                       Geometry.Coordinate.of(10.0, 10.0),
                       Geometry.Coordinate.of(-10.0, -10.0)))));
+
+  public static final Cql2Expression EXAMPLE_16_MultiPolygon =
+      SIntersects.of(
+          Property.of("location"),
+          SpatialLiteral.of(
+              Geometry.MultiPolygon.of(
+                  Polygon.of(
+                      OgcCrs.CRS84,
+                      ImmutableList.of(
+                          Geometry.Coordinate.of(-10.0, -10.0),
+                          Geometry.Coordinate.of(10.0, -10.0),
+                          Geometry.Coordinate.of(10.0, 10.0),
+                          Geometry.Coordinate.of(-10.0, -10.0))),
+                  Polygon.of(
+                      OgcCrs.CRS84,
+                      ImmutableList.of(
+                          Geometry.Coordinate.of(-15.0, -15.0),
+                          Geometry.Coordinate.of(15.0, -15.0),
+                          Geometry.Coordinate.of(15.0, 15.0),
+                          Geometry.Coordinate.of(-15.0, -15.0))))));
+
+  public static final Cql2Expression EXAMPLE_16_MultiLineString =
+      SIntersects.of(
+          Property.of("location"),
+          SpatialLiteral.of(
+              Geometry.MultiLineString.of(
+                  LineString.of(
+                      Geometry.Coordinate.of(-10.0, -10.0),
+                      Geometry.Coordinate.of(10.0, -10.0),
+                      Geometry.Coordinate.of(10.0, 10.0),
+                      Geometry.Coordinate.of(-10.0, -10.0)),
+                  LineString.of(
+                      Geometry.Coordinate.of(-15.0, -15.0),
+                      Geometry.Coordinate.of(15.0, -15.0),
+                      Geometry.Coordinate.of(15.0, 15.0),
+                      Geometry.Coordinate.of(-15.0, -15.0)))));
+  public static final Cql2Expression EXAMPLE_16_LineString =
+      SIntersects.of(
+          Property.of("location"),
+          SpatialLiteral.of(
+              LineString.of(
+                  Geometry.Coordinate.of(-10.0, -10.0),
+                  Geometry.Coordinate.of(10.0, -10.0),
+                  Geometry.Coordinate.of(10.0, 10.0),
+                  Geometry.Coordinate.of(-10.0, -10.0))));
+
+  public static final Cql2Expression EXAMPLE_16_Point =
+      SIntersects.of(Property.of("location"), SpatialLiteral.of(Point.of(10, -10)));
+
+  public static final Cql2Expression EXAMPLE_16_MultiPoint =
+      SIntersects.of(
+          Property.of("location"),
+          SpatialLiteral.of(MultiPoint.of(Point.of(10, -10), Point.of(10, 10))));
   public static final CqlFilter EXAMPLE_16_OLD =
       CqlFilter.of(
           SpatialOperation.of(
@@ -281,6 +359,22 @@ public class CqlFilterExamples {
       TIntersects.of(
           Interval.of(ImmutableList.of(Property.of("start"), TemporalLiteral.of(".."))),
           Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "..")));
+
+  public static final Cql2Expression EXAMPLE_Interval =
+      TIntersects.of(
+          Objects.requireNonNull(
+              TemporalLiteral.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")),
+          Interval.of(
+              ImmutableList.of(TemporalLiteral.of("2012-06-05T00:00:00Z"), Property.of("end"))));
+
+  public static final Cql2Expression EXAMPLE_Illegal_Interval =
+      TIntersects.of(
+          Objects.requireNonNull(
+              TemporalLiteral.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")),
+          Interval.of(
+              ImmutableList.of(
+                  TemporalLiteral.of("2012-06-05T00:00:00Z"),
+                  TemporalLiteral.of("2017-06-10T07:30:00Z"))));
   public static final CqlFilter EXAMPLE_25_OLD =
       CqlFilter.of(
           TemporalOperation.of(
@@ -894,4 +988,24 @@ public class CqlFilterExamples {
               ScalarLiteral.of("b"),
               ScalarLiteral.of("l"),
               ScalarLiteral.of("k")));
+
+  public static final Cql2Expression EXAMPLE_AContains_ValidFor_JOINED_GEOMETRY =
+      AContains.of(
+          Property.of("location"),
+          ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("id"), ScalarLiteral.of("location"))));
+
+  public static final Cql2Expression EXAMPLE_AEquals_ValidFor_JOINED_GEOMETRY =
+      AEquals.of(
+          Property.of("location"),
+          ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("id"), ScalarLiteral.of("location"))));
+
+  public static final Cql2Expression EXAMPLE_AOverlaps_ValidFor_JOINED_GEOMETRY =
+      AOverlaps.of(
+          Property.of("location"),
+          ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("id"), ScalarLiteral.of("location"))));
+
+  public static final Cql2Expression EXAMPLE_AContainedBy_ValidFor_JOINED_GEOMETRY =
+      AContainedBy.of(
+          Property.of("location"),
+          ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("id"), ScalarLiteral.of("location"))));
 }

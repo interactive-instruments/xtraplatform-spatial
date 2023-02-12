@@ -12,6 +12,7 @@ import de.ii.xtraplatform.cql.app.CqlImpl
 import de.ii.xtraplatform.cql.domain.And
 import de.ii.xtraplatform.cql.domain.Cql2Expression
 import de.ii.xtraplatform.cql.domain.Eq
+import de.ii.xtraplatform.cql.domain.Gt
 import de.ii.xtraplatform.cql.domain.Property
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.crs.domain.OgcCrs
@@ -77,12 +78,15 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
         "object without sourcePath"          | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || SqlQueryTemplatesFixtures.OBJECT_WITHOUT_SOURCE_PATH
         "paging"                             | td      | 10    | 10     | []                      | null                                                                                                                        | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_PAGING
         "sortBy"                             | td      | 0     | 0      | [SortKey.of("created")] | null                                                                                                                        | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY
-        "sortBy + filter"                    | td      | 0     | 0      | [SortKey.of("created")] | Eq.of(Property.of("task.title"), ScalarLiteral.of("foo")) | QuerySchemaFixtures.OBJECT_ARRAY || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_FILTER
+        "sortBy + filter"                    | td      | 0     | 0      | [SortKey.of("created")] | Eq.of(Property.of("task.title"), ScalarLiteral.of("foo"))                                                                   | QuerySchemaFixtures.OBJECT_ARRAY || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_FILTER
         "sortBy + paging"                    | td      | 10    | 10     | [SortKey.of("created")] | null                                                                                                                        | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING
         "sortBy + paging + filter"           | td      | 10    | 10     | [SortKey.of("created")] | And.of(Eq.of(Property.of("task.title"), ScalarLiteral.of("foo")), Eq.of(Property.of("task.href"), ScalarLiteral.of("bar"))) | QuerySchemaFixtures.OBJECT_ARRAY || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING_FILTER
         "property with multiple sourcePaths" | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || SqlQueryTemplatesFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
         "nested joins"                       | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.NESTED_JOINS                        || SqlQueryTemplatesFixtures.NESTED_JOINS
+        "nested joins"                       | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.NESTED_JOINS                        || SqlQueryTemplatesFixtures.NESTED_JOINS
+
     }
+
 
     static String meta(SqlQueryTemplates templates, List<SortKey> sortBy, Optional<Cql2Expression> userFilter) {
         return templates.getMetaQueryTemplate().generateMetaQuery(10, 10, 0, sortBy, userFilter, ImmutableMap.of(), false, true)
