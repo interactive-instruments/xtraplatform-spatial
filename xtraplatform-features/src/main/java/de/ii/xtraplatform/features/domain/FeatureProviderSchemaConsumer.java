@@ -13,7 +13,7 @@ package de.ii.xtraplatform.features.domain;
 public interface FeatureProviderSchemaConsumer {
   void analyzeFeatureType(String nsUri, String localName);
 
-  void analyzeAttribute(String nsUri, String localName, String type, boolean required);
+  void analyzeAttribute(String nsUri, String localName, String type, boolean required, int depth);
 
   void analyzeProperty(
       String nsUri,

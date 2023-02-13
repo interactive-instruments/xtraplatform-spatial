@@ -25,10 +25,10 @@ import java.sql.Timestamp;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,11 +36,6 @@ import org.slf4j.LoggerFactory;
 class SqlRowVals implements SqlRow {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SqlRowVals.class);
-  /* NOTE: If the db uses e.g. the DE collation and some sort key actually contains e.g. umlauts
-           this might lead to wrong results.
-           To cover such cases, the locale would need to be configurable.
-  */
-  private static final Collator COLLATOR = Collator.getInstance(Locale.US);
 
   private final List<Comparable<?>> ids;
   private final List<Comparable<?>> sortKeys;
@@ -50,12 +45,18 @@ class SqlRowVals implements SqlRow {
   private int priority;
   private SchemaSql tableSchema;
   private Optional<String> type;
+  @Nullable private final Collator collator;
 
   SqlRowVals() {
+    this(null);
+  }
+
+  SqlRowVals(@Nullable Collator collator) {
     this.ids = new ArrayList<>(32);
     this.sortKeys = new ArrayList<>(32);
     this.sortKeyNames = new ArrayList<>(32);
     this.values = new ArrayList<>(128);
+    this.collator = collator;
   }
 
   @Override
@@ -225,7 +226,7 @@ class SqlRowVals implements SqlRow {
     int commonSortKeys = getNumberOfCommonElements(sortKeyNames, otherSqlRow.getSortKeyNames());
     int resultSortKeys =
         compareSortKeys(
-            getSortKeys(), otherSqlRow.getSortKeys(), commonSortKeys, sortKeyDirections);
+            getSortKeys(), otherSqlRow.getSortKeys(), commonSortKeys, sortKeyDirections, collator);
     int result = resultSortKeys == 0 ? priority - otherSqlRow.getPriority() : resultSortKeys;
 
     if (LOGGER.isTraceEnabled()) {
@@ -259,7 +260,8 @@ class SqlRowVals implements SqlRow {
       List<Comparable<?>> ids1,
       List<Comparable<?>> ids2,
       int numberOfIds,
-      List<Direction> idColumnDirections) {
+      List<Direction> idColumnDirections,
+      Collator collator) {
     for (int i = 0; i < numberOfIds; i++) {
       int result = 0;
       Comparable<?> id1 = ids1.get(i);
@@ -286,8 +288,10 @@ class SqlRowVals implements SqlRow {
         result = ((Date) id1).compareTo((Date) id2);
       } else if (id1 instanceof Timestamp) {
         result = ((Timestamp) id1).compareTo((Timestamp) id2);
+      } else if (Objects.nonNull(collator)) {
+        result = collator.compare((String) id1, (String) id2);
       } else {
-        result = COLLATOR.compare((String) id1, (String) id2);
+        result = ((String) id1).compareTo((String) id2);
       }
       if (result != 0) {
         return result * direction;
