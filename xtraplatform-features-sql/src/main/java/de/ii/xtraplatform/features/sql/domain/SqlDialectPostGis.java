@@ -10,7 +10,6 @@ package de.ii.xtraplatform.features.sql.domain;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.cql.domain.SpatialOperator;
 import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -82,15 +81,6 @@ public class SqlDialectPostGis implements SqlDialect {
     }
 
     return Optional.empty();
-  }
-
-  @Override
-  public String getSpatialOperator(SpatialOperator spatialOperator) {
-    if (spatialOperator.equals(SpatialOperator.S_INTERSECTS)) {
-      // TODO temporary override to support 3D primary geometries (in PostGIS)
-      return "ST_3DIntersects";
-    }
-    return SqlDialect.super.getSpatialOperator(spatialOperator);
   }
 
   @Override

@@ -62,7 +62,7 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_16
 
         when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA JOIN geometry AB ON (AA.id=AB.id) WHERE ST_3DIntersects(AB.location, ST_GeomFromText('POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0))',4326)))"
+        String expected = "A.id IN (SELECT AA.id FROM building AA JOIN geometry AB ON (AA.id=AB.id) WHERE ST_Intersects(AB.location, ST_GeomFromText('POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0))',4326)))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -295,7 +295,7 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_16
 
         when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_3DIntersects(AA.location, ST_GeomFromText('POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0))',4326)))"
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_Intersects(AA.location, ST_GeomFromText('POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0))',4326)))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -413,7 +413,7 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_16_MultiPolygon
 
         when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_3DIntersects(AA.location, ST_GeomFromText('MULTIPOLYGON(((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)),((-15.0 -15.0,15.0 -15.0,15.0 15.0,-15.0 -15.0)))',4326)))"
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_Intersects(AA.location, ST_GeomFromText('MULTIPOLYGON(((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)),((-15.0 -15.0,15.0 -15.0,15.0 15.0,-15.0 -15.0)))',4326)))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -430,7 +430,7 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_16_MultiLineString
 
         when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_3DIntersects(AA.location, ST_GeomFromText('MULTILINESTRING((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0),(-15.0 -15.0,15.0 -15.0,15.0 15.0,-15.0 -15.0))',4326)))"
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_Intersects(AA.location, ST_GeomFromText('MULTILINESTRING((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0),(-15.0 -15.0,15.0 -15.0,15.0 15.0,-15.0 -15.0))',4326)))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -447,7 +447,7 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_16_LineString
 
         when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_3DIntersects(AA.location, ST_GeomFromText('LINESTRING(-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)',4326)))"
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_Intersects(AA.location, ST_GeomFromText('LINESTRING(-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)',4326)))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -464,7 +464,7 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_16_Point
 
         when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_3DIntersects(AA.location, ST_GeomFromText('POINT(10.0 -10.0)',4326)))"
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_Intersects(AA.location, ST_GeomFromText('POINT(10.0 -10.0)',4326)))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -481,7 +481,7 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_16_MultiPoint
 
         when:
-        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_3DIntersects(AA.location, ST_GeomFromText('MULTIPOINT(10.0 -10.0,10.0 10.0)',4326)))"
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE ST_Intersects(AA.location, ST_GeomFromText('MULTIPOINT(10.0 -10.0,10.0 10.0)',4326)))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
