@@ -54,7 +54,9 @@ class TileStorePlain implements TileStore {
       return TileResult.notFound();
     }
 
-    return TileResult.found(content.get().readAllBytes());
+    try (InputStream result = content.get()) {
+      return TileResult.found(result.readAllBytes());
+    }
   }
 
   @Override
