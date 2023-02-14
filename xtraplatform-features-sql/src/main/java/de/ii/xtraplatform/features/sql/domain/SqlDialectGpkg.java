@@ -113,6 +113,12 @@ public class SqlDialectGpkg implements SqlDialect {
   }
 
   @Override
+  public String applyToDiameter(String geomExpression, boolean is3d) {
+    throw new IllegalArgumentException(
+        "DIAMETER2D()/DIAMETER3D() is not supported for GeoPackage feature providers.");
+  }
+
+  @Override
   public String castToBigInt(int value) {
     return String.format("CAST(%d AS BIGINT)", value);
   }

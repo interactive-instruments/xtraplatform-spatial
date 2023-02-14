@@ -45,6 +45,7 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
   default Class<?> getType() {
     if (isLower() || isUpper()) return String.class;
     else if (isPosition()) return Integer.class;
+    else if (isDiameter()) return Double.class;
     return Object.class;
   }
 
@@ -84,6 +85,12 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
   @Value.Lazy
   default boolean isPosition() {
     return "position".equalsIgnoreCase(getName());
+  }
+
+  @JsonIgnore
+  @Value.Lazy
+  default boolean isDiameter() {
+    return "diameter2d".equalsIgnoreCase(getName()) || "diameter3d".equalsIgnoreCase(getName());
   }
 
   class Serializer extends StdSerializer<Function> {
