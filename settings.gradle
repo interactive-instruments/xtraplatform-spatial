@@ -15,6 +15,14 @@ plugins {
     id "org.danilopianini.gradle-pre-commit-git-hooks" version "1.0.12"
 }
 
+dependencyResolutionManagement {
+    versionCatalogs {
+        catalog {
+            from(files("./catalog.versions.toml"))
+        }
+    }
+}
+
 rootProject.name = 'xtraplatform-spatial'
 
 rootDir.listFiles().each { file ->
