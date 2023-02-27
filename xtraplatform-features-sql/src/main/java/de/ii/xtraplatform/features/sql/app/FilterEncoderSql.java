@@ -541,6 +541,25 @@ public class FilterEncoderSql {
       return ImmutableList.of(mainExpression, secondExpression, thirdExpression);
     }
 
+    private boolean has3dOperand(List<? extends Operand> operands) {
+      for (Operand op : operands) {
+        if (op instanceof Property) {
+          String name = ((Property) op).getName();
+          SchemaSql table = getTable(name, false, name.contains("."));
+          Optional<SchemaSql> schema =
+              table.getProperties().stream()
+                  .filter(getPropertyNameMatcher(name, false))
+                  .findFirst();
+
+          if (schema.isPresent() && schema.get().is3dGeometry()) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
     @Override
     public String visit(BinaryScalarOperation scalarOperation, List<String> children) {
       String operator = SCALAR_OPERATORS.get(scalarOperation.getClass());
@@ -734,7 +753,9 @@ public class FilterEncoderSql {
 
     @Override
     public String visit(BinarySpatialOperation spatialOperation, List<String> children) {
-      String operator = sqlDialect.getSpatialOperator(spatialOperation.getSpatialOperator());
+      boolean is3d = has3dOperand(spatialOperation.getArgs());
+
+      String operator = sqlDialect.getSpatialOperator(spatialOperation.getSpatialOperator(), is3d);
 
       List<String> expressions = processBinary(spatialOperation.getArgs(), children);
 
