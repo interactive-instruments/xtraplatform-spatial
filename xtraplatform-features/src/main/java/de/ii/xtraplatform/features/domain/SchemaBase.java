@@ -179,7 +179,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
             p ->
                 p.isPrimaryGeometry()
                     && SimpleFeatureGeometry.MULTI_POLYGON.equals(
-                    p.getGeometryType().orElse(SimpleFeatureGeometry.NONE))
+                        p.getGeometryType().orElse(SimpleFeatureGeometry.NONE))
                     && p.getConstraints().map(SchemaConstraints::isComposite).orElse(false)
                     && p.getConstraints().map(SchemaConstraints::isClosed).orElse(false));
   }
