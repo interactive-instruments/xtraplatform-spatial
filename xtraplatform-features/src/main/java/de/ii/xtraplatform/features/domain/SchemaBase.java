@@ -245,10 +245,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default Optional<T> getSecondaryGeometry() {
-    return getAllNestedProperties().stream()
-        .filter(SchemaBase::isSecondaryGeometry)
-        .findFirst()
-        .or(() -> getProperties().stream().filter(SchemaBase::isSpatial).findFirst());
+    return getAllNestedProperties().stream().filter(SchemaBase::isSecondaryGeometry).findFirst();
   }
 
   @JsonIgnore
