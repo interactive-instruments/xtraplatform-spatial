@@ -1,4 +1,3 @@
-
 plugins {
     id 'antlr'
 }
@@ -20,6 +19,10 @@ configurations.api {
     exclude(group: 'org.antlr', module: 'antlr4')
     exclude(group: 'org.antlr', module: 'antlr4-runtime')
     exclude(group: 'org.antlr', module: 'antlr-runtime')
+    exclude(group: 'org.antlr', module: 'ST4')
+    exclude(group: 'org.abego.treelayout', module: 'org.abego.treelayout.core')
+    exclude(group: 'org.glassfish', module: 'javax.json')
+    exclude(group: 'com.ibm.icu', module: 'icu4j')
 }
 
 ext {
@@ -59,7 +62,7 @@ publishing {
     publications.named('default').configure {
         pom.withXml {
             asNode().dependencies.'*'.findAll() {
-                it.artifactId.text().startsWith('antlr')
+                it.artifactId.text().startsWith('antlr') || it.artifactId.text().startsWith('ST4') || it.artifactId.text().startsWith('org.abego.treelayout') || it.artifactId.text().startsWith('javax.json') || it.artifactId.text().startsWith('icu4j')
             }.each {
                 it.parent().remove(it)
             }
