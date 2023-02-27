@@ -28,7 +28,8 @@ public interface FeatureProperty extends Buildable<FeatureProperty> {
     PRIMARY_GEOMETRY,
     PRIMARY_INSTANT,
     PRIMARY_INTERVAL_START,
-    PRIMARY_INTERVAL_END
+    PRIMARY_INTERVAL_END,
+    SECONDARY_GEOMETRY
   }
 
   enum Type {

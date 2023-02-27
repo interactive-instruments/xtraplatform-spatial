@@ -36,8 +36,9 @@ public interface SchemaBase<T extends SchemaBase<T>> {
    *           Namen einer Unterobjektart enthält.
    *       <li>Hat eine Objektart mehrere Geometrieeigenschaften, dann ist <code>PRIMARY_GEOMETRY
    *           </code> bei der Eigenschaft anzugeben, die für <code>bbox</code>-Abfragen verwendet
-   *           werden soll und die in GeoJSON in <code>geometry</code> oder in JSON-FG in <code>
-   *           where</code> kodiert werden soll.
+   *           werden soll und die z.B. in GeoJSON in <code>geometry</code> kodiert werden soll. Bei
+   *           JSON-FG wird in <code>place</code> die <code>SECONDARY_GEOMETRY</code> kodiert,
+   *           sofern die Rolle gesetzt ist, ansonsten auch die <code>PRIMARY_GEOMETRY</code>.
    *       <li>Hat eine Objektart mehrere zeitliche Eigenschaften, dann sollte <code>PRIMARY_INSTANT
    *           </code> bei der Eigenschaft angegeben werden, die für <code>datetime</code>-Abfragen
    *           verwendet werden soll, sofern ein Zeitpunkt die zeitliche Ausdehnung der Features
@@ -55,7 +56,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     PRIMARY_GEOMETRY,
     PRIMARY_INSTANT,
     PRIMARY_INTERVAL_START,
-    PRIMARY_INTERVAL_END
+    PRIMARY_INTERVAL_END,
+    SECONDARY_GEOMETRY
   }
 
   enum Type {
@@ -228,6 +230,25 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  default Optional<T> getSecondaryGeometry() {
+    return getAllNestedProperties().stream()
+        .filter(SchemaBase::isSecondaryGeometry)
+        .findFirst()
+        .or(() -> getProperties().stream().filter(SchemaBase::isSpatial).findFirst());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default Optional<T> getSecondaryGeometryParent() {
+    return getAllObjects().stream()
+        .filter(schema -> schema.getProperties().stream().anyMatch(SchemaBase::isSecondaryGeometry))
+        .findFirst();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default List<String> getFullPath() {
     return new ImmutableList.Builder<String>().addAll(getParentPath()).addAll(getPath()).build();
   }
@@ -329,6 +350,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  default boolean isSecondaryGeometry() {
+    return getRole().filter(role -> role == Role.SECONDARY_GEOMETRY).isPresent();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default boolean isType() {
     return getRole().filter(role -> role == Role.TYPE).isPresent();
   }
@@ -338,6 +366,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default boolean isRequired() {
     return getConstraints().filter(SchemaConstraints::isRequired).isPresent();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isSimpleFeatureGeometry() {
+    return getGeometryType().isPresent() && !is3dGeometry();
   }
 
   @JsonIgnore
