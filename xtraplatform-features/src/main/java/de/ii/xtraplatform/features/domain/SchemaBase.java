@@ -382,6 +382,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  default boolean isSimpleFeatureGeometry() {
+    return getGeometryType().isPresent() && !is3dGeometry();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default boolean is3dGeometry() {
     return getGeometryType().isPresent()
         && getGeometryType().get() == SimpleFeatureGeometry.MULTI_POLYGON
