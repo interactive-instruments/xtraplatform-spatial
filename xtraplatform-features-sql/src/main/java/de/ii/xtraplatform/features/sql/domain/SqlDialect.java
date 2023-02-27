@@ -53,8 +53,10 @@ public interface SqlDialect {
 
   List<String> getSystemTables();
 
-  default String getSpatialOperator(SpatialOperator spatialOperator) {
-    return SPATIAL_OPERATORS.get(spatialOperator);
+  default String getSpatialOperator(SpatialOperator spatialOperator, boolean is3d) {
+    return is3d && SPATIAL_OPERATORS_3D.containsKey(spatialOperator)
+        ? SPATIAL_OPERATORS_3D.get(spatialOperator)
+        : SPATIAL_OPERATORS.get(spatialOperator);
   }
 
   default String getTemporalOperator(TemporalOperator temporalOperator) {
@@ -87,4 +89,7 @@ public interface SqlDialect {
           .put(SpatialOperator.S_INTERSECTS, "ST_Intersects")
           .put(SpatialOperator.S_CONTAINS, "ST_Contains")
           .build();
+
+  Map<SpatialOperator, String> SPATIAL_OPERATORS_3D =
+      new ImmutableMap.Builder<SpatialOperator, String>().build();
 }

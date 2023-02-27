@@ -340,6 +340,17 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     return getConstraints().filter(SchemaConstraints::isRequired).isPresent();
   }
 
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean is3dGeometry() {
+    return getGeometryType().isPresent()
+        && getGeometryType().get() == SimpleFeatureGeometry.MULTI_POLYGON
+        && getConstraints().isPresent()
+        && getConstraints().get().isClosed()
+        && getConstraints().get().isComposite();
+  }
+
   default <U> U accept(SchemaVisitor<T, U> visitor) {
     return visitor.visit(
         (T) this,

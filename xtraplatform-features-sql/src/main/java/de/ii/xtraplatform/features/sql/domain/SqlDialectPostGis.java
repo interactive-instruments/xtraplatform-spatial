@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.sql.domain;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.cql.domain.SpatialOperator;
 import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
@@ -27,6 +28,10 @@ public class SqlDialectPostGis implements SqlDialect {
 
   private static final Splitter BBOX_SPLITTER =
       Splitter.onPattern("[(), ]").omitEmptyStrings().trimResults();
+  private static final Map<SpatialOperator, String> SPATIAL_OPERATORS_3D =
+      new ImmutableMap.Builder<SpatialOperator, String>()
+          .put(SpatialOperator.S_INTERSECTS, "ST_3DIntersects")
+          .build();
   public static final Map<TemporalOperator, String> TEMPORAL_OPERATORS =
       new ImmutableMap.Builder<TemporalOperator, String>()
           .put(
@@ -97,6 +102,13 @@ public class SqlDialectPostGis implements SqlDialect {
     }
     Instant parsedEnd = parser.parse(end, Instant::from);
     return Optional.of(Interval.of(parsedStart, parsedEnd));
+  }
+
+  @Override
+  public String getSpatialOperator(SpatialOperator spatialOperator, boolean is3d) {
+    return is3d && SPATIAL_OPERATORS_3D.containsKey(spatialOperator)
+        ? SPATIAL_OPERATORS_3D.get(spatialOperator)
+        : SqlDialect.super.getSpatialOperator(spatialOperator, is3d);
   }
 
   @Override
