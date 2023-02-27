@@ -173,20 +173,6 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
-  default boolean primaryGeometryIsSimpleFeature() {
-    return getProperties().stream()
-        .noneMatch(
-            p ->
-                p.isPrimaryGeometry()
-                    && SimpleFeatureGeometry.MULTI_POLYGON.equals(
-                        p.getGeometryType().orElse(SimpleFeatureGeometry.NONE))
-                    && p.getConstraints().map(SchemaConstraints::isComposite).orElse(false)
-                    && p.getConstraints().map(SchemaConstraints::isClosed).orElse(false));
-  }
-
-  @JsonIgnore
-  @Value.Derived
-  @Value.Auxiliary
   default Optional<T> getPrimaryInstant() {
     return getAllNestedProperties().stream()
         .filter(SchemaBase::isPrimaryInstant)
@@ -380,6 +366,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default boolean isRequired() {
     return getConstraints().filter(SchemaConstraints::isRequired).isPresent();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isSimpleFeatureGeometry() {
+    return getGeometryType().isPresent() && !is3dGeometry();
   }
 
   @JsonIgnore
