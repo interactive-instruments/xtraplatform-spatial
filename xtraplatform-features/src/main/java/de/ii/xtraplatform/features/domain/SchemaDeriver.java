@@ -23,8 +23,6 @@ import java.util.stream.Stream;
 
 public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSchema, T> {
 
-  protected static final String SECONDARY_GEOMETRY = "SECONDARY_GEOMETRY";
-
   private final List<Codelist> codelists;
 
   public SchemaDeriver(List<Codelist> codelists) {
@@ -156,7 +154,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
               valueSchema,
               schema.isPrimaryGeometry()
                   ? getNameWithRole(Role.PRIMARY_GEOMETRY.name(), propertyName)
-                  : getNameWithRole(SECONDARY_GEOMETRY, propertyName));
+                  : getNameWithRole(Role.SECONDARY_GEOMETRY.name(), propertyName));
     } else {
       valueSchema =
           withName(
