@@ -77,6 +77,6 @@ public interface FeaturePropertyTransformerDateFormat extends FeaturePropertyVal
   }
 
   static boolean isDateTimeFormat(String format) {
-    return ImmutableList.of("H", "h", "M", "m", "S", "s").stream().anyMatch(format::contains);
+    return ImmutableList.of("H", "h", "m", "S", "s").stream().anyMatch(format::contains);
   }
 }
