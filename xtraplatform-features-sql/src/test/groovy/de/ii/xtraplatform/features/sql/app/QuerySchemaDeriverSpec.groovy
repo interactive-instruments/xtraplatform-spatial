@@ -22,7 +22,7 @@ class QuerySchemaDeriverSpec extends Specification {
     def setupSpec() {
         def defaults = new ImmutableSqlPathDefaults.Builder().build()
         def cql = new CqlImpl()
-        def pathParser = new SqlPathParser(defaults, cql)
+        def pathParser = new SqlPathParser(defaults, cql, Set.of())
         schemaDeriver = new QuerySchemaDeriver(pathParser)
     }
 

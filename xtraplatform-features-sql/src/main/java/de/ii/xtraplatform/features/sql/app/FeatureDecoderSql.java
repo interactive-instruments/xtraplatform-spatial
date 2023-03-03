@@ -51,7 +51,10 @@ public class FeatureDecoderSql
   private NestingTracker nestingTracker;
 
   public FeatureDecoderSql(
-      Map<String, SchemaMapping> mappings, List<SchemaSql> tableSchemas, Query query) {
+      Map<String, SchemaMapping> mappings,
+      List<SchemaSql> tableSchemas,
+      Query query,
+      Map<String, FeatureTokenDecoder> subdecoders) {
     this.mappings = mappings;
     this.query = query;
 

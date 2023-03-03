@@ -65,6 +65,8 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             ? ImmutableList.of()
             : pathParser.extractRelations(parentPaths.get(parentPaths.size() - 1), path);
 
+    Optional<String> connector = path.getConnector();
+
     List<String> sortKeys =
         Stream.concat(
                 relations.stream()
@@ -333,13 +335,14 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                 parentSortKeys.isEmpty() || !targetSchema.isValue()
                     ? Optional.empty()
                     : Optional.of(parentSortKeys.get(parentSortKeys.size() - 1)))
-            .type(targetSchema.getType())
+            .type(connector.isPresent() ? Type.STRING : targetSchema.getType())
             .valueType(targetSchema.getValueType())
             .geometryType(targetSchema.getGeometryType())
             .role(targetSchema.getRole())
             .sourcePath(targetSchema.getName())
             .relation(relations)
-            .properties(newVisitedProperties)
+            .subDecoder(connector)
+            .properties(connector.isPresent() ? List.of() : newVisitedProperties)
             .constantValue(targetSchema.getConstantValue())
             .forcePolygonCCW(
                 targetSchema.isForcePolygonCCW() ? Optional.empty() : Optional.of(false))

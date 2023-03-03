@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,7 +41,8 @@ public class SqlPathParser {
     FLAGS,
     SORTKEY,
     PRIMARYKEY,
-    FILTER
+    FILTER,
+    CONNECTOR
   }
 
   private interface Tokens {
@@ -93,6 +95,17 @@ public class SqlPathParser {
         String.format(
             "%s(?<%s>%s)(?<%s>%s)?", JOIN, MatcherGroups.TABLE, TABLE, MatcherGroups.FLAGS, FLAGS);
     String JOINED_TABLE_PLAIN = String.format("(?:%s)(?:%s)(?:%s)?", JOIN_PLAIN, TABLE, FLAGS);
+    String CONNECTED_COLUMN =
+        String.format(
+            "%s(?<%s>%s)%s(?<%s>%s)(?<%s>%s)?",
+            Pattern.quote(Tokens.JOIN_START),
+            MatcherGroups.CONNECTOR,
+            IDENTIFIER,
+            Pattern.quote(Tokens.JOIN_END),
+            MatcherGroups.COLUMNS,
+            COLUMN,
+            MatcherGroups.FLAGS,
+            FLAGS);
     String COLUMN_PATH =
         String.format(
             "(?<%s>(?:%s%s)*)(?<%s>%s)(?<%s>%s)?",
@@ -109,6 +122,8 @@ public class SqlPathParser {
     Pattern ROOT_TABLE = Pattern.compile(PatternStrings.ROOT_TABLE);
 
     Pattern JOINED_TABLE = Pattern.compile(PatternStrings.JOINED_TABLE);
+
+    Pattern CONNECTED_COLUMN = Pattern.compile(PatternStrings.CONNECTED_COLUMN);
 
     Pattern COLUMN_PATH = Pattern.compile(PatternStrings.COLUMN_PATH);
 
@@ -134,11 +149,13 @@ public class SqlPathParser {
   private final Cql cql;
   // TODO: remove
   private final Optional<Pattern> junctionTableMatcher;
+  private final Set<String> connectors;
 
-  public SqlPathParser(SqlPathDefaults defaults, Cql cql) {
+  public SqlPathParser(SqlPathDefaults defaults, Cql cql, Set<String> connectors) {
     this.defaults = defaults;
     this.cql = cql;
     this.junctionTableMatcher = defaults.getJunctionTablePattern().map(Pattern::compile);
+    this.connectors = connectors;
   }
 
   public SqlPath parseColumnPath(String path) {
@@ -228,6 +245,14 @@ public class SqlPathParser {
       tables.add(parseTable(tableMatcher, true));
     }
 
+    if (tables.isEmpty()) {
+      Matcher connectedMatcher = Patterns.CONNECTED_COLUMN.matcher(tablePath);
+
+      while (connectedMatcher.find()) {
+        tables.add(parseConnectedColumn(connectedMatcher, tablePath));
+      }
+    }
+
     return tables;
   }
 
@@ -256,6 +281,25 @@ public class SqlPathParser {
         .junction(isJunctionTable(table, flags))
         .filter(getFilterFlag(flags).map(filterText -> cql.read(filterText, Format.TEXT)))
         .filterString(getFilterFlag(flags));
+
+    return builder.build();
+  }
+
+  private SqlPath parseConnectedColumn(Matcher connectedMatcher, String path) {
+    String connector = connectedMatcher.group(MatcherGroups.CONNECTOR.name());
+    String column = connectedMatcher.group(MatcherGroups.COLUMNS.name());
+
+    if (!connectors.contains(connector)) {
+      throw new IllegalArgumentException(
+          "Invalid sourcePath connector in provider configuration: " + path);
+    }
+
+    Builder builder = new ImmutableSqlPath.Builder().name(column).connector(connector);
+
+    String flags =
+        Optional.ofNullable(connectedMatcher.group(MatcherGroups.FLAGS.name())).orElse("");
+
+    builder.sortKey(getSortKey(flags)).primaryKey(getPrimaryKey(flags)).junction(false);
 
     return builder.build();
   }

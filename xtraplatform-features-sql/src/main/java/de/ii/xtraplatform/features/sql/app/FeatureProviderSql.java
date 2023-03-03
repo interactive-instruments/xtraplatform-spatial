@@ -96,6 +96,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.postgresql.util.PSQLException;
@@ -121,6 +122,7 @@ public class FeatureProviderSql
   private final CrsInfo crsInfo;
   private final Cql cql;
   private final EntityRegistry entityRegistry;
+  private final Map<String, FeatureTokenDecoder> subdecoders;
 
   private FeatureQueryEncoderSql queryTransformer;
   private AggregateStatsReader<SchemaSql> aggregateStatsReader;
@@ -147,6 +149,10 @@ public class FeatureProviderSql
     this.crsInfo = crsInfo;
     this.cql = cql;
     this.entityRegistry = entityRegistry;
+    // TODO: DI all decoders, add method getSubDecoders -> [JSON: application/json], match decoder
+    // by media type
+    // TODO: cherry-pick json decoder from graphql
+    this.subdecoders = Map.of(); // "JSON", new FakeDecoder());
   }
 
   private static PathParserSql createPathParser2(SqlPathDefaults sqlPathDefaults, Cql cql) {
@@ -154,8 +160,9 @@ public class FeatureProviderSql
     return new PathParserSql(syntax, cql);
   }
 
-  private static SqlPathParser createPathParser3(SqlPathDefaults sqlPathDefaults, Cql cql) {
-    return new SqlPathParser(sqlPathDefaults, cql);
+  private static SqlPathParser createPathParser3(
+      SqlPathDefaults sqlPathDefaults, Cql cql, Set<String> connectors) {
+    return new SqlPathParser(sqlPathDefaults, cql, connectors);
   }
 
   @Override
@@ -168,7 +175,8 @@ public class FeatureProviderSql
     this.sourceSchemaValidator =
         new SourceSchemaValidatorSql(validationSchemas, this::getSqlClient);
 
-    this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql);
+    // TODO
+    this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql, Set.of("JSON"));
     QuerySchemaDeriver querySchemaDeriver = new QuerySchemaDeriver(pathParser3);
     this.tableSchemas =
         getData().getTypes().entrySet().stream()
@@ -451,7 +459,7 @@ public class FeatureProviderSql
               ? tableSchemas.get(featureQuery.getType())
               : tableSchemasMutations.get(featureQuery.getType());
 
-      return new FeatureDecoderSql(mappings, schemas, query);
+      return new FeatureDecoderSql(mappings, schemas, query, subdecoders);
     }
 
     if (query instanceof MultiFeatureQuery) {
@@ -478,7 +486,7 @@ public class FeatureProviderSql
               .flatMap(typeQuery -> tableSchemas.get(typeQuery.getType()).stream())
               .collect(Collectors.toList());
 
-      return new FeatureDecoderSql(mappings, schemas, query);
+      return new FeatureDecoderSql(mappings, schemas, query, subdecoders);
     }
 
     throw new IllegalArgumentException();

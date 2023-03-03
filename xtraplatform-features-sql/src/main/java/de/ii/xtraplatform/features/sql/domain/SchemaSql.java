@@ -25,6 +25,8 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
 
   List<SqlRelation> getRelation();
 
+  Optional<String> getSubDecoder();
+
   Optional<String> getPrimaryKey();
 
   Optional<String> getSortKey();
