@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.sql.app;
 
+import de.ii.xtraplatform.features.domain.FeatureDecoder;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -21,6 +22,7 @@ import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.sql.domain.SqlRowMeta;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +42,7 @@ public class FeatureDecoderSql
   private final List<List<String>> mainTablePaths;
   private final FeatureStoreMultiplicityTracker multiplicityTracker;
   private final boolean isSingleFeature;
+  private final Map<String, FeatureDecoder<byte[]>> subDecoders;
 
   private boolean started;
   private boolean featureStarted;
@@ -54,7 +57,7 @@ public class FeatureDecoderSql
       Map<String, SchemaMapping> mappings,
       List<SchemaSql> tableSchemas,
       Query query,
-      Map<String, FeatureTokenDecoder> subdecoders) {
+      Map<String, FeatureDecoder<byte[]>> subDecoders) {
     this.mappings = mappings;
     this.query = query;
 
@@ -69,6 +72,7 @@ public class FeatureDecoderSql
     this.multiplicityTracker = new SqlMultiplicityTracker(multiTables);
     this.isSingleFeature =
         query instanceof FeatureQuery && ((FeatureQuery) query).returnsSingleFeature();
+    this.subDecoders = subDecoders;
   }
 
   @Override
@@ -224,8 +228,7 @@ public class FeatureDecoderSql
               schemaIndexes.get(sqlRow.getColumnPaths().get(i)) + 1);
         }
 
-        if (sqlRow.getSpatialAttributes().size() > i
-            && Objects.equals(sqlRow.getSpatialAttributes().get(i), true)) {
+        if (sqlRow.isSpatialColumn(i)) {
           try {
             context.setSchemaIndex(-1);
             geometryDecoder.decode((String) sqlRow.getValues().get(i));
@@ -237,7 +240,17 @@ public class FeatureDecoderSql
           context.setValueType(Type.STRING);
           context.setValue((String) sqlRow.getValues().get(i));
           context.setSchemaIndex(schemaIndexes.get(sqlRow.getColumnPaths().get(i)));
-          getDownstream().onValue(context);
+
+          if (sqlRow.isSubDecoderColumn(i)) {
+            String subDecoder = sqlRow.getSubDecoder(i);
+            if (subDecoders.containsKey(subDecoder)) {
+              subDecoders.get(subDecoder).onPush(context.value().getBytes(StandardCharsets.UTF_8));
+            } else {
+              LOGGER.warn("Invalid sub-decoder: {}", subDecoder);
+            }
+          } else {
+            getDownstream().onValue(context);
+          }
         }
       }
     }

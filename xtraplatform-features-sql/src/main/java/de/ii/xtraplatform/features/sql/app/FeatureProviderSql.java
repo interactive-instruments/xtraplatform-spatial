@@ -27,6 +27,7 @@ import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
+import de.ii.xtraplatform.features.domain.FeatureDecoder;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
@@ -87,6 +88,7 @@ import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
+import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -122,7 +124,7 @@ public class FeatureProviderSql
   private final CrsInfo crsInfo;
   private final Cql cql;
   private final EntityRegistry entityRegistry;
-  private final Map<String, FeatureTokenDecoder> subdecoders;
+  private final Map<String, FeatureDecoder<byte[]>> subdecoders;
 
   private FeatureQueryEncoderSql queryTransformer;
   private AggregateStatsReader<SchemaSql> aggregateStatsReader;
@@ -152,7 +154,16 @@ public class FeatureProviderSql
     // TODO: DI all decoders, add method getSubDecoders -> [JSON: application/json], match decoder
     // by media type
     // TODO: cherry-pick json decoder from graphql
-    this.subdecoders = Map.of(); // "JSON", new FakeDecoder());
+    // TODO: factory
+    this.subdecoders =
+        Map.of(
+            "JSON",
+            new FeatureDecoder<byte[]>() {
+              @Override
+              public void onPush(byte[] bytes) {
+                LOGGER.debug("DECODE {}", new String(bytes, StandardCharsets.UTF_8));
+              }
+            });
   }
 
   private static PathParserSql createPathParser2(SqlPathDefaults sqlPathDefaults, Cql cql) {
@@ -175,8 +186,8 @@ public class FeatureProviderSql
     this.sourceSchemaValidator =
         new SourceSchemaValidatorSql(validationSchemas, this::getSqlClient);
 
-    // TODO
-    this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql, Set.of("JSON"));
+    this.pathParser3 =
+        createPathParser3(getData().getSourcePathDefaults(), cql, subdecoders.keySet());
     QuerySchemaDeriver querySchemaDeriver = new QuerySchemaDeriver(pathParser3);
     this.tableSchemas =
         getData().getTypes().entrySet().stream()

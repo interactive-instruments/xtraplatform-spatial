@@ -47,12 +47,20 @@ public interface SqlRow extends Comparable<SqlRow> {
     return ImmutableList.of();
   }
 
-  default List<Boolean> getSpatialAttributes() {
-    return ImmutableList.of();
+  default boolean isSpatialColumn(int i) {
+    return false;
   }
 
-  default List<Boolean> getTemporalAttributes() {
-    return ImmutableList.of();
+  default boolean isTemporalColumn(int i) {
+    return false;
+  }
+
+  default boolean isSubDecoderColumn(int i) {
+    return false;
+  }
+
+  default String getSubDecoder(int i) {
+    return "";
   }
 
   @Override
