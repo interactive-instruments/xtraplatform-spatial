@@ -26,8 +26,9 @@ import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
+import de.ii.xtraplatform.features.domain.Decoder;
+import de.ii.xtraplatform.features.domain.DecoderFactories;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
-import de.ii.xtraplatform.features.domain.FeatureDecoder;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
@@ -88,7 +89,6 @@ import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
-import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -99,8 +99,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.ws.rs.core.MediaType;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,7 +126,7 @@ public class FeatureProviderSql
   private final CrsInfo crsInfo;
   private final Cql cql;
   private final EntityRegistry entityRegistry;
-  private final Map<String, FeatureDecoder<byte[]>> subdecoders;
+  private final Map<String, Supplier<Decoder>> subdecoders;
 
   private FeatureQueryEncoderSql queryTransformer;
   private AggregateStatsReader<SchemaSql> aggregateStatsReader;
@@ -144,6 +146,7 @@ public class FeatureProviderSql
       Reactive reactive,
       EntityRegistry entityRegistry,
       ProviderExtensionRegistry extensionRegistry,
+      DecoderFactories decoderFactories,
       @Assisted FeatureProviderDataV2 data) {
     super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry, data);
 
@@ -151,19 +154,11 @@ public class FeatureProviderSql
     this.crsInfo = crsInfo;
     this.cql = cql;
     this.entityRegistry = entityRegistry;
-    // TODO: DI all decoders, add method getSubDecoders -> [JSON: application/json], match decoder
-    // by media type
-    // TODO: cherry-pick json decoder from graphql
-    // TODO: factory
+
     this.subdecoders =
         Map.of(
             "JSON",
-            new FeatureDecoder<byte[]>() {
-              @Override
-              public void onPush(byte[] bytes) {
-                LOGGER.debug("DECODE {}", new String(bytes, StandardCharsets.UTF_8));
-              }
-            });
+            () -> decoderFactories.createDecoder(MediaType.APPLICATION_JSON_TYPE).orElseThrow());
   }
 
   private static PathParserSql createPathParser2(SqlPathDefaults sqlPathDefaults, Cql cql) {

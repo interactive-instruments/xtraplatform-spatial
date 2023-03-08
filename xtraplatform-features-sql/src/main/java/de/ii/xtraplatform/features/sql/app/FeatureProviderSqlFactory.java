@@ -18,6 +18,7 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
+import de.ii.xtraplatform.features.domain.DecoderFactories;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
@@ -79,6 +80,7 @@ public class FeatureProviderSqlFactory
       Reactive reactive,
       EntityRegistry entityRegistry,
       ProviderExtensionRegistry extensionRegistry,
+      DecoderFactories decoderFactories,
       ProviderSqlFactoryAssisted providerSqlFactoryAssisted) {
     super(providerSqlFactoryAssisted);
     this.connectorFactory = connectorFactory;

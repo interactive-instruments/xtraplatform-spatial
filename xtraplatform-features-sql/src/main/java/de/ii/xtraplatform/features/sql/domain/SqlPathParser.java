@@ -29,6 +29,9 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO: use parser library, e.g.
+// https://github.com/zhong-j-yu/rekex/blob/main/rekex-example/src/main/java/org/rekex/exmple/parser/ExampleParser_Uri.java (Java17)
+// or https://github.com/typemeta/funcj/tree/master/parser
 public class SqlPathParser {
 
   private enum MatcherGroups {
