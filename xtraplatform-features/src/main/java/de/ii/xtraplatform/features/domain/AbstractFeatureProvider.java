@@ -16,7 +16,6 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.features.app.FeatureChangeHandlerImpl;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.LIFECYCLE_HOOK;
-import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
 import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
@@ -46,8 +45,10 @@ public abstract class AbstractFeatureProvider<
     implements FeatureProvider2, FeatureQueries {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
-  protected static final WithScope WITH_SCOPE_QUERIES = new WithScope(Scope.QUERIES);
-  protected static final WithScope WITH_SCOPE_MUTATIONS = new WithScope(Scope.MUTATIONS);
+  protected static final WithScope WITH_SCOPE_QUERIES =
+      new WithScope(FeatureSchemaBase.Scope.QUERIES);
+  protected static final WithScope WITH_SCOPE_MUTATIONS =
+      new WithScope(FeatureSchemaBase.Scope.MUTATIONS);
 
   private final ConnectorFactory connectorFactory;
   private final Reactive reactive;

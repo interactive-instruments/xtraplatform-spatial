@@ -53,12 +53,7 @@ import org.slf4j.LoggerFactory;
   "constraints",
   "properties"
 })
-public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<FeatureSchema> {
-
-  enum Scope {
-    QUERIES,
-    MUTATIONS
-  }
+public interface FeatureSchema extends FeatureSchemaBase<FeatureSchema>, Buildable<FeatureSchema> {
 
   Logger LOGGER = LoggerFactory.getLogger(FeatureSchema.class);
 

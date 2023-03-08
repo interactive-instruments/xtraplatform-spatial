@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
-import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
+import de.ii.xtraplatform.features.domain.FeatureSchemaBase.Scope;
 import de.ii.xtraplatform.web.domain.ETag;
 import java.util.List;
 import java.util.Optional;
@@ -29,7 +29,7 @@ public interface FeatureQuery extends TypeQuery, Query {
 
   @Value.Default
   default Scope getSchemaScope() {
-    return Scope.QUERIES;
+    return FeatureSchemaBase.Scope.QUERIES;
   }
 
   Optional<ETag.Type> getETag();
