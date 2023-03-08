@@ -61,6 +61,7 @@ public class DecoderJson implements Decoder {
   public void decode(byte[] data, Pipeline pipeline) {
     LOGGER.debug("DECODE {}", new String(data, StandardCharsets.UTF_8));
 
+    // TODO: optional wrapper and type, partial decoders?
     /*try {
       feeder.feedInput(data, 0, data.length);
     } catch (IOException e) {
