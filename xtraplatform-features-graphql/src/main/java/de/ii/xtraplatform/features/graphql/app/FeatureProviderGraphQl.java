@@ -159,7 +159,7 @@ public class FeatureProviderGraphQl
             : getData().getQueryGeneration().getCollection(name);
 
     // TODO: generalize, parse graphql
-    return new FeatureTokenDecoderGraphQlJson(featureSchema, featureQuery, name, wrapper);
+    return new FeatureTokenDecoderGraphQlJson2(featureSchema, featureQuery, name, wrapper);
   }
 
   @Override
