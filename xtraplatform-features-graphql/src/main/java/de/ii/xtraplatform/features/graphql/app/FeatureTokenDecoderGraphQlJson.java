@@ -17,13 +17,16 @@ import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
+import de.ii.xtraplatform.features.domain.MultiplicityTracker;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.json.domain.GeoJsonGeometryType;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +56,8 @@ public class FeatureTokenDecoderGraphQlJson
   private int endArray = 0;
 
   private ModifiableContext<FeatureSchema, SchemaMapping> context;
+  private List<List<String>> arrayPaths;
+  private MultiplicityTracker multiplicityTracker;
 
   public FeatureTokenDecoderGraphQlJson(
       FeatureSchema featureSchema, FeatureQuery query, String type, String wrapper) {
@@ -91,6 +96,13 @@ public class FeatureTokenDecoderGraphQlJson
                         .sourcePathTransformer((path, isValue) -> path)
                         .build()))
             .setQuery(featureQuery);
+
+    this.arrayPaths =
+        context.mapping().getTargetSchemasByPath().entrySet().stream()
+            .filter(entry -> entry.getValue().get(0).isArray())
+            .map(entry -> entry.getKey())
+            .collect(Collectors.toList());
+    this.multiplicityTracker = new MultiplicityTracker(arrayPaths);
   }
 
   @Override
@@ -146,9 +158,13 @@ public class FeatureTokenDecoderGraphQlJson
 
         case START_OBJECT:
           if (Objects.nonNull(currentName) && !started) {
+            // TODO: wrapper
             if (Objects.equals(currentName, "data")) {
+              // TODO
+              depth = 0;
               break;
             }
+            // TODO: propsParent
             if (Objects.equals(currentName, wrapper)) {
               startIfNecessary(false);
               inProperties = true;
@@ -169,27 +185,39 @@ public class FeatureTokenDecoderGraphQlJson
                   break;*/
               default:
                 if (inProperties /* || inGeometry*/) {
-                  // context.pathTracker().track(currentName);
+                  context.pathTracker().track(currentName);
                 }
                 break;
             }
             // nested array_object start
-          } else if (depth > featureDepth && started) {
+          } else if (Objects.isNull(currentName) && depth > featureDepth && started) {
+            multiplicityTracker.track(context.pathTracker().asList());
+            context.setIndexes(
+                multiplicityTracker.getMultiplicitiesForPath(context.pathTracker().asList()));
+            LOGGER.debug("OBJ {} {}", context.pathAsString(), context.indexes());
             getDownstream().onObjectStart(context);
+            break;
             // feature in collection start
           } else if (depth == featureDepth && inFeature) {
             // inFeature = false;
             context.pathTracker().track(type, 0);
+            context.setIndexes(List.of());
+            multiplicityTracker.reset();
             getDownstream().onFeatureStart(context);
+            depth = 1;
+            break;
           }
 
           // nested object start?
-          if (Objects.nonNull(currentName) || lastNameIsArrayDepth == 0) {
-            depth += 1;
+          if (Objects.nonNull(currentName)
+              || arrayPaths.contains(
+                  context.pathTracker().asList()) /*|| lastNameIsArrayDepth == 0*/) {
             if (depth > featureDepth && (inProperties /*|| inGeometry*/)
             /*&& !Objects.equals(currentName, "properties")*/ ) {
-              // getDownstream().onObjectStart(context);
+              LOGGER.debug("OBJ2 {} {}", context.pathAsString(), context.indexes());
+              getDownstream().onObjectStart(context);
             }
+            depth += 1;
           }
           break;
 
@@ -207,7 +235,7 @@ public class FeatureTokenDecoderGraphQlJson
             if (!context.inGeometry()) {
               context.pathTracker().track(currentName);
             }
-            lastNameIsArrayDepth += 1;
+            // lastNameIsArrayDepth += 1;
             depth += 1;
 
             getDownstream().onArrayStart(context);
@@ -248,7 +276,7 @@ public class FeatureTokenDecoderGraphQlJson
             if (inProperties) {
               context.pathTracker().track(depth - featureDepth);
             }
-            lastNameIsArrayDepth -= 1;
+            // lastNameIsArrayDepth -= 1;
             // end nested geo array
           } else if (context.inGeometry()) {
             endArray++;
@@ -260,10 +288,10 @@ public class FeatureTokenDecoderGraphQlJson
         case END_OBJECT:
 
           // end nested object
-          if (Objects.nonNull(currentName) || lastNameIsArrayDepth == 0) {
+          if (Objects.nonNull(currentName) /*||  lastNameIsArrayDepth == 0*/) {
             if (depth > featureDepth && (inProperties || context.inGeometry())
             /*&& !Objects.equals(currentName, "properties")*/ ) {
-              // getDownstream().onObjectEnd(context);
+              getDownstream().onObjectEnd(context);
             }
 
             // end geo
@@ -272,7 +300,10 @@ public class FeatureTokenDecoderGraphQlJson
             }
 
             depth -= 1;
-          } else if (lastNameIsArrayDepth > 0) {
+            // nested array_object end
+          } else if (arrayPaths.contains(
+              context.pathTracker().asList()) /*lastNameIsArrayDepth > 0*/) {
+            // context.pathTracker().track(depth - lastNameIsArrayDepth);
             getDownstream().onObjectEnd(context);
           }
 
@@ -283,8 +314,9 @@ public class FeatureTokenDecoderGraphQlJson
             }*/
             getDownstream().onEnd(context);
             // end feature in collection
-          } else if (depth == featureDepth && inFeature) {
-            // inFeature = false;
+          } else if (depth == featureDepth + 1 && inFeature) {
+            inFeature = false;
+            depth = 0;
             getDownstream().onFeatureEnd(context);
           } else if (inFeature) {
             // featureConsumer.onPropertyEnd(pathTracker.asList());
@@ -297,7 +329,8 @@ public class FeatureTokenDecoderGraphQlJson
             context.setInGeometry(false);
           }*/
           if (inProperties) {
-            context.pathTracker().track(depth - featureDepth);
+            // context.pathTracker().track(depth - featureDepth);
+            context.pathTracker().track(depth);
           }
           break;
 
