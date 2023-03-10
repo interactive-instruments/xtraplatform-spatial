@@ -22,7 +22,6 @@ import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.TypeQuery;
 import de.ii.xtraplatform.features.graphql.domain.ConnectionInfoGraphQlHttp;
 import de.ii.xtraplatform.features.graphql.domain.FeatureProviderGraphQlData.QueryGeneratorSettings;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -83,29 +82,35 @@ public class FeatureQueryEncoderGraphQl implements FeatureQueryEncoder<String, Q
     return name;
   }
 
-  public List<String> getFields(final FeatureQuery query) {
-    FeatureSchema featureSchema = featureSchemas.get(query.getType());
-    String name =
-        featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
-
+  public String getFields(FeatureSchema featureSchema, String indentation) {
     return featureSchema.getProperties().stream()
         .filter(
             s ->
-                s.isValue()
-                    && s.getScope().orElse(FeatureSchemaBase.Scope.QUERIES)
-                        == FeatureSchemaBase.Scope.QUERIES)
-        .map(FeatureSchema::getSourcePath)
+                s.getScope().orElse(FeatureSchemaBase.Scope.QUERIES)
+                    == FeatureSchemaBase.Scope.QUERIES)
+        .map(
+            prop -> {
+              if (prop.isValue()) {
+                return prop.getSourcePath();
+              } else if (prop.isObject()) {
+                return prop.getSourcePath()
+                    .map(obj -> obj + " " + getFields(prop, indentation + "  "));
+              }
+
+              return Optional.<String>empty();
+            })
         .filter(Optional::isPresent)
         .map(Optional::get)
-        .collect(Collectors.toList());
+        .collect(
+            Collectors.joining(
+                "\\n  " + indentation, "{\\n  " + indentation, "\\n" + indentation + "}"));
   }
 
   public String encodeFeatureQuery(
       FeatureQuery query, Map<String, String> additionalQueryParameters) {
-    String queryTemplate = "{\\n  %s {%s}\\n}";
+    String queryTemplate = "{\\n  %s %s\\n}";
 
-    String fields =
-        getFields(query).stream().collect(Collectors.joining("\\n    ", "\\n    ", "\\n  "));
+    String fields = getFields(featureSchemas.get(query.getType()), "  ");
 
     String q =
         String.format(queryTemplate, queryGeneration.getCollection(getTypeName(query)), fields);
