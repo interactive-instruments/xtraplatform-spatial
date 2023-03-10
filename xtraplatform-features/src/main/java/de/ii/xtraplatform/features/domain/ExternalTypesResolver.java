@@ -45,6 +45,7 @@ public class ExternalTypesResolver {
 
   public Optional<FeatureSchema> resolve(String key, FeatureSchemaExt value) {
     if (value.getSchema().isPresent()) {
+      LOGGER.debug("RESOLVING {}", value.getSchema().get());
       try {
         // TODO: rel path from blob store
         net.jimblackler.jsonschemafriend.Schema schema =
@@ -62,19 +63,28 @@ public class ExternalTypesResolver {
     return Optional.empty();
   }
 
+  net.jimblackler.jsonschemafriend.Schema resolve2(net.jimblackler.jsonschemafriend.Schema schema) {
+    if (Objects.nonNull(schema.getRef())) {
+      return resolve2(schema.getRef());
+    } else if (Objects.nonNull(schema.getOneOf()) && !schema.getOneOf().isEmpty()) {
+      return resolve2(schema.getOneOf().iterator().next());
+    } else if (Objects.nonNull(schema.getAnyOf()) && !schema.getAnyOf().isEmpty()) {
+      return resolve2(schema.getAnyOf().iterator().next());
+    } else if (Objects.nonNull(schema.getAllOf()) && !schema.getAllOf().isEmpty()) {
+      return resolve2(schema.getAllOf().iterator().next());
+    }
+    return schema;
+  }
+
   // TODO: constrains, arrays, oneOf/anyOf/allOf etc
   private FeatureSchema toFeatureSchema(
       String name,
       net.jimblackler.jsonschemafriend.Schema schema,
       @Nullable net.jimblackler.jsonschemafriend.Schema root,
       @Nullable FeatureSchemaExt original) {
-
-    /*if (Objects.equals(name, "isGeregistreerdMet")) {
-      return null;
-    }*/
     ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder();
-    net.jimblackler.jsonschemafriend.Schema s =
-        Objects.nonNull(schema.getRef()) ? schema.getRef() : schema;
+    net.jimblackler.jsonschemafriend.Schema s = resolve2(schema);
+
     net.jimblackler.jsonschemafriend.Schema r = Objects.isNull(root) ? schema : root;
     Type t = toType(s.getExplicitTypes());
 
