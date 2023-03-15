@@ -154,7 +154,9 @@ public class DecoderJsonProperties {
             break;
         }
 
-        context.pathTracker().track(currentName);
+        if (Objects.nonNull(currentName)) {
+          context.pathTracker().track(currentName);
+        }
 
         if (nextToken == JsonToken.VALUE_NULL && nullValue.isPresent()) {
           context.setValue(nullValue.get());
