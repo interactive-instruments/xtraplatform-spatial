@@ -19,12 +19,30 @@ import java.util.Objects;
 
 public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
+  private final boolean wildcard;
+  private final List<String> included;
+  private final List<String> excluded;
+
+  public OnlyQueryables(List<String> included, List<String> excluded) {
+    this.included = included;
+    this.excluded = excluded;
+    this.wildcard = included.contains("*");
+  }
+
   @Override
   public FeatureSchema visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
     if (!schema.isObject() && !schema.queryable()) {
       return null;
+    }
+
+    if (schema.queryable()) {
+      String path = schema.getFullPathAsString();
+      // ignore property, if it is not included (by default or explicitly) or if it is excluded
+      if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
+        return null;
+      }
     }
 
     Map<String, FeatureSchema> visitedPropertiesMap =
