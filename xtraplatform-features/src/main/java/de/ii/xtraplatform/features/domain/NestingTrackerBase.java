@@ -37,8 +37,15 @@ public class NestingTrackerBase<T> {
   }
 
   public void openArray(List<String> path) {
+    openArray(path, null);
+  }
 
-    push("A", List.copyOf(path), null);
+  public void openArray(List<String> path, T payload) {
+    push("A", List.copyOf(path), payload);
+  }
+
+  public void openObject(List<String> path) {
+    openObject(path, null);
   }
 
   public void openObject(List<String> path, T payload) {
@@ -132,7 +139,7 @@ public class NestingTrackerBase<T> {
   }
 
   public boolean isNested() {
-    return Objects.nonNull(getCurrentNestingPath());
+    return !getCurrentNestingPath().isEmpty();
   }
 
   public boolean inArray() {
@@ -170,5 +177,14 @@ public class NestingTrackerBase<T> {
     }
 
     return Objects.equals(longer.subList(0, shorter.size()), shorter);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder s = new StringBuilder();
+    for (int i = 0; i < pathStack.size(); i++) {
+      s.append(pathStack.get(i)).append(" ").append(nestingStack.get(i)).append("\n");
+    }
+    return s.toString();
   }
 }
