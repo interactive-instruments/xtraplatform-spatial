@@ -243,6 +243,35 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
   Optional<Boolean> getForcePolygonCCW();
 
   /**
+   * @langEn Properties that are not of type OBJECT or OBJECT_ARRAY are by default eligible as
+   *     queryables - unless the property is stored in a JSON container. This setting can be used to
+   *     declare a property as ineligible, for example, if the property is not optimized for use in
+   *     queries.
+   * @langDe Eigenschaften, die nicht vom Typ OBJECT oder OBJECT_ARRAY sind, sind standardmäßig für
+   *     Abfragen geeignet - es sei denn, die Eigenschaft ist in einem JSON-Container gespeichert.
+   *     Diese Einstellung kann verwendet werden, um eine Eigenschaft als nicht abfragefähig zu
+   *     markieren, z. B. wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert ist.
+   * @default see description
+   */
+  @Override
+  Optional<Boolean> getIsQueryable();
+
+  /**
+   * @langEn Only the direct properties of a feature type that are of type STRING, FLOAT, INTEGER,
+   *     DATE, or TIMESTAMP are eligible as sortables - unless the property is stored in a JSON
+   *     container. This setting can be used to declare a property as ineligible, for example, if
+   *     the property is not optimized for use in queries.
+   * @langDe Nur die direkten Feature-Eigenschaften einer Objektart, die vom Typ STRING, FLOAT,
+   *     INTEGER, DATE oder TIMESTAMP sind, kommen als Sortierkriterien in Frage - es sei denn, die
+   *     Eigenschaft ist in einem JSON-Container gespeichert. Diese Einstellung kann verwendet
+   *     werden, um eine Eigenschaft als nicht geeignet zu deklarieren, zum Beispiel, wenn die
+   *     Eigenschaft nicht für die Verwendung in Abfragen optimiert ist.
+   * @default see description
+   */
+  @Override
+  Optional<Boolean> getIsSortable();
+
+  /**
    * @langEn Only for `OBJECT` and `OBJECT_ARRAY`. Object with the property names as keys and schema
    *     objects as values.
    * @langDe Nur bei `OBJECT` und `OBJECT_ARRAY`. Ein Objekt mit einer Eigenschaft pro

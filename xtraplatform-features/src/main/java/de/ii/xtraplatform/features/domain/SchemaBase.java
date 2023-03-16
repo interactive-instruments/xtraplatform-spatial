@@ -112,6 +112,28 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     return getForcePolygonCCW().filter(force -> force == false).isEmpty();
   }
 
+  // TODO check that the property is eligible
+  Optional<Boolean> getIsQueryable();
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean queryable() {
+    // TODO also ignore JSON containers
+    return !isObject() && getIsQueryable().orElse(true);
+  }
+
+  // TODO check that the property is eligible
+  Optional<Boolean> getIsSortable();
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean sortable() {
+    // TODO also ignore JSON containers
+    return !isObject() && !isArray() && getParentPath().size() == 1 && getIsSortable().orElse(true);
+  }
+
   List<T> getProperties();
 
   @JsonIgnore
