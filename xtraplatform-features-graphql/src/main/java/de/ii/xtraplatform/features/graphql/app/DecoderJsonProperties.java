@@ -82,7 +82,7 @@ public class DecoderJsonProperties {
           multiplicityTracker.track(context.pathTracker().asList());
           context.setIndexes(
               multiplicityTracker.getMultiplicitiesForPath(context.pathTracker().asList()));
-          LOGGER.debug("ARR_OBJ {} {} {}", context.pathAsString(), context.indexes(), depth);
+          // LOGGER.debug("ARR_OBJ {} {} {}", context.pathAsString(), context.indexes(), depth);
           downstream.onObjectStart(context);
           // feature in collection start
         }
@@ -90,7 +90,7 @@ public class DecoderJsonProperties {
         else if (Objects.nonNull(currentName)
             || arrayPaths.contains(context.pathTracker().asList())) {
           depth += 1;
-          LOGGER.debug("OBJ {} {} {}", context.pathAsString(), context.indexes(), depth);
+          // LOGGER.debug("OBJ {} {} {}", context.pathAsString(), context.indexes(), depth);
           downstream.onObjectStart(context);
         }
         break;
@@ -99,7 +99,7 @@ public class DecoderJsonProperties {
         if (Objects.nonNull(currentName)) {
           context.pathTracker().track(currentName);
           depth += 1;
-          LOGGER.debug("ARR {} {} {}", context.pathAsString(), context.indexes(), depth);
+          // LOGGER.debug("ARR {} {} {}", context.pathAsString(), context.indexes(), depth);
           downstream.onArrayStart(context);
         }
         break;
@@ -111,7 +111,7 @@ public class DecoderJsonProperties {
           depth -= 1;
 
           context.pathTracker().track(depth + featureDepth);
-          LOGGER.debug("E ARR {} {} {}", context.pathAsString(), context.indexes(), depth);
+          // LOGGER.debug("E ARR {} {} {}", context.pathAsString(), context.indexes(), depth);
         }
         break;
 
@@ -128,7 +128,7 @@ public class DecoderJsonProperties {
         }
 
         context.pathTracker().track(depth + featureDepth);
-        LOGGER.debug("E OBJ {} {} {}", context.pathAsString(), context.indexes(), depth);
+        // LOGGER.debug("E OBJ {} {} {}", context.pathAsString(), context.indexes(), depth);
         break;
 
       case VALUE_STRING:
