@@ -159,12 +159,6 @@ public class FeatureTokenDecoderGraphQlJson2
 
         case START_OBJECT:
         case START_ARRAY:
-          LOGGER.debug(
-              "START {} {} {} {}",
-              currentName,
-              inProperties,
-              nextToken == JsonToken.START_ARRAY,
-              context.path());
           if (!inProperties) {
             if (inFeatures && context.path().size() == featureDepth) {
               this.inProperties = true;
@@ -179,17 +173,10 @@ public class FeatureTokenDecoderGraphQlJson2
           feedMeMore = decoderJsonProperties.parse(nextToken, currentName, featureDepth);
           break;
         case END_OBJECT:
-          LOGGER.debug(
-              "END {} {} {} {}",
-              currentName,
-              inProperties,
-              nextToken == JsonToken.END_ARRAY,
-              context.path());
           if (inProperties && context.path().size() == featureDepth) {
             this.inProperties = false;
             getDownstream().onFeatureEnd(context);
             if (!isCollection) {
-              LOGGER.debug("EOW");
               getDownstream().onEnd(context);
               this.inFeatures = false;
             }
@@ -199,7 +186,6 @@ public class FeatureTokenDecoderGraphQlJson2
           break;
         case END_ARRAY:
           if (!inProperties && context.path().size() == featureDepth) {
-            LOGGER.debug("EOW");
             getDownstream().onEnd(context);
             this.inFeatures = false;
             break;
@@ -248,6 +234,7 @@ public class FeatureTokenDecoderGraphQlJson2
 
   private void startFeature() {
     context.pathTracker().track(type, 0);
+    context.setIndexes(List.of());
     decoderJsonProperties.reset();
     getDownstream().onFeatureStart(context);
     this.featureDepth = context.path().size();
