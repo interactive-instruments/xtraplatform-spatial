@@ -41,8 +41,7 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
       if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
         return null;
       }
-    }
-    if (!schema.isObject()) {
+    } else if (!schema.isObject()) {
       return null;
     }
 
