@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.OptBoolean;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Preconditions;
 import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
@@ -499,5 +500,25 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
     }
 
     return this;
+  }
+
+  @Value.Check
+  default void checkIsQueryable() {
+    Preconditions.checkState(
+        !queryable() || !isObject(),
+        "a queryable property must not be an OBJECT or OBJECT_ARRAY, found %s",
+        getType());
+  }
+
+  @Value.Check
+  default void checkIsSortable() {
+    Preconditions.checkState(
+        !sortable() || getFullPath().size() == 1,
+        "a sortable property must be a direct property of the feature, found %s",
+        getFullPathAsString());
+    Preconditions.checkState(
+        !sortable() || (!isSpatial() && !isObject() && !isArray()),
+        "a sortable property must be a primitive value, found %s",
+        getType());
   }
 }

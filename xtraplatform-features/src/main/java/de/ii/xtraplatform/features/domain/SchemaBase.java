@@ -112,7 +112,6 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     return getForcePolygonCCW().filter(force -> force == false).isEmpty();
   }
 
-  // TODO check that the property is eligible
   Optional<Boolean> getIsQueryable();
 
   @JsonIgnore
@@ -123,7 +122,6 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     return !isObject() && getIsQueryable().orElse(true);
   }
 
-  // TODO check that the property is eligible
   Optional<Boolean> getIsSortable();
 
   @JsonIgnore
@@ -131,7 +129,11 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default boolean sortable() {
     // TODO also ignore JSON containers
-    return !isObject() && !isArray() && getParentPath().size() == 1 && getIsSortable().orElse(true);
+    return !isSpatial()
+        && !isObject()
+        && !isArray()
+        && getFullPath().size() == 1
+        && getIsSortable().orElse(true);
   }
 
   List<T> getProperties();
@@ -276,7 +278,11 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default String getFullPathAsString() {
-    return String.join(".", getFullPath());
+    return getFullPathAsString(".");
+  }
+
+  default String getFullPathAsString(String delimiter) {
+    return String.join(delimiter, getFullPath());
   }
 
   @JsonIgnore
