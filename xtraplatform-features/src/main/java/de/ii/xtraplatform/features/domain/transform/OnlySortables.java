@@ -19,11 +19,29 @@ import java.util.Objects;
 
 public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
+  private final boolean wildcard;
+  private final List<String> included;
+  private final List<String> excluded;
+  private final String pathSeparator;
+
+  public OnlySortables(List<String> included, List<String> excluded, String pathSeparator) {
+    this.included = included;
+    this.excluded = excluded;
+    this.wildcard = included.contains("*");
+    this.pathSeparator = pathSeparator;
+  }
+
   @Override
   public FeatureSchema visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
-    if (!schema.sortable()) {
+    if (schema.sortable()) {
+      String path = schema.getFullPathAsString(pathSeparator);
+      // ignore property, if it is not included (by default or explicitly) or if it is excluded
+      if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
+        return null;
+      }
+    } else {
       return null;
     }
 
@@ -32,7 +50,8 @@ public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, Featur
             .filter(Objects::nonNull)
             .map(
                 featureSchema ->
-                    new SimpleImmutableEntry<>(featureSchema.getFullPathAsString(), featureSchema))
+                    new SimpleImmutableEntry<>(
+                        featureSchema.getFullPathAsString(pathSeparator), featureSchema))
             .collect(
                 ImmutableMap.toImmutableMap(
                     Entry::getKey, Entry::getValue, (first, second) -> second));
