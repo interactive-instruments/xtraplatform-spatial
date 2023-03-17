@@ -41,7 +41,7 @@ public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, Featur
       if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
         return null;
       }
-    } else {
+    } else if (!schema.isFeature()) {
       return null;
     }
 
