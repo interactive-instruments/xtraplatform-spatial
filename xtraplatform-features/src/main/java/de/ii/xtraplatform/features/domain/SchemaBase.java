@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -119,7 +120,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default boolean queryable() {
     // TODO also ignore JSON containers
-    return !isObject() && getIsQueryable().orElse(true);
+    return !isObject() && !Objects.equals(getType(), Type.UNKNOWN) && getIsQueryable().orElse(true);
   }
 
   Optional<Boolean> getIsSortable();
@@ -132,6 +133,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     return !isSpatial()
         && !isObject()
         && !isArray()
+        && !Objects.equals(getType(), Type.BOOLEAN)
+        && !Objects.equals(getType(), Type.UNKNOWN)
         && getFullPath().size() == 1
         && getIsSortable().orElse(true);
   }

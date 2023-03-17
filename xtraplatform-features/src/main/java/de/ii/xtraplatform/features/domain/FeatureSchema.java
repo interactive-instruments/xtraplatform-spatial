@@ -505,7 +505,7 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
   @Value.Check
   default void checkIsQueryable() {
     Preconditions.checkState(
-        !queryable() || !isObject(),
+        !queryable() || (!isObject() && !Objects.equals(getType(), Type.UNKNOWN)),
         "a queryable property must not be an OBJECT or OBJECT_ARRAY, found %s",
         getType());
   }
@@ -517,7 +517,12 @@ public interface FeatureSchema extends SchemaBase<FeatureSchema>, Buildable<Feat
         "a sortable property must be a direct property of the feature, found %s",
         getFullPathAsString());
     Preconditions.checkState(
-        !sortable() || (!isSpatial() && !isObject() && !isArray()),
+        !sortable()
+            || (!isSpatial()
+                && !isObject()
+                && !isArray()
+                && !Objects.equals(getType(), Type.BOOLEAN)
+                && !Objects.equals(getType(), Type.UNKNOWN)),
         "a sortable property must be a primitive value, found %s",
         getType());
   }
