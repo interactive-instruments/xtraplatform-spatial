@@ -22,6 +22,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
+import de.ii.xtraplatform.features.json.domain.DecoderJsonProperties;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
