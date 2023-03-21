@@ -10,7 +10,6 @@ package de.ii.xtraplatform.features.domain;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.OptBoolean;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -18,7 +17,6 @@ import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import java.util.HashMap;
@@ -53,7 +51,10 @@ import org.slf4j.LoggerFactory;
   "constraints",
   "properties"
 })
-public interface FeatureSchema extends FeatureSchemaBase<FeatureSchema>, Buildable<FeatureSchema> {
+public interface FeatureSchema
+    extends FeatureSchemaBase<FeatureSchema>,
+        Buildable<FeatureSchema>,
+        PropertiesSchema<FeatureSchema, ImmutableFeatureSchema.Builder, FeatureSchema> {
 
   Logger LOGGER = LoggerFactory.getLogger(FeatureSchema.class);
 
@@ -209,6 +210,28 @@ public interface FeatureSchema extends FeatureSchemaBase<FeatureSchema>, Buildab
   Optional<Scope> getScope();
 
   /**
+   * @langEn <code>
+   * - foo
+   * - bar
+   * </code>
+   * @langDe
+   * @default null
+   */
+  Optional<String> getSchema();
+
+  /**
+   * @langEn Option to completely ignore this schema object. Main purpose is to ignore parts of
+   *     schemas referenced with `schema`.
+   * @langDe Option um dieses Schemaobjekt komplett zu ignorieren. Der Hauptzweck ist es Teile von
+   *     Schemas zu ignorieren, die mit `schema` referenziert werden.
+   * @default false
+   */
+  @Value.Default
+  default boolean getIgnore() {
+    return false;
+  }
+
+  /**
    * @langEn Optional transformations for the property, see
    *     [transformations](../details/transformations.md).
    * @langDe Optionale Transformationen für die Eigenschaft, siehe
@@ -237,46 +260,14 @@ public interface FeatureSchema extends FeatureSchemaBase<FeatureSchema>, Buildab
   @Override
   Optional<Boolean> getForcePolygonCCW();
 
-  /**
-   * @langEn Only for `OBJECT` and `OBJECT_ARRAY`. Object with the property names as keys and schema
-   *     objects as values.
-   * @langDe Nur bei `OBJECT` und `OBJECT_ARRAY`. Ein Objekt mit einer Eigenschaft pro
-   *     Objekteigenschaft. Der Schüssel ist der Name der Objekteigenschaft, der Wert das
-   *     Schema-Objekt zu der Objekteigenschaft.
-   */
-  // behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder
-  // deserialization
-  // (immutables attributeBuilder does not work with maps yet)
-  @JsonProperty(value = "properties")
+  @Override
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getPropertyMap();
 
-  // custom builder to automatically use keys of properties as name
-  abstract class Builder implements BuildableBuilder<FeatureSchema> {
+  List<PartialObjectSchema> getAllOf();
 
-    public abstract ImmutableFeatureSchema.Builder putPropertyMap(
-        String key, ImmutableFeatureSchema.Builder builder);
-
-    // @JsonMerge
-    @JsonProperty(value = "properties")
-    public ImmutableFeatureSchema.Builder putProperties2(
-        Map<String, ImmutableFeatureSchema.Builder> builderMap) {
-      ImmutableFeatureSchema.Builder builder1 = null;
-      for (Map.Entry<String, ImmutableFeatureSchema.Builder> entry : builderMap.entrySet()) {
-        String key = entry.getKey();
-        ImmutableFeatureSchema.Builder builder = entry.getValue();
-        builder1 = putPropertyMap(key, builder.name(key));
-      }
-      return builder1;
-      // return putPropertyMap(key, builder.name(key));
-    }
-
-    // @JsonProperty(value = "properties")
-    // @JsonAnySetter
-    public ImmutableFeatureSchema.Builder putProperties2(
-        String key, ImmutableFeatureSchema.Builder builder) {
-      return putPropertyMap(key, builder.name(key));
-    }
-  }
+  abstract class Builder
+      extends PropertiesSchema.Builder<FeatureSchema, ImmutableFeatureSchema.Builder, FeatureSchema>
+      implements PropertiesSchema.BuilderWithName<FeatureSchema, ImmutableFeatureSchema.Builder> {}
 
   @Override
   default ImmutableFeatureSchema.Builder getBuilder() {

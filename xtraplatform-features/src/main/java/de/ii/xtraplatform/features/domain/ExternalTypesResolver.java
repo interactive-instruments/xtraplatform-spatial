@@ -7,59 +7,208 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
-import de.ii.xtraplatform.schemas.domain.JsonSchemaParser;
+import de.ii.xtraplatform.store.domain.BlobStore;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Path;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import net.jimblackler.jsonschemafriend.CacheLoader;
+import net.jimblackler.jsonschemafriend.Schema;
+import net.jimblackler.jsonschemafriend.SchemaStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ExternalTypesResolver {
+public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ExternalTypesResolver.class);
 
-  public Map<String, FeatureSchema> resolve(Map<String, FeatureSchemaExt> externalTypes) {
+  private final SchemaStore schemaParser;
+  private final BlobStore schemaStore;
+
+  public ExternalTypesResolver(BlobStore schemaStore) {
+    this.schemaStore = schemaStore;
+    // TODO: custom loader with HttpClient
+    this.schemaParser = new SchemaStore(new CacheLoader());
+  }
+
+  public boolean needsResolving(Map<String, FeatureSchema> types) {
+    return types.values().stream()
+        .flatMap(type -> Stream.concat(Stream.of(type), type.getAllNestedProperties().stream()))
+        .anyMatch(def -> def.getSchema().isPresent() || !def.getAllOf().isEmpty());
+  }
+
+  @Override
+  public FeatureSchema visit(
+      FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
+    boolean ignoreProperties = false;
+    FeatureSchema resolved = schema;
+
+    if (resolved.getSchema().isPresent()) {
+      resolved = resolve(resolved.getSchema().get(), resolved).orElse(null);
+      ignoreProperties = true;
+    }
+
+    if (Objects.nonNull(resolved) && !resolved.getAllOf().isEmpty()) {
+      resolved = resolveAllOf(resolved);
+      // LOGGER.debug("ALLOF {}", resolved);
+      ignoreProperties = true;
+    }
+
+    if (ignoreProperties) {
+      return resolved;
+    }
+
+    Map<String, FeatureSchema> visitedPropertiesMap =
+        visitedProperties.stream()
+            .filter(Objects::nonNull)
+            .map(
+                featureSchema ->
+                    new SimpleImmutableEntry<>(featureSchema.getFullPathAsString(), featureSchema))
+            .collect(
+                ImmutableMap.toImmutableMap(
+                    Entry::getKey, Entry::getValue, (first, second) -> second));
+
+    return new ImmutableFeatureSchema.Builder()
+        .from(schema)
+        .propertyMap(visitedPropertiesMap)
+        .build();
+  }
+
+  public Map<String, FeatureSchema> resolve(Map<String, FeatureSchema> externalTypes) {
     Map<String, FeatureSchema> types = new LinkedHashMap<>();
 
-    if (!externalTypes.isEmpty()) {
-      ExternalTypesResolver resolver = new ExternalTypesResolver();
-
-      externalTypes.forEach(
-          (key, value) -> {
-            Optional<FeatureSchema> featureSchema = resolver.resolve(key, value);
-            if (featureSchema.isPresent()) {
-              types.put(key, featureSchema.get());
-            }
-          });
-    }
+    externalTypes.forEach(
+        (key, value) -> {
+          FeatureSchema resolved = value.accept(this);
+          if (Objects.nonNull(resolved)) {
+            types.put(key, resolved);
+          }
+        });
 
     return types;
   }
 
-  public Optional<FeatureSchema> resolve(String key, FeatureSchemaExt value) {
-    if (value.getSchema().isPresent()) {
-      LOGGER.debug("RESOLVING {}", value.getSchema().get());
-      try {
-        // TODO: rel path from blob store
-        net.jimblackler.jsonschemafriend.Schema schema =
-            new JsonSchemaParser().parseUri(URI.create(value.getSchema().get()));
+  public FeatureSchema resolveAllOf(FeatureSchema original) {
 
-        FeatureSchema featureSchema = toFeatureSchema(key, schema, null, value);
+    if (!original.getAllOf().isEmpty()) {
+      Map<String, FeatureSchema> props = new LinkedHashMap<>();
 
-        if (Objects.nonNull(featureSchema)) {
-          return Optional.of(featureSchema);
-        }
-      } catch (Throwable e) {
-        LogContext.error(LOGGER, e, "Error parsing json schema");
-      }
+      // TODO: merge sourcePath into first level props
+      original
+          .getAllOf()
+          .forEach(
+              partial -> {
+                // LOGGER.debug("PARTIAL {}", partial);
+                if (partial.getSourcePath().isPresent()) {
+                  partial
+                      .getPropertyMap()
+                      .forEach(
+                          (key, schema) -> {
+                            props.put(
+                                key,
+                                new ImmutableFeatureSchema.Builder()
+                                    .from(schema)
+                                    .sourcePath(
+                                        schema
+                                            .getSourcePath()
+                                            .map(
+                                                sourcePath ->
+                                                    String.format(
+                                                        "%s/%s",
+                                                        partial.getSourcePath().get(), sourcePath)))
+                                    .sourcePaths(
+                                        schema.getSourcePaths().stream()
+                                            .map(
+                                                sourcePath ->
+                                                    String.format(
+                                                        "%s/%s",
+                                                        partial.getSourcePath().get(), sourcePath))
+                                            .collect(Collectors.toList()))
+                                    .build());
+                          });
+                } else {
+                  props.putAll(partial.getPropertyMap());
+                }
+              });
+
+      return new ImmutableFeatureSchema.Builder()
+          .from(original)
+          .allOf(List.of())
+          .propertyMap(props)
+          .build();
     }
+
+    return original;
+  }
+
+  private static final Set<String> SCHEMES = ImmutableSet.of("http", "https");
+
+  public Optional<FeatureSchema> resolve(String schemaSource, FeatureSchema original) {
+    // LOGGER.debug("RESOLVING {}", schemaSource);
+    try {
+      URI schemaUri = URI.create(schemaSource);
+
+      if (SCHEMES.contains(schemaUri.getScheme())) {
+        net.jimblackler.jsonschemafriend.Schema schema = schemaParser.loadSchema(schemaUri);
+
+        FeatureSchema featureSchema = toFeatureSchema(original.getName(), schema, null, original);
+
+        return Optional.ofNullable(featureSchema);
+      } else if (Objects.isNull(schemaUri.getScheme())
+          && !schemaUri.getSchemeSpecificPart().startsWith("/")) {
+        Path path = Path.of(schemaUri.getSchemeSpecificPart());
+        if (schemaStore.has(path)) {
+          try (InputStream inputStream = schemaStore.get(path).get()) {
+            net.jimblackler.jsonschemafriend.Schema schema = schemaParser.loadSchema(inputStream);
+
+            if (Objects.nonNull(schemaUri.getFragment())) {
+              Map<URI, Schema> subSchemas = schema.getSubSchemas();
+              URI fullUri =
+                  URI.create(
+                      String.format("%s#%s", schema.getUri().toString(), schemaUri.getFragment()));
+              if (Objects.nonNull(subSchemas) && subSchemas.containsKey(fullUri)) {
+                schema = subSchemas.get(fullUri);
+              } else {
+                LOGGER.error(
+                    "Cannot load sub-schema '{}', not found in '{}'.",
+                    schemaUri.getFragment(),
+                    path);
+              }
+            }
+
+            FeatureSchema featureSchema =
+                toFeatureSchema(original.getName(), schema, null, original);
+
+            return Optional.ofNullable(featureSchema);
+          }
+        } else {
+          LOGGER.error("Cannot load schema '{}', not found in 'resources/schemas'.", schemaSource);
+        }
+      } else {
+        LOGGER.error(
+            "Cannot load schema '{}', only http/https URLs and relative paths allowed.",
+            schemaSource);
+      }
+    } catch (Throwable e) {
+      LogContext.error(LOGGER, e, "Error resolving external schema");
+    }
+
     return Optional.empty();
   }
 
@@ -81,7 +230,7 @@ public class ExternalTypesResolver {
       String name,
       net.jimblackler.jsonschemafriend.Schema schema,
       @Nullable net.jimblackler.jsonschemafriend.Schema root,
-      @Nullable FeatureSchemaExt original) {
+      @Nullable FeatureSchema original) {
     ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder();
     net.jimblackler.jsonschemafriend.Schema s = resolve2(schema);
 
@@ -94,7 +243,7 @@ public class ExternalTypesResolver {
 
     if (Objects.nonNull(original)) {
       if (original.getIgnore()) {
-        LOGGER.debug("IGNORE {}", name);
+        // LOGGER.debug("IGNORE {}", name);
         return null;
       }
       builderFrom(builder, original).propertyMap(Map.of());
@@ -137,13 +286,13 @@ public class ExternalTypesResolver {
     }
 
     ImmutableFeatureSchema build = builder.build();
-    LOGGER.debug("{} {}", name, build);
+    // LOGGER.debug("{} {}", name, build);
 
     return build;
   }
 
   private ImmutableFeatureSchema.Builder builderFrom(
-      ImmutableFeatureSchema.Builder builder, FeatureSchemaExt instance) {
+      ImmutableFeatureSchema.Builder builder, FeatureSchema instance) {
     Objects.requireNonNull(instance, "instance");
     builder.name(instance.getName());
     builder.addAllPath(instance.getPath());

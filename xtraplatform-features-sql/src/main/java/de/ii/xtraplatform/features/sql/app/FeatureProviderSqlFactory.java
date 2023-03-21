@@ -19,6 +19,7 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.DecoderFactories;
+import de.ii.xtraplatform.features.domain.ExternalTypesResolver;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
@@ -37,6 +38,7 @@ import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg;
 import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.features.sql.infra.db.SchemaGeneratorSql;
+import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.store.domain.entities.AbstractEntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
@@ -68,10 +70,12 @@ public class FeatureProviderSqlFactory
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSqlFactory.class);
 
+  private final BlobStore blobStore;
   private final ConnectorFactory connectorFactory;
 
   @Inject
   public FeatureProviderSqlFactory(
+      BlobStore blobStore,
       // TODO: needed because dagger-auto does not parse FeatureProviderSql
       CrsTransformerFactory crsTransformerFactory,
       CrsInfo crsInfo,
@@ -83,6 +87,7 @@ public class FeatureProviderSqlFactory
       DecoderFactories decoderFactories,
       ProviderSqlFactoryAssisted providerSqlFactoryAssisted) {
     super(providerSqlFactoryAssisted);
+    this.blobStore = blobStore;
     this.connectorFactory = connectorFactory;
   }
 
@@ -127,15 +132,28 @@ public class FeatureProviderSqlFactory
     }
 
     try {
-      return normalizeConstants(
-          cleanupAutoPersist(
-              cleanupAdditionalInfo(generateNativeCrsIfNecessary(generateTypesIfNecessary(data)))));
+      return resolveSchemasIfNecessary(
+          normalizeConstants(
+              cleanupAutoPersist(
+                  cleanupAdditionalInfo(
+                      generateNativeCrsIfNecessary(generateTypesIfNecessary(data))))));
     } catch (Throwable e) {
       LogContext.error(
           LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
     }
 
     throw new IllegalStateException();
+  }
+
+  private FeatureProviderSqlData resolveSchemasIfNecessary(FeatureProviderSqlData data) {
+    ExternalTypesResolver resolver = new ExternalTypesResolver(blobStore.with("schemas"));
+
+    if (resolver.needsResolving(data.getTypes())) {
+      Map<String, FeatureSchema> types = resolver.resolve(data.getTypes());
+
+      return new Builder().from(data).types(types).build();
+    }
+    return data;
   }
 
   private FeatureProviderSqlData generateTypesIfNecessary(FeatureProviderSqlData data) {
