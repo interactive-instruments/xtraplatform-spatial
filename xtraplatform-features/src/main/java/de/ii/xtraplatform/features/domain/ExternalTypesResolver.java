@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.domain;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.store.domain.BlobStore;
@@ -36,7 +37,43 @@ import org.slf4j.LoggerFactory;
 
 public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
+  class AllOfResolver implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
+    @Override
+    public FeatureSchema visit(
+        FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
+      boolean ignoreProperties = false;
+      FeatureSchema resolved = schema;
+
+      if (!resolved.getAllOf().isEmpty()) {
+        resolved = resolveAllOf(resolved);
+        // LOGGER.debug("ALLOF {}", resolved);
+        ignoreProperties = true;
+      }
+
+      if (ignoreProperties) {
+        return resolved;
+      }
+
+      Map<String, FeatureSchema> visitedPropertiesMap =
+          visitedProperties.stream()
+              .filter(Objects::nonNull)
+              .map(
+                  featureSchema ->
+                      new SimpleImmutableEntry<>(
+                          featureSchema.getFullPathAsString(), featureSchema))
+              .collect(
+                  ImmutableMap.toImmutableMap(
+                      Entry::getKey, Entry::getValue, (first, second) -> second));
+
+      return new ImmutableFeatureSchema.Builder()
+          .from(schema)
+          .propertyMap(visitedPropertiesMap)
+          .build();
+    }
+  }
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ExternalTypesResolver.class);
+  public static final String IGNORE_OBJECT = "_IGNORE_";
 
   private final SchemaStore schemaParser;
   private final BlobStore schemaStore;
@@ -59,14 +96,14 @@ public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema
     boolean ignoreProperties = false;
     FeatureSchema resolved = schema;
 
-    if (resolved.getSchema().isPresent()) {
-      resolved = resolve(resolved.getSchema().get(), resolved).orElse(null);
-      ignoreProperties = true;
-    }
-
-    if (Objects.nonNull(resolved) && !resolved.getAllOf().isEmpty()) {
+    /*if (!resolved.getAllOf().isEmpty()) {
       resolved = resolveAllOf(resolved);
       // LOGGER.debug("ALLOF {}", resolved);
+      ignoreProperties = true;
+    }*/
+
+    if (resolved.getSchema().isPresent()) {
+      resolved = resolve(resolved.getSchema().get(), resolved).orElse(null);
       ignoreProperties = true;
     }
 
@@ -92,10 +129,12 @@ public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema
 
   public Map<String, FeatureSchema> resolve(Map<String, FeatureSchema> externalTypes) {
     Map<String, FeatureSchema> types = new LinkedHashMap<>();
+    AllOfResolver allOfResolver = new AllOfResolver();
 
     externalTypes.forEach(
         (key, value) -> {
-          FeatureSchema resolved = value.accept(this);
+          FeatureSchema resolved = value.accept(allOfResolver);
+          resolved = resolved.accept(this);
           if (Objects.nonNull(resolved)) {
             types.put(key, resolved);
           }
@@ -114,9 +153,28 @@ public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema
           .getAllOf()
           .forEach(
               partial -> {
+                PartialObjectSchema partial1 = partial;
+
+                if (partial1.getSchema().isPresent()) {
+                  ImmutableFeatureSchema partial2 =
+                      new Builder()
+                          .name(IGNORE_OBJECT)
+                          .sourcePath(partial1.getSourcePath())
+                          .schema(partial1.getSchema())
+                          .propertyMap(partial1.getPropertyMap())
+                          .build();
+                  Optional<FeatureSchema> resolved = resolve(partial1.getSchema().get(), partial2);
+                  if (resolved.isPresent()) {
+                    partial1 =
+                        new ImmutablePartialObjectSchema.Builder()
+                            .putPropertyMap(partial2.getName(), partial2)
+                            .build();
+                  }
+                }
                 // LOGGER.debug("PARTIAL {}", partial);
-                if (partial.getSourcePath().isPresent()) {
-                  partial
+                if (partial1.getSourcePath().isPresent()) {
+                  PartialObjectSchema finalPartial = partial1;
+                  partial1
                       .getPropertyMap()
                       .forEach(
                           (key, schema) -> {
@@ -131,19 +189,21 @@ public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema
                                                 sourcePath ->
                                                     String.format(
                                                         "%s/%s",
-                                                        partial.getSourcePath().get(), sourcePath)))
+                                                        finalPartial.getSourcePath().get(),
+                                                        sourcePath)))
                                     .sourcePaths(
                                         schema.getSourcePaths().stream()
                                             .map(
                                                 sourcePath ->
                                                     String.format(
                                                         "%s/%s",
-                                                        partial.getSourcePath().get(), sourcePath))
+                                                        finalPartial.getSourcePath().get(),
+                                                        sourcePath))
                                             .collect(Collectors.toList()))
                                     .build());
                           });
                 } else {
-                  props.putAll(partial.getPropertyMap());
+                  props.putAll(partial1.getPropertyMap());
                 }
               });
 

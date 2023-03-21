@@ -27,6 +27,8 @@ public interface PartialObjectSchema
 
   Optional<String> getSourcePath();
 
+  Optional<String> getSchema();
+
   @Override
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getPropertyMap();
 

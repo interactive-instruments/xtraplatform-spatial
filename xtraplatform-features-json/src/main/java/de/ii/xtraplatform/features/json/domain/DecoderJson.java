@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.json.domain;
 
 import static de.ii.xtraplatform.base.domain.util.LambdaWithException.supplierMayThrow;
+import static de.ii.xtraplatform.features.domain.ExternalTypesResolver.IGNORE_OBJECT;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -111,7 +112,12 @@ public class DecoderJson implements Decoder {
           if (!inProperties) {
             if (context.path().size() == featureDepth) {
               this.inProperties = true;
-              downstream.onObjectStart(context);
+              if (context
+                  .schema()
+                  .filter(s -> Objects.equals(s.getName(), IGNORE_OBJECT))
+                  .isEmpty()) {
+                downstream.onObjectStart(context);
+              }
             }
             break;
           }
