@@ -19,6 +19,7 @@ import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.graphql.domain.FeatureProviderGraphQlData;
 import de.ii.xtraplatform.features.graphql.domain.ImmutableFeatureProviderGraphQlData;
+import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.store.domain.entities.AbstractEntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
@@ -26,7 +27,6 @@ import de.ii.xtraplatform.store.domain.entities.EntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
 import de.ii.xtraplatform.streams.domain.Reactive;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import javax.inject.Inject;
@@ -42,10 +42,12 @@ public class FeatureProviderGraphQlFactory
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderGraphQlFactory.class);
 
+  private final BlobStore blobStore;
   private final ConnectorFactory connectorFactory;
 
   @Inject
   public FeatureProviderGraphQlFactory(
+      BlobStore blobStore,
       // TODO: needed because dagger-auto does not parse FeatureProviderSql
       CrsTransformerFactory crsTransformerFactory,
       Cql cql,
@@ -55,6 +57,7 @@ public class FeatureProviderGraphQlFactory
       ProviderExtensionRegistry extensionRegistry,
       ProviderGraphQlFactoryAssisted providerGraphQlFactoryAssisted) {
     super(providerGraphQlFactoryAssisted);
+    this.blobStore = blobStore;
     this.connectorFactory = connectorFactory;
   }
 
@@ -93,11 +96,10 @@ public class FeatureProviderGraphQlFactory
     FeatureProviderGraphQlData data = (FeatureProviderGraphQlData) entityData;
 
     // TODO: also for sql
-    if (!data.getExternalTypes().isEmpty()) {
-      ExternalTypesResolver resolver = new ExternalTypesResolver();
-      Map<String, FeatureSchema> types = new LinkedHashMap<>(data.getTypes());
+    ExternalTypesResolver resolver = new ExternalTypesResolver(blobStore.with("schemas"));
 
-      types.putAll(resolver.resolve(data.getExternalTypes()));
+    if (resolver.needsResolving(data.getTypes())) {
+      Map<String, FeatureSchema> types = resolver.resolve(data.getTypes());
 
       return new ImmutableFeatureProviderGraphQlData.Builder().from(data).types(types).build();
     }
