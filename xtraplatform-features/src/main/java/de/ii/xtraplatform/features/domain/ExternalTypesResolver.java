@@ -253,8 +253,11 @@ public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema
         .name(name)
         .label(Optional.ofNullable(s.getTitle()))
         .description(Optional.ofNullable(s.getDescription()))
-        .sourcePath((Objects.isNull(root) ? "/" : "") + name)
         .type(t);
+
+    if (Objects.isNull(original) || original.getSourcePath().isEmpty()) {
+      builder.sourcePath((Objects.isNull(root) ? "/" : "") + name);
+    }
 
     // TODO: name vs objectType (from def key)
     if (t == Type.OBJECT && Objects.nonNull(s.getProperties())) {
