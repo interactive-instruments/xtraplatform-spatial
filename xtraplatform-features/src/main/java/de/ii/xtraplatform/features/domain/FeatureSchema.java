@@ -210,11 +210,23 @@ public interface FeatureSchema
   Optional<Scope> getScope();
 
   /**
-   * @langEn <code>
-   * - foo
-   * - bar
+   * @langEn Derive the schema from an external JSON Schema. Can be either a URL or a relative path
+   *     to a file in `resources/schemas`. Also supports referencing sub-schemas in `$defs`.
+   *     Constraints are not yet derived. Examples: <code>
+   * - https://example.com/buildings.json
+   * - https://example.com/buildings.json#/$defs/address
+   * - buildings.json
+   * - buildings.json#/$defs/address
    * </code>
-   * @langDe
+   * @langDe Option um das Schema aus einem externen JSON Schema abzuleiten. Kann entweder eine URL
+   *     oder einer relativer Pfad zu einer Datei in `resources/schemas` sein. Unterstützt auch das
+   *     referenzieren von Sub-Schemas in `$defs`. Constraints werden noch nicht abgeleitet.
+   *     Beispiele: <code>
+   * - https://example.com/buildings.json
+   * - https://example.com/buildings.json#/$defs/address
+   * - buildings.json
+   * - buildings.json#/$defs/address
+   * </code>
    * @default null
    */
   Optional<String> getSchema();
@@ -263,6 +275,18 @@ public interface FeatureSchema
   @Override
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getPropertyMap();
 
+  /**
+   * @langEn If only some of the `properties` are defined in an external `schema`, or if some of the
+   *     `properties` should be mapped to a different table, this provides a convenient way to
+   *     define these properties alongside the regular properties. The option takes a list of schema
+   *     objects, but only `sourcePath` and `properties` are considered.
+   * @langDe Wenn nur einige `properties` in einem externen `schema` definiert sind, oder wenn nur
+   *     einige `properties` auf eine andere Tabelle gemappt werden sollen, stellt diese Option
+   *     einen komfortablen Weg zur Verfügung, um solche properties zusammen mit den regulären
+   *     properties zu definieren. Der Wert ist eine Liste von Schema-Objekten, aber nur
+   *     `sourcePath` und `properties` werden berücksichtigt.
+   * @default []
+   */
   List<PartialObjectSchema> getAllOf();
 
   abstract class Builder
