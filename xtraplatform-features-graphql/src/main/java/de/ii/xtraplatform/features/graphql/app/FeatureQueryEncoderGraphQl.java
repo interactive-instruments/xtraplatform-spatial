@@ -82,6 +82,29 @@ public class FeatureQueryEncoderGraphQl implements FeatureQueryEncoder<String, Q
     return name;
   }
 
+  private String getNestedFields(String sourcePath) {
+    if (!sourcePath.contains("/")) {
+      return sourcePath;
+    }
+
+    String fields = "";
+
+    String[] split = sourcePath.split("/");
+    for (int i = split.length - 1; i >= 0; i--) {
+      String elem = split[i];
+      if (!fields.isBlank()) {
+        elem = elem + " " + fields;
+      }
+      if (i > 0) {
+        fields = "{ " + elem + " }";
+      } else {
+        fields = elem;
+      }
+    }
+
+    return fields;
+  }
+
   public String getFields(FeatureSchema featureSchema, String indentation) {
     return featureSchema.getProperties().stream()
         .filter(
@@ -90,8 +113,12 @@ public class FeatureQueryEncoderGraphQl implements FeatureQueryEncoder<String, Q
                     == FeatureSchemaBase.Scope.QUERIES)
         .map(
             prop -> {
-              if (prop.isValue()) {
-                return prop.getSourcePath();
+              if (prop.isSimpleFeatureGeometry()) {
+                // TODO: configurable
+                return prop.getSourcePath().map(obj -> getNestedFields(obj));
+                // .map(obj -> obj + " { asWKT }");
+              } else if (prop.isValue()) {
+                return prop.getSourcePath().map(obj -> getNestedFields(obj));
               } else if (prop.isObject()) {
                 return prop.getSourcePath()
                     .map(obj -> obj + " " + getFields(prop, indentation + "  "));
@@ -130,6 +157,9 @@ public class FeatureQueryEncoderGraphQl implements FeatureQueryEncoder<String, Q
               fields);
     }
 
-    return "{\"query\":\"" + q + "\"}";
+    String q2 = "{\"query\":\"" + q + "\"}";
+    LOGGER.debug("GraphQL Request\n{}", q2.replaceAll("\\\\n", "\n"));
+
+    return q2;
   }
 }

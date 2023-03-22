@@ -109,7 +109,11 @@ public class FeatureTokenDecoderGraphQlJson2
 
     this.decoderJsonProperties =
         new DecoderJsonProperties(
-            this, arrayPaths, supplierMayThrow(parser::getValueAsString), Optional.empty());
+            this,
+            arrayPaths,
+            supplierMayThrow(parser::getValueAsString),
+            Optional.empty(),
+            Optional.of(new GeometryDecoderWkt()));
   }
 
   @Override
@@ -239,5 +243,6 @@ public class FeatureTokenDecoderGraphQlJson2
     decoderJsonProperties.reset();
     getDownstream().onFeatureStart(context);
     this.featureDepth = context.path().size();
+    this.inProperties = true;
   }
 }
