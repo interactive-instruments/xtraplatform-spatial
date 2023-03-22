@@ -59,8 +59,7 @@ public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema
               .filter(Objects::nonNull)
               .map(
                   featureSchema ->
-                      new SimpleImmutableEntry<>(
-                          featureSchema.getFullPathAsString(), featureSchema))
+                      new SimpleImmutableEntry<>(featureSchema.getName(), featureSchema))
               .collect(
                   ImmutableMap.toImmutableMap(
                       Entry::getKey, Entry::getValue, (first, second) -> second));
@@ -115,8 +114,7 @@ public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema
         visitedProperties.stream()
             .filter(Objects::nonNull)
             .map(
-                featureSchema ->
-                    new SimpleImmutableEntry<>(featureSchema.getFullPathAsString(), featureSchema))
+                featureSchema -> new SimpleImmutableEntry<>(featureSchema.getName(), featureSchema))
             .collect(
                 ImmutableMap.toImmutableMap(
                     Entry::getKey, Entry::getValue, (first, second) -> second));
@@ -148,7 +146,6 @@ public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema
     if (!original.getAllOf().isEmpty()) {
       Map<String, FeatureSchema> props = new LinkedHashMap<>();
 
-      // TODO: merge sourcePath into first level props
       original
           .getAllOf()
           .forEach(
@@ -285,6 +282,14 @@ public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema
     return schema;
   }
 
+  // TODO: configurable
+  private static final Map<String, SimpleFeatureGeometry> GEO_DEFS =
+      ImmutableMap.of(
+          "#/$defs/polygonGeoJSON",
+          SimpleFeatureGeometry.POLYGON,
+          "#/$defs/multipolygonGeoJSON",
+          SimpleFeatureGeometry.MULTI_POLYGON);
+
   // TODO: constrains, arrays, oneOf/anyOf/allOf etc
   private FeatureSchema toFeatureSchema(
       String name,
@@ -306,7 +311,8 @@ public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema
         // LOGGER.debug("IGNORE {}", name);
         return null;
       }
-      builderFrom(builder, original).propertyMap(Map.of());
+      // builderFrom(builder, original).propertyMap(Map.of());
+      builder.from(original).propertyMap(Map.of());
     }
 
     builder
@@ -319,21 +325,35 @@ public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema
       builder.sourcePath((Objects.isNull(root) ? "/" : "") + name);
     }
 
-    // TODO: name vs objectType (from def key)
-    if (t == Type.OBJECT && Objects.nonNull(s.getProperties())) {
-      s.getProperties()
-          .forEach(
-              (key, value) -> {
-                FeatureSchema featureSchema =
-                    toFeatureSchema(
-                        key,
-                        value,
-                        r,
-                        Objects.nonNull(original) ? original.getPropertyMap().get(key) : original);
-                if (Objects.nonNull(featureSchema)) {
-                  builder.putPropertyMap(key, featureSchema);
-                }
-              });
+    if (t == Type.OBJECT) {
+      Optional<String> geoType =
+          GEO_DEFS.keySet().stream().filter(def -> s.getUri().toString().endsWith(def)).findFirst();
+
+      if (geoType.isPresent()) {
+        // builder.type(Type.STRING);
+        builder.type(Type.GEOMETRY).geometryType(GEO_DEFS.get(geoType.get()));
+        // TODO: configurable
+        builder.sourcePath(
+            Optional.ofNullable(original).flatMap(o -> o.getSourcePath()).orElse(name) + "/asWKT");
+      }
+      // TODO: name vs objectType (from def key)
+      else if (Objects.nonNull(s.getProperties())) {
+        s.getProperties()
+            .forEach(
+                (key, value) -> {
+                  FeatureSchema featureSchema =
+                      toFeatureSchema(
+                          key,
+                          value,
+                          r,
+                          Objects.nonNull(original)
+                              ? original.getPropertyMap().get(key)
+                              : original);
+                  if (Objects.nonNull(featureSchema)) {
+                    builder.putPropertyMap(key, featureSchema);
+                  }
+                });
+      }
     } else if (t == Type.OBJECT_ARRAY && Objects.nonNull(s.getItems())) {
       net.jimblackler.jsonschemafriend.Schema is =
           Objects.nonNull(s.getItems().getRef()) ? s.getItems().getRef() : s.getItems();
@@ -343,7 +363,8 @@ public class ExternalTypesResolver implements SchemaVisitorTopDown<FeatureSchema
       } else {
         FeatureSchema featureSchema = toFeatureSchema(name, is, r, original);
         if (Objects.nonNull(featureSchema)) {
-          builder.from(featureSchema).type(Type.OBJECT_ARRAY);
+          // TODO
+          builder.path(List.of()).parentPath(List.of()).from(featureSchema).type(Type.OBJECT_ARRAY);
         }
       }
     }

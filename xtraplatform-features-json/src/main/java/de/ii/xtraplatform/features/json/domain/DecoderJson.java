@@ -60,7 +60,11 @@ public class DecoderJson implements Decoder {
 
       this.decoderJsonProperties =
           new DecoderJsonProperties(
-              pipeline, arrayPaths, supplierMayThrow(parser::getValueAsString), Optional.empty());
+              pipeline,
+              arrayPaths,
+              supplierMayThrow(parser::getValueAsString),
+              Optional.empty(),
+              Optional.empty());
 
       this.featureDepth = pipeline.context().pathTracker().asList().size();
     }

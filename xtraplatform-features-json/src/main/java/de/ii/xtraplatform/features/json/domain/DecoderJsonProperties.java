@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.json.domain;
 
 import com.fasterxml.jackson.core.JsonToken;
+import de.ii.xtraplatform.features.domain.Decoder;
 import de.ii.xtraplatform.features.domain.Decoder.Pipeline;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
@@ -15,6 +16,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.MultiplicityTracker;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -34,6 +36,7 @@ public class DecoderJsonProperties {
   private final MultiplicityTracker multiplicityTracker;
   private final Supplier<String> getValueAsString;
   private final Optional<String> nullValue;
+  private final Optional<Decoder> geometryDecoder;
 
   private int depth;
 
@@ -41,13 +44,15 @@ public class DecoderJsonProperties {
       Pipeline pipeline,
       List<List<String>> arrayPaths,
       Supplier<String> getValueAsString,
-      Optional<String> nullValue) {
+      Optional<String> nullValue,
+      Optional<Decoder> geometryDecoder) {
     this.context = pipeline.context();
     this.downstream = pipeline.downstream();
     this.arrayPaths = arrayPaths;
     this.multiplicityTracker = new MultiplicityTracker(arrayPaths);
     this.getValueAsString = getValueAsString;
     this.nullValue = nullValue;
+    this.geometryDecoder = geometryDecoder;
     this.depth = 0;
   }
 
@@ -164,9 +169,37 @@ public class DecoderJsonProperties {
           context.setValue(getValueAsString.get());
         }
 
-        downstream.onValue(context);
+        Optional<FeatureSchema> schema = context.schema();
+        if (schema.filter(s -> s.isSimpleFeatureGeometry()).isPresent()
+            && geometryDecoder.isPresent()) {
+          geometryDecoder
+              .get()
+              .decode(
+                  context.value().getBytes(StandardCharsets.UTF_8),
+                  new Pipeline() {
+                    @Override
+                    public ModifiableContext<FeatureSchema, SchemaMapping> context() {
+                      return context;
+                    }
 
-        context.pathTracker().track(depth + featureDepth);
+                    @Override
+                    public FeatureEventHandler<
+                            FeatureSchema,
+                            SchemaMapping,
+                            ModifiableContext<FeatureSchema, SchemaMapping>>
+                        downstream() {
+                      return downstream;
+                    }
+                  });
+        } else {
+          try {
+            downstream.onValue(context);
+
+            context.pathTracker().track(depth + featureDepth);
+          } catch (Throwable e) {
+            boolean br = true;
+          }
+        }
 
         break;
     }
