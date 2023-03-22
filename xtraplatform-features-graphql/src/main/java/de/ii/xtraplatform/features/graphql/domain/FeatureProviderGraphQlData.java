@@ -20,9 +20,7 @@ import de.ii.xtraplatform.docs.DocVar;
 import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureSchemaExt;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureSchemaExt;
 import de.ii.xtraplatform.features.domain.WithConnectionInfo;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
@@ -107,9 +105,6 @@ public interface FeatureProviderGraphQlData
   // for json ordering
   @Override
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
-
-  @Override
-  BuildableMap<FeatureSchemaExt, ImmutableFeatureSchemaExt.Builder> getExternalTypes();
 
   @Value.Check
   default FeatureProviderGraphQlData initNestedDefault() {

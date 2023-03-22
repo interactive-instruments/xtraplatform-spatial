@@ -95,7 +95,6 @@ public class FeatureProviderGraphQlFactory
   public EntityData hydrateData(EntityData entityData) {
     FeatureProviderGraphQlData data = (FeatureProviderGraphQlData) entityData;
 
-    // TODO: also for sql
     ExternalTypesResolver resolver = new ExternalTypesResolver(blobStore.with("schemas"));
 
     if (resolver.needsResolving(data.getTypes())) {
