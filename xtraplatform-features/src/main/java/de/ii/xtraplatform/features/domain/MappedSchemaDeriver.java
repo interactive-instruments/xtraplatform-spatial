@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import static de.ii.xtraplatform.features.domain.ExternalTypesResolver.IGNORE_OBJECT;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -19,6 +21,10 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
   @Override
   default List<T> visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<List<T>> visitedProperties) {
+    if (parents.stream().anyMatch(parent -> Objects.equals(IGNORE_OBJECT, parent.getName()))) {
+      return List.of();
+    }
+
     List<U> currentPaths = parseSourcePaths(schema);
 
     List<List<U>> parentPaths1 = getParentPaths(parents);
