@@ -170,6 +170,7 @@ public class FeatureDecoderSql
         getDownstream().onFeatureEnd(context);
         this.featureStarted = false;
         multiplicityTracker.reset();
+        subDecoders.values().forEach(Decoder::reset);
       }
 
       context.setType(featureType);

@@ -83,6 +83,15 @@ public class DecoderJson implements Decoder {
   }
 
   @Override
+  public void reset() {
+    this.inProperties = false;
+    this.isArray = false;
+    if (Objects.nonNull(decoderJsonProperties)) {
+      decoderJsonProperties.reset();
+    }
+  }
+
+  @Override
   public void close() throws Exception {
     feeder.endOfInput();
   }

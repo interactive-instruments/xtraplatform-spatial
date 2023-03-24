@@ -13,6 +13,8 @@ public interface Decoder extends AutoCloseable {
 
   void decode(byte[] data, Pipeline pipeline);
 
+  default void reset() {}
+
   interface Pipeline {
     ModifiableContext<FeatureSchema, SchemaMapping> context();
 
