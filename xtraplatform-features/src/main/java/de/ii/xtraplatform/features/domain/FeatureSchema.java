@@ -7,9 +7,13 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import static de.ii.xtraplatform.features.domain.ExternalTypesResolver.IGNORE_OBJECT;
+
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.OptBoolean;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -238,6 +242,7 @@ public interface FeatureSchema
    *     Schemas zu ignorieren, die mit `schema` referenziert werden.
    * @default false
    */
+  @JsonProperty(value = "ignore", access = Access.WRITE_ONLY)
   @Value.Default
   default boolean getIgnore() {
     return false;
@@ -272,6 +277,7 @@ public interface FeatureSchema
   @Override
   Optional<Boolean> getForcePolygonCCW();
 
+  @JsonProperty("properties")
   @Override
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getPropertyMap();
 
@@ -313,7 +319,10 @@ public interface FeatureSchema
                   new ImmutableFeatureSchema.Builder().from(featureSchema);
 
               if (getFullPath().size() > featureSchema.getParentPath().size()) {
-                builder.parentPath(getFullPath());
+                builder.parentPath(
+                    getFullPath().stream()
+                        .filter(elem -> !Objects.equals(elem, IGNORE_OBJECT))
+                        .collect(Collectors.toList()));
               }
 
               if (featureSchema.getPath().isEmpty()) {

@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import static de.ii.xtraplatform.features.domain.ExternalTypesResolver.IGNORE_OBJECT;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
@@ -15,6 +17,7 @@ import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -52,6 +55,7 @@ public class SchemaToMappingVisitor<T extends SchemaBase<T>>
 
     List<String> path =
         path2.stream()
+            .filter(elem -> !Objects.equals(elem, IGNORE_OBJECT))
             .map(path1 -> sourcePathTransformer.apply(path1, schema.isValue()))
             .collect(Collectors.toList());
 
