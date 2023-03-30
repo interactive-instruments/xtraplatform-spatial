@@ -92,7 +92,7 @@ public class SqlPathParser {
             Pattern.quote(Tokens.JOIN_END));
     String ROOT_TABLE =
         String.format(
-            "(?:%s)(?<%s>%s)(?<%s>%s)?",
+            "^(?:%s)(?<%s>%s)(?<%s>%s)?",
             Tokens.PATH_SEPARATOR, MatcherGroups.TABLE, TABLE, MatcherGroups.FLAGS, FLAGS);
     String JOINED_TABLE =
         String.format(
@@ -162,6 +162,12 @@ public class SqlPathParser {
   }
 
   public SqlPath parseColumnPath(String path) {
+    Matcher connectedMatcher = Patterns.CONNECTED_COLUMN.matcher(path);
+
+    if (connectedMatcher.find()) {
+      return parseConnectedColumn(connectedMatcher, path);
+    }
+
     Matcher matcher = Patterns.COLUMN_PATH.matcher(path);
 
     if (matcher.find()) {
@@ -297,7 +303,8 @@ public class SqlPathParser {
           "Invalid sourcePath connector in provider configuration: " + path);
     }
 
-    Builder builder = new ImmutableSqlPath.Builder().name(column).connector(connector);
+    Builder builder =
+        new ImmutableSqlPath.Builder().name(column).addColumns(column).connector(connector);
 
     String flags =
         Optional.ofNullable(connectedMatcher.group(MatcherGroups.FLAGS.name())).orElse("");

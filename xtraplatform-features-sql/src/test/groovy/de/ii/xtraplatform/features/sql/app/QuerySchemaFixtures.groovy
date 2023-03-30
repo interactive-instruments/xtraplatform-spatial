@@ -747,4 +747,26 @@ class QuerySchemaFixtures {
                     .build()
     ]
 
+    static List<SchemaSql> CONNECTOR = [
+            new ImmutableSchemaSql.Builder()
+                    .name("eignungsflaeche")
+                    .sourcePath("eignungsflaeche")
+                    .type(Type.OBJECT)
+                    .sortKey("id")
+                    .primaryKey("id")
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("id")
+                            .type(Type.STRING)
+                            .sourcePath("id")
+                            .parentPath(["eignungsflaeche"])
+                            .role(SchemaBase.Role.ID)
+                            .build())
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("osirisobjekt")
+                            .type(Type.STRING)
+                            .parentPath(["eignungsflaeche"])
+                            .subDecoder("JSON")
+                            .build())
+                    .build()
+    ]
 }

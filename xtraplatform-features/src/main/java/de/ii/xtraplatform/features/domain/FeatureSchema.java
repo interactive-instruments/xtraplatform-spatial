@@ -7,8 +7,6 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import static de.ii.xtraplatform.features.domain.ExternalTypesResolver.IGNORE_OBJECT;
-
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
@@ -319,10 +317,7 @@ public interface FeatureSchema
                   new ImmutableFeatureSchema.Builder().from(featureSchema);
 
               if (getFullPath().size() > featureSchema.getParentPath().size()) {
-                builder.parentPath(
-                    getFullPath().stream()
-                        .filter(elem -> !Objects.equals(elem, IGNORE_OBJECT))
-                        .collect(Collectors.toList()));
+                builder.parentPath(getFullPath());
               }
 
               if (featureSchema.getPath().isEmpty()) {

@@ -17,6 +17,7 @@ import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.features.domain.AllOfResolver;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.DecoderFactories;
 import de.ii.xtraplatform.features.domain.ExternalTypesResolver;
@@ -132,11 +133,12 @@ public class FeatureProviderSqlFactory
     }
 
     try {
-      return resolveSchemasIfNecessary(
-          normalizeConstants(
-              cleanupAutoPersist(
-                  cleanupAdditionalInfo(
-                      generateNativeCrsIfNecessary(generateTypesIfNecessary(data))))));
+      return resolveAllOfIfNecessary(
+          resolveSchemasIfNecessary(
+              normalizeConstants(
+                  cleanupAutoPersist(
+                      cleanupAdditionalInfo(
+                          generateNativeCrsIfNecessary(generateTypesIfNecessary(data)))))));
     } catch (Throwable e) {
       LogContext.error(
           LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
@@ -147,6 +149,17 @@ public class FeatureProviderSqlFactory
 
   private FeatureProviderSqlData resolveSchemasIfNecessary(FeatureProviderSqlData data) {
     ExternalTypesResolver resolver = new ExternalTypesResolver(blobStore.with("schemas"));
+
+    if (resolver.needsResolving(data.getTypes())) {
+      Map<String, FeatureSchema> types = resolver.resolve(data.getTypes());
+
+      return new Builder().from(data).types(types).build();
+    }
+    return data;
+  }
+
+  private FeatureProviderSqlData resolveAllOfIfNecessary(FeatureProviderSqlData data) {
+    AllOfResolver resolver = new AllOfResolver();
 
     if (resolver.needsResolving(data.getTypes())) {
       Map<String, FeatureSchema> types = resolver.resolve(data.getTypes());

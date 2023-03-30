@@ -22,7 +22,7 @@ class QuerySchemaDeriverSpec extends Specification {
     def setupSpec() {
         def defaults = new ImmutableSqlPathDefaults.Builder().build()
         def cql = new CqlImpl()
-        def pathParser = new SqlPathParser(defaults, cql, Set.of())
+        def pathParser = new SqlPathParser(defaults, cql, Set.of("JSON"))
         schemaDeriver = new QuerySchemaDeriver(pathParser)
     }
 
@@ -50,6 +50,10 @@ class QuerySchemaDeriverSpec extends Specification {
         "multiple sourcePaths"                       | FeatureSchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
         "nested joins"                               | FeatureSchemaFixtures.NESTED_JOINS                        || QuerySchemaFixtures.NESTED_JOINS
         "nested value array"                         | FeatureSchemaFixtures.NESTED_VALUE_ARRAY                  || QuerySchemaFixtures.NESTED_VALUE_ARRAY
+        "simple connector"                           | FeatureSchemaFixtures.CONNECTOR_SIMPLE                    || QuerySchemaFixtures.CONNECTOR
+        "merge connector"                            | FeatureSchemaFixtures.CONNECTOR_MERGE                     || QuerySchemaFixtures.CONNECTOR
+        "object connector"                           | FeatureSchemaFixtures.CONNECTOR_OBJECT                    || QuerySchemaFixtures.CONNECTOR
+        "merge object connector"                     | FeatureSchemaFixtures.CONNECTOR_MERGE_OBJECT              || QuerySchemaFixtures.CONNECTOR
     }
 
 
