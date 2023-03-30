@@ -32,7 +32,7 @@ public class FeatureDecoderJson extends FeatureDecoder<byte[]> implements Decode
       String type,
       String wrapper,
       Optional<String> nullValue) {
-    this.decoderJson = new DecoderJson(type, wrapper, nullValue);
+    this.decoderJson = new DecoderJson(nullValue);
     this.featureSchema = featureSchema;
     this.featureQuery = query;
   }

@@ -30,6 +30,6 @@ public class DecoderFactoryJson implements DecoderFactory {
 
   @Override
   public Decoder createDecoder() {
-    return new DecoderJson(null, null, Optional.empty());
+    return new DecoderJson(Optional.empty());
   }
 }

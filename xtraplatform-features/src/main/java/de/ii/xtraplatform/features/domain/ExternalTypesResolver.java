@@ -42,15 +42,34 @@ public class ExternalTypesResolver implements TypesResolver {
     this.schemaParser = new SchemaStore(new CacheLoader());
   }
 
+  private static boolean hasSchema(FeatureSchema type) {
+    return type.getSchema().isPresent();
+  }
+
+  private static boolean hasSchema(PartialObjectSchema partial) {
+    return partial.getSchema().isPresent();
+  }
+
+  private static boolean hasNestedSchema(PartialObjectSchema partial) {
+    return partial.getAllNestedProperties().stream().anyMatch(ExternalTypesResolver::hasSchema);
+  }
+
+  private static boolean hasAllOfWithSchema(FeatureSchema type) {
+    return type.getAllOf().stream().anyMatch(ExternalTypesResolver::hasSchema);
+  }
+
+  private static boolean hasAllOfWithNestedSchema(FeatureSchema type) {
+    return type.getAllOf().stream().anyMatch(ExternalTypesResolver::hasNestedSchema);
+  }
+
   @Override
   public boolean needsResolving(FeatureSchema type) {
-    return type.getSchema().isPresent()
-        || type.getAllOf().stream().anyMatch(partial -> partial.getSchema().isPresent());
+    return hasSchema(type) || hasAllOfWithSchema(type) || hasAllOfWithNestedSchema(type);
   }
 
   @Override
   public FeatureSchema resolve(FeatureSchema type) {
-    if (type.getSchema().isPresent()) {
+    if (hasSchema(type)) {
       Optional<net.jimblackler.jsonschemafriend.Schema> schema = parse(type.getSchema().get());
 
       if (schema.isPresent()) {
@@ -60,11 +79,11 @@ public class ExternalTypesResolver implements TypesResolver {
       return null;
     }
 
-    if (type.getAllOf().stream().anyMatch(partial -> partial.getSchema().isPresent())) {
+    if (hasAllOfWithSchema(type) || hasAllOfWithNestedSchema(type)) {
       List<PartialObjectSchema> partials = new ArrayList<>();
 
       for (PartialObjectSchema partial : type.getAllOf()) {
-        if (partial.getSchema().isPresent()) {
+        if (hasSchema(partial)) {
           Optional<net.jimblackler.jsonschemafriend.Schema> schema =
               parse(partial.getSchema().get());
 
@@ -74,6 +93,21 @@ public class ExternalTypesResolver implements TypesResolver {
               partials.add(resolvedPartial);
             }
           }
+        } else if (hasNestedSchema(partial)) {
+          ImmutablePartialObjectSchema.Builder builder =
+              new ImmutablePartialObjectSchema.Builder().from(partial).propertyMap(Map.of());
+
+          partial
+              .getPropertyMap()
+              .forEach(
+                  (key, value) -> {
+                    FeatureSchema accept = value.accept(this);
+                    if (Objects.nonNull(accept)) {
+                      builder.putPropertyMap(key, accept);
+                    }
+                  });
+
+          partials.add(builder.build());
         } else {
           partials.add(partial);
         }

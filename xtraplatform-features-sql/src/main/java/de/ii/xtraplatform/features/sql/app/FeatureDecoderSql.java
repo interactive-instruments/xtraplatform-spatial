@@ -257,6 +257,7 @@ public class FeatureDecoderSql
               subDecoders
                   .get(subDecoder)
                   .decode(context.value().getBytes(StandardCharsets.UTF_8), this);
+              subDecoders.get(subDecoder).reset();
             } else {
               LOGGER.warn("Invalid sub-decoder: {}", subDecoder);
             }

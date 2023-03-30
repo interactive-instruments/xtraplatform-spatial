@@ -17,6 +17,7 @@ import de.ii.xtraplatform.features.domain.MultiplicityTracker;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -39,6 +40,7 @@ public class DecoderJsonProperties {
   private final Optional<Decoder> geometryDecoder;
 
   private int depth;
+  private int valueIndex;
 
   public DecoderJsonProperties(
       Pipeline pipeline,
@@ -54,10 +56,12 @@ public class DecoderJsonProperties {
     this.nullValue = nullValue;
     this.geometryDecoder = geometryDecoder;
     this.depth = 0;
+    this.valueIndex = 0;
   }
 
   public void reset() {
     multiplicityTracker.reset();
+    this.valueIndex = 0;
   }
 
   public boolean parse(JsonToken nextToken, String currentName, int featureDepth) {
@@ -106,6 +110,9 @@ public class DecoderJsonProperties {
           depth += 1;
           // LOGGER.debug("ARR {} {} {}", context.pathAsString(), context.indexes(), depth);
           downstream.onArrayStart(context);
+        }
+        if (context.schema().filter(schema -> schema.isValue() && schema.isArray()).isPresent()) {
+          this.valueIndex = 0;
         }
         break;
 
@@ -170,6 +177,13 @@ public class DecoderJsonProperties {
         }
 
         Optional<FeatureSchema> schema = context.schema();
+
+        if (schema.filter(s -> s.isValue() && s.isArray()).isPresent()) {
+          ArrayList<Integer> indexes = new ArrayList<>(context.indexes());
+          indexes.add(++valueIndex);
+          context.setIndexes(indexes);
+        }
+
         if (schema.filter(s -> s.isSimpleFeatureGeometry()).isPresent()
             && geometryDecoder.isPresent()) {
           geometryDecoder
