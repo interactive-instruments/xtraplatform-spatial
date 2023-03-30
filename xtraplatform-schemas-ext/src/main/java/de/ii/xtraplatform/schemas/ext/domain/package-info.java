@@ -5,6 +5,6 @@
  * of the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 @AutoModule(single = true, encapsulate = true)
-package de.ii.xtraplatform.schemas.domain;
+package de.ii.xtraplatform.schemas.ext.domain;
 
 import com.github.azahnen.dagger.annotations.AutoModule;

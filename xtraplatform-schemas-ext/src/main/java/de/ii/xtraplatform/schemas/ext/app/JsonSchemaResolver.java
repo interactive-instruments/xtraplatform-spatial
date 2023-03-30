@@ -5,16 +5,24 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.domain;
+package de.ii.xtraplatform.schemas.ext.app;
 
+import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
+import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutablePartialObjectSchema;
+import de.ii.xtraplatform.features.domain.PartialObjectSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
+import de.ii.xtraplatform.schemas.ext.domain.JsonSchemaConfiguration;
 import de.ii.xtraplatform.store.domain.BlobStore;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -22,114 +30,98 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import net.jimblackler.jsonschemafriend.CacheLoader;
 import net.jimblackler.jsonschemafriend.Schema;
 import net.jimblackler.jsonschemafriend.SchemaStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ExternalTypesResolver implements TypesResolver {
+@Singleton
+@AutoBind
+public class JsonSchemaResolver implements SchemaFragmentResolver {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ExternalTypesResolver.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(JsonSchemaResolver.class);
   private static final Set<String> SCHEMES = ImmutableSet.of("http", "https");
 
   private final SchemaStore schemaParser;
   private final BlobStore schemaStore;
 
-  public ExternalTypesResolver(BlobStore schemaStore) {
-    this.schemaStore = schemaStore;
+  @Inject
+  JsonSchemaResolver(BlobStore blobStore) {
+    this.schemaStore = blobStore.with("schemas");
     // TODO: custom loader with HttpClient
     this.schemaParser = new SchemaStore(new CacheLoader());
   }
 
-  private static boolean hasSchema(FeatureSchema type) {
-    return type.getSchema().isPresent();
+  private Optional<JsonSchemaConfiguration> getConfiguration(FeatureProviderDataV2 data) {
+    return data.getExtensions().stream()
+        .filter(extension -> extension.isEnabled() && extension instanceof JsonSchemaConfiguration)
+        .map(extension -> (JsonSchemaConfiguration) extension)
+        .findFirst();
   }
 
-  private static boolean hasSchema(PartialObjectSchema partial) {
-    return partial.getSchema().isPresent();
-  }
-
-  private static boolean hasNestedSchema(PartialObjectSchema partial) {
-    return partial.getAllNestedProperties().stream().anyMatch(ExternalTypesResolver::hasSchema);
-  }
-
-  private static boolean hasAllOfWithSchema(FeatureSchema type) {
-    return type.getAllOf().stream().anyMatch(ExternalTypesResolver::hasSchema);
-  }
-
-  private static boolean hasAllOfWithNestedSchema(FeatureSchema type) {
-    return type.getAllOf().stream().anyMatch(ExternalTypesResolver::hasNestedSchema);
+  private boolean isEnabled(FeatureProviderDataV2 data) {
+    return getConfiguration(data).filter(ExtensionConfiguration::isEnabled).isPresent();
   }
 
   @Override
-  public boolean needsResolving(FeatureSchema type) {
-    return hasSchema(type) || hasAllOfWithSchema(type) || hasAllOfWithNestedSchema(type);
+  public boolean canResolve(String ref, FeatureProviderDataV2 data) {
+    if (!isEnabled(data)) {
+      return false;
+    }
+
+    try {
+      URI schemaUri = URI.create(ref);
+
+      if (SCHEMES.contains(schemaUri.getScheme())
+          || ((Objects.isNull(schemaUri.getScheme())
+              && !schemaUri.getSchemeSpecificPart().isBlank()
+              && !schemaUri.getSchemeSpecificPart().startsWith("/")))) {
+        return true;
+      }
+    } catch (Throwable e) {
+      // ignore
+    }
+    return false;
   }
 
   @Override
-  public FeatureSchema resolve(FeatureSchema type) {
-    if (hasSchema(type)) {
-      Optional<net.jimblackler.jsonschemafriend.Schema> schema = parse(type.getSchema().get());
+  public FeatureSchema resolve(String ref, FeatureSchema original, FeatureProviderDataV2 data) {
+    Optional<Schema> schema = parse(ref);
 
-      if (schema.isPresent()) {
-        return toFeatureSchema(type.getName(), schema.get(), null, type);
-      }
-
-      return null;
+    if (schema.isPresent()) {
+      return toFeatureSchema(original.getName(), schema.get(), null, original, data);
     }
 
-    if (hasAllOfWithSchema(type) || hasAllOfWithNestedSchema(type)) {
-      List<PartialObjectSchema> partials = new ArrayList<>();
-
-      for (PartialObjectSchema partial : type.getAllOf()) {
-        if (hasSchema(partial)) {
-          Optional<net.jimblackler.jsonschemafriend.Schema> schema =
-              parse(partial.getSchema().get());
-
-          if (schema.isPresent()) {
-            PartialObjectSchema resolvedPartial = toPartialSchema(schema.get(), partial);
-            if (Objects.nonNull(resolvedPartial)) {
-              partials.add(resolvedPartial);
-            }
-          }
-        } else if (hasNestedSchema(partial)) {
-          ImmutablePartialObjectSchema.Builder builder =
-              new ImmutablePartialObjectSchema.Builder().from(partial).propertyMap(Map.of());
-
-          partial
-              .getPropertyMap()
-              .forEach(
-                  (key, value) -> {
-                    FeatureSchema accept = value.accept(this);
-                    if (Objects.nonNull(accept)) {
-                      builder.putPropertyMap(key, accept);
-                    }
-                  });
-
-          partials.add(builder.build());
-        } else {
-          partials.add(partial);
-        }
-      }
-
-      return new ImmutableFeatureSchema.Builder().from(type).allOf(partials).build();
-    }
-
-    return type;
+    return null;
   }
 
-  Optional<net.jimblackler.jsonschemafriend.Schema> parse(String schemaSource) {
+  @Override
+  public PartialObjectSchema resolve(
+      String ref, PartialObjectSchema original, FeatureProviderDataV2 data) {
+    Optional<Schema> schema = parse(ref);
+
+    if (schema.isPresent()) {
+      return toPartialSchema(schema.get(), original, data);
+    }
+
+    return null;
+  }
+
+  Optional<Schema> parse(String schemaSource) {
     try {
       URI schemaUri = URI.create(schemaSource);
 
       if (SCHEMES.contains(schemaUri.getScheme())) {
-        net.jimblackler.jsonschemafriend.Schema schema = schemaParser.loadSchema(schemaUri);
+        Schema schema = schemaParser.loadSchema(schemaUri);
 
         return Optional.ofNullable(schema);
       }
 
       if (Objects.isNull(schemaUri.getScheme())
+          && !schemaUri.getSchemeSpecificPart().isBlank()
           && !schemaUri.getSchemeSpecificPart().startsWith("/")) {
         Path path = Path.of(schemaUri.getSchemeSpecificPart());
 
@@ -139,7 +131,7 @@ public class ExternalTypesResolver implements TypesResolver {
         }
 
         try (InputStream inputStream = schemaStore.get(path).get()) {
-          net.jimblackler.jsonschemafriend.Schema schema = schemaParser.loadSchema(inputStream);
+          Schema schema = schemaParser.loadSchema(inputStream);
 
           if (Objects.nonNull(schemaUri.getFragment())) {
             Map<URI, Schema> subSchemas = schema.getSubSchemas();
@@ -168,8 +160,7 @@ public class ExternalTypesResolver implements TypesResolver {
     return Optional.empty();
   }
 
-  private net.jimblackler.jsonschemafriend.Schema resolveComposition(
-      net.jimblackler.jsonschemafriend.Schema schema) {
+  private Schema resolveComposition(Schema schema) {
     if (Objects.nonNull(schema.getRef())) {
       return resolveComposition(schema.getRef());
     } else if (Objects.nonNull(schema.getOneOf()) && !schema.getOneOf().isEmpty()) {
@@ -183,8 +174,8 @@ public class ExternalTypesResolver implements TypesResolver {
   }
 
   private PartialObjectSchema toPartialSchema(
-      net.jimblackler.jsonschemafriend.Schema schema, PartialObjectSchema original) {
-    net.jimblackler.jsonschemafriend.Schema s = resolveComposition(schema);
+      Schema schema, PartialObjectSchema original, FeatureProviderDataV2 data) {
+    Schema s = resolveComposition(schema);
     Type t = toType(s.getExplicitTypes());
 
     if (t != Type.OBJECT) {
@@ -203,7 +194,7 @@ public class ExternalTypesResolver implements TypesResolver {
           .forEach(
               (key, value) -> {
                 FeatureSchema featureSchema =
-                    toFeatureSchema(key, value, schema, original.getPropertyMap().get(key));
+                    toFeatureSchema(key, value, schema, original.getPropertyMap().get(key), data);
                 if (Objects.nonNull(featureSchema)) {
                   builder.putPropertyMap(key, featureSchema);
                 }
@@ -215,13 +206,14 @@ public class ExternalTypesResolver implements TypesResolver {
 
   private FeatureSchema toFeatureSchema(
       String name,
-      net.jimblackler.jsonschemafriend.Schema schema,
-      @Nullable net.jimblackler.jsonschemafriend.Schema root,
-      @Nullable FeatureSchema original) {
+      Schema schema,
+      @Nullable Schema root,
+      @Nullable FeatureSchema original,
+      FeatureProviderDataV2 data) {
     ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder();
-    net.jimblackler.jsonschemafriend.Schema s = resolveComposition(schema);
+    Schema s = resolveComposition(schema);
 
-    net.jimblackler.jsonschemafriend.Schema r = Objects.isNull(root) ? schema : root;
+    Schema r = Objects.isNull(root) ? schema : root;
     Type t = toType(s.getExplicitTypes());
 
     if (Objects.equals(s, root)) {
@@ -248,6 +240,8 @@ public class ExternalTypesResolver implements TypesResolver {
     }
 
     if (t == Type.OBJECT) {
+      applyObjectType(s.getUri().toString(), builder, data);
+
       if (Objects.nonNull(s.getProperties())) {
         s.getProperties()
             .forEach(
@@ -257,30 +251,42 @@ public class ExternalTypesResolver implements TypesResolver {
                           key,
                           value,
                           r,
-                          Objects.nonNull(original)
-                              ? original.getPropertyMap().get(key)
-                              : original);
+                          Objects.nonNull(original) ? original.getPropertyMap().get(key) : original,
+                          data);
                   if (Objects.nonNull(featureSchema)) {
                     builder.putPropertyMap(key, featureSchema);
                   }
                 });
       }
     } else if (t == Type.OBJECT_ARRAY && Objects.nonNull(s.getItems())) {
-      net.jimblackler.jsonschemafriend.Schema is =
-          Objects.nonNull(s.getItems().getRef()) ? s.getItems().getRef() : s.getItems();
+      Schema is = Objects.nonNull(s.getItems().getRef()) ? s.getItems().getRef() : s.getItems();
       Type it = toType(is.getExplicitTypes());
       if (isSimple(it)) {
         builder.type(Type.VALUE_ARRAY).valueType(it);
       } else {
-        FeatureSchema featureSchema = toFeatureSchema(name, is, r, original);
+        FeatureSchema featureSchema = toFeatureSchema(name, is, r, original, data);
         if (Objects.nonNull(featureSchema)) {
-          // TODO
           builder.path(List.of()).parentPath(List.of()).from(featureSchema).type(Type.OBJECT_ARRAY);
         }
+        applyObjectType(s.getUri().toString(), builder, data);
       }
     }
 
     return builder.build();
+  }
+
+  private void applyObjectType(
+      String uri, ImmutableFeatureSchema.Builder builder, FeatureProviderDataV2 data) {
+    getConfiguration(data)
+        .ifPresent(
+            cfg -> {
+              Optional<String> objectType =
+                  cfg.getObjectTypeRefs().keySet().stream().filter(uri::endsWith).findFirst();
+
+              if (objectType.isPresent()) {
+                builder.objectType(cfg.getObjectTypeRefs().get(objectType.get()));
+              }
+            });
   }
 
   private boolean isSimple(Type type) {

@@ -6,7 +6,6 @@ dependencies {
     provided project(':xtraplatform-cql')
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-geometries')
-    provided project(':xtraplatform-schemas')
     provided project(':xtraplatform-strings')
 }
 

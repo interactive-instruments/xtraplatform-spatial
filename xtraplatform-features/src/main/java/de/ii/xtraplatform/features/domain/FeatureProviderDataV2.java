@@ -182,6 +182,15 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
   @JsonMerge
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
 
+  /**
+   * @langEn Definition of reusable schema fragments that can be referenced using `schema` in
+   *     [types](#types).
+   * @langDe Definition von wiederverwendbaren Schema-Fragmenten die mittels `schema` in
+   *     [Types](#types) referenziert werden können.
+   */
+  @JsonMerge
+  BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getFragments();
+
   @DocIgnore
   Map<String, Map<String, String>> getCodelists();
 
@@ -240,6 +249,23 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
     @JsonProperty(value = "types")
     public T putTypes2(String key, ImmutableFeatureSchema.Builder builder) {
       return putTypes(key, builder.name(key));
+    }
+
+    @JsonIgnore
+    public abstract Map<String, ImmutableFeatureSchema.Builder> getFragments();
+
+    @JsonProperty(value = "fragments")
+    public Map<String, ImmutableFeatureSchema.Builder> getFragments2() {
+      Map<String, ImmutableFeatureSchema.Builder> types = getFragments();
+
+      return new ApplyKeyToValueMap<>(types, (key, builder) -> builder.name(key));
+    }
+
+    public abstract T putFragments(String key, ImmutableFeatureSchema.Builder builder);
+
+    @JsonProperty(value = "fragments")
+    public T putFragments2(String key, ImmutableFeatureSchema.Builder builder) {
+      return putFragments(key, builder.name(key));
     }
 
     public abstract T id(String id);
