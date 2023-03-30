@@ -95,6 +95,7 @@ import java.util.function.BiConsumer;
                   + "{@body}\n\n"
                   + "## Scope\n\n"
                   + "{@scopeEn |||}\n\n"
+                  + "{@limitationsEn ### Limitations\n\n|||}\n\n"
                   + "## Configuration\n\n"
                   + "{@docTable:properties ### Options\n\n||| This extension has no configuration options.}\n\n"
                   + "{@docVar:example ### Example\n\n|||}\n"),
@@ -106,6 +107,7 @@ import java.util.function.BiConsumer;
                   + "{@body}\n\n"
                   + "## Umfang\n\n"
                   + "{@scopeDe |||}\n\n"
+                  + "{@limitationsDe ### Limitierungen\n\n|||}\n\n"
                   + "## Konfiguration\n\n"
                   + "{@docTable:properties ### Optionen\n\n||| Diese Erweiterung hat keine Konfigurationsoptionen.}\n\n"
                   + "{@docVar:example ### Beispiel\n\n|||}\n")

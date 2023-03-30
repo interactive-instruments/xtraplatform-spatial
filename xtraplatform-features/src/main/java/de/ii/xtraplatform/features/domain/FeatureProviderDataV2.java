@@ -34,14 +34,14 @@ import org.immutables.value.Value;
  *     <p>A feature provider is defined in a configuration file by an object with the following
  *     properties. Properties without default are mandatory.
  *     <p>{@docTable:properties}
- *     <p>## Types
+ *     <p>## Schema Definitions
  *     <p>{@docTable:types}
  *     <p>
  * @langDe # Allgemein
  *     <p>Jeder Feature-Provider wird in einer Konfigurationsdatei in einem Objekt mit den folgenden
  *     Eigenschaften beschrieben. Werte ohne Defaultwert sind in diesem Fall Pflichtangaben.
  *     <p>{@docTable:properties}
- *     <p>## Types
+ *     <p>## Schema-Definitionen
  *     <p>{@docTable:types}
  *     <p>
  * @langEn ## Connection Info
@@ -176,17 +176,24 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
   List<ExtensionConfiguration> getExtensions();
 
   /**
-   * @langEn Definition of feature types, see [below](#types).
-   * @langDe Definition of object types, see [below](#types).
+   * @langEn Definition of feature types. The entries have to be [schema
+   *     definitions](#schema-definitions) with `type: OBJECT` and at least one property with `role:
+   *     ID`.
+   * @langDe Definition von Feature-Types. Die Einträge sind
+   *     [Schema-Definitionen](#schema-definitions) mit `type: OBJECT` und mindestens einem Property
+   *     mit `role: ID`.
+   * @default {}
    */
   @JsonMerge
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
 
   /**
    * @langEn Definition of reusable schema fragments that can be referenced using `schema` in
-   *     [types](#types).
-   * @langDe Definition von wiederverwendbaren Schema-Fragmenten die mittels `schema` in
-   *     [Types](#types) referenziert werden können.
+   *     `types`. The entries are arbitrary [schema definitions](#schema-definitions).
+   * @langDe Definition von wiederverwendbaren Schema-Fragmenten, die mittels `schema` in `types`
+   *     referenziert werden können. Die Einträge sind beliebige
+   *     [Schema-Definitionen](#schema-definitions).
+   * @default {}
    */
   @JsonMerge
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getFragments();

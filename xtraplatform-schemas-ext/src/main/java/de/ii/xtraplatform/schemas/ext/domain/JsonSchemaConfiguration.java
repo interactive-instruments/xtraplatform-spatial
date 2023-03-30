@@ -17,6 +17,8 @@ import org.immutables.value.Value;
  * ```yaml
  * - type: JSON_SCHEMA
  *   enabled: true
+ *   objectTypeRefs:
+ *     '#/$defs/Link': Link
  * ```
  * </code>
  */
@@ -25,6 +27,13 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableJsonSchemaConfiguration.Builder.class)
 public interface JsonSchemaConfiguration extends ExtensionConfiguration {
 
+  /**
+   * @langEn Allows to map JSON schema definitions to an `objectType`, e.g. `'#/$defs/Link': Link`.
+   * @langDe Erlaubt es JSON Schema Definitionen einem `objectType` zuzuweisen, z.B.
+   *     `'#/$defs/Link': Link`.
+   * @default {}
+   * @since v3.4
+   */
   Map<String, String> getObjectTypeRefs();
 
   abstract class Builder extends ExtensionConfiguration.Builder {}

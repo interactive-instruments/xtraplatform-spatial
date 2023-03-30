@@ -244,14 +244,14 @@ public interface ConnectionInfoSql extends ConnectionInfo {
     /**
      * @langEn Maximum number of connections to the database. The default value is computed
      *     depending on the number of processor cores and the maximum number of joins per feature
-     *     type in the [Types Configuration](README.md#types). The default value is recommended for
-     *     optimal performance under load. The smallest possible value also depends on the maximum
-     *     number of joins per feature type, smaller values are rejected.
+     *     type in the [Types Configuration](README.md#schema-definitions). The default value is
+     *     recommended for optimal performance under load. The smallest possible value also depends
+     *     on the maximum number of joins per feature type, smaller values are rejected.
      * @langDe Steuert die maximale Anzahl von Verbindungen zur Datenbank. Der Default-Wert ist
      *     abhängig von der Anzahl der Prozessorkerne und der Anzahl der Joins in der
-     *     [Types-Konfiguration](README.md#types). Der Default-Wert wird für optimale Performanz
-     *     unter Last empfohlen. Der kleinstmögliche Wert ist ebenfalls von der Anzahl der Joins
-     *     abhängig, kleinere Werte werden zurückgewiesen.
+     *     [Types-Konfiguration](README.md#schema-definitions). Der Default-Wert wird für optimale
+     *     Performanz unter Last empfohlen. Der kleinstmögliche Wert ist ebenfalls von der Anzahl
+     *     der Joins abhängig, kleinere Werte werden zurückgewiesen.
      * @default dynamic
      */
     @Value.Default

@@ -47,6 +47,11 @@ public interface ExtensionConfiguration
     return getIdentifier(this.getClass());
   }
 
+  /**
+   * @langEn Enable the extension?
+   * @langDe Soll die Erweiterung aktiviert werden?
+   * @default false
+   */
   @Nullable
   Boolean getEnabled();
 
