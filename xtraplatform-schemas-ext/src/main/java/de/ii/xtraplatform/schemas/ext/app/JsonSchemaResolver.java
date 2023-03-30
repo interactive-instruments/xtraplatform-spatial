@@ -15,6 +15,7 @@ import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutablePartialObjectSchema;
+import de.ii.xtraplatform.features.domain.ImmutableSchemaConstraints;
 import de.ii.xtraplatform.features.domain.PartialObjectSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
@@ -29,6 +30,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -92,7 +95,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver {
     Optional<Schema> schema = parse(ref);
 
     if (schema.isPresent()) {
-      return toFeatureSchema(original.getName(), schema.get(), null, original, data);
+      return toFeatureSchema(original.getName(), schema.get(), null, original, data, false);
     }
 
     return null;
@@ -160,7 +163,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver {
     return Optional.empty();
   }
 
-  private Schema resolveComposition(Schema schema) {
+  private List<Schema> resolveComposition(Schema schema) {
     if (Objects.nonNull(schema.getRef())) {
       return resolveComposition(schema.getRef());
     } else if (Objects.nonNull(schema.getOneOf()) && !schema.getOneOf().isEmpty()) {
@@ -168,14 +171,17 @@ public class JsonSchemaResolver implements SchemaFragmentResolver {
     } else if (Objects.nonNull(schema.getAnyOf()) && !schema.getAnyOf().isEmpty()) {
       return resolveComposition(schema.getAnyOf().iterator().next());
     } else if (Objects.nonNull(schema.getAllOf()) && !schema.getAllOf().isEmpty()) {
-      return resolveComposition(schema.getAllOf().iterator().next());
+      return schema.getAllOf().stream()
+          .flatMap(s -> resolveComposition(s).stream())
+          .collect(Collectors.toList());
     }
-    return schema;
+    return List.of(schema);
   }
 
   private PartialObjectSchema toPartialSchema(
       Schema schema, PartialObjectSchema original, FeatureProviderDataV2 data) {
-    Schema s = resolveComposition(schema);
+    List<Schema> resolved = resolveComposition(schema);
+    Schema s = resolved.get(0);
     Type t = toType(s.getExplicitTypes());
 
     if (t != Type.OBJECT) {
@@ -190,11 +196,19 @@ public class JsonSchemaResolver implements SchemaFragmentResolver {
             .propertyMap(Map.of());
 
     if (Objects.nonNull(s.getProperties())) {
+      resolveProperties(
+          s.getProperties(),
+          Objects.nonNull(original) ? original.getPropertyMap() : null,
+          schema,
+          builder::putPropertyMap,
+          data,
+          s.getRequiredProperties());
       s.getProperties()
           .forEach(
               (key, value) -> {
                 FeatureSchema featureSchema =
-                    toFeatureSchema(key, value, schema, original.getPropertyMap().get(key), data);
+                    toFeatureSchema(
+                        key, value, schema, original.getPropertyMap().get(key), data, false);
                 if (Objects.nonNull(featureSchema)) {
                   builder.putPropertyMap(key, featureSchema);
                 }
@@ -209,9 +223,11 @@ public class JsonSchemaResolver implements SchemaFragmentResolver {
       Schema schema,
       @Nullable Schema root,
       @Nullable FeatureSchema original,
-      FeatureProviderDataV2 data) {
+      FeatureProviderDataV2 data,
+      boolean isRequired) {
     ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder();
-    Schema s = resolveComposition(schema);
+    List<Schema> resolved = resolveComposition(schema);
+    Schema s = resolved.get(0);
 
     Schema r = Objects.isNull(root) ? schema : root;
     Type t = toType(s.getExplicitTypes());
@@ -239,24 +255,40 @@ public class JsonSchemaResolver implements SchemaFragmentResolver {
       builder.sourcePath((Objects.isNull(root) ? "/" : "") + name);
     }
 
+    ImmutableSchemaConstraints.Builder constraintsBuilder = builder.constraintsBuilder();
+    boolean constrained = false;
+    if (isRequired) {
+      constraintsBuilder.required(true);
+      constrained = true;
+    }
+
     if (t == Type.OBJECT) {
       applyObjectType(s.getUri().toString(), builder, data);
 
-      if (Objects.nonNull(s.getProperties())) {
-        s.getProperties()
-            .forEach(
-                (key, value) -> {
-                  FeatureSchema featureSchema =
-                      toFeatureSchema(
-                          key,
-                          value,
-                          r,
-                          Objects.nonNull(original) ? original.getPropertyMap().get(key) : original,
-                          data);
-                  if (Objects.nonNull(featureSchema)) {
-                    builder.putPropertyMap(key, featureSchema);
-                  }
-                });
+      if (Objects.nonNull(s.getProperties()) || resolved.size() > 1) {
+        if (Objects.nonNull(s.getProperties())) {
+          resolveProperties(
+              s.getProperties(),
+              Objects.nonNull(original) ? original.getPropertyMap() : null,
+              r,
+              builder::putPropertyMap,
+              data,
+              s.getRequiredProperties());
+        }
+        if (resolved.size() > 1) {
+          for (int i = 1; i < resolved.size(); i++) {
+            Schema add = resolved.get(i);
+            if (Objects.nonNull(add.getProperties())) {
+              resolveProperties(
+                  add.getProperties(),
+                  Objects.nonNull(original) ? original.getPropertyMap() : null,
+                  r,
+                  builder::putPropertyMap,
+                  data,
+                  s.getRequiredProperties());
+            }
+          }
+        }
       }
     } else if (t == Type.OBJECT_ARRAY && Objects.nonNull(s.getItems())) {
       Schema is = Objects.nonNull(s.getItems().getRef()) ? s.getItems().getRef() : s.getItems();
@@ -264,15 +296,78 @@ public class JsonSchemaResolver implements SchemaFragmentResolver {
       if (isSimple(it)) {
         builder.type(Type.VALUE_ARRAY).valueType(it);
       } else {
-        FeatureSchema featureSchema = toFeatureSchema(name, is, r, original, data);
+        FeatureSchema featureSchema = toFeatureSchema(name, is, r, original, data, false);
         if (Objects.nonNull(featureSchema)) {
           builder.path(List.of()).parentPath(List.of()).from(featureSchema).type(Type.OBJECT_ARRAY);
         }
         applyObjectType(s.getUri().toString(), builder, data);
+
+        if (s.getMinItems() != null) {
+          constraintsBuilder.minOccurrence(s.getMinItems().intValue());
+          constrained = true;
+        }
+        if (s.getMaxItems() != null) {
+          constraintsBuilder.maxOccurrence(s.getMaxItems().intValue());
+          constrained = true;
+        }
       }
     }
 
+    if (t == Type.STRING || t == Type.INTEGER || t == Type.FLOAT) {
+      if (s.getConst() != null) {
+        constraintsBuilder.addEnumValues(s.getConst().toString());
+        constrained = true;
+      } else if (s.getEnums() != null && !s.getEnums().isEmpty()) {
+        constraintsBuilder.addAllEnumValues(
+            s.getEnums().stream().map(Object::toString).collect(Collectors.toList()));
+        constrained = true;
+      }
+      if (t == Type.STRING) {
+        if (s.getPattern() != null) {
+          constraintsBuilder.regex(s.getPattern());
+          constrained = true;
+        }
+      }
+      if (t == Type.INTEGER || t == Type.FLOAT) {
+        if (s.getMinimum() != null) {
+          constraintsBuilder.min(s.getMinimum().doubleValue());
+          constrained = true;
+        }
+        if (s.getMaximum() != null) {
+          constraintsBuilder.max(s.getMaximum().doubleValue());
+          constrained = true;
+        }
+      }
+    }
+
+    if (constrained) {
+      builder.constraints(constraintsBuilder.build());
+    }
+
     return builder.build();
+  }
+
+  private void resolveProperties(
+      Map<String, Schema> properties,
+      Map<String, FeatureSchema> original,
+      Schema root,
+      BiConsumer<String, FeatureSchema> consumer,
+      FeatureProviderDataV2 data,
+      Collection<String> requiredProperties) {
+    properties.forEach(
+        (key, value) -> {
+          FeatureSchema featureSchema =
+              toFeatureSchema(
+                  key,
+                  value,
+                  root,
+                  Objects.nonNull(original) ? original.get(key) : null,
+                  data,
+                  Objects.nonNull(requiredProperties) && requiredProperties.contains(key));
+          if (Objects.nonNull(featureSchema)) {
+            consumer.accept(key, featureSchema);
+          }
+        });
   }
 
   private void applyObjectType(
