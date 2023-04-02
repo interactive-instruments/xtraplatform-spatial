@@ -25,6 +25,7 @@ import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
 import de.ii.xtraplatform.schemas.ext.domain.JsonSchemaConfiguration;
 import de.ii.xtraplatform.store.domain.BlobStore;
+import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
@@ -60,7 +61,7 @@ import org.slf4j.LoggerFactory;
  * @limitationsEn Compositions are only supported to some extent:<code>
  *  - **oneOf** Only the first variant is used.
  *  - **anyOf** Only the first variant is used.
- *  - **allOf** The first variant is used as main schema. Properties from additonal variants are merged into the main schema.
+ *  - **allOf** The first variant is used as main schema. Properties from additional variants are merged into the main schema.
  *  </code>
  * @scopeDe Wenn diese Erweiterung aktiviert ist können `schema` Referenzen auch auf JSON Schema
  *     Dateien zeigen. Die Referenz kann entweder eine URL oder ein relativer Pfad zu einer Datei in
@@ -201,16 +202,28 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
     return Optional.empty();
   }
 
-  private List<Schema> resolveComposition(Schema schema) {
+  private List<Schema> resolveComposition(Schema schema, FeatureProviderDataV2 data) {
     if (Objects.nonNull(schema.getRef())) {
-      return resolveComposition(schema.getRef());
+      return resolveComposition(schema.getRef(), data);
     } else if (Objects.nonNull(schema.getOneOf()) && !schema.getOneOf().isEmpty()) {
-      return resolveComposition(schema.getOneOf().iterator().next());
+      if (data.getTypeValidation() != MODE.NONE && LOGGER.isWarnEnabled()) {
+        LOGGER.warn(
+            "External JSON Schema includes 'oneOf'. This cannot be mapped directly to a feature schema, see the documentation of the JSON Schema Resolver.");
+      }
+      return resolveComposition(schema.getOneOf().iterator().next(), data);
     } else if (Objects.nonNull(schema.getAnyOf()) && !schema.getAnyOf().isEmpty()) {
-      return resolveComposition(schema.getAnyOf().iterator().next());
+      if (data.getTypeValidation() != MODE.NONE && LOGGER.isWarnEnabled()) {
+        LOGGER.warn(
+            "External JSON Schema includes 'anyOf'. This cannot be mapped directly to a feature schema, see the documentation of the JSON Schema Resolver.");
+      }
+      return resolveComposition(schema.getAnyOf().iterator().next(), data);
     } else if (Objects.nonNull(schema.getAllOf()) && !schema.getAllOf().isEmpty()) {
+      if (data.getTypeValidation() != MODE.NONE && LOGGER.isWarnEnabled()) {
+        LOGGER.warn(
+            "External JSON Schema includes 'allOf'. This cannot be mapped directly to a feature schema, see the documentation of the JSON Schema Resolver.");
+      }
       return schema.getAllOf().stream()
-          .flatMap(s -> resolveComposition(s).stream())
+          .flatMap(s -> resolveComposition(s, data).stream())
           .collect(Collectors.toList());
     }
     return List.of(schema);
@@ -218,7 +231,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
 
   private PartialObjectSchema toPartialSchema(
       Schema schema, PartialObjectSchema original, FeatureProviderDataV2 data) {
-    List<Schema> resolved = resolveComposition(schema);
+    List<Schema> resolved = resolveComposition(schema, data);
     Schema s = resolved.get(0);
     Type t = toType(s.getExplicitTypes());
 
@@ -264,7 +277,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
       FeatureProviderDataV2 data,
       boolean isRequired) {
     ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder();
-    List<Schema> resolved = resolveComposition(schema);
+    List<Schema> resolved = resolveComposition(schema, data);
     Schema s = resolved.get(0);
 
     Schema r = Objects.isNull(root) ? schema : root;
