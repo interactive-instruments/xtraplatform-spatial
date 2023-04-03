@@ -25,6 +25,8 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
 
   List<SqlRelation> getRelation();
 
+  Optional<String> getSubDecoder();
+
   Optional<String> getPrimaryKey();
 
   Optional<String> getSortKey();
@@ -48,8 +50,11 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
   default List<String> getPath() {
     List<String> path =
         getRelation().isEmpty()
-            ? ImmutableList.of(
-                getName() + getFilterString().map(filter -> "{filter=" + filter + "}").orElse(""))
+            ? getSubDecoder().isPresent()
+                ? List.of(String.format("[%s]%s", getSubDecoder().get(), getName()))
+                : ImmutableList.of(
+                    getName()
+                        + getFilterString().map(filter -> "{filter=" + filter + "}").orElse(""))
             : // Stream.concat(
             // Stream.of(getName() + getFilterString().map(filter -> "{filter=" + filter +
             // "}").orElse("")),
@@ -90,6 +95,14 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
     return getProperties().stream()
         .filter(SchemaBase::isValue)
         .map(SchemaSql::getFullPath)
+        .collect(ImmutableList.toImmutableList());
+  }
+
+  @Value.Derived
+  @Value.Auxiliary
+  default List<SchemaSql> getColumnSchemas() {
+    return getProperties().stream()
+        .filter(SchemaBase::isValue)
         .collect(ImmutableList.toImmutableList());
   }
 

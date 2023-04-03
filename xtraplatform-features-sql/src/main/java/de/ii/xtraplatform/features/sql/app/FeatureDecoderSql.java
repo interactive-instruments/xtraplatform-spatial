@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.features.sql.app;
 
+import de.ii.xtraplatform.features.domain.Decoder;
+import de.ii.xtraplatform.features.domain.FeatureEventHandler;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -21,17 +23,21 @@ import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.sql.domain.SqlRowMeta;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class FeatureDecoderSql
     extends FeatureTokenDecoder<
-        SqlRow, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>> {
+        SqlRow, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
+    implements Decoder.Pipeline {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDecoderSql.class);
 
@@ -40,6 +46,8 @@ public class FeatureDecoderSql
   private final List<List<String>> mainTablePaths;
   private final FeatureStoreMultiplicityTracker multiplicityTracker;
   private final boolean isSingleFeature;
+  private final Map<String, Supplier<Decoder>> subDecoderFactories;
+  private final Map<String, Decoder> subDecoders;
 
   private boolean started;
   private boolean featureStarted;
@@ -51,7 +59,10 @@ public class FeatureDecoderSql
   private NestingTracker nestingTracker;
 
   public FeatureDecoderSql(
-      Map<String, SchemaMapping> mappings, List<SchemaSql> tableSchemas, Query query) {
+      Map<String, SchemaMapping> mappings,
+      List<SchemaSql> tableSchemas,
+      Query query,
+      Map<String, Supplier<Decoder>> subDecoderFactories) {
     this.mappings = mappings;
     this.query = query;
 
@@ -66,6 +77,8 @@ public class FeatureDecoderSql
     this.multiplicityTracker = new SqlMultiplicityTracker(multiTables);
     this.isSingleFeature =
         query instanceof FeatureQuery && ((FeatureQuery) query).returnsSingleFeature();
+    this.subDecoderFactories = subDecoderFactories;
+    this.subDecoders = new LinkedHashMap<>();
   }
 
   @Override
@@ -74,6 +87,9 @@ public class FeatureDecoderSql
     this.geometryDecoder = new GeometryDecoderWkt(getDownstream(), context);
     this.nestingTracker =
         new NestingTracker(getDownstream(), context, mainTablePaths, false, false, false);
+
+    // TODO: pass context and downstream
+    subDecoderFactories.forEach((connector, factory) -> subDecoders.put(connector, factory.get()));
   }
 
   @Override
@@ -154,6 +170,7 @@ public class FeatureDecoderSql
         getDownstream().onFeatureEnd(context);
         this.featureStarted = false;
         multiplicityTracker.reset();
+        subDecoders.values().forEach(Decoder::reset);
       }
 
       context.setType(featureType);
@@ -221,8 +238,7 @@ public class FeatureDecoderSql
               schemaIndexes.get(sqlRow.getColumnPaths().get(i)) + 1);
         }
 
-        if (sqlRow.getSpatialAttributes().size() > i
-            && Objects.equals(sqlRow.getSpatialAttributes().get(i), true)) {
+        if (sqlRow.isSpatialColumn(i)) {
           try {
             context.setSchemaIndex(-1);
             geometryDecoder.decode((String) sqlRow.getValues().get(i));
@@ -234,7 +250,20 @@ public class FeatureDecoderSql
           context.setValueType(Type.STRING);
           context.setValue((String) sqlRow.getValues().get(i));
           context.setSchemaIndex(schemaIndexes.get(sqlRow.getColumnPaths().get(i)));
-          getDownstream().onValue(context);
+
+          if (sqlRow.isSubDecoderColumn(i)) {
+            String subDecoder = sqlRow.getSubDecoder(i);
+            if (subDecoders.containsKey(subDecoder)) {
+              subDecoders
+                  .get(subDecoder)
+                  .decode(context.value().getBytes(StandardCharsets.UTF_8), this);
+              subDecoders.get(subDecoder).reset();
+            } else {
+              LOGGER.warn("Invalid sub-decoder: {}", subDecoder);
+            }
+          } else {
+            getDownstream().onValue(context);
+          }
         }
       }
     }
@@ -244,5 +273,17 @@ public class FeatureDecoderSql
     if (nestingTracker.isNotMain(sqlRow.getPath())) {
       context.pathTracker().track(sqlRow.getPath());
     }
+  }
+
+  @Override
+  public ModifiableContext<FeatureSchema, SchemaMapping> context() {
+    return context;
+  }
+
+  @Override
+  public FeatureEventHandler<
+          FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
+      downstream() {
+    return getDownstream();
   }
 }

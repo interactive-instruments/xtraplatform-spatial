@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
@@ -324,6 +325,13 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
     String featureType = layer.getFeatureType().orElse(layer.getId());
     // TODO: from TilesProviders with orThrow
     FeatureSchema featureSchema = featureTypes.get(featureType);
+    // TODO: validate layer during provider startup
+    if (featureSchema == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Tile layer '%s' references feature type '%s', which does not exist.",
+              layer.getId(), featureType));
+    }
 
     ImmutableFeatureQuery.Builder queryBuilder =
         ImmutableFeatureQuery.builder()
@@ -340,11 +348,19 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
           .forEach(filter -> queryBuilder.addFilters(cql.read(filter.getFilter(), Format.TEXT)));
     }
 
-    String spatialProperty = featureSchema.getPrimaryGeometry().orElseThrow().getFullPathAsString();
-    BoundingBox bbox = clip(tile.getBoundingBox(), bounds);
-    Cql2Expression spatialPredicate =
-        SIntersects.of(Property.of(spatialProperty), SpatialLiteral.of(Envelope.of(bbox)));
-    queryBuilder.addFilters(spatialPredicate);
+    featureSchema
+        .getPrimaryGeometry()
+        .map(SchemaBase::getFullPathAsString)
+        .ifPresentOrElse(
+            spatialProperty -> {
+              BoundingBox bbox = clip(tile.getBoundingBox(), bounds);
+              Cql2Expression spatialPredicate =
+                  SIntersects.of(
+                      Property.of(spatialProperty), SpatialLiteral.of(Envelope.of(bbox)));
+              queryBuilder.addFilters(spatialPredicate);
+            },
+            // TODO: validate feature schema during provider startup
+            () -> queryBuilder.addFilters(BooleanValue2.of(false)));
 
     if (userParameters.isPresent()) {
       userParameters.get().getLimit().ifPresent(queryBuilder::limit);

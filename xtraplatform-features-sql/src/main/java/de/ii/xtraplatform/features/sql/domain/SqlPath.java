@@ -25,6 +25,8 @@ public interface SqlPath extends SourcePath {
 
   Optional<Tuple<String, String>> getJoin();
 
+  Optional<String> getConnector();
+
   List<String> getColumns();
 
   String getSortKey();
@@ -49,6 +51,11 @@ public interface SqlPath extends SourcePath {
   }
 
   @Value.Derived
+  default boolean isConnected() {
+    return !isRoot() && getConnector().isPresent();
+  }
+
+  @Value.Derived
   default boolean isLeaf() {
     return !getColumns().isEmpty();
   }
@@ -68,8 +75,10 @@ public interface SqlPath extends SourcePath {
             getJoin().get().second(),
             getName(),
             getFilterString().map(filterString -> "{filter=" + filterString + "}").orElse(""))
-        : getName()
-            + getFilterString().map(filterString -> "{filter=" + filterString + "}").orElse("");
+        : isConnected()
+            ? String.format("[%s]%s", getConnector().get(), getName())
+            : getName()
+                + getFilterString().map(filterString -> "{filter=" + filterString + "}").orElse("");
   }
 
   @Value.Derived

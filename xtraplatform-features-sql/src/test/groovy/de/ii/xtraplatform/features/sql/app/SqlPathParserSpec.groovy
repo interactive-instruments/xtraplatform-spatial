@@ -8,8 +8,8 @@
 package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlImpl
-import de.ii.xtraplatform.features.sql.domain.SqlPathParser
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults
+import de.ii.xtraplatform.features.sql.domain.SqlPathParser
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -22,7 +22,7 @@ class SqlPathParserSpec extends Specification {
         def defaults = new ImmutableSqlPathDefaults.Builder().build()
         def cql = new CqlImpl()
 
-        pathParser = new SqlPathParser(defaults, cql)
+        pathParser = new SqlPathParser(defaults, cql, Set.of())
     }
 
     def 'root table'() {

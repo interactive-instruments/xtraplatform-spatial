@@ -571,10 +571,8 @@ class SqlRowFixtures {
         }
 
         @Override
-        List<Boolean> getSpatialAttributes() {
-            return attributesContainer.getAttributes().stream().map(
-                    FeatureStoreAttribute::isSpatial).collect(
-                    Collectors.toList());
+        boolean isSpatialColumn(int i) {
+            return attributesContainer.getAttributes().get(i).isSpatial()
         }
     }
 }
