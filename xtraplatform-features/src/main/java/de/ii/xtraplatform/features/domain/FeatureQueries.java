@@ -8,13 +8,16 @@
 package de.ii.xtraplatform.features.domain;
 
 public interface FeatureQueries {
+  FeatureProviderCapabilities getCapabilities();
 
   long getFeatureCount(String typeName);
 
+  // TODO: replace with capabilities
   default boolean supportsCql2() {
     return false;
   }
 
+  // TODO: replace with capabilities
   default boolean supportsAccenti() {
     return false;
   }

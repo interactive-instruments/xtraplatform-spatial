@@ -16,7 +16,6 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.features.app.FeatureChangeHandlerImpl;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.LIFECYCLE_HOOK;
-import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
 import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
@@ -46,8 +45,10 @@ public abstract class AbstractFeatureProvider<
     implements FeatureProvider2, FeatureQueries {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
-  protected static final WithScope WITH_SCOPE_QUERIES = new WithScope(Scope.QUERIES);
-  protected static final WithScope WITH_SCOPE_MUTATIONS = new WithScope(Scope.MUTATIONS);
+  protected static final WithScope WITH_SCOPE_QUERIES =
+      new WithScope(FeatureSchemaBase.Scope.QUERIES);
+  protected static final WithScope WITH_SCOPE_MUTATIONS =
+      new WithScope(FeatureSchemaBase.Scope.MUTATIONS);
 
   private final ConnectorFactory connectorFactory;
   private final Reactive reactive;
@@ -343,6 +344,11 @@ public abstract class AbstractFeatureProvider<
   protected abstract Map<String, Codelist> getCodelists();
 
   @Override
+  public final FeatureProviderCapabilities getCapabilities() {
+    return getQueryEncoder().getCapabilities();
+  }
+
+  @Override
   public FeatureStream getFeatureStream(FeatureQuery query) {
     validateQuery(query);
 
@@ -371,14 +377,18 @@ public abstract class AbstractFeatureProvider<
     return changeHandler;
   }
 
+  // TODO: encodingOptions vs executionOptions
   private FeatureTokenSource getFeatureTokenSource(
       Query query, Map<String, String> virtualTables, boolean passThrough) {
-    U transformedQuery = getQueryEncoder().encode(query, virtualTables);
-    // TODO: remove options, already embedded in SqlQuerySet
     TypeQuery typeQuery =
         query instanceof MultiFeatureQuery
             ? ((MultiFeatureQuery) query).getQueries().get(0)
             : (FeatureQuery) query;
+
+    getQueryEncoder().validate(typeQuery, query);
+
+    U transformedQuery = getQueryEncoder().encode(query, virtualTables);
+    // TODO: remove options, already embedded in SqlQuerySet
     V options = getQueryEncoder().getOptions(typeQuery, query);
     Reactive.Source<T> source = getConnector().getSourceStream(transformedQuery, options);
 
@@ -402,6 +412,7 @@ public abstract class AbstractFeatureProvider<
       BiFunction<FeatureTokenSource, Map<String, String>, Stream<W>> stream,
       Query query,
       boolean passThrough) {
+    // TODO: rename to context?
     Map<String, String> virtualTables = beforeQuery(query);
 
     FeatureTokenSource tokenSource = getFeatureTokenSource(query, virtualTables, passThrough);

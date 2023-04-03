@@ -17,7 +17,6 @@ import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
@@ -192,10 +191,10 @@ public class FeatureStreamImpl implements FeatureStream {
     FeatureTokenTransformerRemoveEmptyOptionals cleaner =
         new FeatureTokenTransformerRemoveEmptyOptionals();
 
-    FeatureTokenTransformerLogger logger = new FeatureTokenTransformerLogger();
+    FeatureTokenValidator validator = new FeatureTokenValidator();
 
     return featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner);
-    // .via(logger);
+    // .via(validator);
   }
 
   private Map<String, PropertyTransformations> getMergedTransformations(
@@ -232,7 +231,7 @@ public class FeatureStreamImpl implements FeatureStream {
     FeatureSchema featureSchema = data.getTypes().get(typeQuery.getType());
 
     if (typeQuery instanceof FeatureQuery
-        && ((FeatureQuery) typeQuery).getSchemaScope() == Scope.MUTATIONS) {
+        && ((FeatureQuery) typeQuery).getSchemaScope() == FeatureSchemaBase.Scope.MUTATIONS) {
       return () -> getProviderTransformationsMutations(featureSchema);
     }
 

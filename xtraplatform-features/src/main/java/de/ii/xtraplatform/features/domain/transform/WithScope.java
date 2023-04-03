@@ -9,7 +9,8 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
+import de.ii.xtraplatform.features.domain.FeatureSchemaBase;
+import de.ii.xtraplatform.features.domain.FeatureSchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -34,7 +35,7 @@ public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSch
       return null;
     }
 
-    if (schema.isConstant() && scope == Scope.MUTATIONS) {
+    if (schema.isConstant() && scope == FeatureSchemaBase.Scope.MUTATIONS) {
       return null;
     }
 

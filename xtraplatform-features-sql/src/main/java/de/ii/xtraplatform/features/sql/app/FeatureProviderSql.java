@@ -26,6 +26,8 @@ import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
+import de.ii.xtraplatform.features.domain.Decoder;
+import de.ii.xtraplatform.features.domain.DecoderFactories;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
@@ -35,7 +37,7 @@ import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureSchema.Scope;
+import de.ii.xtraplatform.features.domain.FeatureSchemaBase;
 import de.ii.xtraplatform.features.domain.FeatureStream;
 import de.ii.xtraplatform.features.domain.FeatureStreamImpl;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
@@ -96,8 +98,11 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.ws.rs.core.MediaType;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,6 +126,7 @@ public class FeatureProviderSql
   private final CrsInfo crsInfo;
   private final Cql cql;
   private final EntityRegistry entityRegistry;
+  private final Map<String, Supplier<Decoder>> subdecoders;
 
   private FeatureQueryEncoderSql queryTransformer;
   private AggregateStatsReader<SchemaSql> aggregateStatsReader;
@@ -140,6 +146,7 @@ public class FeatureProviderSql
       Reactive reactive,
       EntityRegistry entityRegistry,
       ProviderExtensionRegistry extensionRegistry,
+      DecoderFactories decoderFactories,
       @Assisted FeatureProviderDataV2 data) {
     super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry, data);
 
@@ -147,6 +154,11 @@ public class FeatureProviderSql
     this.crsInfo = crsInfo;
     this.cql = cql;
     this.entityRegistry = entityRegistry;
+
+    this.subdecoders =
+        Map.of(
+            "JSON",
+            () -> decoderFactories.createDecoder(MediaType.APPLICATION_JSON_TYPE).orElseThrow());
   }
 
   private static PathParserSql createPathParser2(SqlPathDefaults sqlPathDefaults, Cql cql) {
@@ -154,8 +166,9 @@ public class FeatureProviderSql
     return new PathParserSql(syntax, cql);
   }
 
-  private static SqlPathParser createPathParser3(SqlPathDefaults sqlPathDefaults, Cql cql) {
-    return new SqlPathParser(sqlPathDefaults, cql);
+  private static SqlPathParser createPathParser3(
+      SqlPathDefaults sqlPathDefaults, Cql cql, Set<String> connectors) {
+    return new SqlPathParser(sqlPathDefaults, cql, connectors);
   }
 
   @Override
@@ -168,7 +181,8 @@ public class FeatureProviderSql
     this.sourceSchemaValidator =
         new SourceSchemaValidatorSql(validationSchemas, this::getSqlClient);
 
-    this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql);
+    this.pathParser3 =
+        createPathParser3(getData().getSourcePathDefaults(), cql, subdecoders.keySet());
     QuerySchemaDeriver querySchemaDeriver = new QuerySchemaDeriver(pathParser3);
     this.tableSchemas =
         getData().getTypes().entrySet().stream()
@@ -434,7 +448,7 @@ public class FeatureProviderSql
       FeatureQuery featureQuery = (FeatureQuery) query;
 
       WithScope withScope =
-          featureQuery.getSchemaScope() == Scope.QUERIES
+          featureQuery.getSchemaScope() == FeatureSchemaBase.Scope.QUERIES
               ? WITH_SCOPE_QUERIES
               : WITH_SCOPE_MUTATIONS;
 
@@ -447,11 +461,11 @@ public class FeatureProviderSql
                   .build());
 
       List<SchemaSql> schemas =
-          featureQuery.getSchemaScope() == Scope.QUERIES
+          featureQuery.getSchemaScope() == FeatureSchemaBase.Scope.QUERIES
               ? tableSchemas.get(featureQuery.getType())
               : tableSchemasMutations.get(featureQuery.getType());
 
-      return new FeatureDecoderSql(mappings, schemas, query);
+      return new FeatureDecoderSql(mappings, schemas, query, subdecoders);
     }
 
     if (query instanceof MultiFeatureQuery) {
@@ -478,7 +492,7 @@ public class FeatureProviderSql
               .flatMap(typeQuery -> tableSchemas.get(typeQuery.getType()).stream())
               .collect(Collectors.toList());
 
-      return new FeatureDecoderSql(mappings, schemas, query);
+      return new FeatureDecoderSql(mappings, schemas, query, subdecoders);
     }
 
     throw new IllegalArgumentException();

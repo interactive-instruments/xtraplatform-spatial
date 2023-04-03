@@ -160,6 +160,9 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
 
     for (List<String> path : mapping.getTargetSchemasByPath().keySet()) {
       if (path.size() > 1) {
+        if (path.stream().anyMatch(elem -> elem.matches("\\[[^=\\]]+].+"))) {
+          continue;
+        }
         List<String> parent = path.subList(0, path.size() - 1);
         if (!doRearrange
             && !Objects.equals(parent, lastParent)

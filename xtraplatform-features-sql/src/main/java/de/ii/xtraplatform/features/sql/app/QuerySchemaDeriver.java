@@ -21,11 +21,13 @@ import de.ii.xtraplatform.features.sql.domain.SqlPathParser;
 import de.ii.xtraplatform.features.sql.domain.SqlRelation;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -64,6 +66,8 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
         parentPaths.isEmpty()
             ? ImmutableList.of()
             : pathParser.extractRelations(parentPaths.get(parentPaths.size() - 1), path);
+
+    Optional<String> connector = path.getConnector();
 
     List<String> sortKeys =
         Stream.concat(
@@ -325,6 +329,30 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                 })
             .collect(Collectors.toList());
 
+    Set<String> connected = new HashSet<>();
+
+    List<SchemaSql> newVisitedProperties2 =
+        newVisitedProperties.stream()
+            .flatMap(
+                prop -> {
+                  if (prop.getSubDecoder().isEmpty()) {
+                    return Stream.of(prop);
+                  }
+
+                  boolean isFirst = connected.add(prop.getSubDecoder().get() + prop.getName());
+
+                  return isFirst
+                      ? Stream.of(
+                          new Builder()
+                              .from(prop)
+                              .sourcePath(Optional.empty())
+                              .primaryKey(Optional.empty())
+                              .sortKey(Optional.empty())
+                              .build())
+                      : Stream.empty();
+                })
+            .collect(Collectors.toList());
+
     Builder builder =
         new Builder()
             .name(path.getName())
@@ -333,13 +361,14 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                 parentSortKeys.isEmpty() || !targetSchema.isValue()
                     ? Optional.empty()
                     : Optional.of(parentSortKeys.get(parentSortKeys.size() - 1)))
-            .type(targetSchema.getType())
+            .type(connector.isPresent() ? Type.STRING : targetSchema.getType())
             .valueType(targetSchema.getValueType())
             .geometryType(targetSchema.getGeometryType())
             .role(targetSchema.getRole())
             .sourcePath(targetSchema.getName())
             .relation(relations)
-            .properties(newVisitedProperties)
+            .subDecoder(connector)
+            .properties(connector.isPresent() ? List.of() : newVisitedProperties2)
             .constantValue(targetSchema.getConstantValue())
             .forcePolygonCCW(
                 targetSchema.isForcePolygonCCW() ? Optional.empty() : Optional.of(false))

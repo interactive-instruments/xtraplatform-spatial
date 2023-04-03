@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.sql.app;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import dagger.Lazy;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.cql.domain.Cql;
@@ -17,13 +18,17 @@ import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.features.domain.AllOfResolver;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
+import de.ii.xtraplatform.features.domain.DecoderFactories;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
+import de.ii.xtraplatform.features.domain.SchemaReferenceResolver;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
@@ -53,6 +58,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -67,10 +73,12 @@ public class FeatureProviderSqlFactory
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSqlFactory.class);
 
+  private final Lazy<Set<SchemaFragmentResolver>> schemaResolvers;
   private final ConnectorFactory connectorFactory;
 
   @Inject
   public FeatureProviderSqlFactory(
+      Lazy<Set<SchemaFragmentResolver>> schemaResolvers,
       // TODO: needed because dagger-auto does not parse FeatureProviderSql
       CrsTransformerFactory crsTransformerFactory,
       CrsInfo crsInfo,
@@ -79,8 +87,10 @@ public class FeatureProviderSqlFactory
       Reactive reactive,
       EntityRegistry entityRegistry,
       ProviderExtensionRegistry extensionRegistry,
+      DecoderFactories decoderFactories,
       ProviderSqlFactoryAssisted providerSqlFactoryAssisted) {
     super(providerSqlFactoryAssisted);
+    this.schemaResolvers = schemaResolvers;
     this.connectorFactory = connectorFactory;
   }
 
@@ -125,15 +135,40 @@ public class FeatureProviderSqlFactory
     }
 
     try {
-      return normalizeConstants(
-          cleanupAutoPersist(
-              cleanupAdditionalInfo(generateNativeCrsIfNecessary(generateTypesIfNecessary(data)))));
+      return resolveAllOfIfNecessary(
+          resolveSchemasIfNecessary(
+              normalizeConstants(
+                  cleanupAutoPersist(
+                      cleanupAdditionalInfo(
+                          generateNativeCrsIfNecessary(generateTypesIfNecessary(data)))))));
     } catch (Throwable e) {
       LogContext.error(
           LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
     }
 
     throw new IllegalStateException();
+  }
+
+  private FeatureProviderSqlData resolveSchemasIfNecessary(FeatureProviderSqlData data) {
+    SchemaReferenceResolver resolver = new SchemaReferenceResolver(data, schemaResolvers);
+
+    if (resolver.needsResolving(data.getTypes())) {
+      Map<String, FeatureSchema> types = resolver.resolve(data.getTypes());
+
+      return new Builder().from(data).types(types).build();
+    }
+    return data;
+  }
+
+  private FeatureProviderSqlData resolveAllOfIfNecessary(FeatureProviderSqlData data) {
+    AllOfResolver resolver = new AllOfResolver();
+
+    if (resolver.needsResolving(data.getTypes())) {
+      Map<String, FeatureSchema> types = resolver.resolve(data.getTypes());
+
+      return new Builder().from(data).types(types).build();
+    }
+    return data;
   }
 
   private FeatureProviderSqlData generateTypesIfNecessary(FeatureProviderSqlData data) {

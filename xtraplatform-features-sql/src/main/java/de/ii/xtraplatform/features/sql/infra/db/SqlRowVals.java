@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SortKey.Direction;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
@@ -27,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,26 +111,28 @@ class SqlRowVals implements SqlRow {
     return ImmutableList.of();
   }
 
-  @Override
-  public List<Boolean> getSpatialAttributes() {
-    if (Objects.nonNull(tableSchema)) {
-      return tableSchema.getProperties().stream()
-          .filter(SchemaBase::isValue)
-          .map(SchemaBase::isSpatial)
-          .collect(Collectors.toList());
-    }
-    return ImmutableList.of();
+  private boolean hasColumnSchema(int i) {
+    return Objects.nonNull(tableSchema) && tableSchema.getColumnSchemas().size() > i;
   }
 
   @Override
-  public List<Boolean> getTemporalAttributes() {
-    if (Objects.nonNull(tableSchema)) {
-      return tableSchema.getProperties().stream()
-          .filter(SchemaBase::isValue)
-          .map(SchemaBase::isTemporal)
-          .collect(Collectors.toList());
-    }
-    return ImmutableList.of();
+  public boolean isSpatialColumn(int i) {
+    return hasColumnSchema(i) && tableSchema.getColumnSchemas().get(i).isSpatial();
+  }
+
+  @Override
+  public boolean isTemporalColumn(int i) {
+    return hasColumnSchema(i) && tableSchema.getColumnSchemas().get(i).isTemporal();
+  }
+
+  @Override
+  public boolean isSubDecoderColumn(int i) {
+    return hasColumnSchema(i) && tableSchema.getColumnSchemas().get(i).getSubDecoder().isPresent();
+  }
+
+  @Override
+  public String getSubDecoder(int i) {
+    return isSubDecoderColumn(i) ? tableSchema.getColumnSchemas().get(i).getSubDecoder().get() : "";
   }
 
   // TODO: use result.nextObject when column type info is supported
