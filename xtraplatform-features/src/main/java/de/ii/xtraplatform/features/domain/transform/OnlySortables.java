@@ -35,6 +35,16 @@ public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, Featur
   public FeatureSchema visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
+    if (parents.size() > 1) {
+      // only direct properties can be a sortable
+      return null;
+    }
+
+    if (parents.stream().anyMatch(s -> s.getSourcePath().orElse("").contains("[JSON]"))) {
+      // if we are in a JSON column, no property can be a sortable
+      return null;
+    }
+
     if (schema.sortable()) {
       String path = schema.getFullPathAsString(pathSeparator);
       // ignore property, if it is not included (by default or explicitly) or if it is excluded

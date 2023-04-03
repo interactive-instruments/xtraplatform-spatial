@@ -35,6 +35,11 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
   public FeatureSchema visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
+    if (parents.stream().anyMatch(s -> s.getSourcePath().orElse("").contains("[JSON]"))) {
+      // if we are in a JSON column, no property can be a queryable
+      return null;
+    }
+
     if (schema.queryable()) {
       String path = schema.getFullPathAsString(pathSeparator);
       // ignore property, if it is not included (by default or explicitly) or if it is excluded

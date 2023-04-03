@@ -119,10 +119,12 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default boolean queryable() {
+    // we cannot reliably detect whether the property is a sub-property stored in a JSON column,
+    // so this has to be taken into account when the complete feature schema is available
     return !isObject()
         && !Objects.equals(getType(), Type.UNKNOWN)
         && getIsQueryable().orElse(true)
-        && !getFullPathAsString().contains("[JSON]");
+        && getEffectiveSourcePaths().stream().noneMatch(path -> path.contains("[JSON]"));
   }
 
   Optional<Boolean> getIsSortable();
@@ -131,14 +133,16 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default boolean sortable() {
+    // we cannot reliably detect whether the property is a direct property of a feature nor whether
+    // the property is a sub-property in a JSON column, so this has to be taken into account when
+    // the complete feature schema is available
     return !isSpatial()
         && !isObject()
         && !isArray()
         && !Objects.equals(getType(), Type.BOOLEAN)
         && !Objects.equals(getType(), Type.UNKNOWN)
-        && getParentPath().size() == 1
         && getIsSortable().orElse(true)
-        && !getFullPathAsString().contains("[JSON]");
+        && getEffectiveSourcePaths().stream().noneMatch(path -> path.contains("[JSON]"));
   }
 
   List<T> getProperties();
