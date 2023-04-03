@@ -119,8 +119,10 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default boolean queryable() {
-    // TODO also ignore JSON containers
-    return !isObject() && !Objects.equals(getType(), Type.UNKNOWN) && getIsQueryable().orElse(true);
+    return !isObject()
+        && !Objects.equals(getType(), Type.UNKNOWN)
+        && getIsQueryable().orElse(true)
+        && !getFullPathAsString().contains("[JSON]");
   }
 
   Optional<Boolean> getIsSortable();
@@ -129,14 +131,14 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default boolean sortable() {
-    // TODO also ignore JSON containers
     return !isSpatial()
         && !isObject()
         && !isArray()
         && !Objects.equals(getType(), Type.BOOLEAN)
         && !Objects.equals(getType(), Type.UNKNOWN)
-        && getFullPath().size() == 1
-        && getIsSortable().orElse(true);
+        && getParentPath().size() == 1
+        && getIsSortable().orElse(true)
+        && !getFullPathAsString().contains("[JSON]");
   }
 
   List<T> getProperties();

@@ -518,7 +518,7 @@ public interface FeatureSchema
   @Value.Check
   default void checkIsQueryable() {
     Preconditions.checkState(
-        !queryable() || (!isObject() && !Objects.equals(getType(), Type.UNKNOWN)),
+        !queryable() || (!isObject() && !Objects.equals(getType(), Type.UNKNOWN) && !getFullPathAsString().contains("[JSON]")),
         "a queryable property must not be an OBJECT or OBJECT_ARRAY, found %s",
         getType());
   }
@@ -526,7 +526,7 @@ public interface FeatureSchema
   @Value.Check
   default void checkIsSortable() {
     Preconditions.checkState(
-        !sortable() || getFullPath().size() == 1,
+        !sortable() || getParentPath().size() == 1,
         "a sortable property must be a direct property of the feature, found %s",
         getFullPathAsString());
     Preconditions.checkState(
@@ -535,7 +535,8 @@ public interface FeatureSchema
                 && !isObject()
                 && !isArray()
                 && !Objects.equals(getType(), Type.BOOLEAN)
-                && !Objects.equals(getType(), Type.UNKNOWN)),
+                && !Objects.equals(getType(), Type.UNKNOWN)
+                && !getFullPathAsString().contains("[JSON]")),
         "a sortable property must be a primitive value, found %s",
         getType());
   }
