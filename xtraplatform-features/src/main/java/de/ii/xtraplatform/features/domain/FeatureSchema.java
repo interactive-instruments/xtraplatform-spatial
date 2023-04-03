@@ -518,7 +518,10 @@ public interface FeatureSchema
   @Value.Check
   default void checkIsQueryable() {
     Preconditions.checkState(
-        !queryable() || (!isObject() && !Objects.equals(getType(), Type.UNKNOWN) && !getFullPathAsString().contains("[JSON]")),
+        !queryable()
+            || (!isObject()
+                && !Objects.equals(getType(), Type.UNKNOWN)
+                && !getFullPathAsString().contains("[JSON]")),
         "a queryable property must not be an OBJECT or OBJECT_ARRAY, found %s",
         getType());
   }
