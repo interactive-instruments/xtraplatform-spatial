@@ -1,17 +1,30 @@
 package de.ii.xtraplatform.schemas.ext.app
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import de.ii.xtraplatform.features.domain.FeatureSchema
-import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData
+import de.ii.xtraplatform.features.domain.*
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder
-import de.ii.xtraplatform.features.domain.SchemaReferenceResolver
-import de.ii.xtraplatform.features.domain.YamlSerialization
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 import de.ii.xtraplatform.schemas.ext.domain.ImmutableJsonSchemaConfiguration
 import de.ii.xtraplatform.store.domain.BlobStore
 import spock.lang.Shared
 import spock.lang.Specification
 
 class JsonSchemaResolverSpec extends Specification {
+
+    static FeatureProviderDataV2 data = new ImmutableFeatureProviderCommonData.Builder()
+            .id("foo")
+            .providerType("FEATURE")
+            .providerSubType("BAR")
+            .addExtensions(new ImmutableJsonSchemaConfiguration.Builder()
+                    .enabled(true)
+                    .geometryTypeRefs([
+                            '#/$defs/polygonGeoJSON'     : SimpleFeatureGeometry.POLYGON,
+                            '#/$defs/multipolygonGeoJSON': SimpleFeatureGeometry.MULTI_POLYGON
+                    ])
+                    .relationRefs(['#/$defs/Adres': 'adres'])
+                    .compositionIndexes(['#/$defs/Waardetype': 5])
+                    .build())
+            .build()
 
     @Shared
     ObjectMapper objectMapper = YamlSerialization.createYamlMapper()
@@ -27,14 +40,7 @@ class JsonSchemaResolverSpec extends Specification {
     @Shared
     JsonSchemaResolver jsonSchemaResolver = new JsonSchemaResolver(schemaStore2)
     @Shared
-    SchemaReferenceResolver schemaReferenceResolver = new SchemaReferenceResolver(
-            new ImmutableFeatureProviderCommonData.Builder()
-                    .id("foo")
-                    .providerType("FEATURE")
-                    .providerSubType("BAR")
-                    .addExtensions(new ImmutableJsonSchemaConfiguration.Builder().enabled(true).build())
-                    .build(),
-            () -> Set.of(jsonSchemaResolver))
+    SchemaReferenceResolver schemaReferenceResolver = new SchemaReferenceResolver(data, () -> Set.of(jsonSchemaResolver))
 
     static String txt(String file) {
         return new File("src/test/resources/mappings/${file}").text
@@ -56,6 +62,23 @@ class JsonSchemaResolverSpec extends Specification {
         return objectMapper.writeValueAsString(resolved)
     }
 
+    static Map<String, FeatureSchema> gebouwOverrides = [
+            "geregistreerdMet": new Builder()
+                    .name("geregistreerdMet")
+                    .propertyMap([
+                            "bestaatUit": new Builder()
+                                    .name("bestaatUit")
+                                    .propertyMap([
+                                            "waarde": new Builder()
+                                                    .name("waarde")
+                                                    .sourcePath("waarde/stringValue")
+                                                    .build()
+                                    ])
+                                    .build()
+                    ])
+                    .build()
+    ]
+
     def 'resolve'() {
         expect:
 
@@ -63,9 +86,9 @@ class JsonSchemaResolverSpec extends Specification {
 
         where:
 
-        type    | schema                               | overrides || expected
-        "link"  | "link.json"                          | [:]       || "link.yml"
+        type     | schema                               | overrides       || expected
+        "link"   | "link.json"                          | [:]             || "link.yml"
         //"gebouw" | "gebouw.json"                        | gebouwOverrides || "gebouw.yml"
-        "xplan" | 'xplan.json#/$defs/PFS_Schutzgebiet' | [:]       || "xplan.yml"
+        "xplan"  | 'xplan.json#/$defs/PFS_Schutzgebiet' | [:]             || "xplan.yml"
     }
 }

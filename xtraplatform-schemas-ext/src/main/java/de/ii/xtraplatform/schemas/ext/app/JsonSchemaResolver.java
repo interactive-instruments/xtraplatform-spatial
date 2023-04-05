@@ -29,6 +29,7 @@ import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -202,37 +203,58 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
     return Optional.empty();
   }
 
-  private List<Schema> resolveComposition(
-      Schema schema, FeatureSchema original, FeatureProviderDataV2 data) {
+  private List<Schema> resolveComposition(Schema schema, FeatureProviderDataV2 data) {
     if (Objects.nonNull(schema.getRef())) {
-      return resolveComposition(schema.getRef(), original, data);
+      return resolveComposition(schema.getRef(), data);
     } else if (Objects.nonNull(schema.getOneOf()) && !schema.getOneOf().isEmpty()) {
       if (data.getTypeValidation() != MODE.NONE && LOGGER.isWarnEnabled()) {
         LOGGER.warn(
             "External JSON Schema includes 'oneOf'. This cannot be mapped directly to a feature schema, see the documentation of the JSON Schema Resolver.");
       }
-      return resolveComposition(schema.getOneOf().iterator().next(), original, data);
+      int compositionIndex =
+          getCompositionIndex(schema.getUri().toString(), schema.getOneOf().size(), data);
+
+      return resolveComposition(new ArrayList<>(schema.getOneOf()).get(compositionIndex), data);
     } else if (Objects.nonNull(schema.getAnyOf()) && !schema.getAnyOf().isEmpty()) {
       if (data.getTypeValidation() != MODE.NONE && LOGGER.isWarnEnabled()) {
         LOGGER.warn(
             "External JSON Schema includes 'anyOf'. This cannot be mapped directly to a feature schema, see the documentation of the JSON Schema Resolver.");
       }
-      return resolveComposition(schema.getAnyOf().iterator().next(), original, data);
+      int compositionIndex =
+          getCompositionIndex(schema.getUri().toString(), schema.getAnyOf().size(), data);
+
+      return resolveComposition(new ArrayList<>(schema.getAnyOf()).get(compositionIndex), data);
     } else if (Objects.nonNull(schema.getAllOf()) && !schema.getAllOf().isEmpty()) {
       if (data.getTypeValidation() != MODE.NONE && LOGGER.isWarnEnabled()) {
         LOGGER.warn(
             "External JSON Schema includes 'allOf'. This cannot be mapped directly to a feature schema, see the documentation of the JSON Schema Resolver.");
       }
-      return schema.getAllOf().stream()
-          .flatMap(s -> resolveComposition(s, original, data).stream())
-          .collect(Collectors.toList());
+      List<Schema> resolved =
+          schema.getAllOf().stream()
+              .flatMap(s -> resolveComposition(s, data).stream())
+              .collect(Collectors.toList());
+      int compositionIndex =
+          getCompositionIndex(schema.getUri().toString(), schema.getAllOf().size(), data);
+
+      if (compositionIndex > 0) {
+        List<Schema> reordered = new ArrayList<>();
+        reordered.add(resolved.get(compositionIndex));
+        for (int i = 0; i < resolved.size(); i++) {
+          if (i != compositionIndex) {
+            reordered.add(resolved.get(i));
+          }
+        }
+        return reordered;
+      }
+
+      return resolved;
     }
     return List.of(schema);
   }
 
   private PartialObjectSchema toPartialSchema(
       Schema schema, PartialObjectSchema original, FeatureProviderDataV2 data) {
-    List<Schema> resolved = resolveComposition(schema, null, data);
+    List<Schema> resolved = resolveComposition(schema, data);
     Schema s = resolved.get(0);
     Type t = toType(s.getExplicitTypes());
 
@@ -278,7 +300,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
       FeatureProviderDataV2 data,
       boolean isRequired) {
     ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder();
-    List<Schema> resolved = resolveComposition(schema, original, data);
+    List<Schema> resolved = resolveComposition(schema, data);
     Schema s = resolved.get(0);
 
     Schema r = Objects.isNull(root) ? schema : root;
@@ -357,7 +379,14 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
       } else {
         FeatureSchema featureSchema = toFeatureSchema(name, is, r, original, data, false);
         if (Objects.nonNull(featureSchema)) {
-          builder.path(List.of()).parentPath(List.of()).from(featureSchema).type(Type.OBJECT_ARRAY);
+          builder
+              .path(List.of())
+              .parentPath(List.of())
+              .from(featureSchema)
+              .type(
+                  featureSchema.getType() == Type.FEATURE_REF
+                      ? Type.FEATURE_REF_ARRAY
+                      : Type.OBJECT_ARRAY);
         }
 
         if (s.getMinItems() != null) {
@@ -449,6 +478,18 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
         return Type.GEOMETRY;
       }
 
+      Optional<String> relationRef =
+          cfg.get().getRelationRefs().keySet().stream().filter(uri::endsWith).findFirst();
+
+      if (relationRef.isPresent()) {
+        Type newType = type == Type.OBJECT_ARRAY ? Type.FEATURE_REF_ARRAY : Type.FEATURE_REF;
+        builder.type(newType).refType(cfg.get().getRelationRefs().get(relationRef.get()));
+        // TODO: configurable
+        builder.sourcePath(sourcePath + "/identificatie");
+
+        return newType;
+      }
+
       Optional<String> objectTypeRef =
           cfg.get().getObjectTypeRefs().keySet().stream().filter(uri::endsWith).findFirst();
 
@@ -458,6 +499,20 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
     }
 
     return type;
+  }
+
+  private int getCompositionIndex(String uri, int max, FeatureProviderDataV2 data) {
+    Optional<JsonSchemaConfiguration> cfg = getConfiguration(data);
+    if (cfg.isPresent()) {
+      Optional<String> compositionRef =
+          cfg.get().getCompositionIndexes().keySet().stream().filter(uri::endsWith).findFirst();
+
+      if (compositionRef.isPresent()) {
+        return Math.min(max, cfg.get().getCompositionIndexes().get(compositionRef.get()));
+      }
+    }
+
+    return 0;
   }
 
   private boolean isSimple(Type type) {

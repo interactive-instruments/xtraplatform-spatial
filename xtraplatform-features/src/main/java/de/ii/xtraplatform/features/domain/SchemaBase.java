@@ -72,6 +72,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     OBJECT,
     VALUE_ARRAY,
     OBJECT_ARRAY,
+    FEATURE_REF,
+    FEATURE_REF_ARRAY,
     UNKNOWN
   }
 
@@ -84,6 +86,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   Optional<Type> getValueType();
 
   Optional<SimpleFeatureGeometry> getGeometryType();
+
+  Optional<String> getRefType();
 
   List<String> getPath();
 
