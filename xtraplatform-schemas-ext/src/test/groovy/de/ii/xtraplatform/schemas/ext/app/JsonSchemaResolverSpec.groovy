@@ -56,23 +56,6 @@ class JsonSchemaResolverSpec extends Specification {
         return objectMapper.writeValueAsString(resolved)
     }
 
-    static Map<String, FeatureSchema> gebouwOverrides = [
-            "geregistreerdMet": new Builder()
-                    .name("geregistreerdMet")
-                    .propertyMap([
-                            "bestaatUit": new Builder()
-                                    .name("bestaatUit")
-                                    .propertyMap([
-                                            "waarde": new Builder()
-                                                    .name("waarde")
-                                                    .oneOfIndex(5)
-                                                    .build()
-                                    ])
-                                    .build()
-                    ])
-                    .build()
-    ]
-
     def 'resolve'() {
         expect:
 
