@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain.transform;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import java.util.List;
@@ -52,6 +53,28 @@ public interface TransformerChain<T, U> {
                                 schema,
                                 extractWildcardParameter(transformationKey, wildcardPattern))))
         .map(entry -> String.join(".", entry.getKey()))
+        .collect(Collectors.toList());
+  }
+
+  default List<Tuple<String, List<FeatureSchema>>> explodeWildcard2(
+      String transformationKey,
+      String wildcardPattern,
+      SchemaMapping schemaMapping,
+      BiPredicate<FeatureSchema, String> filter) {
+    if (!hasWildcard(transformationKey, wildcardPattern)) {
+      return ImmutableList.of();
+    }
+
+    return schemaMapping.getTargetSchemasByPath().entrySet().stream()
+        .filter(
+            entry ->
+                entry.getValue().stream()
+                    .anyMatch(
+                        schema ->
+                            filter.test(
+                                schema,
+                                extractWildcardParameter(transformationKey, wildcardPattern))))
+        .map(entry -> Tuple.of(String.join(".", entry.getKey()), entry.getValue()))
         .collect(Collectors.toList());
   }
 }

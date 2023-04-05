@@ -143,6 +143,12 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       case GEOMETRY:
         valueSchema = getSchemaForGeometry(schema);
         break;
+      case FEATURE_REF:
+      case FEATURE_REF_ARRAY:
+        valueSchema =
+            getSchemaForLiteralType(
+                schema.getValueType().orElse(Type.STRING), label, description, unit);
+        break;
       case UNKNOWN:
       default:
         break;

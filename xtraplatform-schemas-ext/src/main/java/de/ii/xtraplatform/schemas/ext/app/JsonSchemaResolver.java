@@ -17,6 +17,7 @@ import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import de.ii.xtraplatform.features.domain.ImmutablePartialObjectSchema;
 import de.ii.xtraplatform.features.domain.ImmutableSchemaConstraints;
 import de.ii.xtraplatform.features.domain.PartialObjectSchema;
@@ -302,8 +303,9 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
     ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder();
     List<Schema> resolved = resolveComposition(schema, data);
     Schema s = resolved.get(0);
+    boolean isRoot = Objects.isNull(root);
 
-    Schema r = Objects.isNull(root) ? schema : root;
+    Schema r = isRoot ? schema : root;
     Type t = toType(s.getExplicitTypes());
 
     if (Objects.equals(s, root)) {
@@ -326,7 +328,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
         .type(t);
 
     if (Objects.isNull(original) || original.getSourcePath().isEmpty()) {
-      builder.sourcePath((Objects.isNull(root) ? "/" : "") + name);
+      builder.sourcePath((isRoot ? "/" : "") + name);
     }
 
     ImmutableSchemaConstraints.Builder constraintsBuilder =
@@ -343,6 +345,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
             builder,
             t,
             Optional.ofNullable(original).flatMap(FeatureSchema::getSourcePath).orElse(name),
+            isRoot,
             data);
 
     if (t == Type.OBJECT) {
@@ -459,9 +462,10 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
 
   private Type applyTypeRefs(
       String uri,
-      ImmutableFeatureSchema.Builder builder,
+      Builder builder,
       Type type,
       String sourcePath,
+      boolean isRoot,
       FeatureProviderDataV2 data) {
     Optional<JsonSchemaConfiguration> cfg = getConfiguration(data);
     if (cfg.isPresent() && (type == Type.OBJECT || type == Type.OBJECT_ARRAY)) {
@@ -481,7 +485,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
       Optional<String> relationRef =
           cfg.get().getRelationRefs().keySet().stream().filter(uri::endsWith).findFirst();
 
-      if (relationRef.isPresent()) {
+      if (!isRoot && relationRef.isPresent()) {
         Type newType = type == Type.OBJECT_ARRAY ? Type.FEATURE_REF_ARRAY : Type.FEATURE_REF;
         builder.type(newType).refType(cfg.get().getRelationRefs().get(relationRef.get()));
         // TODO: configurable
