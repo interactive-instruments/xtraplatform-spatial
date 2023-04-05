@@ -291,7 +291,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
       if (original.getIgnore()) {
         return null;
       }
-      builder.from(original).propertyMap(Map.of());
+      builder.from(original).schema(Optional.empty()).propertyMap(Map.of());
     }
 
     builder
@@ -306,7 +306,8 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
       builder.sourcePath((Objects.isNull(root) ? "/" : "") + name);
     }
 
-    ImmutableSchemaConstraints.Builder constraintsBuilder = builder.constraintsBuilder();
+    ImmutableSchemaConstraints.Builder constraintsBuilder =
+        new ImmutableSchemaConstraints.Builder();
     boolean constrained = false;
     if (isRequired) {
       constraintsBuilder.required(true);

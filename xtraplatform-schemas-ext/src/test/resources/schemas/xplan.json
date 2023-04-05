@@ -1,0 +1,1261 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/PFS_Schutzgebiet"
+    },
+    {
+      "$ref": "#/$defs/PFS_StationFlÃ¤che"
+    },
+    {
+      "$ref": "#/$defs/PFS_StationPunkt"
+    },
+    {
+      "$ref": "#/$defs/PFS_Stationierungspunkt"
+    },
+    {
+      "$ref": "#/$defs/PFS_Netzverknuepfungspunkt"
+    },
+    {
+      "$ref": "#/$defs/PFS_GasversorgungsleitungAbschnitt"
+    },
+    {
+      "$ref": "#/$defs/PFS_BaustelleFlÃ¤che"
+    },
+    {
+      "$ref": "#/$defs/PFS_Baugrube"
+    },
+    {
+      "$ref": "#/$defs/PFS_Armaturengruppe"
+    },
+    {
+      "$ref": "#/$defs/BST_Speicher"
+    },
+    {
+      "$ref": "#/$defs/BST_Erdgasleitung"
+    },
+    {
+      "$ref": "#/$defs/PFS_AlternativeTrasseAbschnitt"
+    },
+    {
+      "$ref": "#/$defs/PFS_Plan"
+    }
+  ],
+  "$defs": {
+    "Link": {
+      "properties": {
+        "href": {
+          "format": "uri-reference",
+          "type": "string"
+        },
+        "rel": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "href"
+      ]
+    },
+    "XP_GesetzlicheGrundlage": {
+      "description": "Angabe der gesetzlichen Grundlage des Planinhalts.",
+      "properties": {
+        "name": {
+          "description": "Name / Titel des Gesetzes",
+          "type": "string"
+        },
+        "detail": {
+          "description": "Detaillierte Spezifikation der gesetzlichen Grundlage mit Angabe einer Paragraphennummer",
+          "type": "string"
+        },
+        "ausfertigungDatum": {
+          "description": "Die Datumsangabe bezieht sich in der Regel auf das Datum der Ausfertigung des Gesetzes oder der Rechtsverordnung.",
+          "format": "date",
+          "type": "string"
+        },
+        "letzteBekanntmDatum": {
+          "description": "Ist das Gesetz oder die Verordnung nach mehreren Ã„nderungen neu bekannt gemacht worden, kann anstelle des Ausfertigungsdatums das Datum der Bekanntmachung der Neufassung angegeben werden.",
+          "format": "date",
+          "type": "string"
+        },
+        "letzteAenderungDatum": {
+          "description": "Ist ein Gesetz oder eine Rechtsverordnung nach der VerÃ¶ffentlichung des amtlichen Volltextes geÃ¤ndert worden, kann hierauf hingewiesen werden.",
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "XP_NetzExterneReferenz": {
+      "description": "Referenz auf ein Dokument oder einen georeferenzierten Rasterplan.",
+      "properties": {
+        "georefURL": {
+          "description": "Referenz auf eine Georeferenzierungs-Datei. Das Attribut ist nur relevant bei Verweisen auf georeferenzierte Rasterbilder. Wenn der XPlanGML Datensatz und das referierte Dokument in einem hierarchischen Ordnersystem gespeichert sind, kann die URI auch einen relativen Pfad vom XPlanGML-Datensatz zum Dokument enthalten.",
+          "type": "string"
+        },
+        "referenzName": {
+          "description": "Name des referierten Dokument innerhalb des Informationssystems.",
+          "type": "string"
+        },
+        "referenzURL": {
+          "description": "URI des referierten Dokuments, bzw. Datenbank-SchlÃ¼ssel. Wenn der XPlanGML Datensatz und das referierte Dokument in einem hierarchischen Ordnersystem gespeichert sind, kann die URI auch einen relativen Pfad vom XPlanGML-Datensatz zum Dokument enthalten.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Beschreibung des referierten Dokuments",
+          "type": "string"
+        },
+        "datum": {
+          "description": "Datum des referierten Dokuments",
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "referenzName",
+        "referenzURL"
+      ]
+    },
+    "XP_Akteur": {
+      "description": "Zentrale Akteure des Verfahrens",
+      "properties": {
+        "nameOrganisation": {
+          "description": "Name der Organisation.",
+          "type": "string"
+        },
+        "namePerson": {
+          "description": "Name der Person.",
+          "type": "string"
+        },
+        "strasse": {
+          "description": "StraÃŸe",
+          "type": "string"
+        },
+        "postleitzahl": {
+          "description": "Postleitzahl",
+          "type": "string"
+        },
+        "ort": {
+          "description": "Ort",
+          "type": "string"
+        },
+        "telefon": {
+          "description": "Telefonnummer",
+          "type": "string"
+        },
+        "mail": {
+          "description": "Mail-Adresse",
+          "type": "string"
+        },
+        "rolle": {
+          "description": "Rolle der Person/Organisation",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000",
+            "3000",
+            "4000",
+            "5000",
+            "6000",
+            "7100",
+            "7200"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "PFS_Auslegung": {
+      "description": "Die AnhÃ¶rungsbehÃ¶rde veranlasst, dass der Plan in den Gemeinden, in denen sich das Vorhaben voraussichtlich auswirken wird, ausgelegt wird.",
+      "properties": {
+        "gemeinde": {
+          "description": "Name der betroffenen Gemeinde",
+          "type": "string"
+        },
+        "auslegungStartDatum": {
+          "description": "Datum der Auslegung",
+          "format": "date",
+          "type": "string"
+        },
+        "auslegungEndDatum": {
+          "description": "Ende der Auslegung",
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PFS_Schutzgebiet": {
+      "title": "PFS_Schutzgebiet",
+      "description": "FÃ¼r die Trassenplanung relevantes Schutzgebiet",
+      "properties": {
+        "uuid": {
+          "description": "Eindeutiger Identifier des Objektes.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Beliebiger Text.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung von Planinhalten.",
+          "type": "string"
+        },
+        "netzbetreiber": {
+          "description": "Angabe des Leitungsbetreibers.",
+          "type": "string"
+        },
+        "aufschrift": {
+          "description": "Spezifischer Text zur Beschriftung von Planinhalten.",
+          "type": "string"
+        },
+        "gehoertZuPFS": {
+          "$ref": "#/$defs/Link"
+        }
+      },
+      "type": "object",
+      "required": [
+        "gehoertZuPFS"
+      ]
+    },
+    "PFS_StationFlÃ¤che": {
+      "title": "PFS_StationFlÃ¤che",
+      "description": "Spezifizierung einer Station als FlÃ¤chenobjekt (alternativ zu PFS_StationPunkt)",
+      "properties": {
+        "uuid": {
+          "description": "Eindeutiger Identifier des Objektes.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Beliebiger Text.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung von Planinhalten.",
+          "type": "string"
+        },
+        "netzbetreiber": {
+          "description": "Angabe des Leitungsbetreibers.",
+          "type": "string"
+        },
+        "aufschrift": {
+          "description": "Spezifischer Text zur Beschriftung von Planinhalten.",
+          "type": "string"
+        },
+        "gehoertZuPFS": {
+          "$ref": "#/$defs/Link"
+        },
+        "artFlaeche": {
+          "description": "Art des genutzten FlÃ¤che",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000",
+            "3000"
+          ]
+        },
+        "artStation": {
+          "description": "Art der Station",
+          "type": "string",
+          "enum": [
+            "1000",
+            "10001",
+            "10002",
+            "10003",
+            "10004",
+            "10005",
+            "10006",
+            "2000",
+            "20001",
+            "20002",
+            "9999"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "gehoertZuPFS"
+      ]
+    },
+    "PFS_StationPunkt": {
+      "title": "PFS_StationPunkt",
+      "description": "Knoten eines Gas- und Stromnetzes",
+      "properties": {
+        "uuid": {
+          "description": "Eindeutiger Identifier des Objektes.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Beliebiger Text.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung von Planinhalten.",
+          "type": "string"
+        },
+        "netzbetreiber": {
+          "description": "Angabe des Leitungsbetreibers.",
+          "type": "string"
+        },
+        "aufschrift": {
+          "description": "Spezifischer Text zur Beschriftung von Planinhalten.",
+          "type": "string"
+        },
+        "gehoertZuPFS": {
+          "$ref": "#/$defs/Link"
+        },
+        "status": {
+          "description": "Status bzw. Ã„nderung des Status",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000",
+            "3000"
+          ]
+        },
+        "art": {
+          "description": "Art der Station",
+          "type": "string",
+          "enum": [
+            "1000",
+            "10001",
+            "10002",
+            "10003",
+            "10004",
+            "10005",
+            "10006",
+            "2000",
+            "20001",
+            "20002",
+            "9999"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "gehoertZuPFS"
+      ]
+    },
+    "PFS_Stationierungspunkt": {
+      "title": "PFS_Stationierungspunkt",
+      "description": "Stationierungspunkte sind Vermessungspunkte entlang einer Trasse. Sie kÃ¶nnen in regelmÃ¤ÃŸigen AbstÃ¤nden LÃ¤ngenangaben liefern oder sonstige spezifische Punkte auf der Trasse kennzeichnen.",
+      "properties": {
+        "uuid": {
+          "description": "Eindeutiger Identifier des Objektes.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Beliebiger Text.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung von Planinhalten.",
+          "type": "string"
+        },
+        "netzbetreiber": {
+          "description": "Angabe des Leitungsbetreibers.",
+          "type": "string"
+        },
+        "aufschrift": {
+          "description": "Spezifischer Text zur Beschriftung von Planinhalten.",
+          "type": "string"
+        },
+        "gehoertZuPFS": {
+          "$ref": "#/$defs/Link"
+        },
+        "nummer": {
+          "description": "Nummer wie SP1, A1, K1.",
+          "type": "string"
+        },
+        "laenge": {
+          "description": "LÃ¤nge einer Trasse an diesem Punkt in m.",
+          "type": "number"
+        },
+        "start": {
+          "description": "Start einer Baustrecke",
+          "type": "boolean"
+        },
+        "ende": {
+          "description": "Ende einer Baustrecke",
+          "type": "boolean"
+        }
+      },
+      "type": "object",
+      "required": [
+        "gehoertZuPFS"
+      ]
+    },
+    "PFS_Netzverknuepfungspunkt": {
+      "title": "PFS_Netzverknuepfungspunkt",
+      "description": "NetzverknÃ¼pfungs- bzw. Netzkopplungspunkte legen die Anfangs-, Zwischen- und Endpunkte von Netzausbau-Vorhaben fest.",
+      "properties": {
+        "uuid": {
+          "description": "Eindeutiger Identifier des Objektes.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Beliebiger Text.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung von Planinhalten.",
+          "type": "string"
+        },
+        "netzbetreiber": {
+          "description": "Angabe des Leitungsbetreibers.",
+          "type": "string"
+        },
+        "aufschrift": {
+          "description": "Spezifischer Text zur Beschriftung von Planinhalten.",
+          "type": "string"
+        },
+        "gehoertZuPFS": {
+          "$ref": "#/$defs/Link"
+        },
+        "status": {
+          "description": "Status bzw. Ã„nderung des Status",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000",
+            "3000"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "gehoertZuPFS"
+      ]
+    },
+    "PFS_GasversorgungsleitungAbschnitt": {
+      "title": "PFS_GasversorgungsleitungAbschnitt",
+      "description": "Abschnitt einer Gasversorgungsleitung (Pipeline)",
+      "properties": {
+        "uuid": {
+          "description": "Eindeutiger Identifier des Objektes.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Beliebiger Text.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung von Planinhalten.",
+          "type": "string"
+        },
+        "netzbetreiber": {
+          "description": "Angabe des Leitungsbetreibers.",
+          "type": "string"
+        },
+        "aufschrift": {
+          "description": "Spezifischer Text zur Beschriftung von Planinhalten.",
+          "type": "string"
+        },
+        "gehoertZuPFS": {
+          "$ref": "#/$defs/Link"
+        },
+        "bezeichnung": {
+          "description": "Bezeichnung der Trasse",
+          "type": "string"
+        },
+        "leitungstyp": {
+          "description": "Geplanter Leitungstyp",
+          "type": "string",
+          "enum": [
+            "1000",
+            "10001",
+            "10002",
+            "10003",
+            "10004",
+            "2000",
+            "20001",
+            "20002",
+            "20003"
+          ]
+        },
+        "durchmesser": {
+          "description": "DN-Angabe und/oder AuÃŸendurchmesser in mm",
+          "type": "string"
+        },
+        "regelueberdeckung": {
+          "description": "Mindestabstand zwischen Oberkante des Weges und Oberkante des Rohres/Kabels in m.\r\nGilt nur fÃ¼r erdverlegte Linienobjekte.\r\n(gml:LengthType: uom=â€œmâ€œ oder uom=â€œurn:adv:uom:mâ€œ)",
+          "type": "number"
+        },
+        "schutzstreifen": {
+          "description": "Schutzstreifen einer (Frei-)Leitung. Angabe der Gesamtbreite in m.\r\n(Schutzstreifen wird im Grundbuch eingetragen.)",
+          "type": "number"
+        },
+        "status": {
+          "description": "Status bzw. Ã„nderung des Status",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000",
+            "3000"
+          ]
+        },
+        "gehoelzfreierStreifen": {
+          "description": "Teil des Schutzstreifens, der von GehÃ¶lzen freizuhalten ist. Ab RohrauÃŸenkante gemessen in m. \r\n(gml:LengthType: uom=â€œmâ€œ oder uom=â€œurn:adv:uom:mâ€œ)",
+          "type": "number"
+        },
+        "arbeitsstreifen": {
+          "description": "Zur BauausfÃ¼hrung wird ein Regelarbeitsstreifen auf freier Feldflur  in Anspruch genommen. Gesamtbreite in m.",
+          "type": "number"
+        },
+        "bauweise": {
+          "description": "Bauweise im Trassenabschnitt",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000",
+            "3000"
+          ]
+        },
+        "verlegemethode": {
+          "description": "Verlegemethode im Trassenabschnitt",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000",
+            "3000",
+            "4000",
+            "5000",
+            "6000",
+            "60001",
+            "60002",
+            "60003",
+            "60004",
+            "7000"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "gehoertZuPFS"
+      ]
+    },
+    "PFS_BaustelleFlÃ¤che": {
+      "title": "PFS_BaustelleFlÃ¤che",
+      "description": "Geplante temporÃ¤re FlÃ¤chennutzungen wÃ¤hrend der Bauphase.",
+      "properties": {
+        "uuid": {
+          "description": "Eindeutiger Identifier des Objektes.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Beliebiger Text.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung von Planinhalten.",
+          "type": "string"
+        },
+        "netzbetreiber": {
+          "description": "Angabe des Leitungsbetreibers.",
+          "type": "string"
+        },
+        "aufschrift": {
+          "description": "Spezifischer Text zur Beschriftung von Planinhalten.",
+          "type": "string"
+        },
+        "gehoertZuPFS": {
+          "$ref": "#/$defs/Link"
+        },
+        "art": {
+          "description": "Art der Baustelle",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000",
+            "3000",
+            "4000"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "gehoertZuPFS"
+      ]
+    },
+    "PFS_Baugrube": {
+      "title": "PFS_Baugrube",
+      "description": "Baugrube zur Erstellung von geschlossenen Querungen von StraÃŸen, GrÃ¤ben u.a.",
+      "properties": {
+        "uuid": {
+          "description": "Eindeutiger Identifier des Objektes.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Beliebiger Text.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung von Planinhalten.",
+          "type": "string"
+        },
+        "netzbetreiber": {
+          "description": "Angabe des Leitungsbetreibers.",
+          "type": "string"
+        },
+        "aufschrift": {
+          "description": "Spezifischer Text zur Beschriftung von Planinhalten.",
+          "type": "string"
+        },
+        "gehoertZuPFS": {
+          "$ref": "#/$defs/Link"
+        },
+        "status": {
+          "description": "Status bzw. Ã„nderung des Status",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000",
+            "3000"
+          ]
+        },
+        "art": {
+          "description": "Auswahl der Start- und Zielgrube",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000"
+          ]
+        }
+      },
+      "type": "object",
+      "required": [
+        "gehoertZuPFS"
+      ]
+    },
+    "PFS_Armaturengruppe": {
+      "title": "PFS_Armaturengruppe",
+      "description": "Eine Armatur bezeichnet ein Bauteil zum VerÃ¤ndern und Steuern von StoffstrÃ¶men, das insbesondere in Rohrleitungen fÃ¼r Gase und FlÃ¼ssigkeiten verwendet wird.",
+      "properties": {
+        "uuid": {
+          "description": "Eindeutiger Identifier des Objektes.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Beliebiger Text.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung von Planinhalten.",
+          "type": "string"
+        },
+        "netzbetreiber": {
+          "description": "Angabe des Leitungsbetreibers.",
+          "type": "string"
+        },
+        "aufschrift": {
+          "description": "Spezifischer Text zur Beschriftung von Planinhalten.",
+          "type": "string"
+        },
+        "gehoertZuPFS": {
+          "$ref": "#/$defs/Link"
+        },
+        "status": {
+          "description": "Status bzw. Ã„nderung des Status",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000",
+            "3000"
+          ]
+        },
+        "funktion": {
+          "items": {
+            "description": "Funktion(en) der Armaturengruppe.",
+            "type": "string"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "einsatzgebiet": {
+          "items": {
+            "description": "Einsatzgebiet(e) der Armaturengruppe",
+            "type": "string"
+          },
+          "minItems": 0,
+          "type": "array"
+        }
+      },
+      "type": "object",
+      "required": [
+        "gehoertZuPFS"
+      ]
+    },
+    "BST_Speicher": {
+      "title": "BST_Speicher",
+      "description": "Energiespeicher dienen der Speicherung von momentan verfÃ¼gbarer, aber nicht benÃ¶tigter Energie zur spÃ¤teren Nutzung.",
+      "properties": {
+        "uuid": {
+          "description": "Eindeutiger Identifier des Objektes.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Beliebiger Text.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung von Planinhalten.",
+          "type": "string"
+        },
+        "netzbetreiber": {
+          "description": "Angabe des Leitungsbetreibers.",
+          "type": "string"
+        },
+        "aufschrift": {
+          "description": "Spezifischer Text zur Beschriftung von Planinhalten.",
+          "type": "string"
+        },
+        "gehoertZuPlan_BRA_AusbauPlan": {
+          "$ref": "#/$defs/Link"
+        },
+        "gehoertZuPlan_BST_NetzPlan": {
+          "$ref": "#/$defs/Link"
+        },
+        "gehoertZuPlan_ISA_Plan": {
+          "$ref": "#/$defs/Link"
+        },
+        "gehoertZuPlan_PFS_Plan": {
+          "$ref": "#/$defs/Link"
+        },
+        "status": {
+          "description": "StatusverÃ¤nderung im Rahmen einer BaumaÃŸnahme.",
+          "type": "string",
+          "enum": [
+            "1100",
+            "1200",
+            "2000",
+            "3000"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "BST_Erdgasleitung": {
+      "title": "BST_Erdgasleitung",
+      "description": "Erdgasleitung im Bestand",
+      "properties": {
+        "uuid": {
+          "description": "Eindeutiger Identifier des Objektes.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Beliebiger Text.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung von Planinhalten.",
+          "type": "string"
+        },
+        "netzbetreiber": {
+          "description": "Angabe des Leitungsbetreibers.",
+          "type": "string"
+        },
+        "aufschrift": {
+          "description": "Spezifischer Text zur Beschriftung von Planinhalten.",
+          "type": "string"
+        },
+        "gehoertZuPlan_BRA_AusbauPlan": {
+          "$ref": "#/$defs/Link"
+        },
+        "gehoertZuPlan_BST_NetzPlan": {
+          "$ref": "#/$defs/Link"
+        },
+        "gehoertZuPlan_ISA_Plan": {
+          "$ref": "#/$defs/Link"
+        },
+        "gehoertZuPlan_PFS_Plan": {
+          "$ref": "#/$defs/Link"
+        },
+        "durchmesser": {
+          "description": "DN-Angabe und/oder AuÃŸendurchmesser in mm",
+          "type": "string"
+        },
+        "leitungstyp": {
+          "description": "Auswahl des Leitungstyps",
+          "type": "string",
+          "enum": [
+            "1000",
+            "10001",
+            "10002",
+            "10003",
+            "10004",
+            "2000",
+            "20001",
+            "20002",
+            "20003"
+          ]
+        },
+        "ueberdeckung": {
+          "description": "Abstand zwischen Oberkante der VerkehrsflÃ¤che und Oberkante des Rohres/Kabels in m (entspricht der begrifflich unprÃ¤ziseren \"Verlegetiefe\").\r\nGilt nur fÃ¼r erdverlegte Linienobjekte.\r\n(gml:LengthType: uom=â€œmâ€œ oder uom=â€œurn:adv:uom:mâ€œ)",
+          "type": "number"
+        },
+        "status": {
+          "description": "StatusverÃ¤nderung im Rahmen einer BaumaÃŸnahme.",
+          "type": "string",
+          "enum": [
+            "1100",
+            "1200",
+            "2000",
+            "3000"
+          ]
+        },
+        "druckstufe": {
+          "description": "Angabe der Druckstufe.",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000",
+            "3000",
+            "9999"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "PFS_AlternativeTrasseAbschnitt": {
+      "title": "PFS_AlternativeTrasseAbschnitt",
+      "description": "Trassenabschnitt/-segement eines alternativen Verlaufs nach Â§ 19 NABEG.\r\nVorzugsvariante ist entsprechend dargestellt durch PFS_HochspannungsleitungAbschnitt bzw. PFS_GasversorgungsleitungAbschnitt",
+      "properties": {
+        "uuid": {
+          "description": "Eindeutiger Identifier des Objektes.",
+          "type": "string"
+        },
+        "text": {
+          "description": "Beliebiger Text.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung von Planinhalten.",
+          "type": "string"
+        },
+        "netzbetreiber": {
+          "description": "Angabe des Leitungsbetreibers.",
+          "type": "string"
+        },
+        "aufschrift": {
+          "description": "Spezifischer Text zur Beschriftung von Planinhalten.",
+          "type": "string"
+        },
+        "gehoertZuPFS": {
+          "$ref": "#/$defs/Link"
+        },
+        "bezeichnung": {
+          "description": "Bezeichnung der Trasse",
+          "type": "string"
+        },
+        "leitungstyp": {
+          "description": "Geplanter Leitungstyp",
+          "type": "string",
+          "enum": [
+            "1000",
+            "10001",
+            "10002",
+            "10003",
+            "10004",
+            "2000",
+            "20001",
+            "20002",
+            "20003"
+          ]
+        },
+        "variante": {
+          "description": "Bezeichnung der Variante.",
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "gehoertZuPFS"
+      ]
+    },
+    "PFS_Plan": {
+      "title": "PFS_Plan",
+      "description": "Klasse zur Modellierung eines Planfeststellungsverfahrens",
+      "properties": {
+        "name": {
+          "description": "Name des Plans.",
+          "type": "string"
+        },
+        "nummer": {
+          "description": "Nummer des Plans.",
+          "type": "string"
+        },
+        "internalId": {
+          "description": "Interner Identifikator des Plans.",
+          "type": "string"
+        },
+        "beschreibung": {
+          "description": "Kommentierende Beschreibung des Leitungsplans.",
+          "type": "string"
+        },
+        "gesetzlicheGrundlage": {
+          "items": {
+            "$ref": "#/$defs/XP_GesetzlicheGrundlage"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "technischerPlanersteller": {
+          "description": "Beizeichnung der Institution oder Firma, die den Plan technisch erstellt hat.",
+          "type": "string"
+        },
+        "technHerstellDatum": {
+          "description": "Datum, an dem der Plan technisch ausgefertigt wurde.",
+          "format": "date",
+          "type": "string"
+        },
+        "erstellungsMassstab": {
+          "description": "Der bei der Erstellung des Plans benutzte KartenmaÃŸstab.",
+          "type": "integer"
+        },
+        "externeReferenz": {
+          "items": {
+            "$ref": "#/$defs/XP_NetzExterneReferenz"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Abwasserleitung": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Armatur": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Erdgasleitung": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Fernwaermeleitung": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Hausanschluss": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Kraftwerk": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Mast": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Multi_Flaechenobjekt": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Richtfunkstrecke": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Schacht": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_SonstEinrichtungLinie": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Speicher": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Station": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Strassenbeleuchtung": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Stromleitung": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_TelekommunikationLeitung": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Umspannanlage": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Verteiler": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Wasserleitung": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatObjekt_BST_Windenergieanlage": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_AlternativeTrasseAbschnitt": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_Armaturengruppe": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_Baugrube": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_BaustelleFlaeche": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_Energiekopplungsanlage": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_GasversorgungsleitungAbschnitt": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_Gleis": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_Grossspeicheranlage": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_HochspannungsleitungAbschnitt": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_Hochspannungsmast": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_Kanal": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_Mittelspannungsleitung": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_Netzverknuepfungspunkt": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_Schutzgebiet": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_StationFlaeche": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_StationPunkt": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_Stationierungspunkt": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_Strasse": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "hatPFSObjekt_PFS_TrassenkorridorAbschnitt": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "status": {
+          "description": "Planfeststellungsverfahren wird erÃ¶ffnet, oder bestehendes Verfahren wird ergÃ¤nzt bzw. geÃ¤ndert.",
+          "type": "string",
+          "enum": [
+            "1000",
+            "2000",
+            "3000"
+          ]
+        },
+        "beteiligte": {
+          "items": {
+            "$ref": "#/$defs/XP_Akteur"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "antragskonferenzDatum": {
+          "description": "Datum der Antragskonferenz (Â§ 20 NABEG)",
+          "format": "date",
+          "type": "string"
+        },
+        "traegerbeteiligungStartDatum": {
+          "description": "Die AnhÃ¶rungsbehÃ¶rde startet die Beteiligung der BehÃ¶rden, deren Aufgabenbereich durch das Vorhaben berÃ¼hrt wird.",
+          "format": "date",
+          "type": "string"
+        },
+        "traegerbeteiligungEndDatum": {
+          "description": "Ende der TrÃ¤gerbeteiligung",
+          "format": "date",
+          "type": "string"
+        },
+        "auslegungGemeinden": {
+          "items": {
+            "$ref": "#/$defs/PFS_Auslegung"
+          },
+          "minItems": 0,
+          "type": "array"
+        },
+        "auslegungInternetStartDatum": {
+          "description": "Die PlanfeststellungsbehÃ¶rde veranlasst fÃ¼r die Dauer von einem Monat zum Zweck der Ã–ffentlichkeitsbeteiligung die Auslegung der Unterlagen, indem sie die Unterlagen auf ihrer Internetseite verÃ¶ffentlicht (Â§22 NABEG).",
+          "format": "date",
+          "type": "string"
+        },
+        "auslegungInternetEndDatum": {
+          "description": "Enddatum fÃ¼r die Auslegung im Intenet",
+          "format": "date",
+          "type": "string"
+        },
+        "planfeststellungsbeschlussDatum": {
+          "description": "Datum der Plansfeststellung",
+          "format": "date",
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    }
+  }
+}
