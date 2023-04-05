@@ -8,18 +8,19 @@
 package de.ii.xtraplatform.features.graphql.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
+import dagger.Lazy;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
-import de.ii.xtraplatform.features.domain.ExternalTypesResolver;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
+import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
+import de.ii.xtraplatform.features.domain.SchemaReferenceResolver;
 import de.ii.xtraplatform.features.graphql.domain.FeatureProviderGraphQlData;
 import de.ii.xtraplatform.features.graphql.domain.ImmutableFeatureProviderGraphQlData;
-import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.store.domain.entities.AbstractEntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
@@ -29,6 +30,7 @@ import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -42,12 +44,12 @@ public class FeatureProviderGraphQlFactory
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderGraphQlFactory.class);
 
-  private final BlobStore blobStore;
+  private final Lazy<Set<SchemaFragmentResolver>> schemaResolvers;
   private final ConnectorFactory connectorFactory;
 
   @Inject
   public FeatureProviderGraphQlFactory(
-      BlobStore blobStore,
+      Lazy<Set<SchemaFragmentResolver>> schemaResolvers,
       // TODO: needed because dagger-auto does not parse FeatureProviderSql
       CrsTransformerFactory crsTransformerFactory,
       Cql cql,
@@ -57,7 +59,7 @@ public class FeatureProviderGraphQlFactory
       ProviderExtensionRegistry extensionRegistry,
       ProviderGraphQlFactoryAssisted providerGraphQlFactoryAssisted) {
     super(providerGraphQlFactoryAssisted);
-    this.blobStore = blobStore;
+    this.schemaResolvers = schemaResolvers;
     this.connectorFactory = connectorFactory;
   }
 
@@ -95,7 +97,7 @@ public class FeatureProviderGraphQlFactory
   public EntityData hydrateData(EntityData entityData) {
     FeatureProviderGraphQlData data = (FeatureProviderGraphQlData) entityData;
 
-    ExternalTypesResolver resolver = new ExternalTypesResolver(blobStore.with("schemas"));
+    SchemaReferenceResolver resolver = new SchemaReferenceResolver(data, schemaResolvers);
 
     if (resolver.needsResolving(data.getTypes())) {
       Map<String, FeatureSchema> types = resolver.resolve(data.getTypes());
