@@ -282,7 +282,9 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default boolean isArray() {
-    return getType() == Type.OBJECT_ARRAY || getType() == Type.VALUE_ARRAY;
+    return getType() == Type.OBJECT_ARRAY
+        || getType() == Type.VALUE_ARRAY
+        || getType() == Type.FEATURE_REF_ARRAY;
   }
 
   @JsonIgnore
