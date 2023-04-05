@@ -202,28 +202,29 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
     return Optional.empty();
   }
 
-  private List<Schema> resolveComposition(Schema schema, FeatureProviderDataV2 data) {
+  private List<Schema> resolveComposition(
+      Schema schema, FeatureSchema original, FeatureProviderDataV2 data) {
     if (Objects.nonNull(schema.getRef())) {
-      return resolveComposition(schema.getRef(), data);
+      return resolveComposition(schema.getRef(), original, data);
     } else if (Objects.nonNull(schema.getOneOf()) && !schema.getOneOf().isEmpty()) {
       if (data.getTypeValidation() != MODE.NONE && LOGGER.isWarnEnabled()) {
         LOGGER.warn(
             "External JSON Schema includes 'oneOf'. This cannot be mapped directly to a feature schema, see the documentation of the JSON Schema Resolver.");
       }
-      return resolveComposition(schema.getOneOf().iterator().next(), data);
+      return resolveComposition(schema.getOneOf().iterator().next(), original, data);
     } else if (Objects.nonNull(schema.getAnyOf()) && !schema.getAnyOf().isEmpty()) {
       if (data.getTypeValidation() != MODE.NONE && LOGGER.isWarnEnabled()) {
         LOGGER.warn(
             "External JSON Schema includes 'anyOf'. This cannot be mapped directly to a feature schema, see the documentation of the JSON Schema Resolver.");
       }
-      return resolveComposition(schema.getAnyOf().iterator().next(), data);
+      return resolveComposition(schema.getAnyOf().iterator().next(), original, data);
     } else if (Objects.nonNull(schema.getAllOf()) && !schema.getAllOf().isEmpty()) {
       if (data.getTypeValidation() != MODE.NONE && LOGGER.isWarnEnabled()) {
         LOGGER.warn(
             "External JSON Schema includes 'allOf'. This cannot be mapped directly to a feature schema, see the documentation of the JSON Schema Resolver.");
       }
       return schema.getAllOf().stream()
-          .flatMap(s -> resolveComposition(s, data).stream())
+          .flatMap(s -> resolveComposition(s, original, data).stream())
           .collect(Collectors.toList());
     }
     return List.of(schema);
@@ -231,7 +232,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
 
   private PartialObjectSchema toPartialSchema(
       Schema schema, PartialObjectSchema original, FeatureProviderDataV2 data) {
-    List<Schema> resolved = resolveComposition(schema, data);
+    List<Schema> resolved = resolveComposition(schema, null, data);
     Schema s = resolved.get(0);
     Type t = toType(s.getExplicitTypes());
 
@@ -277,7 +278,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
       FeatureProviderDataV2 data,
       boolean isRequired) {
     ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder();
-    List<Schema> resolved = resolveComposition(schema, data);
+    List<Schema> resolved = resolveComposition(schema, original, data);
     Schema s = resolved.get(0);
 
     Schema r = Objects.isNull(root) ? schema : root;
@@ -314,9 +315,15 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
       constrained = true;
     }
 
-    if (t == Type.OBJECT) {
-      applyObjectType(s.getUri().toString(), builder, data);
+    t =
+        applyTypeRefs(
+            s.getUri().toString(),
+            builder,
+            t,
+            Optional.ofNullable(original).flatMap(FeatureSchema::getSourcePath).orElse(name),
+            data);
 
+    if (t == Type.OBJECT) {
       if (Objects.nonNull(s.getProperties()) || resolved.size() > 1) {
         if (Objects.nonNull(s.getProperties())) {
           resolveProperties(
@@ -352,7 +359,6 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
         if (Objects.nonNull(featureSchema)) {
           builder.path(List.of()).parentPath(List.of()).from(featureSchema).type(Type.OBJECT_ARRAY);
         }
-        applyObjectType(s.getUri().toString(), builder, data);
 
         if (s.getMinItems() != null) {
           constraintsBuilder.minOccurrence(s.getMinItems().intValue());
@@ -422,18 +428,36 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
         });
   }
 
-  private void applyObjectType(
-      String uri, ImmutableFeatureSchema.Builder builder, FeatureProviderDataV2 data) {
-    getConfiguration(data)
-        .ifPresent(
-            cfg -> {
-              Optional<String> objectType =
-                  cfg.getObjectTypeRefs().keySet().stream().filter(uri::endsWith).findFirst();
+  private Type applyTypeRefs(
+      String uri,
+      ImmutableFeatureSchema.Builder builder,
+      Type type,
+      String sourcePath,
+      FeatureProviderDataV2 data) {
+    Optional<JsonSchemaConfiguration> cfg = getConfiguration(data);
+    if (cfg.isPresent() && (type == Type.OBJECT || type == Type.OBJECT_ARRAY)) {
+      Optional<String> geometryTypeRef =
+          cfg.get().getGeometryTypeRefs().keySet().stream().filter(uri::endsWith).findFirst();
 
-              if (objectType.isPresent()) {
-                builder.objectType(cfg.getObjectTypeRefs().get(objectType.get()));
-              }
-            });
+      if (geometryTypeRef.isPresent()) {
+        builder
+            .type(Type.GEOMETRY)
+            .geometryType(cfg.get().getGeometryTypeRefs().get(geometryTypeRef.get()));
+        // TODO: configurable
+        builder.sourcePath(sourcePath + "/asWKT");
+
+        return Type.GEOMETRY;
+      }
+
+      Optional<String> objectTypeRef =
+          cfg.get().getObjectTypeRefs().keySet().stream().filter(uri::endsWith).findFirst();
+
+      if (objectTypeRef.isPresent()) {
+        builder.objectType(cfg.get().getObjectTypeRefs().get(objectTypeRef.get()));
+      }
+    }
+
+    return type;
   }
 
   private boolean isSimple(Type type) {
