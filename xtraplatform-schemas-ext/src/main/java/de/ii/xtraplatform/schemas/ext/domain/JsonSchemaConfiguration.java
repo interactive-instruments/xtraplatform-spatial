@@ -47,6 +47,24 @@ public interface JsonSchemaConfiguration extends ExtensionConfiguration {
    */
   Map<String, SimpleFeatureGeometry> getGeometryTypeRefs();
 
+  /**
+   * @langEn Allows to map JSON schema definitions to a `refType`, e.g. `'#/$defs/Address':
+   *     address`.
+   * @langDe Erlaubt es JSON Schema Definitionen einem `refType` zuzuweisen, z.B.
+   *     `'#/$defs/Address': address`.
+   * @default {}
+   * @since v3.4
+   */
+  Map<String, String> getRelationRefs();
+
+  /**
+   * @langEn Allows to choose a specific variant for oneOf/anyOf/allOf.
+   * @langDe Erlaubt es eine bestimmte Variante für oneOf/anyOf/allOf auszuwählen.
+   * @default 0
+   * @since v3.4
+   */
+  Map<String, Integer> getCompositionIndexes();
+
   abstract class Builder extends ExtensionConfiguration.Builder {}
 
   @Override
