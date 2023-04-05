@@ -2,13 +2,14 @@
 id: geoval
 createdAt: 1586271491161
 lastModified: 1586271491161
-entityStorageVersion: 2
+entityStorageVersion: 1
 providerType: FEATURE
-featureProviderType: SQL
+providerSubType: SQL
 nativeCrs:
   code: 4326
   forceAxisOrder: LON_LAT
 defaultLanguage: de
+typeValidation: NONE
 types:
   observationsubject:
     sourcePath: /observationsubject
@@ -37,11 +38,12 @@ types:
       shortName:
         sourcePath: shortname
         type: STRING
-        transformers:
+        transformations:
           codelist: nullValues
       geomLowerPoint:
         sourcePath: geomlowerpoint
         type: GEOMETRY
+        role: PRIMARY_GEOMETRY
         geometryType: POINT
       explorationSite:
         sourcePath: '[explorationsite_fk=id]explorationsite'
@@ -98,5 +100,5 @@ types:
             label: Klassifikationen
 codelists:
   nullValues:
-    No Information: null
-    -1: null
+    No Information: "null"
+    "-1": "null"
