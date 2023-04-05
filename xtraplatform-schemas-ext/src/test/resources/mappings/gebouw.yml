@@ -1,0 +1,347 @@
+---
+gebouw:
+  sourcePath: /gebouw
+  type: OBJECT
+  label: Gebouw
+  properties:
+    identificatie:
+      sourcePath: identificatie
+      type: STRING
+    domein:
+      sourcePath: domein
+      type: STRING
+      description: Het domein waar het object aan toe behoort.
+    bouwjaar:
+      sourcePath: bouwjaar
+      type: STRING
+    sloopjaar:
+      sourcePath: sloopjaar
+      type: STRING
+    type:
+      sourcePath: type
+      type: STRING
+    bovenaanzichtgeometrie:
+      sourcePath: bovenaanzichtgeometrie/asWKT
+      type: GEOMETRY
+      role: PRIMARY_GEOMETRY
+      geometryType: POLYGON
+    maaiveldgeometrie:
+      sourcePath: maaiveldgeometrie/asWKT
+      type: GEOMETRY
+      geometryType: MULTI_POLYGON
+    "3dGeometrie":
+      sourcePath: 3dGeometrie
+      type: OBJECT
+      label: JSON-FG MultiPolyhedron
+      properties:
+        type:
+          sourcePath: type
+          type: STRING
+        coordRefSys:
+          sourcePath: coordRefSys
+          type: STRING
+        coordinates:
+          sourcePath: coordinates
+          type: OBJECT_ARRAY
+          valueType: FLOAT
+        bbox:
+          sourcePath: bbox
+          type: VALUE_ARRAY
+          valueType: FLOAT
+    heeftAlsAdres:
+      sourcePath: heeftAlsAdres
+      type: OBJECT_ARRAY
+      label: Adres
+      description: Een samengesteld adres van gegevens van een Nummeraanduiding, Openbare
+        ruimte en Woonplaats in de Basisregistratie Adressen en Gebouwen (BAG).
+      properties:
+        identificatie:
+          sourcePath: identificatie
+          type: STRING
+        domein:
+          sourcePath: domein
+          type: STRING
+          description: Het domein waar het object aan toe behoort.
+        omschrijving:
+          sourcePath: omschrijving
+          type: STRING
+          description: De unieke aanduiding van een nummeraanduiding.
+        straatnaam:
+          sourcePath: straatnaam
+          type: STRING
+          description: Een naam die aan een openbare ruimte is toegekend in een daartoe
+            strekkend formeel gemeentelijk besluit.
+        huisnummer:
+          sourcePath: huisnummer
+          type: INTEGER
+          description: Een door of namens het gemeentebestuur ten aanzien van een
+            adresseerbaar object toegekende nummering.
+        huisletter:
+          sourcePath: huisletter
+          type: STRING
+          description: Een door of namens het gemeentebestuur ten aanzien van een
+            adresseerbaar object toegekende toevoeging aan een huisnummer in de vorm
+            van een alfanumeriek teken.
+        huisnummertoevoeging:
+          sourcePath: huisnummertoevoeging
+          type: STRING
+          description: Een door of namens het gemeentebestuur ten aanzien van een
+            adresseerbaar object toegekende nadere toevoeging aan een huisnummer of
+            een combinatie van huisnummer en huisletter.
+        postcode:
+          sourcePath: postcode
+          type: STRING
+          description: De door PostNL vastgestelde code behorende bij een bepaalde
+            combinatie van een straatnaam en een huisnummer.
+        plaatsnaam:
+          sourcePath: plaatsnaam
+          type: STRING
+          description: De benaming van een door het gemeentebestuur aangewezen woonplaats.
+        isHoofdadres:
+          sourcePath: isHoofdadres
+          type: BOOLEAN
+          description: Indicatie of het adres een hoofdadres is.
+        geregistreerdMet:
+          sourcePath: geregistreerdMet
+          type: OBJECT
+          label: Registratiegegevens
+          properties:
+            tijdstipRegistratie:
+              sourcePath: tijdstipRegistratie
+              type: STRING
+            eindRegistratie:
+              sourcePath: eindRegistratie
+              type: STRING
+            bestaatUit:
+              sourcePath: bestaatUit
+              type: OBJECT_ARRAY
+              label: GeorkestreerdGegeven
+              description: Een gegeven dat is ontstaan/verkregen middels het orkestreren
+                van brongegevens.
+              properties:
+                kenmerk:
+                  sourcePath: kenmerk
+                  type: STRING
+                  label: kenmerk
+                  description: De naam van het attribuut of de relatie van het Orkestratiegegeven.
+                wasGeneratedBy:
+                  sourcePath: wasGeneratedBy
+                  type: OBJECT
+                  label: PropertyMappingExecution
+                  properties:
+                    used:
+                      sourcePath: used
+                      type: OBJECT
+                      label: PropertyMapping
+                      properties:
+                        pathMapping:
+                          sourcePath: pathMapping
+                          type: OBJECT_ARRAY
+                          label: PropertyPathMapping
+                          properties:
+                            path:
+                              sourcePath: path
+                              type: OBJECT_ARRAY
+                              label: PropertyPath
+                              properties:
+                                segments:
+                                  sourcePath: segments
+                                  type: VALUE_ARRAY
+                                  valueType: STRING
+                                  label: segments
+                                references:
+                                  sourcePath: references
+                                  type: OBJECT_ARRAY
+                                  label: Brongegeven
+                                  description: Een gegeven van een Bronobject.
+                                  properties:
+                                    kenmerk:
+                                      sourcePath: kenmerk
+                                      type: STRING
+                                      label: kenmerk
+                                      description: De naam van het attribuut of de
+                                        relatie van het Brongegeven.
+                                    bronregistratie:
+                                      sourcePath: bronregistratie
+                                      type: OBJECT
+                                      label: Bronregistratie
+                                      description: Een registratie, welke als bron
+                                        heeft gediend voor de orkestratie van brongegevens.
+                                      properties:
+                                        naam:
+                                          sourcePath: naam
+                                          type: STRING
+                                          label: naam
+                                          description: De naam van de Bronregistratie.
+                                    onderwerp:
+                                      sourcePath: onderwerp
+                                      type: OBJECT
+                                      label: Bronobject
+                                      description: Een object in een Bronregistratie.
+                                      properties:
+                                        type:
+                                          sourcePath: type
+                                          type: STRING
+                                          label: type
+                                          description: Het type Bronobject in de Bronregistratie.
+                                        identificatie:
+                                          sourcePath: identificatie
+                                          type: STRING
+                                          label: identificatie
+                                          description: De identificatie van het Bronobject
+                                            in de Bronregistratie.
+                                startNode:
+                                  sourcePath: startNode
+                                  type: OBJECT
+                                  label: Bronobject
+                                  description: Een object in een Bronregistratie.
+                                  properties:
+                                    type:
+                                      sourcePath: type
+                                      type: STRING
+                                      label: type
+                                      description: Het type Bronobject in de Bronregistratie.
+                                    identificatie:
+                                      sourcePath: identificatie
+                                      type: STRING
+                                      label: identificatie
+                                      description: De identificatie van het Bronobject
+                                        in de Bronregistratie.
+                onderwerp:
+                  sourcePath: onderwerp
+                  type: OBJECT
+                  label: Object
+                  description: Een object.
+                  properties:
+                    identificatie:
+                      sourcePath: identificatie
+                      type: STRING
+                      label: identificatie
+                      description: De identificatie van het object.
+                    domein:
+                      sourcePath: domein
+                      type: STRING
+                      label: domein
+                      description: Het type domein van het object.
+    geregistreerdMet:
+      sourcePath: geregistreerdMet
+      type: OBJECT
+      label: Registratiegegevens
+      properties:
+        tijdstipRegistratie:
+          sourcePath: tijdstipRegistratie
+          type: STRING
+        eindRegistratie:
+          sourcePath: eindRegistratie
+          type: STRING
+        bestaatUit:
+          sourcePath: bestaatUit
+          type: OBJECT_ARRAY
+          label: GeorkestreerdGegeven
+          description: Een gegeven dat is ontstaan/verkregen middels het orkestreren
+            van brongegevens.
+          properties:
+            kenmerk:
+              sourcePath: kenmerk
+              type: STRING
+              label: kenmerk
+              description: De naam van het attribuut of de relatie van het Orkestratiegegeven.
+            wasGeneratedBy:
+              sourcePath: wasGeneratedBy
+              type: OBJECT
+              label: PropertyMappingExecution
+              properties:
+                used:
+                  sourcePath: used
+                  type: OBJECT
+                  label: PropertyMapping
+                  properties:
+                    pathMapping:
+                      sourcePath: pathMapping
+                      type: OBJECT_ARRAY
+                      label: PropertyPathMapping
+                      properties:
+                        path:
+                          sourcePath: path
+                          type: OBJECT_ARRAY
+                          label: PropertyPath
+                          properties:
+                            segments:
+                              sourcePath: segments
+                              type: VALUE_ARRAY
+                              valueType: STRING
+                              label: segments
+                            references:
+                              sourcePath: references
+                              type: OBJECT_ARRAY
+                              label: Brongegeven
+                              description: Een gegeven van een Bronobject.
+                              properties:
+                                kenmerk:
+                                  sourcePath: kenmerk
+                                  type: STRING
+                                  label: kenmerk
+                                  description: De naam van het attribuut of de relatie
+                                    van het Brongegeven.
+                                bronregistratie:
+                                  sourcePath: bronregistratie
+                                  type: OBJECT
+                                  label: Bronregistratie
+                                  description: Een registratie, welke als bron heeft
+                                    gediend voor de orkestratie van brongegevens.
+                                  properties:
+                                    naam:
+                                      sourcePath: naam
+                                      type: STRING
+                                      label: naam
+                                      description: De naam van de Bronregistratie.
+                                onderwerp:
+                                  sourcePath: onderwerp
+                                  type: OBJECT
+                                  label: Bronobject
+                                  description: Een object in een Bronregistratie.
+                                  properties:
+                                    type:
+                                      sourcePath: type
+                                      type: STRING
+                                      label: type
+                                      description: Het type Bronobject in de Bronregistratie.
+                                    identificatie:
+                                      sourcePath: identificatie
+                                      type: STRING
+                                      label: identificatie
+                                      description: De identificatie van het Bronobject
+                                        in de Bronregistratie.
+                            startNode:
+                              sourcePath: startNode
+                              type: OBJECT
+                              label: Bronobject
+                              description: Een object in een Bronregistratie.
+                              properties:
+                                type:
+                                  sourcePath: type
+                                  type: STRING
+                                  label: type
+                                  description: Het type Bronobject in de Bronregistratie.
+                                identificatie:
+                                  sourcePath: identificatie
+                                  type: STRING
+                                  label: identificatie
+                                  description: De identificatie van het Bronobject
+                                    in de Bronregistratie.
+            onderwerp:
+              sourcePath: onderwerp
+              type: OBJECT
+              label: Object
+              description: Een object.
+              properties:
+                identificatie:
+                  sourcePath: identificatie
+                  type: STRING
+                  label: identificatie
+                  description: De identificatie van het object.
+                domein:
+                  sourcePath: domein
+                  type: STRING
+                  label: domein
+                  description: Het type domein van het object.

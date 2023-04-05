@@ -1,0 +1,815 @@
+{
+  "$id": "https://raw.githubusercontent.com/Geonovum/WaU-UC2/main/gebouw-nolineage.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gebouw",
+  "type": "object",
+  "required": [
+    "identificatie",
+    "domein",
+    "bouwjaar",
+    "type",
+    "bovenaanzichtgeometrie",
+    "geregistreerdMet"
+  ],
+  "properties": {
+    "identificatie": {
+      "type": "string"
+    },
+    "domein": {
+      "description": "Het domein waar het object aan toe behoort.",
+      "type": "string"
+    },
+    "bouwjaar": {
+      "type": "string"
+    },
+    "sloopjaar": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "type": {
+      "type": "string"
+    },
+    "bovenaanzichtgeometrie": {
+      "$ref": "#/$defs/polygonGeoJSON"
+    },
+    "maaiveldgeometrie": {
+      "$ref": "#/$defs/multipolygonGeoJSON"
+    },
+    "3dGeometrie": {
+      "$ref": "#/$defs/MultiPolyhedron"
+    },
+    "heeftAlsAdres": {
+      "description": "Een Gebouw heeft nul of meer Adressen",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Adres"
+      },
+      "minItems": 0
+    },
+    "geregistreerdMet": {
+      "$ref": "#/$defs/Registratiegegevens"
+    }
+  },
+  "$defs": {
+    "Registratiegegevens": {
+      "title": "Registratiegegevens",
+      "type": "object",
+      "required": [
+        "bestaatUit"
+      ],
+      "properties": {
+        "tijdstipRegistratie": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "eindRegistratie": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "bestaatUit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/GeorkestreerdGegevenChoice"
+          }
+        }
+      }
+    },
+    "Adres": {
+      "title": "Adres",
+      "description": "Een samengesteld adres van gegevens van een Nummeraanduiding, Openbare ruimte en Woonplaats in de Basisregistratie Adressen en Gebouwen (BAG).",
+      "type": "object",
+      "required": [
+        "identificatie",
+        "domein",
+        "omschrijving",
+        "straatnaam",
+        "huisnummer",
+        "plaatsnaam",
+        "isHoofdadres",
+        "geregistreerdMet"
+      ],
+      "properties": {
+        "identificatie": {
+          "type": "string"
+        },
+        "domein": {
+          "description": "Het domein waar het object aan toe behoort.",
+          "type": "string"
+        },
+        "omschrijving": {
+          "description": "De unieke aanduiding van een nummeraanduiding.",
+          "type": "string"
+        },
+        "straatnaam": {
+          "description": "Een naam die aan een openbare ruimte is toegekend in een daartoe strekkend formeel gemeentelijk besluit.",
+          "type": "string"
+        },
+        "huisnummer": {
+          "description": "Een door of namens het gemeentebestuur ten aanzien van een adresseerbaar object toegekende nummering.",
+          "type": "integer",
+          "pattern": "^[1-9][0-9]{0,4}$"
+        },
+        "huisletter": {
+          "description": "Een door of namens het gemeentebestuur ten aanzien van een adresseerbaar object toegekende toevoeging aan een huisnummer in de vorm van een alfanumeriek teken.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-zA-Z]{1}$"
+        },
+        "huisnummertoevoeging": {
+          "description": "Een door of namens het gemeentebestuur ten aanzien van een adresseerbaar object toegekende nadere toevoeging aan een huisnummer of een combinatie van huisnummer en huisletter.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-zA-Z]{1,4}$"
+        },
+        "postcode": {
+          "description": "De door PostNL vastgestelde code behorende bij een bepaalde combinatie van een straatnaam en een huisnummer.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[1-9][0-9]{3}[A-Z]{2}$"
+        },
+        "plaatsnaam": {
+          "description": "De benaming van een door het gemeentebestuur aangewezen woonplaats.",
+          "type": "string"
+        },
+        "isHoofdadres": {
+          "description": "Indicatie of het adres een hoofdadres is.",
+          "type": "boolean"
+        },
+        "geregistreerdMet": {
+          "$ref": "#/$defs/Registratiegegevens"
+        }
+      }
+    },
+    "GeorkestreerdGegevenChoice": {
+      "title": "GeorkestreerdGegevenChoice",
+      "type": "object",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/GeorkestreerdSimpelGegeven"
+        },
+        {
+          "$ref": "#/$defs/GeorkestreerdComplexGegeven"
+        },
+        {
+          "$ref": "#/$defs/GeorkestreerdRelatieGegeven"
+        }
+      ]
+    },
+    "GeorkestreerdGegeven": {
+      "title": "GeorkestreerdGegeven",
+      "description": "Een gegeven dat is ontstaan\/verkregen middels het orkestreren van brongegevens.",
+      "type": "object",
+      "required": [
+        "kenmerk",
+        "wasGeneratedBy",
+        "onderwerp"
+      ],
+      "properties": {
+        "kenmerk": {
+          "title": "kenmerk",
+          "description": "De naam van het attribuut of de relatie van het Orkestratiegegeven.",
+          "type": "string"
+        },
+        "wasGeneratedBy": {
+          "title": "wasGeneratedBy",
+          "$ref": "#/$defs/PropertyMappingExecution"
+        },
+        "onderwerp": {
+          "title": "onderwerp",
+          "$ref": "#/$defs/Object"
+        }
+      }
+    },
+    "BrongegevenChoice": {
+      "title": "BrongegevenChoice",
+      "type": "object",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/BronSimpelGegeven"
+        },
+        {
+          "$ref": "#/$defs/BronComplexGegeven"
+        },
+        {
+          "$ref": "#/$defs/BronRelatieGegeven"
+        }
+      ]
+    },
+    "Brongegeven": {
+      "title": "Brongegeven",
+      "description": "Een gegeven van een Bronobject.",
+      "type": "object",
+      "required": [
+        "kenmerk",
+        "onderwerp"
+      ],
+      "properties": {
+        "kenmerk": {
+          "title": "kenmerk",
+          "description": "De naam van het attribuut of de relatie van het Brongegeven.",
+          "type": "string"
+        },
+        "bronregistratie": {
+          "title": "bronregistratie",
+          "description": "Een Brongegeven heeft als herkomst een Bronregistratie.",
+          "oneOf": [
+            {"$ref":"#/$defs/Bronregistratie"},
+            {"type": "null"}
+          ]
+        },
+        "onderwerp": {
+          "title": "onderwerp",
+          "description": "Brongegeven hoort bij één Bronobject.",
+          "$ref": "#/$defs/Bronobject"
+        }
+      }
+    },
+    "BronRelatieGegeven": {
+      "title": "BronRelatieGegeven",
+      "description": "Brongegeven met als waarde een relatie naar een Bronobject.",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/Brongegeven"
+        },
+        {
+          "required": [
+            "waarde"
+          ],
+          "properties": {
+            "waarde": {
+              "title": "waarde",
+              "description": "BronRelatieGegeven heeft als waarde een Bronobject.",
+              "$ref": "#/$defs/Bronobject"
+            }
+          }
+        }
+      ]
+    },
+    "Bronobject": {
+      "title": "Bronobject",
+      "description": "Een object in een Bronregistratie.",
+      "type": "object",
+      "required": [
+        "type",
+        "identificatie"
+      ],
+      "properties": {
+        "type": {
+          "title": "type",
+          "description": "Het type Bronobject in de Bronregistratie.",
+          "type": "string"
+        },
+        "identificatie": {
+          "title": "identificatie",
+          "description": "De identificatie van het Bronobject in de Bronregistratie.",
+          "type": "string"
+        }
+      }
+    },
+    "Bronregistratie": {
+      "title": "Bronregistratie",
+      "description": "Een registratie, welke als bron heeft gediend voor de orkestratie van brongegevens.",
+      "type": "object",
+      "required": [
+        "naam"
+      ],
+      "properties": {
+        "naam": {
+          "title": "naam",
+          "description": "De naam van de Bronregistratie.",
+          "type": "string"
+        }
+      }
+    },
+    "PropertyPathMapping": {
+      "title": "PropertyPathMapping",
+      "type": "object",
+      "properties": {
+        "path": {
+          "title": "path",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PropertyPath"
+          },
+          "minItems": 0
+        }
+      }
+    },
+    "Object": {
+      "title": "Object",
+      "description": "Een object.",
+      "type": "object",
+      "required": [
+        "identificatie"
+      ],
+      "properties": {
+        "identificatie": {
+          "title": "identificatie",
+          "description": "De identificatie van het object.",
+          "type": "string"
+        },
+        "domein": {
+          "title": "domein",
+          "description": "Het type domein van het object.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "GeorkestreerdComplexGegeven": {
+      "title": "GeorkestreerdComplexGegeven",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/GeorkestreerdGegeven"
+        },
+        {
+          "required": [
+            "bestaatUit"
+          ],
+          "properties": {
+            "bestaatUit": {
+              "title": "bestaatUit",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/GeorkestreerdGegevenChoice"
+              },
+              "minItems": 2
+            }
+          }
+        }
+      ]
+    },
+    "BronComplexGegeven": {
+      "title": "BronComplexGegeven",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/Brongegeven"
+        },
+        {
+          "required": [
+            "bestaatUit"
+          ],
+          "properties": {
+            "bestaatUit": {
+              "title": "bestaatUit",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Brongegeven"
+              },
+              "minItems": 2
+            }
+          }
+        }
+      ]
+    },
+    "BronSimpelGegeven": {
+      "title": "BronSimpelGegeven",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/Brongegeven"
+        },
+        {
+          "required": [
+            "waarde"
+          ],
+          "properties": {
+            "waarde": {
+              "title": "waarde",
+              "$ref": "#/$defs/Waardetype"
+            }
+          }
+        }
+      ]
+    },
+    "GeorkestreerdRelatieGegeven": {
+      "title": "GeorkestreerdRelatieGegeven",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/GeorkestreerdGegeven"
+        },
+        {
+          "required": [
+            "waarde"
+          ],
+          "properties": {
+            "waarde": {
+              "title": "waarde",
+              "$ref": "#/$defs/Object"
+            }
+          }
+        }
+      ]
+    },
+    "PropertyMappingExecution": {
+      "title": "PropertyMappingExecution",
+      "type": "object",
+      "required": [
+        "used"
+      ],
+      "properties": {
+        "used": {
+          "title": "used",
+          "$ref": "#/$defs/PropertyMapping"
+        }
+      }
+    },
+    "PropertyPath": {
+      "title": "PropertyPath",
+      "type": "object",
+      "required": [
+        "segments",
+        "startNode"
+      ],
+      "properties": {
+        "segments": {
+          "title": "segments",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "references": {
+          "title": "references",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BrongegevenChoice"
+          },
+          "minItems": 0
+        },
+        "startNode": {
+          "title": "startNode",
+          "$ref": "#/$defs/Bronobject"
+        }
+      }
+    },
+    "GeorkestreerdSimpelGegeven": {
+      "title": "GeorkestreerdSimpelGegeven",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/GeorkestreerdGegeven"
+        },
+        {
+          "required": [
+            "waarde"
+          ],
+          "properties": {
+            "waarde": {
+              "title": "waarde",
+              "$ref": "#/$defs/Waardetype"
+            }
+          }
+        }
+      ]
+    },
+    "Waardetype": {
+      "title": "Waardetype",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/boolean"
+        },
+        {
+          "$ref": "#/$defs/integer"
+        },
+        {
+          "$ref": "#/$defs/lijn"
+        },
+        {
+          "$ref": "#/$defs/punt"
+        },
+        {
+          "$ref": "#/$defs/real"
+        },
+        {
+          "$ref": "#/$defs/string"
+        },
+        {
+          "$ref": "#/$defs/vlak"
+        }
+      ]
+    },
+    "boolean": {
+      "title": "boolean",
+      "type": "boolean"
+    },
+    "integer": {
+      "title": "integer",
+      "type": "integer"
+    },
+    "lijn": {
+      "title": "lijn",
+      "$ref": "#/$defs/linestringGeoJSON"
+    },
+    "punt": {
+      "title": "punt",
+      "$ref": "#/$defs/pointGeoJSON"
+    },
+    "real": {
+      "title": "real",
+      "type": "number"
+    },
+    "string": {
+      "title": "string",
+      "type": "string"
+    },
+    "vlak": {
+      "title": "vlak",
+      "$ref": "#/$defs/polygonGeoJSON"
+    },
+    "PropertyMapping": {
+      "title": "PropertyMapping",
+      "type": "object",
+      "properties": {
+        "pathMapping": {
+          "title": "pathMapping",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PropertyPathMapping"
+          },
+          "minItems": 0
+        }
+      }
+    },
+    "linestringGeoJSON": {
+      "type": "object",
+      "required": [
+        "type",
+        "coordinates"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "LineString"
+          ]
+        },
+        "coordinates": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "pointGeoJSON": {
+      "type": "object",
+      "required": [
+        "type",
+        "coordinates"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "Point"
+          ]
+        },
+        "coordinates": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "polygonGeoJSON": {
+      "type": "object",
+      "required": [
+        "type",
+        "coordinates"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "Polygon"
+          ]
+        },
+        "coordinates": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 4,
+            "items": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    },
+    "multipolygonGeoJSON": {
+      "type": "object",
+      "required": [
+        "type",
+        "coordinates"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "MultiPolygon"
+          ]
+        },
+        "coordinates": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "minItems": 4,
+              "items": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Polyhedron": {
+      "title": "JSON-FG Polyhedron",
+      "type": "object",
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["Polyhedron"]
+        },
+        "coordRefSys": {
+          "$ref": "#/$defs/coordrefsys"
+        },
+        "coordinates": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "array",
+                "minItems": 4,
+                "items": {
+                  "$ref": "#/$defs/position3d"
+                }
+              }
+            }
+          }
+        },
+        "bbox": {
+          "$ref": "#/$defs/bbox3d"
+        }
+      }
+    },
+    "MultiPolyhedron": {
+      "title": "JSON-FG MultiPolyhedron",
+      "type": "object",
+      "required": ["type", "coordinates"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["MultiPolyhedron"]
+        },
+        "coordRefSys": {
+          "$ref": "#/$defs/coordrefsys"
+        },
+        "coordinates": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "array",
+                  "minItems": 4,
+                  "items": {
+                    "$ref": "#/$defs/position3d"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "bbox": {
+          "$ref": "#/$defs/bbox3d"
+        }
+      }
+    },
+    "position3d": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "number"
+      }
+    },
+    "bbox3d": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "number"
+      }
+    },
+    "coordrefsys": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/single-refsys"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/single-refsys"
+          }
+        }
+      ]
+    },
+    "single-refsys": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/refsys-simpleref"
+        },
+        {
+          "$ref": "#/$defs/refsys-byref"
+        },
+        {
+          "$ref": "#/$defs/refsys-custom"
+        }
+      ]
+    },
+    "refsys-simpleref": {
+      "type": "string",
+      "format": "uri"
+    },
+    "refsys-byref": {
+      "type": "object",
+      "required": ["type", "href"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["Reference"]
+        },
+        "href": {
+          "type": "string",
+          "format": "uri"
+        },
+        "epoch": {
+          "type": "number"
+        }
+      }
+    },
+    "refsys-custom": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "not": {
+            "enum": ["Reference"]
+          }
+        }
+      }
+    }
+  }
+}
