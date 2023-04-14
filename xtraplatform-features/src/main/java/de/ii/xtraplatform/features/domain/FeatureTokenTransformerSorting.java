@@ -9,7 +9,6 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -19,7 +18,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Queue;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,25 +152,28 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
     rearrange.put(currentType, new LinkedHashMap<>());
 
     int index = 0;
-    Set<List<String>> parents = new HashSet<>();
     List<String> lastParent = null;
     boolean doRearrange = false;
 
     for (List<String> path : mapping.getTargetSchemasByPath().keySet()) {
       if (path.size() > 1) {
+        if (path.stream().anyMatch(elem -> elem.matches("\\[[^=\\]]+].+"))) {
+          continue;
+        }
+        boolean isNested = path.size() > 2 || path.get(path.size() - 1).startsWith("[");
         List<String> parent = path.subList(0, path.size() - 1);
-        if (!doRearrange
-            && !Objects.equals(parent, lastParent)
-            && parents.contains(parent)
-            && !path.get(path.size() - 1).startsWith("[")) {
+        if (lastParent == null) {
+          lastParent = parent;
+        }
+
+        if (!doRearrange && !Objects.equals(parent, lastParent) && !isNested) {
           doRearrange = true;
-        } else if (doRearrange
-            && (!Objects.equals(parent, lastParent) || path.get(path.size() - 1).startsWith("["))) {
+        } else if (doRearrange && (!Objects.equals(parent, lastParent) || isNested)) {
           doRearrange = false;
         }
 
-        parents.add(parent);
         lastParent = parent;
+
         if (doRearrange) {
           this.rearrange.get(currentType).put(path, index);
         }
