@@ -29,6 +29,8 @@ public interface TileProvider extends PersistentEntity {
   default void deleteFromCache(
       String layer, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits) {}
 
+  Optional<TilesetMetadata> metadata(String tileset);
+
   // TODO: generation? source? dynamic?
   default boolean supportsGeneration() {
     return this instanceof TileGenerator;
