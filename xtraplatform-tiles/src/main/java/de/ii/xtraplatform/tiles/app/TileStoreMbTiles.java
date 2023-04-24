@@ -10,6 +10,7 @@ package de.ii.xtraplatform.tiles.app;
 import static de.ii.xtraplatform.base.domain.util.LambdaWithException.consumerMayThrow;
 
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.tiles.domain.ImmutableMbtilesMetadata;
@@ -32,6 +33,7 @@ import java.sql.SQLException;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -323,7 +325,26 @@ public class TileStoreMbTiles implements TileStore {
       String subLayer, TileGenerationSchema generationSchema) {
 
     ImmutableVectorLayer.Builder builder =
-        ImmutableVectorLayer.builder().id(subLayer).fields(generationSchema.getProperties());
+        ImmutableVectorLayer.builder()
+            .id(subLayer)
+            .fields(
+                generationSchema.getProperties().entrySet().stream()
+                    .collect(
+                        Collectors.toUnmodifiableMap(
+                            Entry::getKey,
+                            entry -> {
+                              Type type = entry.getValue().getType();
+                              switch (type) {
+                                case INTEGER:
+                                  return "Integer";
+                                case FLOAT:
+                                  return "Number";
+                                case BOOLEAN:
+                                  return "Boolean";
+                                default:
+                                  return "String";
+                              }
+                            })));
 
     switch (generationSchema.getGeometryType().orElse(SimpleFeatureGeometry.ANY)) {
       case POINT:
