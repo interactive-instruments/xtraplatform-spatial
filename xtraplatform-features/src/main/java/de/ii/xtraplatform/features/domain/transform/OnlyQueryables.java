@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
@@ -23,20 +24,26 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
   private final List<String> included;
   private final List<String> excluded;
   private final String pathSeparator;
+  private final Predicate<String> excludePathMatcher;
 
-  public OnlyQueryables(List<String> included, List<String> excluded, String pathSeparator) {
+  public OnlyQueryables(
+      List<String> included,
+      List<String> excluded,
+      String pathSeparator,
+      Predicate<String> excludePathMatcher) {
     this.included = included;
     this.excluded = excluded;
     this.wildcard = included.contains("*");
     this.pathSeparator = pathSeparator;
+    this.excludePathMatcher = excludePathMatcher;
   }
 
   @Override
   public FeatureSchema visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
-    if (parents.stream().anyMatch(s -> s.getSourcePath().orElse("").contains("[JSON]"))) {
-      // if we are in a JSON column, no property can be a queryable
+    if (parents.stream().anyMatch(s -> excludePathMatcher.test(s.getSourcePath().orElse("")))) {
+      // if the path is excluded, no property can be a queryable
       return null;
     }
 

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
@@ -23,12 +24,18 @@ public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, Featur
   private final List<String> included;
   private final List<String> excluded;
   private final String pathSeparator;
+  private final Predicate<String> excludePathMatcher;
 
-  public OnlySortables(List<String> included, List<String> excluded, String pathSeparator) {
+  public OnlySortables(
+      List<String> included,
+      List<String> excluded,
+      String pathSeparator,
+      Predicate<String> excludePathMatcher) {
     this.included = included;
     this.excluded = excluded;
     this.wildcard = included.contains("*");
     this.pathSeparator = pathSeparator;
+    this.excludePathMatcher = excludePathMatcher;
   }
 
   @Override
@@ -40,8 +47,8 @@ public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, Featur
       return null;
     }
 
-    if (parents.stream().anyMatch(s -> s.getSourcePath().orElse("").contains("[JSON]"))) {
-      // if we are in a JSON column, no property can be a sortable
+    if (parents.stream().anyMatch(s -> excludePathMatcher.test(s.getSourcePath().orElse("")))) {
+      // if the path is excluded, no property can be a sortable
       return null;
     }
 

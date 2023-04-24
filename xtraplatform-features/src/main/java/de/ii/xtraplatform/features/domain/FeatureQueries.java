@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import java.util.List;
+
 public interface FeatureQueries {
   FeatureProviderCapabilities getCapabilities();
 
@@ -25,4 +27,10 @@ public interface FeatureQueries {
   default FeatureStream getFeatureStream(FeatureQuery query) {
     throw new UnsupportedOperationException();
   }
+
+  FeatureSchema getQueryablesSchema(
+      FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator);
+
+  FeatureSchema getSortablesSchema(
+      FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator);
 }
