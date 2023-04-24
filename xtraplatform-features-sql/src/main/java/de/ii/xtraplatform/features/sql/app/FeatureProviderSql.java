@@ -900,8 +900,8 @@ public class FeatureProviderSql
   }
 
   @Override
-  public FeatureSchema getSortablesSchema(FeatureSchema schema, List<String> included,
-      List<String> excluded, String pathSeparator) {
+  public FeatureSchema getSortablesSchema(
+      FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
     Predicate<String> excludeConnectors = path -> path.matches(".+?\\[[^=\\]]+].+");
     OnlySortables sortablesSelector =
         new OnlySortables(included, excluded, pathSeparator, excludeConnectors);

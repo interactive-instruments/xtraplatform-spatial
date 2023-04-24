@@ -119,9 +119,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default boolean queryable() {
-    return !isObject()
-        && !Objects.equals(getType(), Type.UNKNOWN)
-        && getIsQueryable().orElse(true);
+    return !isObject() && !Objects.equals(getType(), Type.UNKNOWN) && getIsQueryable().orElse(true);
   }
 
   Optional<Boolean> getIsSortable();
