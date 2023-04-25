@@ -32,6 +32,7 @@ import java.sql.SQLException;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -323,7 +324,12 @@ public class TileStoreMbTiles implements TileStore {
       String subLayer, TileGenerationSchema generationSchema) {
     return ImmutableVectorLayer.builder()
         .id(subLayer)
-        .fields(generationSchema.getProperties())
+        .fields(
+            generationSchema.getProperties().entrySet().stream()
+                .collect(
+                    Collectors.toUnmodifiableMap(
+                        Entry::getKey,
+                        entry -> VectorLayer.getTypeAsString(entry.getValue().getType()))))
         .geometryType(
             VectorLayer.getGeometryTypeAsString(
                 generationSchema.getGeometryType().orElse(SimpleFeatureGeometry.ANY)))

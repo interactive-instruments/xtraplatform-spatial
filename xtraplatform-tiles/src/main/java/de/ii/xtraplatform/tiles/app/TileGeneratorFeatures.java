@@ -267,7 +267,8 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
 
   // TODO: create on startup for all layers
   @Override
-  public TileGenerationSchema getGenerationSchema(String layer, Map<String, String> queryables) {
+  public TileGenerationSchema getGenerationSchema(
+      String layer, Map<String, FeatureSchema> queryables) {
     String featureProviderId =
         data.getTilesetDefaults()
             .getFeatureProvider()
@@ -309,7 +310,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
 
       // TODO
       @Override
-      public Map<String, String> getProperties() {
+      public Map<String, FeatureSchema> getProperties() {
         return queryables;
       }
     };

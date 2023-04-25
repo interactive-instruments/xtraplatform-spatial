@@ -114,6 +114,7 @@ public interface VectorLayer {
   static String getTypeAsString(SchemaBase.Type type) {
     switch (type) {
       case INTEGER:
+        return "Integer";
       case FLOAT:
         return "Number";
       case BOOLEAN:
