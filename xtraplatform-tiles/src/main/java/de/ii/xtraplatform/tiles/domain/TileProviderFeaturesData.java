@@ -41,9 +41,8 @@ import org.immutables.value.Value;
  *     <p>### Layer
  *     <p>{@docTable:layer}
  * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderFeaturesData}
- * @ref:layerDefaultsTable {@link
- *     de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsFeaturesDefault}
- * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsFeatures}
+ * @ref:layerDefaultsTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeaturesDefaults}
+ * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeatures}
  */
 @DocFile(
     path = "providers/tile",
@@ -79,10 +78,10 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches {
   String ENTITY_SUBTYPE = String.format("%s/%s", PROVIDER_TYPE, PROVIDER_SUBTYPE).toLowerCase();
 
   @Override
-  LayerOptionsFeaturesDefault getLayerDefaults();
+  TilesetFeaturesDefaults getTilesetDefaults();
 
   @Override
-  BuildableMap<LayerOptionsFeatures, ImmutableLayerOptionsFeatures.Builder> getLayers();
+  BuildableMap<TilesetFeatures, ImmutableTilesetFeatures.Builder> getTilesets();
 
   @Override
   default TileProviderData mergeInto(TileProviderData source) {

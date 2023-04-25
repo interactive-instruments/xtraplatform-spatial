@@ -9,13 +9,13 @@ package de.ii.xtraplatform.tiles.app;
 
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileQuery;
-import de.ii.xtraplatform.tiles.domain.LayerOptionsFeatures;
 import de.ii.xtraplatform.tiles.domain.TileEncoder;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParametersTransient;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetBase;
 import de.ii.xtraplatform.tiles.domain.TileProviderFeaturesData;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
+import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map.Entry;
@@ -39,14 +39,14 @@ public class TileEncoderMvt implements TileEncoder {
   public byte[] combine(
       TileQuery tile, TileProviderFeaturesData data, ChainedTileProvider tileProvider)
       throws IOException {
-    LayerOptionsFeatures combinedLayer = data.getLayers().get(tile.getLayer());
+    TilesetFeatures combinedLayer = data.getTilesets().get(tile.getTileset());
     List<String> subLayers =
         getSubLayers(data, combinedLayer, tile.getGenerationParametersTransient());
     VectorTileEncoder encoder = new VectorTileEncoder(tile.getTileMatrixSet().getTileExtent());
     VectorTileDecoder decoder = new VectorTileDecoder();
 
     for (String subLayer : subLayers) {
-      TileQuery tileQuery = ImmutableTileQuery.builder().from(tile).layer(subLayer).build();
+      TileQuery tileQuery = ImmutableTileQuery.builder().from(tile).tileset(subLayer).build();
       TileResult subTile = tileProvider.get(tileQuery);
 
       if (subTile.isError()) {
@@ -71,13 +71,13 @@ public class TileEncoderMvt implements TileEncoder {
 
   private List<String> getSubLayers(
       TileProviderFeaturesData data,
-      LayerOptionsFeatures combinedLayer,
+      TilesetFeatures combinedLayer,
       Optional<TileGenerationParametersTransient> userParameters) {
     return combinedLayer.getCombine().stream()
         .flatMap(
             layer -> {
-              if (Objects.equals(layer, LayerOptionsFeatures.COMBINE_ALL)) {
-                return data.getLayers().entrySet().stream()
+              if (Objects.equals(layer, TilesetFeatures.COMBINE_ALL)) {
+                return data.getTilesets().entrySet().stream()
                     .filter(entry -> !entry.getValue().isCombined())
                     .map(Entry::getKey);
               }

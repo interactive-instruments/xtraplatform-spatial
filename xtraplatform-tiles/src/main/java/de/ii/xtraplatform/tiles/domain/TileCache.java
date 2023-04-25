@@ -73,7 +73,7 @@ public interface TileCache {
         (layer, mediaType, tileMatrixSet, level, row, col) -> {
           TileQuery tile =
               ImmutableTileQuery.builder()
-                  .layer(layer)
+                  .tileset(layer)
                   .mediaType(mediaType)
                   .tileMatrixSet(tileMatrixSet)
                   .level(level)

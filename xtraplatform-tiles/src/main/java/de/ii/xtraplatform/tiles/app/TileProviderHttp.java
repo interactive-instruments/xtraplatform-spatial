@@ -36,7 +36,7 @@ public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
     super(data);
 
     Map<String, String> layerSources =
-        data.getLayers().entrySet().stream()
+        data.getTilesets().entrySet().stream()
             .map(
                 entry -> {
                   return new SimpleImmutableEntry<>(

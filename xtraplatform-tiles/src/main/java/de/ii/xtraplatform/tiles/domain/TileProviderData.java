@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
@@ -70,18 +71,20 @@ public interface TileProviderData extends ProviderData {
   @Override
   String getProviderSubType();
 
-  LayerOptionsCommonDefault getLayerDefaults();
+  @JsonAlias("layerDefaults")
+  TilesetCommonDefaults getTilesetDefaults();
 
-  Map<String, ? extends LayerOptionsCommon> getLayers();
+  @JsonAlias("layers")
+  Map<String, ? extends TilesetCommon> getTilesets();
 
   @JsonIgnore
   @Value.Lazy
   default Map<String, Map<String, Range<Integer>>> getTmsRanges() {
-    return getLayers().entrySet().stream()
+    return getTilesets().entrySet().stream()
         .map(
             entry -> {
               LinkedHashMap<String, Range<Integer>> ranges =
-                  new LinkedHashMap<>(getLayerDefaults().getTmsRanges());
+                  new LinkedHashMap<>(getTilesetDefaults().getTmsRanges());
               ranges.putAll(entry.getValue().getTmsRanges());
 
               return new SimpleImmutableEntry<>(entry.getKey(), ranges);

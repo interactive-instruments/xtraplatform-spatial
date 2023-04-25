@@ -11,8 +11,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableLayerOptionsHttp.Builder.class)
-public interface LayerOptionsHttp extends LayerOptionsCommon {
+@JsonDeserialize(builder = ImmutableTilesetHttp.Builder.class)
+public interface TilesetHttp extends TilesetCommon {
 
   /**
    * @langEn URL template for accessing tiles. Parameters to use are `{{tileMatrix}}`,

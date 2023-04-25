@@ -22,7 +22,6 @@ import de.ii.xtraplatform.tiles.domain.Cache;
 import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.Cache.Type;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
-import de.ii.xtraplatform.tiles.domain.LayerOptionsFeatures;
 import de.ii.xtraplatform.tiles.domain.TileCache;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
 import de.ii.xtraplatform.tiles.domain.TileGenerationSchema;
@@ -36,6 +35,7 @@ import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileSeeding;
 import de.ii.xtraplatform.tiles.domain.TileStore;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
+import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -101,7 +101,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       Cache cache = data.getCaches().get(i);
       BlobStore cacheStore =
           tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
-      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getLayers());
+      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getTilesets());
 
       if (cache.getType() == Type.DYNAMIC) {
         current =
@@ -123,7 +123,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       Cache cache = data.getCaches().get(i);
       BlobStore cacheStore =
           tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
-      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getLayers());
+      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getTilesets());
 
       if (cache.getType() == Type.DYNAMIC) {
         current =
@@ -140,7 +140,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private TileStore getTileStore(
-      Cache cache, BlobStore cacheStore, String id, Map<String, LayerOptionsFeatures> layers) {
+      Cache cache, BlobStore cacheStore, String id, Map<String, TilesetFeatures> layers) {
     return tileStores
         .get(cache.getType())
         .computeIfAbsent(
@@ -159,7 +159,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private Map<String, Map<String, Range<Integer>>> getCacheRanges(Cache cache) {
-    return getData().getLayers().entrySet().stream()
+    return getData().getTilesets().entrySet().stream()
         .map(
             entry ->
                 new SimpleImmutableEntry<>(
@@ -201,7 +201,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private static Map<String, Map<String, TileGenerationSchema>> getTileSchemas(
-      TileGeneratorFeatures tileGenerator, Map<String, LayerOptionsFeatures> layers) {
+      TileGeneratorFeatures tileGenerator, Map<String, TilesetFeatures> layers) {
     return layers.values().stream()
         .map(
             layer -> {
@@ -210,7 +210,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                       ? layer.getCombine().stream()
                           .flatMap(
                               subLayer -> {
-                                if (Objects.equals(subLayer, LayerOptionsFeatures.COMBINE_ALL)) {
+                                if (Objects.equals(subLayer, TilesetFeatures.COMBINE_ALL)) {
                                   return layers.entrySet().stream()
                                       .filter(entry -> !entry.getValue().isCombined())
                                       .map(Entry::getKey);
@@ -248,7 +248,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       return error.get();
     }
 
-    LayerOptionsFeatures layer = getData().getLayers().get(tile.getLayer());
+    TilesetFeatures layer = getData().getTilesets().get(tile.getTileset());
     TileResult result =
         layer.isCombined() ? combinerProviderChain.get(tile) : generatorProviderChain.get(tile);
 
@@ -332,7 +332,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     return layers.entrySet().stream()
         .filter(
             entry -> {
-              if (!getData().getLayers().containsKey(entry.getKey())) {
+              if (!getData().getTilesets().containsKey(entry.getKey())) {
                 LOGGER.warn("Layer with name '{}' not found", entry.getKey());
                 return false;
               }
@@ -346,8 +346,8 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     return layers.entrySet().stream()
         .filter(
             entry ->
-                getData().getLayers().containsKey(entry.getKey())
-                    && !getData().getLayers().get(entry.getKey()).isCombined())
+                getData().getTilesets().containsKey(entry.getKey())
+                    && !getData().getTilesets().get(entry.getKey()).isCombined())
         .collect(MapStreams.toMap());
   }
 
@@ -356,8 +356,8 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     return layers.entrySet().stream()
         .filter(
             entry ->
-                getData().getLayers().containsKey(entry.getKey())
-                    && getData().getLayers().get(entry.getKey()).isCombined())
+                getData().getTilesets().containsKey(entry.getKey())
+                    && getData().getTilesets().get(entry.getKey()).isCombined())
         .collect(MapStreams.toMap());
   }
 

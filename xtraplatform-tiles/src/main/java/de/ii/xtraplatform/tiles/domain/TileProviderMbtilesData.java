@@ -45,9 +45,8 @@ import org.immutables.value.Value;
  *     <p>### Layer
  *     <p>{@docTable:layer}
  * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderMbtilesData}
- * @ref:layerDefaultsTable {@link
- *     de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsMbTilesDefault}
- * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsMbTiles}
+ * @ref:layerDefaultsTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetMbTilesDefaults}
+ * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetMbTiles}
  */
 @DocFile(
     path = "providers/tile",
@@ -85,12 +84,12 @@ public interface TileProviderMbtilesData extends TileProviderData {
   // TODO: error when using interface
   @Value.Default
   @Override
-  default ImmutableLayerOptionsMbTilesDefault getLayerDefaults() {
-    return new ImmutableLayerOptionsMbTilesDefault.Builder().build();
+  default ImmutableTilesetMbTilesDefaults getTilesetDefaults() {
+    return new ImmutableTilesetMbTilesDefaults.Builder().build();
   }
 
   @Override
-  Map<String, LayerOptionsMbTiles> getLayers();
+  Map<String, TilesetMbTiles> getTilesets();
 
   @Override
   default TileProviderData mergeInto(TileProviderData source) {

@@ -14,7 +14,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, attributeBuilderDetection = true)
 public interface TileQuery extends TileCoordinates {
-  String getLayer();
+  String getTileset();
 
   MediaType getMediaType();
 

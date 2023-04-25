@@ -491,7 +491,7 @@ public class MbtilesTileset {
               tile.getLevel(),
               tile.getRow(),
               tile.getCol(),
-              tile.getLayer(),
+              tile.getTileset(),
               e.getMessage()),
           e);
     } catch (InterruptedException e) {

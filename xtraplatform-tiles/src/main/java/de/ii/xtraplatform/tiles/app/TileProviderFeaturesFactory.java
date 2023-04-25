@@ -20,8 +20,8 @@ import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
-import de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsFeaturesDefault;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileProviderFeaturesData;
+import de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeaturesDefaults;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TileProviderFeaturesData;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
@@ -70,7 +70,7 @@ public class TileProviderFeaturesFactory
   @Override
   public EntityDataBuilder<TileProviderData> dataBuilder() {
     return new ImmutableTileProviderFeaturesData.Builder()
-        .layerDefaultsBuilder(new ImmutableLayerOptionsFeaturesDefault.Builder());
+        .tilesetDefaultsBuilder(new ImmutableTilesetFeaturesDefaults.Builder());
   }
 
   @Override

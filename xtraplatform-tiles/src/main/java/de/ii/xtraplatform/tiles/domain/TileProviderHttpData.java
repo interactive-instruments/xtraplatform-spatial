@@ -41,8 +41,8 @@ import org.immutables.value.Value;
  *     <p>### Layer
  *     <p>{@docTable:layer}
  * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderHttpData}
- * @ref:layerDefaultsTable {@link de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsHttpDefault}
- * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableLayerOptionsHttp}
+ * @ref:layerDefaultsTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetHttpDefaults}
+ * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetHttp}
  */
 @DocFile(
     path = "providers/tile",
@@ -79,12 +79,12 @@ public interface TileProviderHttpData extends TileProviderData {
 
   @Value.Default
   @Override
-  default ImmutableLayerOptionsHttpDefault getLayerDefaults() {
-    return new ImmutableLayerOptionsHttpDefault.Builder().build();
+  default ImmutableTilesetHttpDefaults getTilesetDefaults() {
+    return new ImmutableTilesetHttpDefaults.Builder().build();
   }
 
   @Override
-  Map<String, LayerOptionsHttp> getLayers();
+  Map<String, TilesetHttp> getTilesets();
 
   @Override
   default TileProviderData mergeInto(TileProviderData source) {

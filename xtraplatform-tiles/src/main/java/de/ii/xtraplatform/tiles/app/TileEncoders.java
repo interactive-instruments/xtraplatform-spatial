@@ -38,7 +38,7 @@ public class TileEncoders implements ChainedTileProvider {
   @Override
   public boolean canProvide(TileQuery tile) {
     return ChainedTileProvider.super.canProvide(tile)
-        && !data.getLayers().get(tile.getLayer()).getCombine().isEmpty()
+        && !data.getTilesets().get(tile.getTileset()).getCombine().isEmpty()
         && canEncode(tile.getMediaType());
   }
 

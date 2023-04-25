@@ -197,9 +197,9 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
 
   @Override
   public boolean isDirty(TileQuery tile) {
-    return dirty.containsKey(tile.getLayer())
-        && dirty.get(tile.getLayer()).containsKey(tile.getTileMatrixSet().getId())
-        && dirty.get(tile.getLayer()).get(tile.getTileMatrixSet().getId()).stream()
+    return dirty.containsKey(tile.getTileset())
+        && dirty.get(tile.getTileset()).containsKey(tile.getTileMatrixSet().getId())
+        && dirty.get(tile.getTileset()).get(tile.getTileMatrixSet().getId()).stream()
             .anyMatch(
                 limits ->
                     Objects.equals(limits.getTileMatrix(), String.valueOf(tile.getLevel()))

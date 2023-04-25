@@ -55,12 +55,12 @@ public interface TileProvider extends PersistentEntity {
   }
 
   default Optional<TileResult> validate(TileQuery tile) {
-    if (!getData().getLayers().containsKey(tile.getLayer())) {
+    if (!getData().getTilesets().containsKey(tile.getTileset())) {
       return Optional.of(
-          TileResult.error(String.format("Layer '%s' is not supported.", tile.getLayer())));
+          TileResult.error(String.format("Layer '%s' is not supported.", tile.getTileset())));
     }
 
-    Map<String, Range<Integer>> tmsRanges = getData().getTmsRanges().get(tile.getLayer());
+    Map<String, Range<Integer>> tmsRanges = getData().getTmsRanges().get(tile.getTileset());
 
     if (!tmsRanges.containsKey(tile.getTileMatrixSet().getId())) {
       return Optional.of(

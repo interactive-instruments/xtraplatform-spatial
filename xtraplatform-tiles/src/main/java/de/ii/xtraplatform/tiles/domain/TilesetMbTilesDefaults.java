@@ -7,4 +7,9 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-public interface LayerOptionsCommonDefault extends WithTmsLevelsMergeable {}
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.immutables.value.Value;
+
+@Value.Immutable
+@JsonDeserialize(builder = ImmutableTilesetMbTilesDefaults.Builder.class)
+public interface TilesetMbTilesDefaults extends TilesetCommonDefaults {}

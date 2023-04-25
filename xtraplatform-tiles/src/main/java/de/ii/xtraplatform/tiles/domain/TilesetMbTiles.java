@@ -8,12 +8,11 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableLayerOptionsFeaturesDefault.Builder.class)
-public interface LayerOptionsFeaturesDefault
-    extends LayerOptionsCommonDefault, TileGenerationOptions {
-  Optional<String> getFeatureProvider();
+@JsonDeserialize(builder = ImmutableTilesetMbTiles.Builder.class)
+public interface TilesetMbTiles extends TilesetCommon {
+
+  String getSource();
 }

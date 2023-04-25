@@ -143,7 +143,7 @@ class TileStorePlain implements TileStore {
 
   private static Path path(TileQuery tile) {
     return Path.of(
-        tile.getLayer(),
+        tile.getTileset(),
         tile.getTileMatrixSet().getId(),
         String.valueOf(tile.getLevel()),
         String.valueOf(tile.getRow()),

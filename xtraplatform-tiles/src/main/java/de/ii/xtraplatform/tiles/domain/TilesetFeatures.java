@@ -17,9 +17,9 @@ import java.util.Optional;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableLayerOptionsFeatures.Builder.class)
-public interface LayerOptionsFeatures
-    extends LayerOptionsCommon, TileGenerationOptions, Buildable<LayerOptionsFeatures> {
+@JsonDeserialize(builder = ImmutableTilesetFeatures.Builder.class)
+public interface TilesetFeatures
+    extends TilesetCommon, TileGenerationOptions, Buildable<TilesetFeatures> {
   String COMBINE_ALL = "*";
 
   Optional<String> getFeatureProvider();
@@ -39,9 +39,9 @@ public interface LayerOptionsFeatures
   // TODO: check
 
   @Override
-  default ImmutableLayerOptionsFeatures.Builder getBuilder() {
-    return new ImmutableLayerOptionsFeatures.Builder().from(this);
+  default ImmutableTilesetFeatures.Builder getBuilder() {
+    return new ImmutableTilesetFeatures.Builder().from(this);
   }
 
-  abstract class Builder implements BuildableBuilder<LayerOptionsFeatures> {}
+  abstract class Builder implements BuildableBuilder<TilesetFeatures> {}
 }

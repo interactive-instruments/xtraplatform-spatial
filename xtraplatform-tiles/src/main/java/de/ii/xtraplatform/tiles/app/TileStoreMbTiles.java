@@ -123,7 +123,7 @@ public class TileStoreMbTiles implements TileStore {
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getLayer(),
+            tile.getTileset(),
             e.getMessage());
         if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
           LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
@@ -166,7 +166,7 @@ public class TileStoreMbTiles implements TileStore {
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getLayer(),
+            tile.getTileset(),
             e.getMessage());
         if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
           LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
@@ -200,9 +200,9 @@ public class TileStoreMbTiles implements TileStore {
               createTileSet(
                   rootStore,
                   providerId,
-                  tile.getLayer(),
+                  tile.getTileset(),
                   tile.getTileMatrixSet().getId(),
-                  getVectorLayers(tileSchemas, tile.getLayer())));
+                  getVectorLayers(tileSchemas, tile.getTileset())));
         }
       }
       tileSets.get(key(tile)).writeTile(tile, content.readAllBytes());
@@ -215,7 +215,7 @@ public class TileStoreMbTiles implements TileStore {
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getLayer(),
+            tile.getTileset(),
             e.getMessage());
         if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
           LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
@@ -238,7 +238,7 @@ public class TileStoreMbTiles implements TileStore {
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getLayer(),
+            tile.getTileset(),
             e.getMessage());
         if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
           LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
@@ -384,7 +384,7 @@ public class TileStoreMbTiles implements TileStore {
   }
 
   private static String key(TileQuery tile) {
-    return key(tile.getLayer(), tile.getTileMatrixSet());
+    return key(tile.getTileset(), tile.getTileMatrixSet());
   }
 
   private static String key(String layer, TileMatrixSetBase tileMatrixSet) {

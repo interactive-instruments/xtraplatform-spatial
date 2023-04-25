@@ -62,7 +62,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
     this.tileMatrixSetRepository = tileMatrixSetRepository;
     this.metadata = new LinkedHashMap<>();
     this.layerSources =
-        data.getLayers().entrySet().stream()
+        data.getTilesets().entrySet().stream()
             .map(
                 entry -> {
                   Path source = Path.of(entry.getValue().getSource());

@@ -40,7 +40,6 @@ import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileGenerationContext;
-import de.ii.xtraplatform.tiles.domain.LayerOptionsFeatures;
 import de.ii.xtraplatform.tiles.domain.LevelTransformation;
 import de.ii.xtraplatform.tiles.domain.TileCoordinates;
 import de.ii.xtraplatform.tiles.domain.TileGenerationContext;
@@ -51,6 +50,7 @@ import de.ii.xtraplatform.tiles.domain.TileGenerator;
 import de.ii.xtraplatform.tiles.domain.TileProviderFeaturesData;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
+import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -109,7 +109,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
   @Override
   public boolean canProvide(TileQuery tile) {
     return ChainedTileProvider.super.canProvide(tile)
-        && data.getLayers().get(tile.getLayer()).getCombine().isEmpty();
+        && data.getTilesets().get(tile.getTileset()).getCombine().isEmpty();
   }
 
   @Override
@@ -134,9 +134,9 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
 
     TileGenerationContext tileGenerationContext =
         new ImmutableTileGenerationContext.Builder()
-            .parameters(data.getLayerDefaults())
+            .parameters(data.getTilesetDefaults())
             .coordinates(tileQuery)
-            .collectionId(tileQuery.getLayer())
+            .collectionId(tileQuery.getTileset())
             // .fields
             // .limit(query.getLimit())
             .build();
@@ -144,7 +144,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
     FeatureTokenEncoder<?> encoder =
         ENCODERS.get(tileQuery.getMediaType()).apply(tileGenerationContext);
 
-    LayerOptionsFeatures layer = data.getLayers().get(tileQuery.getLayer());
+    TilesetFeatures layer = data.getTilesets().get(tileQuery.getTileset());
     String featureType = layer.getFeatureType().orElse(layer.getId());
     PropertyTransformations propertyTransformations =
         tileQuery
@@ -162,7 +162,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
   @Override
   public FeatureStream getTileSource(TileQuery tileQuery) {
     // TODO: merge defaults into layers
-    LayerOptionsFeatures layer = data.getLayers().get(tileQuery.getLayer());
+    TilesetFeatures layer = data.getTilesets().get(tileQuery.getTileset());
 
     // TODO: from TilesProviders
     String featureProviderId =
@@ -268,7 +268,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
   @Override
   public TileGenerationSchema getGenerationSchema(String layer, Map<String, String> queryables) {
     String featureProviderId =
-        data.getLayerDefaults()
+        data.getTilesetDefaults()
             .getFeatureProvider()
             .orElse(TileProviderFeatures.clean(data.getId()));
     FeatureProvider2 featureProvider =
@@ -316,7 +316,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
 
   private FeatureQuery getFeatureQuery(
       TileQuery tile,
-      LayerOptionsFeatures layer,
+      TilesetFeatures layer,
       Map<String, FeatureSchema> featureTypes,
       EpsgCrs nativeCrs,
       Optional<BoundingBox> bounds,

@@ -54,12 +54,12 @@ public class TileStoreHttp implements TileStoreReadOnly {
   // TODO: use HttpClient
   @Override
   public TileResult get(TileQuery tile) throws IOException {
-    if (!layerSources.containsKey(tile.getLayer())) {
+    if (!layerSources.containsKey(tile.getTileset())) {
       return TileResult.notFound();
     }
 
     try {
-      String url = getUrl(tile, layerSources.get(tile.getLayer()));
+      String url = getUrl(tile, layerSources.get(tile.getTileset()));
 
       Response response = ClientBuilder.newClient().target(url).request(tile.getMediaType()).get();
 
@@ -104,7 +104,7 @@ public class TileStoreHttp implements TileStoreReadOnly {
         template,
         Map.of(
                 "layer",
-                tile.getLayer(),
+                tile.getTileset(),
                 "tileMatrixSet",
                 tile.getTileMatrixSet().getId(),
                 "tileMatrix",
