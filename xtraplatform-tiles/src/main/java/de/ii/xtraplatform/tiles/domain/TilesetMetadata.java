@@ -8,9 +8,9 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
-import java.util.List;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.tiles.domain.WithCenter.LonLat;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -20,39 +20,27 @@ import org.immutables.value.Value;
 @Value.Style(deepImmutablesDetection = true)
 public interface TilesetMetadata {
 
-  Set<String> getTileMatrixSets();
+  Set<String> getEncodings();
 
   Map<String, MinMax> getLevels();
-
-  Set<String> getTileEncodings();
 
   Optional<LonLat> getCenter();
 
   Optional<BoundingBox> getBounds();
 
-  Set<VectorLayer> getVectorLayers();
+  Map<String, Set<FeatureSchema>> getVectorSchemas();
+
+  // Map<String, Set<VectorLayer>> getVectorLayers();
+
+  @JsonIgnore
+  @Value.Derived
+  default Set<String> getTileMatrixSets() {
+    return getLevels().keySet();
+  }
 
   @JsonIgnore
   @Value.Derived
   default boolean isVector() {
-    return getTileEncodings().contains("MVT");
-  }
-
-  @Value.Immutable
-  interface LonLat {
-
-    static LonLat of(double lon, double lat) {
-      return ImmutableLonLat.builder().lon(lon).lat(lat).build();
-    }
-
-    double getLon();
-
-    double getLat();
-
-    @JsonIgnore
-    @Value.Derived
-    default List<Double> asList() {
-      return ImmutableList.of(getLon(), getLat());
-    }
+    return getEncodings().contains("MVT");
   }
 }

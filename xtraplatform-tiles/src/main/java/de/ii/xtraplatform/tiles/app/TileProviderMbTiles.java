@@ -15,6 +15,7 @@ import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.ImmutableMinMax;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetMetadata;
@@ -30,7 +31,9 @@ import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStoreReadOnly;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
-import de.ii.xtraplatform.tiles.domain.TilesetMetadata.LonLat;
+import de.ii.xtraplatform.tiles.domain.VectorLayer;
+import de.ii.xtraplatform.tiles.domain.WithCenter;
+import de.ii.xtraplatform.tiles.domain.WithCenter.LonLat;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -39,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,7 +155,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
       Optional<LonLat> center =
           metadata.getCenter().size() >= 2
               ? Optional.of(
-                  LonLat.of(
+                  WithCenter.LonLat.of(
                       metadata.getCenter().get(0).doubleValue(),
                       metadata.getCenter().get(1).doubleValue()))
               : Optional.empty();
@@ -166,14 +170,19 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
                   BoundingBox.of(bbox.get(0), bbox.get(1), bbox.get(2), bbox.get(3), OgcCrs.CRS84))
               : Optional.empty();
       String format = getFormat(metadata.getFormat());
+      Map<String, Set<FeatureSchema>> vectorSchemas =
+          ImmutableMap.of(
+              tms,
+              metadata.getVectorLayers().stream()
+                  .map(VectorLayer::toFeatureSchema)
+                  .collect(Collectors.toSet()));
 
       return ImmutableTilesetMetadata.builder()
-          .addTileEncodings(format)
-          .addTileMatrixSets(tms)
+          .addEncodings(format)
           .levels(zoomLevels)
           .center(center)
           .bounds(bounds)
-          .vectorLayers(metadata.getVectorLayers())
+          .vectorSchemas(vectorSchemas)
           .build();
     } catch (Exception e) {
       throw new RuntimeException("Could not derive metadata from Mbtiles tile provider.", e);

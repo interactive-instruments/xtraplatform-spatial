@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.tiles.app;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
@@ -15,6 +16,7 @@ import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.services.domain.TaskContext;
 import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
@@ -22,6 +24,7 @@ import de.ii.xtraplatform.tiles.domain.Cache;
 import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.Cache.Type;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
+import de.ii.xtraplatform.tiles.domain.ImmutableTilesetMetadata;
 import de.ii.xtraplatform.tiles.domain.TileCache;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
 import de.ii.xtraplatform.tiles.domain.TileGenerationSchema;
@@ -36,8 +39,10 @@ import de.ii.xtraplatform.tiles.domain.TileSeeding;
 import de.ii.xtraplatform.tiles.domain.TileStore;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
 import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
+import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -47,6 +52,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -68,6 +74,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   private final Map<Type, Map<Storage, TileStore>> tileStores;
   private final List<TileCache> generatorCaches;
   private final List<TileCache> combinerCaches;
+  private final Map<String, TilesetMetadata> metadata;
   private final BlobStore tilesStore;
 
   @AssistedInject
@@ -93,6 +100,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                 new ConcurrentHashMap<>()));
     this.generatorCaches = new ArrayList<>();
     this.combinerCaches = new ArrayList<>();
+    this.metadata = new LinkedHashMap<>();
 
     this.tilesStore = blobStore.with(TILES_DIR_NAME, clean(data.getId()));
     ChainedTileProvider current = tileGenerator;
@@ -232,12 +240,37 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
+  private List<String> getSubLayers(TilesetFeatures tileset) {
+    if (!tileset.isCombined()) {
+      return ImmutableList.of(tileset.getId());
+    }
+
+    return tileset.getCombine().stream()
+        .flatMap(
+            subLayer -> {
+              if (Objects.equals(subLayer, TilesetFeatures.COMBINE_ALL)) {
+                return getData().getTilesets().entrySet().stream()
+                    .filter(entry -> !entry.getValue().isCombined())
+                    .map(Entry::getKey);
+              }
+              return Stream.of(subLayer);
+            })
+        .collect(ImmutableList.toImmutableList());
+  }
+
   @Override
   protected boolean onStartup() throws InterruptedException {
 
     cleanupCache32();
 
+    loadMetadata();
+
     return super.onStartup();
+  }
+
+  @Override
+  public Optional<TilesetMetadata> metadata(String tileset) {
+    return Optional.ofNullable(metadata.get(tileset));
   }
 
   @Override
@@ -405,5 +438,37 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     } catch (IOException e) {
       // ignore
     }
+  }
+
+  private void loadMetadata() {
+    getData()
+        .getTilesets()
+        .forEach(
+            (key, tileset) -> {
+              metadata.put(key, loadMetadata(tileset));
+            });
+  }
+
+  private TilesetMetadata loadMetadata(TilesetFeatures tileset) {
+    Map<String, Set<FeatureSchema>> vectorSchemas =
+        tileset.getLevels().keySet().stream()
+            .map(
+                tms -> {
+                  Set<FeatureSchema> schemas =
+                      getSubLayers(tileset).stream()
+                          .map(id -> tileGenerator.getVectorSchema(id, FeatureEncoderMVT.FORMAT))
+                          .collect(Collectors.toSet());
+
+                  return new SimpleEntry<>(tms, schemas);
+                })
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+    return ImmutableTilesetMetadata.builder()
+        .addEncodings("MVT")
+        .levels(tileset.getLevels())
+        .center(tileset.getCenter())
+        .bounds(tileGenerator.getBounds(tileset.getId()))
+        .vectorSchemas(vectorSchemas)
+        .build();
   }
 }

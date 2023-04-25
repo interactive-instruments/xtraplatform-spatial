@@ -34,6 +34,7 @@ import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.features.domain.transform.WithTransformationsApplied;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
@@ -312,6 +313,75 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
         return queryables;
       }
     };
+  }
+
+  public FeatureSchema getVectorSchema(String tilesetId, MediaType encoding) {
+    TilesetFeatures tileset = data.getTilesets().get(tilesetId);
+
+    if (Objects.isNull(tileset)) {
+      throw new IllegalArgumentException(String.format("Unknown tileset '%s'", tilesetId));
+    }
+
+    String featureProviderId =
+        tileset
+            .getFeatureProvider()
+            .or(data.getTilesetDefaults()::getFeatureProvider)
+            .orElse(TileProviderFeatures.clean(data.getId()));
+    FeatureProvider2 featureProvider =
+        entityRegistry
+            .getEntity(FeatureProvider2.class, featureProviderId)
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        String.format(
+                            "Feature provider with id '%s' not found.", featureProviderId)));
+
+    String featureType = tileset.getFeatureType().orElse(tileset.getId());
+    FeatureSchema featureSchema = featureProvider.getData().getTypes().get(featureType);
+
+    if (Objects.isNull(featureSchema)) {
+      throw new IllegalArgumentException(
+          String.format("Unknown feature type '%s' in tileset '%s'", featureType, tilesetId));
+    }
+
+    PropertyTransformations transformations = TRANSFORMATIONS.get(encoding);
+
+    if (Objects.nonNull(transformations)) {
+      featureSchema = featureSchema.accept(new WithTransformationsApplied(transformations));
+    }
+
+    return featureSchema;
+  }
+
+  @Override
+  public Optional<BoundingBox> getBounds(String tilesetId) {
+    TilesetFeatures tileset = data.getTilesets().get(tilesetId);
+
+    if (Objects.isNull(tileset)) {
+      throw new IllegalArgumentException(String.format("Unknown tileset '%s'", tilesetId));
+    }
+
+    String featureProviderId =
+        tileset
+            .getFeatureProvider()
+            .or(data.getTilesetDefaults()::getFeatureProvider)
+            .orElse(TileProviderFeatures.clean(data.getId()));
+    FeatureProvider2 featureProvider =
+        entityRegistry
+            .getEntity(FeatureProvider2.class, featureProviderId)
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        String.format(
+                            "Feature provider with id '%s' not found.", featureProviderId)));
+
+    if (!featureProvider.supportsExtents()) {
+      return Optional.empty();
+    }
+
+    String featureType = tileset.getFeatureType().orElse(tileset.getId());
+
+    return featureProvider.extents().getSpatialExtent(featureType);
   }
 
   private FeatureQuery getFeatureQuery(

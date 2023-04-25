@@ -321,32 +321,13 @@ public class TileStoreMbTiles implements TileStore {
   // TODO: fields, minzoom, maxzoom
   private static VectorLayer getVectorLayer(
       String subLayer, TileGenerationSchema generationSchema) {
-
-    ImmutableVectorLayer.Builder builder =
-        ImmutableVectorLayer.builder().id(subLayer).fields(generationSchema.getProperties());
-
-    switch (generationSchema.getGeometryType().orElse(SimpleFeatureGeometry.ANY)) {
-      case POINT:
-      case MULTI_POINT:
-        builder.geometryType("points");
-        break;
-      case LINE_STRING:
-      case MULTI_LINE_STRING:
-        builder.geometryType("lines");
-        break;
-      case POLYGON:
-      case MULTI_POLYGON:
-        builder.geometryType("polygons");
-        break;
-      case GEOMETRY_COLLECTION:
-      case ANY:
-      case NONE:
-      default:
-        builder.geometryType("unknown");
-        break;
-    }
-
-    return builder.build();
+    return ImmutableVectorLayer.builder()
+        .id(subLayer)
+        .fields(generationSchema.getProperties())
+        .geometryType(
+            VectorLayer.getGeometryTypeAsString(
+                generationSchema.getGeometryType().orElse(SimpleFeatureGeometry.ANY)))
+        .build();
   }
 
   // TODO: minzoom, maxzoom, bounds, center

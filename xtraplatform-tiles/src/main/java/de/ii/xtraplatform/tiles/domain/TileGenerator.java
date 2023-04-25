@@ -7,8 +7,10 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.features.domain.FeatureStream;
 import java.util.Map;
+import java.util.Optional;
 import javax.ws.rs.core.MediaType;
 
 public interface TileGenerator {
@@ -22,4 +24,6 @@ public interface TileGenerator {
 
   // TODO: create on startup for all layers
   TileGenerationSchema getGenerationSchema(String layer, Map<String, String> queryables);
+
+  Optional<BoundingBox> getBounds(String tilesetId);
 }

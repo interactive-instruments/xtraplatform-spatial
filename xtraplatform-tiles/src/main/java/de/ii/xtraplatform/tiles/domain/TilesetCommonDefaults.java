@@ -7,4 +7,4 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-public interface TilesetCommonDefaults extends WithTmsLevelsMergeable {}
+public interface TilesetCommonDefaults extends WithTmsLevelsMergeable, WithCenter {}
