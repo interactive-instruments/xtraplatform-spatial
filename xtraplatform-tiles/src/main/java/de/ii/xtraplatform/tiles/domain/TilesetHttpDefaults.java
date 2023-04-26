@@ -12,4 +12,4 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTilesetHttpDefaults.Builder.class)
-public interface TilesetHttpDefaults extends TilesetCommonDefaults {}
+public interface TilesetHttpDefaults extends TilesetCommonDefaults, WithEncodings {}

@@ -12,7 +12,7 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTilesetHttp.Builder.class)
-public interface TilesetHttp extends TilesetCommon {
+public interface TilesetHttp extends TilesetCommon, TilesetHttpDefaults {
 
   /**
    * @langEn URL template for accessing tiles. Parameters to use are `{{tileMatrix}}`,
