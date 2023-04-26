@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.tiles.domain.WithCenter.LonLat;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -18,17 +19,18 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true)
-public interface TilesetMetadata {
+public interface TilesetMetadata extends WithTmsLevels {
 
   Set<String> getEncodings();
 
+  @Override
   Map<String, MinMax> getLevels();
 
   Optional<LonLat> getCenter();
 
   Optional<BoundingBox> getBounds();
 
-  Map<String, Set<FeatureSchema>> getVectorSchemas();
+  List<FeatureSchema> getVectorSchemas();
 
   // Map<String, Set<VectorLayer>> getVectorLayers();
 

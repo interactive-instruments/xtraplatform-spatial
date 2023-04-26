@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +53,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   private final TileMatrixSetRepository tileMatrixSetRepository;
   private final Map<String, Path> layerSources;
   private final Map<String, TilesetMetadata> metadata;
+  private final Map<String, Map<String, Range<Integer>>> tmsRanges;
   private final ChainedTileProvider providerChain;
 
   @AssistedInject
@@ -65,6 +65,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
 
     this.tileMatrixSetRepository = tileMatrixSetRepository;
     this.metadata = new LinkedHashMap<>();
+    this.tmsRanges = new LinkedHashMap<>();
     this.layerSources =
         data.getTilesets().entrySet().stream()
             .map(
@@ -84,7 +85,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
         new ChainedTileProvider() {
           @Override
           public Map<String, Map<String, Range<Integer>>> getTmsRanges() {
-            return data.getTmsRanges();
+            return tmsRanges;
           }
 
           @Override
@@ -133,6 +134,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
           Tuple<String, String> tilesetKey = toTuple(key);
 
           metadata.put(tilesetKey.first(), loadMetadata(tilesetKey.second(), path));
+          tmsRanges.put(tilesetKey.first(), metadata.get(tilesetKey.first()).getTmsRanges());
         });
   }
 
@@ -170,12 +172,10 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
                   BoundingBox.of(bbox.get(0), bbox.get(1), bbox.get(2), bbox.get(3), OgcCrs.CRS84))
               : Optional.empty();
       String format = getFormat(metadata.getFormat());
-      Map<String, Set<FeatureSchema>> vectorSchemas =
-          ImmutableMap.of(
-              tms,
-              metadata.getVectorLayers().stream()
-                  .map(VectorLayer::toFeatureSchema)
-                  .collect(Collectors.toSet()));
+      List<FeatureSchema> vectorSchemas =
+          metadata.getVectorLayers().stream()
+              .map(VectorLayer::toFeatureSchema)
+              .collect(Collectors.toList());
 
       return ImmutableTilesetMetadata.builder()
           .addEncodings(format)

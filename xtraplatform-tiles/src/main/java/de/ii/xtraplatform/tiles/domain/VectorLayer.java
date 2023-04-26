@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
@@ -23,7 +24,6 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -64,10 +64,11 @@ public interface VectorLayer {
 
     Map<String, String> properties =
         featureSchema.getProperties().stream()
+            .filter(prop -> !prop.isSpatial())
             .map(
                 prop ->
                     new SimpleEntry<>(prop.getName(), VectorLayer.getTypeAsString(prop.getType())))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     return ImmutableVectorLayer.builder()
         .id(featureSchema.getName())
@@ -100,7 +101,7 @@ public interface VectorLayer {
                           .build();
                   return new SimpleEntry<>(entry.getKey(), property);
                 })
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     return new ImmutableFeatureSchema.Builder()
         .name(getId())

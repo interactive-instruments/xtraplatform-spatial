@@ -24,6 +24,7 @@ import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -382,7 +383,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
 
     String featureType = tileset.getFeatureType().orElse(tileset.getId());
 
-    return featureProvider.extents().getSpatialExtent(featureType);
+    return featureProvider.extents().getSpatialExtent(featureType, OgcCrs.CRS84);
   }
 
   private FeatureQuery getFeatureQuery(

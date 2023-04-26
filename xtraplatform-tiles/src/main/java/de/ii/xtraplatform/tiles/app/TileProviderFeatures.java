@@ -14,6 +14,7 @@ import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -42,7 +43,6 @@ import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -52,7 +52,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -450,24 +449,33 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private TilesetMetadata loadMetadata(TilesetFeatures tileset) {
-    Map<String, Set<FeatureSchema>> vectorSchemas =
-        tileset.getLevels().keySet().stream()
-            .map(
-                tms -> {
-                  Set<FeatureSchema> schemas =
-                      getSubLayers(tileset).stream()
-                          .map(id -> tileGenerator.getVectorSchema(id, FeatureEncoderMVT.FORMAT))
-                          .collect(Collectors.toSet());
-
-                  return new SimpleEntry<>(tms, schemas);
-                })
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    List<FeatureSchema> vectorSchemas =
+        getSubLayers(tileset).stream()
+            .map(id -> tileGenerator.getVectorSchema(id, FeatureEncoderMVT.FORMAT))
+            .collect(Collectors.toList());
+    Optional<BoundingBox> bounds =
+        getSubLayers(tileset).stream()
+            .map(tileGenerator::getBounds)
+            .reduce(
+                Optional.empty(),
+                (a, b) -> {
+                  if (b.isEmpty()) {
+                    return a;
+                  }
+                  if (a.isPresent()) {
+                    return Optional.of(BoundingBox.merge(b.get(), a.get()));
+                  }
+                  return b;
+                });
 
     return ImmutableTilesetMetadata.builder()
         .addEncodings("MVT")
-        .levels(tileset.getLevels())
-        .center(tileset.getCenter())
-        .bounds(tileGenerator.getBounds(tileset.getId()))
+        .levels(
+            tileset.getLevels().isEmpty()
+                ? getData().getTilesetDefaults().getLevels()
+                : tileset.getLevels())
+        .center(tileset.getCenter().or(() -> getData().getTilesetDefaults().getCenter()))
+        .bounds(bounds)
         .vectorSchemas(vectorSchemas)
         .build();
   }

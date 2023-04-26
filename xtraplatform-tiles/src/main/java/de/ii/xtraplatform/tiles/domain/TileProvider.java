@@ -7,10 +7,8 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-import com.google.common.collect.Range;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
-import java.util.Map;
 import java.util.Optional;
 
 public interface TileProvider extends PersistentEntity {
@@ -55,24 +53,28 @@ public interface TileProvider extends PersistentEntity {
   }
 
   default Optional<TileResult> validate(TileQuery tile) {
-    if (!getData().getTilesets().containsKey(tile.getTileset())) {
+    Optional<TilesetMetadata> metadata = metadata(tile.getTileset());
+
+    if (metadata.isEmpty()) {
       return Optional.of(
-          TileResult.error(String.format("Layer '%s' is not supported.", tile.getTileset())));
+          TileResult.error(String.format("Tileset '%s' is not supported.", tile.getTileset())));
     }
 
-    Map<String, Range<Integer>> tmsRanges = getData().getTmsRanges().get(tile.getTileset());
-
-    if (!tmsRanges.containsKey(tile.getTileMatrixSet().getId())) {
+    if (!metadata.get().getTileMatrixSets().contains(tile.getTileMatrixSet().getId())) {
       return Optional.of(
           TileResult.error(
               String.format(
                   "Tile matrix set '%s' is not supported.", tile.getTileMatrixSet().getId())));
     }
 
-    if (!tmsRanges.get(tile.getTileMatrixSet().getId()).contains(tile.getLevel())) {
+    if (!metadata
+        .get()
+        .getTmsRanges()
+        .get(tile.getTileMatrixSet().getId())
+        .contains(tile.getLevel())) {
       return Optional.of(
           TileResult.outsideLimits(
-              "The requested tile is outside the zoom levels for this tile set."));
+              "The requested tile is outside the zoom levels for this tileset."));
     }
 
     BoundingBox boundingBox =
@@ -84,7 +86,7 @@ public interface TileProvider extends PersistentEntity {
     if (!limits.contains(tile.getRow(), tile.getCol())) {
       return Optional.of(
           TileResult.outsideLimits(
-              "The requested tile is outside of the limits for this zoom level and tile set."));
+              "The requested tile is outside of the limits for this zoom level and tileset."));
     }
 
     return Optional.empty();
