@@ -77,8 +77,6 @@ public class TileProviderMbTilesFactory
   public EntityData hydrateData(EntityData entityData) {
     TileProviderMbtilesData data = (TileProviderMbtilesData) entityData;
 
-    // TODO: auto mode
-
     return data;
   }
 

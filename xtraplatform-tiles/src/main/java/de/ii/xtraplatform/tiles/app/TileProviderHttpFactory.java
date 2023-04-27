@@ -70,8 +70,6 @@ public class TileProviderHttpFactory
   public EntityData hydrateData(EntityData entityData) {
     TileProviderHttpData data = (TileProviderHttpData) entityData;
 
-    // TODO: auto mode
-
     return data;
   }
 

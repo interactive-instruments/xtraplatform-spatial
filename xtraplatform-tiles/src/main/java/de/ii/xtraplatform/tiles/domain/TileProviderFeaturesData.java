@@ -13,6 +13,7 @@ import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
+import de.ii.xtraplatform.store.domain.entities.AutoEntity;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
@@ -84,7 +85,7 @@ import org.immutables.value.Value;
     })
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTileProviderFeaturesData.Builder.class)
-public interface TileProviderFeaturesData extends TileProviderData, WithCaches {
+public interface TileProviderFeaturesData extends TileProviderData, WithCaches, AutoEntity {
 
   String PROVIDER_SUBTYPE = "FEATURES";
   String ENTITY_SUBTYPE = String.format("%s/%s", PROVIDER_TYPE, PROVIDER_SUBTYPE).toLowerCase();

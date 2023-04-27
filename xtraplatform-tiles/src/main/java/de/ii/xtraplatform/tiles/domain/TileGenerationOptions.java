@@ -9,24 +9,18 @@ package de.ii.xtraplatform.tiles.domain;
 
 import java.util.List;
 import java.util.Map;
-import org.immutables.value.Value;
+import javax.annotation.Nullable;
 
 public interface TileGenerationOptions {
 
-  @Value.Default
-  default int getFeatureLimit() {
-    return 100000;
-  }
+  @Nullable
+  Integer getFeatureLimit();
 
-  @Value.Default
-  default double getMinimumSizeInPixel() {
-    return 0.5;
-  }
+  @Nullable
+  Double getMinimumSizeInPixel();
 
-  @Value.Default
-  default boolean getIgnoreInvalidGeometries() {
-    return false;
-  }
+  @Nullable
+  Boolean getIgnoreInvalidGeometries();
 
   Map<String, List<LevelTransformation>> getTransformations();
 }

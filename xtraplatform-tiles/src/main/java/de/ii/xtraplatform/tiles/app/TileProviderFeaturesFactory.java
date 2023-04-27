@@ -8,10 +8,13 @@
 package de.ii.xtraplatform.tiles.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
+import com.google.common.collect.ImmutableMap;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.AppContext;
+import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
+import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.store.domain.entities.AbstractEntityFactory;
@@ -20,11 +23,16 @@ import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
+import de.ii.xtraplatform.tiles.domain.ImmutableMinMax;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileProviderFeaturesData;
+import de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeatures.Builder;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeaturesDefaults;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TileProviderFeaturesData;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
+import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Map;
 import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,6 +47,8 @@ public class TileProviderFeaturesFactory
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderFeaturesFactory.class);
 
+  private final EntityRegistry entityRegistry;
+
   @Inject
   public TileProviderFeaturesFactory(
       // TODO: needed because dagger-auto does not parse TileProviderFeatures
@@ -50,6 +60,7 @@ public class TileProviderFeaturesFactory
       TileWalker tileWalker,
       TileProviderFeaturesFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
+    this.entityRegistry = entityRegistry;
   }
 
   @Override
@@ -70,7 +81,11 @@ public class TileProviderFeaturesFactory
   @Override
   public EntityDataBuilder<TileProviderData> dataBuilder() {
     return new ImmutableTileProviderFeaturesData.Builder()
-        .tilesetDefaultsBuilder(new ImmutableTilesetFeaturesDefaults.Builder());
+        .tilesetDefaultsBuilder(
+            new ImmutableTilesetFeaturesDefaults.Builder()
+                .featureLimit(100000)
+                .minimumSizeInPixel(0.5)
+                .ignoreInvalidGeometries(false));
   }
 
   @Override
@@ -87,9 +102,97 @@ public class TileProviderFeaturesFactory
   public EntityData hydrateData(EntityData entityData) {
     TileProviderFeaturesData data = (TileProviderFeaturesData) entityData;
 
-    // TODO: auto mode
+    if (data.isAuto()) {
+      LOGGER.info(
+          "Provider with id '{}' is in auto mode, generating configuration ...", data.getId());
+
+      try {
+        data = generateDefaultsIfNecessary(generateTilesetsIfNecessary(data));
+
+        data =
+            new ImmutableTileProviderFeaturesData.Builder()
+                .from(data)
+                .auto(Optional.empty())
+                .autoPersist(Optional.empty())
+                .build();
+      } catch (Throwable e) {
+        if (LOGGER.isErrorEnabled()) {
+          LogContext.error(LOGGER, e, "Provider with id '{}' could not be started", data.getId());
+        }
+        throw e;
+      }
+    }
 
     return data;
+  }
+
+  private TileProviderFeaturesData generateDefaultsIfNecessary(TileProviderFeaturesData data) {
+    if (!data.getTilesetDefaults().getLevels().isEmpty()) {
+      return data;
+    }
+
+    return new ImmutableTileProviderFeaturesData.Builder()
+        .from(data)
+        .tilesetDefaults(
+            new ImmutableTilesetFeaturesDefaults.Builder()
+                .from(data.getTilesetDefaults())
+                .levels(
+                    ImmutableMap.of(
+                        "WebMercatorQuad", new ImmutableMinMax.Builder().min(0).max(23).build()))
+                .build())
+        .build();
+  }
+
+  private TileProviderFeaturesData generateTilesetsIfNecessary(TileProviderFeaturesData data) {
+    if (!data.getTilesets().isEmpty()) {
+      return data;
+    }
+
+    // TODO: from TilesProviders
+    String featureProviderId =
+        data.getTilesetDefaults()
+            .getFeatureProvider()
+            .orElse(TileProviderFeatures.clean(data.getId()));
+    FeatureProvider2 featureProvider =
+        entityRegistry
+            .getEntity(FeatureProvider2.class, featureProviderId)
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        String.format(
+                            "Feature provider with id '%s' not found.", featureProviderId)));
+
+    if (!featureProvider.supportsQueries()) {
+      throw new IllegalStateException("Feature provider has no Queries support.");
+    }
+    if (!featureProvider.supportsCrs()) {
+      throw new IllegalStateException("Feature provider has no CRS support.");
+    }
+
+    TilesetFeatures all =
+        new Builder().id("__all__").addCombine(TilesetFeatures.COMBINE_ALL).build();
+
+    Map<String, TilesetFeatures> tilesets =
+        featureProvider.getData().getTypes().values().stream()
+            .filter(featureSchema -> featureSchema.getPrimaryGeometry().isPresent())
+            .map(
+                featureSchema -> {
+                  TilesetFeatures tilesetFeatures =
+                      new Builder().id(featureSchema.getName()).build();
+
+                  return new SimpleEntry<>(featureSchema.getName(), tilesetFeatures);
+                })
+            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    if (tilesets.isEmpty()) {
+      return data;
+    }
+
+    return new ImmutableTileProviderFeaturesData.Builder()
+        .from(data)
+        .putTilesets(all.getId(), all)
+        .putAllTilesets(tilesets)
+        .build();
   }
 
   @AssistedFactory

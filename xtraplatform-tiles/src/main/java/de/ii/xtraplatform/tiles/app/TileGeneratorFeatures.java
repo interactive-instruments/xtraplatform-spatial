@@ -407,7 +407,9 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
     ImmutableFeatureQuery.Builder queryBuilder =
         ImmutableFeatureQuery.builder()
             .type(featureType)
-            .limit(layer.getFeatureLimit())
+            .limit(
+                Optional.ofNullable(layer.getFeatureLimit())
+                    .orElse(data.getTilesetDefaults().getFeatureLimit()))
             .offset(0)
             .crs(tile.getTileMatrixSet().getCrs())
             .maxAllowableOffset(getMaxAllowableOffset(tile, nativeCrs));
