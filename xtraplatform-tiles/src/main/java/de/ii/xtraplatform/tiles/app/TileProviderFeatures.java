@@ -25,7 +25,9 @@ import de.ii.xtraplatform.tiles.domain.Cache;
 import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.Cache.Type;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
+import de.ii.xtraplatform.tiles.domain.ImmutableSeedingOptions;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetMetadata;
+import de.ii.xtraplatform.tiles.domain.SeedingOptions;
 import de.ii.xtraplatform.tiles.domain.TileCache;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
 import de.ii.xtraplatform.tiles.domain.TileGenerationSchema;
@@ -320,6 +322,11 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   @Override
   public String getType() {
     return TileProviderFeaturesData.PROVIDER_TYPE;
+  }
+
+  @Override
+  public SeedingOptions getOptions() {
+    return getData().getSeeding().orElseGet(() -> new ImmutableSeedingOptions.Builder().build());
   }
 
   @Override

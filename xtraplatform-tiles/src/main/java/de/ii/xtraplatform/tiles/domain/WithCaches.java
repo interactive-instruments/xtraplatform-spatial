@@ -8,8 +8,16 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface WithCaches {
 
   List<Cache> getCaches();
+
+  /**
+   * @langEn Controls how and when tiles are precomputed, see [Seeding](#seeding).
+   * @langDe Steuert wie und wann Kacheln vorberechnet werden, siehe [Seeding](#seeding).
+   * @default {}
+   */
+  Optional<SeedingOptions> getSeeding();
 }

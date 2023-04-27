@@ -14,6 +14,9 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
 public interface TileSeeding {
+
+  SeedingOptions getOptions();
+
   void seed(
       Map<String, TileGenerationParameters> layers,
       List<MediaType> mediaTypes,

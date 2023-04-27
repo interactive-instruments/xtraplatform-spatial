@@ -31,6 +31,8 @@ import org.immutables.value.Value;
  *     <p>{@docTable:layerDefaults}
  *     <p>### Layer
  *     <p>{@docTable:layer}
+ *     <p>### Seeding
+ *     <p>{@docTable:seeding}
  * @langDe Bei diesem Tile-Provider werden die Kacheln im Format Mapbox Vector Tiles aus einem
  *     [Feature Provider](../feature/README.md) abgeleitet.
  *     <p>## Konfiguration
@@ -40,9 +42,12 @@ import org.immutables.value.Value;
  *     <p>{@docTable:layerDefaults}
  *     <p>### Layer
  *     <p>{@docTable:layer}
+ *     <p>### Seeding
+ *     <p>{@docTable:seeding}
  * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderFeaturesData}
  * @ref:layerDefaultsTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeaturesDefaults}
  * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeatures}
+ * @ref:seeding {@link de.ii.xtraplatform.tiles.domain.SeedingOptions}
  */
 @DocFile(
     path = "providers/tile",
@@ -66,6 +71,13 @@ import org.immutables.value.Value;
           name = "layer",
           rows = {
             @DocStep(type = Step.TAG_REFS, params = "{@ref:layerTable}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "seeding",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:seeding}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
