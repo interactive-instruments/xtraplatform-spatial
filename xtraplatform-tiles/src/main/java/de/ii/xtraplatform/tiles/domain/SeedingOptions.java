@@ -14,6 +14,12 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
+/**
+ * @langEn ### Seeding
+ *     <p>Controls how and when [caches](#cache) are computed.
+ * @langDe ### Seeding
+ *     <p>Steuert wie und wann [Caches](#cache) berechnet werden.
+ */
 @Value.Immutable
 @Value.Style(builder = "new")
 @JsonDeserialize(builder = ImmutableSeedingOptions.Builder.class)

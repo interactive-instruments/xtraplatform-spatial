@@ -10,6 +10,12 @@ package de.ii.xtraplatform.tiles.domain;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
+/**
+ * @langEn ### Tileset Defaults
+ *     <p>Defaults that are applied to each [Tileset](#tileset).
+ * @langDe ### Tileset Defaults
+ *     <p>Defaults die für jedes [Tileset](#tileset) angewendet werden.
+ */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTilesetHttpDefaults.Builder.class)
 public interface TilesetHttpDefaults extends TilesetCommonDefaults, WithEncodings {}

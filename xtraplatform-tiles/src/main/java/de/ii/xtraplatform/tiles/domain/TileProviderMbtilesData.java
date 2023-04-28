@@ -9,10 +9,12 @@ package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocFile;
+import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
+import de.ii.xtraplatform.docs.DocVar;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import java.util.Map;
@@ -20,33 +22,41 @@ import java.util.Objects;
 import org.immutables.value.Value;
 
 /**
- * # MbTiles
+ * # MBTiles
  *
  * @langEn With this tile provider, the tiles are provided via an [MBTiles
  *     file](https://github.com/mapbox/mbtiles-spec). The tile format and all other properties of
- *     the tileset resource are derived from the contents of the MBTiles file. Only the
- *     "WebMercatorQuad" tiling scheme is supported.
+ *     the tileset are derived from the contents of the MBTiles file. Only the `WebMercatorQuad`
+ *     tiling scheme is supported.
  *     <p>## Configuration
- *     <p>### Options
  *     <p>{@docTable:properties}
- *     <p>### Layer Defaults
- *     <p>{@docTable:layerDefaults}
- *     <p>### Layer
- *     <p>{@docTable:layer}
+ *     <p>### Tileset
+ *     <p>{@docTable:tileset}
+ *     <p>## Example
+ *     <p>{@docVar:examples}
  * @langDe Bei diesem Tile-Provider werden die Kacheln über eine
  *     [MBTiles-Datei](https://github.com/mapbox/mbtiles-spec) bereitgestellt. Das Kachelformat und
- *     alle anderen Eigenschaften der Tileset-Ressource ergeben sich aus dem Inhalt der
- *     MBTiles-Datei. Unterstützt wird nur das Kachelschema "WebMercatorQuad".
+ *     alle anderen Eigenschaften des Tileset ergeben sich aus dem Inhalt der MBTiles-Datei.
+ *     Unterstützt wird nur das Kachelschema `WebMercatorQuad`.
  *     <p>## Konfiguration
- *     <p>### Optionen
  *     <p>{@docTable:properties}
- *     <p>### Layer Defaults
- *     <p>{@docTable:layerDefaults}
- *     <p>### Layer
- *     <p>{@docTable:layer}
+ *     <p>### Tileset
+ *     <p>{@docTable:tileset}
+ *     <p>## Beispiel
+ *     <p>{@docVar:examples}
  * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderMbtilesData}
- * @ref:layerDefaultsTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetMbTilesDefaults}
- * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetMbTiles}
+ * @ref:tilesetTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetMbTiles}
+ * @examplesAll <code>
+ * ```yaml
+ * id: zoomstack-tiles
+ * providerType: TILE
+ * providerSubType: MBTILES
+ * tilesets:
+ *   __all__:
+ *     id: __all__
+ *     source: zoomstack/OS_Open_Zoomstack.mbtiles
+ * ```
+ * </code>
  */
 @DocFile(
     path = "providers/tile",
@@ -60,19 +70,20 @@ import org.immutables.value.Value;
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
       @DocTable(
-          name = "layerDefaults",
+          name = "tileset",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:layerDefaultsTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:tilesetTable}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
-      @DocTable(
-          name = "layer",
-          rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:layerTable}"),
-            @DocStep(type = Step.JSON_PROPERTIES)
-          },
-          columnSet = ColumnSet.JSON_PROPERTIES),
+    },
+    vars = {
+      @DocVar(
+          name = "examples",
+          value = {
+            // @DocStep(type = Step.TAG_REFS, params = "{@ref:cfg}"),
+            @DocStep(type = Step.TAG, params = "{@examples}")
+          }),
     })
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTileProviderMbtilesData.Builder.class)
@@ -81,7 +92,15 @@ public interface TileProviderMbtilesData extends TileProviderData {
   String PROVIDER_SUBTYPE = "MBTILES";
   String ENTITY_SUBTYPE = String.format("%s/%s", PROVIDER_TYPE, PROVIDER_SUBTYPE).toLowerCase();
 
+  /**
+   * @langEn Always `MBTILES`.
+   * @langDe Immer `MBTILES`.
+   */
+  @Override
+  String getProviderSubType();
+
   // TODO: error when using interface
+  @DocIgnore
   @Value.Default
   @Override
   default ImmutableTilesetMbTilesDefaults getTilesetDefaults() {

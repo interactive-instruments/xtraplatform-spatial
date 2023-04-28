@@ -174,7 +174,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                 new SimpleImmutableEntry<>(
                     entry.getKey(),
                     mergeCacheRanges(
-                        cache.getTmsRanges(), cache.getLayerTmsRanges().get(entry.getKey()))))
+                        cache.getTmsRanges(), cache.getTilesetTmsRanges().get(entry.getKey()))))
         .collect(MapStreams.toMap());
   }
 

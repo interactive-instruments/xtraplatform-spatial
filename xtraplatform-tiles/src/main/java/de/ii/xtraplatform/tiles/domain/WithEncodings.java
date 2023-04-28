@@ -16,6 +16,7 @@ public interface WithEncodings {
    * @langDe Unterstützte Tile-Encodings. Keys müssen eins aus `MVT`, `PNG`, `WebP` und `JPEG` sein,
    *     Werte sind als `{{fileExtension}}` in `urlTemplate` verfügbar.
    * @default {}
+   * @since v3.4
    */
   Map<String, String> getEncodings();
 }

@@ -15,6 +15,13 @@ import org.immutables.value.Value;
 
 public interface WithCenter {
 
+  /**
+   * @langEn Longitude and latitude that a map with the tiles should be centered on by default.
+   * @langDe Legt Länge und Breite fest, auf die standardmäßig eine Karte mit den Kacheln zentriert
+   *     werden sollte.
+   * @default { lon: 0.0, lat: 0.0 }
+   * @since v3.4
+   */
   Optional<LonLat> getCenter();
 
   @Value.Immutable

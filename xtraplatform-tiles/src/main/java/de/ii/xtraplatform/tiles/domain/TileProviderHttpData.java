@@ -13,6 +13,7 @@ import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
+import de.ii.xtraplatform.docs.DocVar;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import java.util.Map;
@@ -25,24 +26,45 @@ import org.immutables.value.Value;
  * @langEn With this tile provider, the tiles are obtained via HTTP, e.g. from a
  *     [TileServer-GL](https://github.com/maptiler/tileserver-gl) instance.
  *     <p>## Configuration
- *     <p>### Options
  *     <p>{@docTable:properties}
- *     <p>### Layer Defaults
- *     <p>{@docTable:layerDefaults}
- *     <p>### Layer
- *     <p>{@docTable:layer}
+ *     <p>{@docVar:tilesetDefaults}
+ *     <p>{@docTable:tilesetDefaults}
+ *     <p>{@docVar:tileset}
+ *     <p>{@docTable:tileset}
+ *     <p>## Example
+ *     <p>{@docVar:examples}
  * @langDe Bei diesem Tile-Provider werden die Kacheln über HTTP bezogen, z.B. von einer
  *     [TileServer-GL](https://github.com/maptiler/tileserver-gl) Instanz.
  *     <p>## Konfiguration
- *     <p>### Optionen
  *     <p>{@docTable:properties}
- *     <p>### Layer Defaults
- *     <p>{@docTable:layerDefaults}
- *     <p>### Layer
- *     <p>{@docTable:layer}
+ *     <p>{@docVar:tilesetDefaults}
+ *     <p>{@docTable:tilesetDefaults}
+ *     <p>{@docVar:tileset}
+ *     <p>{@docTable:tileset}
+ *     <p>## Beispiel
+ *     <p>{@docVar:examples}
  * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderHttpData}
- * @ref:layerDefaultsTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetHttpDefaults}
- * @ref:layerTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetHttp}
+ * @ref:tilesetDefaults {@link de.ii.xtraplatform.tiles.domain.TilesetHttpDefaults}
+ * @ref:tilesetDefaultsTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetHttpDefaults}
+ * @ref:tileset {@link de.ii.xtraplatform.tiles.domain.TilesetHttp}
+ * @ref:tilesetTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetHttp}
+ * @examplesAll <code>
+ * ```yaml
+ * id: earthatnight-tiles
+ * providerType: TILE
+ * providerSubType: HTTP
+ * tilesets:
+ *   __all__:
+ *     id: __all__
+ *     urlTemplate: https://demo.ldproxy.net/earthatnight/tiles/{tileMatrixSet}/{tileMatrix}/{tileRow}/{tileCol}?f={fileExtension}
+ *     levels:
+ *       WebMercatorQuad:
+ *         min: 0
+ *         max: 6
+ *     encodings:
+ *       JPEG: jpeg
+ * ```
+ * </code>
  */
 @DocFile(
     path = "providers/tile",
@@ -56,19 +78,39 @@ import org.immutables.value.Value;
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
       @DocTable(
-          name = "layerDefaults",
+          name = "tilesetDefaults",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:layerDefaultsTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:tilesetDefaultsTable}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
       @DocTable(
-          name = "layer",
+          name = "tileset",
           rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:layerTable}"),
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:tilesetTable}"),
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
+    },
+    vars = {
+      @DocVar(
+          name = "tilesetDefaults",
+          value = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:tilesetDefaults}"),
+            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
+          }),
+      @DocVar(
+          name = "tileset",
+          value = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:tileset}"),
+            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
+          }),
+      @DocVar(
+          name = "examples",
+          value = {
+            // @DocStep(type = Step.TAG_REFS, params = "{@ref:cfg}"),
+            @DocStep(type = Step.TAG, params = "{@examples}")
+          }),
     })
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTileProviderHttpData.Builder.class)
@@ -77,12 +119,30 @@ public interface TileProviderHttpData extends TileProviderData {
   String PROVIDER_SUBTYPE = "HTTP";
   String ENTITY_SUBTYPE = String.format("%s/%s", PROVIDER_TYPE, PROVIDER_SUBTYPE).toLowerCase();
 
+  /**
+   * @langEn Always `HTTP`.
+   * @langDe Immer `HTTP`.
+   */
+  @Override
+  String getProviderSubType();
+
+  /**
+   * @langEn Defaults for all `tilesets`, see [Tileset Defaults](#tileset-defaults).
+   * @langDe Defaults für alle `tilesets`, siehe [Tileset Defaults](#tileset-defaults).
+   * @since v3.4
+   */
   @Value.Default
   @Override
   default ImmutableTilesetHttpDefaults getTilesetDefaults() {
     return new ImmutableTilesetHttpDefaults.Builder().build();
   }
 
+  /**
+   * @langEn Definition of tilesets, see [Tileset](#tileset).
+   * @langDe Definition von Tilesets, see [Tileset](#tileset).
+   * @since v3.4
+   * @default {}
+   */
   @Override
   Map<String, TilesetHttp> getTilesets();
 

@@ -32,6 +32,7 @@ import org.immutables.value.Value;
  * - [HTTP](http.md): The tiles are retrieved via HTTP, e.g. from a TileServer GL instance.
  *     </code>
  *     <p>## Configuration
+ *     <p>These are common configuration options for all provider types.
  *     <p>{@docTable:cfgProperties}
  * @langDe # Tiles
  *     <p>Es werden aktuell drei Arten von Tile-Providern unterstützt:
@@ -41,6 +42,7 @@ import org.immutables.value.Value;
  * - [HTTP](http.md): Die Kacheln werden via HTTP abgerufen, z.B. von einer TileServer GL Instanz.
  *     </code>
  *     <p>## Konfiguration
+ *     <p>Dies sind gemeinsame Konfigurations-Optionen für alle Provider-Typen.
  *     <p>{@docTable:cfgProperties}
  * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderCommonData}
  */
@@ -68,12 +70,27 @@ public interface TileProviderData extends ProviderData {
   @Override
   String getProviderType();
 
+  /**
+   * @langEn `FEATURES` or `MBILES` or `HTTP`.
+   * @langDe `FEATURES` oder `MBILES` oder `HTTP`.
+   */
   @Override
   String getProviderSubType();
 
+  /**
+   * @langEn Defaults for all `tilesets`.
+   * @langDe Defaults für alle `tilesets`.
+   * @since v3.4
+   */
   @JsonAlias("layerDefaults")
   TilesetCommonDefaults getTilesetDefaults();
 
+  /**
+   * @langEn Definition of tilesets.
+   * @langDe Definition von Tilesets.
+   * @since v3.4
+   * @default {}
+   */
   @JsonAlias("layers")
   Map<String, ? extends TilesetCommon> getTilesets();
 
