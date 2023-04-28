@@ -16,6 +16,7 @@ import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
@@ -48,14 +49,17 @@ public interface TilesetFeatures
   Optional<String> getFeatureProvider();
 
   @DocIgnore
+  @Nullable
   @Override
   Integer getFeatureLimit();
 
   @DocIgnore
+  @Nullable
   @Override
   Double getMinimumSizeInPixel();
 
   @DocIgnore
+  @Nullable
   @Override
   Boolean getIgnoreInvalidGeometries();
 
