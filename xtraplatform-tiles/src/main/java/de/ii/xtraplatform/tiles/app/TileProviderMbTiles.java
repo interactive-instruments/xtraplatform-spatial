@@ -54,7 +54,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   private final Map<String, Path> layerSources;
   private final Map<String, TilesetMetadata> metadata;
   private final Map<String, Map<String, Range<Integer>>> tmsRanges;
-  private final ChainedTileProvider providerChain;
+  private ChainedTileProvider providerChain;
 
   @AssistedInject
   public TileProviderMbTiles(
@@ -75,10 +75,20 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
                   // TODO: different TMSs?
                   return new SimpleImmutableEntry<>(
                       toTilesetKey(entry.getKey(), "WebMercatorQuad"),
-                      source.isAbsolute() ? source : appContext.getDataDir().resolve(source));
+                      source.isAbsolute()
+                          ? source
+                          : source.startsWith("api-resources")
+                              ? appContext.getDataDir().resolve(source)
+                              : appContext
+                                  .getDataDir()
+                                  .resolve("api-resources/tiles")
+                                  .resolve(source));
                 })
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+  }
 
+  @Override
+  protected boolean onStartup() throws InterruptedException {
     TileStoreReadOnly tileStore = TileStoreMbTiles.readOnly(layerSources);
 
     this.providerChain =
@@ -93,10 +103,6 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
             return tileStore.get(tile);
           }
         };
-  }
-
-  @Override
-  protected boolean onStartup() throws InterruptedException {
     loadMetadata();
 
     return true;

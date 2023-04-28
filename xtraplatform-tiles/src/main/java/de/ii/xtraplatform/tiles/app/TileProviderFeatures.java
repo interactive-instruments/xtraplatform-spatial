@@ -372,7 +372,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
         .filter(
             entry -> {
               if (!getData().getTilesets().containsKey(entry.getKey())) {
-                LOGGER.warn("Layer with name '{}' not found", entry.getKey());
+                LOGGER.warn("Tileset with name '{}' not found", entry.getKey());
                 return false;
               }
               return true;

@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.docs.DocStep;
@@ -17,6 +18,8 @@ import de.ii.xtraplatform.store.domain.entities.AutoEntity;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
+import de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeatures.Builder;
+import java.util.Map;
 import java.util.Objects;
 import org.immutables.value.Value;
 
@@ -173,5 +176,8 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
           .providerType(EntityDataDefaults.PLACEHOLDER)
           .providerSubType(EntityDataDefaults.PLACEHOLDER);
     }
+
+    @JsonAlias("layers")
+    public abstract Map<String, ImmutableTilesetFeatures.Builder> getTilesets();
   }
 }
