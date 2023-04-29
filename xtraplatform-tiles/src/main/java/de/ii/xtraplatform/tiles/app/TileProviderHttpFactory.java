@@ -15,7 +15,9 @@ import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityFactory;
 import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
+import de.ii.xtraplatform.tiles.domain.ImmutableMinMax;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileProviderHttpData;
+import de.ii.xtraplatform.tiles.domain.ImmutableTilesetHttpDefaults;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TileProviderHttpData;
 import java.util.Optional;
@@ -53,7 +55,11 @@ public class TileProviderHttpFactory
 
   @Override
   public EntityDataBuilder<TileProviderData> dataBuilder() {
-    return new ImmutableTileProviderHttpData.Builder();
+    return new ImmutableTileProviderHttpData.Builder()
+        .tilesetDefaultsBuilder(
+            new ImmutableTilesetHttpDefaults.Builder()
+                .putLevels(
+                    "WebMercatorQuad", new ImmutableMinMax.Builder().min(0).max(23).build()));
   }
 
   @Override

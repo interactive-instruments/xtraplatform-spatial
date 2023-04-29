@@ -307,5 +307,9 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
 
     @JsonAlias("layers")
     public abstract Map<String, ImmutableTilesetFeatures.Builder> getTilesets();
+
+    @JsonAlias("layerDefaults")
+    public abstract ImmutableTileProviderFeaturesData.Builder tilesetDefaultsBuilder(
+        ImmutableTilesetFeaturesDefaults.Builder tilesetDefaults);
   }
 }

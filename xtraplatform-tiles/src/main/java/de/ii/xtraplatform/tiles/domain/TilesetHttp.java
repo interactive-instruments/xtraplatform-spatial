@@ -9,8 +9,9 @@ package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocIgnore;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
-import de.ii.xtraplatform.tiles.domain.ImmutableMinMax.Builder;
 import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -25,11 +26,11 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTilesetHttp.Builder.class)
-public interface TilesetHttp extends TilesetCommon, TilesetHttpDefaults {
+public interface TilesetHttp extends TilesetCommon, WithEncodings, Buildable<TilesetHttp> {
 
   @DocIgnore
   @Override
-  BuildableMap<MinMax, Builder> getLevels();
+  BuildableMap<MinMax, ImmutableMinMax.Builder> getLevels();
 
   @DocIgnore
   @Override
@@ -47,4 +48,11 @@ public interface TilesetHttp extends TilesetCommon, TilesetHttpDefaults {
    * @since v3.4
    */
   String getUrlTemplate();
+
+  @Override
+  default ImmutableTilesetHttp.Builder getBuilder() {
+    return new ImmutableTilesetHttp.Builder().from(this);
+  }
+
+  abstract class Builder implements BuildableBuilder<TilesetHttp> {}
 }

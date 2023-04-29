@@ -8,6 +8,9 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import org.immutables.value.Value;
 
 /**
@@ -19,4 +22,17 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTilesetFeaturesDefaults.Builder.class)
 public interface TilesetFeaturesDefaults
-    extends TilesetCommonDefaults, TileGenerationOptions, WithFeatureProvider {}
+    extends TilesetCommonDefaults,
+        TileGenerationOptions,
+        WithFeatureProvider,
+        Buildable<TilesetFeaturesDefaults> {
+  @Override
+  BuildableMap<MinMax, ImmutableMinMax.Builder> getLevels();
+
+  @Override
+  default ImmutableTilesetFeaturesDefaults.Builder getBuilder() {
+    return new ImmutableTilesetFeaturesDefaults.Builder().from(this);
+  }
+
+  abstract class Builder implements BuildableBuilder<TilesetFeaturesDefaults> {}
+}

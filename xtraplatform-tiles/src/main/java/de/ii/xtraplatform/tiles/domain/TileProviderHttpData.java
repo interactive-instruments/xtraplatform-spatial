@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.docs.DocStep;
@@ -16,6 +17,7 @@ import de.ii.xtraplatform.docs.DocTable.ColumnSet;
 import de.ii.xtraplatform.docs.DocVar;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
+import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import java.util.Map;
 import java.util.Objects;
 import org.immutables.value.Value;
@@ -56,7 +58,7 @@ import org.immutables.value.Value;
  * tilesets:
  *   __all__:
  *     id: __all__
- *     urlTemplate: https://demo.ldproxy.net/earthatnight/tiles/{tileMatrixSet}/{tileMatrix}/{tileRow}/{tileCol}?f={fileExtension}
+ *     urlTemplate: https://demo.ldproxy.net/earthatnight/tiles/{{tileMatrixSet}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f={{fileExtension}}
  *     levels:
  *       WebMercatorQuad:
  *         min: 0
@@ -131,11 +133,8 @@ public interface TileProviderHttpData extends TileProviderData {
    * @langDe Defaults für alle `tilesets`, siehe [Tileset Defaults](#tileset-defaults).
    * @since v3.4
    */
-  @Value.Default
   @Override
-  default ImmutableTilesetHttpDefaults getTilesetDefaults() {
-    return new ImmutableTilesetHttpDefaults.Builder().build();
-  }
+  TilesetHttpDefaults getTilesetDefaults();
 
   /**
    * @langEn Definition of tilesets, see [Tileset](#tileset).
@@ -144,7 +143,7 @@ public interface TileProviderHttpData extends TileProviderData {
    * @default {}
    */
   @Override
-  Map<String, TilesetHttp> getTilesets();
+  BuildableMap<TilesetHttp, ImmutableTilesetHttp.Builder> getTilesets();
 
   @Override
   default TileProviderData mergeInto(TileProviderData source) {
@@ -179,5 +178,12 @@ public interface TileProviderHttpData extends TileProviderData {
           .providerType(EntityDataDefaults.PLACEHOLDER)
           .providerSubType(EntityDataDefaults.PLACEHOLDER);
     }
+
+    @JsonAlias("layers")
+    public abstract Map<String, ImmutableTilesetHttp.Builder> getTilesets();
+
+    @JsonAlias("layerDefaults")
+    public abstract ImmutableTileProviderHttpData.Builder tilesetDefaultsBuilder(
+        ImmutableTilesetHttpDefaults.Builder tilesetDefaults);
   }
 }
