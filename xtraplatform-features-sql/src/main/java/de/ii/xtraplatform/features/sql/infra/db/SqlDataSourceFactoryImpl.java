@@ -12,8 +12,9 @@ import com.google.common.base.Strings;
 import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.spatialite.domain.SpatiaLiteLoader;
+import de.ii.xtraplatform.store.domain.BlobStore;
+import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,14 +31,17 @@ import org.sqlite.SQLiteDataSource;
 public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
 
   private final Path dataDir;
+  private final BlobStore featuresStore;
   private final String applicationName;
   private final SpatiaLiteLoader spatiaLiteLoader;
 
   private boolean spatiaLiteInitialized;
 
   @Inject
-  public SqlDataSourceFactoryImpl(AppContext appContext, SpatiaLiteLoader spatiaLiteLoader) {
+  public SqlDataSourceFactoryImpl(
+      AppContext appContext, BlobStore blobStore, SpatiaLiteLoader spatiaLiteLoader) {
     this.dataDir = appContext.getDataDir();
+    this.featuresStore = blobStore.with("features");
     this.applicationName =
         String.format("%s %s - %%s", appContext.getName(), appContext.getVersion());
     this.spatiaLiteLoader = spatiaLiteLoader;
@@ -139,13 +143,25 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
   }
 
   private DataSource createGpkg(String providerId, ConnectionInfoSql connectionInfo) {
-    Path path =
-        Paths.get(connectionInfo.getDatabase()).isAbsolute()
-            ? Paths.get(connectionInfo.getDatabase())
-            : dataDir.resolve(connectionInfo.getDatabase());
+    Path source = Path.of(connectionInfo.getDatabase());
 
-    if (!path.toFile().exists()) {
-      throw new IllegalArgumentException("GPKG database does not exist: " + path);
+    if (!source.isAbsolute()) {
+      if (source.startsWith("api-resources/features")) {
+        source = Path.of("api-resources/features").relativize(source);
+      }
+      Optional<Path> localPath = Optional.empty();
+      try {
+        localPath = featuresStore.asLocalPath(source, false);
+      } catch (IOException e) {
+        // continue
+      }
+      if (localPath.isPresent()) {
+        source = localPath.get();
+      } else if (dataDir.resolve(connectionInfo.getDatabase()).toFile().exists()) {
+        source = dataDir.resolve(connectionInfo.getDatabase());
+      } else {
+        throw new IllegalStateException("GPKG database not found: " + source);
+      }
     }
 
     if (!spatiaLiteInitialized) {
@@ -174,7 +190,7 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
         };
 
     ds.setLoadExtension(true);
-    ds.setUrl(String.format("jdbc:sqlite:%s", path));
+    ds.setUrl(String.format("jdbc:sqlite:%s", source));
 
     return ds;
   }
