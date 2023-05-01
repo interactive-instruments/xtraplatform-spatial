@@ -66,7 +66,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     implements TileProvider, TileSeeding {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderFeatures.class);
-  private static final String TILES_DIR_NAME = "tiles";
+  static final String TILES_DIR_NAME = "tiles";
 
   private final TileGeneratorFeatures tileGenerator;
   private final TileEncoders tileEncoders;

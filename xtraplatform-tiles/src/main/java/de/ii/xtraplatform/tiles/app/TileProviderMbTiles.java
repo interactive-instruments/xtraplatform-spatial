@@ -11,11 +11,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
-import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.ImmutableMinMax;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetMetadata;
@@ -51,28 +51,50 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
     implements TileProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderMbTiles.class);
+  private final BlobStore tilesStore;
   private final TileMatrixSetRepository tileMatrixSetRepository;
-  private final Map<String, Path> tilesetSources;
   private final Map<String, TilesetMetadata> metadata;
   private final Map<String, Map<String, Range<Integer>>> tmsRanges;
   private ChainedTileProvider providerChain;
 
   @AssistedInject
   public TileProviderMbTiles(
-      AppContext appContext,
+      BlobStore blobStore,
       TileMatrixSetRepository tileMatrixSetRepository,
       @Assisted TileProviderMbtilesData data) {
     super(data);
 
+    this.tilesStore = blobStore.with(TileProviderFeatures.TILES_DIR_NAME);
     this.tileMatrixSetRepository = tileMatrixSetRepository;
     this.metadata = new LinkedHashMap<>();
     this.tmsRanges = new LinkedHashMap<>();
-    this.tilesetSources =
-        // we know there is exactly one tileset and one tile matrix set
+  }
+
+  @Override
+  protected boolean onStartup() throws InterruptedException {
+    // we know there is exactly one tileset and one tile matrix set
+    Map<String, Path> tilesetSources =
         data.getTilesets().entrySet().stream()
             .map(
                 entry -> {
                   Path source = Path.of(entry.getValue().getSource());
+
+                  if (!source.isAbsolute()) {
+                    if (source.startsWith("api-resources/tiles")) {
+                      source = Path.of("api-resources/tiles").relativize(source);
+                    }
+                    Optional<Path> localPath = Optional.empty();
+                    try {
+                      localPath = tilesStore.asLocalPath(source, false);
+                    } catch (IOException e) {
+                      // continue
+                    }
+                    if (localPath.isEmpty()) {
+                      throw new IllegalStateException(
+                          "Could not locate MBTiles file. Make sure you have a localizable source defined in cfg.yml.");
+                    }
+                    source = localPath.get();
+                  }
 
                   Set<String> tmsSet = entry.getValue().getLevels().keySet();
                   if (tmsSet.isEmpty()) {
@@ -81,21 +103,10 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
                   String tms = tmsSet.isEmpty() ? "WebMercatorQuad" : tmsSet.iterator().next();
 
                   return new SimpleImmutableEntry<>(
-                      toTilesetKey(entry.getKey(), tms),
-                      source.isAbsolute()
-                          ? source
-                          : source.startsWith("api-resources")
-                              ? appContext.getDataDir().resolve(source)
-                              : appContext
-                                  .getDataDir()
-                                  .resolve("api-resources/tiles")
-                                  .resolve(source));
+                      toTilesetKey(entry.getKey(), tms), source);
                 })
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-  }
 
-  @Override
-  protected boolean onStartup() throws InterruptedException {
     TileStoreReadOnly tileStore = TileStoreMbTiles.readOnly(tilesetSources);
 
     this.providerChain =
@@ -110,7 +121,8 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
             return tileStore.get(tile);
           }
         };
-    loadMetadata();
+
+    loadMetadata(tilesetSources);
 
     return true;
   }
@@ -141,7 +153,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
     return TileProviderMbtilesData.PROVIDER_TYPE;
   }
 
-  private void loadMetadata() {
+  private void loadMetadata(Map<String, Path> layerSources) {
     tilesetSources.forEach(
         (key, path) -> {
           Tuple<String, String> tilesetKey = toTuple(key);
