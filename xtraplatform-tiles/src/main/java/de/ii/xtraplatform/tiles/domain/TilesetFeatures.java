@@ -15,6 +15,7 @@ import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
@@ -112,4 +113,34 @@ public interface TilesetFeatures
   }
 
   abstract class Builder implements BuildableBuilder<TilesetFeatures> {}
+
+  default TilesetFeatures mergeDefaults(TilesetFeaturesDefaults defaults) {
+    ImmutableTilesetFeatures.Builder withDefaults = getBuilder();
+
+    if (this.getFeatureProvider().isEmpty() && defaults.getFeatureProvider().isPresent()) {
+      withDefaults.featureProvider(defaults.getFeatureProvider());
+    }
+    if (this.getLevels().isEmpty()) {
+      withDefaults.levels(defaults.getLevels());
+    }
+    if (this.getCenter().isEmpty() && defaults.getCenter().isPresent()) {
+      withDefaults.center(defaults.getCenter());
+    }
+    if (this.getTransformations().isEmpty()) {
+      withDefaults.transformations(defaults.getTransformations());
+    }
+    if (Objects.isNull(this.getFeatureLimit()) && Objects.nonNull(defaults.getFeatureLimit())) {
+      withDefaults.featureLimit(defaults.getFeatureLimit());
+    }
+    if (Objects.isNull(this.getMinimumSizeInPixel())
+        && Objects.nonNull(defaults.getMinimumSizeInPixel())) {
+      withDefaults.minimumSizeInPixel(defaults.getMinimumSizeInPixel());
+    }
+    if (Objects.isNull(this.getIgnoreInvalidGeometries())
+        && Objects.nonNull(defaults.getIgnoreInvalidGeometries())) {
+      withDefaults.ignoreInvalidGeometries(defaults.getIgnoreInvalidGeometries());
+    }
+
+    return withDefaults.build();
+  }
 }

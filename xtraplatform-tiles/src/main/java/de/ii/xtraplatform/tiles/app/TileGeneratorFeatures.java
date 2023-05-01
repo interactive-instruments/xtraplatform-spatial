@@ -42,7 +42,6 @@ import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileGenerationContext;
-import de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeatures;
 import de.ii.xtraplatform.tiles.domain.LevelTransformation;
 import de.ii.xtraplatform.tiles.domain.TileCoordinates;
 import de.ii.xtraplatform.tiles.domain.TileGenerationContext;
@@ -54,7 +53,6 @@ import de.ii.xtraplatform.tiles.domain.TileProviderFeaturesData;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
-import de.ii.xtraplatform.tiles.domain.TilesetFeaturesDefaults;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -136,19 +134,19 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
 
     FeatureStream tileSource = getTileSource(tileQuery);
 
+    TilesetFeatures layer =
+        data.getTilesets().get(tileQuery.getTileset()).mergeDefaults(data.getTilesetDefaults());
+
     TileGenerationContext tileGenerationContext =
         new ImmutableTileGenerationContext.Builder()
-            .parameters(data.getTilesetDefaults())
+            .parameters(layer)
             .coordinates(tileQuery)
             .collectionId(tileQuery.getTileset())
-            // .fields
-            // .limit(query.getLimit())
             .build();
 
     FeatureTokenEncoder<?> encoder =
         ENCODERS.get(tileQuery.getMediaType()).apply(tileGenerationContext);
 
-    TilesetFeatures layer = data.getTilesets().get(tileQuery.getTileset());
     String featureType = layer.getFeatureType().orElse(layer.getId());
     PropertyTransformations propertyTransformations =
         tileQuery
@@ -165,7 +163,8 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
 
   @Override
   public FeatureStream getTileSource(TileQuery tileQuery) {
-    TilesetFeatures layer = getEffectiveTileset(tileQuery);
+    TilesetFeatures layer =
+        data.getTilesets().get(tileQuery.getTileset()).mergeDefaults(data.getTilesetDefaults());
 
     String featureProviderId =
         layer.getFeatureProvider().orElse(TileProviderFeatures.clean(data.getId()));
@@ -197,39 +196,6 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
             tileQuery.getGenerationParametersTransient());
 
     return featureProvider.queries().getFeatureStream(featureQuery);
-  }
-
-  private TilesetFeatures getEffectiveTileset(TileQuery tileQuery) {
-    TilesetFeatures layer = data.getTilesets().get(tileQuery.getTileset());
-
-    // merge defaults into tileset
-    TilesetFeaturesDefaults defaults = data.getTilesetDefaults();
-    ImmutableTilesetFeatures.Builder withDefaults =
-        new ImmutableTilesetFeatures.Builder().from(layer);
-    if (layer.getFeatureProvider().isEmpty() && defaults.getFeatureProvider().isPresent()) {
-      withDefaults.featureProvider(defaults.getFeatureProvider());
-    }
-    if (layer.getLevels().isEmpty()) {
-      withDefaults.levels(defaults.getLevels());
-    }
-    if (layer.getCenter().isEmpty() && defaults.getCenter().isPresent()) {
-      withDefaults.center(defaults.getCenter());
-    }
-    if (layer.getTransformations().isEmpty()) {
-      withDefaults.transformations(defaults.getTransformations());
-    }
-    if (Objects.isNull(layer.getFeatureLimit()) && Objects.nonNull(defaults.getFeatureLimit())) {
-      withDefaults.featureLimit(defaults.getFeatureLimit());
-    }
-    if (Objects.isNull(layer.getMinimumSizeInPixel())
-        && Objects.nonNull(defaults.getMinimumSizeInPixel())) {
-      withDefaults.minimumSizeInPixel(defaults.getMinimumSizeInPixel());
-    }
-    if (Objects.isNull(layer.getIgnoreInvalidGeometries())
-        && Objects.nonNull(defaults.getIgnoreInvalidGeometries())) {
-      withDefaults.ignoreInvalidGeometries(defaults.getIgnoreInvalidGeometries());
-    }
-    return withDefaults.build();
   }
 
   private Optional<BoundingBox> getBounds(TileQuery tileQuery) {
