@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.Preconditions;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.tiles.domain.WithCenter.LonLat;
@@ -44,5 +45,17 @@ public interface TilesetMetadata extends WithTmsLevels {
   @Value.Derived
   default boolean isVector() {
     return getEncodings().contains("MVT");
+  }
+
+  @Value.Check
+  default void checkTileset() {
+    Preconditions.checkState(
+        !getTileMatrixSets().isEmpty(),
+        "There is no tileset, because no tile matrix set has been configured. Found: %s",
+        this.toString());
+    Preconditions.checkState(
+        !getEncodings().isEmpty(),
+        "There is no tileset, because no tile encoding has been configured. Found: %s",
+        this.toString());
   }
 }
