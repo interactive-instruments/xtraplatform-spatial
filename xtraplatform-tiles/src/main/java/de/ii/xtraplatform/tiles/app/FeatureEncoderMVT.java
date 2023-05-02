@@ -41,7 +41,7 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
   private final TileCoordinates tile;
   private final VectorTileEncoder tileEncoder;
   private final AffineTransformation affineTransformation;
-  private final String layerName;
+  private final String tileset;
   private final PrecisionModel tilePrecisionModel;
   private final GeometryFactory geometryFactoryTile;
   private final GeometryFactory geometryFactoryWorld;
@@ -53,14 +53,13 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
   private long featureCount = 0;
   private boolean full = true;
 
-  // TODO: TilesConfiguration not available in xtraplatform, but new TileProviderData
   public FeatureEncoderMVT(TileGenerationContext encodingContext) {
     super(encodingContext);
     this.parameters = encodingContext.getParameters();
     this.tile = encodingContext.getCoordinates();
     this.tileEncoder = new VectorTileEncoder(tile.getTileMatrixSet().getTileExtent());
     this.affineTransformation = createTransformNativeToTile();
-    this.layerName = Objects.requireNonNullElse(collectionId, "layer");
+    this.tileset = encodingContext.getTileset();
     this.tilePrecisionModel =
         new PrecisionModel(
             (double) tile.getTileMatrixSet().getTileExtent()
@@ -98,8 +97,8 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
   public void onStart(ModifiableContext context) {
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(
-          "Start generating tile for collection {}, tile {}/{}/{}/{}.",
-          collectionId,
+          "Start generating tile for tileset {}, tile {}/{}/{}/{}.",
+          tileset,
           tile.getTileMatrixSet().getId(),
           tile.getLevel(),
           tile.getRow(),
@@ -148,9 +147,9 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
       // Geometry is invalid -> log this information and skip it, if that option is used
       if (!tileGeometry.isValid()) {
         LOGGER.warn(
-            "Feature {} in collection {} has an invalid tile geometry in tile {}/{}/{}/{}. Size in pixels: {}.",
+            "Feature {} in tileset {} has an invalid tile geometry in tile {}/{}/{}/{}. Size in pixels: {}.",
             feature.getIdValue(),
-            collectionId,
+            tileset,
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
@@ -173,21 +172,21 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
 
       // Add the feature with the layer name, a Map with attributes and the JTS Geometry.
       if (Objects.nonNull(id)) {
-        tileEncoder.addFeature(layerName, feature.getPropertiesAsMap(), tileGeometry, id);
+        tileEncoder.addFeature(tileset, feature.getPropertiesAsMap(), tileGeometry, id);
       } else {
-        tileEncoder.addFeature(layerName, feature.getPropertiesAsMap(), tileGeometry);
+        tileEncoder.addFeature(tileset, feature.getPropertiesAsMap(), tileGeometry);
       }
       written++;
 
     } catch (Exception e) {
       LOGGER.error(
-          "Error while processing feature {} in tile {}/{}/{}/{} in collection {}. The feature is skipped.",
+          "Error while processing feature {} in tile {}/{}/{}/{} in tileset {}. The feature is skipped.",
           feature.getIdValue(),
           tile.getTileMatrixSet().getId(),
           tile.getLevel(),
           tile.getRow(),
           tile.getCol(),
-          collectionId);
+          tileset);
       if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
         LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace:", e);
       }
@@ -207,8 +206,8 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
               geometryFactoryTile,
               tilePrecisionModel,
               String.format(
-                  "Collection %s, tile %s/%d/%d/%d",
-                  collectionId,
+                  "Tileset %s, tile %s/%d/%d/%d",
+                  tileset,
                   tile.getTileMatrixSet().getId(),
                   tile.getLevel(),
                   tile.getRow(),
@@ -221,8 +220,8 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
                 // Geometry is invalid? -> log this information and skip it, if that option is used
                 if (!geom.isValid()) {
                   LOGGER.warn(
-                      "A merged feature in collection {} has an invalid tile geometry in tile {}/{}/{}/{}. Properties: {}",
-                      collectionId,
+                      "A merged feature in tileset {} has an invalid tile geometry in tile {}/{}/{}/{}. Properties: {}",
+                      tileset,
                       tile.getTileMatrixSet().getId(),
                       tile.getLevel(),
                       tile.getRow(),
@@ -230,7 +229,7 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
                       mergedFeature.getProperties());
                   if (parameters.getIgnoreInvalidGeometries()) return;
                 }
-                tileEncoder.addFeature(layerName, mergedFeature.getProperties(), geom);
+                tileEncoder.addFeature(tileset, mergedFeature.getProperties(), geom);
                 written++;
               });
     }
@@ -245,8 +244,8 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
       // TODO header/trailer/field "OATiles-hint: empty", also include info in tile cache
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace(
-            "Collection {}, tile {}/{}/{}/{} is empty.",
-            collectionId,
+            "Tileset {}, tile {}/{}/{}/{} is empty.",
+            tileset,
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
@@ -256,8 +255,8 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
       // TODO header/trailer/field "OATiles-hint: full", also include info in tile cache
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace(
-            "Collection {}, tile {}/{}/{}/{} is full.",
-            collectionId,
+            "Tileset {}, tile {}/{}/{}/{} is full.",
+            tileset,
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
@@ -272,8 +271,8 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
       int kiloBytes = mvt.length / 1024;
       String text =
           String.format(
-              "Collection %s, tile %s/%d/%d/%d written. Features returned: %d, written: %d, total duration: %dms, processing: %dms, feature processing: %dms, merging: %dms, encoding: %dms, size: %dkB.",
-              collectionId,
+              "Tileset %s, tile %s/%d/%d/%d written. Features returned: %d, written: %d, total duration: %dms, processing: %dms, feature processing: %dms, merging: %dms, encoding: %dms, size: %dkB.",
+              tileset,
               tile.getTileMatrixSet().getId(),
               tile.getLevel(),
               tile.getRow(),

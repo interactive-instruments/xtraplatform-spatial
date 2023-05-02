@@ -140,7 +140,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
         new ImmutableTileGenerationContext.Builder()
             .parameters(tileset)
             .coordinates(tileQuery)
-            .collectionId(tileQuery.getTileset())
+            .tileset(tileQuery.getTileset())
             .build();
 
     FeatureTokenEncoder<?> encoder =

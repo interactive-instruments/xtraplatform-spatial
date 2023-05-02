@@ -14,7 +14,6 @@ import java.util.List;
 public abstract class FeatureEncoderSfFlat
     extends FeatureObjectEncoder<PropertySfFlat, FeatureSfFlat> {
 
-  protected final String collectionId;
   protected final List<String> properties;
   protected final boolean allProperties;
   protected final long transformerStart;
@@ -23,7 +22,6 @@ public abstract class FeatureEncoderSfFlat
   protected long written = 0;
 
   protected FeatureEncoderSfFlat(EncodingContextSfFlat encodingContext) {
-    this.collectionId = encodingContext.getCollectionId();
     this.properties =
         encodingContext.getFields().values().stream().findFirst().orElse(ImmutableList.of("*"));
     this.allProperties = properties.contains("*");
