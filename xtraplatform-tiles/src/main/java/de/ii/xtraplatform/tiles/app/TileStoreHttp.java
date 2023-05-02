@@ -115,6 +115,7 @@ public class TileStoreHttp implements TileStoreReadOnly {
                 String.valueOf(tile.getCol()),
                 "fileExtension",
                 EXTENSIONS.get(tile.getMediaType()))
-            ::get);
+            ::get,
+        true);
   }
 }

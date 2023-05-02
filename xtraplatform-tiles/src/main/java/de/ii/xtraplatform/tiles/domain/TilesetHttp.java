@@ -42,9 +42,10 @@ public interface TilesetHttp extends TilesetCommon, WithEncodings, Buildable<Til
 
   /**
    * @langEn URL template for accessing tiles. Parameters to use are `{{tileMatrix}}`,
-   *     `{{tileRow}}`, `{{tileCol}}` and `{{fileExtension}}`.
+   *     `{{tileRow}}`, `{{tileCol}}` and `{{fileExtension}}`. Single curly braces are also allowed.
    * @langDe URL-Template für den Zugriff auf Kacheln. Zu verwenden sind die Parameter
-   *     `{{tileMatrix}}`, `{{tileRow}}`, `{{tileCol}}` und `{{fileExtension}}`.
+   *     `{{tileMatrix}}`, `{{tileRow}}`, `{{tileCol}}` und `{{fileExtension}}`. Einfache
+   *     geschweifte Klammern sind auch erlaubt.
    * @since v3.4
    */
   String getUrlTemplate();
