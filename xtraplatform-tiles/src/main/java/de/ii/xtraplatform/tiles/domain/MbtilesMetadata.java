@@ -79,5 +79,6 @@ public abstract class MbtilesMetadata {
 
   public abstract List<VectorLayer> getVectorLayers();
 
-  // TODO add tilestats
+  // TODO support tilestats
+  //      see https://github.com/mapbox/mbtiles-spec/blob/master/1.3/spec.md#tilestats
 }

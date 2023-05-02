@@ -25,7 +25,7 @@ import org.immutables.value.Value;
  *     <p>All options from [Tileset Defaults](#tileset-defaults) are also available and can be
  *     overriden here.
  * @langDe ### Tileset
- *     <p>Alle Optionen aus [Tileset Defaults](#tileset-defaults) sind ebenfalls verfübgar und
+ *     <p>Alle Optionen aus [Tileset Defaults](#tileset-defaults) sind ebenfalls verfügbar und
  *     können hier überschrieben werden.
  */
 @Value.Immutable
@@ -105,7 +105,7 @@ public interface TilesetFeatures
     return !getCombine().isEmpty();
   }
 
-  // TODO: check
+  // TODO: check (???)
 
   @Override
   default ImmutableTilesetFeatures.Builder getBuilder() {

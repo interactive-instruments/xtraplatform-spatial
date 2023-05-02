@@ -51,7 +51,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableCache.Builder.class)
-public interface Cache extends WithTmsLevels, WithLayerTmsLevels {
+public interface Cache extends WithTmsLevels, WithTilesetTmsLevels {
   enum Type {
     DYNAMIC,
     IMMUTABLE;

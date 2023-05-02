@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Preconditions;
 import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.tiles.domain.ImmutableMinMax.Builder;
@@ -33,4 +34,12 @@ public interface TilesetMbTiles extends TilesetCommon {
    * @since v3.4
    */
   String getSource();
+
+  @Value.Check
+  default void checkSingleTileMatrixSet() {
+    Preconditions.checkState(
+        getLevels().size() <= 1,
+        "There must be no more than one tile matrix set associated with an MBTiles file. Found: %s.",
+        getLevels().size());
+  }
 }

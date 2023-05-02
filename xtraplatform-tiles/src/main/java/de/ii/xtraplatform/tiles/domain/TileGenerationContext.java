@@ -17,5 +17,5 @@ public interface TileGenerationContext extends EncodingContextSfFlat {
 
   TileGenerationOptions getParameters();
 
-  // String getCollectionId(); // TODO: layer
+  // String getCollectionId(); // TODO: layer (!!!)
 }

@@ -64,7 +64,7 @@ public class TileCacheImmutable implements ChainedTileProvider, TileCache {
 
   @Override
   public void seed(
-      Map<String, TileGenerationParameters> layers,
+      Map<String, TileGenerationParameters> tilesets,
       List<MediaType> mediaTypes,
       boolean reseed,
       String tileSourceLabel,
@@ -74,7 +74,7 @@ public class TileCacheImmutable implements ChainedTileProvider, TileCache {
     tileStore.staging().init();
 
     doSeed(
-        layers,
+        tilesets,
         mediaTypes,
         reseed,
         tileSourceLabel,

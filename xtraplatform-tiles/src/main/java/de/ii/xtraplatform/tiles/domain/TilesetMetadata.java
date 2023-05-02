@@ -33,8 +33,6 @@ public interface TilesetMetadata extends WithTmsLevels {
 
   List<FeatureSchema> getVectorSchemas();
 
-  // Map<String, Set<VectorLayer>> getVectorLayers();
-
   @JsonIgnore
   @Value.Derived
   default Set<String> getTileMatrixSets() {

@@ -25,19 +25,6 @@ public interface TileProviderCommonData extends TileProviderData {
     ImmutableTileProviderCommonData.Builder builder =
         new ImmutableTileProviderCommonData.Builder().from(src).from(this);
 
-    /*List<String> tileEncodings =
-        Objects.nonNull(src.getTileEncodings())
-            ? Lists.newArrayList(src.getTileEncodings())
-            : Lists.newArrayList();
-    getTileEncodings()
-        .forEach(
-            tileEncoding -> {
-              if (!tileEncodings.contains(tileEncoding)) {
-                tileEncodings.add(tileEncoding);
-              }
-            });
-    builder.tileEncodings(tileEncodings);*/
-
     return builder.build();
   }
 

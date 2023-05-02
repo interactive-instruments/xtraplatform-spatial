@@ -154,18 +154,8 @@ public interface TileProviderHttpData extends TileProviderData {
     ImmutableTileProviderHttpData.Builder builder =
         new ImmutableTileProviderHttpData.Builder().from(src).from(this);
 
-    /*List<String> tileEncodings =
-        Objects.nonNull(src.getTileEncodings())
-            ? Lists.newArrayList(src.getTileEncodings())
-            : Lists.newArrayList();
-    getTileEncodings()
-        .forEach(
-            tileEncoding -> {
-              if (!tileEncodings.contains(tileEncoding)) {
-                tileEncodings.add(tileEncoding);
-              }
-            });
-    builder.tileEncodings(tileEncodings);*/
+    // TODO Is merging tile provider data relevant or can we leave this as it is?
+    //      If it is relevant, how should the options be merged? (???)
 
     return builder.build();
   }

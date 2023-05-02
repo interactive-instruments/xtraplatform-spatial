@@ -23,13 +23,13 @@ public interface TileProvider extends PersistentEntity {
 
   TileResult getTile(TileQuery tileQuery);
 
-  // TODO: TileRange?
+  // TODO: TileRange? (???)
   default void deleteFromCache(
-      String layer, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits) {}
+      String tileset, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits) {}
 
   Optional<TilesetMetadata> metadata(String tileset);
 
-  // TODO: generation? source? dynamic?
+  // TODO: generation? source? dynamic? (???)
   default boolean supportsGeneration() {
     return this instanceof TileGenerator;
   }

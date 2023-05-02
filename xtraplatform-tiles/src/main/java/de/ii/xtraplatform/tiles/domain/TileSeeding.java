@@ -18,7 +18,7 @@ public interface TileSeeding {
   SeedingOptions getOptions();
 
   void seed(
-      Map<String, TileGenerationParameters> layers,
+      Map<String, TileGenerationParameters> tilesets,
       List<MediaType> mediaTypes,
       boolean reseed,
       TaskContext taskContext)

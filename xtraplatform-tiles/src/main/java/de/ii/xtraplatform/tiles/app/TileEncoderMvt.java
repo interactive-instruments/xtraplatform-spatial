@@ -25,8 +25,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.ecc.vectortile.VectorTileDecoder;
 import no.ecc.vectortile.VectorTileEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TileEncoderMvt implements TileEncoder {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(TileEncoderMvt.class);
 
   public TileEncoderMvt() {}
 
@@ -39,23 +43,31 @@ public class TileEncoderMvt implements TileEncoder {
   public byte[] combine(
       TileQuery tile, TileProviderFeaturesData data, ChainedTileProvider tileProvider)
       throws IOException {
-    TilesetFeatures combinedLayer = data.getTilesets().get(tile.getTileset());
-    List<String> subLayers =
-        getSubLayers(data, combinedLayer, tile.getGenerationParametersTransient());
+    TilesetFeatures combinedTileset = data.getTilesets().get(tile.getTileset());
+    List<String> tilesets =
+        getLayerTilesets(data, combinedTileset, tile.getGenerationParametersTransient());
     VectorTileEncoder encoder = new VectorTileEncoder(tile.getTileMatrixSet().getTileExtent());
     VectorTileDecoder decoder = new VectorTileDecoder();
 
-    for (String subLayer : subLayers) {
-      TileQuery tileQuery = ImmutableTileQuery.builder().from(tile).tileset(subLayer).build();
-      TileResult subTile = tileProvider.get(tileQuery);
+    for (String tileset : tilesets) {
+      TileQuery tileQuery = ImmutableTileQuery.builder().from(tile).tileset(tileset).build();
+      TileResult layer = tileProvider.get(tileQuery);
 
-      if (subTile.isError()) {
-        // TODO
-      }
-
-      if (subTile.isAvailable()) {
+      if (layer.isError()) {
+        if (LOGGER.isWarnEnabled()) {
+          LOGGER.warn(
+              "Failure to get layer '{}' of combined vector tile {}/{}/{}/{} (format '{}'), the layer will be ignored. Reason: {}",
+              tileset,
+              tileQuery.getTileMatrixSet().getId(),
+              tileQuery.getLevel(),
+              tileQuery.getRow(),
+              tileQuery.getCol(),
+              tileQuery.getMediaType().toString(),
+              layer.getError().orElse("unknown"));
+        }
+      } else if (layer.isAvailable()) {
         decoder
-            .decode(subTile.getContent().get())
+            .decode(layer.getContent().get())
             .forEach(
                 feature ->
                     encoder.addFeature(
@@ -69,11 +81,11 @@ public class TileEncoderMvt implements TileEncoder {
     return encoder.encode();
   }
 
-  private List<String> getSubLayers(
+  private List<String> getLayerTilesets(
       TileProviderFeaturesData data,
-      TilesetFeatures combinedLayer,
+      TilesetFeatures combinedTileset,
       Optional<TileGenerationParametersTransient> userParameters) {
-    return combinedLayer.getCombine().stream()
+    return combinedTileset.getCombine().stream()
         .flatMap(
             layer -> {
               if (Objects.equals(layer, TilesetFeatures.COMBINE_ALL)) {

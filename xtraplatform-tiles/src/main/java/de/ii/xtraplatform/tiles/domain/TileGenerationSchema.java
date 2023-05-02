@@ -14,8 +14,6 @@ import java.util.Optional;
 
 public interface TileGenerationSchema {
 
-  String getSpatialProperty();
-
   Optional<SimpleFeatureGeometry> getGeometryType();
 
   Optional<String> getTemporalProperty();

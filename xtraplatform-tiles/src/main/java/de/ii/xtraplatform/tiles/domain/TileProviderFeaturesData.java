@@ -237,62 +237,10 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
             .from(this);
 
     TileProviderFeaturesData src = (TileProviderFeaturesData) source;
-    /*
-        List<String> tileEncodings =
-            Objects.nonNull(src.getTileEncodings())
-                ? Lists.newArrayList(src.getTileEncodings())
-                : Lists.newArrayList();
-        getTileEncodings()
-            .forEach(
-                tileEncoding -> {
-                  if (!tileEncodings.contains(tileEncoding)) {
-                    tileEncodings.add(tileEncoding);
-                  }
-                });
-        builder.tileEncodings(tileEncodings);
 
-        Map<String, MinMax> mergedSeeding =
-            Objects.nonNull(src.getSeeding())
-                ? Maps.newLinkedHashMap(src.getSeeding())
-                : Maps.newLinkedHashMap();
-        if (Objects.nonNull(getSeeding())) getSeeding().forEach(mergedSeeding::put);
-        builder.seeding(mergedSeeding);
+    // TODO Is merging tile provider data relevant or can we leave this as it is?
+    //      If it is relevant, how should the options be merged? (???)
 
-        Map<String, MinMax> mergedZoomLevels =
-            Objects.nonNull(src.getZoomLevels())
-                ? Maps.newLinkedHashMap(src.getZoomLevels())
-                : Maps.newLinkedHashMap();
-        if (Objects.nonNull(getZoomLevels())) getZoomLevels().forEach(mergedZoomLevels::put);
-        builder.zoomLevels(mergedZoomLevels);
-
-        if (!getCenter().isEmpty()) builder.center(getCenter());
-        else if (!src.getCenter().isEmpty()) builder.center(src.getCenter());
-
-        Map<String, MinMax> mergedZoomLevelsCache =
-            Objects.nonNull(src.getZoomLevelsCache())
-                ? Maps.newLinkedHashMap(src.getZoomLevelsCache())
-                : Maps.newLinkedHashMap();
-        if (Objects.nonNull(getZoomLevelsCache()))
-          getZoomLevelsCache().forEach(mergedZoomLevelsCache::put);
-        builder.zoomLevelsCache(mergedZoomLevelsCache);
-
-        Map<String, List<Rule>> mergedRules =
-            Objects.nonNull(src.getRules())
-                ? Maps.newLinkedHashMap(src.getRules())
-                : Maps.newLinkedHashMap();
-        if (Objects.nonNull(getRules())) getRules().forEach(mergedRules::put);
-        builder.rules(mergedRules);
-
-        Map<String, List<PredefinedFilter>> mergedFilters =
-            Objects.nonNull(src.getFilters())
-                ? Maps.newLinkedHashMap(src.getFilters())
-                : Maps.newLinkedHashMap();
-        if (Objects.nonNull(getFilters())) getFilters().forEach(mergedFilters::put);
-        builder.filters(mergedFilters);
-
-        if (Objects.nonNull(getCenter())) builder.center(getCenter());
-        else if (Objects.nonNull(src.getCenter())) builder.center(src.getCenter());
-    */
     return builder.build();
   }
 

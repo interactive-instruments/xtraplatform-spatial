@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +52,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderMbTiles.class);
   private final TileMatrixSetRepository tileMatrixSetRepository;
-  private final Map<String, Path> layerSources;
+  private final Map<String, Path> tilesetSources;
   private final Map<String, TilesetMetadata> metadata;
   private final Map<String, Map<String, Range<Integer>>> tmsRanges;
   private ChainedTileProvider providerChain;
@@ -66,15 +67,21 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
     this.tileMatrixSetRepository = tileMatrixSetRepository;
     this.metadata = new LinkedHashMap<>();
     this.tmsRanges = new LinkedHashMap<>();
-    this.layerSources =
+    this.tilesetSources =
+        // we know there is exactly one tileset and one tile matrix set
         data.getTilesets().entrySet().stream()
             .map(
                 entry -> {
                   Path source = Path.of(entry.getValue().getSource());
 
-                  // TODO: different TMSs?
+                  Set<String> tmsSet = entry.getValue().getLevels().keySet();
+                  if (tmsSet.isEmpty()) {
+                    tmsSet = data.getTilesetDefaults().getLevels().keySet();
+                  }
+                  String tms = tmsSet.isEmpty() ? "WebMercatorQuad" : tmsSet.iterator().next();
+
                   return new SimpleImmutableEntry<>(
-                      toTilesetKey(entry.getKey(), "WebMercatorQuad"),
+                      toTilesetKey(entry.getKey(), tms),
                       source.isAbsolute()
                           ? source
                           : source.startsWith("api-resources")
@@ -89,7 +96,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
 
   @Override
   protected boolean onStartup() throws InterruptedException {
-    TileStoreReadOnly tileStore = TileStoreMbTiles.readOnly(layerSources);
+    TileStoreReadOnly tileStore = TileStoreMbTiles.readOnly(tilesetSources);
 
     this.providerChain =
         new ChainedTileProvider() {
@@ -135,7 +142,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   }
 
   private void loadMetadata() {
-    layerSources.forEach(
+    tilesetSources.forEach(
         (key, path) -> {
           Tuple<String, String> tilesetKey = toTuple(key);
 

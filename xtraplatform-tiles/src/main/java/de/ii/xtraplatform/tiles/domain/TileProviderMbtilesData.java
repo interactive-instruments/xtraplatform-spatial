@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Preconditions;
 import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.docs.DocStep;
@@ -99,10 +100,10 @@ public interface TileProviderMbtilesData extends TileProviderData {
   @Override
   String getProviderSubType();
 
-  // TODO: error when using interface
   @DocIgnore
   @Value.Default
   @Override
+  // note: ImmutableTilesetMbTilesDefaults is used, because using the interface results in an error
   default ImmutableTilesetMbTilesDefaults getTilesetDefaults() {
     return new ImmutableTilesetMbTilesDefaults.Builder().build();
   }
@@ -119,8 +120,8 @@ public interface TileProviderMbtilesData extends TileProviderData {
     ImmutableTileProviderMbtilesData.Builder builder =
         new ImmutableTileProviderMbtilesData.Builder().from(src).from(this);
 
-    // if (!getCenter().isEmpty()) builder.center(getCenter());
-    // else if (!src.getCenter().isEmpty()) builder.center(src.getCenter());
+    // TODO Is merging tile provider data relevant or can we leave this as it is?
+    //      If it is relevant, how should the options be merged? (???)
 
     return builder.build();
   }
@@ -133,5 +134,13 @@ public interface TileProviderMbtilesData extends TileProviderData {
           .providerType(EntityDataDefaults.PLACEHOLDER)
           .providerSubType(EntityDataDefaults.PLACEHOLDER);
     }
+  }
+
+  @Value.Check
+  default void checkSingleTileset() {
+    Preconditions.checkState(
+        getTilesets().size() == 1,
+        "There must be exactly one tileset in an MBTiles provider. Found: %s.",
+        getTilesets().size());
   }
 }

@@ -41,16 +41,14 @@ public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
     super(data);
     this.metadata = new LinkedHashMap<>();
 
-    Map<String, String> layerSources =
+    Map<String, String> tilesetSources =
         data.getTilesets().entrySet().stream()
             .map(
-                entry -> {
-                  return new SimpleImmutableEntry<>(
-                      entry.getKey(), entry.getValue().getUrlTemplate());
-                })
+                entry ->
+                    new SimpleImmutableEntry<>(entry.getKey(), entry.getValue().getUrlTemplate()))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
-    TileStoreReadOnly tileStore = new TileStoreHttp(layerSources);
+    TileStoreReadOnly tileStore = new TileStoreHttp(tilesetSources);
 
     this.providerChain =
         new ChainedTileProvider() {

@@ -15,7 +15,7 @@ import org.immutables.value.Value;
 
 /** This class specifies the data structure of a tile matrix set. */
 @Value.Immutable
-// TODO: remove when migrated to entity
+// TODO: remove when migrated to entity (???)
 @Value.Style(deepImmutablesDetection = true, builder = "new")
 @JsonDeserialize(builder = ImmutableTileMatrixSetData.Builder.class)
 public interface TileMatrixSetData {

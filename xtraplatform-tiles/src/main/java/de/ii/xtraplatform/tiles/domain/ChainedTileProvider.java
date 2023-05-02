@@ -30,7 +30,7 @@ public interface ChainedTileProvider {
         tileResult = getTile(tile);
       } catch (IOException e) {
         LOGGER.warn(
-            "Failed to retrieve tile {}/{}/{}/{} for layer '{}'. Reason: {}",
+            "Failed to retrieve tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
@@ -54,7 +54,7 @@ public interface ChainedTileProvider {
         return processDelegateResult(tile, delegateResult);
       } catch (IOException e) {
         LOGGER.warn(
-            "Failed to retrieve tile {}/{}/{}/{} for layer '{}'. Reason: {}",
+            "Failed to retrieve tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),

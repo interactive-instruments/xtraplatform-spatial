@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
-public interface WithLayerTmsLevels {
+public interface WithTilesetTmsLevels {
   @JsonAlias("layerLevels")
   Map<String, Map<String, MinMax>> getTilesetLevels();
 
