@@ -184,10 +184,10 @@ public class MbtilesTileset {
           // recreate an empty MBTiles container
           LOGGER.trace("Creating MBTiles file '{}'.", tilesetPath);
           Files.createDirectories(tilesetPath.getParent());
-          connection = SqlHelper.getConnection(tilesetPath.toFile());
+          connection = SqlHelper.getConnection(tilesetPath);
           initMbtilesDb(metadata, connection);
         } else if (Objects.isNull(connection)) {
-          connection = SqlHelper.getConnection(tilesetPath.toFile());
+          connection = SqlHelper.getConnection(tilesetPath);
         }
       } catch (InterruptedException e) {
         LOGGER.debug("getConnection: Thread has been interrupted.");
@@ -198,7 +198,7 @@ public class MbtilesTileset {
         }
       }
     } else if (Objects.isNull(connection)) {
-      connection = SqlHelper.getConnection(tilesetPath.toFile());
+      connection = SqlHelper.getConnection(tilesetPath);
     }
 
     return connection;
