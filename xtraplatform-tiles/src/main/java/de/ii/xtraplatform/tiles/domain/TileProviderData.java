@@ -109,8 +109,6 @@ public interface TileProviderData extends ProviderData {
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  TileProviderData mergeInto(TileProviderData tileProvider);
-
   abstract class Builder<T extends TileProviderData.Builder<T>>
       implements EntityDataBuilder<TileProviderData> {
 

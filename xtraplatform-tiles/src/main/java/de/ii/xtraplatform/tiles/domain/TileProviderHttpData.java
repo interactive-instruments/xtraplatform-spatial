@@ -19,7 +19,6 @@ import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import java.util.Map;
-import java.util.Objects;
 import org.immutables.value.Value;
 
 /**
@@ -144,21 +143,6 @@ public interface TileProviderHttpData extends TileProviderData {
    */
   @Override
   BuildableMap<TilesetHttp, ImmutableTilesetHttp.Builder> getTilesets();
-
-  @Override
-  default TileProviderData mergeInto(TileProviderData source) {
-    if (Objects.isNull(source) || !(source instanceof TileProviderHttpData)) return this;
-
-    TileProviderHttpData src = (TileProviderHttpData) source;
-
-    ImmutableTileProviderHttpData.Builder builder =
-        new ImmutableTileProviderHttpData.Builder().from(src).from(this);
-
-    // TODO Is merging tile provider data relevant or can we leave this as it is?
-    //      If it is relevant, how should the options be merged? (???)
-
-    return builder.build();
-  }
 
   abstract class Builder extends TileProviderData.Builder<ImmutableTileProviderHttpData.Builder>
       implements EntityDataBuilder<TileProviderData> {

@@ -51,7 +51,7 @@ public class TileProviderFeaturesFactory
 
   @Inject
   public TileProviderFeaturesFactory(
-      // TODO: needed because dagger-auto does not parse TileProviderFeatures (???)
+      // TODO: needed because dagger-auto does not parse TileProviderFeatures
       CrsInfo crsInfo,
       EntityRegistry entityRegistry,
       AppContext appContext,
@@ -149,7 +149,6 @@ public class TileProviderFeaturesFactory
       return data;
     }
 
-    // TODO: from TilesProviders (???)
     String featureProviderId =
         data.getTilesetDefaults()
             .getFeatureProvider()

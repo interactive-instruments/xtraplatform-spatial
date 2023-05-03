@@ -290,7 +290,6 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     return result;
   }
 
-  // TODO: add to TileCacheDynamic, use canProvide + clip limits (???)
   @Override
   public void deleteFromCache(
       String tileset, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits) {
@@ -360,7 +359,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       }
     }
 
-    // TODO: cleanup all orphaned tiles with merged limits (???)
+    // TODO: cleanup all orphaned tiles that are not within current cache limits
   }
 
   private Map<String, TileGenerationParameters> validTilesets(

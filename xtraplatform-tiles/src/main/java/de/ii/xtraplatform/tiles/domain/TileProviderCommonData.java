@@ -9,24 +9,11 @@ package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
-import java.util.Objects;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTileProviderCommonData.Builder.class)
 public interface TileProviderCommonData extends TileProviderData {
-
-  @Override
-  default TileProviderData mergeInto(TileProviderData source) {
-    if (Objects.isNull(source) || !(source instanceof TileProviderCommonData)) return this;
-
-    TileProviderCommonData src = (TileProviderCommonData) source;
-
-    ImmutableTileProviderCommonData.Builder builder =
-        new ImmutableTileProviderCommonData.Builder().from(src).from(this);
-
-    return builder.build();
-  }
 
   abstract class Builder implements EntityDataBuilder<TileProviderCommonData> {}
 }

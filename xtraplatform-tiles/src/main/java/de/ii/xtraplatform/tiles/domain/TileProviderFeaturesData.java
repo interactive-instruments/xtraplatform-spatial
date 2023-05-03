@@ -19,10 +19,8 @@ import de.ii.xtraplatform.store.domain.entities.AutoEntity;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
-import de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeatures.Builder;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import org.immutables.value.Value;
 
@@ -226,23 +224,6 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
    */
   @Override
   Optional<SeedingOptions> getSeeding();
-
-  @Override
-  default TileProviderData mergeInto(TileProviderData source) {
-    if (Objects.isNull(source) || !(source instanceof TileProviderFeaturesData)) return this;
-
-    Builder builder =
-        new ImmutableTileProviderFeaturesData.Builder()
-            .from((TileProviderFeaturesData) source)
-            .from(this);
-
-    TileProviderFeaturesData src = (TileProviderFeaturesData) source;
-
-    // TODO Is merging tile provider data relevant or can we leave this as it is?
-    //      If it is relevant, how should the options be merged? (???)
-
-    return builder.build();
-  }
 
   abstract class Builder extends TileProviderData.Builder<ImmutableTileProviderFeaturesData.Builder>
       implements EntityDataBuilder<TileProviderData> {

@@ -117,8 +117,10 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
 
     Map<String, Optional<BoundingBox>> boundingBoxes = getBoundingBoxes(tilesets);
 
-    // TODO: other partials may start writing before first partial is done with purging
-    // add preRun and postRun to tasks which are run before/after partials (???)
+    // NOTE: other partials may start writing before first partial is done with purging, as a
+    // workaround they will sleep for 1s
+    // TODO: to implement this properly, add preRun and postRun to tasks which are run before/after
+    // partials
     if (reseed) {
       if (taskContext.isFirstPartial()) {
         LOGGER.debug("{}: purging cache for {}", taskContext.getTaskLabel(), tileSourceLabel);

@@ -10,7 +10,6 @@ package de.ii.xtraplatform.tiles.app;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
-import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
@@ -155,7 +154,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
             .orElse(TRANSFORMATIONS.get(tileQuery.getMediaType()));
 
     ResultReduced<byte[]> resultReduced =
-        generateTile(tileSource, encoder, tileQuery, Map.of(featureType, propertyTransformations));
+        generateTile(tileSource, encoder, Map.of(featureType, propertyTransformations));
 
     return resultReduced.reduced();
   }
@@ -223,7 +222,6 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
   private ResultReduced<byte[]> generateTile(
       FeatureStream featureStream,
       FeatureTokenEncoder<?> encoder,
-      TileCoordinates tile,
       Map<String, PropertyTransformations> propertyTransformations) {
 
     SinkReduced<Object, byte[]> featureSink = encoder.to(Sink.reduceByteArray());
@@ -232,25 +230,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
       ResultReduced<byte[]> result =
           featureStream.runWith(featureSink, propertyTransformations).toCompletableFuture().join();
 
-      if (result.isSuccess()) {
-        try {
-          // TODO (???)
-          // write/update tile in cache
-          // tileCache.storeTile(tile, result.reduced());
-        } catch (Throwable e) {
-          String msg =
-              "Failure to write the multi-layer vector tile {}/{}/{}/{} in dataset '{}' to the cache";
-          LogContext.errorAsInfo(
-              LOGGER,
-              e,
-              msg,
-              tile.getTileMatrixSet().getId(),
-              tile.getLevel(),
-              tile.getRow(),
-              tile.getCol(),
-              data.getId());
-        }
-      } else {
+      if (!result.isSuccess()) {
         result.getError().ifPresent(FeatureStream::processStreamError);
       }
 
@@ -386,7 +366,6 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
       Optional<BoundingBox> bounds,
       Optional<TileGenerationParametersTransient> userParameters) {
     String featureType = tileset.getFeatureType().orElse(tileset.getId());
-    // TODO: from TilesProviders with orThrow (???)
     FeatureSchema featureSchema = featureTypes.get(featureType);
     // TODO: validate tileset during provider startup
     if (featureSchema == null) {

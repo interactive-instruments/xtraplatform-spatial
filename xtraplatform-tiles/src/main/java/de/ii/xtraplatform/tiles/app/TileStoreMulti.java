@@ -45,7 +45,6 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   private static final String STAGING_MARKER = ".staging";
 
   private final BlobStore cacheStore;
-  // TODO: factory? (???)
   private final Cache.Storage storage;
   private final String tileSetName;
   private final Map<String, Map<String, TileGenerationSchema>> tileSchemas;
@@ -53,7 +52,6 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   private final Map<String, Map<String, List<TileMatrixSetLimits>>> dirty;
   private Tuple<TileStore, BlobStore> staging;
 
-  // TODO: how to sync active on non-seeding node in multi-node setup (???)
   public TileStoreMulti(
       BlobStore cacheStore,
       Storage storage,

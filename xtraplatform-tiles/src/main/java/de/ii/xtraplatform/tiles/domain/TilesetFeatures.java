@@ -105,8 +105,6 @@ public interface TilesetFeatures
     return !getCombine().isEmpty();
   }
 
-  // TODO: check (???)
-
   @Override
   default ImmutableTilesetFeatures.Builder getBuilder() {
     return new ImmutableTilesetFeatures.Builder().from(this);

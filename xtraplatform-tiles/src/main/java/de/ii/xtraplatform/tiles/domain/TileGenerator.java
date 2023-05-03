@@ -18,7 +18,6 @@ public interface TileGenerator {
 
   byte[] generateTile(TileQuery tileQuery);
 
-  // TODO: TileStream, TileEncoder, TileQuery (???)
   FeatureStream getTileSource(TileQuery tileQuery);
 
   // TODO: create on startup for all layers
