@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -20,18 +19,12 @@ import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.tiles.app.TileMatrixSetImpl;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
-import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,34 +50,6 @@ public interface TileMatrixSet extends TileMatrixSetBase {
       if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
         LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
       }
-      return Optional.empty();
-    }
-
-    return fromInputStream(inputStream, tileMatrixSetId);
-  }
-
-  static Optional<TileMatrixSet> fromDefinition(
-      String tileMatrixSetId, Path customTileMatrixSetsStore) {
-    File dir = customTileMatrixSetsStore.toFile();
-    if (!dir.exists()) dir.mkdirs();
-    Optional<File> tileMatrixSetFile =
-        Arrays.stream(
-                Objects.requireNonNullElse(
-                    dir.listFiles(), ImmutableList.of().toArray(File[]::new)))
-            .filter(file -> !file.isHidden())
-            .filter(file -> Files.getFileExtension(file.getName()).equals("json"))
-            .filter(file -> Files.getNameWithoutExtension(file.getName()).equals(tileMatrixSetId))
-            .findAny();
-    if (tileMatrixSetFile.isEmpty()) {
-      LOGGER.debug("Tile matrix set '{}' not found.", tileMatrixSetId);
-      return Optional.empty();
-    }
-
-    InputStream inputStream;
-    try {
-      inputStream = new FileInputStream(tileMatrixSetFile.get());
-    } catch (FileNotFoundException e) {
-      LOGGER.debug("Tile matrix set '{}' not found: {}", tileMatrixSetId, e.getMessage());
       return Optional.empty();
     }
 

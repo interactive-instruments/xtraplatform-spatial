@@ -9,8 +9,8 @@ package de.ii.xtraplatform.tiles.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.assisted.AssistedFactory;
-import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
+import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.store.domain.entities.AbstractEntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
@@ -37,7 +37,7 @@ public class TileProviderMbTilesFactory
   @Inject
   public TileProviderMbTilesFactory(
       // TODO: needed because dagger-auto does not parse TileProviderMbTiles
-      AppContext appContext,
+      BlobStore blobStore,
       TileMatrixSetRepository tileMatrixSetRepository,
       TileProviderMbTilesFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
