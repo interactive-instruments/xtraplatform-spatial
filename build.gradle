@@ -22,7 +22,7 @@ layer {
 }
 
 dependencies {
-    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '5.2.0-migrations-SNAPSHOT'
+    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '5.2.0-SNAPSHOT'
     layers group: 'de.interactive_instruments', name: 'xtraplatform-native', version: "2.2.0-${platform}-SNAPSHOT"
 
     modules subprojects

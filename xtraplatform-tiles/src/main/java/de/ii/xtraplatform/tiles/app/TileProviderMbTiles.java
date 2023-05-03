@@ -74,7 +74,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   protected boolean onStartup() throws InterruptedException {
     // we know there is exactly one tileset and one tile matrix set
     Map<String, Path> tilesetSources =
-        data.getTilesets().entrySet().stream()
+        getData().getTilesets().entrySet().stream()
             .map(
                 entry -> {
                   Path source = Path.of(entry.getValue().getSource());
@@ -98,12 +98,11 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
 
                   Set<String> tmsSet = entry.getValue().getLevels().keySet();
                   if (tmsSet.isEmpty()) {
-                    tmsSet = data.getTilesetDefaults().getLevels().keySet();
+                    tmsSet = getData().getTilesetDefaults().getLevels().keySet();
                   }
                   String tms = tmsSet.isEmpty() ? "WebMercatorQuad" : tmsSet.iterator().next();
 
-                  return new SimpleImmutableEntry<>(
-                      toTilesetKey(entry.getKey(), tms), source);
+                  return new SimpleImmutableEntry<>(toTilesetKey(entry.getKey(), tms), source);
                 })
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
@@ -153,7 +152,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
     return TileProviderMbtilesData.PROVIDER_TYPE;
   }
 
-  private void loadMetadata(Map<String, Path> layerSources) {
+  private void loadMetadata(Map<String, Path> tilesetSources) {
     tilesetSources.forEach(
         (key, path) -> {
           Tuple<String, String> tilesetKey = toTuple(key);
