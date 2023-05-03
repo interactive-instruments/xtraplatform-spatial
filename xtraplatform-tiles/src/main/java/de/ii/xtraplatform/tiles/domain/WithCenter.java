@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +26,7 @@ public interface WithCenter {
   Optional<LonLat> getCenter();
 
   @Value.Immutable
+  @JsonDeserialize(builder = ImmutableLonLat.Builder.class)
   interface LonLat {
 
     static LonLat of(double lon, double lat) {
