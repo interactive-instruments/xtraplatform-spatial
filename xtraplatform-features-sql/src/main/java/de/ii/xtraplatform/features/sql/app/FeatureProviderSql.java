@@ -890,6 +890,11 @@ public class FeatureProviderSql
   }
 
   @Override
+  public boolean supportsIsNull() {
+    return true;
+  }
+
+  @Override
   public FeatureSchema getQueryablesSchema(
       FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
     Predicate<String> excludeConnectors = path -> path.matches(".+?\\[[^=\\]]+].+");

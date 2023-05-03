@@ -444,10 +444,14 @@ public class FilterEncoderWfs {
 
     @Override
     public FesExpression visit(BooleanValue2 booleanValue, List<FesExpression> children) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Booleans are not supported in filter expressions for WFS feature providers. Found: %s",
-              booleanValue));
+      if (Objects.equals(booleanValue.getValue(), Boolean.TRUE)) {
+        FesLiteral literal = new FesLiteral("1");
+        return new FesPropertyIsEqualTo(literal, literal);
+      }
+
+      FesLiteral literal0 = new FesLiteral("0");
+      FesLiteral literal1 = new FesLiteral("1");
+      return new FesPropertyIsEqualTo(literal0, literal1);
     }
   }
 }

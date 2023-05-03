@@ -24,6 +24,11 @@ public interface FeatureQueries {
     return false;
   }
 
+  // TODO: replace with capabilities
+  default boolean supportsIsNull() {
+    return false;
+  }
+
   default FeatureStream getFeatureStream(FeatureQuery query) {
     throw new UnsupportedOperationException();
   }
