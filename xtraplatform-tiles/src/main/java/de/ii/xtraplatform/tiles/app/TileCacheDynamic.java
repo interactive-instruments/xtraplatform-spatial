@@ -81,7 +81,7 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
 
   @Override
   public void seed(
-      Map<String, TileGenerationParameters> layers,
+      Map<String, TileGenerationParameters> tilesets,
       List<MediaType> mediaTypes,
       boolean reseed,
       String tileSourceLabel,
@@ -92,7 +92,7 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
     }
 
     doSeed(
-        layers,
+        tilesets,
         mediaTypes,
         reseed,
         tileSourceLabel,
@@ -105,7 +105,7 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
 
   @Override
   public void purge(
-      Map<String, TileGenerationParameters> layers,
+      Map<String, TileGenerationParameters> tilesets,
       List<MediaType> mediaTypes,
       boolean reseed,
       String tileSourceLabel,
@@ -115,21 +115,23 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
       return;
     }
 
-    Map<String, Optional<BoundingBox>> boundingBoxes = getBoundingBoxes(layers);
+    Map<String, Optional<BoundingBox>> boundingBoxes = getBoundingBoxes(tilesets);
 
-    // TODO: other partials may start writing before first partial is done with purging
-    // add preRun and postRun to tasks which are run before/after partials
+    // NOTE: other partials may start writing before first partial is done with purging, as a
+    // workaround they will sleep for 1s
+    // TODO: to implement this properly, add preRun and postRun to tasks which are run before/after
+    // partials
     if (reseed) {
       if (taskContext.isFirstPartial()) {
         LOGGER.debug("{}: purging cache for {}", taskContext.getTaskLabel(), tileSourceLabel);
 
-        tileWalker.walkLayersAndLimits(
-            layers.keySet(),
+        tileWalker.walkTilesetsAndLimits(
+            tilesets.keySet(),
             getTmsRanges(),
             boundingBoxes,
-            (layer, tileMatrixSet, limits) -> {
+            (tileset, tileMatrixSet, limits) -> {
               try {
-                tileStore.delete(layer, tileMatrixSet, limits, false);
+                tileStore.delete(tileset, tileMatrixSet, limits, false);
               } catch (IOException e) {
                 // ignore
               }

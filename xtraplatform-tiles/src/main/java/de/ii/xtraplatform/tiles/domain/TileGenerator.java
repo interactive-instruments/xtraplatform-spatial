@@ -7,9 +7,9 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.features.domain.FeatureStream;
-import java.util.Map;
+import java.util.Optional;
 import javax.ws.rs.core.MediaType;
 
 public interface TileGenerator {
@@ -18,9 +18,10 @@ public interface TileGenerator {
 
   byte[] generateTile(TileQuery tileQuery);
 
-  // TODO: TileStream, TileEncoder, TileQuery
   FeatureStream getTileSource(TileQuery tileQuery);
 
   // TODO: create on startup for all layers
-  TileGenerationSchema getGenerationSchema(String layer, Map<String, FeatureSchema> queryables);
+  TileGenerationSchema getGenerationSchema(String tileset);
+
+  Optional<BoundingBox> getBounds(String tilesetId);
 }

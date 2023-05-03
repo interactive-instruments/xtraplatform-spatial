@@ -88,25 +88,38 @@ public class StringTemplateFilters {
       return value;
     }
 
-    return applyTemplate(template, isHtml, key -> Objects.equals(key, valueSubst) ? value : null);
+    return applyTemplate(
+        template, isHtml, key -> Objects.equals(key, valueSubst) ? value : null, false);
   }
 
   public static String applyTemplate(String template, Function<String, String> valueLookup) {
-    return applyTemplate(template, isHtml -> {}, valueLookup);
+    return applyTemplate(template, isHtml -> {}, valueLookup, false);
+  }
+
+  public static String applyTemplate(
+      String template, Function<String, String> valueLookup, boolean allowSingleCurlyBraces) {
+    return applyTemplate(template, isHtml -> {}, valueLookup, allowSingleCurlyBraces);
   }
 
   static Pattern valuePattern = Pattern.compile("\\{\\{([\\w.]+)( ?\\| ?[\\w]+(:'[^']*')*)*\\}\\}");
+  static Pattern valuePatternSingle = Pattern.compile("\\{([\\w.]+)( ?\\| ?[\\w]+(:'[^']*')*)*\\}");
   static Pattern filterPattern = Pattern.compile(" ?\\| ?([\\w]+)((?::'[^']*')*)");
 
   public static String applyTemplate(
-      String template, Consumer<Boolean> isHtml, Function<String, String> valueLookup) {
+      String template,
+      Consumer<Boolean> isHtml,
+      Function<String, String> valueLookup,
+      boolean allowSingleCurlyBraces) {
 
     if (Objects.isNull(template) || template.isEmpty()) {
       return "";
     }
 
     String formattedValue = "";
-    Matcher matcher = valuePattern.matcher(template);
+    Matcher matcher =
+        !allowSingleCurlyBraces || template.contains("{{")
+            ? valuePattern.matcher(template)
+            : valuePatternSingle.matcher(template);
     boolean hasAppliedMarkdown = false;
     Map<String, String> assigns = new HashMap<>();
 
@@ -131,7 +144,7 @@ public class StringTemplateFilters {
         if (Objects.isNull(filteredValue)) {
           if (filter.equals("orElse") && parameters.size() >= 1) {
             filteredValue =
-                applyTemplate(parameters.get(0).replace("\"", "'"), isHtml, valueLookup);
+                applyTemplate(parameters.get(0).replace("\"", "'"), isHtml, valueLookup, false);
           }
         } else {
           if (filter.equals("markdown")) {

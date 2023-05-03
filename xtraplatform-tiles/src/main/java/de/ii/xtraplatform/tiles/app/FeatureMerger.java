@@ -211,7 +211,8 @@ class FeatureMerger {
                     Iterator<Polygon> iter = polygons.iterator();
                     geom = iter.next();
                     while (iter.hasNext()) {
-                      // TODO use OverlayNGRobust instead?
+                      // an alternative would be to use OverlayNGRobust, if we identify stability
+                      // issues with OverlayNG:
                       // geom = OverlayNGRobust.overlay(geom, iter.next(), OverlayNG.SYMDIFFERENCE);
                       OverlayNG overlay =
                           new OverlayNG(geom, iter.next(), precisionModel, OverlayNG.SYMDIFFERENCE);

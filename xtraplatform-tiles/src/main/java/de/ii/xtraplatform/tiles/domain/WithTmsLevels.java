@@ -15,6 +15,14 @@ import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 public interface WithTmsLevels {
+  /**
+   * @langEn Controls the zoom levels available for each active tiling scheme as well as which zoom
+   *     level to use as default.
+   * @langDe Steuert die Zoomstufen, die für jedes aktive Kachelschema verfügbar sind sowie welche
+   *     Zoomstufe als Default verwendet werden soll.
+   * @default { "WebMercatorQuad" : { "min": 0, "max": 23 } }
+   * @since v3.4
+   */
   Map<String, MinMax> getLevels();
 
   @JsonIgnore

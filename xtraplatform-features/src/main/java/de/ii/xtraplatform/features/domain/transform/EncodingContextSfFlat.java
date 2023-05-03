@@ -15,8 +15,6 @@ import org.immutables.value.Value;
 
 public interface EncodingContextSfFlat {
 
-  String getCollectionId();
-
   @Value.Default
   default Map<String, List<String>> getFields() {
     return ImmutableMap.of("*", ImmutableList.of("*"));

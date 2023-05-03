@@ -13,9 +13,9 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface TileGenerationContext extends EncodingContextSfFlat {
 
+  String getTileset();
+
   TileCoordinates getCoordinates();
 
   TileGenerationOptions getParameters();
-
-  // String getCollectionId(); // TODO: layer
 }

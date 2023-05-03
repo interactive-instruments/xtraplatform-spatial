@@ -10,7 +10,6 @@ package de.ii.xtraplatform.tiles.app;
 import static de.ii.xtraplatform.base.domain.util.LambdaWithException.consumerMayThrow;
 
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.tiles.domain.ImmutableMbtilesMetadata;
@@ -75,16 +74,16 @@ public class TileStoreMbTiles implements TileStore {
           .forEach(
               consumerMayThrow(
                   path -> {
-                    String layer = path.getName(0).toString();
+                    String tileset = path.getName(0).toString();
                     String tms = path.getName(1).toString().replace(MBTILES_SUFFIX, "");
                     tileSets.put(
-                        key(layer, tms),
+                        key(tileset, tms),
                         createTileSet(
                             rootStore,
                             providerId,
-                            layer,
+                            tileset,
                             tms,
-                            getVectorLayers(tileSchemas, layer)));
+                            getVectorLayers(tileSchemas, tileset)));
                   }));
     } catch (IOException e) {
       LogContext.errorAsWarn(LOGGER, e, "Error when loading tile caches");
@@ -120,12 +119,12 @@ public class TileStoreMbTiles implements TileStore {
     } catch (SQLException | IOException e) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(
-            "Failed to check existence of tile {}/{}/{}/{} for layer '{}'. Reason: {}",
+            "Failed to check existence of tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getLayer(),
+            tile.getTileset(),
             e.getMessage());
         if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
           LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
@@ -163,12 +162,12 @@ public class TileStoreMbTiles implements TileStore {
     } catch (SQLException e) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(
-            "Failed to retrieve tile {}/{}/{}/{} for layer '{}'. Reason: {}",
+            "Failed to retrieve tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getLayer(),
+            tile.getTileset(),
             e.getMessage());
         if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
           LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
@@ -202,9 +201,9 @@ public class TileStoreMbTiles implements TileStore {
               createTileSet(
                   rootStore,
                   providerId,
-                  tile.getLayer(),
+                  tile.getTileset(),
                   tile.getTileMatrixSet().getId(),
-                  getVectorLayers(tileSchemas, tile.getLayer())));
+                  getVectorLayers(tileSchemas, tile.getTileset())));
         }
       }
       tileSets.get(key(tile)).writeTile(tile, content.readAllBytes());
@@ -212,12 +211,12 @@ public class TileStoreMbTiles implements TileStore {
     } catch (SQLException e) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(
-            "Failed to write tile {}/{}/{}/{} for layer '{}'. Reason: {}",
+            "Failed to write tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getLayer(),
+            tile.getTileset(),
             e.getMessage());
         if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
           LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
@@ -235,12 +234,12 @@ public class TileStoreMbTiles implements TileStore {
     } catch (SQLException e) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(
-            "Failed to delete tile {}/{}/{}/{} for layer '{}'. Reason: {}",
+            "Failed to delete tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getLayer(),
+            tile.getTileset(),
             e.getMessage());
         if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
           LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
@@ -251,23 +250,23 @@ public class TileStoreMbTiles implements TileStore {
 
   @Override
   public void delete(
-      String layer, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits, boolean inverse)
+      String tileset, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits, boolean inverse)
       throws IOException {
     try {
-      if (tileSets.containsKey(key(layer, tileMatrixSet))) {
-        tileSets.get(key(layer, tileMatrixSet)).deleteTiles(tileMatrixSet, limits);
+      if (tileSets.containsKey(key(tileset, tileMatrixSet))) {
+        tileSets.get(key(tileset, tileMatrixSet)).deleteTiles(tileMatrixSet, limits);
       }
     } catch (SQLException e) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(
-            "Failed to delete tiles {}/{}/{}-{}/{}-{} for layer '{}'. Reason: {}",
+            "Failed to delete tiles {}/{}/{}-{}/{}-{} for tileset '{}'. Reason: {}",
             tileMatrixSet,
             limits.getTileMatrix(),
             limits.getMinTileRow(),
             limits.getMaxTileRow(),
             limits.getMinTileCol(),
             limits.getMaxTileCol(),
-            layer,
+            tileset,
             e.getMessage());
         if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
           LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
@@ -293,10 +292,10 @@ public class TileStoreMbTiles implements TileStore {
   }
 
   @Override
-  public boolean has(String layer, String tms, int level, int row, int col) throws IOException {
+  public boolean has(String tileset, String tms, int level, int row, int col) throws IOException {
     try {
-      return tileSets.containsKey(key(layer, tms))
-          && tileSets.get(key(layer, tms)).tileExists(level, row, col);
+      return tileSets.containsKey(key(tileset, tms))
+          && tileSets.get(key(tileset, tms)).tileExists(level, row, col);
     } catch (SQLException | IOException e) {
       // ignore
     }
@@ -304,81 +303,47 @@ public class TileStoreMbTiles implements TileStore {
   }
 
   @Override
-  public void delete(String layer, String tms, int level, int row, int col) throws IOException {
+  public void delete(String tileset, String tms, int level, int row, int col) throws IOException {
     try {
-      if (tileSets.containsKey(key(layer, tms)))
-        tileSets.get(key(layer, tms)).deleteTile(level, row, col, false);
+      if (tileSets.containsKey(key(tileset, tms)))
+        tileSets.get(key(tileset, tms)).deleteTile(level, row, col, false);
     } catch (SQLException | IOException e) {
       // ignore
     }
   }
 
   private static List<VectorLayer> getVectorLayers(
-      Map<String, Map<String, TileGenerationSchema>> tileSchemas, String layer) {
-    return tileSchemas.get(layer).entrySet().stream()
+      Map<String, Map<String, TileGenerationSchema>> tileSchemas, String tileset) {
+    return tileSchemas.get(tileset).entrySet().stream()
         .map(entry -> getVectorLayer(entry.getKey(), entry.getValue()))
         .collect(Collectors.toList());
   }
 
   // TODO: fields, minzoom, maxzoom
-  private static VectorLayer getVectorLayer(
-      String subLayer, TileGenerationSchema generationSchema) {
-
-    ImmutableVectorLayer.Builder builder =
-        ImmutableVectorLayer.builder()
-            .id(subLayer)
-            .fields(
-                generationSchema.getProperties().entrySet().stream()
-                    .collect(
-                        Collectors.toUnmodifiableMap(
-                            Entry::getKey,
-                            entry -> {
-                              Type type = entry.getValue().getType();
-                              switch (type) {
-                                case INTEGER:
-                                  return "Integer";
-                                case FLOAT:
-                                  return "Number";
-                                case BOOLEAN:
-                                  return "Boolean";
-                                default:
-                                  return "String";
-                              }
-                            })));
-
-    switch (generationSchema.getGeometryType().orElse(SimpleFeatureGeometry.ANY)) {
-      case POINT:
-      case MULTI_POINT:
-        builder.geometryType("points");
-        break;
-      case LINE_STRING:
-      case MULTI_LINE_STRING:
-        builder.geometryType("lines");
-        break;
-      case POLYGON:
-      case MULTI_POLYGON:
-        builder.geometryType("polygons");
-        break;
-      case GEOMETRY_COLLECTION:
-      case ANY:
-      case NONE:
-      default:
-        builder.geometryType("unknown");
-        break;
-    }
-
-    return builder.build();
+  private static VectorLayer getVectorLayer(String layer, TileGenerationSchema generationSchema) {
+    return ImmutableVectorLayer.builder()
+        .id(layer)
+        .fields(
+            generationSchema.getProperties().entrySet().stream()
+                .collect(
+                    Collectors.toUnmodifiableMap(
+                        Entry::getKey,
+                        entry -> VectorLayer.getTypeAsString(entry.getValue().getType()))))
+        .geometryType(
+            VectorLayer.getGeometryTypeAsString(
+                generationSchema.getGeometryType().orElse(SimpleFeatureGeometry.ANY)))
+        .build();
   }
 
   // TODO: minzoom, maxzoom, bounds, center
   private static MbtilesTileset createTileSet(
       BlobStore rootStore,
       String name,
-      String layer,
+      String tileset,
       String tileMatrixSet,
       List<VectorLayer> vectorLayers)
       throws IOException {
-    Path relPath = Path.of(layer).resolve(tileMatrixSet + MBTILES_SUFFIX);
+    Path relPath = Path.of(tileset).resolve(tileMatrixSet + MBTILES_SUFFIX);
     Optional<Path> filePath = rootStore.asLocalPath(relPath, true);
 
     if (filePath.isEmpty()) {
@@ -405,15 +370,15 @@ public class TileStoreMbTiles implements TileStore {
   }
 
   private static String key(TileQuery tile) {
-    return key(tile.getLayer(), tile.getTileMatrixSet());
+    return key(tile.getTileset(), tile.getTileMatrixSet());
   }
 
-  private static String key(String layer, TileMatrixSetBase tileMatrixSet) {
-    return key(layer, tileMatrixSet.getId());
+  private static String key(String tileset, TileMatrixSetBase tileMatrixSet) {
+    return key(tileset, tileMatrixSet.getId());
   }
 
-  private static String key(String layer, String tileMatrixSet) {
-    return String.join("/", layer, tileMatrixSet);
+  private static String key(String tileset, String tileMatrixSet) {
+    return String.join("/", tileset, tileMatrixSet);
   }
 
   private static String[] fromKey(String key) {

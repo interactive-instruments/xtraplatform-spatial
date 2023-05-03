@@ -211,21 +211,6 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
   @Override
   Optional<Boolean> getAuto();
 
-  /**
-   * @langEn Option to persist definitions generated with `auto: true` to the configuration file.
-   *     Will remove `auto` und `autoPersist` from the configuration file. If the configuration file
-   *     does not reside in `store/entities/providers` (see `additionalLocations`), a new file will
-   *     be created in `store/entities/providers`. The `store` must not be `READ_ONLY` for this to
-   *     take effect.
-   * @langDe Steuert, ob die im Auto-Modus (`auto: true`) bestimmten Schemainformationen in die
-   *     Konfigurationsdatei übernommen werden sollen. In diesem Fall werden `auto` und
-   *     `autoPersist` beim nächsten Start automatisch aus der Datei entfernt. Liegt die
-   *     Konfigurationsdatei in einem anderen Verzeichnis als unter `store/entities/providers`
-   *     (siehe `additionalLocations`), so wird eine neue Datei in `store/entities/providers`
-   *     erstellt. `autoPersist: true` setzt voraus, dass `store` sich nicht im `READ_ONLY`-Modus
-   *     befindet.
-   * @default false
-   */
   @Override
   Optional<Boolean> getAutoPersist();
 

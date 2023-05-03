@@ -26,7 +26,7 @@ public interface TileCache {
   Logger LOGGER = LoggerFactory.getLogger(TileCache.class);
 
   void seed(
-      Map<String, TileGenerationParameters> layers,
+      Map<String, TileGenerationParameters> tilesets,
       List<MediaType> mediaTypes,
       boolean reseed,
       String tileSource,
@@ -34,7 +34,7 @@ public interface TileCache {
       throws IOException;
 
   default boolean doSeed(
-      Map<String, TileGenerationParameters> layers,
+      Map<String, TileGenerationParameters> tilesets,
       List<MediaType> mediaTypes,
       boolean reseed,
       String tileSourceLabel,
@@ -44,11 +44,11 @@ public interface TileCache {
       TileWalker tileWalker,
       Map<String, Map<String, Range<Integer>>> tmsRanges)
       throws IOException {
-    Map<String, Optional<BoundingBox>> boundingBoxes = getBoundingBoxes(layers);
+    Map<String, Optional<BoundingBox>> boundingBoxes = getBoundingBoxes(tilesets);
 
     long numberOfTiles =
         tileWalker.getNumberOfTiles(
-            layers.keySet(), mediaTypes, tmsRanges, boundingBoxes, taskContext);
+            tilesets.keySet(), mediaTypes, tmsRanges, boundingBoxes, taskContext);
     final double[] currentTile = {0.0};
     final boolean[] isEmpty = {true};
 
@@ -64,28 +64,28 @@ public interface TileCache {
           taskContext.getMaxPartials());
     }
 
-    tileWalker.walkLayersAndTiles(
-        layers.keySet(),
+    tileWalker.walkTilesetsAndTiles(
+        tilesets.keySet(),
         mediaTypes,
         tmsRanges,
         boundingBoxes,
         taskContext,
-        (layer, mediaType, tileMatrixSet, level, row, col) -> {
+        (tileset, mediaType, tileMatrixSet, level, row, col) -> {
           TileQuery tile =
               ImmutableTileQuery.builder()
-                  .layer(layer)
+                  .tileset(tileset)
                   .mediaType(mediaType)
                   .tileMatrixSet(tileMatrixSet)
                   .level(level)
                   .row(row)
                   .col(col)
-                  .generationParameters(layers.get(layer))
+                  .generationParameters(tilesets.get(tileset))
                   .build();
 
           taskContext.setStatusMessage(
               String.format(
                   "currently processing -> %s, %s/%s/%s/%s, %s",
-                  layer, tileMatrixSet.getId(), level, row, col, mediaType));
+                  tileset, tileMatrixSet.getId(), level, row, col, mediaType));
 
           if (reseed || tileStore.isDirty(tile) || !tileStore.has(tile)) {
             TileResult result = delegate.get(tile);
@@ -101,7 +101,7 @@ public interface TileCache {
               LOGGER.warn(
                   "{}: processing failed -> {}, {}/{}/{}/{}, {} | {}",
                   taskContext.getTaskLabel(),
-                  layer,
+                  tileset,
                   tileMatrixSet.getId(),
                   level,
                   row,
@@ -121,8 +121,8 @@ public interface TileCache {
   }
 
   default Map<String, Optional<BoundingBox>> getBoundingBoxes(
-      Map<String, TileGenerationParameters> layers) {
-    return layers.entrySet().stream()
+      Map<String, TileGenerationParameters> tilesets) {
+    return tilesets.entrySet().stream()
         .map(
             entry ->
                 new SimpleImmutableEntry<>(entry.getKey(), entry.getValue().getClipBoundingBox()))
@@ -134,7 +134,7 @@ public interface TileCache {
   }
 
   default void purge(
-      Map<String, TileGenerationParameters> layers,
+      Map<String, TileGenerationParameters> tilesets,
       List<MediaType> mediaTypes,
       boolean reseed,
       String tileSourceLabel,

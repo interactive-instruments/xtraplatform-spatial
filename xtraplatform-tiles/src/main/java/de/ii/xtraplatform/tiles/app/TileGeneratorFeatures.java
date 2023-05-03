@@ -10,7 +10,6 @@ package de.ii.xtraplatform.tiles.app;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
-import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
@@ -24,6 +23,7 @@ import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -34,13 +34,13 @@ import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.features.domain.transform.WithTransformationsApplied;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileGenerationContext;
-import de.ii.xtraplatform.tiles.domain.LayerOptionsFeatures;
 import de.ii.xtraplatform.tiles.domain.LevelTransformation;
 import de.ii.xtraplatform.tiles.domain.TileCoordinates;
 import de.ii.xtraplatform.tiles.domain.TileGenerationContext;
@@ -51,6 +51,7 @@ import de.ii.xtraplatform.tiles.domain.TileGenerator;
 import de.ii.xtraplatform.tiles.domain.TileProviderFeaturesData;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
+import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -109,7 +110,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
   @Override
   public boolean canProvide(TileQuery tile) {
     return ChainedTileProvider.super.canProvide(tile)
-        && data.getLayers().get(tile.getLayer()).getCombine().isEmpty();
+        && data.getTilesets().get(tile.getTileset()).getCombine().isEmpty();
   }
 
   @Override
@@ -122,7 +123,6 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
     return ENCODERS.containsKey(mediaType);
   }
 
-  // TODO: streaming?
   @Override
   public byte[] generateTile(TileQuery tileQuery) {
     if (!ENCODERS.containsKey(tileQuery.getMediaType())) {
@@ -132,20 +132,20 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
 
     FeatureStream tileSource = getTileSource(tileQuery);
 
+    TilesetFeatures tileset =
+        data.getTilesets().get(tileQuery.getTileset()).mergeDefaults(data.getTilesetDefaults());
+
     TileGenerationContext tileGenerationContext =
         new ImmutableTileGenerationContext.Builder()
-            .parameters(data.getLayerDefaults())
+            .parameters(tileset)
             .coordinates(tileQuery)
-            .collectionId(tileQuery.getLayer())
-            // .fields
-            // .limit(query.getLimit())
+            .tileset(tileQuery.getTileset())
             .build();
 
     FeatureTokenEncoder<?> encoder =
         ENCODERS.get(tileQuery.getMediaType()).apply(tileGenerationContext);
 
-    LayerOptionsFeatures layer = data.getLayers().get(tileQuery.getLayer());
-    String featureType = layer.getFeatureType().orElse(layer.getId());
+    String featureType = tileset.getFeatureType().orElse(tileset.getId());
     PropertyTransformations propertyTransformations =
         tileQuery
             .getGenerationParameters()
@@ -154,19 +154,18 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
             .orElse(TRANSFORMATIONS.get(tileQuery.getMediaType()));
 
     ResultReduced<byte[]> resultReduced =
-        generateTile(tileSource, encoder, tileQuery, Map.of(featureType, propertyTransformations));
+        generateTile(tileSource, encoder, Map.of(featureType, propertyTransformations));
 
     return resultReduced.reduced();
   }
 
   @Override
   public FeatureStream getTileSource(TileQuery tileQuery) {
-    // TODO: merge defaults into layers
-    LayerOptionsFeatures layer = data.getLayers().get(tileQuery.getLayer());
+    TilesetFeatures tileset =
+        data.getTilesets().get(tileQuery.getTileset()).mergeDefaults(data.getTilesetDefaults());
 
-    // TODO: from TilesProviders
     String featureProviderId =
-        layer.getFeatureProvider().orElse(TileProviderFeatures.clean(data.getId()));
+        tileset.getFeatureProvider().orElse(TileProviderFeatures.clean(data.getId()));
     FeatureProvider2 featureProvider =
         entityRegistry
             .getEntity(FeatureProvider2.class, featureProviderId)
@@ -188,7 +187,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
     FeatureQuery featureQuery =
         getFeatureQuery(
             tileQuery,
-            layer,
+            tileset,
             types,
             nativeCrs,
             getBounds(tileQuery),
@@ -223,7 +222,6 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
   private ResultReduced<byte[]> generateTile(
       FeatureStream featureStream,
       FeatureTokenEncoder<?> encoder,
-      TileCoordinates tile,
       Map<String, PropertyTransformations> propertyTransformations) {
 
     SinkReduced<Object, byte[]> featureSink = encoder.to(Sink.reduceByteArray());
@@ -232,25 +230,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
       ResultReduced<byte[]> result =
           featureStream.runWith(featureSink, propertyTransformations).toCompletableFuture().join();
 
-      if (result.isSuccess()) {
-        try {
-          // write/update tile in cache
-          // tileCache.storeTile(tile, result.reduced());
-        } catch (Throwable e) {
-          String msg =
-              "Failure to write the multi-layer file of tile {}/{}/{}/{} in dataset '{}', format '{}' to the cache";
-          LogContext.errorAsInfo(
-              LOGGER,
-              e,
-              msg,
-              tile.getTileMatrixSet().getId(),
-              tile.getLevel(),
-              tile.getRow(),
-              tile.getCol(),
-              "TODO",
-              "TODO");
-        }
-      } else {
+      if (!result.isSuccess()) {
         result.getError().ifPresent(FeatureStream::processStreamError);
       }
 
@@ -264,12 +244,11 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
     }
   }
 
-  // TODO: create on startup for all layers
+  // TODO: create on startup for all tilesets
   @Override
-  public TileGenerationSchema getGenerationSchema(
-      String layer, Map<String, FeatureSchema> queryables) {
+  public TileGenerationSchema getGenerationSchema(String tileset) {
     String featureProviderId =
-        data.getLayerDefaults()
+        data.getTilesetDefaults()
             .getFeatureProvider()
             .orElse(TileProviderFeatures.clean(data.getId()));
     FeatureProvider2 featureProvider =
@@ -281,13 +260,9 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
                         String.format(
                             "Feature provider with id '%s' not found.", featureProviderId)));
     Map<String, FeatureSchema> featureTypes = featureProvider.getData().getTypes();
-    FeatureSchema featureSchema = featureTypes.get(layer);
+    String featureType = data.getTilesets().get(tileset).getFeatureType().orElse(tileset);
+    FeatureSchema featureSchema = featureTypes.get(featureType);
     return new TileGenerationSchema() {
-      @Override
-      public String getSpatialProperty() {
-        return featureSchema.getPrimaryGeometry().orElseThrow().getFullPathAsString();
-      }
-
       @Override
       public Optional<SimpleFeatureGeometry> getGeometryType() {
         return featureSchema.getPrimaryGeometry().orElseThrow().getGeometryType();
@@ -302,47 +277,116 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
                     String.format(
                         "%s%s%s",
                         interval.first().getFullPathAsString(),
-                        "/" /*TODO FeaturesCoreConfiguration.DATETIME_INTERVAL_SEPARATOR*/,
+                        "/", // TODO use constant
                         interval.second().getFullPathAsString()))
             .or(() -> featureSchema.getPrimaryInstant().map(SchemaBase::getFullPathAsString));
       }
 
-      // TODO
       @Override
       public Map<String, FeatureSchema> getProperties() {
-        return queryables;
+        return featureSchema.getPropertyMap();
       }
     };
   }
 
+  public FeatureSchema getVectorSchema(String tilesetId, MediaType encoding) {
+    TilesetFeatures tileset = data.getTilesets().get(tilesetId);
+
+    if (Objects.isNull(tileset)) {
+      throw new IllegalArgumentException(String.format("Unknown tileset '%s'", tilesetId));
+    }
+
+    String featureProviderId =
+        tileset
+            .getFeatureProvider()
+            .or(data.getTilesetDefaults()::getFeatureProvider)
+            .orElse(TileProviderFeatures.clean(data.getId()));
+    FeatureProvider2 featureProvider =
+        entityRegistry
+            .getEntity(FeatureProvider2.class, featureProviderId)
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        String.format(
+                            "Feature provider with id '%s' not found.", featureProviderId)));
+
+    String featureType = tileset.getFeatureType().orElse(tileset.getId());
+    FeatureSchema featureSchema = featureProvider.getData().getTypes().get(featureType);
+
+    if (Objects.isNull(featureSchema)) {
+      throw new IllegalArgumentException(
+          String.format("Unknown feature type '%s' in tileset '%s'", featureType, tilesetId));
+    }
+
+    PropertyTransformations transformations = TRANSFORMATIONS.get(encoding);
+
+    if (Objects.nonNull(transformations)) {
+      featureSchema = featureSchema.accept(new WithTransformationsApplied(transformations));
+    }
+
+    return featureSchema;
+  }
+
+  @Override
+  public Optional<BoundingBox> getBounds(String tilesetId) {
+    TilesetFeatures tileset = data.getTilesets().get(tilesetId);
+
+    if (Objects.isNull(tileset)) {
+      throw new IllegalArgumentException(String.format("Unknown tileset '%s'", tilesetId));
+    }
+
+    String featureProviderId =
+        tileset
+            .getFeatureProvider()
+            .or(data.getTilesetDefaults()::getFeatureProvider)
+            .orElse(TileProviderFeatures.clean(data.getId()));
+    FeatureProvider2 featureProvider =
+        entityRegistry
+            .getEntity(FeatureProvider2.class, featureProviderId)
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        String.format(
+                            "Feature provider with id '%s' not found.", featureProviderId)));
+
+    if (!featureProvider.supportsExtents()) {
+      return Optional.empty();
+    }
+
+    String featureType = tileset.getFeatureType().orElse(tileset.getId());
+
+    return featureProvider.extents().getSpatialExtent(featureType, OgcCrs.CRS84);
+  }
+
   private FeatureQuery getFeatureQuery(
       TileQuery tile,
-      LayerOptionsFeatures layer,
+      TilesetFeatures tileset,
       Map<String, FeatureSchema> featureTypes,
       EpsgCrs nativeCrs,
       Optional<BoundingBox> bounds,
       Optional<TileGenerationParametersTransient> userParameters) {
-    String featureType = layer.getFeatureType().orElse(layer.getId());
-    // TODO: from TilesProviders with orThrow
+    String featureType = tileset.getFeatureType().orElse(tileset.getId());
     FeatureSchema featureSchema = featureTypes.get(featureType);
-    // TODO: validate layer during provider startup
+    // TODO: validate tileset during provider startup
     if (featureSchema == null) {
       throw new IllegalStateException(
           String.format(
-              "Tile layer '%s' references feature type '%s', which does not exist.",
-              layer.getId(), featureType));
+              "Tileset '%s' references feature type '%s', which does not exist.",
+              tileset.getId(), featureType));
     }
 
     ImmutableFeatureQuery.Builder queryBuilder =
         ImmutableFeatureQuery.builder()
             .type(featureType)
-            .limit(layer.getFeatureLimit())
+            .limit(
+                Optional.ofNullable(tileset.getFeatureLimit())
+                    .orElse(data.getTilesetDefaults().getFeatureLimit()))
             .offset(0)
             .crs(tile.getTileMatrixSet().getCrs())
             .maxAllowableOffset(getMaxAllowableOffset(tile, nativeCrs));
 
-    if (layer.getFilters().containsKey(tile.getTileMatrixSet().getId())) {
-      layer.getFilters().get(tile.getTileMatrixSet().getId()).stream()
+    if (tileset.getFilters().containsKey(tile.getTileMatrixSet().getId())) {
+      tileset.getFilters().get(tile.getTileMatrixSet().getId()).stream()
           .filter(levelFilter -> levelFilter.matches(tile.getLevel()))
           // TODO: parse and validate filter, preferably in hydration or provider startup
           .forEach(filter -> queryBuilder.addFilters(cql.read(filter.getFilter(), Format.TEXT)));
@@ -371,8 +415,8 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
     }
 
     if ((userParameters.isEmpty() || userParameters.get().getFields().isEmpty())
-        && layer.getTransformations().containsKey(tile.getTileMatrixSet().getId())) {
-      layer.getTransformations().get(tile.getTileMatrixSet().getId()).stream()
+        && tileset.getTransformations().containsKey(tile.getTileMatrixSet().getId())) {
+      tileset.getTransformations().get(tile.getTileMatrixSet().getId()).stream()
           .filter(rule -> rule.matches(tile.getLevel()))
           .map(LevelTransformation::getProperties)
           .flatMap(Collection::stream)

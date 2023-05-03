@@ -22,10 +22,10 @@ public interface TileStoreReadOnly {
 
   void walk(Walker walker);
 
-  boolean has(String layer, String tms, int level, int row, int col) throws IOException;
+  boolean has(String tileset, String tms, int level, int row, int col) throws IOException;
 
   @FunctionalInterface
   interface Walker {
-    void walk(String layer, String tms, int level, int row, int col);
+    void walk(String tileset, String tms, int level, int row, int col);
   }
 }
