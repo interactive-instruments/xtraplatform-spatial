@@ -248,7 +248,7 @@ public class FeatureProviderWfs
   public FeatureSchema getQueryablesSchema(
       FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
     OnlyQueryables queryablesSelector =
-        new OnlyQueryables(included, excluded, pathSeparator, (path) -> true);
+        new OnlyQueryables(included, excluded, pathSeparator, (path) -> false);
 
     return schema.accept(queryablesSelector);
   }
@@ -257,7 +257,7 @@ public class FeatureProviderWfs
   public FeatureSchema getSortablesSchema(
       FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
     OnlySortables sortablesSelector =
-        new OnlySortables(included, excluded, pathSeparator, (path) -> true);
+        new OnlySortables(included, excluded, pathSeparator, (path) -> false);
 
     return schema.accept(sortablesSelector);
   }
