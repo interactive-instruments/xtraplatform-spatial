@@ -11,6 +11,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -139,6 +140,15 @@ public class SqlDialectGpkg implements SqlDialect {
     return String.format(
         "SELECT f_table_name AS \"%s\", f_geometry_column AS \"%s\", coord_dimension AS \"%s\", srid AS \"%s\", geometry_type AS \"%s\" FROM geometry_columns;",
         GeoInfo.TABLE, GeoInfo.COLUMN, GeoInfo.DIMENSION, GeoInfo.SRID, GeoInfo.TYPE);
+  }
+
+  @Override
+  public EpsgCrs.Force forceAxisOrder(Map<String, String> dbInfo) {
+    if (Objects.equals(dbInfo.get("spatial_metadata"), "GPKG")) {
+      return Force.LON_LAT;
+    }
+
+    return Force.NONE;
   }
 
   @Override

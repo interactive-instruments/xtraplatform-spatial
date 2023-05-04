@@ -125,7 +125,8 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
               try {
                 int srid = Integer.parseInt(geometryInfo.get(1));
                 if (srid > 0) {
-                  featureProperty.additionalInfo(ImmutableMap.of("crs", String.valueOf(srid)));
+                  featureProperty.additionalInfo(
+                      ImmutableMap.of("crs", String.valueOf(srid), "force", geometryInfo.get(2)));
                 }
               } catch (Throwable e) {
                 // ignore
@@ -181,6 +182,7 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
     Map<String, List<String>> geometry = new HashMap<>();
     Map<String, String> dbInfo = sqlClient.getDbInfo();
     String query = dialect.geometryInfoQuery(dbInfo);
+    String force = dialect.forceAxisOrder(dbInfo).name();
 
     try {
       Statement stmt = connection.createStatement();
@@ -188,7 +190,7 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
       while (rs.next()) {
         geometry.put(
             rs.getString(GeoInfo.TABLE),
-            ImmutableList.of(rs.getString(GeoInfo.TYPE), rs.getString(GeoInfo.SRID)));
+            ImmutableList.of(rs.getString(GeoInfo.TYPE), rs.getString(GeoInfo.SRID), force));
       }
     } catch (SQLException e) {
       LOGGER.debug("SQL QUERY EXCEPTION", e);

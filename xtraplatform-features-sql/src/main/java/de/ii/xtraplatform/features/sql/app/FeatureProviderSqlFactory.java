@@ -308,12 +308,9 @@ public class FeatureProviderSqlFactory
               .map(
                   property -> {
                     EpsgCrs crs = EpsgCrs.fromString(property.getAdditionalInfo().get("crs"));
-                    if (Objects.nonNull(data.getConnectionInfo())) {
-                      Dialect dialect = data.getConnectionInfo().getDialect();
-                      if (dialect == Dialect.GPKG) {
-                        // GPKG enforces LON_LAT order
-                        crs = EpsgCrs.of(crs.getCode(), Force.LON_LAT);
-                      }
+                    Force force = Force.valueOf(property.getAdditionalInfo().get("force"));
+                    if (force != crs.getForceAxisOrder()) {
+                      crs = EpsgCrs.of(crs.getCode(), force);
                     }
                     return crs;
                   })
