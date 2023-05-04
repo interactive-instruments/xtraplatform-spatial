@@ -17,6 +17,7 @@ import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.AllOfResolver;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
@@ -296,7 +297,7 @@ public class FeatureProviderSqlFactory
   }
 
   private FeatureProviderSqlData generateNativeCrsIfNecessary(FeatureProviderSqlData data) {
-    if (data.isAuto() && !data.getNativeCrs().isPresent()) {
+    if (data.isAuto() && data.getNativeCrs().isEmpty()) {
       EpsgCrs nativeCrs =
           data.getTypes().values().stream()
               .flatMap(type -> type.getProperties().stream())
@@ -304,7 +305,18 @@ public class FeatureProviderSqlFactory
                   property ->
                       property.isSpatial() && property.getAdditionalInfo().containsKey("crs"))
               .findFirst()
-              .map(property -> EpsgCrs.fromString(property.getAdditionalInfo().get("crs")))
+              .map(
+                  property -> {
+                    EpsgCrs crs = EpsgCrs.fromString(property.getAdditionalInfo().get("crs"));
+                    if (Objects.nonNull(data.getConnectionInfo())) {
+                      Dialect dialect = data.getConnectionInfo().getDialect();
+                      if (dialect == Dialect.GPKG) {
+                        // GPKG enforces LON_LAT order
+                        crs = EpsgCrs.of(crs.getCode(), Force.LON_LAT);
+                      }
+                    }
+                    return crs;
+                  })
               .orElseGet(() -> OgcCrs.CRS84);
 
       return new Builder().from(data).nativeCrs(nativeCrs).build();
