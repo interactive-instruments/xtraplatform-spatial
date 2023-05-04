@@ -13,6 +13,7 @@ import de.ii.xtraplatform.cql.domain.SpatialOperator;
 import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,6 +51,10 @@ public interface SqlDialect {
   String escapeString(String value);
 
   String geometryInfoQuery(Map<String, String> dbInfo);
+
+  default EpsgCrs.Force forceAxisOrder(Map<String, String> dbInfo) {
+    return Force.NONE;
+  }
 
   List<String> getSystemTables();
 
