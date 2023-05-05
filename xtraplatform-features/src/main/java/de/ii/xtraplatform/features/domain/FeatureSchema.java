@@ -16,18 +16,23 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.OptBoolean;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -539,5 +544,53 @@ public interface FeatureSchema
                 && !Objects.equals(getType(), Type.UNKNOWN)),
         "A sortable property must be a string, a number or an instant. Found %s",
         getType());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default List<PartialObjectSchema> getAllNestedPartials() {
+    return getAllOf().stream()
+        .flatMap(
+            t ->
+                Stream.concat(
+                    Stream.of(t),
+                    t.getAllNestedProperties().stream()
+                        .flatMap(prop -> prop.getAllNestedPartials().stream())))
+        .collect(Collectors.toList());
+  }
+
+  default FeatureSchema accept(FeatureSchemaTransformer visitor, List<FeatureSchema> parents) {
+    Function<FeatureSchema, FeatureSchema> visit =
+        property ->
+            property.accept(
+                visitor,
+                new ImmutableList.Builder<FeatureSchema>().addAll(parents).add(this).build());
+
+    return visitor.visit(
+        this,
+        parents,
+        getProperties().stream().map(visit).collect(Collectors.toList()),
+        getAllOf().stream()
+            .map(
+                partial -> {
+                  if (partial.getPropertyMap().isEmpty()) {
+                    return partial;
+                  }
+                  return new ImmutablePartialObjectSchema.Builder()
+                      .from(partial)
+                      .propertyMap(
+                          partial.getPropertyMap().entrySet().stream()
+                              .map(
+                                  entry ->
+                                      new SimpleEntry<>(
+                                          entry.getKey(),
+                                          (FeatureSchema) visit.apply(entry.getValue())))
+                              .collect(
+                                  ImmutableMap.toImmutableMap(
+                                      Map.Entry::getKey, Map.Entry::getValue)))
+                      .build();
+                })
+            .collect(Collectors.toList()));
   }
 }
