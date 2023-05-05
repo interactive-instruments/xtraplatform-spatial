@@ -152,12 +152,20 @@ public class FeatureProviderSqlFactory
 
   private FeatureProviderSqlData resolveSchemasIfNecessary(FeatureProviderSqlData data) {
     SchemaReferenceResolver resolver = new SchemaReferenceResolver(data, schemaResolvers);
+    Map<String, FeatureSchema> types = data.getTypes();
 
-    if (resolver.needsResolving(data.getTypes())) {
-      Map<String, FeatureSchema> types = resolver.resolve(data.getTypes());
+    int rounds = 0;
+    while (resolver.needsResolving(types)) {
+      types = resolver.resolve(types);
+      if (++rounds >= 5) {
+        break;
+      }
+    }
 
+    if (rounds > 0) {
       return new Builder().from(data).types(types).build();
     }
+
     return data;
   }
 
