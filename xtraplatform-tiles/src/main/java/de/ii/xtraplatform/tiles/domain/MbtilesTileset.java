@@ -205,7 +205,14 @@ public class MbtilesTileset {
   }
 
   private void releaseConnection(@Nullable Connection connection) {
-    // nothing to do
+    try {
+      connection.close();
+    } catch (SQLException e) {
+      throw new IllegalStateException(
+          String.format(
+              "Failed to close SQLite connection to MBTiles store.. Reason: %s", e.getMessage()),
+          e);
+    }
   }
 
   public MbtilesMetadata getMetadata() throws SQLException, IOException {
