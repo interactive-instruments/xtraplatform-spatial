@@ -55,14 +55,12 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
                 : ImmutableList.of(
                     getName()
                         + getFilterString().map(filter -> "{filter=" + filter + "}").orElse(""))
-            : // Stream.concat(
-            // Stream.of(getName() + getFilterString().map(filter -> "{filter=" + filter +
-            // "}").orElse("")),
-            getRelation().stream()
+            : getRelation().stream()
                 .flatMap(relation -> relation.asPath().stream()) // )
                 .collect(Collectors.toList());
 
-    if (!path.isEmpty()
+    // shorten paths that overlap parents, can only happen when relation is present
+    if (path.size() > 1
         && !getParentPath().isEmpty()
         && Objects.equals(getParentPath().get(getParentPath().size() - 1), path.get(0))) {
       return path.subList(1, path.size());
@@ -70,24 +68,6 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
 
     return path;
   }
-
-  /*@Override
-  @Value.Derived
-  @Value.Auxiliary
-  default List<String> getFullPath() {
-    return getRelation().isEmpty()
-        ? Stream.concat(
-        getParentPath().stream(),
-        Stream
-            .of(getName() + getFilterString().map(filter -> "{filter=" + filter + "}").orElse("")))
-        .collect(Collectors.toList())
-        : Stream.concat(
-            Stream.of(getRelation().get(0).getSourceContainer() + getRelation().get(0)
-                .getSourceFilter().map(filter -> "{filter=" + filter + "}").orElse("")),
-            getRelation().stream()
-                .flatMap(relation -> relation.asPath().stream()))
-            .collect(Collectors.toList());
-  }*/
 
   @Value.Derived
   @Value.Auxiliary
