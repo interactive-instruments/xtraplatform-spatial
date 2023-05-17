@@ -48,7 +48,6 @@ public class MbtilesTileset {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MbtilesTileset.class);
   private static final int EMPTY_TILE_ID = 1;
-  private Connection connection = null;
   private final Path tilesetPath;
   private final Semaphore mutex = new Semaphore(1);
   private final MbtilesMetadata metadata;
@@ -75,7 +74,7 @@ public class MbtilesTileset {
     this.metadata = metadata;
 
     // create and init MBTiles DB
-    releaseConnection(getConnection(true));
+    releaseConnection(getConnection(true, false));
   }
 
   private void initMbtilesDb(MbtilesMetadata metadata, Connection connection) {
@@ -164,8 +163,9 @@ public class MbtilesTileset {
     }
   }
 
-  private Connection getConnection(boolean aquireMutexOnCreate) throws IOException {
-    // we use a single connection per database to avoid multi-threading conflicts
+  private Connection getConnection(boolean aquireMutexOnCreate, boolean readOnly)
+      throws IOException {
+    Connection connection = null;
 
     // check, if the file exists
     if (!Files.exists(tilesetPath)) {
@@ -184,10 +184,10 @@ public class MbtilesTileset {
           // recreate an empty MBTiles container
           LOGGER.trace("Creating MBTiles file '{}'.", tilesetPath);
           Files.createDirectories(tilesetPath.getParent());
-          connection = SqlHelper.getConnection(tilesetPath);
+          connection = SqlHelper.getConnection(tilesetPath, false);
           initMbtilesDb(metadata, connection);
-        } else if (Objects.isNull(connection)) {
-          connection = SqlHelper.getConnection(tilesetPath);
+        } else {
+          connection = SqlHelper.getConnection(tilesetPath, readOnly);
         }
       } catch (InterruptedException e) {
         LOGGER.debug("getConnection: Thread has been interrupted.");
@@ -197,20 +197,29 @@ public class MbtilesTileset {
           mutex.release();
         }
       }
-    } else if (Objects.isNull(connection)) {
-      connection = SqlHelper.getConnection(tilesetPath);
+    } else {
+      connection = SqlHelper.getConnection(tilesetPath, readOnly);
     }
 
     return connection;
   }
 
   private void releaseConnection(@Nullable Connection connection) {
-    // nothing to do
+    try {
+      if (connection != null) {
+        connection.close();
+      }
+    } catch (SQLException e) {
+      throw new IllegalStateException(
+          String.format(
+              "Failed to close SQLite connection to MBTiles store. Reason: %s", e.getMessage()),
+          e);
+    }
   }
 
   public MbtilesMetadata getMetadata() throws SQLException, IOException {
     ImmutableMbtilesMetadata.Builder builder = ImmutableMbtilesMetadata.builder();
-    Connection connection = getConnection(true);
+    Connection connection = getConnection(true, true);
     ResultSet rs = SqlHelper.executeQuery(connection, "SELECT name, value FROM metadata");
     while (rs.next()) {
       final String name = rs.getString("name");
@@ -333,7 +342,7 @@ public class MbtilesTileset {
     int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
     boolean gzip = Objects.equals(tile.getMediaType(), FeatureEncoderMVT.FORMAT);
-    Connection connection = getConnection(true);
+    Connection connection = getConnection(true, true);
     String sql =
         String.format(
             "SELECT tile_data FROM tiles WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
@@ -352,7 +361,7 @@ public class MbtilesTileset {
 
   public Optional<Boolean> tileIsEmpty(TileCoordinates tile) throws SQLException, IOException {
     Optional<Boolean> result = Optional.empty();
-    Connection connection = getConnection(true);
+    Connection connection = getConnection(true, true);
     int level = tile.getLevel();
     int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
@@ -374,7 +383,7 @@ public class MbtilesTileset {
   }
 
   public void walk(Walker walker) throws SQLException, IOException {
-    Connection connection = getConnection(true);
+    Connection connection = getConnection(true, false);
     String sql = "SELECT zoom_level, tile_row, tile_column FROM tile_map";
     ResultSet rs = SqlHelper.executeQuery(connection, sql);
 
@@ -394,7 +403,7 @@ public class MbtilesTileset {
   }
 
   public boolean tileExists(int level, int row, int col) throws SQLException, IOException {
-    Connection connection = getConnection(true);
+    Connection connection = getConnection(true, true);
     String sql =
         String.format(
             "SELECT tile_data FROM tiles WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
@@ -405,7 +414,7 @@ public class MbtilesTileset {
   }
 
   public boolean hasAnyTiles() throws SQLException, IOException {
-    Connection connection = getConnection(true);
+    Connection connection = getConnection(true, true);
     String sql = "SELECT COUNT(*) FROM tile_blobs";
     ResultSet resultSet = SqlHelper.executeQuery(connection, sql);
     long count = resultSet.getLong(1);
@@ -434,7 +443,7 @@ public class MbtilesTileset {
       if (!aquired)
         throw new IllegalStateException(
             String.format("Could not aquire mutex to create MBTiles file: %s", tilesetPath));
-      connection = getConnection(false);
+      connection = getConnection(false, false);
       // do we have an old blob?
       boolean exists = false;
       Integer old_tile_id = null;
@@ -534,7 +543,7 @@ public class MbtilesTileset {
       if (!aquired)
         throw new IllegalStateException(
             String.format("Could not aquire mutex to create MBTiles file: %s", tilesetPath));
-      connection = getConnection(false);
+      connection = getConnection(false, false);
       String sql =
           String.format(
               "SELECT tile_id FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
@@ -576,7 +585,7 @@ public class MbtilesTileset {
       if (!aquired)
         throw new IllegalStateException(
             String.format("Could not aquire mutex to create MBTiles file: %s", tilesetPath));
-      connection = getConnection(false);
+      connection = getConnection(false, false);
       String sqlFrom =
           String.format(
               "FROM tile_map WHERE zoom_level=%d AND tile_row>=%d AND tile_column>=%d AND tile_row<=%d AND tile_column<=%d",
