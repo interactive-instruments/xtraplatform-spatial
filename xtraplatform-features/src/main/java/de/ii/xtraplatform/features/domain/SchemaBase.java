@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -114,6 +115,29 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default boolean isForcePolygonCCW() {
     return getForcePolygonCCW().filter(force -> force == false).isEmpty();
+  }
+
+  Optional<Boolean> getIsQueryable();
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean queryable() {
+    return !isObject() && !Objects.equals(getType(), Type.UNKNOWN) && getIsQueryable().orElse(true);
+  }
+
+  Optional<Boolean> getIsSortable();
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean sortable() {
+    return !isSpatial()
+        && !isObject()
+        && !isArray()
+        && !Objects.equals(getType(), Type.BOOLEAN)
+        && !Objects.equals(getType(), Type.UNKNOWN)
+        && getIsSortable().orElse(true);
   }
 
   List<T> getProperties();
@@ -258,7 +282,11 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default String getFullPathAsString() {
-    return String.join(".", getFullPath());
+    return getFullPathAsString(".");
+  }
+
+  default String getFullPathAsString(String delimiter) {
+    return String.join(delimiter, getFullPath());
   }
 
   @JsonIgnore

@@ -10,7 +10,6 @@ package de.ii.xtraplatform.features.domain;
 import dagger.Lazy;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -37,16 +36,8 @@ public class SchemaReferenceResolver implements TypesResolver {
     return partial.getSchema().isPresent();
   }
 
-  private static boolean hasNestedSchema(PartialObjectSchema partial) {
-    return partial.getAllNestedProperties().stream().anyMatch(SchemaReferenceResolver::hasSchema);
-  }
-
   private static boolean hasAllOfWithSchema(FeatureSchema type) {
     return type.getAllOf().stream().anyMatch(SchemaReferenceResolver::hasSchema);
-  }
-
-  private static boolean hasAllOfWithNestedSchema(FeatureSchema type) {
-    return type.getAllOf().stream().anyMatch(SchemaReferenceResolver::hasNestedSchema);
   }
 
   private SchemaFragmentResolver getResolver(String ref) {
@@ -71,7 +62,12 @@ public class SchemaReferenceResolver implements TypesResolver {
 
   @Override
   public boolean needsResolving(FeatureSchema type) {
-    return hasSchema(type) || hasAllOfWithSchema(type) || hasAllOfWithNestedSchema(type);
+    return hasSchema(type) || hasAllOfWithSchema(type);
+  }
+
+  @Override
+  public boolean needsResolving(PartialObjectSchema partial) {
+    return hasSchema(partial);
   }
 
   @Override
@@ -80,7 +76,7 @@ public class SchemaReferenceResolver implements TypesResolver {
       return resolve(type.getSchema().get(), type);
     }
 
-    if (hasAllOfWithSchema(type) || hasAllOfWithNestedSchema(type)) {
+    if (hasAllOfWithSchema(type)) {
       List<PartialObjectSchema> partials = new ArrayList<>();
 
       for (PartialObjectSchema partial : type.getAllOf()) {
@@ -90,21 +86,6 @@ public class SchemaReferenceResolver implements TypesResolver {
           if (Objects.nonNull(resolvedPartial)) {
             partials.add(resolvedPartial);
           }
-        } else if (hasNestedSchema(partial)) {
-          ImmutablePartialObjectSchema.Builder builder =
-              new ImmutablePartialObjectSchema.Builder().from(partial).propertyMap(Map.of());
-
-          partial
-              .getPropertyMap()
-              .forEach(
-                  (key, value) -> {
-                    FeatureSchema accept = value.accept(this);
-                    if (Objects.nonNull(accept)) {
-                      builder.putPropertyMap(key, accept);
-                    }
-                  });
-
-          partials.add(builder.build());
         } else {
           partials.add(partial);
         }

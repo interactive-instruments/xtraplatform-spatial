@@ -12,6 +12,8 @@ import de.ii.xtraplatform.services.domain.AbstractService;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
+import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,5 +43,10 @@ public abstract class AbstractTileProvider<T extends TileProviderData>
   @Override
   protected void onStartupFailure(Throwable throwable) {
     LogContext.error(LOGGER, throwable, "Tile provider with id '{}' could not be started", getId());
+  }
+
+  @Override
+  public Optional<TilesetMetadata> metadata(String tileset) {
+    return Optional.empty();
   }
 }

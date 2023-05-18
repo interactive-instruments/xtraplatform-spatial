@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
@@ -31,6 +32,7 @@ import org.immutables.value.Value;
  * - [HTTP](http.md): The tiles are retrieved via HTTP, e.g. from a TileServer GL instance.
  *     </code>
  *     <p>## Configuration
+ *     <p>These are common configuration options for all provider types.
  *     <p>{@docTable:cfgProperties}
  * @langDe # Tiles
  *     <p>Es werden aktuell drei Arten von Tile-Providern unterstützt:
@@ -40,6 +42,7 @@ import org.immutables.value.Value;
  * - [HTTP](http.md): Die Kacheln werden via HTTP abgerufen, z.B. von einer TileServer GL Instanz.
  *     </code>
  *     <p>## Konfiguration
+ *     <p>Dies sind gemeinsame Konfigurations-Optionen für alle Provider-Typen.
  *     <p>{@docTable:cfgProperties}
  * @ref:cfgProperties {@link de.ii.xtraplatform.tiles.domain.ImmutableTileProviderCommonData}
  */
@@ -67,29 +70,44 @@ public interface TileProviderData extends ProviderData {
   @Override
   String getProviderType();
 
+  /**
+   * @langEn `FEATURES` or `MBILES` or `HTTP`.
+   * @langDe `FEATURES` oder `MBILES` oder `HTTP`.
+   */
   @Override
   String getProviderSubType();
 
-  LayerOptionsCommonDefault getLayerDefaults();
+  /**
+   * @langEn Defaults for all `tilesets`.
+   * @langDe Defaults für alle `tilesets`.
+   * @since v3.4
+   */
+  @JsonAlias("layerDefaults")
+  TilesetCommonDefaults getTilesetDefaults();
 
-  Map<String, ? extends LayerOptionsCommon> getLayers();
+  /**
+   * @langEn Definition of tilesets.
+   * @langDe Definition von Tilesets.
+   * @since v3.4
+   * @default {}
+   */
+  @JsonAlias("layers")
+  Map<String, ? extends TilesetCommon> getTilesets();
 
   @JsonIgnore
   @Value.Lazy
   default Map<String, Map<String, Range<Integer>>> getTmsRanges() {
-    return getLayers().entrySet().stream()
+    return getTilesets().entrySet().stream()
         .map(
             entry -> {
               LinkedHashMap<String, Range<Integer>> ranges =
-                  new LinkedHashMap<>(getLayerDefaults().getTmsRanges());
+                  new LinkedHashMap<>(getTilesetDefaults().getTmsRanges());
               ranges.putAll(entry.getValue().getTmsRanges());
 
               return new SimpleImmutableEntry<>(entry.getKey(), ranges);
             })
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
-
-  TileProviderData mergeInto(TileProviderData tileProvider);
 
   abstract class Builder<T extends TileProviderData.Builder<T>>
       implements EntityDataBuilder<TileProviderData> {

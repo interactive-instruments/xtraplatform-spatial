@@ -19,10 +19,10 @@ public interface TileStore extends TileStoreReadOnly {
   void delete(TileQuery tile) throws IOException;
 
   void delete(
-      String layer, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits, boolean inverse)
+      String tileset, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits, boolean inverse)
       throws IOException;
 
-  void delete(String layer, String tms, int level, int row, int col) throws IOException;
+  void delete(String tileset, String tms, int level, int row, int col) throws IOException;
 
   default boolean isDirty(TileQuery tile) {
     return false;
@@ -54,7 +54,7 @@ public interface TileStore extends TileStoreReadOnly {
 
   static boolean isInsideBounds(
       Path tilePath,
-      String layer,
+      String tileset,
       String tileMatrixSet,
       TileMatrixSetLimits tmsLimits,
       boolean inverse) {
@@ -63,9 +63,9 @@ public interface TileStore extends TileStoreReadOnly {
       return false;
     }
 
-    String layerSegment = tilePath.getName(0).toString();
+    String tilesetSegment = tilePath.getName(0).toString();
 
-    if (!Objects.equals(layer, layerSegment)) {
+    if (!Objects.equals(tileset, tilesetSegment)) {
       return false;
     }
 

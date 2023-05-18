@@ -7,14 +7,17 @@
  */
 package de.ii.xtraplatform.tiles.app;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.services.domain.TaskContext;
 import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
@@ -22,7 +25,9 @@ import de.ii.xtraplatform.tiles.domain.Cache;
 import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.Cache.Type;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
-import de.ii.xtraplatform.tiles.domain.LayerOptionsFeatures;
+import de.ii.xtraplatform.tiles.domain.ImmutableSeedingOptions;
+import de.ii.xtraplatform.tiles.domain.ImmutableTilesetMetadata;
+import de.ii.xtraplatform.tiles.domain.SeedingOptions;
 import de.ii.xtraplatform.tiles.domain.TileCache;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
 import de.ii.xtraplatform.tiles.domain.TileGenerationSchema;
@@ -36,6 +41,8 @@ import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileSeeding;
 import de.ii.xtraplatform.tiles.domain.TileStore;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
+import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
+import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -59,7 +66,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     implements TileProvider, TileSeeding {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderFeatures.class);
-  private static final String TILES_DIR_NAME = "tiles";
+  static final String TILES_DIR_NAME = "tiles";
 
   private final TileGeneratorFeatures tileGenerator;
   private final TileEncoders tileEncoders;
@@ -68,6 +75,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   private final Map<Type, Map<Storage, TileStore>> tileStores;
   private final List<TileCache> generatorCaches;
   private final List<TileCache> combinerCaches;
+  private final Map<String, TilesetMetadata> metadata;
   private final BlobStore tilesStore;
 
   @AssistedInject
@@ -93,6 +101,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                 new ConcurrentHashMap<>()));
     this.generatorCaches = new ArrayList<>();
     this.combinerCaches = new ArrayList<>();
+    this.metadata = new LinkedHashMap<>();
 
     this.tilesStore = blobStore.with(TILES_DIR_NAME, clean(data.getId()));
     ChainedTileProvider current = tileGenerator;
@@ -101,7 +110,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       Cache cache = data.getCaches().get(i);
       BlobStore cacheStore =
           tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
-      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getLayers());
+      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getTilesets());
 
       if (cache.getType() == Type.DYNAMIC) {
         current =
@@ -123,7 +132,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       Cache cache = data.getCaches().get(i);
       BlobStore cacheStore =
           tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
-      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getLayers());
+      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getTilesets());
 
       if (cache.getType() == Type.DYNAMIC) {
         current =
@@ -140,7 +149,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private TileStore getTileStore(
-      Cache cache, BlobStore cacheStore, String id, Map<String, LayerOptionsFeatures> layers) {
+      Cache cache, BlobStore cacheStore, String id, Map<String, TilesetFeatures> tilesets) {
     return tileStores
         .get(cache.getType())
         .computeIfAbsent(
@@ -148,36 +157,36 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
             storage -> {
               if (cache.getType() == Type.IMMUTABLE) {
                 return new TileStoreMulti(
-                    cacheStore, cache.getStorage(), id, getTileSchemas(tileGenerator, layers));
+                    cacheStore, cache.getStorage(), id, getTileSchemas(tileGenerator, tilesets));
               }
 
               return storage == Storage.MBTILES
                   ? TileStoreMbTiles.readWrite(
-                      cacheStore, id, getTileSchemas(tileGenerator, layers))
+                      cacheStore, id, getTileSchemas(tileGenerator, tilesets))
                   : new TileStorePlain(cacheStore);
             });
   }
 
   private Map<String, Map<String, Range<Integer>>> getCacheRanges(Cache cache) {
-    return getData().getLayers().entrySet().stream()
+    return getData().getTilesets().entrySet().stream()
         .map(
             entry ->
                 new SimpleImmutableEntry<>(
                     entry.getKey(),
                     mergeCacheRanges(
-                        cache.getTmsRanges(), cache.getLayerTmsRanges().get(entry.getKey()))))
+                        cache.getTmsRanges(), cache.getTilesetTmsRanges().get(entry.getKey()))))
         .collect(MapStreams.toMap());
   }
 
   private Map<String, Range<Integer>> mergeCacheRanges(
-      Map<String, Range<Integer>> defaults, Map<String, Range<Integer>> layer) {
-    if (Objects.isNull(layer)) {
+      Map<String, Range<Integer>> defaults, Map<String, Range<Integer>> tileset) {
+    if (Objects.isNull(tileset)) {
       return defaults;
     }
     Map<String, Range<Integer>> merged = new LinkedHashMap<>();
 
     merged.putAll(defaults);
-    merged.putAll(layer);
+    merged.putAll(tileset);
 
     return merged;
   }
@@ -201,35 +210,50 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private static Map<String, Map<String, TileGenerationSchema>> getTileSchemas(
-      TileGeneratorFeatures tileGenerator, Map<String, LayerOptionsFeatures> layers) {
-    return layers.values().stream()
+      TileGeneratorFeatures tileGenerator, Map<String, TilesetFeatures> tilesets) {
+    return tilesets.values().stream()
         .map(
-            layer -> {
+            tileset -> {
               Map<String, TileGenerationSchema> schemas =
-                  layer.isCombined()
-                      ? layer.getCombine().stream()
+                  tileset.isCombined()
+                      ? tileset.getCombine().stream()
                           .flatMap(
-                              subLayer -> {
-                                if (Objects.equals(subLayer, LayerOptionsFeatures.COMBINE_ALL)) {
-                                  return layers.entrySet().stream()
+                              layer -> {
+                                if (Objects.equals(layer, TilesetFeatures.COMBINE_ALL)) {
+                                  return tilesets.entrySet().stream()
                                       .filter(entry -> !entry.getValue().isCombined())
                                       .map(Entry::getKey);
                                 }
-                                return Stream.of(subLayer);
+                                return Stream.of(layer);
                               })
                           .map(
-                              subLayer ->
+                              layer ->
                                   new SimpleImmutableEntry<>(
-                                      subLayer,
-                                      tileGenerator.getGenerationSchema(subLayer, Map.of())))
+                                      layer, tileGenerator.getGenerationSchema(layer)))
                           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
-                      : Map.of(
-                          layer.getId(),
-                          tileGenerator.getGenerationSchema(layer.getId(), Map.of()));
+                      : Map.of(tileset.getId(), tileGenerator.getGenerationSchema(tileset.getId()));
 
-              return new SimpleImmutableEntry<>(layer.getId(), schemas);
+              return new SimpleImmutableEntry<>(tileset.getId(), schemas);
             })
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  private List<String> getLayers(TilesetFeatures tileset) {
+    if (!tileset.isCombined()) {
+      return ImmutableList.of(tileset.getId());
+    }
+
+    return tileset.getCombine().stream()
+        .flatMap(
+            layer -> {
+              if (Objects.equals(layer, TilesetFeatures.COMBINE_ALL)) {
+                return getData().getTilesets().entrySet().stream()
+                    .filter(entry -> !entry.getValue().isCombined())
+                    .map(Entry::getKey);
+              }
+              return Stream.of(layer);
+            })
+        .collect(ImmutableList.toImmutableList());
   }
 
   @Override
@@ -237,7 +261,14 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     cleanupCache32();
 
+    loadMetadata();
+
     return super.onStartup();
+  }
+
+  @Override
+  public Optional<TilesetMetadata> metadata(String tileset) {
+    return Optional.ofNullable(metadata.get(tileset));
   }
 
   @Override
@@ -248,9 +279,9 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       return error.get();
     }
 
-    LayerOptionsFeatures layer = getData().getLayers().get(tile.getLayer());
+    TilesetFeatures tileset = getData().getTilesets().get(tile.getTileset());
     TileResult result =
-        layer.isCombined() ? combinerProviderChain.get(tile) : generatorProviderChain.get(tile);
+        tileset.isCombined() ? combinerProviderChain.get(tile) : generatorProviderChain.get(tile);
 
     if (result.isNotFound() && tileEncoders.canEncode(tile.getMediaType())) {
       return TileResult.notFound(tileEncoders.empty(tile.getMediaType(), tile.getTileMatrixSet()));
@@ -259,16 +290,15 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     return result;
   }
 
-  // TODO: add to TileCacheDynamic, use canProvide + clip limits
   @Override
   public void deleteFromCache(
-      String layer, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits) {
+      String tileset, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits) {
     for (TileStore cache :
         tileStores.values().stream()
             .flatMap(m -> m.values().stream())
             .collect(Collectors.toList())) {
       try {
-        cache.delete(layer, tileMatrixSet, limits, false);
+        cache.delete(tileset, tileMatrixSet, limits, false);
       } catch (IOException e) {
 
       }
@@ -291,49 +321,54 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   @Override
+  public SeedingOptions getOptions() {
+    return getData().getSeeding().orElseGet(() -> new ImmutableSeedingOptions.Builder().build());
+  }
+
+  @Override
   public void seed(
-      Map<String, TileGenerationParameters> layers,
+      Map<String, TileGenerationParameters> tilesets,
       List<MediaType> mediaTypes,
       boolean reseed,
       TaskContext taskContext)
       throws IOException {
 
-    Map<String, TileGenerationParameters> validLayers = validLayers(layers);
-    Map<String, TileGenerationParameters> sourcedLayers = sourcedLayers(validLayers);
-    Map<String, TileGenerationParameters> combinedLayers = combinedLayers(validLayers);
+    Map<String, TileGenerationParameters> validTilesets = validTilesets(tilesets);
+    Map<String, TileGenerationParameters> sourcedTilesets = sourcedTilesets(validTilesets);
+    Map<String, TileGenerationParameters> combinedTilesets = combinedTilesets(validTilesets);
 
-    if (!sourcedLayers.isEmpty()) {
+    if (!sourcedTilesets.isEmpty()) {
       for (TileCache cache : generatorCaches) {
-        cache.purge(sourcedLayers, mediaTypes, reseed, "tile generator", taskContext);
+        cache.purge(sourcedTilesets, mediaTypes, reseed, "tile generator", taskContext);
       }
     }
-    if (!combinedLayers.isEmpty()) {
+    if (!combinedTilesets.isEmpty()) {
       for (TileCache cache : combinerCaches) {
-        cache.purge(combinedLayers, mediaTypes, reseed, "tile combiner", taskContext);
+        cache.purge(combinedTilesets, mediaTypes, reseed, "tile combiner", taskContext);
       }
     }
 
-    if (!sourcedLayers.isEmpty()) {
+    if (!sourcedTilesets.isEmpty()) {
       for (TileCache cache : generatorCaches) {
-        cache.seed(sourcedLayers, mediaTypes, reseed, "tile generator", taskContext);
+        cache.seed(sourcedTilesets, mediaTypes, reseed, "tile generator", taskContext);
       }
     }
-    if (!combinedLayers.isEmpty()) {
+    if (!combinedTilesets.isEmpty()) {
       for (TileCache cache : combinerCaches) {
-        cache.seed(combinedLayers, mediaTypes, reseed, "tile combiner", taskContext);
+        cache.seed(combinedTilesets, mediaTypes, reseed, "tile combiner", taskContext);
       }
     }
 
-    // TODO: cleanup all orphaned tiles with merged limits
+    // TODO: cleanup all orphaned tiles that are not within current cache limits
   }
 
-  private Map<String, TileGenerationParameters> validLayers(
-      Map<String, TileGenerationParameters> layers) {
-    return layers.entrySet().stream()
+  private Map<String, TileGenerationParameters> validTilesets(
+      Map<String, TileGenerationParameters> tilesets) {
+    return tilesets.entrySet().stream()
         .filter(
             entry -> {
-              if (!getData().getLayers().containsKey(entry.getKey())) {
-                LOGGER.warn("Layer with name '{}' not found", entry.getKey());
+              if (!getData().getTilesets().containsKey(entry.getKey())) {
+                LOGGER.warn("Tileset with name '{}' not found", entry.getKey());
                 return false;
               }
               return true;
@@ -341,23 +376,23 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
         .collect(MapStreams.toMap());
   }
 
-  private Map<String, TileGenerationParameters> sourcedLayers(
-      Map<String, TileGenerationParameters> layers) {
-    return layers.entrySet().stream()
+  private Map<String, TileGenerationParameters> sourcedTilesets(
+      Map<String, TileGenerationParameters> tilesets) {
+    return tilesets.entrySet().stream()
         .filter(
             entry ->
-                getData().getLayers().containsKey(entry.getKey())
-                    && !getData().getLayers().get(entry.getKey()).isCombined())
+                getData().getTilesets().containsKey(entry.getKey())
+                    && !getData().getTilesets().get(entry.getKey()).isCombined())
         .collect(MapStreams.toMap());
   }
 
-  private Map<String, TileGenerationParameters> combinedLayers(
-      Map<String, TileGenerationParameters> layers) {
-    return layers.entrySet().stream()
+  private Map<String, TileGenerationParameters> combinedTilesets(
+      Map<String, TileGenerationParameters> tilesets) {
+    return tilesets.entrySet().stream()
         .filter(
             entry ->
-                getData().getLayers().containsKey(entry.getKey())
-                    && getData().getLayers().get(entry.getKey()).isCombined())
+                getData().getTilesets().containsKey(entry.getKey())
+                    && getData().getTilesets().get(entry.getKey()).isCombined())
         .collect(MapStreams.toMap());
   }
 
@@ -405,5 +440,46 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     } catch (IOException e) {
       // ignore
     }
+  }
+
+  private void loadMetadata() {
+    getData()
+        .getTilesets()
+        .forEach(
+            (key, tileset) -> {
+              metadata.put(key, loadMetadata(tileset));
+            });
+  }
+
+  private TilesetMetadata loadMetadata(TilesetFeatures tileset) {
+    List<FeatureSchema> vectorSchemas =
+        getLayers(tileset).stream()
+            .map(id -> tileGenerator.getVectorSchema(id, FeatureEncoderMVT.FORMAT))
+            .collect(Collectors.toList());
+    Optional<BoundingBox> bounds =
+        getLayers(tileset).stream()
+            .map(tileGenerator::getBounds)
+            .reduce(
+                Optional.empty(),
+                (a, b) -> {
+                  if (b.isEmpty()) {
+                    return a;
+                  }
+                  if (a.isPresent()) {
+                    return Optional.of(BoundingBox.merge(b.get(), a.get()));
+                  }
+                  return b;
+                });
+
+    return ImmutableTilesetMetadata.builder()
+        .addEncodings("MVT")
+        .levels(
+            tileset.getLevels().isEmpty()
+                ? getData().getTilesetDefaults().getLevels()
+                : tileset.getLevels())
+        .center(tileset.getCenter().or(() -> getData().getTilesetDefaults().getCenter()))
+        .bounds(bounds)
+        .vectorSchemas(vectorSchemas)
+        .build();
   }
 }

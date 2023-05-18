@@ -9,14 +9,15 @@ package de.ii.xtraplatform.tiles.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.assisted.AssistedFactory;
-import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
+import de.ii.xtraplatform.store.domain.BlobStore;
 import de.ii.xtraplatform.store.domain.entities.AbstractEntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityFactory;
 import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileProviderMbtilesData;
+import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TileProviderMbtilesData;
 import java.util.Optional;
@@ -36,7 +37,9 @@ public class TileProviderMbTilesFactory
   @Inject
   public TileProviderMbTilesFactory(
       // TODO: needed because dagger-auto does not parse TileProviderMbTiles
-      AppContext appContext, TileProviderMbTilesFactoryAssisted factoryAssisted) {
+      BlobStore blobStore,
+      TileMatrixSetRepository tileMatrixSetRepository,
+      TileProviderMbTilesFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
   }
 
@@ -73,8 +76,6 @@ public class TileProviderMbTilesFactory
   @Override
   public EntityData hydrateData(EntityData entityData) {
     TileProviderMbtilesData data = (TileProviderMbtilesData) entityData;
-
-    // TODO: auto mode
 
     return data;
   }

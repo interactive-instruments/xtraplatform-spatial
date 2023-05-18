@@ -7,22 +7,30 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public interface TypesResolver extends SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
+public interface TypesResolver extends FeatureSchemaTransformer {
 
   boolean needsResolving(FeatureSchema type);
+
+  default boolean needsResolving(PartialObjectSchema partial) {
+    return false;
+  }
 
   FeatureSchema resolve(FeatureSchema type);
 
   default boolean needsResolving(Map<String, FeatureSchema> types) {
     return types.values().stream()
-        .flatMap(type -> Stream.concat(Stream.of(type), type.getAllNestedProperties().stream()))
-        .anyMatch(this::needsResolving);
+            .flatMap(type -> Stream.concat(Stream.of(type), type.getAllNestedProperties().stream()))
+            .anyMatch(this::needsResolving)
+        || types.values().stream()
+            .flatMap(type -> type.getAllNestedPartials().stream())
+            .anyMatch(this::needsResolving);
   }
 
   default Map<String, FeatureSchema> resolve(Map<String, FeatureSchema> types) {
@@ -30,7 +38,7 @@ public interface TypesResolver extends SchemaVisitorTopDown<FeatureSchema, Featu
 
     types.forEach(
         (key, value) -> {
-          FeatureSchema resolved = value.accept(this);
+          FeatureSchema resolved = value.accept(this, List.of());
 
           if (Objects.nonNull(resolved)) {
             resolvedTypes.put(key, resolved);
@@ -42,14 +50,21 @@ public interface TypesResolver extends SchemaVisitorTopDown<FeatureSchema, Featu
 
   @Override
   default FeatureSchema visit(
-      FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
-    if (needsResolving(schema)) {
-      return resolve(schema);
+      FeatureSchema schema,
+      List<FeatureSchema> parents,
+      List<FeatureSchema> visitedProperties,
+      List<PartialObjectSchema> visitedPartials) {
+    ImmutableFeatureSchema visited =
+        new Builder()
+            .from(schema)
+            .propertyMap(asMap(visitedProperties.stream()))
+            .allOf(visitedPartials)
+            .build();
+
+    if (needsResolving(visited)) {
+      return resolve(visited);
     }
 
-    return new ImmutableFeatureSchema.Builder()
-        .from(schema)
-        .propertyMap(asMap(visitedProperties, FeatureSchema::getName))
-        .build();
+    return visited;
   }
 }

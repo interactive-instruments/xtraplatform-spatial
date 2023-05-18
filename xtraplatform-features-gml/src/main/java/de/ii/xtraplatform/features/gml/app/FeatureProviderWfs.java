@@ -43,6 +43,8 @@ import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
+import de.ii.xtraplatform.features.domain.transform.OnlyQueryables;
+import de.ii.xtraplatform.features.domain.transform.OnlySortables;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.features.gml.domain.WfsConnector;
@@ -240,6 +242,24 @@ public class FeatureProviderWfs
     }
 
     return -1;
+  }
+
+  @Override
+  public FeatureSchema getQueryablesSchema(
+      FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
+    OnlyQueryables queryablesSelector =
+        new OnlyQueryables(included, excluded, pathSeparator, (path) -> false);
+
+    return schema.accept(queryablesSelector);
+  }
+
+  @Override
+  public FeatureSchema getSortablesSchema(
+      FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
+    OnlySortables sortablesSelector =
+        new OnlySortables(included, excluded, pathSeparator, (path) -> false);
+
+    return schema.accept(sortablesSelector);
   }
 
   @Override

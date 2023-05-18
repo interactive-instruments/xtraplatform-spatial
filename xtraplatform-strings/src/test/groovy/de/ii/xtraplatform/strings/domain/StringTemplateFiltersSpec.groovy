@@ -9,7 +9,6 @@ package de.ii.xtraplatform.strings.domain
 
 import spock.lang.Specification
 
-import java.nio.charset.Charset
 import java.util.function.Consumer
 import java.util.function.Function
 
@@ -215,11 +214,12 @@ class StringTemplateFiltersSpec extends Specification {
             }}
         when:
                 String result = StringTemplateFilters.applyTemplate("",
-                     new Consumer<Boolean>() {
-                         @Override
-                         void accept(Boolean aBoolean) {
-                      }},
-                      function)
+                        new Consumer<Boolean>() {
+                            @Override
+                            void accept(Boolean aBoolean) {
+                            }
+                        },
+                        function, false)
         then:
              result.isEmpty()
     }
@@ -236,8 +236,9 @@ class StringTemplateFiltersSpec extends Specification {
                     new Consumer<Boolean>() {
                         @Override
                         void accept(Boolean aBoolean) {
-                    }}, function,
-                    )
+                        }
+                    }, function, false,
+            )
         then:
              result.isEmpty()
     }
@@ -287,11 +288,12 @@ class StringTemplateFiltersSpec extends Specification {
 
         when:
             String result = str.applyTemplate(template,
-                new Consumer<Boolean>() {
-                    @Override
-                    void accept(Boolean aBoolean) {
-                    }},
-                    function)
+                    new Consumer<Boolean>() {
+                        @Override
+                        void accept(Boolean aBoolean) {
+                        }
+                    },
+                    function, false)
 
         then:
             result == "test"
@@ -315,8 +317,9 @@ class StringTemplateFiltersSpec extends Specification {
                 new Consumer<Boolean>() {
                     @Override
                     void accept(Boolean aBoolean) {
-                    }},
-                function)
+                    }
+                },
+                function, false)
 
         then:
 

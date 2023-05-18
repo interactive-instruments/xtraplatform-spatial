@@ -15,18 +15,24 @@ import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.OptBoolean;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -264,6 +270,49 @@ public interface FeatureSchema
   @Override
   Optional<Boolean> getForcePolygonCCW();
 
+  /**
+   * @langEn Properties that are not of type OBJECT or OBJECT_ARRAY are by default eligible as
+   *     queryables. This setting can be used to declare a property as ineligible, for example, if
+   *     the property is not optimized for use in queries. If an eligible property can actually be
+   *     queried is decided by the provider implementation, that might not be feasible due to
+   *     technical reasons.
+   * @langDe Eigenschaften, die nicht vom Typ OBJECT oder OBJECT_ARRAY sind, sind standardmäßig für
+   *     Abfragen geeignet. Diese Einstellung kann verwendet werden, um eine Eigenschaft als nicht
+   *     abfragefähig zu markieren, z. B. wenn die Eigenschaft nicht für die Verwendung in Abfragen
+   *     optimiert ist. Ob eine geeignete Eigenschaft tatsächlich abgefragt werden kann entscheidet
+   *     die Provider-Implementierung, das könnte aufgrund technischer Gründe nicht möglich sein.
+   * @default see description
+   */
+  @Override
+  Optional<Boolean> getIsQueryable();
+
+  /**
+   * @langEn Only the direct properties of a feature type that are of type STRING, FLOAT, INTEGER,
+   *     DATE, or TIMESTAMP are eligible as sortables. This setting can be used to declare a
+   *     property as ineligible, for example, if the property is not optimized for use in queries.
+   *     If an eligible property can actually be used as sortable is decided by the provider
+   *     implementation, that might not be feasible due to technical reasons.
+   * @langDe Nur die direkten Feature-Eigenschaften einer Objektart, die vom Typ STRING, FLOAT,
+   *     INTEGER, DATE oder TIMESTAMP sind, kommen als Sortierkriterien in Frage. Diese Einstellung
+   *     kann verwendet werden, um eine Eigenschaft als nicht geeignet zu deklarieren, zum Beispiel,
+   *     wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert ist. Ob eine geeignete
+   *     Eigenschaft tatsächlich als Sortierkriterium verwendet werden kann entscheidet die
+   *     Provider-Implementierung, das könnte aufgrund technischer Gründe nicht möglich sein.
+   * @default see description
+   */
+  @Override
+  Optional<Boolean> getIsSortable();
+
+  /**
+   * @langEn Only for `OBJECT` and `OBJECT_ARRAY`. Object with the property names as keys and schema
+   *     objects as values.
+   * @langDe Nur bei `OBJECT` und `OBJECT_ARRAY`. Ein Objekt mit einer Eigenschaft pro
+   *     Objekteigenschaft. Der Schüssel ist der Name der Objekteigenschaft, der Wert das
+   *     Schema-Objekt zu der Objekteigenschaft.
+   */
+  // behaves exactly like Map<String, FeaturePropertyV2>, but supports mergeable builder
+  // deserialization
+  // (immutables attributeBuilder does not work with maps yet)
   @JsonProperty("properties")
   @Override
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getPropertyMap();
@@ -473,5 +522,75 @@ public interface FeatureSchema
     }
 
     return this;
+  }
+
+  @Value.Check
+  default void checkIsQueryable() {
+    Preconditions.checkState(
+        !queryable() || (!isObject() && !Objects.equals(getType(), Type.UNKNOWN)),
+        "A queryable property must not be of type OBJECT, OBJECT_ARRAY or UNKNOWN. Found: %s. Path: %s.",
+        getType(),
+        getFullPathAsString());
+  }
+
+  @Value.Check
+  default void checkIsSortable() {
+    Preconditions.checkState(
+        !sortable()
+            || (!isSpatial()
+                && !isObject()
+                && !isArray()
+                && !Objects.equals(getType(), Type.BOOLEAN)
+                && !Objects.equals(getType(), Type.UNKNOWN)),
+        "A sortable property must be a string, a number or an instant. Found %s",
+        getType());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default List<PartialObjectSchema> getAllNestedPartials() {
+    return getAllOf().stream()
+        .flatMap(
+            t ->
+                Stream.concat(
+                    Stream.of(t),
+                    t.getAllNestedProperties().stream()
+                        .flatMap(prop -> prop.getAllNestedPartials().stream())))
+        .collect(Collectors.toList());
+  }
+
+  default FeatureSchema accept(FeatureSchemaTransformer visitor, List<FeatureSchema> parents) {
+    Function<FeatureSchema, FeatureSchema> visit =
+        property ->
+            property.accept(
+                visitor,
+                new ImmutableList.Builder<FeatureSchema>().addAll(parents).add(this).build());
+
+    return visitor.visit(
+        this,
+        parents,
+        getProperties().stream().map(visit).collect(Collectors.toList()),
+        getAllOf().stream()
+            .map(
+                partial -> {
+                  if (partial.getPropertyMap().isEmpty()) {
+                    return partial;
+                  }
+                  return new ImmutablePartialObjectSchema.Builder()
+                      .from(partial)
+                      .propertyMap(
+                          partial.getPropertyMap().entrySet().stream()
+                              .map(
+                                  entry ->
+                                      new SimpleEntry<>(
+                                          entry.getKey(),
+                                          (FeatureSchema) visit.apply(entry.getValue())))
+                              .collect(
+                                  ImmutableMap.toImmutableMap(
+                                      Map.Entry::getKey, Map.Entry::getValue)))
+                      .build();
+                })
+            .collect(Collectors.toList()));
   }
 }

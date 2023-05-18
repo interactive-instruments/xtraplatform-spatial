@@ -45,7 +45,7 @@ public class TileWalkerImpl implements TileWalker {
 
   @Override
   public long getNumberOfTiles(
-      Set<String> layers,
+      Set<String> tilesets,
       List<MediaType> outputFormats,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
       Map<String, Optional<BoundingBox>> boundingBoxes,
@@ -53,11 +53,11 @@ public class TileWalkerImpl implements TileWalker {
     final long[] numberOfTiles = {0};
 
     try {
-      walkLayersAndLimits(
-          layers,
+      walkTilesetsAndLimits(
+          tilesets,
           tmsRanges,
           boundingBoxes,
-          (layer, tms, limits) -> {
+          (tileset, tms, limits) -> {
             numberOfTiles[0] +=
                 taskContext.isPartial()
                     ? limits.getNumberOfTiles(taskContext::matchesPartialModulo)
@@ -71,8 +71,8 @@ public class TileWalkerImpl implements TileWalker {
   }
 
   @Override
-  public void walkLayersAndTiles(
-      Set<String> layers,
+  public void walkTilesetsAndTiles(
+      Set<String> tilesets,
       List<MediaType> outputFormats,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
       Map<String, Optional<BoundingBox>> boundingBoxes,
@@ -80,59 +80,59 @@ public class TileWalkerImpl implements TileWalker {
       TileVisitor tileWalker)
       throws IOException {
     for (Map.Entry<String, Map<String, Range<Integer>>> entry : tmsRanges.entrySet()) {
-      String layer = entry.getKey();
+      String tileset = entry.getKey();
 
-      if (layers.contains(layer)) {
+      if (tilesets.contains(tileset)) {
         Map<String, Range<Integer>> ranges = entry.getValue();
-        Optional<BoundingBox> boundingBox = boundingBoxes.get(layer);
+        Optional<BoundingBox> boundingBox = boundingBoxes.get(tileset);
 
         if (boundingBox.isPresent()) {
-          walkTiles(layer, outputFormats, ranges, boundingBox.get(), taskContext, tileWalker);
+          walkTiles(tileset, outputFormats, ranges, boundingBox.get(), taskContext, tileWalker);
         }
       }
     }
   }
 
   @Override
-  public void walkLayersAndLimits(
-      Set<String> layers,
+  public void walkTilesetsAndLimits(
+      Set<String> tilesets,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
       Map<String, Optional<BoundingBox>> boundingBoxes,
       LimitsVisitor limitsVisitor)
       throws IOException {
     for (Map.Entry<String, Map<String, Range<Integer>>> entry : tmsRanges.entrySet()) {
-      String layer = entry.getKey();
+      String tileset = entry.getKey();
 
-      if (layers.contains(layer)) {
+      if (tilesets.contains(tileset)) {
         Map<String, Range<Integer>> ranges = entry.getValue();
-        Optional<BoundingBox> boundingBox = boundingBoxes.get(layer);
+        Optional<BoundingBox> boundingBox = boundingBoxes.get(tileset);
 
         if (boundingBox.isPresent()) {
-          walkLimits(layer, ranges, boundingBox.get(), limitsVisitor);
+          walkLimits(tileset, ranges, boundingBox.get(), limitsVisitor);
         }
       }
     }
   }
 
   @Override
-  public void walkLayersAndLimits(
-      Set<String> layers,
+  public void walkTilesetsAndLimits(
+      Set<String> tilesets,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
       LimitsVisitor limitsVisitor)
       throws IOException {
     for (Map.Entry<String, Map<String, Range<Integer>>> entry : tmsRanges.entrySet()) {
-      String layer = entry.getKey();
+      String tileset = entry.getKey();
 
-      if (layers.contains(layer)) {
+      if (tilesets.contains(tileset)) {
         Map<String, Range<Integer>> ranges = entry.getValue();
 
-        walkLimits(layer, ranges, limitsVisitor);
+        walkLimits(tileset, ranges, limitsVisitor);
       }
     }
   }
 
   private void walkLimits(
-      String layer,
+      String tileset,
       Map<String, Range<Integer>> tmsRanges,
       BoundingBox boundingBox,
       LimitsVisitor limitsVisitor)
@@ -145,13 +145,13 @@ public class TileWalkerImpl implements TileWalker {
           tileMatrixSet.getLimitsList(MinMax.of(entry.getValue()), bbox);
 
       for (TileMatrixSetLimits limits : allLimits) {
-        limitsVisitor.visit(layer, tileMatrixSet, limits);
+        limitsVisitor.visit(tileset, tileMatrixSet, limits);
       }
     }
   }
 
   private void walkLimits(
-      String layer, Map<String, Range<Integer>> tmsRanges, LimitsVisitor limitsVisitor)
+      String tileset, Map<String, Range<Integer>> tmsRanges, LimitsVisitor limitsVisitor)
       throws IOException {
     for (Map.Entry<String, Range<Integer>> entry : tmsRanges.entrySet()) {
       TileMatrixSetBase tileMatrixSet = getTileMatrixSetById(entry.getKey());
@@ -160,13 +160,13 @@ public class TileWalkerImpl implements TileWalker {
           tileMatrixSet.getLimitsList(MinMax.of(entry.getValue()), tileMatrixSet.getBoundingBox());
 
       for (TileMatrixSetLimits limits : allLimits) {
-        limitsVisitor.visit(layer, tileMatrixSet, limits);
+        limitsVisitor.visit(tileset, tileMatrixSet, limits);
       }
     }
   }
 
   private void walkTiles(
-      String layer,
+      String tileset,
       List<MediaType> outputFormats,
       Map<String, Range<Integer>> tmsRanges,
       BoundingBox boundingBox,
@@ -190,7 +190,7 @@ public class TileWalkerImpl implements TileWalker {
                 continue;
               }
               boolean shouldContinue =
-                  tileWalker.visit(layer, outputFormat, tileMatrixSet, level, row, col);
+                  tileWalker.visit(tileset, outputFormat, tileMatrixSet, level, row, col);
               if (!shouldContinue) {
                 return;
               }

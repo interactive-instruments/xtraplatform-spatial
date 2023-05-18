@@ -7,20 +7,31 @@
  */
 package de.ii.xtraplatform.tiles.app;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Properties;
 
 public class SqlHelper {
 
-  public static Connection getConnection(File mbtilesFile) {
+  public static Properties READ_ONLY = getReadOnly();
+
+  public static Properties getReadOnly() {
+    Properties properties = new Properties();
+    properties.put("open_mode", "1");
+    return properties;
+  }
+
+  public static Connection getConnection(Path mbtilesFile, boolean readOnly) {
     try {
       Class.forName("org.sqlite.JDBC");
-      return DriverManager.getConnection("jdbc:sqlite:" + mbtilesFile.getAbsolutePath());
+      return readOnly
+          ? DriverManager.getConnection("jdbc:sqlite:" + mbtilesFile, READ_ONLY)
+          : DriverManager.getConnection("jdbc:sqlite:" + mbtilesFile);
     } catch (SQLException | ClassNotFoundException e) {
       throw new IllegalStateException(
           "Connection to Mbtiles database could not be established.", e);

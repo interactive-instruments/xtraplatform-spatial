@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Range;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -14,13 +15,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
-public interface WithLayerTmsLevels {
-  Map<String, Map<String, MinMax>> getLayerLevels();
+public interface WithTilesetTmsLevels {
+  @JsonAlias("layerLevels")
+  Map<String, Map<String, MinMax>> getTilesetLevels();
 
   @JsonIgnore
   @Value.Derived
-  default Map<String, Map<String, Range<Integer>>> getLayerTmsRanges() {
-    return getLayerLevels().entrySet().stream()
+  default Map<String, Map<String, Range<Integer>>> getTilesetTmsRanges() {
+    return getTilesetLevels().entrySet().stream()
         .map(entry -> new SimpleImmutableEntry<>(entry.getKey(), getTmsRanges(entry.getValue())))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }

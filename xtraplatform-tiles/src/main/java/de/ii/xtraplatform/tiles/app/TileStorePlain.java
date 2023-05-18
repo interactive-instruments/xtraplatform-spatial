@@ -98,8 +98,8 @@ class TileStorePlain implements TileStore {
   }
 
   @Override
-  public boolean has(String layer, String tms, int level, int row, int col) throws IOException {
-    return blobStore.has(path(layer, tms, level, row, col));
+  public boolean has(String tileset, String tms, int level, int row, int col) throws IOException {
+    return blobStore.has(path(tileset, tms, level, row, col));
   }
 
   @Override
@@ -114,7 +114,7 @@ class TileStorePlain implements TileStore {
 
   @Override
   public void delete(
-      String layer, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits, boolean inverse)
+      String tileset, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits, boolean inverse)
       throws IOException {
     try (Stream<Path> matchingFiles =
         blobStore.walk(
@@ -123,7 +123,7 @@ class TileStorePlain implements TileStore {
             (path, fileAttributes) ->
                 fileAttributes.isValue()
                     && TileStore.isInsideBounds(
-                        path, layer, tileMatrixSet.getId(), limits, inverse))) {
+                        path, tileset, tileMatrixSet.getId(), limits, inverse))) {
 
       try {
         matchingFiles.forEach(consumerMayThrow(blobStore::delete));
@@ -137,22 +137,22 @@ class TileStorePlain implements TileStore {
   }
 
   @Override
-  public void delete(String layer, String tms, int level, int row, int col) throws IOException {
-    blobStore.delete(path(layer, tms, level, row, col));
+  public void delete(String tileset, String tms, int level, int row, int col) throws IOException {
+    blobStore.delete(path(tileset, tms, level, row, col));
   }
 
   private static Path path(TileQuery tile) {
     return Path.of(
-        tile.getLayer(),
+        tile.getTileset(),
         tile.getTileMatrixSet().getId(),
         String.valueOf(tile.getLevel()),
         String.valueOf(tile.getRow()),
         String.format("%d.%s", tile.getCol(), EXTENSIONS.get(tile.getMediaType())));
   }
 
-  private static Path path(String layer, String tms, int level, int row, int col) {
+  private static Path path(String tileset, String tms, int level, int row, int col) {
     return Path.of(
-        layer,
+        tileset,
         tms,
         String.valueOf(level),
         String.valueOf(row),

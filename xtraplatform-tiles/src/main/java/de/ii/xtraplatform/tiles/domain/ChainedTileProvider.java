@@ -30,12 +30,12 @@ public interface ChainedTileProvider {
         tileResult = getTile(tile);
       } catch (IOException e) {
         LOGGER.warn(
-            "Failed to retrieve tile {}/{}/{}/{} for layer '{}'. Reason: {}",
+            "Failed to retrieve tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getLayer(),
+            tile.getTileset(),
             e.getMessage());
         if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
           LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
@@ -54,12 +54,12 @@ public interface ChainedTileProvider {
         return processDelegateResult(tile, delegateResult);
       } catch (IOException e) {
         LOGGER.warn(
-            "Failed to retrieve tile {}/{}/{}/{} for layer '{}'. Reason: {}",
+            "Failed to retrieve tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getLayer(),
+            tile.getTileset(),
             e.getMessage());
         if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
           LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
@@ -83,10 +83,10 @@ public interface ChainedTileProvider {
   }
 
   default boolean canProvide(TileQuery tile) {
-    return getTmsRanges().containsKey(tile.getLayer())
-        && getTmsRanges().get(tile.getLayer()).containsKey(tile.getTileMatrixSet().getId())
+    return getTmsRanges().containsKey(tile.getTileset())
+        && getTmsRanges().get(tile.getTileset()).containsKey(tile.getTileMatrixSet().getId())
         && getTmsRanges()
-            .get(tile.getLayer())
+            .get(tile.getTileset())
             .get(tile.getTileMatrixSet().getId())
             .contains(tile.getLevel());
   }

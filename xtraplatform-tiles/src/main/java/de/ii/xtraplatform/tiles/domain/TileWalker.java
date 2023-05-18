@@ -21,7 +21,7 @@ public interface TileWalker {
 
   interface TileVisitor {
     boolean visit(
-        String layer,
+        String tileset,
         MediaType outputFormat,
         TileMatrixSetBase tileMatrixSet,
         int level,
@@ -31,19 +31,19 @@ public interface TileWalker {
   }
 
   interface LimitsVisitor {
-    void visit(String layer, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits)
+    void visit(String tileset, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits)
         throws IOException;
   }
 
   long getNumberOfTiles(
-      Set<String> layers,
+      Set<String> tilesets,
       List<MediaType> outputFormats,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
       Map<String, Optional<BoundingBox>> boundingBoxes,
       TaskContext taskContext);
 
-  void walkLayersAndTiles(
-      Set<String> layers,
+  void walkTilesetsAndTiles(
+      Set<String> tilesets,
       List<MediaType> outputFormats,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
       Map<String, Optional<BoundingBox>> boundingBoxes,
@@ -51,14 +51,14 @@ public interface TileWalker {
       TileVisitor tileWalker)
       throws IOException;
 
-  void walkLayersAndLimits(
-      Set<String> layers,
+  void walkTilesetsAndLimits(
+      Set<String> tilesets,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
       LimitsVisitor limitsVisitor)
       throws IOException;
 
-  void walkLayersAndLimits(
-      Set<String> layers,
+  void walkTilesetsAndLimits(
+      Set<String> tilesets,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
       Map<String, Optional<BoundingBox>> boundingBoxes,
       LimitsVisitor limitsVisitor)

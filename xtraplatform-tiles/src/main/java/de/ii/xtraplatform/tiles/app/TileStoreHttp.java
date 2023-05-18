@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Invocation;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.slf4j.Logger;
@@ -39,48 +40,29 @@ public class TileStoreHttp implements TileStoreReadOnly {
           new MediaType("image", "webp"),
           "webp");
 
-  private final Map<String, String> layerSources;
+  private final Map<String, String> tilesetSources;
 
-  public TileStoreHttp(Map<String, String> layerSources) {
-    this.layerSources = layerSources;
+  public TileStoreHttp(Map<String, String> tilesetSources) {
+    this.tilesetSources = tilesetSources;
   }
 
-  // TODO
   @Override
   public boolean has(TileQuery tile) {
+    try {
+      return request(tile, true).isAvailable();
+    } catch (IOException e) {
+      // ignore
+    }
+
     return false;
   }
 
-  // TODO: use HttpClient
   @Override
   public TileResult get(TileQuery tile) throws IOException {
-    if (!layerSources.containsKey(tile.getLayer())) {
-      return TileResult.notFound();
-    }
-
-    try {
-      String url = getUrl(tile, layerSources.get(tile.getLayer()));
-
-      Response response = ClientBuilder.newClient().target(url).request(tile.getMediaType()).get();
-
-      if (response.getStatus() == 200) {
-        return TileResult.found(response.readEntity(InputStream.class).readAllBytes());
-      }
-
-      return TileResult.error(
-          String.format(
-              "Could not get tile: %s %s",
-              response.getStatus(),
-              response.hasEntity()
-                  ? new String(
-                      response.readEntity(InputStream.class).readAllBytes(), StandardCharsets.UTF_8)
-                  : ""));
-    } catch (Throwable e) {
-      return TileResult.error(e.getMessage());
-    }
+    return request(tile, false);
   }
 
-  // TODO
+  // we cannot determine this information
   @Override
   public Optional<Boolean> isEmpty(TileQuery tile) throws IOException {
     return Optional.empty();
@@ -95,16 +77,51 @@ public class TileStoreHttp implements TileStoreReadOnly {
   public void walk(Walker walker) {}
 
   @Override
-  public boolean has(String layer, String tms, int level, int row, int col) throws IOException {
+  public boolean has(String tileset, String tms, int level, int row, int col) throws IOException {
     return false;
+  }
+
+  // TODO: use HttpClient
+  private TileResult request(TileQuery tile, boolean dryRun) throws IOException {
+    if (!tilesetSources.containsKey(tile.getTileset())) {
+      return TileResult.notFound();
+    }
+
+    try {
+      String url = getUrl(tile, tilesetSources.get(tile.getTileset()));
+
+      Invocation.Builder builder =
+          ClientBuilder.newClient().target(url).request(tile.getMediaType());
+
+      try (Response response = dryRun ? builder.head() : builder.get()) {
+
+        if (response.getStatus() == 200) {
+          return dryRun
+              ? TileResult.found(new byte[] {})
+              : TileResult.found(response.readEntity(InputStream.class).readAllBytes());
+        }
+
+        return TileResult.error(
+            String.format(
+                "Could not get tile: %s %s",
+                response.getStatus(),
+                response.hasEntity()
+                    ? new String(
+                        response.readEntity(InputStream.class).readAllBytes(),
+                        StandardCharsets.UTF_8)
+                    : ""));
+      }
+    } catch (Throwable e) {
+      return TileResult.error(e.getMessage());
+    }
   }
 
   private static String getUrl(TileQuery tile, String template) {
     return StringTemplateFilters.applyTemplate(
         template,
         Map.of(
-                "layer",
-                tile.getLayer(),
+                "tileset",
+                tile.getTileset(),
                 "tileMatrixSet",
                 tile.getTileMatrixSet().getId(),
                 "tileMatrix",
@@ -115,6 +132,7 @@ public class TileStoreHttp implements TileStoreReadOnly {
                 String.valueOf(tile.getCol()),
                 "fileExtension",
                 EXTENSIONS.get(tile.getMediaType()))
-            ::get);
+            ::get,
+        true);
   }
 }

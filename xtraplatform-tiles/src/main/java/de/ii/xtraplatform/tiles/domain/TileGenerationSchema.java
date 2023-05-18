@@ -7,17 +7,16 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.Map;
 import java.util.Optional;
 
 public interface TileGenerationSchema {
 
-  String getSpatialProperty();
-
   Optional<SimpleFeatureGeometry> getGeometryType();
 
   Optional<String> getTemporalProperty();
 
-  Map<String, String> getProperties();
+  Map<String, FeatureSchema> getProperties();
 }

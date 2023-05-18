@@ -11,13 +11,17 @@ import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
+import de.ii.xtraplatform.tiles.domain.ImmutableTilesetMetadata;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
 import de.ii.xtraplatform.tiles.domain.TileProviderHttpData;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStoreReadOnly;
+import de.ii.xtraplatform.tiles.domain.TilesetHttp;
+import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -30,21 +34,21 @@ public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderHttp.class);
   private final ChainedTileProvider providerChain;
+  private final Map<String, TilesetMetadata> metadata;
 
   @AssistedInject
   public TileProviderHttp(@Assisted TileProviderHttpData data) {
     super(data);
+    this.metadata = new LinkedHashMap<>();
 
-    Map<String, String> layerSources =
-        data.getLayers().entrySet().stream()
+    Map<String, String> tilesetSources =
+        data.getTilesets().entrySet().stream()
             .map(
-                entry -> {
-                  return new SimpleImmutableEntry<>(
-                      entry.getKey(), entry.getValue().getUrlTemplate());
-                })
+                entry ->
+                    new SimpleImmutableEntry<>(entry.getKey(), entry.getValue().getUrlTemplate()))
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
-    TileStoreReadOnly tileStore = new TileStoreHttp(layerSources);
+    TileStoreReadOnly tileStore = new TileStoreHttp(tilesetSources);
 
     this.providerChain =
         new ChainedTileProvider() {
@@ -62,7 +66,15 @@ public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
 
   @Override
   protected boolean onStartup() throws InterruptedException {
+
+    loadMetadata();
+
     return super.onStartup();
+  }
+
+  @Override
+  public Optional<TilesetMetadata> metadata(String tileset) {
+    return Optional.ofNullable(metadata.get(tileset));
   }
 
   @Override
@@ -84,5 +96,28 @@ public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
   @Override
   public String getType() {
     return TileProviderHttpData.PROVIDER_TYPE;
+  }
+
+  private void loadMetadata() {
+    getData()
+        .getTilesets()
+        .forEach(
+            (key, tileset) -> {
+              metadata.put(key, loadMetadata(tileset));
+            });
+  }
+
+  private TilesetMetadata loadMetadata(TilesetHttp tileset) {
+    return ImmutableTilesetMetadata.builder()
+        .encodings(
+            tileset.getEncodings().isEmpty()
+                ? getData().getTilesetDefaults().getEncodings().keySet()
+                : tileset.getEncodings().keySet())
+        .levels(
+            tileset.getLevels().isEmpty()
+                ? getData().getTilesetDefaults().getLevels()
+                : tileset.getLevels())
+        .center(tileset.getCenter().or(() -> getData().getTilesetDefaults().getCenter()))
+        .build();
   }
 }

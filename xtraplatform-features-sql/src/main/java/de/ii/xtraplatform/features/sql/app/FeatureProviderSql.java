@@ -59,6 +59,8 @@ import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SourceSchemaValidator;
+import de.ii.xtraplatform.features.domain.transform.OnlyQueryables;
+import de.ii.xtraplatform.features.domain.transform.OnlySortables;
 import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.features.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.features.sql.SqlPathSyntax;
@@ -99,6 +101,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -884,6 +887,31 @@ public class FeatureProviderSql
     if (Objects.nonNull(getData().getQueryGeneration()))
       return getData().getQueryGeneration().getAccentiCollation().isPresent();
     return false;
+  }
+
+  @Override
+  public boolean supportsIsNull() {
+    return true;
+  }
+
+  @Override
+  public FeatureSchema getQueryablesSchema(
+      FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
+    Predicate<String> excludeConnectors = path -> path.matches(".+?\\[[^=\\]]+].+");
+    OnlyQueryables queryablesSelector =
+        new OnlyQueryables(included, excluded, pathSeparator, excludeConnectors);
+
+    return schema.accept(queryablesSelector);
+  }
+
+  @Override
+  public FeatureSchema getSortablesSchema(
+      FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
+    Predicate<String> excludeConnectors = path -> path.matches(".+?\\[[^=\\]]+].+");
+    OnlySortables sortablesSelector =
+        new OnlySortables(included, excluded, pathSeparator, excludeConnectors);
+
+    return schema.accept(sortablesSelector);
   }
 
   @Override

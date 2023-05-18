@@ -268,7 +268,9 @@ class SqlRowVals implements SqlRow {
       Comparable<?> id2 = ids2.get(i);
       int direction = idColumnDirections.get(i) == Direction.DESCENDING ? -1 : 1;
 
-      if (Objects.isNull(id1)) {
+      if (Objects.isNull(id1) && Objects.isNull(id2)) {
+        result = 0;
+      } else if (Objects.isNull(id1)) {
         result = -1;
       } else if (Objects.isNull(id2)) {
         result = 1;
