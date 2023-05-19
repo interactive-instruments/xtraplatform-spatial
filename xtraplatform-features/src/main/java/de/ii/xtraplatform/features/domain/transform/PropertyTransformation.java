@@ -208,6 +208,12 @@ public interface PropertyTransformation
   @JsonProperty(value = "null", access = JsonProperty.Access.WRITE_ONLY)
   Optional<String> getNull();
 
+  /**
+   * @langEn TODO
+   * @langDe TODO
+   */
+  Optional<String> getAsLink(); // TODO: implement, with support for title
+
   @Override
   default PropertyTransformation mergeInto(PropertyTransformation source) {
     return new ImmutablePropertyTransformation.Builder()

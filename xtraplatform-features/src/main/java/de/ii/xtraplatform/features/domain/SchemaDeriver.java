@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.features.domain.SchemaBase.Role;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
 import java.util.Collection;
@@ -125,6 +126,12 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     Optional<String> label = schema.getLabel();
     Optional<String> description = schema.getDescription();
     Optional<String> unit = schema.getUnit();
+    Optional<String> id = schema.getRole().filter(r -> r.equals(Role.ID)).map(Enum::name);
+    Optional<String> refCollectionId = schema.getRefType();
+    Optional<String> refUriTemplate =
+        schema
+            .getRefUriTemplate()
+            .map(template -> StringTemplateFilters.applyTemplate(template, "{featureId}"));
 
     switch (propertyType) {
       case FLOAT:
@@ -133,12 +140,20 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       case BOOLEAN:
       case DATETIME:
       case DATE:
-        valueSchema = getSchemaForLiteralType(propertyType, label, description, unit);
+        valueSchema =
+            getSchemaForLiteralType(
+                propertyType, label, description, unit, id, refCollectionId, refUriTemplate);
         break;
       case VALUE_ARRAY:
         valueSchema =
             getSchemaForLiteralType(
-                schema.getValueType().orElse(Type.UNKNOWN), label, description, unit);
+                schema.getValueType().orElse(Type.UNKNOWN),
+                label,
+                description,
+                unit,
+                Optional.empty(),
+                refCollectionId,
+                refUriTemplate);
         break;
       case GEOMETRY:
         valueSchema = getSchemaForGeometry(schema);
@@ -147,7 +162,13 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       case FEATURE_REF_ARRAY:
         valueSchema =
             getSchemaForLiteralType(
-                schema.getValueType().orElse(Type.STRING), label, description, unit);
+                schema.getValueType().orElse(Type.STRING),
+                label,
+                description,
+                unit,
+                Optional.of("reference"),
+                refCollectionId,
+                refUriTemplate);
         break;
       case UNKNOWN:
       default:
@@ -195,7 +216,13 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       FeatureSchema schema, Map<String, T> properties, List<String> requiredProperties);
 
   protected abstract T getSchemaForLiteralType(
-      Type type, Optional<String> label, Optional<String> description, Optional<String> unit);
+      Type type,
+      Optional<String> label,
+      Optional<String> description,
+      Optional<String> unit,
+      Optional<String> role,
+      Optional<String> refCollectionId,
+      Optional<String> refUriTemplate);
 
   protected abstract T getSchemaForGeometry(FeatureSchema schema);
 

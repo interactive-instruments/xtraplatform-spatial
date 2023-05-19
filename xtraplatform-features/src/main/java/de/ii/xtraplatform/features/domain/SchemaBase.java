@@ -89,6 +89,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
 
   Optional<String> getRefType();
 
+  Optional<String> getRefUriTemplate();
+
   List<String> getPath();
 
   List<String> getParentPath();
@@ -341,6 +343,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default boolean isTemporal() {
     return getType() == Type.DATETIME || getType() == Type.DATE;
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isFeatureRef() {
+    return getType() == Type.FEATURE_REF || getType() == Type.FEATURE_REF_ARRAY;
   }
 
   @JsonIgnore
