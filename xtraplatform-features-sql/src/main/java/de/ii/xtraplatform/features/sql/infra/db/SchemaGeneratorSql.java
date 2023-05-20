@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.sql.infra.db;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.FeatureSchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaGenerator;
@@ -114,6 +115,9 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
             if (!idFound && schemaInfo.isColumnUnique(column.getName(), table.getName(), false)) {
               featureProperty.role(SchemaBase.Role.ID);
               idFound = true;
+            }
+            if (schemaInfo.isColumnReadOnly(column.getName(), table.getName())) {
+              featureProperty.scope(Scope.QUERIES);
             }
             if (featurePropertyType == SchemaBase.Type.GEOMETRY) {
               if (!geometryInfos.containsKey(table.getName())) {
