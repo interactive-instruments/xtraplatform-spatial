@@ -197,6 +197,12 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       valueSchema = withConstraints(valueSchema, schema.getConstraints().get(), schema, codelists);
     }
 
+    if (schema.isConstant()) {
+      valueSchema = withReadOnly(valueSchema);
+    }
+
+    // FIXME process schema.getTransformations() for readOnly/WriteOnly
+
     return valueSchema;
   }
 
@@ -232,6 +238,10 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
 
   protected abstract T withConstraints(
       T schema, SchemaConstraints constraints, FeatureSchema property, List<Codelist> codelists);
+
+  protected abstract T withReadOnly(T schema);
+
+  protected abstract T withWriteOnly(T schema);
 
   protected abstract T withRefWrapper(T schema, String objectType);
 
