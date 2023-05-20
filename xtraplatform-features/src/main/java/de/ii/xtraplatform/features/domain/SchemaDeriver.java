@@ -7,8 +7,11 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerRemove.Condition.ALWAYS;
+
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
+import de.ii.xtraplatform.features.domain.FeatureSchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.SchemaBase.Role;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
@@ -120,6 +123,11 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
   }
 
   private T deriveValueSchema(FeatureSchema schema) {
+    if (schema.getTransformations().stream()
+        .anyMatch(t -> t.getRemove().map(v -> ALWAYS.name().equals(v)).isPresent())) {
+      return null;
+    }
+
     T valueSchema = null;
     Type propertyType = schema.getType();
     String propertyName = schema.getName();
@@ -197,11 +205,12 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       valueSchema = withConstraints(valueSchema, schema.getConstraints().get(), schema, codelists);
     }
 
-    if (schema.isConstant()) {
+    if (schema.isConstant()
+        || schema.getScope().filter(scope -> scope == Scope.QUERIES).isPresent()) {
       valueSchema = withReadOnly(valueSchema);
+    } else if (schema.getScope().filter(scope -> scope == Scope.MUTATIONS).isPresent()) {
+      valueSchema = withWriteOnly(valueSchema);
     }
-
-    // FIXME process schema.getTransformations() for readOnly/WriteOnly
 
     return valueSchema;
   }
