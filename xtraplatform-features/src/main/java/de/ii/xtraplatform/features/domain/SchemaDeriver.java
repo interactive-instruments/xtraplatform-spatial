@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerRemove.Condition.ALWAYS;
 
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.features.domain.FeatureSchemaBase.Scope;
@@ -134,7 +135,11 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     Optional<String> label = schema.getLabel();
     Optional<String> description = schema.getDescription();
     Optional<String> unit = schema.getUnit();
-    Optional<String> id = schema.getRole().filter(r -> r.equals(Role.ID)).map(Enum::name);
+    Optional<String> role =
+        schema
+            .getRole()
+            .map(Enum::name)
+            .map(r -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, r));
     Optional<String> refCollectionId = schema.getRefType();
     Optional<String> refUriTemplate =
         schema
@@ -150,7 +155,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       case DATE:
         valueSchema =
             getSchemaForLiteralType(
-                propertyType, label, description, unit, id, refCollectionId, refUriTemplate);
+                propertyType, label, description, unit, role, refCollectionId, refUriTemplate);
         break;
       case VALUE_ARRAY:
         valueSchema =
@@ -159,12 +164,12 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
                 label,
                 description,
                 unit,
-                Optional.empty(),
+                role,
                 refCollectionId,
                 refUriTemplate);
         break;
       case GEOMETRY:
-        valueSchema = getSchemaForGeometry(schema);
+        valueSchema = getSchemaForGeometry(schema, role);
         break;
       case FEATURE_REF:
       case FEATURE_REF_ARRAY:
@@ -239,7 +244,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       Optional<String> refCollectionId,
       Optional<String> refUriTemplate);
 
-  protected abstract T getSchemaForGeometry(FeatureSchema schema);
+  protected abstract T getSchemaForGeometry(FeatureSchema schema, Optional<String> role);
 
   protected abstract T withName(T schema, String propertyName);
 
