@@ -72,6 +72,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     OBJECT,
     VALUE_ARRAY,
     OBJECT_ARRAY,
+    FEATURE_REF,
+    FEATURE_REF_ARRAY,
     UNKNOWN
   }
 
@@ -84,6 +86,10 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   Optional<Type> getValueType();
 
   Optional<SimpleFeatureGeometry> getGeometryType();
+
+  Optional<String> getRefType();
+
+  Optional<String> getRefUriTemplate();
 
   List<String> getPath();
 
@@ -306,7 +312,9 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default boolean isArray() {
-    return getType() == Type.OBJECT_ARRAY || getType() == Type.VALUE_ARRAY;
+    return getType() == Type.OBJECT_ARRAY
+        || getType() == Type.VALUE_ARRAY
+        || getType() == Type.FEATURE_REF_ARRAY;
   }
 
   @JsonIgnore
@@ -335,6 +343,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default boolean isTemporal() {
     return getType() == Type.DATETIME || getType() == Type.DATE;
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isFeatureRef() {
+    return getType() == Type.FEATURE_REF || getType() == Type.FEATURE_REF_ARRAY;
   }
 
   @JsonIgnore

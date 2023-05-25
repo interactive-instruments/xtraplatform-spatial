@@ -9,6 +9,7 @@ package de.ii.xtraplatform.schemas.ext.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.Map;
 import org.immutables.value.Value;
 
@@ -35,6 +36,34 @@ public interface JsonSchemaConfiguration extends ExtensionConfiguration {
    * @since v3.4
    */
   Map<String, String> getObjectTypeRefs();
+
+  /**
+   * @langEn Allows to map JSON schema definitions to a `geometryType`, e.g.
+   *     `https://geojson.org/schema/LineString.json': LINE_STRING`.
+   * @langDe Erlaubt es JSON Schema Definitionen einem `geometryType` zuzuweisen, z.B.
+   *     `'https://geojson.org/schema/LineString.json': LINE_STRING`.
+   * @default {}
+   * @since v3.4
+   */
+  Map<String, SimpleFeatureGeometry> getGeometryTypeRefs();
+
+  /**
+   * @langEn Allows to map JSON schema definitions to a `refType`, e.g. `'#/$defs/Address':
+   *     address`.
+   * @langDe Erlaubt es JSON Schema Definitionen einem `refType` zuzuweisen, z.B.
+   *     `'#/$defs/Address': address`.
+   * @default {}
+   * @since v3.4
+   */
+  Map<String, String> getRelationRefs();
+
+  /**
+   * @langEn Allows to choose a specific variant for oneOf/anyOf/allOf.
+   * @langDe Erlaubt es eine bestimmte Variante für oneOf/anyOf/allOf auszuwählen.
+   * @default 0
+   * @since v3.4
+   */
+  Map<String, Integer> getCompositionIndexes();
 
   abstract class Builder extends ExtensionConfiguration.Builder {}
 

@@ -7,47 +7,25 @@
  */
 package de.ii.xtraplatform.features.domain
 
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.databind.DeserializationFeature
+
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
-import com.fasterxml.jackson.datatype.guava.GuavaModule
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.crs.domain.OgcCrs
+import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
-@Ignore//TODO
+
 class FeatureProviderDataV2Spec extends Specification {
 
     @Shared
-    ObjectMapper objectMapper
+    ObjectMapper objectMapper = YamlSerialization.createYamlMapper()
 
-    def setupSpec() {
-        def yamlFactory = new YAMLFactory()
-                .disable(YAMLGenerator.Feature.USE_NATIVE_TYPE_ID)
-                .disable(YAMLGenerator.Feature.USE_NATIVE_OBJECT_ID)
-                .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
-                .enable(YAMLGenerator.Feature.INDENT_ARRAYS)
-
-
-        objectMapper = new ObjectMapper(yamlFactory)
-                .enable(SerializationFeature.INDENT_OUTPUT)
-                .enable(SerializationFeature.WRITE_SINGLE_ELEM_ARRAYS_UNWRAPPED)
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-                .registerModules(new Jdk8Module(), new GuavaModule())
-                .setDefaultMergeable(false)
-    }
-
+    //TODO: works in IntelliJ, fails with "Strings too large to calculate edit distance." in gradle
+    @Ignore
     def 'serialize'() {
-
-
         given:
 
         FeatureProviderDataV2 data = new ImmutableFeatureProviderCommonData.Builder()
@@ -55,7 +33,7 @@ class FeatureProviderDataV2Spec extends Specification {
                 .createdAt(1586271491161)
                 .lastModified(1586271491161)
                 .providerType("FEATURE")
-                .featureProviderType("SQL")
+                .providerSubType("SQL")
                 .nativeCrs(OgcCrs.CRS84)
                 .defaultLanguage("de")
                 .putTypes2("observationsubject", new ImmutableFeatureSchema.Builder()
@@ -81,7 +59,7 @@ class FeatureProviderDataV2Spec extends Specification {
                         )
                         .putProperties2("shortName", new ImmutableFeatureSchema.Builder()
                                 .sourcePath("shortname")
-                                .transformers(ImmutableMap.of("codelist", "nullValues"))
+                                .addTransformations(new ImmutablePropertyTransformation.Builder().codelist("nullValues").build())
                         )
                         .putProperties2("geomLowerPoint", new ImmutableFeatureSchema.Builder()
                                 .sourcePath("geomlowerpoint")

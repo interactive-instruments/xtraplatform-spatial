@@ -78,6 +78,7 @@ public interface FeatureSfFlat extends FeatureBase<PropertySfFlat, FeatureSchema
           case DATE:
           case DATETIME:
           case STRING:
+          case FEATURE_REF:
           case UNKNOWN:
             return withQuotes ? "'" + property.getValue() + "'" : property.getValue();
 

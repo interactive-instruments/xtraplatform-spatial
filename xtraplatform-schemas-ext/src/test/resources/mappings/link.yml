@@ -1,0 +1,11 @@
+---
+link:
+  sourcePath: /link
+  type: OBJECT
+  properties:
+    label:
+      sourcePath: label
+      type: STRING
+    url:
+      sourcePath: url
+      type: STRING

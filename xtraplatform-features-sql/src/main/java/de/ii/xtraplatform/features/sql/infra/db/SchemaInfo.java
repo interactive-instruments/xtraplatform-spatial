@@ -76,6 +76,12 @@ class SchemaInfo {
     return false;
   }
 
+  public boolean isColumnReadOnly(String columnName, String tableName) {
+    return getColumn(tableName, columnName, true, false)
+        .map(column -> column.isAutoIncremented() || column.isGenerated())
+        .orElse(false);
+  }
+
   public boolean isColumnSpatial(String table, String name) {
     return getColumn(table, name)
         .filter(

@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 public class ValueTransformerChain
     implements TransformerChain<String, FeaturePropertyValueTransformer> {
 
+  public static final String TYPE_WILDCARD = "*{type=";
   public static final String VALUE_TYPE_WILDCARD = "*{valueType=";
 
   private final Map<String, List<FeaturePropertyValueTransformer>> transformers;
@@ -43,6 +44,18 @@ public class ValueTransformerChain
                 entry -> {
                   String propertyPath = entry.getKey();
                   List<PropertyTransformation> transformation = entry.getValue();
+
+                  if (hasWildcard(propertyPath, TYPE_WILDCARD)) {
+                    return createValueTransformersForType(
+                        propertyPath,
+                        schemaMapping,
+                        transformation,
+                        codelists,
+                        defaultTimeZone,
+                        substitutionLookup)
+                        .entrySet()
+                        .stream();
+                  }
 
                   if (hasWildcard(propertyPath, VALUE_TYPE_WILDCARD)) {
                     return createContextTransformersForValueType(
@@ -195,6 +208,35 @@ public class ValueTransformerChain
         });
 
     return transformers;
+  }
+
+  private Map<String, List<FeaturePropertyValueTransformer>> createValueTransformersForType(
+      String transformationKey,
+      SchemaMapping schemaMapping,
+      List<PropertyTransformation> propertyTransformation,
+      Map<String, Codelist> codelists,
+      Optional<ZoneId> defaultTimeZone,
+      Function<String, String> substitutionLookup) {
+    return explodeWildcard2(transformationKey, TYPE_WILDCARD, schemaMapping, this::matchesType)
+        .stream()
+        .map(
+            property ->
+                new SimpleEntry<>(
+                    property.first(),
+                    createValueTransformers(
+                        property.first(),
+                        propertyTransformation,
+                        codelists,
+                        defaultTimeZone,
+                        (key) ->
+                            "type".equals(key)
+                                ? property.second().get(0).getRefType().orElse("")
+                                : substitutionLookup.apply(key))))
+        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  private boolean matchesType(FeatureSchema schema, String type) {
+    return schema.isValue() && Objects.equals(schema.getType(), Type.valueOf(type));
   }
 
   private Map<String, List<FeaturePropertyValueTransformer>> createContextTransformersForValueType(
