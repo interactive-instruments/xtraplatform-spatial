@@ -29,6 +29,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -38,6 +40,7 @@ import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import javax.annotation.Nullable;
@@ -101,20 +104,16 @@ public class MbtilesTileset {
         SqlHelper.addMetadata(
             connection,
             "bounds",
-            String.join(
-                ",",
-                metadata.getBounds().stream()
-                    .map(v -> String.format(Locale.US, "%f", v))
-                    .collect(Collectors.toUnmodifiableList())));
+            metadata.getBounds().stream()
+                .map(v -> String.format(Locale.US, "%f", v))
+                .collect(Collectors.joining(",")));
       if (metadata.getCenter().size() == 3)
         SqlHelper.addMetadata(
             connection,
             "center",
-            String.join(
-                ",",
-                metadata.getCenter().stream()
-                    .map(v -> String.format(Locale.US, "%s", v))
-                    .collect(Collectors.toUnmodifiableList())));
+            metadata.getCenter().stream()
+                .map(v -> String.format(Locale.US, "%s", v))
+                .collect(Collectors.joining(",")));
       metadata.getMinzoom().ifPresent(v -> SqlHelper.addMetadata(connection, "minzoom", v));
       metadata.getMaxzoom().ifPresent(v -> SqlHelper.addMetadata(connection, "maxzoom", v));
       metadata.getAttribution().ifPresent(v -> SqlHelper.addMetadata(connection, "attribution", v));
@@ -145,63 +144,64 @@ public class MbtilesTileset {
 
       // create empty MVT tile with rowid=1
       if (metadata.getFormat().equals(MbtilesMetadata.MbtilesFormat.pbf)) {
-        PreparedStatement statement =
-            connection.prepareStatement("INSERT INTO tile_blobs (tile_id,tile_data) VALUES(?,?)");
-        statement.setInt(1, EMPTY_TILE_ID);
-        ByteArrayOutputStream mvt = new ByteArrayOutputStream(0);
-        GZIPOutputStream gzipStream = new GZIPOutputStream(mvt);
-        gzipStream.close();
-        statement.setBytes(2, mvt.toByteArray());
-        statement.executeUpdate();
-        statement.close();
+        try (PreparedStatement statement =
+            connection.prepareStatement("INSERT INTO tile_blobs (tile_id,tile_data) VALUES(?,?)")) {
+          statement.setInt(1, EMPTY_TILE_ID);
+          ByteArrayOutputStream mvt = new ByteArrayOutputStream(0);
+          GZIPOutputStream gzipStream = new GZIPOutputStream(mvt);
+          gzipStream.close();
+          statement.setBytes(2, mvt.toByteArray());
+          statement.executeUpdate();
+        }
       }
 
       SqlHelper.execute(connection, "COMMIT");
     } catch (Exception e) {
+      SqlHelper.execute(connection, "ROLLBACK");
       throw new IllegalStateException(
           String.format("Could not create new Mbtiles file: %s", tilesetPath), e);
     }
   }
 
-  private Connection getConnection(boolean aquireMutexOnCreate, boolean readOnly)
+  private Connection getConnection(boolean acquireMutexOnCreate, boolean readOnly)
       throws IOException {
-    Connection connection = null;
-
-    // check, if the file exists
+    // ensure that the file exists
     if (!Files.exists(tilesetPath)) {
-      // aquire the mutex, if necessary (for write operations we already have it)
-      boolean aquired = false;
-      try {
-        aquired = aquireMutexOnCreate && mutex.tryAcquire(5, TimeUnit.SECONDS);
-        if (aquireMutexOnCreate)
-          LOGGER.trace("getConnection: Trying to aquite mutex: '{}'.", aquired);
-        if (aquireMutexOnCreate && !aquired)
-          throw new IllegalStateException(
-              String.format("Could not aquire mutex to create MBTiles file: %s", tilesetPath));
-        // now that we have the mutex, check again, if the file exists, it may have been
-        // created by a parallel request
-        if (!Files.exists(tilesetPath)) {
-          // recreate an empty MBTiles container
-          LOGGER.trace("Creating MBTiles file '{}'.", tilesetPath);
-          Files.createDirectories(tilesetPath.getParent());
-          connection = SqlHelper.getConnection(tilesetPath, false);
-          initMbtilesDb(metadata, connection);
-        } else {
-          connection = SqlHelper.getConnection(tilesetPath, readOnly);
-        }
-      } catch (InterruptedException e) {
-        LOGGER.debug("getConnection: Thread has been interrupted.");
-      } finally {
-        if (aquired) {
-          LOGGER.trace("getConnection: Releasing mutex.");
-          mutex.release();
-        }
-      }
-    } else {
-      connection = SqlHelper.getConnection(tilesetPath, readOnly);
+      createMbtilesFile(acquireMutexOnCreate);
     }
 
-    return connection;
+    return SqlHelper.getConnection(tilesetPath, readOnly);
+  }
+
+  private void createMbtilesFile(boolean acquireMutexOnCreate) throws IOException {
+    // acquire the mutex, if necessary (for write operations we already have it)
+    boolean acquired = false;
+    Connection connection = null;
+    try {
+      acquired = acquireMutexOnCreate && mutex.tryAcquire(5, TimeUnit.SECONDS);
+      if (acquireMutexOnCreate)
+        LOGGER.trace("getConnection: Trying to acquire mutex: '{}'.", acquired);
+      if (acquireMutexOnCreate && !acquired)
+        throw new IllegalStateException(
+            String.format("Could not acquire mutex to create MBTiles file: %s", tilesetPath));
+      // now that we have the mutex, check again, if the file exists, it may have been
+      // created by a parallel request
+      if (!Files.exists(tilesetPath)) {
+        // recreate an empty MBTiles container
+        LOGGER.trace("Creating MBTiles file '{}'.", tilesetPath);
+        Files.createDirectories(tilesetPath.getParent());
+        connection = SqlHelper.getConnection(tilesetPath, false);
+        initMbtilesDb(metadata, connection);
+      }
+    } catch (InterruptedException e) {
+      LOGGER.debug("getConnection: Thread has been interrupted.");
+    } finally {
+      releaseConnection(connection);
+      if (acquired) {
+        LOGGER.trace("getConnection: Releasing mutex.");
+        mutex.release();
+      }
+    }
   }
 
   private void releaseConnection(@Nullable Connection connection) {
@@ -220,118 +220,124 @@ public class MbtilesTileset {
   public MbtilesMetadata getMetadata() throws SQLException, IOException {
     ImmutableMbtilesMetadata.Builder builder = ImmutableMbtilesMetadata.builder();
     Connection connection = getConnection(true, true);
-    ResultSet rs = SqlHelper.executeQuery(connection, "SELECT name, value FROM metadata");
-    while (rs.next()) {
-      final String name = rs.getString("name");
-      final String value = rs.getString("value");
-      if (Objects.nonNull(value)) {
-        switch (name) {
-          case "name":
-            builder.name(value);
-            break;
-          case "format":
-            MbtilesMetadata.MbtilesFormat format = MbtilesMetadata.MbtilesFormat.of(value);
-            if (Objects.isNull(format))
-              throw new IllegalArgumentException(
-                  String.format(
-                      "The metadata entry '%s' in an Mbtiles container has an invalid value '%s'",
-                      name, value));
-            builder.format(format);
-            break;
-          case "bounds":
-            List<Double> bounds =
-                Splitter.on(',')
-                    .trimResults()
-                    .omitEmptyStrings()
-                    .splitToStream(value)
-                    .map(Double::parseDouble)
-                    .collect(Collectors.toUnmodifiableList());
-            if (bounds.size() != 4)
-              throw new IllegalArgumentException(
-                  String.format(
-                      "The metadata entry '%s' in an Mbtiles container has an invalid value '%s'",
-                      name, value));
-            builder.bounds(bounds);
-            break;
-          case "center":
-            List<Double> center =
-                Splitter.on(',')
-                    .trimResults()
-                    .omitEmptyStrings()
-                    .splitToStream(value)
-                    .map(Double::parseDouble)
-                    .collect(Collectors.toUnmodifiableList());
-            if (center.size() != 3)
-              throw new IllegalArgumentException(
-                  String.format(
-                      "The metadata entry '%s' in an Mbtiles container has an invalid value '%s'",
-                      name, value));
-            builder.center(center);
-            break;
-          case "minzoom":
-            builder.minzoom(Integer.parseInt(value));
-            break;
-          case "maxzoom":
-            builder.maxzoom(Integer.parseInt(value));
-            break;
-          case "description":
-            builder.description(value);
-            break;
-          case "attribution":
-            builder.attribution(value);
-            break;
-          case "type":
-            MbtilesMetadata.MbtilesType type = MbtilesMetadata.MbtilesType.of(value);
-            if (Objects.isNull(type))
-              throw new IllegalArgumentException(
-                  String.format(
-                      "The metadata entry '%s' in an Mbtiles container has an invalid value '%s'",
-                      name, value));
-            builder.type(type);
-            break;
-          case "version":
-            try {
-              int v = Integer.parseInt(value);
-              builder.version(v);
-            } catch (NumberFormatException e) {
-              builder.version(Float.parseFloat(value));
-            }
-            break;
-          case "json":
-            ObjectMapper mapper = new ObjectMapper();
-            try {
-              ArrayNode layers = (ArrayNode) mapper.readTree(value).get("vector_layers");
-              for (JsonNode node : layers) {
-                ObjectNode layer = (ObjectNode) node;
-                ImmutableVectorLayer.Builder builder2 =
-                    ImmutableVectorLayer.builder().id(layer.get("id").asText());
-                if (layer.has("description")) {
-                  builder2.description(layer.get("description").asText());
-                }
-                if (layer.has("minzoom")) {
-                  builder2.minzoom(layer.get("minzoom").asDouble());
-                }
-                if (layer.has("maxzoom")) {
-                  builder2.minzoom(layer.get("maxzoom").asDouble());
-                }
-                ObjectNode fields = (ObjectNode) layer.get("fields");
-                for (Iterator<Entry<String, JsonNode>> it = fields.fields(); it.hasNext(); ) {
-                  Entry<String, JsonNode> field = it.next();
-                  builder2.putFields(field.getKey(), field.getValue().textValue());
-                }
-                builder.addVectorLayers(builder2.build());
+    String sql = "SELECT name, value FROM metadata";
+    try (Statement statement = connection.createStatement();
+        ResultSet rs = statement.executeQuery(sql)) {
+      while (rs.next()) {
+        final String name = rs.getString("name");
+        final String value = rs.getString("value");
+        if (Objects.nonNull(value)) {
+          switch (name) {
+            case "name":
+              builder.name(value);
+              break;
+            case "format":
+              MbtilesMetadata.MbtilesFormat format = MbtilesMetadata.MbtilesFormat.of(value);
+              if (Objects.isNull(format))
+                throw new IllegalArgumentException(
+                    String.format(
+                        "The metadata entry '%s' in an Mbtiles container has an invalid value '%s'",
+                        name, value));
+              builder.format(format);
+              break;
+            case "bounds":
+              List<Double> bounds =
+                  Splitter.on(',')
+                      .trimResults()
+                      .omitEmptyStrings()
+                      .splitToStream(value)
+                      .map(Double::parseDouble)
+                      .collect(Collectors.toUnmodifiableList());
+              if (bounds.size() != 4)
+                throw new IllegalArgumentException(
+                    String.format(
+                        "The metadata entry '%s' in an Mbtiles container has an invalid value '%s'",
+                        name, value));
+              builder.bounds(bounds);
+              break;
+            case "center":
+              List<Double> center =
+                  Splitter.on(',')
+                      .trimResults()
+                      .omitEmptyStrings()
+                      .splitToStream(value)
+                      .map(Double::parseDouble)
+                      .collect(Collectors.toUnmodifiableList());
+              if (center.size() != 3)
+                throw new IllegalArgumentException(
+                    String.format(
+                        "The metadata entry '%s' in an Mbtiles container has an invalid value '%s'",
+                        name, value));
+              builder.center(center);
+              break;
+            case "minzoom":
+              builder.minzoom(Integer.parseInt(value));
+              break;
+            case "maxzoom":
+              builder.maxzoom(Integer.parseInt(value));
+              break;
+            case "description":
+              builder.description(value);
+              break;
+            case "attribution":
+              builder.attribution(value);
+              break;
+            case "type":
+              MbtilesMetadata.MbtilesType type = MbtilesMetadata.MbtilesType.of(value);
+              if (Objects.isNull(type))
+                throw new IllegalArgumentException(
+                    String.format(
+                        "The metadata entry '%s' in an Mbtiles container has an invalid value '%s'",
+                        name, value));
+              builder.type(type);
+              break;
+            case "version":
+              try {
+                int v = Integer.parseInt(value);
+                builder.version(v);
+              } catch (NumberFormatException e) {
+                builder.version(Float.parseFloat(value));
               }
-            } catch (IOException e) {
-              if (LOGGER.isErrorEnabled()) {
-                LOGGER.error(
-                    "Could not parse Vector Layers object from MBTiles metadata, the vector layers are ignored: {}",
-                    e.getMessage());
+              break;
+            case "json":
+              ObjectMapper mapper = new ObjectMapper();
+              try {
+                ArrayNode layers = (ArrayNode) mapper.readTree(value).get("vector_layers");
+                for (JsonNode node : layers) {
+                  ObjectNode layer = (ObjectNode) node;
+                  ImmutableVectorLayer.Builder builder2 =
+                      ImmutableVectorLayer.builder().id(layer.get("id").asText());
+                  if (layer.has("description")) {
+                    builder2.description(layer.get("description").asText());
+                  }
+                  if (layer.has("minzoom")) {
+                    builder2.minzoom(layer.get("minzoom").asDouble());
+                  }
+                  if (layer.has("maxzoom")) {
+                    builder2.minzoom(layer.get("maxzoom").asDouble());
+                  }
+                  ObjectNode fields = (ObjectNode) layer.get("fields");
+                  for (Iterator<Entry<String, JsonNode>> it = fields.fields(); it.hasNext(); ) {
+                    Entry<String, JsonNode> field = it.next();
+                    builder2.putFields(field.getKey(), field.getValue().textValue());
+                  }
+                  builder.addVectorLayers(builder2.build());
+                }
+              } catch (IOException e) {
+                if (LOGGER.isErrorEnabled()) {
+                  LOGGER.error(
+                      "Could not parse Vector Layers object from MBTiles metadata, the vector layers are ignored: {}",
+                      e.getMessage());
+                }
               }
-            }
-            break;
+              break;
+          }
         }
       }
+    } catch (SQLException e) {
+      throw new IllegalStateException(String.format("Query execution failed: %s", sql), e);
     }
+
     releaseConnection(connection);
     return builder.build();
   }
@@ -347,13 +353,17 @@ public class MbtilesTileset {
         String.format(
             "SELECT tile_data FROM tiles WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
             level, row, col);
-    ResultSet rs = SqlHelper.executeQuery(connection, sql);
-    if (rs.next()) {
-      result =
-          Optional.of(
-              gzip
-                  ? new GZIPInputStream(rs.getBinaryStream("tile_data"))
-                  : rs.getBinaryStream("tile_data"));
+    try (Statement statement = connection.createStatement();
+        ResultSet rs = statement.executeQuery(sql)) {
+      if (rs.next()) {
+        result =
+            Optional.of(
+                gzip
+                    ? new GZIPInputStream(rs.getBinaryStream("tile_data"))
+                    : rs.getBinaryStream("tile_data"));
+      }
+    } catch (SQLException e) {
+      throw new IllegalStateException(String.format("Query execution failed: %s", sql), e);
     }
     releaseConnection(connection);
     return result;
@@ -369,9 +379,13 @@ public class MbtilesTileset {
         String.format(
             "SELECT tile_id FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
             level, row, col);
-    ResultSet rs = SqlHelper.executeQuery(connection, sql);
-    if (rs.next()) {
-      result = Optional.of(rs.getInt("tile_id") == EMPTY_TILE_ID);
+    try (Statement statement = connection.createStatement();
+        ResultSet rs = statement.executeQuery(sql)) {
+      if (rs.next()) {
+        result = Optional.of(rs.getInt("tile_id") == EMPTY_TILE_ID);
+      }
+    } catch (SQLException e) {
+      throw new IllegalStateException(String.format("Query execution failed: %s", sql), e);
     }
     releaseConnection(connection);
     return result;
@@ -384,14 +398,35 @@ public class MbtilesTileset {
 
   public void walk(Walker walker) throws SQLException, IOException {
     Connection connection = getConnection(true, false);
-    String sql = "SELECT zoom_level, tile_row, tile_column FROM tile_map";
-    ResultSet rs = SqlHelper.executeQuery(connection, sql);
-
-    while (rs.next()) {
-      walker.walk(rs.getInt(1), rs.getInt(2), rs.getInt(3));
+    // we need to close this result set, before we start to walk;
+    // first determine the number of tiles to process and store the tile coordinates in an array
+    String sql = "SELECT COUNT(zoom_level) FROM tile_map";
+    int count = 0;
+    try (Statement statement = connection.createStatement();
+        ResultSet rs = statement.executeQuery(sql)) {
+      if (rs.next()) {
+        count = rs.getInt(1);
+      }
+    } catch (SQLException e) {
+      throw new IllegalStateException(String.format("Query execution failed: %s", sql), e);
     }
-
+    sql = "SELECT zoom_level, tile_row, tile_column FROM tile_map";
+    int[][] x = new int[count][3];
+    count = 0;
+    try (Statement statement = connection.createStatement();
+        ResultSet rs = statement.executeQuery(sql)) {
+      while (rs.next()) {
+        x[count][0] = rs.getInt(1);
+        x[count][1] = rs.getInt(2);
+        x[count++][2] = rs.getInt(3);
+      }
+    } catch (SQLException e) {
+      throw new IllegalStateException(String.format("Query execution failed: %s", sql), e);
+    }
     releaseConnection(connection);
+
+    // the connection is closed, we can start to walk
+    IntStream.range(0, count).forEach(i -> walker.walk(x[i][0], x[i][1], x[i][2]));
   }
 
   public boolean tileExists(TileCoordinates tile) throws SQLException, IOException {
@@ -408,7 +443,13 @@ public class MbtilesTileset {
         String.format(
             "SELECT tile_data FROM tiles WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
             level, row, col);
-    boolean exists = SqlHelper.executeQuery(connection, sql).next();
+    boolean exists;
+    try (Statement statement = connection.createStatement();
+        ResultSet rs = statement.executeQuery(sql)) {
+      exists = rs.next();
+    } catch (SQLException e) {
+      throw new IllegalStateException(String.format("Query execution failed: %s", sql), e);
+    }
     releaseConnection(connection);
     return exists;
   }
@@ -416,8 +457,13 @@ public class MbtilesTileset {
   public boolean hasAnyTiles() throws SQLException, IOException {
     Connection connection = getConnection(true, true);
     String sql = "SELECT COUNT(*) FROM tile_blobs";
-    ResultSet resultSet = SqlHelper.executeQuery(connection, sql);
-    long count = resultSet.getLong(1);
+    long count;
+    try (Statement statement = connection.createStatement();
+        ResultSet rs = statement.executeQuery(sql)) {
+      count = rs.getLong(1);
+    } catch (SQLException e) {
+      throw new IllegalStateException(String.format("Query execution failed: %s", sql), e);
+    }
     releaseConnection(connection);
     return count > 1;
   }
@@ -436,14 +482,15 @@ public class MbtilesTileset {
         col,
         tilesetPath);
     Connection connection = null;
-    boolean aquired = false;
+    boolean acquired = false;
     try {
-      aquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
-      LOGGER.trace("writeTile: Trying to aquite mutex: '{}'.", aquired);
-      if (!aquired)
+      acquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
+      LOGGER.trace("writeTile: Trying to acquire mutex: '{}'.", acquired);
+      if (!acquired)
         throw new IllegalStateException(
-            String.format("Could not aquire mutex to create MBTiles file: %s", tilesetPath));
+            String.format("Could not acquire mutex to create MBTiles file: %s", tilesetPath));
       connection = getConnection(false, false);
+      SqlHelper.execute(connection, "BEGIN IMMEDIATE");
       // do we have an old blob?
       boolean exists = false;
       Integer old_tile_id = null;
@@ -451,48 +498,59 @@ public class MbtilesTileset {
           String.format(
               "SELECT tile_id FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
               level, row, col);
-      ResultSet rs = SqlHelper.executeQuery(connection, sql);
-      if (rs.next()) {
-        exists = true;
-        old_tile_id = rs.getInt(1);
+      try (Statement statement = connection.createStatement();
+          ResultSet rs = statement.executeQuery(sql)) {
+        if (rs.next()) {
+          exists = true;
+          old_tile_id = rs.getInt(1);
+        }
       }
       // add the new tile
       int tile_id = EMPTY_TILE_ID;
       if (content.length > 0 || !supportsEmtpyTile) {
-        PreparedStatement statement =
-            connection.prepareStatement("INSERT INTO tile_blobs (tile_data) VALUES(?)");
-        ByteArrayOutputStream mvt = new ByteArrayOutputStream(content.length);
-        if (gzip) {
-          GZIPOutputStream gzipStream = new GZIPOutputStream(mvt);
-          gzipStream.write(content);
-          gzipStream.close();
-        } else {
-          mvt.write(content);
+        try (PreparedStatement statement =
+            connection.prepareStatement("INSERT INTO tile_blobs (tile_data) VALUES(?)")) {
+          ByteArrayOutputStream mvt = new ByteArrayOutputStream(content.length);
+          if (gzip) {
+            GZIPOutputStream gzipStream = new GZIPOutputStream(mvt);
+            gzipStream.write(content);
+            gzipStream.close();
+          } else {
+            mvt.write(content);
+          }
+          statement.setBytes(1, mvt.toByteArray());
+          statement.executeUpdate();
         }
-        statement.setBytes(1, mvt.toByteArray());
-        statement.executeUpdate();
-        statement.close();
-        rs = SqlHelper.executeQuery(connection, "SELECT last_insert_rowid()");
-        tile_id = rs.getInt(1);
+        sql = "SELECT last_insert_rowid()";
+        try (Statement statement = connection.createStatement();
+            ResultSet rs = statement.executeQuery(sql)) {
+          tile_id = rs.getInt(1);
+        }
       }
-      PreparedStatement statement =
+      sql =
           exists
-              ? connection.prepareStatement(
-                  "UPDATE tile_map SET tile_id=? WHERE zoom_level=? AND tile_row=? AND tile_column=?")
-              : connection.prepareStatement(
-                  "INSERT INTO tile_map (tile_id,zoom_level,tile_row,tile_column) VALUES(?,?,?,?)");
-      statement.setInt(1, tile_id);
-      statement.setInt(2, level);
-      statement.setInt(3, row);
-      statement.setInt(4, col);
-      statement.executeUpdate();
-      statement.close();
+              ? "UPDATE tile_map SET tile_id=? WHERE zoom_level=? AND tile_row=? AND tile_column=?"
+              : "INSERT INTO tile_map (tile_id,zoom_level,tile_row,tile_column) VALUES(?,?,?,?)";
+      try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        statement.setInt(1, tile_id);
+        statement.setInt(2, level);
+        statement.setInt(3, row);
+        statement.setInt(4, col);
+        statement.executeUpdate();
+      }
+
       // finally remove any old blob
       if (Objects.nonNull(old_tile_id) && (old_tile_id != EMPTY_TILE_ID || !supportsEmtpyTile)) {
-        SqlHelper.execute(
-            connection, String.format("DELETE FROM tile_map WHERE tile_id = %d", old_tile_id));
+        sql = "DELETE FROM tile_map WHERE tile_id=?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+          statement.setInt(1, old_tile_id);
+          statement.executeUpdate();
+        }
       }
+
+      SqlHelper.execute(connection, "COMMIT");
     } catch (SQLException e) {
+      SqlHelper.execute(connection, "ROLLBACK");
       throw new IllegalStateException(
           String.format(
               "Failed to write tile %s/%d/%d/%d for layer '%s'. Reason: %s",
@@ -507,7 +565,7 @@ public class MbtilesTileset {
       LOGGER.debug("writeTile: Thread has been interrupted.");
     } finally {
       releaseConnection(connection);
-      if (aquired) {
+      if (acquired) {
         LOGGER.trace("writeTile: Releasing mutex.");
         mutex.release();
       }
@@ -536,36 +594,42 @@ public class MbtilesTileset {
   public void deleteTile(int level, int row, int col, boolean supportsEmtpyTile)
       throws SQLException, IOException {
     Connection connection = null;
-    boolean aquired = false;
+    boolean acquired = false;
     try {
-      aquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
-      LOGGER.trace("deleteTile: Trying to aquite mutex: '{}'.", aquired);
-      if (!aquired)
+      acquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
+      LOGGER.trace("deleteTile: Trying to acquire mutex: '{}'.", acquired);
+      if (!acquired)
         throw new IllegalStateException(
-            String.format("Could not aquire mutex to create MBTiles file: %s", tilesetPath));
+            String.format(
+                "Could not acquire mutex to delete tile from MBTiles file: %s", tilesetPath));
       connection = getConnection(false, false);
       String sql =
           String.format(
               "SELECT tile_id FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
               level, row, col);
-      ResultSet rs = SqlHelper.executeQuery(connection, sql);
-      if (rs.next()) {
-        int tile_id = rs.getInt(1);
-        SqlHelper.execute(
-            connection,
-            String.format(
-                "DELETE FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
-                level, row, col));
-        if (tile_id != EMPTY_TILE_ID || !supportsEmtpyTile) {
-          SqlHelper.execute(
-              connection, String.format("DELETE FROM tile_blobs WHERE tile_id=%d", tile_id));
+      int tile_id = Integer.MIN_VALUE;
+      try (Statement statement = connection.createStatement();
+          ResultSet rs = statement.executeQuery(sql)) {
+        if (rs.next()) {
+          tile_id = rs.getInt(1);
         }
+      } catch (SQLException e) {
+        throw new IllegalStateException(String.format("Query execution failed: %s", sql), e);
+      }
+      sql =
+          String.format(
+              "DELETE FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
+              level, row, col);
+      SqlHelper.execute(connection, sql);
+      if (tile_id != Integer.MIN_VALUE && (tile_id != EMPTY_TILE_ID || !supportsEmtpyTile)) {
+        sql = String.format("DELETE FROM tile_blobs WHERE tile_id=%d", tile_id);
+        SqlHelper.execute(connection, sql);
       }
     } catch (InterruptedException e) {
       LOGGER.debug("deleteTile: Thread has been interrupted.");
     } finally {
       releaseConnection(connection);
-      if (aquired) {
+      if (acquired) {
         LOGGER.trace("deleteTile: Releasing mutex.");
         mutex.release();
       }
@@ -578,13 +642,14 @@ public class MbtilesTileset {
     LOGGER.trace(
         "Delete tiles {}/{}/*/* from MBTiles cache {}.", tileMatrixSet.getId(), level, tilesetPath);
     Connection connection = null;
-    boolean aquired = false;
+    boolean acquired = false;
     try {
-      aquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
-      LOGGER.trace("deleteTiles: Trying to aquite mutex: '{}'.", aquired);
-      if (!aquired)
+      acquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
+      LOGGER.trace("deleteTiles: Trying to acquire mutex: '{}'.", acquired);
+      if (!acquired)
         throw new IllegalStateException(
-            String.format("Could not aquire mutex to create MBTiles file: %s", tilesetPath));
+            String.format(
+                "Could not acquire mutex to delete tiles in MBTiles file: %s", tilesetPath));
       connection = getConnection(false, false);
       String sqlFrom =
           String.format(
@@ -594,21 +659,32 @@ public class MbtilesTileset {
               limits.getMinTileCol(),
               tileMatrixSet.getTmsRow(level, limits.getMinTileRow()),
               limits.getMaxTileCol());
-      ResultSet rs =
-          SqlHelper.executeQuery(connection, String.format("SELECT DISTINCT tile_id %s", sqlFrom));
-      while (rs.next()) {
-        int tile_id = rs.getInt(1);
-        if (tile_id != EMPTY_TILE_ID) {
-          SqlHelper.execute(
-              connection, String.format("DELETE FROM tile_blobs WHERE tile_id=%d", tile_id));
+      String sql = String.format("SELECT DISTINCT tile_id %s", sqlFrom);
+      ArrayList<Integer> tile_ids = new ArrayList<>();
+      try (Statement statement = connection.createStatement();
+          ResultSet rs = statement.executeQuery(sql)) {
+        while (rs.next()) {
+          int tile_id = rs.getInt(1);
+          if (tile_id != EMPTY_TILE_ID) {
+            tile_ids.add(tile_id);
+          }
         }
+      } catch (SQLException e) {
+        throw new IllegalStateException(String.format("Query execution failed: %s", sql), e);
       }
+      SqlHelper.execute(connection, "BEGIN IMMEDIATE");
+      SqlHelper.execute(
+          connection,
+          String.format(
+              "DELETE FROM tile_blobs WHERE tile_id IN (%s)",
+              tile_ids.stream().map(String::valueOf).collect(Collectors.joining(","))));
       SqlHelper.execute(connection, String.format("DELETE %s", sqlFrom));
+      SqlHelper.execute(connection, "COMMIT");
     } catch (InterruptedException e) {
-      LOGGER.debug("deleteTile: Thread has been interrupted.");
+      LOGGER.debug("deleteTiles: Thread has been interrupted.");
     } finally {
       releaseConnection(connection);
-      if (aquired) {
+      if (acquired) {
         LOGGER.trace("deleteTiles: Releasing mutex.");
         mutex.release();
       }
