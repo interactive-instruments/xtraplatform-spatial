@@ -50,8 +50,8 @@ public interface Notification {
         .action(action)
         .featureType(getFeatureType())
         .featureIds(parseFeatureId(parameters.get(1)))
-        .interval(parseInterval(parameters.subList(2, 4)))
-        .boundingBox(parseBbox(parameters.subList(4, 8)))
+        .newInterval(parseInterval(parameters.subList(2, 4)))
+        .newBoundingBox(parseBbox(parameters.subList(4, 8)))
         .build();
   }
 
