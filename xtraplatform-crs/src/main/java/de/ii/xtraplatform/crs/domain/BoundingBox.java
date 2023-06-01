@@ -9,7 +9,9 @@ package de.ii.xtraplatform.crs.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.crs.domain.ImmutableBoundingBox.Builder;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
@@ -57,18 +59,36 @@ public interface BoundingBox {
         .build();
   }
 
-  static BoundingBox intersect2d(BoundingBox first, BoundingBox second, double buffer) {
+  static Optional<BoundingBox> intersect2d(BoundingBox first, BoundingBox second, double buffer) {
     if (!Objects.equals(first.getEpsgCrs(), second.getEpsgCrs())) {
-      return first;
+      return Optional.of(first);
     }
 
-    return new ImmutableBoundingBox.Builder()
-        .xmin(Math.max(first.getXmin(), second.getXmin() - buffer))
-        .ymin(Math.max(first.getYmin(), second.getYmin() - buffer))
-        .xmax(Math.min(first.getXmax(), second.getXmax() + buffer))
-        .ymax(Math.min(first.getYmax(), second.getYmax() + buffer))
-        .epsgCrs(first.getEpsgCrs())
-        .build();
+    BoundingBox bbox =
+        new Builder()
+            .xmin(Math.max(first.getXmin(), second.getXmin() - buffer))
+            .ymin(Math.max(first.getYmin(), second.getYmin() - buffer))
+            .xmax(Math.min(first.getXmax(), second.getXmax() + buffer))
+            .ymax(Math.min(first.getYmax(), second.getYmax() + buffer))
+            .epsgCrs(first.getEpsgCrs())
+            .build();
+
+    if (bbox.getXmin() > bbox.getXmax() || bbox.getYmin() > bbox.getYmax()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(bbox);
+  }
+
+  static boolean intersects(BoundingBox first, BoundingBox second) {
+    return Objects.equals(first.getEpsgCrs(), second.getEpsgCrs())
+        && Math.max(first.getXmin(), second.getXmin())
+            <= Math.min(first.getXmax(), second.getXmax())
+        && Math.max(first.getYmin(), second.getYmin())
+            <= Math.min(first.getYmax(), second.getYmax())
+        && (!first.is3d()
+            || Math.max(first.getZmin(), second.getZmin())
+                <= Math.min(first.getZmax(), second.getZmax()));
   }
 
   double getXmin();

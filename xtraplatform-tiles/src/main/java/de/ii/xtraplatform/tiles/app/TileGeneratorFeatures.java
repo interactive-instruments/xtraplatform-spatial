@@ -13,7 +13,6 @@ import com.google.common.collect.Range;
 import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
-import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.cql.domain.Geometry.Envelope;
 import de.ii.xtraplatform.cql.domain.Property;
 import de.ii.xtraplatform.cql.domain.SIntersects;
@@ -397,11 +396,14 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
         .map(SchemaBase::getFullPathAsString)
         .ifPresentOrElse(
             spatialProperty -> {
-              BoundingBox bbox = clip(tile.getBoundingBox(), bounds);
-              Cql2Expression spatialPredicate =
-                  SIntersects.of(
-                      Property.of(spatialProperty), SpatialLiteral.of(Envelope.of(bbox)));
-              queryBuilder.addFilters(spatialPredicate);
+              clip(tile.getBoundingBox(), bounds)
+                  .ifPresentOrElse(
+                      bbox ->
+                          queryBuilder.addFilters(
+                              SIntersects.of(
+                                  Property.of(spatialProperty),
+                                  SpatialLiteral.of(Envelope.of(bbox)))),
+                      () -> queryBuilder.addFilters(BooleanValue2.of(false)));
             },
             // TODO: validate feature schema during provider startup
             () -> queryBuilder.addFilters(BooleanValue2.of(false)));
@@ -453,9 +455,9 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
    * avoid issues with point features and queries in other CRSs where features on the boundary of
    * the spatial extent are suddenly no longer included in the result.
    */
-  private BoundingBox clip(BoundingBox bbox, Optional<BoundingBox> limits) {
+  private Optional<BoundingBox> clip(BoundingBox bbox, Optional<BoundingBox> limits) {
     if (limits.isEmpty()) {
-      return bbox;
+      return Optional.of(bbox);
     }
 
     return BoundingBox.intersect2d(bbox, limits.get(), getBuffer(bbox.getEpsgCrs()));
