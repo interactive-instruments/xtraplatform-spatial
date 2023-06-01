@@ -39,9 +39,13 @@ public interface FeatureChange {
 
   List<String> getFeatureIds();
 
-  Optional<BoundingBox> getBoundingBox();
+  Optional<BoundingBox> getOldBoundingBox();
 
-  Optional<Interval> getInterval();
+  Optional<BoundingBox> getNewBoundingBox();
+
+  Optional<Interval> getOldInterval();
+
+  Optional<Interval> getNewInterval();
 
   @Value.Derived
   default Instant getModified() {
