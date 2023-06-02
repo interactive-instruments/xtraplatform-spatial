@@ -11,13 +11,15 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SqlHelper {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(SqlHelper.class);
   public static Properties READ_ONLY = getReadOnly();
 
   public static Properties getReadOnly() {
@@ -38,29 +40,26 @@ public class SqlHelper {
     }
   }
 
-  public static ResultSet executeQuery(Connection connection, String sql) {
-    try {
-      Statement statement = connection.createStatement();
-      return statement.executeQuery(sql);
-    } catch (SQLException e) {
-      throw new IllegalStateException(String.format("Query execution failed: %s", sql), e);
-    }
-  }
-
   public static void execute(Connection connection, String sql) {
-    try {
-      Statement statement = connection.createStatement();
+    try (Statement statement = connection.createStatement()) {
       statement.execute(sql);
-      statement.close();
     } catch (SQLException e) {
-      throw new IllegalStateException(String.format("Statement execution failed: %s", sql), e);
+      // error updating a cache, just report and continue
+      if (LOGGER.isErrorEnabled()) {
+        String dbUrl = "unknown";
+        try {
+          dbUrl = connection.getMetaData().getURL();
+        } catch (SQLException ignore) {
+        }
+        LOGGER.error(
+            "Statement execution failed: {}. Database: {}. Reason: {}", sql, dbUrl, e.getMessage());
+      }
     }
   }
 
   public static void addMetadata(Connection connection, String name, Object value) {
-    try {
-      PreparedStatement statement =
-          connection.prepareStatement("INSERT INTO metadata (name,value) VALUES(?,?)");
+    try (PreparedStatement statement =
+        connection.prepareStatement("INSERT INTO metadata (name,value) VALUES(?,?)")) {
       statement.setString(1, name);
       if (value instanceof String) statement.setString(2, (String) value);
       else if (value instanceof Integer) statement.setInt(2, (int) value);
@@ -69,7 +68,6 @@ public class SqlHelper {
       else if (value instanceof Double) statement.setDouble(2, (double) value);
       else statement.setString(2, value.toString());
       statement.execute();
-      statement.close();
     } catch (SQLException e) {
       throw new IllegalStateException(
           String.format("Could not add metadata: %s=%s", name, value.toString()), e);
