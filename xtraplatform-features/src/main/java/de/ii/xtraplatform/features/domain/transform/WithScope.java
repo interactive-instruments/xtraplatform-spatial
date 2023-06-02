@@ -31,7 +31,9 @@ public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSch
   public FeatureSchema visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
-    if (schema.getScope().isPresent() && !Objects.equals(schema.getScope().get(), scope)) {
+    if (schema.getScope().isPresent()
+        && !Objects.equals(schema.getScope().get(), scope)
+        && !schema.isId()) {
       return null;
     }
 
