@@ -31,6 +31,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
@@ -187,6 +188,17 @@ public interface FeatureProviderGraphQlData
     default String getId(FeatureSchema idSchema, String id) {
       return StringTemplateFilters.applyTemplate(
           getId(), (Map.of("sourcePath", idSchema.getSourcePath().get(), "value", id))::get);
+    }
+
+    Optional<String> getBbox();
+
+    default String getBbox(String property, String geo) {
+      return getBbox()
+          .map(
+              template ->
+                  StringTemplateFilters.applyTemplate(
+                      template, (Map.of("property", property, "value", geo))::get))
+          .orElse("");
     }
   }
 }

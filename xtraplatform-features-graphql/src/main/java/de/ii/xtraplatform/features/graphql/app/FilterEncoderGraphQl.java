@@ -46,6 +46,7 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.graphql.domain.FeatureProviderGraphQlData.QueryGeneratorSettings;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -64,13 +65,18 @@ public class FilterEncoderGraphQl {
   private final EpsgCrs nativeCrs;
   private final CrsTransformerFactory crsTransformerFactory;
   BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>> coordinatesTransformer;
+  private final QueryGeneratorSettings queryGeneration;
 
   public FilterEncoderGraphQl(
-      EpsgCrs nativeCrs, CrsTransformerFactory crsTransformerFactory, Cql cql) {
+      EpsgCrs nativeCrs,
+      CrsTransformerFactory crsTransformerFactory,
+      Cql cql,
+      QueryGeneratorSettings queryGeneration) {
     this.nativeCrs = nativeCrs;
     this.crsTransformerFactory = crsTransformerFactory;
     this.cql = cql;
     this.coordinatesTransformer = this::transformCoordinatesIfNecessary;
+    this.queryGeneration = queryGeneration;
   }
 
   public Map<String, String> encode(Cql2Expression filter, FeatureSchema schema) {
@@ -223,6 +229,9 @@ public class FilterEncoderGraphQl {
     public Map<String, String> visit(
         BinarySpatialOperation spatialOperation, List<Map<String, String>> children) {
       if (spatialOperation instanceof SIntersects) {
+        if (queryGeneration.getBbox().isEmpty()) {
+          return Map.of();
+        }
         Map<String, String> op = Map.of("intersects", asString(children.get(1), true, true));
         return Map.of(children.get(0).get("property").replace("/asWKT", ""), asString(op, true));
       }

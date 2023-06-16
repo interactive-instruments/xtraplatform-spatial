@@ -48,7 +48,8 @@ public class FeatureQueryEncoderGraphQl implements FeatureQueryEncoder<String, Q
     this.featureSchemas = featureSchemas;
     this.queryGeneration = queryGeneration;
     this.nativeCrs = nativeCrs;
-    this.filterEncoder = new FilterEncoderGraphQl(nativeCrs, crsTransformerFactory, cql);
+    this.filterEncoder =
+        new FilterEncoderGraphQl(nativeCrs, crsTransformerFactory, cql, queryGeneration);
   }
 
   @Override
@@ -158,6 +159,10 @@ public class FeatureQueryEncoderGraphQl implements FeatureQueryEncoder<String, Q
 
     Map<String, String> filter =
         filterEncoder.encode(optionalFilter.get(), featureSchemas.get(type));
+
+    if (filter.isEmpty()) {
+      return "";
+    }
 
     if (isSingle) {
       return "(" + FilterEncoderGraphQl.asString(filter, false, true) + ")";
