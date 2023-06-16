@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.graphql.app;
 
 import de.ii.xtraplatform.cql.domain.Cql;
+import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.FeatureProviderCapabilities;
@@ -135,31 +136,35 @@ public class FeatureQueryEncoderGraphQl implements FeatureQueryEncoder<String, Q
 
   public String encodeFeatureQuery(
       FeatureQuery query, Map<String, String> additionalQueryParameters) {
-    String queryTemplate = "{\\n  %s %s\\n}";
-
+    String queryTemplate = "{\"query\":\"{\\n  %s %s\\n}\"}";
     String fields = getFields(featureSchemas.get(query.getType()), "  ");
+    String name =
+        query.returnsSingleFeature()
+            ? queryGeneration.getSingle(getTypeName(query))
+            : queryGeneration.getCollection(getTypeName(query));
+    String filter = getFilter(query.getFilter(), query.getType(), query.returnsSingleFeature());
 
-    String q =
-        String.format(queryTemplate, queryGeneration.getCollection(getTypeName(query)), fields);
+    String q = String.format(queryTemplate, name + filter, fields);
 
-    if (query.returnsSingleFeature() && query.getFilter().isPresent()) {
-      Map<String, String> filter =
-          filterEncoder.encode(query.getFilter().get(), featureSchemas.get(query.getType()));
-      String filter2 =
-          filter.entrySet().stream()
-              .map(entry -> String.format("%s: \\\"%s\\\"", entry.getKey(), entry.getValue()))
-              .collect(Collectors.joining(","));
+    LOGGER.debug("GraphQL Request\n{}", q.replaceAll("\\\\n", "\n"));
 
-      q =
-          String.format(
-              queryTemplate,
-              queryGeneration.getSingle(getTypeName(query)) + "(" + filter2 + ")",
-              fields);
+    return q;
+  }
+
+  private String getFilter(Optional<Cql2Expression> optionalFilter, String type, boolean isSingle) {
+    if (optionalFilter.isEmpty()) {
+      return "";
     }
 
-    String q2 = "{\"query\":\"" + q + "\"}";
-    LOGGER.debug("GraphQL Request\n{}", q2.replaceAll("\\\\n", "\n"));
+    Map<String, String> filter =
+        filterEncoder.encode(optionalFilter.get(), featureSchemas.get(type));
 
-    return q2;
+    if (isSingle) {
+      return "(" + FilterEncoderGraphQl.asString(filter, false, true) + ")";
+    }
+
+    return filter.entrySet().stream()
+        .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
+        .collect(Collectors.joining(",", "(filter: {", "})"));
   }
 }

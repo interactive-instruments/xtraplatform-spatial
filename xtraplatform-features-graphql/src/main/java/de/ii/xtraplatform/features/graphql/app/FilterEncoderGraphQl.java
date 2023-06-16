@@ -38,6 +38,7 @@ import de.ii.xtraplatform.cql.domain.Like;
 import de.ii.xtraplatform.cql.domain.LogicalOperation;
 import de.ii.xtraplatform.cql.domain.Not;
 import de.ii.xtraplatform.cql.domain.Property;
+import de.ii.xtraplatform.cql.domain.SIntersects;
 import de.ii.xtraplatform.cql.domain.ScalarLiteral;
 import de.ii.xtraplatform.cql.domain.SpatialLiteral;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
@@ -46,10 +47,12 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -219,6 +222,10 @@ public class FilterEncoderGraphQl {
     @Override
     public Map<String, String> visit(
         BinarySpatialOperation spatialOperation, List<Map<String, String>> children) {
+      if (spatialOperation instanceof SIntersects) {
+        Map<String, String> op = Map.of("intersects", asString(children.get(1), true, true));
+        return Map.of(children.get(0).get("property").replace("/asWKT", ""), asString(op, true));
+      }
       throw new IllegalArgumentException(
           String.format(
               "Spatial operation '%s' is not supported for WFS feature providers.",
@@ -321,8 +328,24 @@ public class FilterEncoderGraphQl {
 
     @Override
     public Map<String, String> visit(Envelope envelope, List<Map<String, String>> children) {
-      throw new IllegalArgumentException(
-          "Envelope geometries are not supported in filter expressions for WFS feature providers.");
+      List<Double> coords =
+          transformCoordinatesIfNecessary(envelope.getCoordinates(), envelope.getCrs());
+
+      return Map.of(
+          "fromWKT",
+          String.format(
+              Locale.US,
+              "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))",
+              coords.get(0),
+              coords.get(1),
+              coords.get(2),
+              coords.get(1),
+              coords.get(2),
+              coords.get(3),
+              coords.get(0),
+              coords.get(3),
+              coords.get(0),
+              coords.get(1)));
     }
 
     @Override
@@ -341,5 +364,22 @@ public class FilterEncoderGraphQl {
               "Booleans are not supported in filter expressions for WFS feature providers. Found: %s",
               booleanValue));
     }
+  }
+
+  static String asString(Map<String, String> obj) {
+    return asString(obj, false);
+  }
+
+  static String asString(Map<String, String> obj, boolean wrap) {
+    return asString(obj, wrap, false);
+  }
+
+  static String asString(Map<String, String> obj, boolean wrap, boolean quote) {
+    return obj.entrySet().stream()
+        .map(
+            entry ->
+                String.format(
+                    quote ? "%s: \\\"%s\\\"" : "%s: %s", entry.getKey(), entry.getValue()))
+        .collect(Collectors.joining(",", wrap ? "{" : "", wrap ? "}" : ""));
   }
 }
