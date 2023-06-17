@@ -131,7 +131,10 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
       }
 
       // in "full" tiles all features cover then whole tile
-      full = full && tileGeometry.equals(clipGeometry);
+      try {
+        full = full && tileGeometry.equals(clipGeometry);
+      } catch (Exception ignore) {
+      }
 
       // if polygons have to be merged, store them for now and process at the end
       if (Objects.nonNull(groupBy) && tileGeometry.getGeometryType().contains("Polygon")) {
@@ -180,13 +183,14 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
 
     } catch (Exception e) {
       LOGGER.error(
-          "Error while processing feature {} in tile {}/{}/{}/{} in tileset {}. The feature is skipped.",
+          "Error while processing feature {} in tile {}/{}/{}/{} in tileset {}. The feature is skipped. Reason: {}",
           feature.getIdValue(),
           tile.getTileMatrixSet().getId(),
           tile.getLevel(),
           tile.getRow(),
           tile.getCol(),
-          tileset);
+          tileset,
+          e.getMessage());
       if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
         LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace:", e);
       }

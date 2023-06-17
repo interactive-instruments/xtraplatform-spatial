@@ -75,9 +75,14 @@ public class TileGeometryUtil {
     geom = GeometryPrecisionReducer.reducePointwise(geom, precisionModel);
     if (Objects.isNull(geom) || geom.isEmpty()) return null;
 
-    // 6 if the resulting geometry is invalid, try to make it valid
-    if (!geom.isValid()) {
-      geom = new GeometryFixer(geom).getResult();
+    // 6 if the resulting geometry is invalid, try to make it valid and ensure it is still aligned
+    //   with the tile grid; give up, if it is still invalid after two attempts
+    int count = 0;
+    while (!geom.isValid() && count++ < 2) {
+      geom = GeometryFixer.fix(geom);
+      if (Objects.isNull(geom) || geom.isEmpty()) return null;
+
+      geom = GeometryPrecisionReducer.reducePointwise(geom, precisionModel);
       if (Objects.isNull(geom) || geom.isEmpty()) return null;
     }
 
