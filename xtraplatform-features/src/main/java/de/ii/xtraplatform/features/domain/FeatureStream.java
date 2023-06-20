@@ -101,6 +101,8 @@ public interface FeatureStream {
 
       public abstract U isEmpty(boolean isEmpty);
 
+      public abstract U hasFeatures(boolean hasFeatures);
+
       public abstract U error(Throwable error);
 
       public abstract T build();
@@ -112,6 +114,8 @@ public interface FeatureStream {
     }
 
     boolean isEmpty();
+
+    boolean hasFeatures();
 
     Optional<Throwable> getError();
   }
