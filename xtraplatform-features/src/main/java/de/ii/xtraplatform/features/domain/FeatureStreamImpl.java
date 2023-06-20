@@ -84,13 +84,15 @@ public class FeatureStreamImpl implements FeatureStream {
             source = source.via(new FeatureTokenTransformerWeakETag(resultBuilder));
           }
 
+          source = source.via(new FeatureTokenTransformerHasFeatures(resultBuilder));
+
           Reactive.BasicStream<?, Void> basicStream =
               sink instanceof Reactive.SinkTransformed
                   ? source.to((Reactive.SinkTransformed<Object, ?>) sink)
                   : source.to(sink);
 
           return basicStream
-              .withResult(resultBuilder.isEmpty(true))
+              .withResult(resultBuilder.isEmpty(true).hasFeatures(false))
               .handleError(ImmutableResult.Builder::error)
               .handleItem(
                   (builder, x) -> {
@@ -138,13 +140,15 @@ public class FeatureStreamImpl implements FeatureStream {
             source = source.via(new FeatureTokenTransformerWeakETag(resultBuilder));
           }
 
+          source = source.via(new FeatureTokenTransformerHasFeatures(resultBuilder));
+
           Reactive.BasicStream<?, X> basicStream =
               sink instanceof Reactive.SinkReducedTransformed
                   ? source.to((Reactive.SinkReducedTransformed<Object, ?, X>) sink)
                   : source.to(sink);
 
           return basicStream
-              .withResult(resultBuilder.isEmpty(true))
+              .withResult(resultBuilder.isEmpty(true).hasFeatures(false))
               .handleError(ImmutableResultReduced.Builder::error)
               .handleItem(
                   (builder, x) -> {
