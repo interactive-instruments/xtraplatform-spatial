@@ -223,6 +223,10 @@ public interface FeatureProviderSqlData
   @Override
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getTypes();
 
+  // for json ordering
+  @Override
+  BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getFragments();
+
   @Value.Check
   default FeatureProviderSqlData initNestedDefault() {
     /*
