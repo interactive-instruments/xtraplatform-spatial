@@ -42,6 +42,10 @@ public class FeatureTokenReader<
       if (Objects.nonNull(currentType)) {
         emitEvent();
       }
+      if (token == FeatureTokenType.FLUSH) {
+        this.currentType = null;
+        return;
+      }
       initEvent((FeatureTokenType) token);
     } else {
       readContext(token);
