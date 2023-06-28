@@ -56,6 +56,9 @@ public interface FeatureTokenEmitter2<
     push(context.path());
     if (context.geometryType().isPresent()) {
       push(context.geometryType().get());
+      if (context.geometryDimension().isPresent()) {
+        push(context.geometryDimension().getAsInt());
+      }
     }
   }
 

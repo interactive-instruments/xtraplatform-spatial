@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 public class FeatureTokenReader<
     T extends SchemaBase<T>, U extends SchemaMappingBase<T>, V extends ModifiableContext<T, U>> {
@@ -57,11 +58,13 @@ public class FeatureTokenReader<
 
     context.pathTracker().track(0);
     context.setGeometryType(Optional.empty());
+    context.setGeometryDimension(OptionalInt.empty());
     context.setValueType(Type.UNKNOWN);
     context.setValue(null);
 
     switch (currentType) {
       case OBJECT:
+        this.context.setInObject(true);
         if (inArray()) {
           this.context
               .indexes()
@@ -72,6 +75,7 @@ public class FeatureTokenReader<
         push("O");
         break;
       case ARRAY:
+        this.context.setInArray(true);
         this.context.indexes().add(0);
         push("A");
         break;
@@ -87,9 +91,18 @@ public class FeatureTokenReader<
       case ARRAY_END:
         this.context.indexes().remove(this.context.indexes().size() - 1);
         pop();
+        if (!nestingStack.contains("A")) {
+          this.context.setInArray(false);
+        }
         break;
       case OBJECT_END:
+        if (this.context.inGeometry()) {
+          this.context.setInGeometry(false);
+        }
         pop();
+        if (!nestingStack.contains("O")) {
+          this.context.setInObject(false);
+        }
         break;
     }
   }
@@ -112,6 +125,9 @@ public class FeatureTokenReader<
         tryReadPath(context);
         if (contextIndex == 1 && context instanceof SimpleFeatureGeometry) {
           this.context.setGeometryType((SimpleFeatureGeometry) context);
+          this.context.setInGeometry(true);
+        } else if (contextIndex == 2 && context instanceof Integer) {
+          this.context.setGeometryDimension((Integer) context);
         }
         break;
       case ARRAY:

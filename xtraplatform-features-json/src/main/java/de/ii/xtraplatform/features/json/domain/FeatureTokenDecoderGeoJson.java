@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -347,6 +348,8 @@ public class FeatureTokenDecoderGeoJson
                 context.setGeometryType(
                     GeoJsonGeometryType.forString(parser.getValueAsString())
                         .toSimpleFeatureGeometry());
+                // TODO: to detect, would need to buffer until first ARRAY_END
+                context.setGeometryDimension(OptionalInt.of(2));
                 getDownstream().onObjectStart(context);
                 break;
               }
