@@ -16,7 +16,7 @@ public class AllOfResolver implements TypesResolver {
 
   @Override
   public boolean needsResolving(FeatureSchema type) {
-    return !type.getAllOf().isEmpty();
+    return !type.getMerge().isEmpty();
   }
 
   @Override
@@ -24,7 +24,7 @@ public class AllOfResolver implements TypesResolver {
     if (needsResolving(type)) {
       Map<String, FeatureSchema> props = new LinkedHashMap<>();
 
-      type.getAllOf()
+      type.getMerge()
           .forEach(
               partial -> {
                 if (partial.getSourcePath().isPresent()) {
@@ -61,7 +61,7 @@ public class AllOfResolver implements TypesResolver {
 
       return new ImmutableFeatureSchema.Builder()
           .from(type)
-          .allOf(List.of())
+          .merge(List.of())
           .propertyMap(props)
           .build();
     }

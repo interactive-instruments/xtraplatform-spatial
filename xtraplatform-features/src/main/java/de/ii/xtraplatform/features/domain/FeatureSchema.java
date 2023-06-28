@@ -329,7 +329,31 @@ public interface FeatureSchema
    *     `sourcePath`, `schema` und `properties` werden berücksichtigt.
    * @default []
    */
-  List<PartialObjectSchema> getAllOf();
+  @JsonAlias("allOf")
+  List<PartialObjectSchema> getMerge();
+
+  /**
+   * @langEn If the value for a property may come from more than one `sourcePath`, this allows to
+   *     choose the first non-null value. This takes a list of value schemas, for details see
+   *     [Mapping Operations](#mapping-operations).
+   * @langDe Wenn der Wert für ein Property aus mehr als einem `sourcePath` stammen kann, erlaubt
+   *     diese Option den ersten Wert der nicht Null ist zu wählen. Die Option erwartet eine Liste
+   *     von Werte-Schemas, für Details siehe [Mapping Operationen](#mapping-operations).
+   * @default []
+   */
+  List<FeatureSchema> getCoalesce();
+
+  /**
+   * @langEn If the values for an array property may come from more than one `sourcePath`, this
+   *     allows to concatenate all available values. This takes a list of value or value array
+   *     schemas, for details see [Mapping Operations](#mapping-operations).
+   * @langDe Wenn die Werte für ein Array-Property aus mehr als einem `sourcePath` stammen können,
+   *     erlaubt diese Option alle verfügbaren Werte zu konkatenieren. Die Option erwartet eine
+   *     Liste von Werte- oder Werte-Array-Schemas, für Details siehe [Mapping
+   *     Operationen](#mapping-operations).
+   * @default []
+   */
+  List<FeatureSchema> getConcat();
 
   abstract class Builder
       extends PropertiesSchema.Builder<FeatureSchema, ImmutableFeatureSchema.Builder, FeatureSchema>
@@ -550,7 +574,7 @@ public interface FeatureSchema
   @Value.Derived
   @Value.Auxiliary
   default List<PartialObjectSchema> getAllNestedPartials() {
-    return getAllOf().stream()
+    return getMerge().stream()
         .flatMap(
             t ->
                 Stream.concat(
@@ -571,7 +595,7 @@ public interface FeatureSchema
         this,
         parents,
         getProperties().stream().map(visit).collect(Collectors.toList()),
-        getAllOf().stream()
+        getMerge().stream()
             .map(
                 partial -> {
                   if (partial.getPropertyMap().isEmpty()) {

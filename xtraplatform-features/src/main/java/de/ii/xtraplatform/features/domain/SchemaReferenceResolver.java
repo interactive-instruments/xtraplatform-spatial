@@ -37,7 +37,7 @@ public class SchemaReferenceResolver implements TypesResolver {
   }
 
   private static boolean hasAllOfWithSchema(FeatureSchema type) {
-    return type.getAllOf().stream().anyMatch(SchemaReferenceResolver::hasSchema);
+    return type.getMerge().stream().anyMatch(SchemaReferenceResolver::hasSchema);
   }
 
   private SchemaFragmentResolver getResolver(String ref) {
@@ -79,7 +79,7 @@ public class SchemaReferenceResolver implements TypesResolver {
     if (hasAllOfWithSchema(type)) {
       List<PartialObjectSchema> partials = new ArrayList<>();
 
-      for (PartialObjectSchema partial : type.getAllOf()) {
+      for (PartialObjectSchema partial : type.getMerge()) {
         if (hasSchema(partial)) {
           PartialObjectSchema resolvedPartial = resolve(partial.getSchema().get(), partial);
 
@@ -91,7 +91,7 @@ public class SchemaReferenceResolver implements TypesResolver {
         }
       }
 
-      return new ImmutableFeatureSchema.Builder().from(type).allOf(partials).build();
+      return new ImmutableFeatureSchema.Builder().from(type).merge(partials).build();
     }
 
     return type;
