@@ -19,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.docs.DocIgnore;
+import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
@@ -357,7 +358,40 @@ public interface FeatureSchema
 
   abstract class Builder
       extends PropertiesSchema.Builder<FeatureSchema, ImmutableFeatureSchema.Builder, FeatureSchema>
-      implements PropertiesSchema.BuilderWithName<FeatureSchema, ImmutableFeatureSchema.Builder> {}
+      implements PropertiesSchema.BuilderWithName<FeatureSchema, ImmutableFeatureSchema.Builder> {
+
+    @JsonIgnore
+    public abstract ImmutableFeatureSchema.Builder concat(
+        Iterable<? extends FeatureSchema> elements);
+
+    public abstract ImmutableFeatureSchema.Builder addAllConcatBuilders(
+        Iterable<ImmutableFeatureSchema.Builder> elements);
+
+    @JsonProperty("concat")
+    public ImmutableFeatureSchema.Builder concatBuilders(
+        Iterable<ImmutableFeatureSchema.Builder> elements) {
+      for (ImmutableFeatureSchema.Builder element : elements) {
+        element.name("concat");
+      }
+      return addAllConcatBuilders(elements);
+    }
+
+    @JsonIgnore
+    public abstract ImmutableFeatureSchema.Builder coalesce(
+        Iterable<? extends FeatureSchema> elements);
+
+    public abstract ImmutableFeatureSchema.Builder addAllCoalesceBuilders(
+        Iterable<ImmutableFeatureSchema.Builder> elements);
+
+    @JsonProperty("coalesce")
+    public ImmutableFeatureSchema.Builder coalesceBuilders(
+        Iterable<ImmutableFeatureSchema.Builder> elements) {
+      for (ImmutableFeatureSchema.Builder element : elements) {
+        element.name("coalesce");
+      }
+      return addAllConcatBuilders(elements);
+    }
+  }
 
   @Override
   default ImmutableFeatureSchema.Builder getBuilder() {
@@ -541,6 +575,62 @@ public interface FeatureSchema
                   builder.putPropertyMap(name, property);
                 }
               });
+
+      return builder.build();
+    }
+
+    return this;
+  }
+
+  @Value.Check
+  default FeatureSchema mappingOperations() {
+    Preconditions.checkState(
+        getConcat().isEmpty() || isArray(),
+        "Concat may only be used with array types. Found: %s. Path: %s.",
+        getType(),
+        getFullPathAsString());
+
+    if (!getConcat().isEmpty()
+        && getSourcePaths().isEmpty()
+        && (getType() == Type.VALUE_ARRAY || getType() == Type.FEATURE_REF_ARRAY)) {
+      String basePath = getSourcePath().map(p -> p + "/").orElse("");
+
+      ImmutableFeatureSchema.Builder builder =
+          new ImmutableFeatureSchema.Builder().from(this).sourcePath(Optional.empty());
+
+      for (FeatureSchema concat : getConcat()) {
+        builder.addSourcePaths(basePath + concat.getSourcePath().orElse(""));
+      }
+
+      return builder.build();
+    }
+
+    if (!getConcat().isEmpty() && getProperties().isEmpty() && getType() == Type.OBJECT_ARRAY) {
+      String basePath = getSourcePath().map(p -> p + "/").orElse("");
+
+      ImmutableFeatureSchema.Builder builder =
+          new ImmutableFeatureSchema.Builder().from(this).sourcePath(Optional.empty());
+
+      for (int i = 0; i < getConcat().size(); i++) {
+        String basePath2 =
+            basePath + getConcat().get(i).getSourcePath().map(p -> p + "/").orElse("");
+
+        for (FeatureSchema prop : getConcat().get(i).getProperties()) {
+          builder.putProperties2(
+              i + "_" + prop.getName(),
+              new ImmutableFeatureSchema.Builder()
+                  .from(prop)
+                  .sourcePath(basePath2 + prop.getSourcePath().orElse(""))
+                  .path(List.of(i + "_" + prop.getName()))
+                  .putAdditionalInfo("concatIndex", String.valueOf(i))
+                  .putAdditionalInfo(
+                      getConcat().get(i).isArray() ? "concatArray" : "concatValue", "true")
+                  .transformations(List.of())
+                  .addTransformations(
+                      new ImmutablePropertyTransformation.Builder().rename(prop.getName()).build())
+                  .addAllTransformations(prop.getTransformations()));
+        }
+      }
 
       return builder.build();
     }

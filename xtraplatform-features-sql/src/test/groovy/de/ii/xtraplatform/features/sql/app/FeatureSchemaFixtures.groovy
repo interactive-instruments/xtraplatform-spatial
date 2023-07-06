@@ -151,6 +151,26 @@ class FeatureSchemaFixtures {
                     .type(Type.STRING))
             .build()
 
+    static FeatureSchema CONCAT_VALUES_JOIN = new ImmutableFeatureSchema.Builder()
+            .name("address")
+            .sourcePath("/o12006")
+            .type(Type.OBJECT)
+            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("objid")
+                    .type(Type.STRING)
+                    .role(SchemaBase.Role.ID))
+            .putProperties2("component", new ImmutableFeatureSchema.Builder()
+                    .type(Type.VALUE_ARRAY)
+                    .valueType(Type.STRING)
+                    .concatBuilders([
+                            new ImmutableFeatureSchema.Builder().sourcePath("lan"),
+                            new ImmutableFeatureSchema.Builder().sourcePath("rbz"),
+                            new ImmutableFeatureSchema.Builder().sourcePath("krs"),
+                            new ImmutableFeatureSchema.Builder().sourcePath("[id7=id]o12007/nam"),
+                            new ImmutableFeatureSchema.Builder().sourcePath("gmd"),
+                    ]))
+            .build()
+
     //TODO: nested
     static FeatureSchema NESTED_JOINS = new ImmutableFeatureSchema.Builder()
             .name("observationsubject")

@@ -347,7 +347,13 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     if (schema.getEffectiveSourcePaths().size() > 1) {
       String column = context.path().get(context.path().size() - 1);
       if (schema.isArray()) {
-        int index = schema.getEffectiveSourcePaths().indexOf(column);
+        String column2 = column;
+        for (int i = 0; i < schema.getEffectiveSourcePaths().size(); i++) {
+          if (String.join("/", context.path()).endsWith(schema.getEffectiveSourcePaths().get(i))) {
+            column2 = schema.getEffectiveSourcePaths().get(i);
+          }
+        }
+        int index = schema.getEffectiveSourcePaths().indexOf(column2);
         if (index >= 0) {
           List<Integer> indexes =
               new ArrayList<>(
@@ -356,6 +362,10 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
                       : context.indexes().subList(0, Math.max(0, context.indexes().size() - 1)));
           indexes.add(index + 1);
           context.setIndexes(indexes);
+
+          if (schema.getConcat().size() > index) {
+            context.setValueType(schema.getConcat().get(index).getType());
+          }
         }
       } else {
         if (Objects.nonNull(context.value())) {
@@ -368,6 +378,32 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
           return;
         }
       }
+    }
+
+    if (schema.getAdditionalInfo().containsKey("concatIndex")) {
+      int index = Integer.parseInt(schema.getAdditionalInfo().get("concatIndex"));
+      int arrayIndex =
+          schema.getAdditionalInfo().containsKey("concatArray")
+              ? Math.max(0, (int) context.index() - 1)
+              : 0;
+
+      if (index >= 1) {
+        int prev = Integer.parseInt(context.transformed().get("concatIndex"));
+        int prevArray = Integer.parseInt(context.transformed().get("concatArray"));
+        if (prev < index || prevArray < arrayIndex) {
+          List<Integer> indexes =
+              new ArrayList<>(
+                  newContext.indexes().subList(0, Math.max(0, newContext.indexes().size() - 1)));
+          indexes.add(newContext.indexes().get(newContext.indexes().size() - 1) + 1);
+
+          closeObject();
+          newContext.setIndexes(indexes);
+          FeatureSchema parentSchema = context.parentSchemas().get(0);
+          openObject(parentSchema);
+        }
+      }
+      context.putTransformed("concatIndex", String.valueOf(index));
+      context.putTransformed("concatArray", String.valueOf(arrayIndex));
     }
 
     handleNesting(schema, context.parentSchemas(), context.indexes());
@@ -523,6 +559,11 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     newContext.pathTracker().track(nestingTracker.getCurrentNestingPath());
 
     nestingTracker.closeArray();
+
+    if (newContext.indexes().size() > nestingTracker.arrayDepth()) {
+      newContext.setIndexes(
+          new ArrayList<>(newContext.indexes().subList(0, nestingTracker.arrayDepth())));
+    }
   }
 
   private void openParents(List<FeatureSchema> parentSchemas, List<Integer> indexes) {

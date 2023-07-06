@@ -137,6 +137,10 @@ public class NestingTracker {
     }
   }
 
+  public int arrayDepth() {
+    return (int) nestingStack.stream().filter("A"::equals).count();
+  }
+
   public void close() {
     if (nestingStack.isEmpty()) {
       if (LOGGER.isDebugEnabled()) {

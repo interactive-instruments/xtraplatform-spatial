@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.features.app.ImmutableCoordinatesWriterFeatureTokens;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.features.domain.transform.TransformerChain;
@@ -145,7 +146,18 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
       if (!context.valueBuffer().isEmpty()) {
         transformValueBuffer(context, path);
       }
+
+      FeatureSchema schema = context.schema().get();
+      if (!schema.getConcat().isEmpty() && schema.getType() == Type.FEATURE_REF_ARRAY) {
+        long index = context.index();
+        Optional<String> refType =
+            schema.getConcat().size() >= index
+                ? schema.getConcat().get((int) (index - 1)).getRefType()
+                : Optional.empty();
+        context.putValueBuffer("type", refType.orElse("UNKNOWN"));
+      }
       value = valueTransformerChain.transform(path, value);
+      context.valueBuffer().remove("type");
 
       // skip, if the value has been transformed to null
       if (Objects.nonNull(value)) {
