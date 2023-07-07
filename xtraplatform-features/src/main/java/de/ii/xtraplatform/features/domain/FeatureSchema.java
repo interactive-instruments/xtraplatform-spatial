@@ -389,7 +389,7 @@ public interface FeatureSchema
       for (ImmutableFeatureSchema.Builder element : elements) {
         element.name("coalesce");
       }
-      return addAllConcatBuilders(elements);
+      return addAllCoalesceBuilders(elements);
     }
   }
 
@@ -590,6 +590,18 @@ public interface FeatureSchema
         getType(),
         getFullPathAsString());
 
+    Preconditions.checkState(
+        getCoalesce().isEmpty() || (isValue() && !isArray()),
+        "Coalesce may only be used with single value types. Found: %s. Path: %s.",
+        getType(),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getType() != Type.VALUE || !getCoalesce().isEmpty(),
+        "Type VALUE may only be used with coalesce. Found: %s. Path: %s.",
+        getType(),
+        getFullPathAsString());
+
     if (!getConcat().isEmpty()
         && getSourcePaths().isEmpty()
         && (getType() == Type.VALUE_ARRAY || getType() == Type.FEATURE_REF_ARRAY)) {
@@ -634,6 +646,19 @@ public interface FeatureSchema
 
       return builder.build();
     }
+
+    /*if (!getCoalesce().isEmpty() && getSourcePaths().isEmpty()) {
+      String basePath = getSourcePath().map(p -> p + "/").orElse("");
+
+      ImmutableFeatureSchema.Builder builder =
+          new ImmutableFeatureSchema.Builder().from(this).sourcePath(Optional.empty());
+
+      for (FeatureSchema coalesce : getCoalesce()) {
+        builder.addSourcePaths(basePath + coalesce.getSourcePath().orElse(""));
+      }
+
+      return builder.build();
+    }*/
 
     return this;
   }

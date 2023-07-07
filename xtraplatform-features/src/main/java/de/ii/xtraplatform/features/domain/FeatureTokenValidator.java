@@ -66,12 +66,13 @@ public class FeatureTokenValidator extends FeatureTokenTransformer {
 
   @Override
   public void onArrayStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    LOGGER.debug("START ARRAY {}", context.pathAsString());
-
+    if (!context.inGeometry()) {
+      LOGGER.debug("START ARRAY {}", context.pathAsString());
+    }
     if (nestingTracker.isNested() && nestingTracker.doesNotStartWithPreviousPath(context.path())) {
       error(context.path(), Type.array, true);
     }
-    if (nestingTracker.inArray()) {
+    if (nestingTracker.inArray() && !context.inGeometry()) {
       error(context.path(), Type.array, true);
     }
 
@@ -82,8 +83,9 @@ public class FeatureTokenValidator extends FeatureTokenTransformer {
 
   @Override
   public void onArrayEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    LOGGER.debug("END ARRAY {}", context.pathAsString());
-
+    if (!context.inGeometry()) {
+      LOGGER.debug("END ARRAY {}", context.pathAsString());
+    }
     if (!nestingTracker.inArray() || !nestingTracker.isSamePath(context.path())) {
       error(context.path(), Type.array, false);
     }
@@ -95,7 +97,9 @@ public class FeatureTokenValidator extends FeatureTokenTransformer {
 
   @Override
   public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-
+    if (!context.inGeometry()) {
+      LOGGER.debug("VALUE {} {}", context.pathAsString(), context.value());
+    }
     if (nestingTracker.isNested() && nestingTracker.doesNotStartWithPreviousPath(context.path())) {
       error(context.path(), Type.value, true);
     }

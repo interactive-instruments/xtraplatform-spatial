@@ -17,12 +17,14 @@ import de.ii.xtraplatform.features.domain.SchemaBase.Role;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,7 +46,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       return deriveValueSchema(schema);
     }
 
-    return deriveObjectSchema(schema, visitedProperties);
+    return deriveObjectSchemas(schema, visitedProperties);
   }
 
   private T deriveRootSchema(FeatureSchema schema, List<T> visitedProperties) {
@@ -84,8 +86,35 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     return Stream.empty();
   }
 
-  private T deriveObjectSchema(FeatureSchema schema, List<T> visitedProperties) {
+  private T deriveObjectSchemas(FeatureSchema schema, List<T> visitedProperties) {
 
+    if (!schema.getConcat().isEmpty()) {
+      List<T> schemas = new ArrayList<>();
+      int k = 0;
+
+      for (int i = 0; i < schema.getConcat().size(); i++) {
+        List<T> visitedProperties3 = new ArrayList<>();
+
+        for (int j = 0; j < schema.getConcat().get(i).getProperties().size(); j++) {
+          visitedProperties3.add(visitedProperties.get(k++));
+        }
+
+        schemas.add(deriveObjectSchema(schema.getConcat().get(i), visitedProperties3, false));
+      }
+      T objectSchema =
+          withOneOfWrapper(
+              schemas, Optional.of(schema.getName()), schema.getLabel(), schema.getDescription());
+      if (schema.isArray()) {
+        objectSchema = withArrayWrapper(objectSchema);
+      }
+      return objectSchema;
+    }
+
+    return deriveObjectSchema(schema, visitedProperties, true);
+  }
+
+  private T deriveObjectSchema(
+      FeatureSchema schema, List<T> visitedProperties, boolean arrayAllowed) {
     Map<String, T> properties =
         visitedProperties.stream()
             .filter(property -> Objects.nonNull(property) && getPropertyName(property).isPresent())
@@ -111,7 +140,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
 
     objectSchema = withRefWrapper(objectSchema, objectType);
 
-    if (schema.isArray()) {
+    if (schema.isArray() && arrayAllowed) {
       objectSchema = withArrayWrapper(objectSchema);
     }
 
@@ -147,6 +176,22 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
             .map(template -> StringTemplateFilters.applyTemplate(template, "{featureId}"));
 
     switch (propertyType) {
+      case VALUE:
+        Set<T> valueSchemas =
+            schema.getCoalesce().stream()
+                .map(
+                    s ->
+                        getSchemaForLiteralType(
+                            s.getType(),
+                            s.getLabel(),
+                            s.getDescription(),
+                            s.getUnit(),
+                            role,
+                            refCollectionId,
+                            refUriTemplate))
+                .collect(Collectors.toSet());
+        valueSchema = withOneOfWrapper(valueSchemas, Optional.of(propertyName), label, description);
+        break;
       case FLOAT:
       case INTEGER:
       case STRING:
@@ -158,30 +203,64 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
                 propertyType, label, description, unit, role, refCollectionId, refUriTemplate);
         break;
       case VALUE_ARRAY:
-        valueSchema =
-            getSchemaForLiteralType(
-                schema.getValueType().orElse(Type.UNKNOWN),
-                label,
-                description,
-                unit,
-                role,
-                refCollectionId,
-                refUriTemplate);
+        if (!schema.getConcat().isEmpty() && schema.getValueType().isEmpty()) {
+          Set<T> valueSchemas2 =
+              schema.getConcat().stream()
+                  .map(
+                      s ->
+                          getSchemaForLiteralType(
+                              s.getType(),
+                              s.getLabel(),
+                              s.getDescription(),
+                              s.getUnit(),
+                              role,
+                              refCollectionId,
+                              refUriTemplate))
+                  .collect(Collectors.toSet());
+          valueSchema = withOneOfWrapper(valueSchemas2, Optional.empty(), label, description);
+        } else {
+          valueSchema =
+              getSchemaForLiteralType(
+                  schema.getValueType().orElse(Type.UNKNOWN),
+                  label,
+                  description,
+                  unit,
+                  role,
+                  refCollectionId,
+                  refUriTemplate);
+        }
         break;
       case GEOMETRY:
         valueSchema = getSchemaForGeometry(schema, role);
         break;
       case FEATURE_REF:
       case FEATURE_REF_ARRAY:
-        valueSchema =
-            getSchemaForLiteralType(
-                schema.getValueType().orElse(Type.STRING),
-                label,
-                description,
-                unit,
-                Optional.of("reference"),
-                refCollectionId,
-                refUriTemplate);
+        if (!schema.getConcat().isEmpty() && schema.getRefType().isEmpty()) {
+          List<T> valueSchemas2 =
+              schema.getConcat().stream()
+                  .map(
+                      s ->
+                          getSchemaForLiteralType(
+                              s.getType(),
+                              s.getLabel(),
+                              s.getDescription(),
+                              Optional.empty(),
+                              Optional.of("reference"),
+                              s.getRefType().or(() -> refCollectionId),
+                              refUriTemplate))
+                  .collect(Collectors.toList());
+          valueSchema = withOneOfWrapper(valueSchemas2, Optional.empty(), label, description);
+        } else {
+          valueSchema =
+              getSchemaForLiteralType(
+                  schema.getValueType().orElse(Type.STRING),
+                  label,
+                  description,
+                  unit,
+                  Optional.of("reference"),
+                  refCollectionId,
+                  refUriTemplate);
+        }
         break;
       case UNKNOWN:
       default:
@@ -260,6 +339,12 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
   protected abstract T withRefWrapper(T schema, String objectType);
 
   protected abstract T withArrayWrapper(T schema);
+
+  protected abstract T withOneOfWrapper(
+      Collection<T> schema,
+      Optional<String> name,
+      Optional<String> label,
+      Optional<String> description);
 
   protected final String getNameWithRole(String role, String propertyName) {
     return String.format("_%s_ROLE_%s", role, propertyName);
