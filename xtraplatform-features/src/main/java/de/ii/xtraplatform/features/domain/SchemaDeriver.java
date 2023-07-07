@@ -110,6 +110,28 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       return objectSchema;
     }
 
+    if (!schema.getCoalesce().isEmpty()) {
+      List<T> schemas = new ArrayList<>();
+      int k = 0;
+
+      for (int i = 0; i < schema.getCoalesce().size(); i++) {
+        List<T> visitedProperties3 = new ArrayList<>();
+
+        for (int j = 0; j < schema.getCoalesce().get(i).getProperties().size(); j++) {
+          visitedProperties3.add(visitedProperties.get(k++));
+        }
+
+        schemas.add(deriveObjectSchema(schema.getCoalesce().get(i), visitedProperties3, false));
+      }
+      T objectSchema =
+          withOneOfWrapper(
+              schemas, Optional.of(schema.getName()), schema.getLabel(), schema.getDescription());
+      if (schema.isArray()) {
+        objectSchema = withArrayWrapper(objectSchema);
+      }
+      return objectSchema;
+    }
+
     return deriveObjectSchema(schema, visitedProperties, true);
   }
 

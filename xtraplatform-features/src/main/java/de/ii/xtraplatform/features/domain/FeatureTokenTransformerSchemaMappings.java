@@ -408,6 +408,21 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       }
       context.putTransformed("concatIndex", String.valueOf(index));
       context.putTransformed("concatArray", String.valueOf(arrayIndex));
+    } else if (schema.getAdditionalInfo().containsKey("coalesceIndex")) {
+      int arrayIndex =
+          schema.getAdditionalInfo().containsKey("coalesceArray")
+              ? Math.max(0, (int) context.index() - 1)
+              : 0;
+      if (Objects.nonNull(context.value())
+          && !coalesces.contains(schema.getParentPath().toString())) {
+        coalesces.add(schema.getParentPath().toString());
+        context.putTransformed(
+            "coalesceIndex", schema.getAdditionalInfo().get("coalesceIndex") + arrayIndex);
+      } else if (!Objects.equals(
+          schema.getAdditionalInfo().get("coalesceIndex") + arrayIndex,
+          context.transformed().get("coalesceIndex"))) {
+        return;
+      }
     }
 
     handleNesting(schema, context.parentSchemas(), context.indexes());
