@@ -19,6 +19,7 @@ import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.features.domain.transform.TransformerChain;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +54,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   private Map<String, Boolean> flattened;
   private final List<List<String>> indexedArrays;
   private final List<List<String>> openedArrays;
+  private final Set<String> coalesces;
 
   public FeatureTokenTransformerSchemaMappings(
       Map<String, PropertyTransformations> propertyTransformations) {
@@ -61,6 +64,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     this.schemaTransformerChains = new LinkedHashMap<>();
     this.contextTransformerChains = new LinkedHashMap<>();
     this.nestingTrackers = new LinkedHashMap<>();
+    this.coalesces = new HashSet<>();
   }
 
   @Override
@@ -174,6 +178,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     this.nestingTracker = nestingTrackers.get(context.type());
     this.schemaTransformerChain = schemaTransformerChains.get(context.type());
     this.contextTransformerChain = contextTransformerChains.get(context.type());
+    this.coalesces.clear();
 
     if (flattened.get(context.type())) {
       newContext.putTransformed(FeaturePropertyTransformerFlatten.TYPE, "TRUE");
@@ -346,14 +351,14 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     // TODO: special value buffer for choice
     if (schema.getEffectiveSourcePaths().size() > 1) {
       String column = context.path().get(context.path().size() - 1);
-      if (schema.isArray()) {
-        String column2 = column;
-        for (int i = 0; i < schema.getEffectiveSourcePaths().size(); i++) {
-          if (String.join("/", context.path()).endsWith(schema.getEffectiveSourcePaths().get(i))) {
-            column2 = schema.getEffectiveSourcePaths().get(i);
-          }
+      String column2 = column;
+      for (int i = 0; i < schema.getEffectiveSourcePaths().size(); i++) {
+        if (String.join("/", context.path()).endsWith(schema.getEffectiveSourcePaths().get(i))) {
+          column2 = schema.getEffectiveSourcePaths().get(i);
         }
-        int index = schema.getEffectiveSourcePaths().indexOf(column2);
+      }
+      int index = schema.getEffectiveSourcePaths().indexOf(column2);
+      if (schema.isArray()) {
         if (index >= 0) {
           List<Integer> indexes =
               new ArrayList<>(
@@ -367,14 +372,13 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
             context.setValueType(schema.getConcat().get(index).getType());
           }
         }
-      } else {
-        if (Objects.nonNull(context.value())) {
-          newContext.putValueBuffer(context.pathAsString(), context.value());
-          newContext.putValueBuffer(column, context.value());
-        }
-        if (!Objects.equals(
-            schema.getEffectiveSourcePaths().get(schema.getEffectiveSourcePaths().size() - 1),
-            column)) {
+      } else if (!schema.getCoalesce().isEmpty()) {
+        if (Objects.nonNull(context.value()) && !coalesces.contains(schema.getFullPathAsString())) {
+          coalesces.add(schema.getFullPathAsString());
+          if (schema.getCoalesce().size() > index) {
+            context.setValueType(schema.getCoalesce().get(index).getType());
+          }
+        } else {
           return;
         }
       }

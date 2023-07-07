@@ -647,7 +647,7 @@ public interface FeatureSchema
       return builder.build();
     }
 
-    /*if (!getCoalesce().isEmpty() && getSourcePaths().isEmpty()) {
+    if (!getCoalesce().isEmpty() && getSourcePaths().isEmpty()) {
       String basePath = getSourcePath().map(p -> p + "/").orElse("");
 
       ImmutableFeatureSchema.Builder builder =
@@ -658,7 +658,7 @@ public interface FeatureSchema
       }
 
       return builder.build();
-    }*/
+    }
 
     return this;
   }
