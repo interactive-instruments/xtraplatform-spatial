@@ -15,6 +15,7 @@ import de.ii.xtraplatform.features.domain.transform.FeaturePropertySchemaTransfo
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten.INCLUDE;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerObjectReduce;
+import de.ii.xtraplatform.features.domain.transform.MappingOperationsTransformer;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.features.domain.transform.TransformerChain;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -55,6 +56,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   private final List<List<String>> indexedArrays;
   private final List<List<String>> openedArrays;
   private final Set<String> coalesces;
+  private final MappingOperationsTransformer mappingOperationsTransformer;
 
   public FeatureTokenTransformerSchemaMappings(
       Map<String, PropertyTransformations> propertyTransformations) {
@@ -65,6 +67,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     this.contextTransformerChains = new LinkedHashMap<>();
     this.nestingTrackers = new LinkedHashMap<>();
     this.coalesces = new HashSet<>();
+    this.mappingOperationsTransformer = new MappingOperationsTransformer();
   }
 
   @Override
@@ -179,6 +182,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
     this.schemaTransformerChain = schemaTransformerChains.get(context.type());
     this.contextTransformerChain = contextTransformerChains.get(context.type());
     this.coalesces.clear();
+    this.mappingOperationsTransformer.reset();
 
     if (flattened.get(context.type())) {
       newContext.putTransformed(FeaturePropertyTransformerFlatten.TYPE, "TRUE");
@@ -190,22 +194,13 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
     newContext.setType(context.type());
 
-    // TODO: why is this needed at all, what does withTargetPaths do?
-    // if (context.query() instanceof MultiFeatureQuery) {
-    // TODO: slow, precompute, same for original in decoder
-    // SchemaMapping schemaMapping = SchemaMapping.withTargetPaths(context.mapping());
-    // newContext.setMapping(schemaMapping);
-    // }
-
     getDownstream().onFeatureStart(newContext);
   }
 
   @Override
   public void onFeatureEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     while (nestingTracker.isNested()) {
-      // nestingTracker.close();
       if (nestingTracker.inObject()) {
-        // nestingTracker.closeObject();
         closeObject();
       } else if (nestingTracker.inArray()) {
         closeArray();
@@ -332,97 +327,11 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       pushValue();
       return;
     }
-    if (context.schema().isEmpty()) {
-      if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace(
-            "VALUE NOT FOUND {} {}",
-            context.pathAsString(),
-            Objects.nonNull(context.mapping())
-                ? context.mapping().getTargetSchemasByPath().keySet()
-                : "{}");
-      }
-      return;
-    }
 
     FeatureSchema schema = context.schema().get();
 
-    // TODO: when to clear valueBuffer
-    // TODO: what about parent arrays
-    // TODO: special value buffer for choice
-    if (schema.getEffectiveSourcePaths().size() > 1) {
-      String column = context.path().get(context.path().size() - 1);
-      String column2 = column;
-      for (int i = 0; i < schema.getEffectiveSourcePaths().size(); i++) {
-        if (String.join("/", context.path()).endsWith(schema.getEffectiveSourcePaths().get(i))) {
-          column2 = schema.getEffectiveSourcePaths().get(i);
-        }
-      }
-      int index = schema.getEffectiveSourcePaths().indexOf(column2);
-      if (schema.isArray()) {
-        if (index >= 0) {
-          List<Integer> indexes =
-              new ArrayList<>(
-                  index == 0
-                      ? context.indexes()
-                      : context.indexes().subList(0, Math.max(0, context.indexes().size() - 1)));
-          indexes.add(index + 1);
-          context.setIndexes(indexes);
-
-          if (schema.getConcat().size() > index) {
-            context.setValueType(schema.getConcat().get(index).getType());
-          }
-        }
-      } else if (!schema.getCoalesce().isEmpty()) {
-        if (Objects.nonNull(context.value()) && !coalesces.contains(schema.getFullPathAsString())) {
-          coalesces.add(schema.getFullPathAsString());
-          if (schema.getCoalesce().size() > index) {
-            context.setValueType(schema.getCoalesce().get(index).getType());
-          }
-        } else {
-          return;
-        }
-      }
-    }
-
-    if (schema.getAdditionalInfo().containsKey("concatIndex")) {
-      int index = Integer.parseInt(schema.getAdditionalInfo().get("concatIndex"));
-      int arrayIndex =
-          schema.getAdditionalInfo().containsKey("concatArray")
-              ? Math.max(0, (int) context.index() - 1)
-              : 0;
-
-      if (index >= 1) {
-        int prev = Integer.parseInt(context.transformed().get("concatIndex"));
-        int prevArray = Integer.parseInt(context.transformed().get("concatArray"));
-        if (prev < index || prevArray < arrayIndex) {
-          List<Integer> indexes =
-              new ArrayList<>(
-                  newContext.indexes().subList(0, Math.max(0, newContext.indexes().size() - 1)));
-          indexes.add(newContext.indexes().get(newContext.indexes().size() - 1) + 1);
-
-          closeObject();
-          newContext.setIndexes(indexes);
-          FeatureSchema parentSchema = context.parentSchemas().get(0);
-          openObject(parentSchema);
-        }
-      }
-      context.putTransformed("concatIndex", String.valueOf(index));
-      context.putTransformed("concatArray", String.valueOf(arrayIndex));
-    } else if (schema.getAdditionalInfo().containsKey("coalesceIndex")) {
-      int arrayIndex =
-          schema.getAdditionalInfo().containsKey("coalesceArray")
-              ? Math.max(0, (int) context.index() - 1)
-              : 0;
-      if (Objects.nonNull(context.value())
-          && !coalesces.contains(schema.getParentPath().toString())) {
-        coalesces.add(schema.getParentPath().toString());
-        context.putTransformed(
-            "coalesceIndex", schema.getAdditionalInfo().get("coalesceIndex") + arrayIndex);
-      } else if (!Objects.equals(
-          schema.getAdditionalInfo().get("coalesceIndex") + arrayIndex,
-          context.transformed().get("coalesceIndex"))) {
-        return;
-      }
+    if (!mappingOperationsTransformer.transform(context, newContext)) {
+      return;
     }
 
     handleNesting(schema, context.parentSchemas(), context.indexes());
@@ -482,6 +391,10 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       closeObject();
       newContext.setIndexes(indexes);
       openObject(schema);
+    } else if (newContext.transformed().containsKey("concatNewObject")) {
+      newContext.transformed().remove("concatNewObject");
+      closeObject();
+      openObject(parentSchemas.get(0));
     }
 
     if (schema.isArray() && !nestingTracker.isSamePath(schema.getFullPath())) {
