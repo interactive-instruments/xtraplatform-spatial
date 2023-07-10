@@ -65,8 +65,6 @@ import java.lang.reflect.Array
 import java.time.Instant
 import java.util.stream.IntStream
 
-//TODO: MissingMethodException in 'Test Interval' and 'Test Temporal throws IllegalStateException'
-@Ignore
 class CqlTypeCheckerSpec extends Specification {
 
     @Shared
