@@ -1008,4 +1008,18 @@ public class CqlFilterExamples {
       AContainedBy.of(
           Property.of("location"),
           ArrayLiteral.of(ImmutableList.of(ScalarLiteral.of("id"), ScalarLiteral.of("location"))));
+
+  public static final Cql2Expression EXAMPLE_NOT =
+      Not.of(
+          And.of(
+              Not.of(Eq.of(Property.of("test"), ScalarLiteral.of(1))),
+              Or.of(
+                  Eq.of(Property.of("test1"), ScalarLiteral.of(1)),
+                  Neq.of(Property.of("test2"), ScalarLiteral.of("foo")),
+                  Gt.of(Property.of("test3"), ScalarLiteral.of("bar"))),
+              And.of(
+                  Eq.of(Property.of("test1"), ScalarLiteral.of(1)),
+                  Neq.of(Property.of("test2"), ScalarLiteral.of("foo")),
+                  Gt.of(Property.of("test3"), ScalarLiteral.of("bar"))),
+              Eq.of(Property.of("test"), ScalarLiteral.of(1))));
 }

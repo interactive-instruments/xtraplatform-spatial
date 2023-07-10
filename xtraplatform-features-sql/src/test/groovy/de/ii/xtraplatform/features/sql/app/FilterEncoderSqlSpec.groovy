@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlFilterExamples
 import de.ii.xtraplatform.cql.app.CqlImpl
+import de.ii.xtraplatform.cql.domain.Not
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.crs.infra.CrsTransformerFactoryProj
@@ -55,6 +56,23 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
+    def 'negated spatial operation, envelope, no join'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_15)
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE NOT ST_Within(AA.location, ST_GeomFromText('POLYGON((-118.0 33.8,-117.9 33.8,-117.9 34.0,-118.0 34.0,-118.0 33.8))',4326)))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
     def 'spatial operation, polygon, 1:n join'() {
 
         given:
@@ -63,6 +81,23 @@ class FilterEncoderSqlSpec extends Specification {
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA JOIN geometry AB ON (AA.id=AB.id) WHERE ST_Intersects(AB.location, ST_GeomFromText('POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0))',4326)))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'negated spatial operation, polygon, 1:n join'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.JOINED_GEOMETRY
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_16)
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA JOIN geometry AB ON (AA.id=AB.id) WHERE NOT ST_Intersects(AB.location, ST_GeomFromText('POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0))',4326)))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -106,6 +141,23 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
+    def 'negated temporal operation, timestamp'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_TIMESTAMP
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_12)
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.built::timestamp(0) >= TIMESTAMP '2012-06-05T00:00:00Z')"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
     def 'temporal operation, date'() {
 
         given:
@@ -114,6 +166,23 @@ class FilterEncoderSqlSpec extends Specification {
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.built::date < DATE '2012-06-05')"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'negated temporal operation, date'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_DATE
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_12_date)
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.built::date >= DATE '2012-06-05')"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -162,12 +231,12 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_Interval
 
         when:
-        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE TIMESTAMP '2017-06-10T07:30:00Z' > AA.updated::timestamp(0)) AND A.id IN (SELECT AA.id FROM building AA WHERE TIMESTAMP '2017-06-11T10:30:00Z' < AA.updated::timestamp(0)))"
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE (TIMESTAMP '2017-06-10T07:30:00Z', TIMESTAMP '2017-06-11T10:30:00Z') OVERLAPS (TIMESTAMP '2012-06-05T00:00:00Z', COALESCE(AA.end,TIMESTAMP 'infinity')))"
         String actual = filterEncoder.encode(filter, instanceContainer)
 
         then:
 
-        actual != expected
+        actual == expected
 
     }
 
@@ -194,7 +263,7 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_14_Negation
 
         when:
-        String expected = "NOT ((A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) > TIMESTAMP '2017-06-10T07:30:00Z') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) < TIMESTAMP '2017-06-11T10:30:00Z')))"
+        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) <= TIMESTAMP '2017-06-10T07:30:00Z') OR A.id IN (SELECT AA.id FROM building AA WHERE AA.updated::timestamp(0) >= TIMESTAMP '2017-06-11T10:30:00Z'))"
         String actual = filterEncoder.encode(filter, instanceContainer)
 
         then:
@@ -211,6 +280,23 @@ class FilterEncoderSqlSpec extends Specification {
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.owner IS NULL)"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'not is Null test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_20)
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.owner IS NOT NULL)"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -254,6 +340,23 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
+    def 'not like test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_3)
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE AA.owner::varchar NOT LIKE '% Jones %')"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
     def 'casei test'() {
 
         given:
@@ -262,6 +365,23 @@ class FilterEncoderSqlSpec extends Specification {
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA WHERE LOWER(AA.road_class) IN ('οδος','straße'))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'not casei test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_CASEI)
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE LOWER(AA.road_class) NOT IN ('οδος','straße'))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -288,6 +408,23 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
+    def 'not accenti test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_INTERVAL
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_ACCENTI)
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE LOWER(AA.road_class) NOT IN ('οδος','straße'))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        thrown(IllegalArgumentException)
+
+    }
+
     def 'polygon test'() {
 
         given:
@@ -305,6 +442,23 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
+    def 'negated polygon test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_16)
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE NOT ST_Intersects(AA.location, ST_GeomFromText('POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0))',4326)))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
     def 'test AContains'() {
 
         given:
@@ -313,6 +467,23 @@ class FilterEncoderSqlSpec extends Specification {
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA JOIN geometry AB ON (AA.id=AB.id) WHERE AB.location IN ('id','location') GROUP BY AA.id HAVING count(distinct AB.location) = 2)"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'test AContains with not'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.JOINED_GEOMETRY
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_AContains_ValidFor_JOINED_GEOMETRY)
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA JOIN geometry AB ON (AA.id=AB.id) WHERE NOT AB.location IN ('id','location') GROUP BY AA.id HAVING count(distinct AB.location) = 2)"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -397,6 +568,23 @@ class FilterEncoderSqlSpec extends Specification {
 
         when:
         String expected = "A.id IN (SELECT AA.id FROM building AA WHERE (COALESCE(AA.start,TIMESTAMP '-infinity'), COALESCE(AA.end,TIMESTAMP 'infinity')) OVERLAPS (DATE '2017-06-10',DATE '2017-06-12'))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'interval test with not'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_DATE
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_25y)
+
+        when:
+        String expected = "A.id IN (SELECT AA.id FROM building AA WHERE NOT (COALESCE(AA.start,TIMESTAMP '-infinity'), COALESCE(AA.end,TIMESTAMP 'infinity')) OVERLAPS (DATE '2017-06-10',DATE '2017-06-12'))"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
@@ -508,6 +696,23 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
+    def 'temporal with list and not test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_DATE
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_26)
+
+        when:
+        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE AA.updated <= TIMESTAMP '2017-06-10T07:30:00Z') OR A.id IN (SELECT AA.id FROM building AA WHERE AA.updated >= TIMESTAMP 'infinity'))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
     def 'function test'() {
 
         given:
@@ -515,15 +720,16 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_43
 
         when:
-        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE AA.updated > TIMESTAMP '2017-06-10T07:30:00Z') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.updated < TIMESTAMP 'infinity'))"
+        String expected = "row_number BETWEEN 4 AND 8"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
         then:
 
-        actual != expected
+        actual == expected
 
     }
+
     def 'function 2 test'() {
 
         given:
@@ -531,16 +737,47 @@ class FilterEncoderSqlSpec extends Specification {
         def filter = CqlFilterExamples.EXAMPLE_31
 
         when:
-        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE AA.updated > TIMESTAMP '2017-06-10T07:30:00Z') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.updated < TIMESTAMP 'infinity'))"
+        String expected = "year(TIMESTAMP '2012-06-05T00:00:00Z') = 2012"
 
         String actual = filterEncoder.encode(filter, instanceContainer)
 
         then:
 
-        actual != expected
+        actual == expected
 
     }
 
+    def 'function 2 test with not'() {
 
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_DATE
+        def filter = Not.of(CqlFilterExamples.EXAMPLE_31)
+
+        when:
+        String expected = "year(TIMESTAMP '2012-06-05T00:00:00Z') <> 2012"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+
+    }
+
+    def 'nested not test'() {
+
+        given:
+        def instanceContainer = QuerySchemaFixtures.SIMPLE_DATE
+        def filter = CqlFilterExamples.EXAMPLE_NOT
+
+        when:
+        String expected = "(A.id IN (SELECT AA.id FROM building AA WHERE AA.test = 1) OR (A.id IN (SELECT AA.id FROM building AA WHERE AA.test1 <> 1) AND A.id IN (SELECT AA.id FROM building AA WHERE AA.test2 = 'foo') AND A.id IN (SELECT AA.id FROM building AA WHERE AA.test3 <= 'bar')) OR (A.id IN (SELECT AA.id FROM building AA WHERE AA.test1 <> 1) OR A.id IN (SELECT AA.id FROM building AA WHERE AA.test2 = 'foo') OR A.id IN (SELECT AA.id FROM building AA WHERE AA.test3 <= 'bar')) OR A.id IN (SELECT AA.id FROM building AA WHERE AA.test <> 1))"
+
+        String actual = filterEncoder.encode(filter, instanceContainer)
+
+        then:
+
+        actual == expected
+    }
 
 }

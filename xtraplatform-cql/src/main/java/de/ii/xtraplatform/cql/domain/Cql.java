@@ -44,4 +44,6 @@ public interface Cql {
       Cql2Expression cqlFilter, Set<TemporalOperator> supportedOperators);
 
   Cql2Expression mapEnvelopes(Cql2Expression cqlFilter, CrsInfo crsInfo);
+
+  Cql2Expression mapNots(Cql2Expression cqlFilter);
 }
