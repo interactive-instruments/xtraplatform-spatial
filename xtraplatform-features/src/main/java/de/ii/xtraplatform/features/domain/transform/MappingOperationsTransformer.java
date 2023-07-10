@@ -63,7 +63,7 @@ public class MappingOperationsTransformer implements ContextTransformer {
       int index = getIndex(context.path(), schema.getEffectiveSourcePaths());
 
       if (!schema.getConcat().isEmpty()) {
-        return valueConcat(schema, index, context);
+        return valueConcat(schema, index, context, newContext);
       } else if (!schema.getCoalesce().isEmpty()) {
         return valueCoalesce(schema, index, context);
       }
@@ -89,7 +89,10 @@ public class MappingOperationsTransformer implements ContextTransformer {
   }
 
   private boolean valueConcat(
-      FeatureSchema schema, int index, ModifiableContext<FeatureSchema, SchemaMapping> context) {
+      FeatureSchema schema,
+      int index,
+      ModifiableContext<FeatureSchema, SchemaMapping> context,
+      ModifiableContext<FeatureSchema, SchemaMapping> newContext) {
     if (Objects.nonNull(context.value())) {
       if (!Objects.equals(concatPath, schema.getFullPathAsString())) {
         this.concatPath = schema.getFullPathAsString();
@@ -112,6 +115,8 @@ public class MappingOperationsTransformer implements ContextTransformer {
               .get(index)
               .getValueType()
               .orElse(schema.getConcat().get(index).getType()));
+      newContext.putValueBuffer(
+          "type", schema.getConcat().get(index).getRefType().orElse("UNKNOWN"));
     }
 
     return true;
