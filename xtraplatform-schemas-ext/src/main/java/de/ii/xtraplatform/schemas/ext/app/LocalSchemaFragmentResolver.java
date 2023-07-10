@@ -67,6 +67,7 @@ public class LocalSchemaFragmentResolver implements SchemaFragmentResolver {
     return new ImmutableFeatureSchema.Builder()
         .from(original)
         .from(resolved)
+        .name(original.getName())
         .schema(Optional.empty())
         .propertyMap(properties)
         .build();
