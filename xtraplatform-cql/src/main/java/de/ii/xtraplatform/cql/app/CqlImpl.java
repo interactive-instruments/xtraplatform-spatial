@@ -152,6 +152,13 @@ public class CqlImpl implements Cql {
     return (Cql2Expression) cqlFilter.accept(visitor, true);
   }
 
+  @Override
+  public Cql2Expression mapNots(Cql2Expression cqlFilter) {
+    CqlVisitorMapNots visitor = new CqlVisitorMapNots();
+
+    return (Cql2Expression) cqlFilter.accept(visitor, true);
+  }
+
   static class IntervalConverter extends StdConverter<Interval, List<String>> {
 
     @Override

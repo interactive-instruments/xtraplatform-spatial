@@ -112,8 +112,9 @@ public class FilterEncoderSql {
   }
 
   private CqlNode prepareExpression(Cql2Expression cqlFilter) {
-    return cql.mapTemporalOperators(
-        cql.mapEnvelopes(cqlFilter, crsInfo), sqlDialect.getTemporalOperators());
+    return cql.mapNots(
+        cql.mapTemporalOperators(
+            cql.mapEnvelopes(cqlFilter, crsInfo), sqlDialect.getTemporalOperators()));
   }
 
   private List<Double> transformCoordinatesIfNecessary(
@@ -1002,9 +1003,39 @@ public class FilterEncoderSql {
       String operator = LOGICAL_OPERATORS.get(not.getClass());
 
       String operation = children.get(0);
-      if (not.getArgs().get(0) instanceof In) {
+      Integer pos = null;
+      Cql2Expression arg = not.getArgs().get(0);
+      if (arg instanceof In) {
         // replace last IN with NOT IN
-        int pos = operation.lastIndexOf(" IN ");
+        pos = operation.lastIndexOf(" IN ");
+      } else if (arg instanceof Between) {
+        // replace last BETWEEN with NOT BETWEEN
+        pos = operation.lastIndexOf(" BETWEEN ");
+      } else if (arg instanceof Like) {
+        // replace last LIKE with NOT LIKE
+        pos = operation.lastIndexOf(" LIKE ");
+      } else if (arg instanceof IsNull) {
+        // replace last IS NULL with IS NOT NULL
+        pos = operation.lastIndexOf(" IS NULL");
+        if (pos == -1) {
+          pos = null;
+        } else {
+          pos += 3;
+        }
+      } else if (arg instanceof BinaryScalarOperation
+          || arg instanceof BinaryArrayOperation
+          || arg instanceof BinarySpatialOperation
+          || arg instanceof BinaryTemporalOperation) {
+        // replace last WHERE with WHERE NOT
+        pos = operation.lastIndexOf(" WHERE ");
+        if (pos == -1) {
+          pos = null;
+        } else {
+          pos += 6;
+        }
+      }
+
+      if (pos != null) {
         int length = operation.length();
         return String.format(
             "%s %s %s",
