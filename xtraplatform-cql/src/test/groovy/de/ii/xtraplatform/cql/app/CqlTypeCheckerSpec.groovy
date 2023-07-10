@@ -58,7 +58,6 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import org.eclipse.jetty.util.ssl.AliasedX509ExtendedKeyManager
 import spock.lang.Ignore
-import spock.lang.PendingFeature
 import spock.lang.Shared
 import spock.lang.Specification
 
