@@ -65,7 +65,7 @@ public class MappingOperationsTransformer implements ContextTransformer {
       if (!schema.getConcat().isEmpty()) {
         return valueConcat(schema, index, context, newContext);
       } else if (!schema.getCoalesce().isEmpty()) {
-        return valueCoalesce(schema, index, context);
+        return valueCoalesce(schema, index, context, newContext);
       }
     }
 
@@ -123,12 +123,17 @@ public class MappingOperationsTransformer implements ContextTransformer {
   }
 
   private boolean valueCoalesce(
-      FeatureSchema schema, int index, ModifiableContext<FeatureSchema, SchemaMapping> context) {
+      FeatureSchema schema,
+      int index,
+      ModifiableContext<FeatureSchema, SchemaMapping> context,
+      ModifiableContext<FeatureSchema, SchemaMapping> newContext) {
     if (Objects.nonNull(context.value()) && !coalesces.contains(schema.getFullPathAsString())) {
       this.coalesces.add(schema.getFullPathAsString());
 
       if (schema.getCoalesce().size() > index) {
         context.setValueType(schema.getCoalesce().get(index).getType());
+        newContext.putValueBuffer(
+            "type", schema.getCoalesce().get(index).getRefType().orElse("UNKNOWN"));
       }
     } else {
       return false;
