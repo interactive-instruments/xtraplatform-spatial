@@ -13,6 +13,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import de.ii.xtraplatform.features.domain.ImmutablePartialObjectSchema;
 import de.ii.xtraplatform.features.domain.PartialObjectSchema;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -68,6 +69,7 @@ public class LocalSchemaFragmentResolver implements SchemaFragmentResolver {
         new Builder()
             .from(resolved)
             .from(original)
+            .type(original.getType() == Type.STRING ? resolved.getType() : original.getType())
             .schema(resolved.getSchema())
             .propertyMap(properties);
 

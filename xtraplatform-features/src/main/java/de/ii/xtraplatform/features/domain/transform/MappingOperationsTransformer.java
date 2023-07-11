@@ -101,12 +101,12 @@ public class MappingOperationsTransformer implements ContextTransformer {
 
       List<Integer> indexes =
           new ArrayList<>(
-              schema.getConcat().get(index).isArray()
-                  ? context.indexes().subList(0, Math.max(0, context.indexes().size() - 1))
-                  : context.indexes());
+              concatItem > 0
+                  ? newContext.indexes().subList(0, Math.max(0, newContext.indexes().size() - 1))
+                  : newContext.indexes());
       indexes.add(++concatItem);
 
-      context.setIndexes(indexes);
+      newContext.setIndexes(indexes);
     }
     if (schema.getConcat().size() > index) {
       context.setValueType(
@@ -147,10 +147,7 @@ public class MappingOperationsTransformer implements ContextTransformer {
       ModifiableContext<FeatureSchema, SchemaMapping> context,
       ModifiableContext<FeatureSchema, SchemaMapping> newContext) {
     int index = Integer.parseInt(schema.getAdditionalInfo().get("concatIndex"));
-    int arrayIndex =
-        schema.getAdditionalInfo().containsKey("concatArray")
-            ? Math.max(0, (int) context.index() - 1)
-            : 0;
+    int arrayIndex = !context.indexes().isEmpty() ? Math.max(0, (int) context.index() - 1) : 0;
 
     if (!Objects.equals(concatPath, context.parentSchemas().get(0).getFullPathAsString())) {
       this.concatPath = context.parentSchemas().get(0).getFullPathAsString();

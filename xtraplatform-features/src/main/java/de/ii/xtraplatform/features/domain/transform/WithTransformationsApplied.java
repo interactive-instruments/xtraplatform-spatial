@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -144,10 +145,22 @@ public class WithTransformationsApplied
       FeatureSchema property, String namePrefix, String labelPrefix) {
     return new ImmutableFeatureSchema.Builder()
         .from(property)
-        .type(property.getValueType().orElse(property.getType()))
+        .type(
+            property
+                .getValueType()
+                .orElse(
+                    property.getConcat().isEmpty()
+                        ? property.getType()
+                        : property.getConcat().stream()
+                            .map(FeatureSchema::getValueType)
+                            .findFirst()
+                            .flatMap(Function.identity())
+                            .orElse(property.getType())))
         .valueType(Optional.empty())
         .name(flatName(property, namePrefix))
         .label(flatLabel(property, labelPrefix))
+        .concat(List.of())
+        .coalesce(List.of())
         .build();
   }
 
