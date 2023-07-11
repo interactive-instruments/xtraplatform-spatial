@@ -50,6 +50,10 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
 
     FeatureSchema schema2 = schema;
 
+    if (!schema2.getConcat().isEmpty() || !schema2.getCoalesce().isEmpty()) {
+      return null;
+    }
+
     if (schema.getAdditionalInfo().containsKey("concatIndex")
         && !schema.getTransformations().isEmpty()
         && schema.getTransformations().get(0).getRename().isPresent()) {

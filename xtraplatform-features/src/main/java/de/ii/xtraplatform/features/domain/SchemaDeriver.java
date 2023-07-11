@@ -257,9 +257,10 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
         break;
       case FEATURE_REF:
       case FEATURE_REF_ARRAY:
-        if (!schema.getConcat().isEmpty() && schema.getRefType().isEmpty()) {
+        if ((!schema.getConcat().isEmpty() || !schema.getCoalesce().isEmpty())
+            && schema.getRefType().isEmpty()) {
           List<T> valueSchemas2 =
-              schema.getConcat().stream()
+              Stream.concat(schema.getConcat().stream(), schema.getCoalesce().stream())
                   .map(
                       s ->
                           getSchemaForLiteralType(

@@ -157,7 +157,8 @@ public class FeatureProviderSqlFactory
     int rounds = 0;
     while (resolver.needsResolving(types)) {
       types = resolver.resolve(types);
-      if (++rounds >= 5) {
+      if (++rounds > 16) {
+        LOGGER.warn("Exceeded the maximum length of 16 for provider schema reference chains.");
         break;
       }
     }

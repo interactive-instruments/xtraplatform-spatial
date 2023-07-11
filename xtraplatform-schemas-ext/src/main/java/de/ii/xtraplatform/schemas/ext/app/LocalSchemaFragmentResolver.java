@@ -66,9 +66,8 @@ public class LocalSchemaFragmentResolver implements SchemaFragmentResolver {
 
     Builder builder =
         new Builder()
-            .from(original)
             .from(resolved)
-            .name(original.getName())
+            .from(original)
             .schema(Optional.empty())
             .propertyMap(properties);
 
