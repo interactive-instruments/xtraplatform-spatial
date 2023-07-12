@@ -179,7 +179,7 @@ public class MappingOperationResolver implements TypesResolver {
 
       if (type.getType() == Type.FEATURE_REF
           && type.getCoalesce().stream().anyMatch(s -> s.getType() == Type.STRING)) {
-        builder.concat(
+        builder.coalesce(
             type.getCoalesce().stream()
                 .map(
                     s -> {
@@ -226,7 +226,7 @@ public class MappingOperationResolver implements TypesResolver {
       }
 
       if (type.getCoalesce().stream().anyMatch(s -> s.getType() == Type.STRING)) {
-        builder.concat(
+        builder.coalesce(
             type.getCoalesce().stream()
                 .map(
                     s -> {
