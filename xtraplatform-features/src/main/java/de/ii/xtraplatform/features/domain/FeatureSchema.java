@@ -591,6 +591,12 @@ public interface FeatureSchema
 
     Preconditions.checkState(
         getConcat().isEmpty()
+            || getConcat().stream().allMatch(s -> s.getTransformations().isEmpty()),
+        "Concat items may not contain transformations. Path: %s.",
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getConcat().isEmpty()
             || getType() != Type.OBJECT_ARRAY
             || getConcat().stream()
                 .allMatch(
@@ -658,6 +664,12 @@ public interface FeatureSchema
         getCoalesce().isEmpty() || !isArray(),
         "Coalesce may not be used with array types. Found: %s. Path: %s.",
         getType(),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getCoalesce().isEmpty()
+            || getCoalesce().stream().allMatch(s -> s.getTransformations().isEmpty()),
+        "Coalesce items may not contain transformations. Path: %s.",
         getFullPathAsString());
 
     Preconditions.checkState(

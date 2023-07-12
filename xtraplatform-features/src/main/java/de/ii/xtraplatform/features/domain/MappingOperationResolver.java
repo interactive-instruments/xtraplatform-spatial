@@ -177,6 +177,23 @@ public class MappingOperationResolver implements TypesResolver {
         builder.addSourcePaths(basePath + coalesce.getSourcePath().orElse(""));
       }
 
+      if (type.getType() == Type.FEATURE_REF
+          && type.getCoalesce().stream().anyMatch(s -> s.getType() == Type.STRING)) {
+        builder.concat(
+            type.getCoalesce().stream()
+                .map(
+                    s -> {
+                      if (s.getType() == Type.STRING) {
+                        return new ImmutableFeatureSchema.Builder()
+                            .from(s)
+                            .type(type.getType())
+                            .build();
+                      }
+                      return s;
+                    })
+                .collect(Collectors.toList()));
+      }
+
       return builder.build();
     }
 
@@ -206,6 +223,22 @@ public class MappingOperationResolver implements TypesResolver {
                       new ImmutablePropertyTransformation.Builder().rename(prop.getName()).build())
                   .addAllTransformations(prop.getTransformations()));
         }
+      }
+
+      if (type.getCoalesce().stream().anyMatch(s -> s.getType() == Type.STRING)) {
+        builder.concat(
+            type.getCoalesce().stream()
+                .map(
+                    s -> {
+                      if (s.getType() == Type.STRING) {
+                        return new ImmutableFeatureSchema.Builder()
+                            .from(s)
+                            .type(type.getType())
+                            .build();
+                      }
+                      return s;
+                    })
+                .collect(Collectors.toList()));
       }
 
       return builder.build();
