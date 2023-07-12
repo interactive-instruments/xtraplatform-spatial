@@ -321,12 +321,14 @@ public interface FeatureSchema
    * @langEn If only some of the `properties` are defined in an external `schema`, or if some of the
    *     `properties` should be mapped to a different table, this provides a convenient way to
    *     define these properties alongside the regular properties. The option takes a list of schema
-   *     objects, but only `sourcePath`, `schema` and `properties` are considered.
+   *     objects, but only `sourcePath`, `schema` and `properties` are considered. For details see
+   *     [Mapping Operations](#merge).
    * @langDe Wenn nur einige `properties` in einem externen `schema` definiert sind, oder wenn nur
    *     einige `properties` auf eine andere Tabelle gemappt werden sollen, stellt diese Option
    *     einen komfortablen Weg zur Verfügung, um solche properties zusammen mit den regulären
    *     properties zu definieren. Der Wert ist eine Liste von Schema-Objekten, aber nur
-   *     `sourcePath`, `schema` und `properties` werden berücksichtigt.
+   *     `sourcePath`, `schema` und `properties` werden berücksichtigt. Für Details siehe [Mapping
+   *     Operationen](#merge).
    * @default []
    */
   @JsonAlias("allOf")
@@ -335,10 +337,10 @@ public interface FeatureSchema
   /**
    * @langEn If the value for a property may come from more than one `sourcePath`, this allows to
    *     choose the first non-null value. This takes a list of value schemas, for details see
-   *     [Mapping Operations](#mapping-operations).
+   *     [Mapping Operations](#coalesce).
    * @langDe Wenn der Wert für ein Property aus mehr als einem `sourcePath` stammen kann, erlaubt
    *     diese Option den ersten Wert der nicht Null ist zu wählen. Die Option erwartet eine Liste
-   *     von Werte-Schemas, für Details siehe [Mapping Operationen](#mapping-operations).
+   *     von Werte-Schemas, für Details siehe [Mapping Operationen](#coalesce).
    * @default []
    */
   List<FeatureSchema> getCoalesce();
@@ -346,11 +348,11 @@ public interface FeatureSchema
   /**
    * @langEn If the values for an array property may come from more than one `sourcePath`, this
    *     allows to concatenate all available values. This takes a list of value or value array
-   *     schemas, for details see [Mapping Operations](#mapping-operations).
+   *     schemas, for details see [Mapping Operations](#concat).
    * @langDe Wenn die Werte für ein Array-Property aus mehr als einem `sourcePath` stammen können,
    *     erlaubt diese Option alle verfügbaren Werte zu konkatenieren. Die Option erwartet eine
    *     Liste von Werte- oder Werte-Array-Schemas, für Details siehe [Mapping
-   *     Operationen](#mapping-operations).
+   *     Operationen](#concat).
    * @default []
    */
   List<FeatureSchema> getConcat();

@@ -15,6 +15,231 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * @langEn Mapping operations may be needed when the source and target schema structure diverge too
+ *     much.
+ *     <p>### Merge
+ *     <p>If only some of the `properties` are defined in an external `schema`, or if some of the
+ *     `properties` should be mapped to a different table, this provides a convenient way to define
+ *     these properties alongside the regular properties.
+ *     <p>#### Examples
+ *     <p>##### Define only some properties using an external JSON schema
+ *     <p><code>
+ * ```yaml
+ * example:
+ *   sourcePath: /main
+ *   type: OBJECT
+ *   allOf:
+ *   - properties:
+ *       id:
+ *         sourcePath: id
+ *         type: INTEGER
+ *         role: ID
+ *   - sourcePath: '[JSON]names'
+ *     schema: names.json
+ * ```
+ * </code>
+ *     <p>##### Using columns from a joined table in the main feature
+ *     <p><code>
+ * ```yaml
+ * example:
+ *   sourcePath: /main
+ *   type: OBJECT
+ *   allOf:
+ *   - properties:
+ *       id:
+ *         sourcePath: id
+ *         type: INTEGER
+ *         role: ID
+ *   - sourcePath: '[id=id]names'
+ *     properties:
+ *       name1:
+ *         sourcePath: name1
+ *         type: STRING
+ *       name2:
+ *         sourcePath: name2
+ *         type: STRING
+ * ```
+ * </code>
+ *     <p>### Coalesce
+ *     <p>If the value for a property may come from more than one `sourcePath`, this allows to
+ *     choose the first non-null value.
+ *     <p>#### Example
+ *     <p><code>
+ * ```yaml
+ * foo:
+ *   type: OBJECT
+ *   properties:
+ *     bar:
+ *       type: VALUE
+ *       coalesce:
+ *       - sourcePath: bar_stringValue
+ *         type: STRING
+ *       - sourcePath: bar_integerValue
+ *         type: INTEGER
+ *       - sourcePath: bar_booleanValue
+ *         type: BOOLEAN
+ * ```
+ * </code>
+ *     <p>#### Type compatibility
+ *     <p>Constraints on the types of inner properties depending on the type of the outer property
+ *     are shown in the table below.
+ *     <p><code>
+ * | Outer type  | Valid inner types  | Remarks |
+ * |---|---|---|
+ * | `VALUE`  |  `INTEGER`, `FLOAT`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE`  |   |
+ * | `INTEGER`  |  `INTEGER` |   |
+ * | `FLOAT`  |  `FLOAT` |   |
+ * | `STRING`  |  `STRING`  |   |
+ * | `BOOLEAN`  |  `BOOLEAN`  |   |
+ * | `DATETIME`  |  `DATETIME`  |   |
+ * | `DATE`  |  `DATE`  |   |
+ * | `OBJECT`  |  `OBJECT`  | Different `objectType` with different schemas can be used  |
+ * | `FEATURE_REF `  |  `FEATURE_REF `  | Different `refType` can be used  |
+ * </code>
+ *     <p>### Concat
+ *     <p>If the values for an array property may come from more than one `sourcePath`, this allows
+ *     to concatenate all available values.
+ *     <p>#### Example
+ *     <p><code>
+ * ```yaml
+ * foo:
+ *   type: OBJECT
+ *   properties:
+ *     bar:
+ *       type: FEATURE_REF_ARRAY
+ *       concat:
+ *       - sourcePath: '[id=foo_fk]baz1/id'
+ *         refType: baz1
+ *       - sourcePath: '[id=foo_fk]baz2/id'
+ *         refType: baz2
+ *       - sourcePath: '[id=foo_fk]bazn/id'
+ *         refType: bazn
+ * ```
+ * </code>
+ *     <p>#### Type compatibility
+ *     <p>Constraints on the types of inner properties depending on the type of the outer property
+ *     are shown in the table below.
+ *     <p><code>
+ * | Outer type  | Valid inner types  | Remarks |
+ * |---|---|---|
+ * | `VALUE_ARRAY`  |  `VALUE_ARRAY`, `INTEGER`, `FLOAT`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE`  |   |
+ * | `OBJECT_ARRAY`  |  `OBJECT_ARRAY`, `OBJECT`  | Different `objectType` with different schemas can be used  |
+ * | `FEATURE_REF_ARRAY `  |  `FEATURE_REF_ARRAY`, `FEATURE_REF `  | Different `refType` can be used  |
+ * </code>
+ * @langDe Mapping Operationen können notwendig sein, wenn die Quell- and Ziel-Schema-Struktur zu
+ *     unterschiedlich sind.
+ *     <p>### Merge
+ *     <p>Wenn nur einige `properties` in einem externen `schema` definiert sind, oder wenn nur
+ *     einige `properties` auf eine andere Tabelle gemappt werden sollen, stellt diese Option einen
+ *     komfortablen Weg zur Verfügung, um solche properties zusammen mit den regulären properties zu
+ *     definieren.
+ *     <p>#### Beispiele
+ *     <p>##### Einige Properties in einem externen JSON schema definieren
+ *     <p><code>
+ * ```yaml
+ * example:
+ *   sourcePath: /main
+ *   type: OBJECT
+ *   allOf:
+ *   - properties:
+ *       id:
+ *         sourcePath: id
+ *         type: INTEGER
+ *         role: ID
+ *   - sourcePath: '[JSON]names'
+ *     schema: names.json
+ * ```
+ * </code>
+ *     <p>##### Spalten aus einer gejointen Tabelle im Haupt-Feature verwenden
+ *     <p><code>
+ * ```yaml
+ * example:
+ *   sourcePath: /main
+ *   type: OBJECT
+ *   allOf:
+ *   - properties:
+ *       id:
+ *         sourcePath: id
+ *         type: INTEGER
+ *         role: ID
+ *   - sourcePath: '[id=id]names'
+ *     properties:
+ *       name1:
+ *         sourcePath: name1
+ *         type: STRING
+ *       name2:
+ *         sourcePath: name2
+ *         type: STRING
+ * ```
+ * </code>
+ *     <p>### Coalesce
+ *     <p>Wenn der Wert für ein Property aus mehr als einem `sourcePath` stammen kann, erlaubt diese
+ *     Option den ersten Wert der nicht Null ist zu wählen.
+ *     <p>#### Beispiel
+ *     <p><code>
+ * ```yaml
+ * foo:
+ *   type: OBJECT
+ *   properties:
+ *     bar:
+ *       type: VALUE
+ *       coalesce:
+ *       - sourcePath: bar_stringValue
+ *         type: STRING
+ *       - sourcePath: bar_integerValue
+ *         type: INTEGER
+ *       - sourcePath: bar_booleanValue
+ *         type: BOOLEAN
+ * ```
+ * </code>
+ *     <p>#### Typ-Kompabilität
+ *     <p>Constraints on the types of inner properties depending on the type of the outer property
+ *     are shown in the table below.
+ *     <p><code>
+ * | Outer type  | Valid inner types  | Remarks |
+ * |---|---|---|
+ * | `VALUE`  |  `INTEGER`, `FLOAT`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE`  |   |
+ * | `INTEGER`  |  `INTEGER` |   |
+ * | `FLOAT`  |  `FLOAT` |   |
+ * | `STRING`  |  `STRING`  |   |
+ * | `BOOLEAN`  |  `BOOLEAN`  |   |
+ * | `DATETIME`  |  `DATETIME`  |   |
+ * | `DATE`  |  `DATE`  |   |
+ * | `OBJECT`  |  `OBJECT`  | Different `objectType` with different schemas can be used  |
+ * | `FEATURE_REF `  |  `FEATURE_REF `  | Different `refType` can be used  |
+ * </code>
+ *     <p>### Concat
+ *     <p>Wenn die Werte für ein Array-Property aus mehr als einem `sourcePath` stammen können,
+ *     erlaubt diese Option alle verfügbaren Werte zu konkatenieren.
+ *     <p>#### Beispiel
+ *     <p><code>
+ * ```yaml
+ * foo:
+ *   type: OBJECT
+ *   properties:
+ *     bar:
+ *       type: FEATURE_REF_ARRAY
+ *       concat:
+ *       - sourcePath: '[id=foo_fk]baz1/id'
+ *         refType: baz1
+ *       - sourcePath: '[id=foo_fk]baz2/id'
+ *         refType: baz2
+ *       - sourcePath: '[id=foo_fk]bazn/id'
+ *         refType: bazn
+ * ```
+ * </code>
+ *     <p>#### Typ-Kompabilität
+ *     <p>Constraints on the types of inner properties depending on the type of the outer property
+ *     are shown in the table below.
+ *     <p><code>
+ * | Outer type  | Valid inner types  | Remarks |
+ * |---|---|---|
+ * | `VALUE_ARRAY`  |  `VALUE_ARRAY`, `INTEGER`, `FLOAT`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE`  |   |
+ * | `OBJECT_ARRAY`  |  `OBJECT_ARRAY`, `OBJECT`  | Different `objectType` with different schemas can be used  |
+ * | `FEATURE_REF_ARRAY `  |  `FEATURE_REF_ARRAY`, `FEATURE_REF `  | Different `refType` can be used  |
+ * </code>
+ */
 public class MappingOperationResolver implements TypesResolver {
 
   @Override
