@@ -590,9 +590,137 @@ public interface FeatureSchema
         getFullPathAsString());
 
     Preconditions.checkState(
+        getConcat().isEmpty()
+            || getType() != Type.OBJECT_ARRAY
+            || getConcat().stream()
+                .allMatch(
+                    s ->
+                        List.of(Type.STRING, Type.OBJECT, Type.OBJECT_ARRAY).contains(s.getType())),
+        "Concat of type OBJECT_ARRAY may only contain items of type OBJECT_ARRAY or OBJECT. Found: %s. Path: %s.",
+        getConcat().stream()
+            .map(FeatureSchema::getType)
+            .filter(t -> !List.of(Type.STRING, Type.OBJECT, Type.OBJECT_ARRAY).contains(t))
+            .findFirst()
+            .orElse(getType()),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getConcat().isEmpty()
+            || getType() != Type.FEATURE_REF_ARRAY
+            || getConcat().stream()
+                .allMatch(
+                    s ->
+                        List.of(Type.STRING, Type.FEATURE_REF, Type.FEATURE_REF_ARRAY)
+                            .contains(s.getType())),
+        "Concat of type FEATURE_REF_ARRAY may only contain items of type FEATURE_REF_ARRAY or FEATURE_REF. Found: %s. Path: %s.",
+        getConcat().stream()
+            .map(FeatureSchema::getType)
+            .filter(
+                t -> !List.of(Type.STRING, Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(t))
+            .findFirst()
+            .orElse(getType()),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getConcat().isEmpty()
+            || getType() != Type.VALUE_ARRAY
+            || getConcat().stream()
+                .allMatch(
+                    s ->
+                        List.of(
+                                Type.INTEGER,
+                                Type.FLOAT,
+                                Type.STRING,
+                                Type.BOOLEAN,
+                                Type.DATE,
+                                Type.DATETIME,
+                                Type.VALUE_ARRAY)
+                            .contains(s.getType())),
+        "Concat of type VALUE_ARRAY may only contain items of type VALUE_ARRAY, INTEGER, FLOAT, STRING, BOOLEAN, DATE or DATETIME. Found: %s. Path: %s.",
+        getConcat().stream()
+            .map(FeatureSchema::getType)
+            .filter(
+                t ->
+                    !List.of(
+                            Type.INTEGER,
+                            Type.FLOAT,
+                            Type.STRING,
+                            Type.BOOLEAN,
+                            Type.DATE,
+                            Type.DATETIME,
+                            Type.VALUE_ARRAY)
+                        .contains(t))
+            .findFirst()
+            .orElse(getType()),
+        getFullPathAsString());
+
+    Preconditions.checkState(
         getCoalesce().isEmpty() || !isArray(),
         "Coalesce may not be used with array types. Found: %s. Path: %s.",
         getType(),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getCoalesce().isEmpty()
+            || getType() != Type.FEATURE_REF
+            || getCoalesce().stream()
+                .allMatch(s -> List.of(Type.STRING, Type.FEATURE_REF).contains(s.getType())),
+        "Coalesce of type FEATURE_REF may only contain items of type FEATURE_REF. Found: %s. Path: %s.",
+        getCoalesce().stream()
+            .map(FeatureSchema::getType)
+            .filter(t -> !List.of(Type.STRING, Type.FEATURE_REF).contains(t))
+            .findFirst()
+            .orElse(getType()),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getCoalesce().isEmpty()
+            || getType() != Type.VALUE
+            || getCoalesce().stream()
+                .allMatch(
+                    s ->
+                        List.of(
+                                Type.INTEGER,
+                                Type.FLOAT,
+                                Type.STRING,
+                                Type.BOOLEAN,
+                                Type.DATE,
+                                Type.DATETIME,
+                                Type.VALUE_ARRAY)
+                            .contains(s.getType())),
+        "Coalesce of type VALUE may only contain items of type INTEGER, FLOAT, STRING, BOOLEAN, DATE, DATETIME or VALUE_ARRAY. Found: %s. Path: %s.",
+        getCoalesce().stream()
+            .map(FeatureSchema::getType)
+            .filter(
+                t ->
+                    !List.of(
+                            Type.INTEGER,
+                            Type.FLOAT,
+                            Type.STRING,
+                            Type.BOOLEAN,
+                            Type.DATE,
+                            Type.DATETIME,
+                            Type.VALUE_ARRAY)
+                        .contains(t))
+            .findFirst()
+            .orElse(getType()),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getCoalesce().isEmpty()
+            || !List.of(
+                    Type.INTEGER, Type.FLOAT, Type.STRING, Type.BOOLEAN, Type.DATE, Type.DATETIME)
+                .contains(getType())
+            || getCoalesce().stream()
+                .allMatch(s -> List.of(Type.STRING, getType()).contains(s.getType())),
+        "Coalesce of type %s may only contain items of type %s. Found: %s. Path: %s.",
+        getType(),
+        getType(),
+        getCoalesce().stream()
+            .map(FeatureSchema::getType)
+            .filter(t -> !List.of(Type.STRING, getType()).contains(t))
+            .findFirst()
+            .orElse(getType()),
         getFullPathAsString());
 
     Preconditions.checkState(
@@ -622,6 +750,18 @@ public interface FeatureSchema
                 && !Objects.equals(getType(), Type.UNKNOWN)),
         "A sortable property must be a string, a number or an instant. Found %s",
         getType());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  @Override
+  default List<FeatureSchema> getAllNestedProperties() {
+    return Stream.concat(
+            getProperties().stream()
+                .flatMap(t -> Stream.concat(Stream.of(t), t.getAllNestedProperties().stream())),
+            getMerge().stream().flatMap(t -> t.getAllNestedProperties().stream()))
+        .collect(Collectors.toList());
   }
 
   @JsonIgnore
