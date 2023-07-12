@@ -353,16 +353,30 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                 })
             .collect(Collectors.toList());
 
+    Optional<String> sortKey =
+        parentSortKeys.isEmpty() || !targetSchema.isValue()
+            ? Optional.empty()
+            : Optional.of(parentSortKeys.get(parentSortKeys.size() - 1));
+
+    Type type = connector.isPresent() ? Type.STRING : targetSchema.getType();
+    Optional<Type> valueType = targetSchema.getValueType();
+
+    if (!targetSchema.getConcat().isEmpty()) {
+      if (!relations.isEmpty()) {
+        sortKey = Optional.empty();
+      } else if (type == Type.VALUE_ARRAY) {
+        type = valueType.orElse(Type.STRING);
+        valueType = Optional.empty();
+      }
+    }
+
     Builder builder =
         new Builder()
             .name(path.getName())
             .parentPath(fullParentPath)
-            .sortKey(
-                parentSortKeys.isEmpty() || !targetSchema.isValue()
-                    ? Optional.empty()
-                    : Optional.of(parentSortKeys.get(parentSortKeys.size() - 1)))
-            .type(connector.isPresent() ? Type.STRING : targetSchema.getType())
-            .valueType(targetSchema.getValueType())
+            .sortKey(sortKey)
+            .type(type)
+            .valueType(valueType)
             .geometryType(targetSchema.getGeometryType())
             .role(targetSchema.getRole())
             .sourcePath(targetSchema.getName())

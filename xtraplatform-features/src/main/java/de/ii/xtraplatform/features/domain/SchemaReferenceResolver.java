@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.domain;
 import dagger.Lazy;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -36,8 +37,16 @@ public class SchemaReferenceResolver implements TypesResolver {
     return partial.getSchema().isPresent();
   }
 
-  private static boolean hasAllOfWithSchema(FeatureSchema type) {
-    return type.getAllOf().stream().anyMatch(SchemaReferenceResolver::hasSchema);
+  private static boolean hasMergeWithSchema(FeatureSchema type) {
+    return type.getMerge().stream().anyMatch(SchemaReferenceResolver::hasSchema);
+  }
+
+  private static boolean hasConcatWithSchema(FeatureSchema type) {
+    return type.getConcat().stream().anyMatch(SchemaReferenceResolver::hasSchema);
+  }
+
+  private static boolean hasCoalesceWithSchema(FeatureSchema type) {
+    return type.getCoalesce().stream().anyMatch(SchemaReferenceResolver::hasSchema);
   }
 
   private SchemaFragmentResolver getResolver(String ref) {
@@ -62,7 +71,10 @@ public class SchemaReferenceResolver implements TypesResolver {
 
   @Override
   public boolean needsResolving(FeatureSchema type) {
-    return hasSchema(type) || hasAllOfWithSchema(type);
+    return hasSchema(type)
+        || hasMergeWithSchema(type)
+        || hasConcatWithSchema(type)
+        || hasCoalesceWithSchema(type);
   }
 
   @Override
@@ -76,10 +88,10 @@ public class SchemaReferenceResolver implements TypesResolver {
       return resolve(type.getSchema().get(), type);
     }
 
-    if (hasAllOfWithSchema(type)) {
+    if (hasMergeWithSchema(type)) {
       List<PartialObjectSchema> partials = new ArrayList<>();
 
-      for (PartialObjectSchema partial : type.getAllOf()) {
+      for (PartialObjectSchema partial : type.getMerge()) {
         if (hasSchema(partial)) {
           PartialObjectSchema resolvedPartial = resolve(partial.getSchema().get(), partial);
 
@@ -91,9 +103,46 @@ public class SchemaReferenceResolver implements TypesResolver {
         }
       }
 
-      return new ImmutableFeatureSchema.Builder().from(type).allOf(partials).build();
+      return new ImmutableFeatureSchema.Builder().from(type).merge(partials).build();
+    }
+
+    if (hasConcatWithSchema(type)) {
+      List<FeatureSchema> partials = resolvePartials(type.getConcat());
+
+      return new ImmutableFeatureSchema.Builder()
+          .from(type)
+          .concat(partials)
+          .propertyMap(Map.of())
+          .build();
+    }
+
+    if (hasCoalesceWithSchema(type)) {
+      List<FeatureSchema> partials = resolvePartials(type.getCoalesce());
+
+      return new ImmutableFeatureSchema.Builder()
+          .from(type)
+          .coalesce(partials)
+          .propertyMap(Map.of())
+          .build();
     }
 
     return type;
+  }
+
+  private List<FeatureSchema> resolvePartials(List<FeatureSchema> partials) {
+    List<FeatureSchema> resolved = new ArrayList<>();
+
+    for (FeatureSchema partial : partials) {
+      if (hasSchema(partial)) {
+        FeatureSchema resolvedPartial = resolve(partial.getSchema().get(), partial);
+
+        if (Objects.nonNull(resolvedPartial)) {
+          resolved.add(resolvedPartial);
+        }
+      } else {
+        resolved.add(partial);
+      }
+    }
+    return resolved;
   }
 }

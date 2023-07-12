@@ -26,6 +26,7 @@ class FeatureTokenReaderSpec extends Specification {
         mapping.getPathSeparator() >> Optional.empty()
         context.setMappings([ft: mapping])
         context.setType('ft')
+        context.setQuery(ImmutableFeatureQuery.builder().type('ft').build())
         tokenReader = new FeatureTokenReader(eventHandler, context)
     }
 
@@ -89,17 +90,24 @@ class FeatureTokenReaderSpec extends Specification {
             context.path() == ["id"]
             context.value() == "19"
             context.valueType() == SchemaBase.Type.STRING
+            (!context.inObject())
         })
 
         then:
         1 * eventHandler.onObjectStart({ FeatureEventHandler.ModifiableContext context ->
             context.path() == ["geometry"]
             context.geometryType() == Optional.of(SimpleFeatureGeometry.POINT)
+            context.geometryDimension() == OptionalInt.of(2)
+            context.inGeometry()
+            context.inObject()
         })
 
         then:
         1 * eventHandler.onArrayStart({ FeatureEventHandler.ModifiableContext context ->
             context.path() == ["geometry"]
+            context.inGeometry()
+            context.inObject()
+            context.inArray()
         })
 
         then:
@@ -107,6 +115,9 @@ class FeatureTokenReaderSpec extends Specification {
             context.path() == ["geometry"]
             context.value() == "6.295202392345018"
             context.valueType() == SchemaBase.Type.FLOAT
+            context.inGeometry()
+            context.inObject()
+            context.inArray()
         })
 
         then:
@@ -114,6 +125,9 @@ class FeatureTokenReaderSpec extends Specification {
             context.path() == ["geometry"]
             context.value() == "50.11336914792363"
             context.valueType() == SchemaBase.Type.FLOAT
+            context.inGeometry()
+            context.inObject()
+            context.inArray()
         })
 
         then:
@@ -127,6 +141,9 @@ class FeatureTokenReaderSpec extends Specification {
             context.path() == ["kennung"]
             context.value() == "580340001-1"
             context.valueType() == SchemaBase.Type.STRING
+            (!context.inGeometry())
+            (!context.inObject())
+            (!context.inArray())
         })
 
         then:

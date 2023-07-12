@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlImpl
+import de.ii.xtraplatform.features.domain.MappingOperationResolver
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults
 import de.ii.xtraplatform.features.sql.domain.SchemaSql
 import de.ii.xtraplatform.features.sql.domain.SqlPathParser
@@ -18,19 +19,22 @@ class QuerySchemaDeriverSpec extends Specification {
 
     @Shared
     QuerySchemaDeriver schemaDeriver
+    @Shared
+    MappingOperationResolver mappingOperationResolver
 
     def setupSpec() {
         def defaults = new ImmutableSqlPathDefaults.Builder().build()
         def cql = new CqlImpl()
         def pathParser = new SqlPathParser(defaults, cql, Set.of("JSON"))
         schemaDeriver = new QuerySchemaDeriver(pathParser)
+        mappingOperationResolver = new MappingOperationResolver()
     }
 
     def 'query schema: #casename'() {
 
         when:
 
-        List<SchemaSql> actual = source.accept(schemaDeriver)
+        List<SchemaSql> actual = source.accept(mappingOperationResolver, List.of()).accept(schemaDeriver)
 
         then:
 
@@ -48,6 +52,7 @@ class QuerySchemaDeriverSpec extends Specification {
         "object without sourcePath"                  | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH
         "object without sourcePath with nested join" | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH2         || QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH2
         "multiple sourcePaths"                       | FeatureSchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
+        "concat values with join"                    | FeatureSchemaFixtures.CONCAT_VALUES_JOIN                  || QuerySchemaFixtures.CONCAT_VALUES_JOIN
         "nested joins"                               | FeatureSchemaFixtures.NESTED_JOINS                        || QuerySchemaFixtures.NESTED_JOINS
         "nested value array"                         | FeatureSchemaFixtures.NESTED_VALUE_ARRAY                  || QuerySchemaFixtures.NESTED_VALUE_ARRAY
         "simple connector"                           | FeatureSchemaFixtures.CONNECTOR_SIMPLE                    || QuerySchemaFixtures.CONNECTOR

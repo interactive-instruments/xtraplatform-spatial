@@ -451,7 +451,7 @@ public class SqlPathParser {
 
     String sourceField = target.getJoin().get().first();
     String targetField = target.getJoin().get().second();
-    boolean isOne2One = Objects.equals(targetField, source.getPrimaryKey());
+    boolean isOne2One = Objects.equals(targetField, target.getPrimaryKey());
 
     return new ImmutableSqlRelation.Builder()
         .cardinality(

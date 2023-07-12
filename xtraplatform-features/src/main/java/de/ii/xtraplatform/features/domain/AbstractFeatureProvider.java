@@ -352,8 +352,15 @@ public abstract class AbstractFeatureProvider<
   public FeatureStream getFeatureStream(FeatureQuery query) {
     validateQuery(query);
 
+    Query query2 = preprocessQuery(query);
+
     return new FeatureStreamImpl(
-        query, getData(), crsTransformerFactory, getCodelists(), this::runQuery, !query.hitsOnly());
+        query2,
+        getData(),
+        crsTransformerFactory,
+        getCodelists(),
+        this::runQuery,
+        !query.hitsOnly());
   }
 
   // TODO: more tests
@@ -370,6 +377,10 @@ public abstract class AbstractFeatureProvider<
         }
       }
     }
+  }
+
+  protected Query preprocessQuery(Query query) {
+    return query;
   }
 
   @Override

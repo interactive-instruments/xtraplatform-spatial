@@ -19,13 +19,13 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.features.domain.AllOfResolver;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.DecoderFactories;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
+import de.ii.xtraplatform.features.domain.MappingOperationResolver;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
@@ -136,7 +136,7 @@ public class FeatureProviderSqlFactory
     }
 
     try {
-      return resolveAllOfIfNecessary(
+      return resolveMappingOperationsIfNecessary(
           resolveSchemasIfNecessary(
               normalizeConstants(
                   cleanupAutoPersist(
@@ -157,7 +157,8 @@ public class FeatureProviderSqlFactory
     int rounds = 0;
     while (resolver.needsResolving(types)) {
       types = resolver.resolve(types);
-      if (++rounds >= 5) {
+      if (++rounds > 16) {
+        LOGGER.warn("Exceeded the maximum length of 16 for provider schema reference chains.");
         break;
       }
     }
@@ -169,13 +170,14 @@ public class FeatureProviderSqlFactory
     return data;
   }
 
-  private FeatureProviderSqlData resolveAllOfIfNecessary(FeatureProviderSqlData data) {
-    AllOfResolver resolver = new AllOfResolver();
+  private FeatureProviderSqlData resolveMappingOperationsIfNecessary(FeatureProviderSqlData data) {
+    MappingOperationResolver resolver = new MappingOperationResolver();
 
     if (resolver.needsResolving(data.getTypes())) {
       Map<String, FeatureSchema> types = resolver.resolve(data.getTypes());
 
-      return new Builder().from(data).types(types).build();
+      ImmutableFeatureProviderSqlData build = new Builder().from(data).types(types).build();
+      return build;
     }
     return data;
   }

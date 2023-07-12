@@ -27,6 +27,7 @@ class FeatureTokenEmitterSpec extends Specification {
         mapping.getPathSeparator() >> Optional.empty()
         context.setMappings([ft: mapping])
         context.setType('ft')
+        context.setQuery(ImmutableFeatureQuery.builder().type('ft').build())
         tokenReader = new FeatureTokenReader(eventHandler, context)
     }
 

@@ -145,6 +145,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
       if (!context.valueBuffer().isEmpty()) {
         transformValueBuffer(context, path);
       }
+
       value = valueTransformerChain.transform(path, value);
 
       // skip, if the value has been transformed to null

@@ -58,7 +58,7 @@ public interface TypesResolver extends FeatureSchemaTransformer {
         new Builder()
             .from(schema)
             .propertyMap(asMap(visitedProperties.stream()))
-            .allOf(visitedPartials)
+            .merge(visitedPartials)
             .build();
 
     if (needsResolving(visited)) {
