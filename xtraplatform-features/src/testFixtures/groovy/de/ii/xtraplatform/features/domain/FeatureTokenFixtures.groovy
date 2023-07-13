@@ -23,6 +23,11 @@ class FeatureTokenFixtures {
                             .type(Type.STRING)
                             .role(Role.ID)
                             .sourcePath("id"))
+            .putProperties2("erfasser_array_join",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.VALUE_ARRAY)
+                            .valueType(Type.STRING)
+                            .sourcePath("[eid=id]erfasser/name"))
             .putProperties2("kennung",
                     new ImmutableFeatureSchema.Builder()
                             .type(Type.STRING)
@@ -61,9 +66,11 @@ class FeatureTokenFixtures {
 
     public static final SchemaMapping MAPPING = new ImmutableSchemaMapping.Builder()
             .targetSchema(SCHEMA)
-            .useTargetPaths(true)
+            .useTargetPaths(false)
             .sourcePathTransformer((path, isValue) -> path)
             .build()
+
+    public static final SchemaMapping MAPPING_OLD = SchemaMapping.withTargetPaths(MAPPING)
 
     public static final List<Object> SINGLE_FEATURE = [
             FeatureTokenType.INPUT,
@@ -419,6 +426,60 @@ class FeatureTokenFixtures {
             FeatureTokenType.ARRAY_END,
             FeatureTokenType.VALUE,
             ["kennung"],
+            "611320001-1",
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> SINGLE_FEATURE_VALUE_ARRAY_AT_END = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["biotop", "id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["biotop", "kennung"],
+            "611320001-1",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["biotop", "erfasser_array_join"],
+            FeatureTokenType.VALUE,
+            ["biotop", "erfasser_array_join"],
+            "John Doe",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["biotop", "erfasser_array_join"],
+            "Jane Doe",
+            Type.STRING,
+            FeatureTokenType.ARRAY_END,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> SINGLE_FEATURE_VALUE_ARRAY_IN_ORDER = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["biotop", "id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["biotop", "erfasser_array_join"],
+            FeatureTokenType.VALUE,
+            ["biotop", "erfasser_array_join"],
+            "John Doe",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["biotop", "erfasser_array_join"],
+            "Jane Doe",
+            Type.STRING,
+            FeatureTokenType.ARRAY_END,
+            FeatureTokenType.VALUE,
+            ["biotop", "kennung"],
             "611320001-1",
             Type.STRING,
             FeatureTokenType.FEATURE_END,

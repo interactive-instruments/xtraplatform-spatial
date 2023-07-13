@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain
 
-import de.ii.xtraplatform.features.domain.transform.PropertyTransformations
+
 import spock.lang.Specification
 
 /**
@@ -23,7 +23,7 @@ class FeatureTokenTransformerRemoveEmptyOptionalsSpec extends Specification {
         FeatureQuery query = ImmutableFeatureQuery.builder().type("test").build()
         FeatureEventHandler.ModifiableContext context = mapper.createContext()
                 .setQuery(query)
-                .setMappings([test: FeatureTokenFixtures.MAPPING])
+                .setMappings([test: FeatureTokenFixtures.MAPPING_OLD])
                 .setType('test')
 
         tokenReader = new FeatureTokenReader(mapper, context)
