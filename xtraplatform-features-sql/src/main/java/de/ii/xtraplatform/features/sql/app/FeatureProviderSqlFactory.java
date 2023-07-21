@@ -76,6 +76,7 @@ public class FeatureProviderSqlFactory
 
   private final Lazy<Set<SchemaFragmentResolver>> schemaResolvers;
   private final ConnectorFactory connectorFactory;
+  private final boolean skipHydration;
 
   @Inject
   public FeatureProviderSqlFactory(
@@ -93,6 +94,15 @@ public class FeatureProviderSqlFactory
     super(providerSqlFactoryAssisted);
     this.schemaResolvers = schemaResolvers;
     this.connectorFactory = connectorFactory;
+    this.skipHydration = false;
+  }
+
+  // for ldproxy-cfg
+  public FeatureProviderSqlFactory() {
+    super(null);
+    this.schemaResolvers = null;
+    this.connectorFactory = null;
+    this.skipHydration = true;
   }
 
   @Override
@@ -128,6 +138,10 @@ public class FeatureProviderSqlFactory
   @Override
   public EntityData hydrateData(EntityData entityData) {
     FeatureProviderSqlData data = (FeatureProviderSqlData) entityData;
+
+    if (skipHydration) {
+      return entityData;
+    }
 
     if (data.isAuto()) {
       LOGGER.info(
