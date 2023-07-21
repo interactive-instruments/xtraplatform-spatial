@@ -34,6 +34,8 @@ public class TileProviderMbTilesFactory
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderMbTilesFactory.class);
 
+  private final boolean skipHydration;
+
   @Inject
   public TileProviderMbTilesFactory(
       // TODO: needed because dagger-auto does not parse TileProviderMbTiles
@@ -41,6 +43,12 @@ public class TileProviderMbTilesFactory
       TileMatrixSetRepository tileMatrixSetRepository,
       TileProviderMbTilesFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
+    this.skipHydration = false;
+  }
+
+  public TileProviderMbTilesFactory() {
+    super(null);
+    this.skipHydration = true;
   }
 
   @Override
@@ -76,6 +84,10 @@ public class TileProviderMbTilesFactory
   @Override
   public EntityData hydrateData(EntityData entityData) {
     TileProviderMbtilesData data = (TileProviderMbtilesData) entityData;
+
+    if (skipHydration) {
+      return data;
+    }
 
     return data;
   }

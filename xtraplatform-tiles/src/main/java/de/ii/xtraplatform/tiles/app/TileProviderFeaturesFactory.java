@@ -48,6 +48,7 @@ public class TileProviderFeaturesFactory
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderFeaturesFactory.class);
 
   private final EntityRegistry entityRegistry;
+  private final boolean skipHydration;
 
   @Inject
   public TileProviderFeaturesFactory(
@@ -61,6 +62,14 @@ public class TileProviderFeaturesFactory
       TileProviderFeaturesFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
     this.entityRegistry = entityRegistry;
+    this.skipHydration = false;
+  }
+
+  // for ldproxy-cfg
+  public TileProviderFeaturesFactory() {
+    super(null);
+    this.entityRegistry = null;
+    this.skipHydration = true;
   }
 
   @Override
@@ -102,6 +111,10 @@ public class TileProviderFeaturesFactory
   @Override
   public EntityData hydrateData(EntityData entityData) {
     TileProviderFeaturesData data = (TileProviderFeaturesData) entityData;
+
+    if (skipHydration) {
+      return data;
+    }
 
     if (data.isAuto()) {
       LOGGER.info(

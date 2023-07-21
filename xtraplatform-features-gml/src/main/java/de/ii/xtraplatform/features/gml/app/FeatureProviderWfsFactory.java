@@ -52,6 +52,7 @@ public class FeatureProviderWfsFactory
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfsFactory.class);
 
   private final ConnectorFactory connectorFactory;
+  private final boolean skipHydration;
 
   @Inject
   public FeatureProviderWfsFactory(
@@ -65,6 +66,13 @@ public class FeatureProviderWfsFactory
       ProviderWfsFactoryAssisted providerWfsFactoryAssisted) {
     super(providerWfsFactoryAssisted);
     this.connectorFactory = connectorFactory;
+    this.skipHydration = false;
+  }
+
+  public FeatureProviderWfsFactory() {
+    super(null);
+    this.connectorFactory = null;
+    this.skipHydration = true;
   }
 
   @Override
@@ -100,6 +108,10 @@ public class FeatureProviderWfsFactory
   @Override
   public EntityData hydrateData(EntityData entityData) {
     FeatureProviderWfsData data = (FeatureProviderWfsData) entityData;
+
+    if (skipHydration) {
+      return data;
+    }
 
     if (data.isAuto()) {
       LOGGER.info(
