@@ -25,6 +25,7 @@ public interface LevelFilter extends WithLevels {
   @Nullable
   Cql2Expression getCqlFilter();
 
+  @JsonIgnore
   @Value.Derived
   default boolean isParsed() {
     return Objects.nonNull(getCqlFilter());
