@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.docs.DocFile;
@@ -204,9 +203,6 @@ public interface FeatureProviderSqlData
    *     [Query-Generierung](#query-generation).
    */
   @DocMarker("specific")
-  @JsonProperty(
-      value = "queryGeneration",
-      access = JsonProperty.Access.WRITE_ONLY) // means only read from json
   // @Value.Default
   // can't use interface, bug in immutables when using attributeBuilderDetection and Default
   /*default QueryGeneratorSettings getQueryGeneration() {

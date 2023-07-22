@@ -105,9 +105,6 @@ public interface ConnectionInfoSql extends ConnectionInfo {
    * @langDe Einstellungen für den Connection-Pool, für Details siehe [Pool](#connection-pool).
    * @default see below
    */
-  @JsonProperty(
-      value = "pool",
-      access = JsonProperty.Access.WRITE_ONLY) // means only read from json
   // @Value.Default
   // can't use interface, bug in immutables when using attributeBuilderDetection and Default
   // default PoolSettings getPool() {
