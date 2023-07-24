@@ -76,6 +76,16 @@ public class TileProviderHttpFactory
   }
 
   @Override
+  public EntityDataBuilder<TileProviderData> emptyDataBuilder() {
+    return new ImmutableTileProviderHttpData.Builder();
+  }
+
+  @Override
+  public EntityDataBuilder<? extends EntityData> emptySuperDataBuilder() {
+    return new ImmutableProviderCommonData.Builder();
+  }
+
+  @Override
   public Class<? extends EntityData> dataClass() {
     return TileProviderHttpData.class;
   }

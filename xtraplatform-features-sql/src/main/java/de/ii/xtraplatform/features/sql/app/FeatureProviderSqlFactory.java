@@ -131,6 +131,16 @@ public class FeatureProviderSqlFactory
   }
 
   @Override
+  public EntityDataBuilder<FeatureProviderDataV2> emptyDataBuilder() {
+    return new ImmutableFeatureProviderSqlData.Builder();
+  }
+
+  @Override
+  public EntityDataBuilder<? extends EntityData> emptySuperDataBuilder() {
+    return new ImmutableProviderCommonData.Builder();
+  }
+
+  @Override
   public Class<? extends EntityData> dataClass() {
     return FeatureProviderSqlData.class;
   }

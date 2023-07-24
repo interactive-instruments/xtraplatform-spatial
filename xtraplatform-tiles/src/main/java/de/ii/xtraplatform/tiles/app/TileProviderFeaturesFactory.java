@@ -104,6 +104,16 @@ public class TileProviderFeaturesFactory
   }
 
   @Override
+  public EntityDataBuilder<TileProviderData> emptyDataBuilder() {
+    return new ImmutableTileProviderFeaturesData.Builder();
+  }
+
+  @Override
+  public EntityDataBuilder<? extends EntityData> emptySuperDataBuilder() {
+    return new ImmutableProviderCommonData.Builder();
+  }
+
+  @Override
   public Class<? extends EntityData> dataClass() {
     return TileProviderFeaturesData.class;
   }

@@ -46,6 +46,11 @@ public class CodelistFactory extends AbstractEntityFactory<CodelistData, Codelis
   }
 
   @Override
+  public EntityDataBuilder<CodelistData> emptyDataBuilder() {
+    return new ImmutableCodelistData.Builder();
+  }
+
+  @Override
   public Class<? extends EntityData> dataClass() {
     return CodelistData.class;
   }

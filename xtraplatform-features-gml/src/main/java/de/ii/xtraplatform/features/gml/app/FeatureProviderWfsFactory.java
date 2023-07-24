@@ -101,6 +101,16 @@ public class FeatureProviderWfsFactory
   }
 
   @Override
+  public EntityDataBuilder<FeatureProviderDataV2> emptyDataBuilder() {
+    return new ImmutableFeatureProviderWfsData.Builder();
+  }
+
+  @Override
+  public EntityDataBuilder<? extends EntityData> emptySuperDataBuilder() {
+    return new ImmutableProviderCommonData.Builder();
+  }
+
+  @Override
   public Class<? extends EntityData> dataClass() {
     return FeatureProviderWfsData.class;
   }
