@@ -12,6 +12,7 @@ import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.codelists.domain.CodelistData;
 import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
+import de.ii.xtraplatform.store.domain.entities.Entity;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author zahnen
  */
+@Entity(type = Codelist.ENTITY_TYPE, data = CodelistData.class)
 public class CodelistEntity extends AbstractPersistentEntity<CodelistData> implements Codelist {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CodelistEntity.class);

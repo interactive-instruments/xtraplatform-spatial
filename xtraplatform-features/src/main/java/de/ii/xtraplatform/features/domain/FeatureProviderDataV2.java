@@ -108,6 +108,8 @@ import org.immutables.value.Value;
 // @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
 public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, ExtendableConfiguration {
 
+  @Deprecated String PROVIDER_SUB_TYPE_KEY_OLD = "featureProviderType";
+
   @JsonIgnore
   @Override
   @Value.Derived

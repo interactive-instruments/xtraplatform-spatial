@@ -128,7 +128,7 @@ public class WfsConnectorHttp implements WfsConnector {
 
   @Override
   public String getType() {
-    return String.format("%s/%s", FeatureProviderWfs.PROVIDER_TYPE, CONNECTOR_TYPE);
+    return String.format("%s/%s", FeatureProviderWfs.PROVIDER_SUB_TYPE, CONNECTOR_TYPE);
   }
 
   @Override

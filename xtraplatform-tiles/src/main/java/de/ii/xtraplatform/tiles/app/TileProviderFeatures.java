@@ -18,8 +18,11 @@ import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.services.domain.TaskContext;
 import de.ii.xtraplatform.store.domain.BlobStore;
+import de.ii.xtraplatform.store.domain.entities.Entity;
+import de.ii.xtraplatform.store.domain.entities.Entity.SubType;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.tiles.domain.Cache;
 import de.ii.xtraplatform.tiles.domain.Cache.Storage;
@@ -35,6 +38,7 @@ import de.ii.xtraplatform.tiles.domain.TileGenerator;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetBase;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
+import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TileProviderFeaturesData;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
@@ -62,6 +66,15 @@ import javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Entity(
+    type = TileProviderData.ENTITY_TYPE,
+    subTypes = {
+      @SubType(key = ProviderData.PROVIDER_TYPE_KEY, value = TileProviderData.PROVIDER_TYPE),
+      @SubType(
+          key = ProviderData.PROVIDER_SUB_TYPE_KEY,
+          value = TileProviderFeaturesData.PROVIDER_SUBTYPE)
+    },
+    data = TileProviderFeaturesData.class)
 public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeaturesData>
     implements TileProvider, TileSeeding {
 

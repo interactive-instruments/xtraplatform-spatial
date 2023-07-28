@@ -87,7 +87,7 @@ public interface EpsgCrs {
 
   // TODO: migrate
   @Deprecated
-  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty(value = "forceLongitudeFirst", access = JsonProperty.Access.WRITE_ONLY)
   @Value.Default
   @Value.Auxiliary
   default boolean getForceLongitudeFirst() {

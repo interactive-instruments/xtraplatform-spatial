@@ -40,6 +40,7 @@ import de.ii.xtraplatform.features.domain.FeatureStream;
 import de.ii.xtraplatform.features.domain.FeatureStreamImpl;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.Metadata;
+import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
@@ -49,6 +50,8 @@ import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.features.gml.domain.WfsConnector;
 import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
+import de.ii.xtraplatform.store.domain.entities.Entity;
+import de.ii.xtraplatform.store.domain.entities.Entity.SubType;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
@@ -64,6 +67,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
+@Entity(
+    type = FeatureProvider2.ENTITY_TYPE,
+    subTypes = {
+      @SubType(key = ProviderData.PROVIDER_TYPE_KEY, value = FeatureProvider2.PROVIDER_TYPE),
+      @SubType(
+          key = ProviderData.PROVIDER_SUB_TYPE_KEY,
+          value = FeatureProviderWfs.PROVIDER_SUB_TYPE,
+          keyAlias = {FeatureProviderDataV2.PROVIDER_SUB_TYPE_KEY_OLD})
+    },
+    data = FeatureProviderWfsData.class)
 public class FeatureProviderWfs
     extends AbstractFeatureProvider<
         byte[], String, FeatureProviderConnector.QueryOptions, FeatureSchema>
@@ -77,7 +90,7 @@ public class FeatureProviderWfs
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfs.class);
 
   static final String ENTITY_SUB_TYPE = "feature/wfs";
-  public static final String PROVIDER_TYPE = "WFS";
+  public static final String PROVIDER_SUB_TYPE = "WFS";
   private static final MediaType MEDIA_TYPE = new MediaType("application", "gml+xml");
 
   private final CrsTransformerFactory crsTransformerFactory;

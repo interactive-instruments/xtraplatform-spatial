@@ -124,7 +124,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
    *     Treibers](https://jdbc.postgresql.org/documentation/head/connect.html#connection-parameters).
    * @default {}
    */
-  Map<String, Object> getDriverOptions();
+  Map<String, String> getDriverOptions();
 
   @DocIgnore
   Optional<FeatureActionTrigger> getTriggers();
