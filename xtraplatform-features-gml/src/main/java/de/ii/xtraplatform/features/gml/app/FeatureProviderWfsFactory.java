@@ -20,6 +20,7 @@ import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
+import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
@@ -77,7 +78,7 @@ public class FeatureProviderWfsFactory
 
   @Override
   public String type() {
-    return FeatureProviderWfs.ENTITY_TYPE;
+    return ProviderData.ENTITY_TYPE;
   }
 
   @Override

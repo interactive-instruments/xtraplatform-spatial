@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
 @Entity(
-    type = FeatureProvider2.ENTITY_TYPE,
+    type = ProviderData.ENTITY_TYPE,
     subTypes = {
       @SubType(key = ProviderData.PROVIDER_TYPE_KEY, value = FeatureProvider2.PROVIDER_TYPE),
       @SubType(

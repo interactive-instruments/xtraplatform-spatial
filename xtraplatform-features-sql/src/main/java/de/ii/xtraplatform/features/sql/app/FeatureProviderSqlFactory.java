@@ -26,6 +26,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.MappingOperationResolver;
+import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
@@ -107,7 +108,7 @@ public class FeatureProviderSqlFactory
 
   @Override
   public String type() {
-    return FeatureProviderSql.ENTITY_TYPE;
+    return ProviderData.ENTITY_TYPE;
   }
 
   @Override
