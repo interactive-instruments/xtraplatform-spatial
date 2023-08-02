@@ -8,16 +8,15 @@
 package de.ii.xtraplatform.features.sql.app
 
 
-import de.ii.xtraplatform.cql.domain.CqlFilter
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.Gt
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
-import de.ii.xtraplatform.features.sql.domain.SchemaSql
-import de.ii.xtraplatform.features.sql.domain.SqlRelation
 import de.ii.xtraplatform.features.domain.SchemaBase
 import de.ii.xtraplatform.features.domain.SchemaBase.Type
 import de.ii.xtraplatform.features.sql.domain.ImmutableSchemaSql
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlRelation
+import de.ii.xtraplatform.features.sql.domain.SchemaSql
+import de.ii.xtraplatform.features.sql.domain.SqlRelation
 
 class QuerySchemaFixtures {
 
@@ -598,6 +597,70 @@ class QuerySchemaFixtures {
                             .type(Type.STRING)
                             .sourcePath("component")
                             .parentPath(["o12006"])
+                            .build())
+                    .build()
+    ]
+
+    static List<SchemaSql> CONCAT_VALUES_JOIN = [
+            new ImmutableSchemaSql.Builder()
+                    .name("o12006")
+                    .sourcePath("address")
+                    .type(Type.OBJECT)
+                    .sortKey("id")
+                    .primaryKey("id")
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("objid")
+                            .type(Type.STRING)
+                            .sourcePath("id")
+                            .parentPath(["o12006"])
+                            .role(SchemaBase.Role.ID)
+                            .build())
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("lan")
+                            .type(Type.STRING)
+                            .sourcePath("component")
+                            .parentPath(["o12006"])
+                            .build())
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("rbz")
+                            .type(Type.STRING)
+                            .sourcePath("component")
+                            .parentPath(["o12006"])
+                            .build())
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("krs")
+                            .type(Type.STRING)
+                            .sourcePath("component")
+                            .parentPath(["o12006"])
+                            .build())
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("gmd")
+                            .type(Type.STRING)
+                            .sourcePath("component")
+                            .parentPath(["o12006"])
+                            .build())
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("o12007")
+                            .type(Type.OBJECT_ARRAY)
+                            .parentPath(["o12006"])
+                            .parentSortKeys(["o12006.id"])
+                            .sortKey("id")
+                            .primaryKey("id")
+                            .addRelation(new ImmutableSqlRelation.Builder()
+                                    .cardinality(SqlRelation.CARDINALITY.ONE_2_ONE)
+                                    .sourceContainer("o12006")
+                                    .sourceField("id7")
+                                    .sourceSortKey("id")
+                                    .sourcePrimaryKey("id")
+                                    .targetContainer("o12007")
+                                    .targetField("id")
+                                    .build())
+                            .addProperties(new ImmutableSchemaSql.Builder()
+                                    .name("nam")
+                                    .type(Type.STRING)
+                                    .sourcePath("component")
+                                    .parentPath(["o12006", "[id7=id]o12007"])
+                                    .build())
                             .build())
                     .build()
     ]

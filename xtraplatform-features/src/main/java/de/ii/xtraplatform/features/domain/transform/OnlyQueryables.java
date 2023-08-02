@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.domain.transform;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
@@ -47,13 +48,30 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
       return null;
     }
 
-    if (schema.queryable()) {
-      String path = schema.getFullPathAsString(pathSeparator);
+    FeatureSchema schema2 = schema;
+
+    if (!schema2.getConcat().isEmpty() || !schema2.getCoalesce().isEmpty()) {
+      return null;
+    }
+
+    if (schema.getAdditionalInfo().containsKey("concatIndex")
+        && !schema.getTransformations().isEmpty()
+        && schema.getTransformations().get(0).getRename().isPresent()) {
+      schema2 =
+          new ImmutableFeatureSchema.Builder()
+              .from(schema)
+              .name(schema.getTransformations().get(0).getRename().get())
+              .path(List.of(schema.getTransformations().get(0).getRename().get()))
+              .build();
+    }
+
+    if (schema2.queryable()) {
+      String path = schema2.getFullPathAsString(pathSeparator);
       // ignore property, if it is not included (by default or explicitly) or if it is excluded
       if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
         return null;
       }
-    } else if (!schema.isObject()) {
+    } else if (!schema2.isObject()) {
       return null;
     }
 
@@ -68,9 +86,6 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
                 ImmutableMap.toImmutableMap(
                     Entry::getKey, Entry::getValue, (first, second) -> second));
 
-    return new ImmutableFeatureSchema.Builder()
-        .from(schema)
-        .propertyMap(visitedPropertiesMap)
-        .build();
+    return new Builder().from(schema2).propertyMap(visitedPropertiesMap).concat(List.of()).build();
   }
 }

@@ -321,19 +321,78 @@ public interface FeatureSchema
    * @langEn If only some of the `properties` are defined in an external `schema`, or if some of the
    *     `properties` should be mapped to a different table, this provides a convenient way to
    *     define these properties alongside the regular properties. The option takes a list of schema
-   *     objects, but only `sourcePath`, `schema` and `properties` are considered.
+   *     objects, but only `sourcePath`, `schema` and `properties` are considered. For details see
+   *     [Mapping Operations](#merge).
    * @langDe Wenn nur einige `properties` in einem externen `schema` definiert sind, oder wenn nur
    *     einige `properties` auf eine andere Tabelle gemappt werden sollen, stellt diese Option
    *     einen komfortablen Weg zur Verfügung, um solche properties zusammen mit den regulären
    *     properties zu definieren. Der Wert ist eine Liste von Schema-Objekten, aber nur
-   *     `sourcePath`, `schema` und `properties` werden berücksichtigt.
+   *     `sourcePath`, `schema` und `properties` werden berücksichtigt. Für Details siehe [Mapping
+   *     Operationen](#merge).
    * @default []
    */
-  List<PartialObjectSchema> getAllOf();
+  @JsonAlias("allOf")
+  List<PartialObjectSchema> getMerge();
+
+  /**
+   * @langEn If the value for a property may come from more than one `sourcePath`, this allows to
+   *     choose the first non-null value. This takes a list of value schemas, for details see
+   *     [Mapping Operations](#coalesce).
+   * @langDe Wenn der Wert für ein Property aus mehr als einem `sourcePath` stammen kann, erlaubt
+   *     diese Option den ersten Wert der nicht Null ist zu wählen. Die Option erwartet eine Liste
+   *     von Werte-Schemas, für Details siehe [Mapping Operationen](#coalesce).
+   * @default []
+   */
+  List<FeatureSchema> getCoalesce();
+
+  /**
+   * @langEn If the values for an array property may come from more than one `sourcePath`, this
+   *     allows to concatenate all available values. This takes a list of value or value array
+   *     schemas, for details see [Mapping Operations](#concat).
+   * @langDe Wenn die Werte für ein Array-Property aus mehr als einem `sourcePath` stammen können,
+   *     erlaubt diese Option alle verfügbaren Werte zu konkatenieren. Die Option erwartet eine
+   *     Liste von Werte- oder Werte-Array-Schemas, für Details siehe [Mapping
+   *     Operationen](#concat).
+   * @default []
+   */
+  List<FeatureSchema> getConcat();
 
   abstract class Builder
       extends PropertiesSchema.Builder<FeatureSchema, ImmutableFeatureSchema.Builder, FeatureSchema>
-      implements PropertiesSchema.BuilderWithName<FeatureSchema, ImmutableFeatureSchema.Builder> {}
+      implements PropertiesSchema.BuilderWithName<FeatureSchema, ImmutableFeatureSchema.Builder> {
+
+    @JsonIgnore
+    public abstract ImmutableFeatureSchema.Builder concat(
+        Iterable<? extends FeatureSchema> elements);
+
+    public abstract ImmutableFeatureSchema.Builder addAllConcatBuilders(
+        Iterable<ImmutableFeatureSchema.Builder> elements);
+
+    @JsonProperty("concat")
+    public ImmutableFeatureSchema.Builder concatBuilders(
+        Iterable<ImmutableFeatureSchema.Builder> elements) {
+      for (ImmutableFeatureSchema.Builder element : elements) {
+        element.name("concat");
+      }
+      return addAllConcatBuilders(elements);
+    }
+
+    @JsonIgnore
+    public abstract ImmutableFeatureSchema.Builder coalesce(
+        Iterable<? extends FeatureSchema> elements);
+
+    public abstract ImmutableFeatureSchema.Builder addAllCoalesceBuilders(
+        Iterable<ImmutableFeatureSchema.Builder> elements);
+
+    @JsonProperty("coalesce")
+    public ImmutableFeatureSchema.Builder coalesceBuilders(
+        Iterable<ImmutableFeatureSchema.Builder> elements) {
+      for (ImmutableFeatureSchema.Builder element : elements) {
+        element.name("coalesce");
+      }
+      return addAllCoalesceBuilders(elements);
+    }
+  }
 
   @Override
   default ImmutableFeatureSchema.Builder getBuilder() {
@@ -525,6 +584,167 @@ public interface FeatureSchema
   }
 
   @Value.Check
+  default void checkMappingOperations() {
+    Preconditions.checkState(
+        getConcat().isEmpty() || isArray(),
+        "Concat may only be used with array types. Found: %s. Path: %s.",
+        getType(),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getConcat().isEmpty()
+            || getConcat().stream().allMatch(s -> s.getTransformations().isEmpty()),
+        "Concat items may not contain transformations. Path: %s.",
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getConcat().isEmpty()
+            || getType() != Type.OBJECT_ARRAY
+            || getConcat().stream()
+                .allMatch(
+                    s ->
+                        List.of(Type.STRING, Type.OBJECT, Type.OBJECT_ARRAY).contains(s.getType())),
+        "Concat of type OBJECT_ARRAY may only contain items of type OBJECT_ARRAY or OBJECT. Found: %s. Path: %s.",
+        getConcat().stream()
+            .map(FeatureSchema::getType)
+            .filter(t -> !List.of(Type.STRING, Type.OBJECT, Type.OBJECT_ARRAY).contains(t))
+            .findFirst()
+            .orElse(getType()),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getConcat().isEmpty()
+            || getType() != Type.FEATURE_REF_ARRAY
+            || getConcat().stream()
+                .allMatch(
+                    s ->
+                        List.of(Type.STRING, Type.FEATURE_REF, Type.FEATURE_REF_ARRAY)
+                            .contains(s.getType())),
+        "Concat of type FEATURE_REF_ARRAY may only contain items of type FEATURE_REF_ARRAY or FEATURE_REF. Found: %s. Path: %s.",
+        getConcat().stream()
+            .map(FeatureSchema::getType)
+            .filter(
+                t -> !List.of(Type.STRING, Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(t))
+            .findFirst()
+            .orElse(getType()),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getConcat().isEmpty()
+            || getType() != Type.VALUE_ARRAY
+            || getConcat().stream()
+                .allMatch(
+                    s ->
+                        List.of(
+                                Type.INTEGER,
+                                Type.FLOAT,
+                                Type.STRING,
+                                Type.BOOLEAN,
+                                Type.DATE,
+                                Type.DATETIME,
+                                Type.VALUE_ARRAY)
+                            .contains(s.getType())),
+        "Concat of type VALUE_ARRAY may only contain items of type VALUE_ARRAY, INTEGER, FLOAT, STRING, BOOLEAN, DATE or DATETIME. Found: %s. Path: %s.",
+        getConcat().stream()
+            .map(FeatureSchema::getType)
+            .filter(
+                t ->
+                    !List.of(
+                            Type.INTEGER,
+                            Type.FLOAT,
+                            Type.STRING,
+                            Type.BOOLEAN,
+                            Type.DATE,
+                            Type.DATETIME,
+                            Type.VALUE_ARRAY)
+                        .contains(t))
+            .findFirst()
+            .orElse(getType()),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getCoalesce().isEmpty() || !isArray(),
+        "Coalesce may not be used with array types. Found: %s. Path: %s.",
+        getType(),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getCoalesce().isEmpty()
+            || getCoalesce().stream().allMatch(s -> s.getTransformations().isEmpty()),
+        "Coalesce items may not contain transformations. Path: %s.",
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getCoalesce().isEmpty()
+            || getType() != Type.FEATURE_REF
+            || getCoalesce().stream()
+                .allMatch(s -> List.of(Type.STRING, Type.FEATURE_REF).contains(s.getType())),
+        "Coalesce of type FEATURE_REF may only contain items of type FEATURE_REF. Found: %s. Path: %s.",
+        getCoalesce().stream()
+            .map(FeatureSchema::getType)
+            .filter(t -> !List.of(Type.STRING, Type.FEATURE_REF).contains(t))
+            .findFirst()
+            .orElse(getType()),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getCoalesce().isEmpty()
+            || getType() != Type.VALUE
+            || getCoalesce().stream()
+                .allMatch(
+                    s ->
+                        List.of(
+                                Type.INTEGER,
+                                Type.FLOAT,
+                                Type.STRING,
+                                Type.BOOLEAN,
+                                Type.DATE,
+                                Type.DATETIME,
+                                Type.VALUE_ARRAY)
+                            .contains(s.getType())),
+        "Coalesce of type VALUE may only contain items of type INTEGER, FLOAT, STRING, BOOLEAN, DATE, DATETIME or VALUE_ARRAY. Found: %s. Path: %s.",
+        getCoalesce().stream()
+            .map(FeatureSchema::getType)
+            .filter(
+                t ->
+                    !List.of(
+                            Type.INTEGER,
+                            Type.FLOAT,
+                            Type.STRING,
+                            Type.BOOLEAN,
+                            Type.DATE,
+                            Type.DATETIME,
+                            Type.VALUE_ARRAY)
+                        .contains(t))
+            .findFirst()
+            .orElse(getType()),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getCoalesce().isEmpty()
+            || !List.of(
+                    Type.INTEGER, Type.FLOAT, Type.STRING, Type.BOOLEAN, Type.DATE, Type.DATETIME)
+                .contains(getType())
+            || getCoalesce().stream()
+                .allMatch(s -> List.of(Type.STRING, getType()).contains(s.getType())),
+        "Coalesce of type %s may only contain items of type %s. Found: %s. Path: %s.",
+        getType(),
+        getType(),
+        getCoalesce().stream()
+            .map(FeatureSchema::getType)
+            .filter(t -> !List.of(Type.STRING, getType()).contains(t))
+            .findFirst()
+            .orElse(getType()),
+        getFullPathAsString());
+
+    Preconditions.checkState(
+        getType() != Type.VALUE || !getCoalesce().isEmpty(),
+        "Type VALUE may only be used with coalesce. Found: %s. Path: %s.",
+        getType(),
+        getFullPathAsString());
+  }
+
+  @Value.Check
   default void checkIsQueryable() {
     Preconditions.checkState(
         !queryable() || (!isObject() && !Objects.equals(getType(), Type.UNKNOWN)),
@@ -549,8 +769,20 @@ public interface FeatureSchema
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  @Override
+  default List<FeatureSchema> getAllNestedProperties() {
+    return Stream.concat(
+            getProperties().stream()
+                .flatMap(t -> Stream.concat(Stream.of(t), t.getAllNestedProperties().stream())),
+            getMerge().stream().flatMap(t -> t.getAllNestedProperties().stream()))
+        .collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default List<PartialObjectSchema> getAllNestedPartials() {
-    return getAllOf().stream()
+    return getMerge().stream()
         .flatMap(
             t ->
                 Stream.concat(
@@ -571,7 +803,7 @@ public interface FeatureSchema
         this,
         parents,
         getProperties().stream().map(visit).collect(Collectors.toList()),
-        getAllOf().stream()
+        getMerge().stream()
             .map(
                 partial -> {
                   if (partial.getPropertyMap().isEmpty()) {

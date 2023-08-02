@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.async.ByteArrayFeeder;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.FeatureTokenBuffer;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
@@ -45,6 +46,9 @@ public class FeatureTokenDecoderGeoJson
   private int endArray = 0;
 
   private ModifiableContext<FeatureSchema, SchemaMapping> context;
+  private FeatureTokenBuffer<
+          FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
+      downstream;
 
   public FeatureTokenDecoderGeoJson() {
     this(Optional.empty());
@@ -63,6 +67,7 @@ public class FeatureTokenDecoderGeoJson
   @Override
   protected void init() {
     this.context = createContext();
+    this.downstream = new FeatureTokenBuffer<>(getDownstream(), context);
   }
 
   @Override
@@ -144,11 +149,11 @@ public class FeatureTokenDecoderGeoJson
             }
             // nested array_object start
           } else if (!context.pathTracker().asList().isEmpty() && started) {
-            getDownstream().onObjectStart(context);
+            downstream.onObjectStart(context);
             // feature in collection start
           } else if (depth == featureDepth - 1 && inFeature) {
             // inFeature = false;
-            getDownstream().onFeatureStart(context);
+            downstream.onFeatureStart(context);
           }
 
           // nested object start?
@@ -157,7 +162,7 @@ public class FeatureTokenDecoderGeoJson
             if (depth > featureDepth
                 && (inProperties /*|| inGeometry*/)
                 && !Objects.equals(currentName, "properties")) {
-              getDownstream().onObjectStart(context);
+              downstream.onObjectStart(context);
             }
           }
           break;
@@ -178,12 +183,12 @@ public class FeatureTokenDecoderGeoJson
             lastNameIsArrayDepth += 1;
             depth += 1;
 
-            getDownstream().onArrayStart(context);
+            downstream.onArrayStart(context);
             // start nested geo array
           } else if (context.inGeometry()) {
             if (endArray > 0) {
               for (int i = 0; i < endArray - 1; i++) {
-                getDownstream().onArrayEnd(context);
+                downstream.onArrayEnd(context);
               }
               endArray = 0;
             }
@@ -204,14 +209,15 @@ public class FeatureTokenDecoderGeoJson
           } else if (Objects.nonNull(currentName) && (inProperties || context.inGeometry())) {
             if (endArray > 0) {
               for (int i = 0; i < endArray - 1; i++) {
-                getDownstream().onArrayEnd(context);
+                downstream.onArrayEnd(context);
               }
               endArray = 0;
             }
 
-            getDownstream().onArrayEnd(context);
+            downstream.onArrayEnd(context);
 
             if (context.inGeometry()) {
+              checkBufferForDimension();
               context.pathTracker().track(depth - featureDepth - 1);
             }
             depth -= 1;
@@ -221,6 +227,7 @@ public class FeatureTokenDecoderGeoJson
             lastNameIsArrayDepth -= 1;
             // end nested geo array
           } else if (context.inGeometry()) {
+            checkBufferForDimension();
             endArray++;
             depth -= 1;
             context.pathTracker().track(depth - featureDepth);
@@ -234,7 +241,7 @@ public class FeatureTokenDecoderGeoJson
             if (depth > featureDepth
                 && (inProperties || context.inGeometry())
                 && !Objects.equals(currentName, "properties")) {
-              getDownstream().onObjectEnd(context);
+              downstream.onObjectEnd(context);
             }
 
             // end geo
@@ -244,19 +251,19 @@ public class FeatureTokenDecoderGeoJson
 
             depth -= 1;
           } else if (lastNameIsArrayDepth > 0) {
-            getDownstream().onObjectEnd(context);
+            downstream.onObjectEnd(context);
           }
 
           // end all
           if (depth == -1) {
             if (context.metadata().isSingleFeature()) {
-              getDownstream().onFeatureEnd(context);
+              downstream.onFeatureEnd(context);
             }
-            getDownstream().onEnd(context);
+            downstream.onEnd(context);
             // end feature in collection
           } else if (depth == featureDepth - 1 && inFeature) {
             // inFeature = false;
-            getDownstream().onFeatureEnd(context);
+            downstream.onFeatureEnd(context);
           } else if (inFeature) {
             // featureConsumer.onPropertyEnd(pathTracker.asList());
           }
@@ -266,6 +273,7 @@ public class FeatureTokenDecoderGeoJson
           }
           if (Objects.equals(currentName, "geometry")) {
             context.setInGeometry(false);
+            downstream.bufferStop(false);
           }
           if (inProperties) {
             context.pathTracker().track(depth - featureDepth - 1);
@@ -308,7 +316,7 @@ public class FeatureTokenDecoderGeoJson
               context.pathTracker().track(currentName, 0);
             }
             context.setValue(nullValue.get());
-            getDownstream().onValue(context);
+            downstream.onValue(context);
           }
 
           // feature or collection prop value
@@ -333,7 +341,7 @@ public class FeatureTokenDecoderGeoJson
                 context.pathTracker().track(currentName, 0);
                 context.setValue(parser.getValueAsString());
 
-                getDownstream().onValue(context);
+                downstream.onValue(context);
 
                 context.pathTracker().track(0);
                 break;
@@ -344,10 +352,13 @@ public class FeatureTokenDecoderGeoJson
 
             if (Objects.nonNull(currentName)) {
               if (context.inGeometry() && Objects.equals(currentName, "type")) {
+                // wait for dimension, mark insertion point
+                downstream.bufferStart();
                 context.setGeometryType(
                     GeoJsonGeometryType.forString(parser.getValueAsString())
                         .toSimpleFeatureGeometry());
-                getDownstream().onObjectStart(context);
+                downstream.onObjectStart(context);
+                downstream.bufferMark();
                 break;
               }
               context.pathTracker().track(currentName);
@@ -355,7 +366,7 @@ public class FeatureTokenDecoderGeoJson
 
             if (context.inGeometry() && startArray > 0) {
               for (int i = 0; i < startArray - 1; i++) {
-                getDownstream().onArrayStart(context);
+                downstream.onArrayStart(context);
               }
               startArray = 0;
             }
@@ -366,7 +377,7 @@ public class FeatureTokenDecoderGeoJson
               context.setValue(parser.getValueAsString());
             }
 
-            getDownstream().onValue(context);
+            downstream.onValue(context);
 
             // feature id
             if (Objects.equals(currentName, "id")) {
@@ -388,6 +399,19 @@ public class FeatureTokenDecoderGeoJson
     return feedMeMore;
   }
 
+  private void checkBufferForDimension() {
+    if (downstream.isBuffering()) {
+      int dim =
+          (int)
+              downstream
+                  .bufferAsStream()
+                  .filter(token -> Objects.equals(token, Type.FLOAT))
+                  .count();
+      downstream.bufferInsert(dim);
+      downstream.bufferStop(true);
+    }
+  }
+
   private void startIfNecessary(boolean isCollection) {
     if (!started) {
       started = true;
@@ -397,9 +421,9 @@ public class FeatureTokenDecoderGeoJson
       } else {
         context.metadata().isSingleFeature(true);
       }
-      getDownstream().onStart(context);
+      downstream.onStart(context);
       if (!isCollection) {
-        getDownstream().onFeatureStart(context);
+        downstream.onFeatureStart(context);
       }
     }
   }

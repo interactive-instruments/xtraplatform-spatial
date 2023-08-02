@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -20,6 +21,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -144,10 +146,12 @@ public class WithTransformationsApplied
       FeatureSchema property, String namePrefix, String labelPrefix) {
     return new ImmutableFeatureSchema.Builder()
         .from(property)
-        .type(property.getValueType().orElse(property.getType()))
+        .type(flatType(property))
         .valueType(Optional.empty())
         .name(flatName(property, namePrefix))
         .label(flatLabel(property, labelPrefix))
+        .concat(List.of())
+        .coalesce(List.of())
         .build();
   }
 
@@ -157,6 +161,29 @@ public class WithTransformationsApplied
 
   private String flatLabel(FeatureSchema property, String prefix) {
     return prefix + property.getLabel().orElse(property.getName());
+  }
+
+  private Type flatType(FeatureSchema property) {
+    if (property.getValueType().isPresent()) {
+      return property.getValueType().get();
+    }
+
+    if (!property.getConcat().isEmpty()) {
+      return property.getConcat().stream()
+          .map(FeatureSchema::getValueType)
+          .findFirst()
+          .flatMap(Function.identity())
+          .orElse(property.getType());
+    }
+
+    if (!property.getCoalesce().isEmpty()) {
+      return property.getCoalesce().stream()
+          .map(FeatureSchema::getType)
+          .findFirst()
+          .orElse(property.getType());
+    }
+
+    return property.getType();
   }
 
   private Optional<PropertyTransformation> getFeatureTransformations(FeatureSchema schema) {

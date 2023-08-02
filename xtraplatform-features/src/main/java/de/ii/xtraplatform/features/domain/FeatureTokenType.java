@@ -17,4 +17,5 @@ public enum FeatureTokenType {
   OBJECT_END,
   FEATURE_END,
   INPUT_END,
+  FLUSH,
 }

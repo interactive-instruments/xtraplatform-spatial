@@ -19,6 +19,7 @@ import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
+import de.ii.xtraplatform.docs.DocVar;
 import de.ii.xtraplatform.store.domain.entities.AutoEntity;
 import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
@@ -59,8 +60,13 @@ import org.immutables.value.Value;
  *     <p>Als Beispiel siehe die
  *     [Provider-Konfiguration](https://github.com/interactive-instruments/ldproxy/blob/master/demo/vineyards/store/entities/providers/vineyards.yml)
  *     der API [Weinlagen in Rheinland-Pfalz](https://demo.ldproxy.net/vineyards).
+ * @langEn ## Mapping Operations
+ *     <p>{@docVar:mappingOps}
+ * @langDe ## Mapping Operationen
+ *     <p>{@docVar:mappingOps}
  * @ref:cfgProperties {@link de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData}
  * @ref:cfgProperties:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
+ * @ref:mappingOps {@link de.ii.xtraplatform.features.domain.MappingOperationResolver}
  */
 @DocFile(
     path = "providers/feature",
@@ -80,6 +86,14 @@ import org.immutables.value.Value;
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
+    },
+    vars = {
+      @DocVar(
+          name = "mappingOps",
+          value = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:mappingOps}"),
+            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
+          }),
     })
 /*@DocFilesTemplate(
     files = ForEach.IMPLEMENTATION,

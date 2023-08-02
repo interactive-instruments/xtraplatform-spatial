@@ -69,6 +69,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     DATETIME,
     DATE,
     GEOMETRY,
+    VALUE,
     OBJECT,
     VALUE_ARRAY,
     OBJECT_ARRAY,

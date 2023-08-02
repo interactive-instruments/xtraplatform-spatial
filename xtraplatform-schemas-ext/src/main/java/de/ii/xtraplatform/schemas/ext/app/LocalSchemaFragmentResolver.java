@@ -10,9 +10,10 @@ package de.ii.xtraplatform.schemas.ext.app;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import de.ii.xtraplatform.features.domain.ImmutablePartialObjectSchema;
 import de.ii.xtraplatform.features.domain.PartialObjectSchema;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -64,12 +65,24 @@ public class LocalSchemaFragmentResolver implements SchemaFragmentResolver {
     Map<String, FeatureSchema> properties =
         merge(original.getPropertyMap(), resolved.getPropertyMap());
 
-    return new ImmutableFeatureSchema.Builder()
-        .from(original)
-        .from(resolved)
-        .schema(Optional.empty())
-        .propertyMap(properties)
-        .build();
+    Builder builder =
+        new Builder()
+            .from(resolved)
+            .from(original)
+            .type(original.getType() == Type.STRING ? resolved.getType() : original.getType())
+            .schema(resolved.getSchema())
+            .propertyMap(properties);
+
+    if (!resolved.getMerge().isEmpty() && !original.getPropertyMap().isEmpty()) {
+      PartialObjectSchema last = resolved.getMerge().get(resolved.getMerge().size() - 1);
+      last = merge(original, last);
+
+      builder.merge(resolved.getMerge().subList(0, resolved.getMerge().size() - 1));
+      builder.addMerge(last);
+      builder.propertyMap(Map.of());
+    }
+
+    return builder.build();
   }
 
   private PartialObjectSchema merge(PartialObjectSchema original, FeatureSchema resolved) {
@@ -80,6 +93,16 @@ public class LocalSchemaFragmentResolver implements SchemaFragmentResolver {
         .from(original)
         .sourcePath(resolved.getSourcePath())
         .schema(Optional.empty())
+        .propertyMap(properties)
+        .build();
+  }
+
+  private PartialObjectSchema merge(FeatureSchema original, PartialObjectSchema resolved) {
+    Map<String, FeatureSchema> properties =
+        merge(original.getPropertyMap(), resolved.getPropertyMap());
+
+    return new ImmutablePartialObjectSchema.Builder()
+        .from(resolved)
         .propertyMap(properties)
         .build();
   }
@@ -97,6 +120,12 @@ public class LocalSchemaFragmentResolver implements SchemaFragmentResolver {
               properties.put(key, merged);
             }
           } else {
+            properties.put(key, property);
+          }
+        });
+    original.forEach(
+        (key, property) -> {
+          if (!resolved.containsKey(key)) {
             properties.put(key, property);
           }
         });
