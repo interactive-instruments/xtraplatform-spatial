@@ -748,7 +748,7 @@ public class FeatureProviderSql
     RunnableStream<MutationResult> deletionStream =
         deletionSource
             .to(Sink.ignore())
-            .withResult(ImmutableMutationResult.builder().type(Type.DELETE))
+            .withResult(ImmutableMutationResult.builder().type(Type.DELETE).hasFeatures(false))
             .handleError(ImmutableMutationResult.Builder::error)
             .handleItem(ImmutableMutationResult.Builder::addIds)
             .handleEnd(Builder::build)
@@ -797,7 +797,8 @@ public class FeatureProviderSql
 
     ImmutableMutationResult.Builder builder =
         ImmutableMutationResult.builder()
-            .type(featureId.isPresent() ? partial ? Type.UPDATE : Type.REPLACE : Type.CREATE);
+            .type(featureId.isPresent() ? partial ? Type.UPDATE : Type.REPLACE : Type.CREATE)
+            .hasFeatures(false);
     FeatureTokenStatsCollector statsCollector = new FeatureTokenStatsCollector(builder, crs);
 
     Source<FeatureSql> featureSqlSource =
