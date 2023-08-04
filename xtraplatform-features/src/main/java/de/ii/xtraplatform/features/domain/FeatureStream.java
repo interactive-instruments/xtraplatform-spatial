@@ -11,6 +11,7 @@ import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -79,6 +80,14 @@ public interface FeatureStream {
     abstract class Builder extends ResultBase.Builder<Result, Builder> {}
 
     Optional<EntityTag> getETag();
+
+    // TODO Set value based on the feature property that has `isLastModified: true`.
+    //      If no such property is part of the schema or if no feature has a value
+    //      set for the property, the value is empty.
+    //      In case of multiple features in the response, the latest value is set.
+    //      There are multiple options how to implement this, e.g., using an additional
+    //      meta query or as part of the pipeline similar to FeatureTokenStatsCollector.
+    Optional<Instant> getLastModified();
   }
 
   @Value.Immutable
@@ -93,6 +102,9 @@ public interface FeatureStream {
     T reduced();
 
     Optional<EntityTag> getETag();
+
+    // TODO See above.
+    Optional<Instant> getLastModified();
   }
 
   interface ResultBase {

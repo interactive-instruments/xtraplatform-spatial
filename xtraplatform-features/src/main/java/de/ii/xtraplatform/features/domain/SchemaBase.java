@@ -143,6 +143,15 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         && getIsSortable().orElse(true);
   }
 
+  Optional<Boolean> getIsLastModified();
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean lastModified() {
+    return Objects.equals(getType(), Type.DATETIME) && getIsLastModified().orElse(false);
+  }
+
   List<T> getProperties();
 
   @JsonIgnore

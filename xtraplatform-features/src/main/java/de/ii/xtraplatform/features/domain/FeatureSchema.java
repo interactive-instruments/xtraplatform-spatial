@@ -288,12 +288,12 @@ public interface FeatureSchema
 
   /**
    * @langEn Only the direct properties of a feature type that are of type STRING, FLOAT, INTEGER,
-   *     DATE, or TIMESTAMP are eligible as sortables. This setting can be used to declare a
-   *     property as ineligible, for example, if the property is not optimized for use in queries.
-   *     If an eligible property can actually be used as sortable is decided by the provider
+   *     DATE, or DATETIME are eligible as sortables. This setting can be used to declare a property
+   *     as ineligible, for example, if the property is not optimized for use in queries. If an
+   *     eligible property can actually be used as sortable is decided by the provider
    *     implementation, that might not be feasible due to technical reasons.
    * @langDe Nur die direkten Feature-Eigenschaften einer Objektart, die vom Typ STRING, FLOAT,
-   *     INTEGER, DATE oder TIMESTAMP sind, kommen als Sortierkriterien in Frage. Diese Einstellung
+   *     INTEGER, DATE oder DATETIME sind, kommen als Sortierkriterien in Frage. Diese Einstellung
    *     kann verwendet werden, um eine Eigenschaft als nicht geeignet zu deklarieren, zum Beispiel,
    *     wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert ist. Ob eine geeignete
    *     Eigenschaft tatsächlich als Sortierkriterium verwendet werden kann entscheidet die
@@ -302,6 +302,19 @@ public interface FeatureSchema
    */
   @Override
   Optional<Boolean> getIsSortable();
+
+  /**
+   * @langEn Identifies a DATETIME property as a property that contains the timestamp when the
+   *     feature was last modified. This information is used in optimistic locking to evaluate the
+   *     pre-conditions, if a mutation request includes a `Last-Modified` header.
+   * @langDe Kennzeichnet eine DATETIME-Eigenschaft als eine Eigenschaft, die den Zeitstempel
+   *     enthält, wann das Feature zuletzt geändert wurde. Diese Information wird beim
+   *     optimistischen Sperren verwendet, um die Vorbedingungen zu bewerten, wenn ein CRUD-Request
+   *     einen "Last-Modified"-Header enthält.
+   * @default see description
+   */
+  @Override
+  Optional<Boolean> getIsLastModified();
 
   /**
    * @langEn Only for `OBJECT` and `OBJECT_ARRAY`. Object with the property names as keys and schema
