@@ -25,13 +25,19 @@ import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.web.domain.ETag;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class FeatureStreamImpl implements FeatureStream {
 
@@ -69,6 +75,9 @@ public class FeatureStreamImpl implements FeatureStream {
                   : tokenSource;
           ImmutableResult.Builder resultBuilder = ImmutableResult.builder();
           final ETag.Incremental eTag = ETag.incremental();
+          /* TODO temporary code for testing, remove */
+          final AtomicReference<Instant> lastModified = new AtomicReference<>();
+          /* TODO END */
           final boolean strongETag =
               query instanceof FeatureQuery
                   && ((FeatureQuery) query)
@@ -99,6 +108,26 @@ public class FeatureStreamImpl implements FeatureStream {
                     if (strongETag && x instanceof byte[]) {
                       eTag.put((byte[]) x);
                     }
+
+                    /* TODO temporary code for testing lastModified with daraa, remove once last Modified is supported */
+                    if (x instanceof byte[]) {
+                      Pattern p =
+                          Pattern.compile(
+                              ".*\"ZI001_SDV\":\"(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[.\\d+]?Z)\".*");
+                      Matcher m = p.matcher(new String((byte[]) x, StandardCharsets.UTF_8));
+                      if (m.find()) {
+                        if (Objects.isNull(lastModified.get())) {
+                          lastModified.set(Instant.parse(m.group(1)));
+                        } else {
+                          Instant lastModified2 = Instant.parse(m.group(1));
+                          if (lastModified2.isAfter(lastModified.get())) {
+                            lastModified.set(lastModified2);
+                          }
+                        }
+                      }
+                    }
+                    /* TODO END */
+
                     return builder.isEmpty(x instanceof byte[] ? ((byte[]) x).length <= 0 : false);
                   })
               .handleEnd(
@@ -106,6 +135,11 @@ public class FeatureStreamImpl implements FeatureStream {
                     if (strongETag) {
                       builder1.eTag(eTag.build(ETag.Type.STRONG));
                     }
+                    /* TODO temporary code for testing, remove */
+                    if (Objects.nonNull(lastModified.get())) {
+                      builder1.lastModified(lastModified.get());
+                    }
+                    /* TODO END */
                     return builder1.build();
                   });
         };
@@ -125,6 +159,9 @@ public class FeatureStreamImpl implements FeatureStream {
                   : tokenSource;
           ImmutableResultReduced.Builder<X> resultBuilder = ImmutableResultReduced.<X>builder();
           final ETag.Incremental eTag = ETag.incremental();
+          /* TODO temporary code for testing, remove */
+          final AtomicReference<Instant> lastModified = new AtomicReference<>();
+          /* TODO END */
           final boolean strongETag =
               query instanceof FeatureQuery
                   && ((FeatureQuery) query)
@@ -155,6 +192,26 @@ public class FeatureStreamImpl implements FeatureStream {
                     if (strongETag && x instanceof byte[]) {
                       eTag.put((byte[]) x);
                     }
+
+                    /* TODO temporary code for testing lastModified with daraa, remove once last Modified is supported */
+                    if (x instanceof byte[]) {
+                      Pattern p =
+                          Pattern.compile(
+                              ".*\"ZI001_SDV\":\"(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[.\\d+]?Z)\".*");
+                      Matcher m = p.matcher(new String((byte[]) x, StandardCharsets.UTF_8));
+                      if (m.find()) {
+                        if (Objects.isNull(lastModified.get())) {
+                          lastModified.set(Instant.parse(m.group(1)));
+                        } else {
+                          Instant lastModified2 = Instant.parse(m.group(1));
+                          if (lastModified2.isAfter(lastModified.get())) {
+                            lastModified.set(lastModified2);
+                          }
+                        }
+                      }
+                    }
+                    /* TODO END */
+
                     return builder
                         .reduced((X) x)
                         .isEmpty(x instanceof byte[] && ((byte[]) x).length <= 0);
@@ -164,6 +221,11 @@ public class FeatureStreamImpl implements FeatureStream {
                     if (strongETag) {
                       xBuilder.eTag(eTag.build(ETag.Type.STRONG));
                     }
+                    /* TODO temporary code for testing, remove */
+                    if (Objects.nonNull(lastModified.get())) {
+                      xBuilder.lastModified(lastModified.get());
+                    }
+                    /* TODO END */
                     return xBuilder.build();
                   });
         };
