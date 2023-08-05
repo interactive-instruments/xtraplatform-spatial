@@ -82,12 +82,6 @@ public interface FeatureStream {
 
     Optional<EntityTag> getETag();
 
-    // TODO Set value based on the feature property that has `isLastModified: true`.
-    //      If no such property is part of the schema or if no feature has a value
-    //      set for the property, the value is empty.
-    //      This value will only be set for requests for a single feature.
-    //      There are multiple options how to implement this, e.g., using an additional
-    //      meta query or as part of the pipeline similar to FeatureTokenStatsCollector.
     Optional<Instant> getLastModified();
 
     Optional<BoundingBox> getSpatialExtent();
@@ -108,7 +102,6 @@ public interface FeatureStream {
 
     Optional<EntityTag> getETag();
 
-    // TODO See above.
     Optional<Instant> getLastModified();
 
     Optional<BoundingBox> getSpatialExtent();

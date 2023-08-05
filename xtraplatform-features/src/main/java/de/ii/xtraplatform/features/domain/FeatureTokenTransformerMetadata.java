@@ -66,7 +66,8 @@ public class FeatureTokenTransformerMetadata extends FeatureTokenTransformer {
                 Double.parseDouble(ymax),
                 crs.orElse(dim == 2 ? OgcCrs.CRS84 : OgcCrs.CRS84h)));
       }
-    } catch (Throwable ignore) {}
+    } catch (Throwable ignore) {
+    }
 
     try {
       if (!start.isEmpty() && !end.isEmpty()) {
@@ -76,13 +77,15 @@ public class FeatureTokenTransformerMetadata extends FeatureTokenTransformer {
       } else if (!end.isEmpty()) {
         temporalExtentSetter.accept(Tuple.of(null, Instant.parse(end)));
       }
-    } catch (Throwable ignore) {}
+    } catch (Throwable ignore) {
+    }
 
     try {
       if (!lastModified.isEmpty()) {
         lastModifiedSetter.accept(Instant.parse(lastModified));
       }
-    } catch (Throwable ignore) {}
+    } catch (Throwable ignore) {
+    }
 
     super.onEnd(context);
   }
