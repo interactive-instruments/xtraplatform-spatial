@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
@@ -84,10 +85,14 @@ public interface FeatureStream {
     // TODO Set value based on the feature property that has `isLastModified: true`.
     //      If no such property is part of the schema or if no feature has a value
     //      set for the property, the value is empty.
-    //      In case of multiple features in the response, the latest value is set.
+    //      This value will only be set for requests for a single feature.
     //      There are multiple options how to implement this, e.g., using an additional
     //      meta query or as part of the pipeline similar to FeatureTokenStatsCollector.
     Optional<Instant> getLastModified();
+
+    Optional<BoundingBox> getSpatialExtent();
+
+    Optional<Tuple<Instant, Instant>> getTemporalExtent();
   }
 
   @Value.Immutable
@@ -105,6 +110,10 @@ public interface FeatureStream {
 
     // TODO See above.
     Optional<Instant> getLastModified();
+
+    Optional<BoundingBox> getSpatialExtent();
+
+    Optional<Tuple<Instant, Instant>> getTemporalExtent();
   }
 
   interface ResultBase {

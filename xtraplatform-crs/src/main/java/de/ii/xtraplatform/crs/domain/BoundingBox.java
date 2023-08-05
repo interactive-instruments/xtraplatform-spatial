@@ -9,9 +9,12 @@ package de.ii.xtraplatform.crs.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Splitter;
 import de.ii.xtraplatform.crs.domain.ImmutableBoundingBox.Builder;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
@@ -19,6 +22,29 @@ import org.immutables.value.Value;
 @Value.Style(builder = "new", deepImmutablesDetection = true)
 @JsonDeserialize(builder = ImmutableBoundingBox.Builder.class)
 public interface BoundingBox {
+
+  static BoundingBox of(String bboxString, EpsgCrs crs) {
+    List<Double> coords =
+        Splitter.on(',')
+            .trimResults()
+            .splitToStream(bboxString)
+            .map(Double::valueOf)
+            .collect(Collectors.toUnmodifiableList());
+    if (coords.size() == 4) {
+      return BoundingBox.of(coords.get(0), coords.get(1), coords.get(2), coords.get(3), crs);
+    } else if (coords.size() == 6) {
+      return BoundingBox.of(
+          coords.get(0),
+          coords.get(1),
+          coords.get(2),
+          coords.get(3),
+          coords.get(4),
+          coords.get(5),
+          crs);
+    }
+
+    throw new IllegalArgumentException(String.format("Invalid bbox: %s", bboxString));
+  }
 
   static BoundingBox of(double xmin, double ymin, double xmax, double ymax, EpsgCrs crs) {
     return new ImmutableBoundingBox.Builder()
