@@ -84,6 +84,8 @@ public class FeatureStreamImpl implements FeatureStream {
             source = source.via(new FeatureTokenTransformerWeakETag(resultBuilder));
           }
 
+          source = source.via(new FeatureTokenTransformerMetadata(resultBuilder));
+
           source = source.via(new FeatureTokenTransformerHasFeatures(resultBuilder));
 
           Reactive.BasicStream<?, Void> basicStream =
@@ -139,6 +141,8 @@ public class FeatureStreamImpl implements FeatureStream {
                   .isPresent()) {
             source = source.via(new FeatureTokenTransformerWeakETag(resultBuilder));
           }
+
+          source = source.via(new FeatureTokenTransformerMetadata(resultBuilder));
 
           source = source.via(new FeatureTokenTransformerHasFeatures(resultBuilder));
 

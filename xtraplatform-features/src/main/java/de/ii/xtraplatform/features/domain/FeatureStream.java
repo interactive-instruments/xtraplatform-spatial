@@ -8,9 +8,11 @@
 package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -79,6 +81,12 @@ public interface FeatureStream {
     abstract class Builder extends ResultBase.Builder<Result, Builder> {}
 
     Optional<EntityTag> getETag();
+
+    Optional<Instant> getLastModified();
+
+    Optional<BoundingBox> getSpatialExtent();
+
+    Optional<Tuple<Instant, Instant>> getTemporalExtent();
   }
 
   @Value.Immutable
@@ -93,6 +101,12 @@ public interface FeatureStream {
     T reduced();
 
     Optional<EntityTag> getETag();
+
+    Optional<Instant> getLastModified();
+
+    Optional<BoundingBox> getSpatialExtent();
+
+    Optional<Tuple<Instant, Instant>> getTemporalExtent();
   }
 
   interface ResultBase {
