@@ -34,7 +34,7 @@ import org.immutables.value.Value;
  * @langEn # Features
  *     <p>There are currently three types of Feature providers:
  *     <p><code>
- * - [SQL](sql.md): `The features are stored in a SQL database (PostgreSQL/PostGIS, GeoPackage, SQLite/SpatiaLite).
+ * - [SQL](sql.md): The features are stored in a SQL database (PostgreSQL/PostGIS, GeoPackage, SQLite/SpatiaLite).
  * - [WFS](wfs.md): The features are retrieved from an OGC WFS.
  * - [GraphQL](graphql.md): The features are retrieved from a GraphQL API.
  *     </code>

@@ -21,6 +21,7 @@ public interface GraphQlQueries {
   /**
    * @langEn Options for collection queries.
    * @langDe Optionen für Collection-Queries.
+   * @since v3.5
    */
   CollectionQuery getCollection();
 
@@ -28,6 +29,7 @@ public interface GraphQlQueries {
    * @langEn Options for single feature queries. If not set, a collection query will be used.
    * @langDe Optionen für Einzel-Feature-Queries. Wenn nicht gesetzt wird ein Collection-Query
    *     verwendet.
+   * @since v3.5
    * @default null
    */
   Optional<SingleQuery> getSingle();
@@ -38,6 +40,7 @@ public interface GraphQlQueries {
     /**
      * @langEn Name of the GraphQL query.
      * @langDe Name des GraphQL-Queries.
+     * @since v3.5
      */
     String getName();
 
@@ -48,6 +51,7 @@ public interface GraphQlQueries {
     /**
      * @langEn Arguments for the GraphQL query.
      * @langDe Argumente für das GraphQL-Query.
+     * @since v3.5
      */
     @Nullable
     QueryArgumentsSingle getArguments();
@@ -55,6 +59,7 @@ public interface GraphQlQueries {
     /**
      * @langEn Subfields for specific types.
      * @langDe Subfields für spezielle Typen.
+     * @since v3.5
      */
     @Nullable
     QueryFields getFields();
@@ -66,6 +71,7 @@ public interface GraphQlQueries {
     /**
      * @langEn Name of the GraphQL query.
      * @langDe Name des GraphQL-Queries.
+     * @since v3.5
      */
     String getName();
 
@@ -76,6 +82,7 @@ public interface GraphQlQueries {
     /**
      * @langEn Arguments for the GraphQL query.
      * @langDe Argumente für das GraphQL-Query.
+     * @since v3.5
      */
     @Nullable
     QueryArgumentsCollection getArguments();
@@ -83,6 +90,7 @@ public interface GraphQlQueries {
     /**
      * @langEn Subfields or arguments for specific types.
      * @langDe Subfields oder Argumente für spezielle Typen.
+     * @since v3.5
      */
     @Nullable
     QueryFields getFields();
@@ -98,6 +106,7 @@ public interface GraphQlQueries {
      * @langDe Argument um ein Feature mit einer speziellen Id auszuwählen. [String
      *     template](details/transformations.md#examples-for-stringformat) bei dem `{{sourcePath}}`
      *     mit den Namen des Id-Property ersetzt wird und `{{value}}` mit der Id ersetzt wird.
+     * @since v3.5
      */
     Optional<String> getId();
   }
@@ -113,6 +122,7 @@ public interface GraphQlQueries {
      * @langDe Argument um ein Feature mit einer speziellen Id auszuwählen. [String
      *     template](details/transformations.md#examples-for-stringformat) bei dem `{{sourcePath}}`
      *     mit den Namen des Id-Property ersetzt wird und `{{value}}` mit der Id ersetzt wird.
+     * @since v3.5
      */
     Optional<String> getId();
 
@@ -123,6 +133,7 @@ public interface GraphQlQueries {
      * @langDe Argument um die Anzahl der ausgewählten Features zu beschränken. [String
      *     template](details/transformations.md#examples-for-stringformat) bei dem `{{value}}` mit
      *     dem Limit ersetzt wird.
+     * @since v3.5
      * @default null
      */
     Optional<String> getLimit();
@@ -134,6 +145,7 @@ public interface GraphQlQueries {
      * @langDe Argument um den Index des ersten Features in der Gesamtergebnismenge zu ändern.
      *     [String template](details/transformations.md#examples-for-stringformat) bei dem
      *     `{{value}}` mit dem Offset ersetzt wird.
+     * @since v3.5
      * @default null
      */
     Optional<String> getOffset();
@@ -145,6 +157,7 @@ public interface GraphQlQueries {
      * @langDe Argument das als Wrapper für Filter-Ausdrücke dient. [String
      *     template](details/transformations.md#examples-for-stringformat) bei dem `{{value}}` mit
      *     den Filter-Ausdrücken ersetzt wird.
+     * @since v3.5
      * @default null
      */
     Optional<String> getFilter();
@@ -158,6 +171,7 @@ public interface GraphQlQueries {
      *     template](details/transformations.md#examples-for-stringformat) bei dem `{{sourcePath}}`
      *     mit den Namen des primären Geometrie-Property ersetzt wird und `{{value}}` mit der
      *     Geometrie (siehe `geometry` unten).
+     * @since v3.5
      * @default null
      */
     Optional<String> getBbox();
@@ -171,6 +185,7 @@ public interface GraphQlQueries {
      *     template](details/transformations.md#examples-for-stringformat) bei dem `{{value}}` mit
      *     der Geometrie ersetzt wird. Ein Filter der die Geometrie in eine Text-Repräsentation
      *     wandelt wird benötigt, aktuell wird nur `toWkt` unterstützt (`{{value | toWkt}}`).
+     * @since v3.5
      * @default null
      */
     Optional<String> getGeometry();
@@ -186,6 +201,8 @@ public interface GraphQlQueries {
      * @langDe Subfield oder Argument für Properties vom Typ `GEOMETRY`. [String
      *     template](details/transformations.md#examples-for-stringformat) bei dem `{{sourcePath}}`
      *     mit den Namen des räumlichen Properties ersetzt wird.
+     * @since v3.5
+     * @default null
      */
     Optional<String> getGeometry();
   }

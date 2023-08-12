@@ -44,11 +44,33 @@ import org.immutables.value.Value;
  * @langDe ## Query-Generierung
  *     <p>Optionen für die Query-Generierung in `queryGeneration`.
  * @langAll {@docTable:queryGeneration}
+ * @langEn ### Collection queries
+ * @langDe ### Collection-Queries
+ * @langAll {@docTable:collectionQuery}
+ * @langEn ### Arguments for collection queries
+ * @langDe ### Argumente für Collection-Queries
+ * @langAll {@docTable:collectionArguments}
+ * @langEn ### Single queries
+ * @langDe ### Einzel-Queries
+ * @langAll {@docTable:singleQuery}
+ * @langEn ### Arguments for single queries
+ * @langDe ### Argumente für Einzel-Queries
+ * @langAll {@docTable:singleArguments}
+ * @langEn ### Special subfields
+ * @langDe ### Spezielle Subfields
+ * @langAll {@docTable:queryFields}
  * @ref:properties {@link
  *     de.ii.xtraplatform.features.graphql.domain.ImmutableFeatureProviderGraphQlData}
  * @ref:connectionInfo {@link
  *     de.ii.xtraplatform.features.graphql.domain.ImmutableConnectionInfoGraphQlHttp}
  * @ref:queryGeneration {@link de.ii.xtraplatform.features.graphql.domain.ImmutableGraphQlQueries}
+ * @ref:collectionQuery {@link de.ii.xtraplatform.features.graphql.domain.ImmutableCollectionQuery}
+ * @ref:singleQuery {@link de.ii.xtraplatform.features.graphql.domain.ImmutableSingleQuery}
+ * @ref:collectionArguments {@link
+ *     de.ii.xtraplatform.features.graphql.domain.ImmutableQueryArgumentsCollection}
+ * @ref:singleArguments {@link
+ *     de.ii.xtraplatform.features.graphql.domain.ImmutableQueryArgumentsSingle}
+ * @ref:queryFields {@link de.ii.xtraplatform.features.graphql.domain.ImmutableQueryFields}
  */
 @DocFile(
     path = "providers/feature",
@@ -76,6 +98,41 @@ import org.immutables.value.Value;
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "collectionQuery",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:collectionQuery}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "singleQuery",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:singleQuery}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "collectionArguments",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:collectionArguments}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "singleArguments",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:singleArguments}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "queryFields",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:queryFields}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
     })
 @Value.Immutable
 @BuildableMapEncodingEnabled
@@ -92,6 +149,7 @@ public interface FeatureProviderGraphQlData
   /**
    * @langEn Options for query generation, for details see [Queries](#queries) below.
    * @langDe Einstellungen für die Query-Generierung, für Details siehe [Queries](#queries).
+   * @since v3.5
    */
   @DocMarker("specific")
   @Nullable
