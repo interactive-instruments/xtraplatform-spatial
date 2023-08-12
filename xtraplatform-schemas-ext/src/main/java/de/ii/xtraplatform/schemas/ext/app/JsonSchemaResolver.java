@@ -476,8 +476,6 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
         builder
             .type(Type.GEOMETRY)
             .geometryType(cfg.get().getGeometryTypeRefs().get(geometryTypeRef.get()));
-        // TODO: configurable
-        builder.sourcePath(sourcePath + "/asWKT");
 
         return Type.GEOMETRY;
       }
@@ -488,8 +486,6 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
       if (!isRoot && relationRef.isPresent()) {
         Type newType = type == Type.OBJECT_ARRAY ? Type.FEATURE_REF_ARRAY : Type.FEATURE_REF;
         builder.type(newType).refType(cfg.get().getRelationRefs().get(relationRef.get()));
-        // TODO: configurable
-        builder.sourcePath(sourcePath + "/identificatie");
 
         return newType;
       }

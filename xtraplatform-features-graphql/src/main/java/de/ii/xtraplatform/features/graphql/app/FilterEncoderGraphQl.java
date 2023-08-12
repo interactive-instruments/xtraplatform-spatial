@@ -46,7 +46,8 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.graphql.domain.FeatureProviderGraphQlData.QueryGeneratorSettings;
+import de.ii.xtraplatform.features.graphql.domain.GraphQlQueries;
+import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -65,13 +66,13 @@ public class FilterEncoderGraphQl {
   private final EpsgCrs nativeCrs;
   private final CrsTransformerFactory crsTransformerFactory;
   BiFunction<List<Double>, Optional<EpsgCrs>, List<Double>> coordinatesTransformer;
-  private final QueryGeneratorSettings queryGeneration;
+  private final GraphQlQueries queryGeneration;
 
   public FilterEncoderGraphQl(
       EpsgCrs nativeCrs,
       CrsTransformerFactory crsTransformerFactory,
       Cql cql,
-      QueryGeneratorSettings queryGeneration) {
+      GraphQlQueries queryGeneration) {
     this.nativeCrs = nativeCrs;
     this.crsTransformerFactory = crsTransformerFactory;
     this.cql = cql;
@@ -149,14 +150,14 @@ public class FilterEncoderGraphQl {
     @Override
     public Map<String, String> visit(Not not, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "NOT predicates are not supported in filter expressions for WFS feature providers.");
+          "NOT predicates are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(
         LogicalOperation logicalOperation, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "AND/OR predicates are not supported in filter expressions for WFS feature providers.");
+          "AND/OR predicates are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
@@ -164,56 +165,68 @@ public class FilterEncoderGraphQl {
         BinaryScalarOperation scalarOperation, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
           String.format(
-              "Scalar operation '%s' is not supported for WFS feature providers.",
+              "Scalar operation '%s' is not supported for GraphQL feature providers.",
               scalarOperation.getClass().getSimpleName()));
     }
 
     @Override
     public Map<String, String> visit(Between between, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "BETWEEN predicates are not supported in filter expressions for WFS feature providers.");
+          "BETWEEN predicates are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(Like like, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "LIKE predicates are not supported in filter expressions for WFS feature providers.");
+          "LIKE predicates are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(In in, List<Map<String, String>> children) {
-      if (children.size() != 2 || !(children.get(1).containsKey("scalar"))) {
-        throw new IllegalArgumentException(
-            "IN predicates are not supported in filter expressions for WFS feature providers.");
-      }
-      LOGGER.debug("IN {}", children);
+      Optional<String> template =
+          queryGeneration
+              .getSingle()
+              .flatMap(single -> single.getArguments().getId())
+              .or(queryGeneration.getCollection().getArguments()::getId);
 
-      return Map.of("identificatie", children.get(1).get("scalar"));
+      if (children.size() != 2 || !(children.get(1).containsKey("scalar")) || template.isEmpty()) {
+        throw new IllegalArgumentException(
+            "IN predicates are not supported in filter expressions for GraphQL feature providers.");
+      }
+
+      String sourcePath = children.get(0).get("property");
+      String value = children.get(1).get("scalar");
+
+      String argument =
+          StringTemplateFilters.applyTemplate(
+              template.get(), (Map.of("sourcePath", sourcePath, "value", value))::get);
+
+      return fromString(argument);
     }
 
     @Override
     public Map<String, String> visit(IsNull isNull, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "IS NULL predicates are not supported in filter expressions for WFS feature providers.");
+          "IS NULL predicates are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(Casei casei, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "Casei() is not supported in filter expressions for WFS feature providers.");
+          "Casei() is not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(Accenti accenti, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "Accenti() is not supported in filter expressions for WFS feature providers.");
+          "Accenti() is not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(
         de.ii.xtraplatform.cql.domain.Interval interval, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "Non-trivial intervals are not supported in filter expressions for WFS feature providers.");
+          "Non-trivial intervals are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
@@ -221,7 +234,7 @@ public class FilterEncoderGraphQl {
         BinaryTemporalOperation temporalOperation, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
           String.format(
-              "Temporal operation '%s' is not supported for WFS feature providers.",
+              "Temporal operation '%s' is not supported for GraphQL feature providers.",
               temporalOperation.getClass().getSimpleName()));
     }
 
@@ -229,15 +242,23 @@ public class FilterEncoderGraphQl {
     public Map<String, String> visit(
         BinarySpatialOperation spatialOperation, List<Map<String, String>> children) {
       if (spatialOperation instanceof SIntersects) {
-        if (queryGeneration.getBbox().isEmpty()) {
+        if (queryGeneration.getCollection().getArguments().getBbox().isEmpty()) {
           return Map.of();
         }
-        Map<String, String> op = Map.of("intersects", asString(children.get(1), true, true));
-        return Map.of(children.get(0).get("property").replace("/asWKT", ""), asString(op, true));
+
+        String sourcePath = children.get(0).get("property");
+        String wkt = asString(children.get(1), true, true);
+
+        String argument =
+            StringTemplateFilters.applyTemplate(
+                queryGeneration.getCollection().getArguments().getBbox().get(),
+                (Map.of("sourcePath", sourcePath, "value", wkt))::get);
+
+        return fromString(argument);
       }
       throw new IllegalArgumentException(
           String.format(
-              "Spatial operation '%s' is not supported for WFS feature providers.",
+              "Spatial operation '%s' is not supported for GraphQL feature providers.",
               spatialOperation.getClass().getSimpleName()));
     }
 
@@ -245,7 +266,7 @@ public class FilterEncoderGraphQl {
     public Map<String, String> visit(
         BinaryArrayOperation arrayOperation, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "Array operations are not supported for WFS feature providers.");
+          "Array operations are not supported for GraphQL feature providers.");
     }
 
     @Override
@@ -282,7 +303,7 @@ public class FilterEncoderGraphQl {
         return ((CqlNode) ((List<?>) arrayLiteral.getValue()).get(0)).accept(this);
       }
       throw new IllegalArgumentException(
-          "Array expressions are not supported in filter expressions for WFS feature providers.");
+          "Array expressions are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
@@ -294,54 +315,59 @@ public class FilterEncoderGraphQl {
     @Override
     public Map<String, String> visit(Coordinate coordinate, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "Coordinates are not supported in filter expressions for WFS feature providers.");
+          "Coordinates are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(Point point, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "Point geometries are not supported in filter expressions for WFS feature providers.");
+          "Point geometries are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(LineString lineString, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "LineString geometries are not supported in filter expressions for WFS feature providers.");
+          "LineString geometries are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(Polygon polygon, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "Polygon geometries are not supported in filter expressions for WFS feature providers.");
+          "Polygon geometries are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(MultiPoint multiPoint, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "MultiPoint geometries are not supported in filter expressions for WFS feature providers.");
+          "MultiPoint geometries are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(
         MultiLineString multiLineString, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "MultiLineString geometries are not supported in filter expressions for WFS feature providers.");
+          "MultiLineString geometries are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(
         MultiPolygon multiPolygon, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
-          "MultiPolygon geometries are not supported in filter expressions for WFS feature providers.");
+          "MultiPolygon geometries are not supported in filter expressions for GraphQL feature providers.");
     }
 
     @Override
     public Map<String, String> visit(Envelope envelope, List<Map<String, String>> children) {
+      if (queryGeneration.getCollection().getArguments().getGeometry().isEmpty()) {
+        return Map.of();
+      }
+      if (!queryGeneration.getCollection().getArguments().getGeometry().get().contains("| toWkt")) {
+        throw new IllegalArgumentException(
+            "No valid argument geometry filter found, valid filters are [toWkt].");
+      }
       List<Double> coords =
           transformCoordinatesIfNecessary(envelope.getCoordinates(), envelope.getCrs());
-
-      return Map.of(
-          "fromWKT",
+      String wkt =
           String.format(
               Locale.US,
               "POLYGON ((%f %f, %f %f, %f %f, %f %f, %f %f))",
@@ -354,14 +380,22 @@ public class FilterEncoderGraphQl {
               coords.get(0),
               coords.get(3),
               coords.get(0),
-              coords.get(1)));
+              coords.get(1));
+
+      String argument =
+          StringTemplateFilters.applyTemplate(
+              queryGeneration.getCollection().getArguments().getGeometry().get(),
+              (Map.of("value", wkt))::get,
+              Map.of("toWkt", java.util.function.Function.identity()));
+
+      return fromString(argument);
     }
 
     @Override
     public Map<String, String> visit(Function function, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
           String.format(
-              "Functions are not supported in filter expressions for WFS feature providers. Found: %s",
+              "Functions are not supported in filter expressions for GraphQL feature providers. Found: %s",
               function.getName()));
     }
 
@@ -370,7 +404,7 @@ public class FilterEncoderGraphQl {
         BooleanValue2 booleanValue, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
           String.format(
-              "Booleans are not supported in filter expressions for WFS feature providers. Found: %s",
+              "Booleans are not supported in filter expressions for GraphQL feature providers. Found: %s",
               booleanValue));
     }
   }
@@ -390,5 +424,34 @@ public class FilterEncoderGraphQl {
                 String.format(
                     quote ? "%s: \\\"%s\\\"" : "%s: %s", entry.getKey(), entry.getValue()))
         .collect(Collectors.joining(",", wrap ? "{" : "", wrap ? "}" : ""));
+  }
+
+  static Map<String, String> fromString(String obj) {
+    return fromString(obj, false);
+  }
+
+  static Map<String, String> fromString(String obj, boolean subField) {
+    String separator = subField ? " " : ":";
+    String cleaned = obj.trim();
+
+    if (!cleaned.contains(separator)) {
+      return Map.of();
+    }
+
+    if (cleaned.startsWith("{") && cleaned.endsWith("}")) {
+      cleaned = cleaned.substring(1, cleaned.length() - 1);
+    }
+
+    String[] split = cleaned.split(separator, 2);
+
+    String value = split[1].trim();
+
+    if (value.startsWith("\"") && value.endsWith("\"")) {
+      value = value.substring(1, value.length() - 1);
+    } else if (subField && value.startsWith("{") && value.endsWith("}")) {
+      value = value.substring(1, value.length() - 1).trim();
+    }
+
+    return Map.of(split[0].trim(), value);
   }
 }

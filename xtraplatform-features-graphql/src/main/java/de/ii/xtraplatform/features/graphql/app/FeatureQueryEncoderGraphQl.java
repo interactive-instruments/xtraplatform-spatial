@@ -22,10 +22,14 @@ import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCapabilities;
 import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.TypeQuery;
 import de.ii.xtraplatform.features.graphql.domain.ConnectionInfoGraphQlHttp;
-import de.ii.xtraplatform.features.graphql.domain.FeatureProviderGraphQlData.QueryGeneratorSettings;
+import de.ii.xtraplatform.features.graphql.domain.GraphQlQueries;
+import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,18 +38,21 @@ public class FeatureQueryEncoderGraphQl implements FeatureQueryEncoder<String, Q
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderGraphQl.class);
 
   private final Map<String, FeatureSchema> featureSchemas;
-  private final QueryGeneratorSettings queryGeneration;
+  private final Map<String, List<FeatureSchema>> sourceSchemas;
+  private final GraphQlQueries queryGeneration;
   private final EpsgCrs nativeCrs;
   private final FilterEncoderGraphQl filterEncoder;
 
   public FeatureQueryEncoderGraphQl(
       Map<String, FeatureSchema> featureSchemas,
+      Map<String, List<FeatureSchema>> sourceSchemas,
       ConnectionInfoGraphQlHttp connectionInfo,
-      QueryGeneratorSettings queryGeneration,
+      GraphQlQueries queryGeneration,
       EpsgCrs nativeCrs,
       CrsTransformerFactory crsTransformerFactory,
       Cql cql) {
     this.featureSchemas = featureSchemas;
+    this.sourceSchemas = sourceSchemas;
     this.queryGeneration = queryGeneration;
     this.nativeCrs = nativeCrs;
     this.filterEncoder =
@@ -115,11 +122,7 @@ public class FeatureQueryEncoderGraphQl implements FeatureQueryEncoder<String, Q
                     == FeatureSchemaBase.Scope.QUERIES)
         .map(
             prop -> {
-              if (prop.isSimpleFeatureGeometry()) {
-                // TODO: configurable
-                return prop.getSourcePath().map(obj -> getNestedFields(obj));
-                // .map(obj -> obj + " { asWKT }");
-              } else if (prop.isValue()) {
+              if (prop.isValue()) {
                 return prop.getSourcePath().map(obj -> getNestedFields(obj));
               } else if (prop.isObject()) {
                 return prop.getSourcePath()
@@ -138,38 +141,83 @@ public class FeatureQueryEncoderGraphQl implements FeatureQueryEncoder<String, Q
   public String encodeFeatureQuery(
       FeatureQuery query, Map<String, String> additionalQueryParameters) {
     String queryTemplate = "{\"query\":\"{\\n  %s %s\\n}\"}";
-    String fields = getFields(featureSchemas.get(query.getType()), "  ");
     String name =
-        query.returnsSingleFeature()
-            ? queryGeneration.getSingle(getTypeName(query))
-            : queryGeneration.getCollection(getTypeName(query));
-    String filter = getFilter(query.getFilter(), query.getType(), query.returnsSingleFeature());
+        query.returnsSingleFeature() && queryGeneration.getSingle().isPresent()
+            ? queryGeneration.getSingle().get().getName(getTypeName(query))
+            : queryGeneration.getCollection().getName(getTypeName(query));
+    String arguments = getArguments(query);
+    String fields = getFields(sourceSchemas.get(query.getType()).get(0), "  ");
 
-    String q = String.format(queryTemplate, name + filter, fields);
+    String q = String.format(queryTemplate, name + arguments, fields);
 
     LOGGER.debug("GraphQL Request\n{}", q.replaceAll("\\\\n", "\n"));
 
     return q;
   }
 
-  private String getFilter(Optional<Cql2Expression> optionalFilter, String type, boolean isSingle) {
-    if (optionalFilter.isEmpty()) {
+  private String getArguments(FeatureQuery query) {
+    List<String> paging = getPaging(query.getLimit(), query.getOffset());
+    List<String> filter =
+        getFilter(query.getFilter(), query.getType(), query.returnsSingleFeature());
+
+    if (paging.isEmpty() && filter.isEmpty()) {
       return "";
+    }
+
+    return Stream.concat(paging.stream(), filter.stream())
+        .collect(Collectors.joining(", ", "(", ")"));
+  }
+
+  private List<String> getPaging(int limit, int offset) {
+    List<String> arguments = new ArrayList<>();
+
+    queryGeneration
+        .getCollection()
+        .getArguments()
+        .getLimit()
+        .map(
+            template ->
+                StringTemplateFilters.applyTemplate(
+                    template, (Map.of("value", String.valueOf(limit)))::get))
+        .ifPresent(arguments::add);
+
+    queryGeneration
+        .getCollection()
+        .getArguments()
+        .getOffset()
+        .map(
+            template ->
+                StringTemplateFilters.applyTemplate(
+                    template, (Map.of("value", String.valueOf(offset)))::get))
+        .ifPresent(arguments::add);
+
+    return arguments;
+  }
+
+  private List<String> getFilter(
+      Optional<Cql2Expression> optionalFilter, String type, boolean isSingle) {
+    if (optionalFilter.isEmpty()) {
+      return List.of();
     }
 
     Map<String, String> filter =
         filterEncoder.encode(optionalFilter.get(), featureSchemas.get(type));
 
     if (filter.isEmpty()) {
-      return "";
+      return List.of();
     }
+
+    String filterString = FilterEncoderGraphQl.asString(filter, false, isSingle);
 
     if (isSingle) {
-      return "(" + FilterEncoderGraphQl.asString(filter, false, true) + ")";
+      return List.of(filterString);
     }
 
-    return filter.entrySet().stream()
-        .map(entry -> String.format("%s: %s", entry.getKey(), entry.getValue()))
-        .collect(Collectors.joining(",", "(filter: {", "})"));
+    String argument =
+        StringTemplateFilters.applyTemplate(
+            queryGeneration.getCollection().getArguments().getFilter().orElse("{{value}}"),
+            (Map.of("value", filterString))::get);
+
+    return List.of(argument);
   }
 }

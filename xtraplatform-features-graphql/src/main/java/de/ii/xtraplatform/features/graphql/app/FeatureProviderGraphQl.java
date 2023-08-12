@@ -101,8 +101,9 @@ public class FeatureProviderGraphQl
     this.queryTransformer =
         new FeatureQueryEncoderGraphQl(
             getData().getTypes(),
+            getSourceSchemas(),
             getData().getConnectionInfo(),
-            getData().getQueryGeneration(),
+            getData().getQueries(),
             getData().getNativeCrs().orElse(OgcCrs.CRS84),
             crsTransformerFactory,
             cql);
@@ -117,7 +118,16 @@ public class FeatureProviderGraphQl
   protected Map<String, List<FeatureSchema>> getSourceSchemas() {
     Map<String, List<FeatureSchema>> types =
         getData().getTypes().entrySet().stream()
-            .map(entry -> new SimpleImmutableEntry<>(entry.getKey(), List.of(entry.getValue())))
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(
+                        entry.getKey(),
+                        List.of(
+                            entry
+                                .getValue()
+                                .accept(
+                                    new SchemaDeriverGraphQl(
+                                        getData().getTypes(), getData().getQueries())))))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     return types;
   }
@@ -151,16 +161,15 @@ public class FeatureProviderGraphQl
       throw new IllegalArgumentException();
     }
     FeatureQuery featureQuery = (FeatureQuery) query;
-    FeatureSchema featureSchema = getData().getTypes().get(featureQuery.getType());
+    FeatureSchema featureSchema = getSourceSchemas().get(featureQuery.getType()).get(0);
     String name =
         featureSchema.getSourcePath().map(sourcePath -> sourcePath.substring(1)).orElse(null);
 
     String wrapper =
-        featureQuery.returnsSingleFeature()
-            ? getData().getQueryGeneration().getSingle(name)
-            : getData().getQueryGeneration().getCollection(name);
+        featureQuery.returnsSingleFeature() && getData().getQueries().getSingle().isPresent()
+            ? getData().getQueries().getSingle().get().getName(name)
+            : getData().getQueries().getCollection().getName(name);
 
-    // TODO: generalize, parse graphql
     return new FeatureTokenDecoderGraphQlJson2(featureSchema, featureQuery, name, wrapper);
   }
 

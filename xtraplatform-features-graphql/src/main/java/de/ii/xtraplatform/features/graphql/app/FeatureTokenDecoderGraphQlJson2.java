@@ -55,6 +55,7 @@ public class FeatureTokenDecoderGraphQlJson2
   private boolean inFeatures = false;
   private boolean inProperties = false;
   private boolean isCollection = false;
+  private boolean inErrors = false;
   private int lastNameIsArrayDepth = 0;
   private int startArray = 0;
   private int endArray = 0;
@@ -172,6 +173,8 @@ public class FeatureTokenDecoderGraphQlJson2
               }
             } else if (!inFeatures && Objects.equals(currentName, wrapper)) {
               startIfNecessary(nextToken == JsonToken.START_ARRAY);
+            } else if (!inFeatures && Objects.equals(currentName, "errors")) {
+              this.inErrors = true;
             }
             break;
           }
@@ -198,7 +201,13 @@ public class FeatureTokenDecoderGraphQlJson2
           feedMeMore = decoderJsonProperties.parse(nextToken, currentName, featureDepth);
           break;
         default:
-          feedMeMore = decoderJsonProperties.parse(nextToken, currentName, featureDepth);
+          if (!inErrors) {
+            feedMeMore = decoderJsonProperties.parse(nextToken, currentName, featureDepth);
+            break;
+          }
+          if (Objects.equals(currentName, "message")) {
+            throw new IllegalStateException("GraphQL error: " + parser.getValueAsString());
+          }
           break;
       }
 

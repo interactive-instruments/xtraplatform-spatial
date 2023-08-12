@@ -26,6 +26,11 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableConnectionInfoGraphQlHttp.Builder.class)
 public interface ConnectionInfoGraphQlHttp extends ConnectionInfo {
 
+  ConnectionInfoGraphQlHttp DEFAULTS =
+      new ImmutableConnectionInfoGraphQlHttp.Builder()
+          .accept("application/graphql-response+json")
+          .build();
+
   @DocIgnore
   @Override
   @Value.Derived
@@ -39,6 +44,14 @@ public interface ConnectionInfoGraphQlHttp extends ConnectionInfo {
    */
   @Nullable
   URI getUri();
+
+  /**
+   * @langEn The Accept header sent for GraphQL requests.
+   * @langDe Der Accept-Header der für GraphQL-Requests gesendet wird.
+   * @default application/graphql-response+json
+   */
+  @Nullable
+  String getAccept();
 
   /**
    * @langEn The user name for HTTP Basic Auth.

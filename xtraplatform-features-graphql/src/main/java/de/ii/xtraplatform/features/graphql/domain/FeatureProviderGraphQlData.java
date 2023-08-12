@@ -10,7 +10,6 @@ package de.ii.xtraplatform.features.graphql.domain;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocFile;
-import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.docs.DocMarker;
 import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
@@ -26,12 +25,9 @@ import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
-import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
@@ -74,11 +70,6 @@ import org.immutables.value.Value;
           })
     })
 @Value.Immutable
-@Value.Style(
-    builder = "new",
-    deepImmutablesDetection = true,
-    attributeBuilderDetection = true,
-    passAnnotations = DocIgnore.class)
 @BuildableMapEncodingEnabled
 @JsonDeserialize(builder = ImmutableFeatureProviderGraphQlData.Builder.class)
 public interface FeatureProviderGraphQlData
@@ -91,17 +82,15 @@ public interface FeatureProviderGraphQlData
   ConnectionInfoGraphQlHttp getConnectionInfo();
 
   /**
-   * @langEn Options for query generation, for details see [Query Generation](#query-generation)
-   *     below.
-   * @langDe Einstellungen für die Query-Generierung, für Details siehe
-   *     [Query-Generierung](#query-generation).
+   * @langEn Options for query generation, for details see [Queries](#queries) below.
+   * @langDe Einstellungen für die Query-Generierung, für Details siehe [Queries](#queries).
    */
   @DocMarker("specific")
   @JsonProperty(
-      value = "queryGeneration",
+      value = "queries",
       access = JsonProperty.Access.WRITE_ONLY) // means only read from json
   @Nullable
-  QueryGeneratorSettings getQueryGeneration();
+  GraphQlQueries getQueries();
 
   // for json ordering
   @Override
@@ -155,50 +144,6 @@ public interface FeatureProviderGraphQlData
               new ImmutableConnectionInfoGraphQlHttp.Builder()
                   .uri(URI.create("http://www.example.com"))
                   .build());
-    }
-  }
-
-  @Value.Immutable
-  @JsonDeserialize(builder = ImmutableQueryGeneratorSettings.Builder.class)
-  interface QueryGeneratorSettings {
-
-    @Value.Default
-    default String getCollection() {
-      return "{{type | toLower}}";
-    }
-
-    default String getCollection(String type) {
-      return StringTemplateFilters.applyTemplate(getCollection(), (Map.of("type", type))::get);
-    }
-
-    @Value.Default
-    default String getSingle() {
-      return getCollection();
-    }
-
-    default String getSingle(String type) {
-      return StringTemplateFilters.applyTemplate(getSingle(), (Map.of("type", type))::get);
-    }
-
-    @Value.Default
-    default String getId() {
-      return "{{sourcePath}}: \\\"{{value}}\\\"";
-    }
-
-    default String getId(FeatureSchema idSchema, String id) {
-      return StringTemplateFilters.applyTemplate(
-          getId(), (Map.of("sourcePath", idSchema.getSourcePath().get(), "value", id))::get);
-    }
-
-    Optional<String> getBbox();
-
-    default String getBbox(String property, String geo) {
-      return getBbox()
-          .map(
-              template ->
-                  StringTemplateFilters.applyTemplate(
-                      template, (Map.of("property", property, "value", geo))::get))
-          .orElse("");
     }
   }
 }
