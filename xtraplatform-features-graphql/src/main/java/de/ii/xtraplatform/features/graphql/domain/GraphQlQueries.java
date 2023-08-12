@@ -180,11 +180,11 @@ public interface GraphQlQueries {
      * @langEn Argument that wraps geometries in filter expressions. [String
      *     template](details/transformations.md#examples-for-stringformat) where `{{value}}` is
      *     replaced with the spatial value. A filter to convert the geometry to a textual
-     *     representation is required, currently only `toWkt` is supported (`{{value | toWkt}}`).
+     *     representation is required, currently only `toWkt` is supported (`{{value \| toWkt}}`).
      * @langDe Argument das als Wrapper für Geometrien in Filter-Ausdrücken dient. [String
      *     template](details/transformations.md#examples-for-stringformat) bei dem `{{value}}` mit
      *     der Geometrie ersetzt wird. Ein Filter der die Geometrie in eine Text-Repräsentation
-     *     wandelt wird benötigt, aktuell wird nur `toWkt` unterstützt (`{{value | toWkt}}`).
+     *     wandelt wird benötigt, aktuell wird nur `toWkt` unterstützt (`{{value \| toWkt}}`).
      * @since v3.5
      * @default null
      */
