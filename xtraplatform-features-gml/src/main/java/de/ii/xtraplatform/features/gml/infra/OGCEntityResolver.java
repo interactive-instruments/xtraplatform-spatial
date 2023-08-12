@@ -18,11 +18,11 @@ import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.protocol.BasicHttpContext;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.protocol.BasicHttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.EntityResolver;
@@ -36,12 +36,13 @@ public class OGCEntityResolver implements EntityResolver {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OGCEntityResolver.class);
   private Map<String, String> uris = new HashMap();
-  private HttpClient untrustedSslHttpClient;
+  private CloseableHttpClient untrustedSslHttpClient;
   private boolean useBasicAuth = false;
   private String user;
   private String password;
 
-  public OGCEntityResolver(HttpClient untrustedSslHttpClient, String user, String password) {
+  public OGCEntityResolver(
+      CloseableHttpClient untrustedSslHttpClient, String user, String password) {
     this.untrustedSslHttpClient = untrustedSslHttpClient;
     this.user = user;
     this.password = password;
@@ -57,7 +58,7 @@ public class OGCEntityResolver implements EntityResolver {
     // TODO: temporary basic auth hack
     // protected schema files
     if (systemId != null && systemId.startsWith("https://") && useBasicAuth) {
-      HttpResponse response = null;
+      CloseableHttpResponse response = null;
       LOGGER.debug("resolving protected schema: {}", systemId);
       try {
         HttpGet httpGet = new HttpGet(systemId);

@@ -24,7 +24,7 @@ import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.web.domain.DropwizardPlugin;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.setup.Environment;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
