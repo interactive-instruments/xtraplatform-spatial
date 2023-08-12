@@ -89,16 +89,23 @@ public class StringTemplateFilters {
     }
 
     return applyTemplate(
-        template, isHtml, key -> Objects.equals(key, valueSubst) ? value : null, false);
+        template, isHtml, key -> Objects.equals(key, valueSubst) ? value : null, Map.of(), false);
   }
 
   public static String applyTemplate(String template, Function<String, String> valueLookup) {
-    return applyTemplate(template, isHtml -> {}, valueLookup, false);
+    return applyTemplate(template, isHtml -> {}, valueLookup, Map.of(), false);
+  }
+
+  public static String applyTemplate(
+      String template,
+      Function<String, String> valueLookup,
+      Map<String, Function<String, String>> customFilters) {
+    return applyTemplate(template, isHtml -> {}, valueLookup, customFilters, false);
   }
 
   public static String applyTemplate(
       String template, Function<String, String> valueLookup, boolean allowSingleCurlyBraces) {
-    return applyTemplate(template, isHtml -> {}, valueLookup, allowSingleCurlyBraces);
+    return applyTemplate(template, isHtml -> {}, valueLookup, Map.of(), allowSingleCurlyBraces);
   }
 
   static Pattern valuePattern = Pattern.compile("\\{\\{([\\w.]+)( ?\\| ?[\\w]+(:'[^']*')*)*\\}\\}");
@@ -109,6 +116,7 @@ public class StringTemplateFilters {
       String template,
       Consumer<Boolean> isHtml,
       Function<String, String> valueLookup,
+      Map<String, Function<String, String>> customFilters,
       boolean allowSingleCurlyBraces) {
 
     if (Objects.isNull(template) || template.isEmpty()) {
@@ -144,7 +152,12 @@ public class StringTemplateFilters {
         if (Objects.isNull(filteredValue)) {
           if (filter.equals("orElse") && parameters.size() >= 1) {
             filteredValue =
-                applyTemplate(parameters.get(0).replace("\"", "'"), isHtml, valueLookup, false);
+                applyTemplate(
+                    parameters.get(0).replace("\"", "'"),
+                    isHtml,
+                    valueLookup,
+                    customFilters,
+                    false);
           }
         } else {
           if (filter.equals("markdown")) {
@@ -170,6 +183,8 @@ public class StringTemplateFilters {
             assigns.put(parameters.get(0), filteredValue);
           } else if (filter.equals("unHtml")) {
             filteredValue = filteredValue.replaceAll("<.*?>", "");
+          } else if (customFilters.containsKey(filter)) {
+            filteredValue = customFilters.get(filter).apply(filteredValue);
           } else if (!filter.equals("orElse")) {
             LOGGER.warn("Template filter '{}' not supported", filter);
           }
