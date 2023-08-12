@@ -50,6 +50,7 @@ public interface ConnectionInfoGraphQlHttp extends ConnectionInfo {
    * @langDe Der Accept-Header der für GraphQL-Requests gesendet wird.
    * @default application/graphql-response+json
    */
+  @DocIgnore
   @Nullable
   String getAccept();
 

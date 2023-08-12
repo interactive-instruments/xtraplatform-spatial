@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.features.graphql.domain;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.docs.DocMarker;
@@ -15,7 +14,6 @@ import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
-import de.ii.xtraplatform.docs.DocVar;
 import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -36,23 +34,34 @@ import org.immutables.value.Value;
  *
  * @langEn The specifics of the GraphQL feature provider.
  * @langDe Hier werden die Besonderheiten des GraphQL-Feature-Providers beschrieben.
+ * @langAll {@docTable:properties}
  * @langAll ## Connection Info
  * @langEn The connection info object for GraphQL has the following properties:
  * @langDe Das Connection-Info-Objekt für GraphQL wird wie folgt beschrieben:
  * @langAll {@docTable:connectionInfo}
- * @langEn ### Example
- * @langDe ### Beispiel
- * @langAll {@docVar:example}
- * @langEn ## Path Syntax
- * @langDe ## Pfad-Syntax
+ * @langEn ## Query Generation
+ *     <p>Options for query generation.
+ * @langDe ## Query-Generierung
+ *     <p>Optionen für die Query-Generierung in `queryGeneration`.
+ * @langAll {@docTable:queryGeneration}
+ * @ref:properties {@link
+ *     de.ii.xtraplatform.features.graphql.domain.ImmutableFeatureProviderGraphQlData}
  * @ref:connectionInfo {@link
  *     de.ii.xtraplatform.features.graphql.domain.ImmutableConnectionInfoGraphQlHttp}
- * @ref:example {@link ConnectionInfoGraphQlHttp}
+ * @ref:queryGeneration {@link de.ii.xtraplatform.features.graphql.domain.ImmutableGraphQlQueries}
  */
 @DocFile(
     path = "providers/feature",
     name = "graphql.md",
     tables = {
+      @DocTable(
+          name = "properties",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:properties}"),
+            @DocStep(type = Step.JSON_PROPERTIES),
+            @DocStep(type = Step.MARKED, params = "specific")
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
       @DocTable(
           name = "connectionInfo",
           rows = {
@@ -60,14 +69,13 @@ import org.immutables.value.Value;
             @DocStep(type = Step.JSON_PROPERTIES)
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
-    },
-    vars = {
-      @DocVar(
-          name = "example",
-          value = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:example}"),
-            @DocStep(type = Step.TAG, params = "{@examplesAll}")
-          })
+      @DocTable(
+          name = "queryGeneration",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:queryGeneration}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
     })
 @Value.Immutable
 @BuildableMapEncodingEnabled
@@ -86,9 +94,6 @@ public interface FeatureProviderGraphQlData
    * @langDe Einstellungen für die Query-Generierung, für Details siehe [Queries](#queries).
    */
   @DocMarker("specific")
-  @JsonProperty(
-      value = "queries",
-      access = JsonProperty.Access.WRITE_ONLY) // means only read from json
   @Nullable
   GraphQlQueries getQueries();
 
