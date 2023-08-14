@@ -232,15 +232,14 @@ public class CqlFilterExamples {
           Property.of("location"),
           SpatialLiteral.of(
               Geometry.MultiPolygon.of(
+                  OgcCrs.CRS84,
                   Polygon.of(
-                      OgcCrs.CRS84,
                       ImmutableList.of(
                           Geometry.Coordinate.of(-10.0, -10.0),
                           Geometry.Coordinate.of(10.0, -10.0),
                           Geometry.Coordinate.of(10.0, 10.0),
                           Geometry.Coordinate.of(-10.0, -10.0))),
                   Polygon.of(
-                      OgcCrs.CRS84,
                       ImmutableList.of(
                           Geometry.Coordinate.of(-15.0, -15.0),
                           Geometry.Coordinate.of(15.0, -15.0),
@@ -252,6 +251,7 @@ public class CqlFilterExamples {
           Property.of("location"),
           SpatialLiteral.of(
               Geometry.MultiLineString.of(
+                  OgcCrs.CRS84,
                   LineString.of(
                       Geometry.Coordinate.of(-10.0, -10.0),
                       Geometry.Coordinate.of(10.0, -10.0),
@@ -267,18 +267,25 @@ public class CqlFilterExamples {
           Property.of("location"),
           SpatialLiteral.of(
               LineString.of(
+                  OgcCrs.CRS84,
                   Geometry.Coordinate.of(-10.0, -10.0),
                   Geometry.Coordinate.of(10.0, -10.0),
                   Geometry.Coordinate.of(10.0, 10.0),
                   Geometry.Coordinate.of(-10.0, -10.0))));
 
   public static final Cql2Expression EXAMPLE_16_Point =
-      SIntersects.of(Property.of("location"), SpatialLiteral.of(Point.of(10, -10)));
+      SIntersects.of(Property.of("location"), SpatialLiteral.of(Point.of(10, -10, OgcCrs.CRS84)));
 
   public static final Cql2Expression EXAMPLE_16_MultiPoint =
       SIntersects.of(
           Property.of("location"),
-          SpatialLiteral.of(MultiPoint.of(Point.of(10, -10), Point.of(10, 10))));
+          SpatialLiteral.of(MultiPoint.of(OgcCrs.CRS84, Point.of(10, -10), Point.of(10, 10))));
+
+  public static final Cql2Expression EXAMPLE_16_Envelope =
+      SIntersects.of(
+          Property.of("location"),
+          SpatialLiteral.of(Geometry.Envelope.of(-10.0, -10.0, 10.0, 10.0, OgcCrs.CRS84)));
+
   public static final CqlFilter EXAMPLE_16_OLD =
       CqlFilter.of(
           SpatialOperation.of(

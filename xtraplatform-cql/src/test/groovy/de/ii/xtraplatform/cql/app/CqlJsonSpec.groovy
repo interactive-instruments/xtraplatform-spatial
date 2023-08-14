@@ -522,7 +522,71 @@ class CqlJsonSpec extends Specification {
         JSONAssert.assertEquals(cqlJson, actual2, true)
     }
 
-    def 'Location that intersects with geometry'() {
+    def 'Location that intersects with a point geometry'() {
+
+        given:
+        String cqlJson = """
+            {
+                "op": "s_intersects",
+                "args": [
+                    {"property": "location"},
+                    {
+                        "type": "Point",
+                        "coordinates": [10.0, -10.0]
+                    }
+                ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_16_Point
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(actual, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+
+    }
+
+    def 'Location that intersects with a line string geometry'() {
+
+        given:
+        String cqlJson = """
+            {
+                "op": "s_intersects",
+                "args": [
+                    {"property": "location"},
+                    {
+                        "type": "LineString",
+                        "coordinates": [[-10.0, -10.0],[10.0, -10.0],[10.0, 10.0],[-10.0, -10.0]]
+                    }
+                ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_16_LineString
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(actual, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+
+    }
+
+    def 'Location that intersects with a polygon geometry'() {
 
         given:
         String cqlJson = """
@@ -547,7 +611,132 @@ class CqlJsonSpec extends Specification {
         and:
 
         when: 'writing json'
-        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_16, Cql.Format.JSON)
+        String actual2 = cql.write(actual, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+
+    }
+
+    def 'Location that intersects with a multi-point geometry'() {
+
+        given:
+        String cqlJson = """
+            {
+                "op": "s_intersects",
+                "args": [
+                    {"property": "location"},
+                    {
+                        "type": "MultiPoint",
+                        "coordinates": [[10.0, -10.0],[10.0, 10.0]]
+                    }
+                ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_16_MultiPoint
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(actual, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+
+    }
+
+    def 'Location that intersects with a multi-line-string geometry'() {
+
+        given:
+        String cqlJson = """
+            {
+                "op": "s_intersects",
+                "args": [
+                    {"property": "location"},
+                    {
+                        "type": "MultiLineString",
+                        "coordinates": [[[-10.0, -10.0],[10.0, -10.0],[10.0, 10.0],[-10.0, -10.0]], [[-15.0, -15.0],[15.0, -15.0],[15.0, 15.0],[-15.0, -15.0]]]
+                    }
+                ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_16_MultiLineString
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(actual, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+
+    }
+
+    def 'Location that intersects with a multi-polygon geometry'() {
+
+        given:
+        String cqlJson = """
+            {
+                "op": "s_intersects",
+                "args": [
+                    {"property": "location"},
+                    {
+                        "type": "MultiPolygon",
+                        "coordinates": [[[[-10.0, -10.0],[10.0, -10.0],[10.0, 10.0],[-10.0, -10.0]]], [[[-15.0, -15.0],[15.0, -15.0],[15.0, 15.0],[-15.0, -15.0]]]]
+                    }
+                ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_16_MultiPolygon
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_16_MultiPolygon, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+
+    }
+
+    def 'Location that intersects with a bbox geometry'() {
+
+        given:
+        String cqlJson = """
+            {
+                "op": "s_intersects",
+                "args": [
+                    {"property": "location"},
+                    { "bbox": [-10.0, -10.0, 10.0, 10.0] }
+                ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_16_Envelope
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(actual, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
