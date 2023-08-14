@@ -195,6 +195,7 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
    * @langDe Defaults für alle `tilesets`, siehe [Tileset Defaults](#tileset-defaults).
    * @since v3.4
    */
+  @JsonAlias("layerDefaults")
   @Override
   TilesetFeaturesDefaults getTilesetDefaults();
 
@@ -204,6 +205,7 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
    * @since v3.4
    * @default {}
    */
+  @JsonAlias("layers")
   @Override
   BuildableMap<TilesetFeatures, ImmutableTilesetFeatures.Builder> getTilesets();
 

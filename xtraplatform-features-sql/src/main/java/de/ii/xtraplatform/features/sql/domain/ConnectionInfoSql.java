@@ -16,6 +16,7 @@ import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql.Builder;
 import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorRx;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.MergeableMapEncodingEnabled;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -229,6 +230,20 @@ public interface ConnectionInfoSql extends ConnectionInfo {
       }
 
       return builder.build();
+    }
+
+    return this;
+  }
+
+  @Deprecated(since = "3.5")
+  @Value.Check
+  default ConnectionInfoSql upgradeGpkgPaths() {
+    if (getDialect() == Dialect.GPKG
+        && Path.of(getDatabase()).startsWith("api-resources/features/")) {
+      return new Builder()
+          .from(this)
+          .database(getDatabase().replace("api-resources/features/", ""))
+          .build();
     }
 
     return this;

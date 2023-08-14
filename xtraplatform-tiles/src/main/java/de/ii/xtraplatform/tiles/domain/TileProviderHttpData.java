@@ -132,6 +132,7 @@ public interface TileProviderHttpData extends TileProviderData {
    * @langDe Defaults für alle `tilesets`, siehe [Tileset Defaults](#tileset-defaults).
    * @since v3.4
    */
+  @JsonAlias("layerDefaults")
   @Override
   TilesetHttpDefaults getTilesetDefaults();
 
@@ -141,6 +142,7 @@ public interface TileProviderHttpData extends TileProviderData {
    * @since v3.4
    * @default {}
    */
+  @JsonAlias("layers")
   @Override
   BuildableMap<TilesetHttp, ImmutableTilesetHttp.Builder> getTilesets();
 
