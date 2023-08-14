@@ -31,7 +31,7 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.apache.http.client.utils.URIBuilder;
+import org.apache.hc.core5.net.URIBuilder;
 import org.codehaus.staxmate.SMInputFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
