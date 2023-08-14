@@ -12,10 +12,21 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.ObjectCodec;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.google.common.base.Preconditions;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +45,7 @@ import org.immutables.value.Value;
   @JsonSubTypes.Type(value = Geometry.MultiLineString.class, name = "MultiLineString"),
   @JsonSubTypes.Type(value = Geometry.MultiPolygon.class, name = "MultiPolygon")
 })
+@JsonSerialize(using = Geometry.Serializer.class)
 public interface Geometry<T> extends CqlNode {
 
   enum Type {
@@ -54,6 +66,93 @@ public interface Geometry<T> extends CqlNode {
   @JacksonInject("filterCrs")
   Optional<EpsgCrs> getCrs();
 
+  class Serializer extends StdSerializer<Geometry<?>> {
+
+    protected Serializer() {
+      this(null);
+    }
+
+    protected Serializer(Class<Geometry<?>> t) {
+      super(t);
+    }
+
+    @Override
+    public void serialize(
+        Geometry<?> geom, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+        throws IOException {
+      if (geom instanceof Envelope) {
+        jsonGenerator.writeStartObject();
+        jsonGenerator.writeFieldName("bbox");
+        jsonGenerator.writeStartArray();
+        for (Double ord : ((Envelope) geom).getCoordinates()) {
+          jsonGenerator.writeNumber(ord);
+        }
+        jsonGenerator.writeEndArray();
+        jsonGenerator.writeEndObject();
+      } else {
+        jsonGenerator.writeStartObject();
+        jsonGenerator.writeStringField("type", geom.getType().toString());
+        if (geom instanceof Point) {
+          jsonGenerator.writeFieldName("coordinates");
+          jsonGenerator.writeStartArray();
+          for (Double ord : ((Point) geom).getCoordinates().get(0)) {
+            jsonGenerator.writeNumber(ord);
+          }
+          jsonGenerator.writeEndArray();
+        } else if (geom instanceof MultiPoint) {
+          jsonGenerator.writeFieldName("coordinates");
+          jsonGenerator.writeStartArray();
+          for (Point p : ((MultiPoint) geom).getCoordinates()) {
+            jsonGenerator.writeStartArray();
+            for (Double ord : p.getCoordinates().get(0)) {
+              jsonGenerator.writeNumber(ord);
+            }
+            jsonGenerator.writeEndArray();
+          }
+          jsonGenerator.writeEndArray();
+        } else if (geom instanceof MultiLineString) {
+          jsonGenerator.writeFieldName("coordinates");
+          jsonGenerator.writeStartArray();
+          for (LineString g : ((MultiLineString) geom).getCoordinates()) {
+            jsonGenerator.writeStartArray();
+            for (Coordinate c : g.getCoordinates()) {
+              jsonGenerator.writeStartArray();
+              for (Double ord : c) {
+                jsonGenerator.writeNumber(ord);
+              }
+              jsonGenerator.writeEndArray();
+            }
+            jsonGenerator.writeEndArray();
+          }
+          jsonGenerator.writeEndArray();
+        } else if (geom instanceof MultiPolygon) {
+          jsonGenerator.writeFieldName("coordinates");
+          jsonGenerator.writeStartArray();
+          for (Polygon g : ((MultiPolygon) geom).getCoordinates()) {
+            jsonGenerator.writeStartArray();
+            for (List<Coordinate> r : g.getCoordinates()) {
+              jsonGenerator.writeStartArray();
+              for (Coordinate c : r) {
+                jsonGenerator.writeStartArray();
+                for (Double ord : c) {
+                  jsonGenerator.writeNumber(ord);
+                }
+                jsonGenerator.writeEndArray();
+              }
+              jsonGenerator.writeEndArray();
+            }
+            jsonGenerator.writeEndArray();
+          }
+          jsonGenerator.writeEndArray();
+        } else {
+          serializerProvider.defaultSerializeField(
+              "coordinates", geom.getCoordinates(), jsonGenerator);
+        }
+        jsonGenerator.writeEndObject();
+      }
+    }
+  }
+
   @Value.Immutable
   @JsonDeserialize(builder = ImmutablePoint.Builder.class)
   interface Point extends Geometry<Coordinate> {
@@ -68,6 +167,25 @@ public interface Geometry<T> extends CqlNode {
 
     static Point of(Coordinate coordinate) {
       return new ImmutablePoint.Builder().addCoordinates(coordinate).build();
+    }
+
+    static Point of(EpsgCrs crs, Coordinate coordinate) {
+      return new ImmutablePoint.Builder().crs(crs).addCoordinates(coordinate).build();
+    }
+
+    class PointDeserializer extends StdDeserializer<Point> {
+
+      protected PointDeserializer(Class<?> vc) {
+        super(vc);
+      }
+
+      @Override
+      public Point deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
+          throws IOException, JacksonException {
+        ObjectCodec oc = jsonParser.getCodec();
+        JsonNode node = oc.readTree(jsonParser);
+        return Point.of(oc.treeToValue(node.get("coordinates"), Coordinate.class));
+      }
     }
 
     @Value.Check
@@ -90,6 +208,10 @@ public interface Geometry<T> extends CqlNode {
 
     static LineString of(Coordinate... coordinates) {
       return new ImmutableLineString.Builder().addCoordinates(coordinates).build();
+    }
+
+    static LineString of(EpsgCrs crs, Coordinate... coordinates) {
+      return new ImmutableLineString.Builder().crs(crs).addCoordinates(coordinates).build();
     }
 
     @Override
@@ -124,6 +246,10 @@ public interface Geometry<T> extends CqlNode {
       return new ImmutableMultiPoint.Builder().addCoordinates(points).build();
     }
 
+    static MultiPoint of(EpsgCrs crs, Point... points) {
+      return new ImmutableMultiPoint.Builder().crs(crs).addCoordinates(points).build();
+    }
+
     @Override
     default Type getType() {
       return Type.MultiPoint;
@@ -138,6 +264,10 @@ public interface Geometry<T> extends CqlNode {
       return new ImmutableMultiLineString.Builder().addCoordinates(lineStrings).build();
     }
 
+    static MultiLineString of(EpsgCrs crs, LineString... lineStrings) {
+      return new ImmutableMultiLineString.Builder().crs(crs).addCoordinates(lineStrings).build();
+    }
+
     @Override
     default Type getType() {
       return Type.MultiLineString;
@@ -150,6 +280,10 @@ public interface Geometry<T> extends CqlNode {
 
     static MultiPolygon of(Polygon... polygons) {
       return new ImmutableMultiPolygon.Builder().addCoordinates(polygons).build();
+    }
+
+    static MultiPolygon of(EpsgCrs crs, Polygon... polygons) {
+      return new ImmutableMultiPolygon.Builder().crs(crs).addCoordinates(polygons).build();
     }
 
     @Override
