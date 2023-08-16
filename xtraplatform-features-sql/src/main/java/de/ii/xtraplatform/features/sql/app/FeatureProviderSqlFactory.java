@@ -133,7 +133,15 @@ public class FeatureProviderSqlFactory
         .connectionInfo(
             new ImmutableConnectionInfoSql.Builder()
                 .database("")
-                .pool(new ImmutablePoolSettings.Builder().build())
+                .pool(
+                    new ImmutablePoolSettings.Builder()
+                        .maxConnections(-1)
+                        .minConnections(1)
+                        .initFailFast(true)
+                        .initFailTimeout("1")
+                        .idleTimeout("10m")
+                        .shared(false)
+                        .build())
                 .build());
   }
 

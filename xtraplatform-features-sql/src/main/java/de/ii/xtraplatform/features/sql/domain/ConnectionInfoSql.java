@@ -263,10 +263,8 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      *     der Joins abhängig, kleinere Werte werden zurückgewiesen.
      * @default dynamic
      */
-    @Value.Default
-    default int getMaxConnections() {
-      return -1;
-    }
+    @Nullable
+    Integer getMaxConnections();
 
     /**
      * @langEn Minimum number of connections to the database that are maintained.
@@ -274,10 +272,8 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      *     gehalten werden.
      * @default maxConnections
      */
-    @Value.Default
-    default int getMinConnections() {
-      return getMaxConnections();
-    }
+    @Nullable
+    Integer getMinConnections();
 
     /**
      * @langEn If disabled the provider will wait longer for the first database connection to be
@@ -289,16 +285,12 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      * @default true
      */
     @Deprecated
-    @Value.Default
-    default boolean getInitFailFast() {
-      return true;
-    }
+    @Nullable
+    Boolean getInitFailFast();
 
     @DocIgnore
-    @Value.Default
-    default String getInitFailTimeout() {
-      return "1";
-    }
+    @Nullable
+    String getInitFailTimeout();
 
     /**
      * @langEn The maximum amount of time that a connection is allowed to sit idle in the pool. Only
@@ -309,10 +301,8 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      *     unbeschäftigte Connections niemals aus dem Pool entfernt werden.
      * @default 10m
      */
-    @Value.Default
-    default String getIdleTimeout() {
-      return "10m";
-    }
+    @Nullable
+    String getIdleTimeout();
 
     /**
      * @langEn If enabled for multiple providers with matching `host`, `database` and `user`, a
@@ -324,9 +314,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      *     fehl.
      * @default false
      */
-    @Value.Default
-    default boolean getShared() {
-      return false;
-    }
+    @Nullable
+    Boolean getShared();
   }
 }
