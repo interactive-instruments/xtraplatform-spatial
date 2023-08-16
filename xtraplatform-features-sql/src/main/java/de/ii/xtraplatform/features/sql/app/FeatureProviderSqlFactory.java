@@ -39,6 +39,8 @@ import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData;
 import de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData.Builder;
 import de.ii.xtraplatform.features.sql.domain.ImmutablePoolSettings;
+import de.ii.xtraplatform.features.sql.domain.ImmutableQueryGeneratorSettings;
+import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg;
 import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis;
@@ -49,6 +51,7 @@ import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
+import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -123,7 +126,15 @@ public class FeatureProviderSqlFactory
 
   @Override
   public EntityDataBuilder<FeatureProviderDataV2> dataBuilder() {
-    return new ImmutableFeatureProviderSqlData.Builder();
+    return new ImmutableFeatureProviderSqlData.Builder()
+        .typeValidation(MODE.NONE)
+        .sourcePathDefaults(new ImmutableSqlPathDefaults.Builder().build())
+        .queryGeneration(new ImmutableQueryGeneratorSettings.Builder().build())
+        .connectionInfo(
+            new ImmutableConnectionInfoSql.Builder()
+                .database("")
+                .pool(new ImmutablePoolSettings.Builder().build())
+                .build());
   }
 
   @Override

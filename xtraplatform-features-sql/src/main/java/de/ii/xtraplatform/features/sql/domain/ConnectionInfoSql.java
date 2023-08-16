@@ -48,6 +48,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
    * @langEn Always `SLICK`.
    * @langDe Stets `SLICK`.
    */
+  @JsonIgnore
   @Override
   @Value.Derived
   default String getConnectorType() {
@@ -106,11 +107,6 @@ public interface ConnectionInfoSql extends ConnectionInfo {
    * @langDe Einstellungen für den Connection-Pool, für Details siehe [Pool](#connection-pool).
    * @default see below
    */
-  // @Value.Default
-  // can't use interface, bug in immutables when using attributeBuilderDetection and Default
-  // default PoolSettings getPool() {
-  //    return new ImmutablePoolSettings.Builder().build();
-  // }
   @Nullable
   PoolSettings getPool();
 
@@ -199,23 +195,24 @@ public interface ConnectionInfoSql extends ConnectionInfo {
       access = JsonProperty.Access.WRITE_ONLY) // means only read from json
   Optional<SqlPathDefaults> getPathSyntax();
 
+  @Deprecated(since = "3.5") // nested defaults are handled by FeatureProviderSqlFactory.dataBuilder
   @Value.Check
   default ConnectionInfoSql initNestedDefault() {
     boolean poolIsNull = Objects.isNull(getPool());
     boolean maxConnectionsDiffers =
-        !poolIsNull
-            && getMaxConnections().isPresent()
-            && !Objects.equals(getMaxConnections().getAsInt(), getPool().getMaxConnections());
+        getMaxConnections().isPresent()
+            && (poolIsNull
+                || !Objects.equals(getMaxConnections().getAsInt(), getPool().getMaxConnections()));
     boolean minConnectionsDiffers =
-        !poolIsNull
-            && getMinConnections().isPresent()
-            && !Objects.equals(getMinConnections().getAsInt(), getPool().getMinConnections());
+        getMinConnections().isPresent()
+            && (poolIsNull
+                || !Objects.equals(getMinConnections().getAsInt(), getPool().getMinConnections()));
     boolean initFailFastDiffers =
-        !poolIsNull
-            && getInitFailFast().isPresent()
-            && !Objects.equals(getInitFailFast().get(), getPool().getInitFailFast());
+        getInitFailFast().isPresent()
+            && (poolIsNull
+                || !Objects.equals(getInitFailFast().get(), getPool().getInitFailFast()));
 
-    if (poolIsNull || maxConnectionsDiffers || minConnectionsDiffers || initFailFastDiffers) {
+    if (maxConnectionsDiffers || minConnectionsDiffers || initFailFastDiffers) {
       Builder builder = new Builder().from(this);
       ImmutablePoolSettings.Builder poolBuilder = builder.poolBuilder();
 

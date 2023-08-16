@@ -28,6 +28,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
@@ -179,15 +180,16 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
    *     keine Risiken für Laufzeitfehler im Zusammenhang mit der Datenquelle identifiziert werden.
    * @default NONE
    */
-  @Value.Default
-  default MODE getTypeValidation() {
-    return MODE.NONE;
-  }
+  @Nullable
+  MODE getTypeValidation();
 
   Optional<String> getLabelTemplate();
 
-  // TODO: document together with routes
-  @DocIgnore
+  /**
+   * @langEn Definition of extensions, see [Extensions](extensions/README.md).
+   * @langDe Definition von Erweiterungen, siehe [Erweiterungen](extensions/README.md).
+   * @default []
+   */
   @Override
   List<ExtensionConfiguration> getExtensions();
 

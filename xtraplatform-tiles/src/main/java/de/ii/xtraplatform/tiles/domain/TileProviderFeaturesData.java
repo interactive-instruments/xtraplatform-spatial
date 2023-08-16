@@ -22,6 +22,7 @@ import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
@@ -196,6 +197,7 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
    * @since v3.4
    */
   @JsonAlias("layerDefaults")
+  @Nullable
   @Override
   TilesetFeaturesDefaults getTilesetDefaults();
 

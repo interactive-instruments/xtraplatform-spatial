@@ -185,13 +185,6 @@ public interface FeatureProviderSqlData
    * @langDe Defaults für die Pfad-Ausdrücke in `sourcePath`, für Details siehe
    *     [SQL-Pfad-Defaults](#source-path-defaults).
    */
-  // @JsonProperty(value = "sourcePathDefaults", access = JsonProperty.Access.WRITE_ONLY) // means
-  // only read from json
-  // @Value.Default
-  // can't use interface, bug in immutables when using attributeBuilderDetection and Default
-  // default SqlPathDefaults getSourcePathDefaults() {
-  //    return new ImmutableSqlPathDefaults.Builder().build();
-  // }
   @DocMarker("specific")
   @Nullable
   SqlPathDefaults getSourcePathDefaults();
@@ -203,15 +196,6 @@ public interface FeatureProviderSqlData
    *     [Query-Generierung](#query-generation).
    */
   @DocMarker("specific")
-  // @Value.Default
-  // can't use interface, bug in immutables when using attributeBuilderDetection and Default
-  /*default QueryGeneratorSettings getQueryGeneration() {
-    ImmutableQueryGeneratorSettings.Builder builder = new ImmutableQueryGeneratorSettings.Builder();
-
-    getConnectionInfo().getComputeNumberMatched().ifPresent(builder::computeNumberMatched);
-
-    return builder.build();
-  }*/
   @Nullable
   QueryGeneratorSettings getQueryGeneration();
 
@@ -223,6 +207,7 @@ public interface FeatureProviderSqlData
   @Override
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getFragments();
 
+  @Deprecated(since = "3.5") // nested defaults are handled by FeatureProviderSqlFactory.dataBuilder
   @Value.Check
   default FeatureProviderSqlData initNestedDefault() {
     /*
@@ -243,25 +228,24 @@ public interface FeatureProviderSqlData
     */
     boolean queryGenerationIsNull = Objects.isNull(getQueryGeneration());
     boolean computeNumberMatchedDiffers =
-        !queryGenerationIsNull
-            && getConnectionInfo().getComputeNumberMatched().isPresent()
-            && !Objects.equals(
-                getConnectionInfo().getComputeNumberMatched().get(),
-                getQueryGeneration().getComputeNumberMatched());
+        getConnectionInfo().getComputeNumberMatched().isPresent()
+            && (queryGenerationIsNull
+                || !Objects.equals(
+                    getConnectionInfo().getComputeNumberMatched().get(),
+                    getQueryGeneration().getComputeNumberMatched()));
     boolean sourcePathDefaultsIsNull = Objects.isNull(getSourcePathDefaults());
     boolean sourcePathDefaultsDiffers =
-        !sourcePathDefaultsIsNull
-            && getConnectionInfo().getPathSyntax().isPresent()
-            && !Objects.equals(getConnectionInfo().getPathSyntax().get(), getSourcePathDefaults());
+        getConnectionInfo().getPathSyntax().isPresent()
+            && (sourcePathDefaultsIsNull
+                || !Objects.equals(
+                    getConnectionInfo().getPathSyntax().get(), getSourcePathDefaults()));
 
-    if ((queryGenerationIsNull || computeNumberMatchedDiffers)
-        || sourcePathDefaultsIsNull
-        || sourcePathDefaultsDiffers) {
+    if (computeNumberMatchedDiffers || sourcePathDefaultsDiffers) {
       ImmutableFeatureProviderSqlData.Builder builder =
           new ImmutableFeatureProviderSqlData.Builder().from(this);
       ImmutableConnectionInfoSql.Builder connectionInfoBuilder = builder.connectionInfoBuilder();
 
-      if (queryGenerationIsNull || computeNumberMatchedDiffers) {
+      if (computeNumberMatchedDiffers) {
         ImmutableQueryGeneratorSettings.Builder queryGenerationBuilder =
             builder.queryGenerationBuilder();
         getConnectionInfo()
@@ -272,7 +256,7 @@ public interface FeatureProviderSqlData
                   connectionInfoBuilder.computeNumberMatched(Optional.empty());
                 });
       }
-      if (sourcePathDefaultsIsNull || sourcePathDefaultsDiffers) {
+      if (sourcePathDefaultsDiffers) {
         ImmutableSqlPathDefaults.Builder sourcePathDefaultsBuilder =
             builder.sourcePathDefaultsBuilder();
         getConnectionInfo()
