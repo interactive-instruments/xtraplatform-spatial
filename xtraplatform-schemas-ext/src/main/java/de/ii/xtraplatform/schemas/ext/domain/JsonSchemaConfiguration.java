@@ -15,6 +15,7 @@ import java.util.Map;
 import org.immutables.value.Value;
 
 /**
+ * @type JSON_SCHEMA
  * @langAll <code>
  * ```yaml
  * - type: JSON_SCHEMA

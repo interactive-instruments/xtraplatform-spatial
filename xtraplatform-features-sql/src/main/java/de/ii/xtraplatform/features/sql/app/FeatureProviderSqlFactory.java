@@ -194,6 +194,11 @@ public class FeatureProviderSqlFactory
     throw new IllegalStateException();
   }
 
+  @Override
+  public Map<String, String> getListEntryKeys() {
+    return Map.of("extensions", "type");
+  }
+
   private FeatureProviderSqlData resolveSchemasIfNecessary(FeatureProviderSqlData data) {
     SchemaReferenceResolver resolver = new SchemaReferenceResolver(data, schemaResolvers);
     Map<String, FeatureSchema> types = data.getTypes();

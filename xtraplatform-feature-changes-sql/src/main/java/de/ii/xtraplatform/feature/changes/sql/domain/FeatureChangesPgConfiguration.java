@@ -15,6 +15,7 @@ import java.util.List;
 import org.immutables.value.Value;
 
 /**
+ * @type FEATURE_CHANGES_PG
  * @langAll <code>
  * ```yaml
  * - type: FEATURE_CHANGES_PG
