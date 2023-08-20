@@ -1,47 +1,36 @@
 ---
 xplan:
   sourcePath: /xplan
-  type: OBJECT
   label: PFS_Schutzgebiet
   description: FÃ¼r die Trassenplanung relevantes Schutzgebiet
   properties:
     uuid:
       sourcePath: uuid
-      type: STRING
       description: Eindeutiger Identifier des Objektes.
     text:
       sourcePath: text
-      type: STRING
       description: Beliebiger Text.
     beschreibung:
       sourcePath: beschreibung
-      type: STRING
       description: Kommentierende Beschreibung von Planinhalten.
     netzbetreiber:
       sourcePath: netzbetreiber
-      type: STRING
       description: Angabe des Leitungsbetreibers.
     aufschrift:
       sourcePath: aufschrift
-      type: STRING
       description: Spezifischer Text zur Beschriftung von Planinhalten.
     gehoertZuPFS:
       sourcePath: gehoertZuPFS
-      type: OBJECT
       constraints:
         required: true
       properties:
         href:
           sourcePath: href
-          type: STRING
           constraints:
             required: true
         rel:
           sourcePath: rel
-          type: STRING
         type:
           sourcePath: type
-          type: STRING
         title:
           sourcePath: title
-          type: STRING
