@@ -104,14 +104,20 @@ public interface CodelistData extends EntityData {
     ONEO_SCHLUESSELLISTE
   }
 
-  abstract class Builder implements EntityDataBuilder<CodelistData> {}
+  abstract class Builder implements EntityDataBuilder<CodelistData> {
+    public abstract Builder id(String id);
+
+    public ImmutableCodelistData.Builder fillRequiredFieldsWithPlaceholders() {
+      return ((ImmutableCodelistData.Builder) this.id("__DEFAULT__"));
+    }
+  }
 
   /**
    * @langEn Human readable label.
    * @langDe Eine lesbare Bezeichnung der Codelist, die im Manager angezeigt wird.
-   * @default
+   * @default id
    */
-  String getLabel();
+  Optional<String> getLabel();
 
   /**
    * @langEn Map with the original value as key and the new value as value.
@@ -123,7 +129,7 @@ public interface CodelistData extends EntityData {
   /**
    * @langEn Always `TEMPLATES`.
    * @langDe `TEMPLATES` für alle manuell erstellte Codelisten.
-   * @default
+   * @default TEMPLATES
    */
   ImportType getSourceType();
 
