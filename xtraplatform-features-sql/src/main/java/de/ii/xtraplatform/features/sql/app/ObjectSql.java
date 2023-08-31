@@ -207,7 +207,10 @@ public interface ObjectSql {
                       .getSchema()
                       .map(
                           schemaSql ->
-                              schemaSql.getType() == SchemaBase.Type.STRING
+                              (schemaSql.getType() == SchemaBase.Type.FEATURE_REF
+                                      && schemaSql.getValueType().orElse(SchemaBase.Type.STRING)
+                                          == SchemaBase.Type.STRING)
+                                  || schemaSql.getType() == SchemaBase.Type.STRING
                                   || schemaSql.getType() == SchemaBase.Type.DATETIME)
                       .orElse(false);
 
