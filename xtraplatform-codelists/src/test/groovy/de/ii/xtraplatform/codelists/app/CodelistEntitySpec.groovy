@@ -88,7 +88,7 @@ class CodelistEntitySpec extends Specification{
         CodelistData cl = codeListEntity.getData()
 
         "cab" == cl.getId()
-        "Cable Type" == cl.getLabel()
+        "Cable Type" == cl.getLabel().get()
         cl.getEntries().containsKey("19")
         cl.getEntries().containsValue("Cableway")
 

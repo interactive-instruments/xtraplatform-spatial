@@ -11,6 +11,7 @@ import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.codelists.domain.CodelistData;
+import de.ii.xtraplatform.codelists.domain.CodelistData.ImportType;
 import de.ii.xtraplatform.codelists.domain.ImmutableCodelistData;
 import de.ii.xtraplatform.store.domain.entities.AbstractEntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityData;
@@ -42,6 +43,11 @@ public class CodelistFactory extends AbstractEntityFactory<CodelistData, Codelis
 
   @Override
   public EntityDataBuilder<CodelistData> dataBuilder() {
+    return new ImmutableCodelistData.Builder().sourceType(ImportType.TEMPLATES);
+  }
+
+  @Override
+  public EntityDataBuilder<CodelistData> emptyDataBuilder() {
     return new ImmutableCodelistData.Builder();
   }
 

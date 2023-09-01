@@ -43,6 +43,11 @@ public interface ExtensionConfiguration
             .replace("Data", ""));
   }
 
+  /**
+   * @langEn Always `{@type}`.
+   * @langDe Immer `{@type}`.
+   */
+  @Value.Derived
   default String getType() {
     return getIdentifier(this.getClass());
   }

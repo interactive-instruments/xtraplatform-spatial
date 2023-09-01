@@ -60,7 +60,7 @@ public class SqlConnectorRxFactory
 
   @Override
   public String type() {
-    return FeatureProviderSql.PROVIDER_TYPE;
+    return FeatureProviderSql.PROVIDER_SUB_TYPE;
   }
 
   @Override

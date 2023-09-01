@@ -28,6 +28,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
@@ -108,6 +109,8 @@ import org.immutables.value.Value;
 // @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
 public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, ExtendableConfiguration {
 
+  @Deprecated String PROVIDER_SUB_TYPE_KEY_OLD = "featureProviderType";
+
   @JsonIgnore
   @Override
   @Value.Derived
@@ -177,15 +180,16 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
    *     keine Risiken für Laufzeitfehler im Zusammenhang mit der Datenquelle identifiziert werden.
    * @default NONE
    */
-  @Value.Default
-  default MODE getTypeValidation() {
-    return MODE.NONE;
-  }
+  @Nullable
+  MODE getTypeValidation();
 
   Optional<String> getLabelTemplate();
 
-  // TODO: document together with routes
-  @DocIgnore
+  /**
+   * @langEn Definition of extensions, see [Extensions](extensions/README.md).
+   * @langDe Definition von Erweiterungen, siehe [Erweiterungen](extensions/README.md).
+   * @default []
+   */
   @Override
   List<ExtensionConfiguration> getExtensions();
 

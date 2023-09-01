@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
 import de.ii.xtraplatform.docs.DocFile;
@@ -99,6 +100,7 @@ public interface TileProviderMbtilesData extends TileProviderData {
   @Override
   String getProviderSubType();
 
+  @JsonAlias("layerDefaults")
   @DocIgnore
   @Value.Default
   @Override
@@ -107,6 +109,7 @@ public interface TileProviderMbtilesData extends TileProviderData {
     return new ImmutableTilesetMbTilesDefaults.Builder().build();
   }
 
+  @JsonAlias("layers")
   @Override
   Map<String, TilesetMbTiles> getTilesets();
 

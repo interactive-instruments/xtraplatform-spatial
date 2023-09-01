@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
@@ -33,6 +34,7 @@ public interface PartialObjectSchema
 
   Optional<String> getSchema();
 
+  @JsonProperty(value = "properties")
   @Override
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getPropertyMap();
 

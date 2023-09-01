@@ -15,7 +15,10 @@ import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.store.domain.BlobStore;
+import de.ii.xtraplatform.store.domain.entities.Entity;
+import de.ii.xtraplatform.store.domain.entities.Entity.SubType;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.ImmutableMinMax;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetMetadata;
@@ -26,6 +29,7 @@ import de.ii.xtraplatform.tiles.domain.MinMax;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSet;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
+import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TileProviderMbtilesData;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
@@ -47,6 +51,15 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Entity(
+    type = TileProviderData.ENTITY_TYPE,
+    subTypes = {
+      @SubType(key = ProviderData.PROVIDER_TYPE_KEY, value = TileProviderData.PROVIDER_TYPE),
+      @SubType(
+          key = ProviderData.PROVIDER_SUB_TYPE_KEY,
+          value = TileProviderMbtilesData.PROVIDER_SUBTYPE)
+    },
+    data = TileProviderMbtilesData.class)
 public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtilesData>
     implements TileProvider {
 

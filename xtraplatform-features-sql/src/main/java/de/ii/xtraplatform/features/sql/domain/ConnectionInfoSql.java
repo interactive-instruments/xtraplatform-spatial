@@ -16,6 +16,7 @@ import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql.Builder;
 import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorRx;
 import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.MergeableMapEncodingEnabled;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -47,6 +48,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
    * @langEn Always `SLICK`.
    * @langDe Stets `SLICK`.
    */
+  @JsonIgnore
   @Override
   @Value.Derived
   default String getConnectorType() {
@@ -105,14 +107,6 @@ public interface ConnectionInfoSql extends ConnectionInfo {
    * @langDe Einstellungen für den Connection-Pool, für Details siehe [Pool](#connection-pool).
    * @default see below
    */
-  @JsonProperty(
-      value = "pool",
-      access = JsonProperty.Access.WRITE_ONLY) // means only read from json
-  // @Value.Default
-  // can't use interface, bug in immutables when using attributeBuilderDetection and Default
-  // default PoolSettings getPool() {
-  //    return new ImmutablePoolSettings.Builder().build();
-  // }
   @Nullable
   PoolSettings getPool();
 
@@ -127,7 +121,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
    *     Treibers](https://jdbc.postgresql.org/documentation/head/connect.html#connection-parameters).
    * @default {}
    */
-  Map<String, Object> getDriverOptions();
+  Map<String, String> getDriverOptions();
 
   @DocIgnore
   Optional<FeatureActionTrigger> getTriggers();
@@ -201,23 +195,24 @@ public interface ConnectionInfoSql extends ConnectionInfo {
       access = JsonProperty.Access.WRITE_ONLY) // means only read from json
   Optional<SqlPathDefaults> getPathSyntax();
 
+  @Deprecated(since = "3.5") // nested defaults are handled by FeatureProviderSqlFactory.dataBuilder
   @Value.Check
   default ConnectionInfoSql initNestedDefault() {
     boolean poolIsNull = Objects.isNull(getPool());
     boolean maxConnectionsDiffers =
-        !poolIsNull
-            && getMaxConnections().isPresent()
-            && !Objects.equals(getMaxConnections().getAsInt(), getPool().getMaxConnections());
+        getMaxConnections().isPresent()
+            && (poolIsNull
+                || !Objects.equals(getMaxConnections().getAsInt(), getPool().getMaxConnections()));
     boolean minConnectionsDiffers =
-        !poolIsNull
-            && getMinConnections().isPresent()
-            && !Objects.equals(getMinConnections().getAsInt(), getPool().getMinConnections());
+        getMinConnections().isPresent()
+            && (poolIsNull
+                || !Objects.equals(getMinConnections().getAsInt(), getPool().getMinConnections()));
     boolean initFailFastDiffers =
-        !poolIsNull
-            && getInitFailFast().isPresent()
-            && !Objects.equals(getInitFailFast().get(), getPool().getInitFailFast());
+        getInitFailFast().isPresent()
+            && (poolIsNull
+                || !Objects.equals(getInitFailFast().get(), getPool().getInitFailFast()));
 
-    if (poolIsNull || maxConnectionsDiffers || minConnectionsDiffers || initFailFastDiffers) {
+    if (maxConnectionsDiffers || minConnectionsDiffers || initFailFastDiffers) {
       Builder builder = new Builder().from(this);
       ImmutablePoolSettings.Builder poolBuilder = builder.poolBuilder();
 
@@ -232,6 +227,20 @@ public interface ConnectionInfoSql extends ConnectionInfo {
       }
 
       return builder.build();
+    }
+
+    return this;
+  }
+
+  @Deprecated(since = "3.5")
+  @Value.Check
+  default ConnectionInfoSql upgradeGpkgPaths() {
+    if (getDialect() == Dialect.GPKG
+        && Path.of(getDatabase()).startsWith("api-resources/features/")) {
+      return new Builder()
+          .from(this)
+          .database(getDatabase().replace("api-resources/features/", ""))
+          .build();
     }
 
     return this;
@@ -254,10 +263,8 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      *     der Joins abhängig, kleinere Werte werden zurückgewiesen.
      * @default dynamic
      */
-    @Value.Default
-    default int getMaxConnections() {
-      return -1;
-    }
+    @Nullable
+    Integer getMaxConnections();
 
     /**
      * @langEn Minimum number of connections to the database that are maintained.
@@ -265,10 +272,8 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      *     gehalten werden.
      * @default maxConnections
      */
-    @Value.Default
-    default int getMinConnections() {
-      return getMaxConnections();
-    }
+    @Nullable
+    Integer getMinConnections();
 
     /**
      * @langEn If disabled the provider will wait longer for the first database connection to be
@@ -280,16 +285,12 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      * @default true
      */
     @Deprecated
-    @Value.Default
-    default boolean getInitFailFast() {
-      return true;
-    }
+    @Nullable
+    Boolean getInitFailFast();
 
     @DocIgnore
-    @Value.Default
-    default String getInitFailTimeout() {
-      return "1";
-    }
+    @Nullable
+    String getInitFailTimeout();
 
     /**
      * @langEn The maximum amount of time that a connection is allowed to sit idle in the pool. Only
@@ -300,10 +301,8 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      *     unbeschäftigte Connections niemals aus dem Pool entfernt werden.
      * @default 10m
      */
-    @Value.Default
-    default String getIdleTimeout() {
-      return "10m";
-    }
+    @Nullable
+    String getIdleTimeout();
 
     /**
      * @langEn If enabled for multiple providers with matching `host`, `database` and `user`, a
@@ -315,9 +314,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      *     fehl.
      * @default false
      */
-    @Value.Default
-    default boolean getShared() {
-      return false;
-    }
+    @Nullable
+    Boolean getShared();
   }
 }
