@@ -23,6 +23,8 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
 
     List<List<U>> parentPaths1 = getParentPaths(parents);
 
+    boolean nestedArray = parents.stream().anyMatch(SchemaBase::isArray) || schema.isArray();
+
     List<T> properties =
         visitedProperties.stream().flatMap(Collection::stream).collect(Collectors.toList());
 
@@ -47,7 +49,8 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
                                                 || Objects.equals(prop.getParentPath(), fullPath))
                                     .collect(Collectors.toList());
 
-                            return create(schema, currentPath, matchingProperties, parentPath);
+                            return create(
+                                schema, currentPath, matchingProperties, parentPath, nestedArray);
                           }))
           .collect(Collectors.toList());
     }
@@ -103,7 +106,12 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
 
   List<U> parseSourcePaths(FeatureSchema sourceSchema);
 
-  T create(FeatureSchema targetSchema, U path, List<T> visitedProperties, List<U> parentPaths);
+  T create(
+      FeatureSchema targetSchema,
+      U path,
+      List<T> visitedProperties,
+      List<U> parentPaths,
+      boolean nestedArray);
 
   List<T> merge(FeatureSchema targetSchema, List<String> parentPath, List<T> visitedProperties);
 }

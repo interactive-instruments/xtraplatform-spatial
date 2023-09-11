@@ -27,6 +27,8 @@ public interface SqlPath extends SourcePath {
 
   Optional<String> getConnector();
 
+  Optional<String> getPathInConnector();
+
   List<String> getColumns();
 
   String getSortKey();

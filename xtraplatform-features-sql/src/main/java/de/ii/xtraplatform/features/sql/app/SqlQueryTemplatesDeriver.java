@@ -100,7 +100,7 @@ public class SqlQueryTemplatesDeriver
       for (int i = 0; i < additionalSortKeys.size(); i++) {
         SortKey sortKey = additionalSortKeys.get(i);
 
-        columns += "A." + sortKey.getField() + " AS CSKEY_" + i + ", ";
+        columns += getSortColumn("A", sortKey, i) + ", ";
       }
       columns += String.format("A.%s AS " + SKEY, schema.getSortKey().get());
       String orderBy = getOrderBy(additionalSortKeys);
@@ -133,6 +133,12 @@ public class SqlQueryTemplatesDeriver
           "WITH\n%4$s%4$sNR AS (%s),\n%4$s%4$sNM AS (%s),\n%4$s%4$sNS AS (%s)\n%4$sSELECT * FROM NR, NM, NS",
           numberReturned, numberMatched, numberSkipped, TAB);
     };
+  }
+
+  private static String getSortColumn(String alias, SortKey sortKey, int i) {
+    return sortKey.getField().startsWith("(")
+        ? String.format("(%s.%s AS CSKEY_%d", alias, sortKey.getField().substring(1), i)
+        : String.format("%s.%s AS CSKEY_%d", alias, sortKey.getField(), i);
   }
 
   ValueQueryTemplate createValueQueryTemplate(SchemaSql schema, List<SchemaSql> parents) {
@@ -334,10 +340,7 @@ public class SqlQueryTemplatesDeriver
 
     final int[] i = {0};
     Stream<String> customSortKeys =
-        additionalSortKeys.stream()
-            .map(
-                sortKey ->
-                    String.format("%s.%s AS CSKEY_%s", aliases.get(0), sortKey.getField(), i[0]++));
+        additionalSortKeys.stream().map(sortKey -> getSortColumn(aliases.get(0), sortKey, i[0]++));
 
     if (!schema.getRelation().isEmpty() || !parents.isEmpty()) {
       ListIterator<String> aliasesIterator = aliases.listIterator();

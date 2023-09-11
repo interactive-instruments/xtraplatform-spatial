@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -117,6 +118,40 @@ public class SqlDialectGpkg implements SqlDialect {
   public String applyToDiameter(String geomExpression, boolean is3d) {
     throw new IllegalArgumentException(
         "DIAMETER2D()/DIAMETER3D() is not supported for GeoPackage feature providers.");
+  }
+
+  @Override
+  public String applyToJsonValue(
+      String alias, String column, String path, Type type, Optional<Type> valueType) {
+    String cast = "";
+    if (Objects.nonNull(type)) {
+      switch (type) {
+        case STRING:
+          cast = "text";
+          break;
+        case FLOAT:
+          cast = "real";
+          break;
+        case INTEGER:
+        case BOOLEAN:
+          cast = "integer";
+          break;
+        case VALUE_ARRAY:
+          throw new IllegalArgumentException(
+              "Arrays as queryables are not supported for GeoPackage feature providers.");
+      }
+    }
+
+    if (Objects.isNull(path)) {
+      if (cast.isEmpty()) {
+        return String.format("%s.%s", alias, column);
+      }
+      return String.format("cast(%s.%s as %s)", alias, column, cast);
+    }
+    if (cast.isEmpty()) {
+      return String.format("%s.%s ->> '$.%s'", alias, column, path);
+    }
+    return String.format("cast((%s.%s ->> '$.%s') as %s)", alias, column, path, cast);
   }
 
   @Override

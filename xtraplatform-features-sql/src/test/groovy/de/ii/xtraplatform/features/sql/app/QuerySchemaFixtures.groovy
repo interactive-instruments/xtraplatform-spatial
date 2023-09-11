@@ -7,12 +7,13 @@
  */
 package de.ii.xtraplatform.features.sql.app
 
-
+import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.Gt
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.features.domain.SchemaBase
 import de.ii.xtraplatform.features.domain.SchemaBase.Type
+import de.ii.xtraplatform.features.domain.Tuple
 import de.ii.xtraplatform.features.sql.domain.ImmutableSchemaSql
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlRelation
 import de.ii.xtraplatform.features.sql.domain.SchemaSql
@@ -827,9 +828,91 @@ class QuerySchemaFixtures {
                     .addProperties(new ImmutableSchemaSql.Builder()
                             .name("osirisobjekt")
                             .type(Type.STRING)
+                            .sourcePath("osirisobjekt")
                             .parentPath(["eignungsflaeche"])
                             .subDecoder("JSON")
+                            .subDecoderPaths(ImmutableMap.of("kennung", "kennung"))
+                            .subDecoderTypes(ImmutableMap.of("kennung", Tuple.of(Type.STRING, Optional.empty())))
                             .build())
                     .build()
     ]
+
+    static List<SchemaSql> CONNECTOR_MERGE = [
+            new ImmutableSchemaSql.Builder()
+                    .name("eignungsflaeche")
+                    .sourcePath("eignungsflaeche")
+                    .type(Type.OBJECT)
+                    .sortKey("id")
+                    .primaryKey("id")
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("id")
+                            .type(Type.STRING)
+                            .sourcePath("id")
+                            .parentPath(["eignungsflaeche"])
+                            .role(SchemaBase.Role.ID)
+                            .build())
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("osirisobjekt")
+                            .type(Type.STRING)
+                            .sourcePath("osirisobjekt")
+                            .parentPath(["eignungsflaeche"])
+                            .subDecoder("JSON")
+                            .subDecoderPaths(ImmutableMap.of("kennung", "kennung", "programm", "programm"))
+                            .subDecoderTypes(ImmutableMap.of("kennung", Tuple.of(Type.STRING, Optional.empty()), "programm", Tuple.of(Type.STRING, Optional.empty())))
+                            .build())
+                    .build()
+    ]
+
+    static List<SchemaSql> CONNECTOR_OBJECT = [
+            new ImmutableSchemaSql.Builder()
+                    .name("eignungsflaeche")
+                    .sourcePath("eignungsflaeche")
+                    .type(Type.OBJECT)
+                    .sortKey("id")
+                    .primaryKey("id")
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("id")
+                            .type(Type.STRING)
+                            .sourcePath("id")
+                            .parentPath(["eignungsflaeche"])
+                            .role(SchemaBase.Role.ID)
+                            .build())
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("osirisobjekt")
+                            .type(Type.STRING)
+                            .sourcePath("osirisobjekt")
+                            .parentPath(["eignungsflaeche"])
+                            .subDecoder("JSON")
+                            .subDecoderPaths(ImmutableMap.of("osirisobjekt.kennung", "kennung"))
+                            .subDecoderTypes(ImmutableMap.of("osirisobjekt.kennung", Tuple.of(Type.STRING, Optional.empty())))
+                            .build())
+                    .build()
+    ]
+
+    static List<SchemaSql> CONNECTOR_MERGE_OBJECT = [
+            new ImmutableSchemaSql.Builder()
+                    .name("eignungsflaeche")
+                    .sourcePath("eignungsflaeche")
+                    .type(Type.OBJECT)
+                    .sortKey("id")
+                    .primaryKey("id")
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("id")
+                            .type(Type.STRING)
+                            .sourcePath("id")
+                            .parentPath(["eignungsflaeche"])
+                            .role(SchemaBase.Role.ID)
+                            .build())
+                    .addProperties(new ImmutableSchemaSql.Builder()
+                            .name("osirisobjekt")
+                            .type(Type.STRING)
+                            .sourcePath("osirisobjekt")
+                            .parentPath(["eignungsflaeche"])
+                            .subDecoder("JSON")
+                            .subDecoderPaths(ImmutableMap.of("osirisobjekt.kennung", "kennung", "programm", "programm"))
+                            .subDecoderTypes(ImmutableMap.of("osirisobjekt.kennung", Tuple.of(Type.STRING, Optional.empty()), "programm", Tuple.of(Type.STRING, Optional.empty())))
+                            .build())
+                    .build()
+    ]
+
 }

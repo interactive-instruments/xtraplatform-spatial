@@ -11,8 +11,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.features.domain.SchemaBase;
+import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,6 +28,10 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
   List<SqlRelation> getRelation();
 
   Optional<String> getSubDecoder();
+
+  Map<String, String> getSubDecoderPaths();
+
+  Map<String, Tuple<Type, Optional<Type>>> getSubDecoderTypes();
 
   Optional<String> getPrimaryKey();
 

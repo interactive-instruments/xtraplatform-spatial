@@ -311,6 +311,12 @@ public class SqlPathParser {
 
     builder.sortKey(getSortKey(flags)).primaryKey(getPrimaryKey(flags)).junction(false);
 
+    String connectorSpec = connectedMatcher.group(0);
+    String pathInConnector = path.substring(path.indexOf(connectorSpec) + connectorSpec.length());
+    if (!pathInConnector.isEmpty()) {
+      builder.pathInConnector(pathInConnector.substring(1).replace('/', '.'));
+    }
+
     return builder.build();
   }
 
