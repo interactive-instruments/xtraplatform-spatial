@@ -42,7 +42,25 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
   }
 
   @Override
-  public List<SqlPath> parseSourcePaths(FeatureSchema sourceSchema) {
+  public List<SqlPath> parseSourcePaths(FeatureSchema sourceSchema, List<List<SqlPath>> parents) {
+    Optional<String> inConnector =
+        parents.stream()
+            .map(
+                list ->
+                    list.stream()
+                        .filter(p -> p.getConnector().isPresent())
+                        .findFirst()
+                        .map(p -> p.getConnector().get()))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .findFirst();
+
+    if (inConnector.filter("JSON"::equals).isPresent()) {
+      return sourceSchema.getEffectiveSourcePaths().stream()
+          .map(pathParser::parseColumnPath)
+          .collect(Collectors.toList());
+    }
+
     return sourceSchema.getEffectiveSourcePaths().stream()
         .map(
             sourcePath ->
