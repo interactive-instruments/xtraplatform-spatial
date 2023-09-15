@@ -21,6 +21,7 @@ import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -188,31 +189,40 @@ public class SqlDialectPostGis implements SqlDialect {
 
   @Override
   public String applyToJsonValue(
-      String alias, String column, String path, Type type, Optional<Type> valueType) {
+      String alias, String column, String path, PropertyTypeInfo typeInfo) {
+
+    if (typeInfo.getInArray()) {
+      return String.format("jsonb_path_query_array(%s.%s::jsonb,'$.%s')", alias, column, path);
+    }
+
     String cast = "";
-    if (Objects.nonNull(type)) {
-      switch (type) {
+    if (Objects.nonNull(typeInfo.getType())) {
+      switch (typeInfo.getType()) {
         case STRING:
-          cast = "::varchar";
-          break;
         case FLOAT:
-          cast = "::double";
-          break;
         case INTEGER:
-          cast = "::integer";
-          break;
         case BOOLEAN:
-          cast = "::boolean";
+          cast = getCast(typeInfo.getType());
           break;
+        case VALUE:
+        case FEATURE_REF:
         case VALUE_ARRAY:
-          if (Objects.isNull(path)) {
-            return String.format("%s.%s::jsonb", alias, column);
-          }
-          return String.format("jsonb_path_query_array(%s.%s::jsonb,'$.%s')", alias, column, path);
+        case FEATURE_REF_ARRAY:
+          cast = typeInfo.getValueType().map(this::getCast).orElse(getCast(Type.STRING));
+          break;
       }
     }
 
     String finalAlias = alias.isEmpty() ? alias : String.format("%s.", alias);
+    if (typeInfo.getType() == Type.VALUE_ARRAY || typeInfo.getType() == Type.FEATURE_REF_ARRAY) {
+      if (Objects.isNull(path)) {
+        return String.format("%s.%s::jsonb", alias, column);
+      } else if (path.contains(".")) {
+        return String.format("(%s%s #> '{%s}')", finalAlias, column, path.replaceAll("\\.", ","));
+      }
+      return String.format("(%s%s -> '%s')", finalAlias, column, path);
+    }
+
     if (Objects.isNull(path)) {
       return String.format("%s%s%s", finalAlias, column, cast);
     } else if (path.contains(".")) {
@@ -220,6 +230,20 @@ public class SqlDialectPostGis implements SqlDialect {
           "(%s%s #>> '{%s}')%s", finalAlias, column, path.replaceAll("\\.", ","), cast);
     }
     return String.format("(%s%s ->> '%s')%s", finalAlias, column, path, cast);
+  }
+
+  private String getCast(Type valueType) {
+    switch (valueType) {
+      case FLOAT:
+        return "::double";
+      case INTEGER:
+        return "::integer";
+      case BOOLEAN:
+        return "::boolean";
+      default:
+      case STRING:
+        return "::varchar";
+    }
   }
 
   @Override

@@ -29,6 +29,7 @@ import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQuerySet.Builder;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
@@ -272,14 +273,10 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
                                   .findFirst()
                                   .map(
                                       p -> {
-                                        Tuple<Type, Optional<Type>> type =
+                                        PropertyTypeInfo typeInfo =
                                             p.getSubDecoderTypes().get(sortKey.getField());
                                         return sqlDialect.applyToJsonValue(
-                                            "",
-                                            p.getName(),
-                                            sortKey.getField(),
-                                            type.first(),
-                                            type.second());
+                                            "", p.getName(), sortKey.getField(), typeInfo);
                                       }));
 
               if (column.isEmpty()) {
@@ -294,18 +291,14 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
         .collect(ImmutableList.toImmutableList());
   }
 
-  private boolean typeIsSortable(Tuple<Type, Optional<Type>> type) {
-    return typeIsSortable(type.first(), type.second());
-  }
-
-  private boolean typeIsSortable(Type type, Optional<Type> valueType) {
-    if (type == Type.STRING || type == Type.INTEGER || type == Type.FLOAT) {
-      return true;
+  private boolean typeIsSortable(PropertyTypeInfo typeInfo) {
+    if (typeInfo.getInArray()) {
+      return false;
     }
-    if (type == Type.VALUE) {
-      Type t = valueType.orElse(Type.STRING);
-      return t == Type.STRING || t == Type.INTEGER || t == Type.FLOAT;
+    Type t = typeInfo.getType();
+    if (typeInfo.getType() == Type.VALUE) {
+      t = typeInfo.getValueType().orElse(Type.STRING);
     }
-    return false;
+    return t == Type.STRING || t == Type.INTEGER || t == Type.FLOAT || t == Type.FEATURE_REF;
   }
 }

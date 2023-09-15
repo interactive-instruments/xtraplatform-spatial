@@ -14,6 +14,7 @@ import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.features.domain.SchemaBase
 import de.ii.xtraplatform.features.domain.SchemaBase.Type
 import de.ii.xtraplatform.features.domain.Tuple
+import de.ii.xtraplatform.features.sql.domain.ImmutablePropertyTypeInfo
 import de.ii.xtraplatform.features.sql.domain.ImmutableSchemaSql
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlRelation
 import de.ii.xtraplatform.features.sql.domain.SchemaSql
@@ -832,7 +833,7 @@ class QuerySchemaFixtures {
                             .parentPath(["eignungsflaeche"])
                             .subDecoder("JSON")
                             .subDecoderPaths(ImmutableMap.of("kennung", "kennung"))
-                            .subDecoderTypes(ImmutableMap.of("kennung", Tuple.of(Type.STRING, Optional.empty())))
+                            .subDecoderTypes(ImmutableMap.of("kennung", SchemaSql.PropertyTypeInfo.of(Type.STRING, Optional.empty(), false)))
                             .build())
                     .build()
     ]
@@ -858,7 +859,7 @@ class QuerySchemaFixtures {
                             .parentPath(["eignungsflaeche"])
                             .subDecoder("JSON")
                             .subDecoderPaths(ImmutableMap.of("kennung", "kennung", "programm", "programm"))
-                            .subDecoderTypes(ImmutableMap.of("kennung", Tuple.of(Type.STRING, Optional.empty()), "programm", Tuple.of(Type.STRING, Optional.empty())))
+                            .subDecoderTypes(ImmutableMap.of("kennung", SchemaSql.PropertyTypeInfo.of(Type.STRING, Optional.empty(), false), "programm", SchemaSql.PropertyTypeInfo.of(Type.STRING, Optional.empty(), false)))
                             .build())
                     .build()
     ]
@@ -884,7 +885,7 @@ class QuerySchemaFixtures {
                             .parentPath(["eignungsflaeche"])
                             .subDecoder("JSON")
                             .subDecoderPaths(ImmutableMap.of("osirisobjekt.kennung", "kennung"))
-                            .subDecoderTypes(ImmutableMap.of("osirisobjekt.kennung", Tuple.of(Type.STRING, Optional.empty())))
+                            .subDecoderTypes(ImmutableMap.of("osirisobjekt.kennung", SchemaSql.PropertyTypeInfo.of(Type.STRING, Optional.empty(), false)))
                             .build())
                     .build()
     ]
@@ -910,7 +911,7 @@ class QuerySchemaFixtures {
                             .parentPath(["eignungsflaeche"])
                             .subDecoder("JSON")
                             .subDecoderPaths(ImmutableMap.of("osirisobjekt.kennung", "kennung", "programm", "programm"))
-                            .subDecoderTypes(ImmutableMap.of("osirisobjekt.kennung", Tuple.of(Type.STRING, Optional.empty()), "programm", Tuple.of(Type.STRING, Optional.empty())))
+                            .subDecoderTypes(ImmutableMap.of("osirisobjekt.kennung", SchemaSql.PropertyTypeInfo.of(Type.STRING, Optional.empty(), false), "programm", SchemaSql.PropertyTypeInfo.of(Type.STRING, Optional.empty(), false)))
                             .build())
                     .build()
     ]

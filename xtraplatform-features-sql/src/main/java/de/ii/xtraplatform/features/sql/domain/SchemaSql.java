@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.features.domain.SchemaBase;
-import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -31,7 +30,7 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
 
   Map<String, String> getSubDecoderPaths();
 
-  Map<String, Tuple<Type, Optional<Type>>> getSubDecoderTypes();
+  Map<String, PropertyTypeInfo> getSubDecoderTypes();
 
   Optional<String> getPrimaryKey();
 
@@ -175,5 +174,22 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
               return Stream.concat(Stream.of(current), current.getAllNestedProperties().stream());
             })
         .collect(Collectors.toList());
+  }
+
+  @Value.Immutable
+  interface PropertyTypeInfo {
+
+    static PropertyTypeInfo of(Type t, Optional<Type> vt, boolean inArray) {
+      return new ImmutablePropertyTypeInfo.Builder().type(t).valueType(vt).inArray(inArray).build();
+    }
+
+    Type getType();
+
+    Optional<Type> getValueType();
+
+    @Value.Default
+    default boolean getInArray() {
+      return false;
+    }
   }
 }

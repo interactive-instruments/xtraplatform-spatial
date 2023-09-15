@@ -23,7 +23,7 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
 
     List<U> currentPaths = parseSourcePaths(schema, parentPaths1);
 
-    boolean nestedArray = parents.stream().anyMatch(SchemaBase::isArray) || schema.isArray();
+    boolean nestedArray = parents.stream().anyMatch(SchemaBase::isArray);
 
     List<T> properties =
         visitedProperties.stream().flatMap(Collection::stream).collect(Collectors.toList());

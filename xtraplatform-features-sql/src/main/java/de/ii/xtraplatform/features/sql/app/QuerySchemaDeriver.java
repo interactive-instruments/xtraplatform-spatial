@@ -13,10 +13,10 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.MappedSchemaDeriver;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
-import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSchemaSql.Builder;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlRelation;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import de.ii.xtraplatform.features.sql.domain.SqlPath;
 import de.ii.xtraplatform.features.sql.domain.SqlPathParser;
 import de.ii.xtraplatform.features.sql.domain.SqlRelation;
@@ -354,13 +354,13 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
 
     Set<String> connected = new HashSet<>();
     Map<String, Map<String, String>> subConnectorPaths = new HashMap<>();
-    Map<String, Map<String, Tuple<Type, Optional<Type>>>> subConnectorTypes = new HashMap<>();
+    Map<String, Map<String, PropertyTypeInfo>> subConnectorTypes = new HashMap<>();
 
     newVisitedProperties.forEach(
         prop -> {
           String jsonColumn = null;
           Map<String, String> subPaths = null;
-          Map<String, Tuple<Type, Optional<Type>>> subTypes = null;
+          Map<String, PropertyTypeInfo> subTypes = null;
           if (prop.getSubDecoder().isPresent()) {
             jsonColumn = prop.getName();
             subPaths = prop.getSubDecoderPaths();
@@ -376,7 +376,10 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                   ImmutableMap.of(
                       prop.getSourcePath().get(),
                       prop.getSourcePath().get().replace(path.getName() + ".", ""));
-              subTypes = ImmutableMap.of(prop.getSourcePath().get(), adjustType(prop, nestedArray));
+              subTypes =
+                  ImmutableMap.of(
+                      prop.getSourcePath().get(),
+                      getTypeInfo(prop, nestedArray || targetSchema.isArray()));
             }
           }
           if (Objects.nonNull(subPaths)) {
@@ -443,13 +446,15 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                     : Map.of())
                 : subConnectorPaths1)
             : Map.of();
-    Map<String, Tuple<Type, Optional<Type>>> subConnectorTypes1 =
+    Map<String, PropertyTypeInfo> subConnectorTypes1 =
         Objects.requireNonNullElse(subConnectorTypes.get(path.getName()), Map.of());
-    Map<String, Tuple<Type, Optional<Type>>> subDecoderTypes =
+    Map<String, PropertyTypeInfo> subDecoderTypes =
         connector.isPresent()
             ? (subConnectorTypes1.isEmpty()
                 ? ImmutableMap.of(
-                    fullSchemaPath, Tuple.of(targetSchema.getType(), targetSchema.getValueType()))
+                    fullSchemaPath,
+                    PropertyTypeInfo.of(
+                        targetSchema.getType(), targetSchema.getValueType(), nestedArray))
                 : subConnectorTypes1)
             : Map.of();
 
@@ -484,14 +489,8 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
     return builder.build();
   }
 
-  private Tuple<Type, Optional<Type>> adjustType(SchemaSql column, boolean nestedArray) {
-    if (!nestedArray || column.isArray()) {
-      return Tuple.of(column.getType(), column.getValueType());
-    }
-
-    return Tuple.of(
-        Type.VALUE_ARRAY,
-        column.getType() == Type.VALUE ? column.getValueType() : Optional.of(column.getType()));
+  private PropertyTypeInfo getTypeInfo(SchemaSql column, boolean nestedArray) {
+    return PropertyTypeInfo.of(column.getType(), column.getValueType(), nestedArray);
   }
 
   @Override

@@ -50,9 +50,9 @@ import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.sql.domain.SqlRelation;
 import java.time.Instant;
@@ -284,13 +284,9 @@ public class FilterEncoderSql {
 
     private String mapToSubDecoder(String alias, SchemaSql column, String propertyName) {
       if (column.getSubDecoder().filter("JSON"::equals).isPresent()) {
-        Tuple<Type, Optional<Type>> type = column.getSubDecoderTypes().get(propertyName);
+        PropertyTypeInfo typeInfo = column.getSubDecoderTypes().get(propertyName);
         return sqlDialect.applyToJsonValue(
-            alias,
-            column.getName(),
-            column.getSubDecoderPaths().get(propertyName),
-            type.first(),
-            type.second());
+            alias, column.getName(), column.getSubDecoderPaths().get(propertyName), typeInfo);
       }
 
       throw new IllegalStateException(
