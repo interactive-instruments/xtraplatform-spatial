@@ -33,7 +33,10 @@ import org.immutables.value.Value;
  * # GraphQL
  *
  * @langEn The specifics of the GraphQL feature provider.
+ *     <p>Note: This feature provider is **experimental** and has limitations.
  * @langDe Hier werden die Besonderheiten des GraphQL-Feature-Providers beschrieben.
+ *     <p>Hinweis: Dieser Feature-Provider ist **experimentell** und hat einen eingeschränkten
+ *     Funktionsumfang.
  * @langAll {@docTable:properties}
  * @langAll ## Connection Info
  * @langEn The connection info object for GraphQL has the following properties:

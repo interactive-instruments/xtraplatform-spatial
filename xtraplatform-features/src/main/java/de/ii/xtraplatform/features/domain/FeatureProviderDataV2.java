@@ -37,7 +37,7 @@ import org.immutables.value.Value;
  *     <p><code>
  * - [SQL](sql.md): The features are stored in a SQL database (PostgreSQL/PostGIS, GeoPackage, SQLite/SpatiaLite).
  * - [WFS](wfs.md): The features are retrieved from an OGC WFS.
- * - [GraphQL](graphql.md): The features are retrieved from a GraphQL API.
+ * - [GraphQL](graphql.md): The features are retrieved from a GraphQL API. This Feature provider is **experimental** and has limitations..
  *     </code>
  *     <p>## Configuration
  *     <p>These are common configuration options for all provider types.
@@ -50,7 +50,7 @@ import org.immutables.value.Value;
  *     <p><code>
  * - [SQL](sql.md): Die Features sind in einer SQL-Datenbank gespeichert (PostgreSQL/PostGIS, GeoPackage, SQLite/SpatiaLite).
  * - [WFS](wfs.md): Die Features werden von einem OGC WFS bezogen.
- * - [GraphQL](graphql.md): Die Features werden von einer GraphQL API bezogen.
+ * - [GraphQL](graphql.md): Die Features werden von einer GraphQL API bezogen. Dieser Feature-Provider ist **experimentell** und hat einen eingeschränkten Funktionsumfang.
  *     </code>
  *     <p>## Konfiguration
  *     <p>Dies sind gemeinsame Konfigurations-Optionen für alle Provider-Typen.
