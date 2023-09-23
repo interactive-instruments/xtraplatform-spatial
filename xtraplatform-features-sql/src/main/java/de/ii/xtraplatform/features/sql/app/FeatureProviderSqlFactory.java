@@ -26,6 +26,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.MappingOperationResolver;
+import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
@@ -38,6 +39,8 @@ import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData;
 import de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData.Builder;
 import de.ii.xtraplatform.features.sql.domain.ImmutablePoolSettings;
+import de.ii.xtraplatform.features.sql.domain.ImmutableQueryGeneratorSettings;
+import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg;
 import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis;
@@ -48,6 +51,7 @@ import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
 import de.ii.xtraplatform.store.domain.entities.EntityFactory;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
+import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -76,6 +80,7 @@ public class FeatureProviderSqlFactory
 
   private final Lazy<Set<SchemaFragmentResolver>> schemaResolvers;
   private final ConnectorFactory connectorFactory;
+  private final boolean skipHydration;
 
   @Inject
   public FeatureProviderSqlFactory(
@@ -93,11 +98,20 @@ public class FeatureProviderSqlFactory
     super(providerSqlFactoryAssisted);
     this.schemaResolvers = schemaResolvers;
     this.connectorFactory = connectorFactory;
+    this.skipHydration = false;
+  }
+
+  // for ldproxy-cfg
+  public FeatureProviderSqlFactory() {
+    super(null);
+    this.schemaResolvers = null;
+    this.connectorFactory = null;
+    this.skipHydration = true;
   }
 
   @Override
   public String type() {
-    return FeatureProviderSql.ENTITY_TYPE;
+    return ProviderData.ENTITY_TYPE;
   }
 
   @Override
@@ -112,11 +126,37 @@ public class FeatureProviderSqlFactory
 
   @Override
   public EntityDataBuilder<FeatureProviderDataV2> dataBuilder() {
-    return new ImmutableFeatureProviderSqlData.Builder();
+    return new ImmutableFeatureProviderSqlData.Builder()
+        .typeValidation(MODE.NONE)
+        .sourcePathDefaults(new ImmutableSqlPathDefaults.Builder().build())
+        .queryGeneration(new ImmutableQueryGeneratorSettings.Builder().build())
+        .connectionInfo(
+            new ImmutableConnectionInfoSql.Builder()
+                .database("")
+                .pool(
+                    new ImmutablePoolSettings.Builder()
+                        .maxConnections(-1)
+                        .minConnections(1)
+                        .initFailFast(true)
+                        .initFailTimeout("1")
+                        .idleTimeout("10m")
+                        .shared(false)
+                        .build())
+                .build());
   }
 
   @Override
   public EntityDataBuilder<? extends EntityData> superDataBuilder() {
+    return new ImmutableProviderCommonData.Builder();
+  }
+
+  @Override
+  public EntityDataBuilder<FeatureProviderDataV2> emptyDataBuilder() {
+    return new ImmutableFeatureProviderSqlData.Builder();
+  }
+
+  @Override
+  public EntityDataBuilder<? extends EntityData> emptySuperDataBuilder() {
     return new ImmutableProviderCommonData.Builder();
   }
 
@@ -128,6 +168,10 @@ public class FeatureProviderSqlFactory
   @Override
   public EntityData hydrateData(EntityData entityData) {
     FeatureProviderSqlData data = (FeatureProviderSqlData) entityData;
+
+    if (skipHydration) {
+      return entityData;
+    }
 
     if (data.isAuto()) {
       LOGGER.info(
@@ -148,6 +192,11 @@ public class FeatureProviderSqlFactory
     }
 
     throw new IllegalStateException();
+  }
+
+  @Override
+  public Map<String, String> getListEntryKeys() {
+    return Map.of("extensions", "type");
   }
 
   private FeatureProviderSqlData resolveSchemasIfNecessary(FeatureProviderSqlData data) {

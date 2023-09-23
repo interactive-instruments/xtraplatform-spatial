@@ -23,12 +23,16 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.sql.DataSource;
 import org.postgresql.ds.PGSimpleDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConnection;
 import org.sqlite.SQLiteDataSource;
 
 @Singleton
 @AutoBind
 public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(SqlDataSourceFactoryImpl.class);
 
   private final Path dataDir;
   private final BlobStore featuresStore;
@@ -142,12 +146,19 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
     return ds;
   }
 
+  @Deprecated(since = "3.5") // remove anything but the featuresStore resolution
   private DataSource createGpkg(String providerId, ConnectionInfoSql connectionInfo) {
     Path source = Path.of(connectionInfo.getDatabase());
 
     if (!source.isAbsolute()) {
       if (source.startsWith("api-resources/features")) {
         source = Path.of("api-resources/features").relativize(source);
+        LOGGER.warn(
+            "Using a relative path starting with api-resources/features for a Geopackage file in connectionInfo.database is deprecated and will stop working in v4. Provide the path relative to that directory in connectionInfo.database instead.");
+      } else if (source.startsWith("resources/features")) {
+        source = Path.of("resources/features").relativize(source);
+        LOGGER.warn(
+            "Using a relative path starting with resources/features for a Geopackage file in connectionInfo.database is deprecated and will stop working in v4. Provide the path relative to that directory in connectionInfo.database instead.");
       }
       Optional<Path> localPath = Optional.empty();
       try {
@@ -159,9 +170,14 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
         source = localPath.get();
       } else if (dataDir.resolve(connectionInfo.getDatabase()).toFile().exists()) {
         source = dataDir.resolve(connectionInfo.getDatabase());
+        LOGGER.warn(
+            "Using a path relative to the data directory for a Geopackage file in connectionInfo.database is deprecated and will stop working in v4. Move the file to (api-)resources/features and provide the path relative to that directory in connectionInfo.database.");
       } else {
         throw new IllegalStateException("GPKG database not found: " + source);
       }
+    } else {
+      LOGGER.warn(
+          "Using an absolute path for a Geopackage file in connectionInfo.database is deprecated and will stop working in v4. Move the file to (api-)resources/features and provide the path relative to that directory in connectionInfo.database.");
     }
 
     if (!spatiaLiteInitialized) {

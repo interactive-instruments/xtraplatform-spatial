@@ -33,9 +33,17 @@ public class TileProviderHttpFactory
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderHttpFactory.class);
 
+  private final boolean skipHydration;
+
   @Inject
   public TileProviderHttpFactory(TileProviderHttpFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
+    this.skipHydration = false;
+  }
+
+  public TileProviderHttpFactory() {
+    super(null);
+    this.skipHydration = true;
   }
 
   @Override
@@ -68,6 +76,16 @@ public class TileProviderHttpFactory
   }
 
   @Override
+  public EntityDataBuilder<TileProviderData> emptyDataBuilder() {
+    return new ImmutableTileProviderHttpData.Builder();
+  }
+
+  @Override
+  public EntityDataBuilder<? extends EntityData> emptySuperDataBuilder() {
+    return new ImmutableProviderCommonData.Builder();
+  }
+
+  @Override
   public Class<? extends EntityData> dataClass() {
     return TileProviderHttpData.class;
   }
@@ -75,6 +93,10 @@ public class TileProviderHttpFactory
   @Override
   public EntityData hydrateData(EntityData entityData) {
     TileProviderHttpData data = (TileProviderHttpData) entityData;
+
+    if (skipHydration) {
+      return data;
+    }
 
     return data;
   }

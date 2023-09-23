@@ -93,7 +93,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
   private final BlobStore schemaStore;
 
   @Inject
-  JsonSchemaResolver(BlobStore blobStore) {
+  public JsonSchemaResolver(BlobStore blobStore) {
     this.schemaStore = blobStore.with("schemas");
     // TODO: custom loader with HttpClient
     this.schemaParser = new SchemaStore(new CacheLoader());

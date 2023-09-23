@@ -328,6 +328,18 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       return;
     }
 
+    if (context.schema().isEmpty()) {
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace(
+            "VALUE NOT FOUND {} {}",
+            context.pathAsString(),
+            Objects.nonNull(context.mapping())
+                ? context.mapping().getTargetSchemasByPath().keySet()
+                : "{}");
+      }
+      return;
+    }
+
     FeatureSchema schema = context.schema().get();
 
     if (!mappingOperationsTransformer.transform(context, newContext)) {

@@ -31,7 +31,7 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.apache.http.client.utils.URIBuilder;
+import org.apache.hc.core5.net.URIBuilder;
 import org.codehaus.staxmate.SMInputFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +128,7 @@ public class WfsConnectorHttp implements WfsConnector {
 
   @Override
   public String getType() {
-    return String.format("%s/%s", FeatureProviderWfs.PROVIDER_TYPE, CONNECTOR_TYPE);
+    return String.format("%s/%s", FeatureProviderWfs.PROVIDER_SUB_TYPE, CONNECTOR_TYPE);
   }
 
   @Override

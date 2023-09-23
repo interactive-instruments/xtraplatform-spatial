@@ -102,7 +102,7 @@ public class SqlConnectorRx implements SqlConnector {
 
   @Override
   public String getType() {
-    return String.format("%s/%s", FeatureProviderSql.PROVIDER_TYPE, CONNECTOR_TYPE);
+    return String.format("%s/%s", FeatureProviderSql.PROVIDER_SUB_TYPE, CONNECTOR_TYPE);
   }
 
   @Override

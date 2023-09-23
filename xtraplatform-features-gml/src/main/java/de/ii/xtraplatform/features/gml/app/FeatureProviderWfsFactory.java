@@ -20,6 +20,7 @@ import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
+import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
@@ -52,6 +53,7 @@ public class FeatureProviderWfsFactory
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfsFactory.class);
 
   private final ConnectorFactory connectorFactory;
+  private final boolean skipHydration;
 
   @Inject
   public FeatureProviderWfsFactory(
@@ -65,11 +67,18 @@ public class FeatureProviderWfsFactory
       ProviderWfsFactoryAssisted providerWfsFactoryAssisted) {
     super(providerWfsFactoryAssisted);
     this.connectorFactory = connectorFactory;
+    this.skipHydration = false;
+  }
+
+  public FeatureProviderWfsFactory() {
+    super(null);
+    this.connectorFactory = null;
+    this.skipHydration = true;
   }
 
   @Override
   public String type() {
-    return FeatureProviderWfs.ENTITY_TYPE;
+    return ProviderData.ENTITY_TYPE;
   }
 
   @Override
@@ -93,6 +102,16 @@ public class FeatureProviderWfsFactory
   }
 
   @Override
+  public EntityDataBuilder<FeatureProviderDataV2> emptyDataBuilder() {
+    return new ImmutableFeatureProviderWfsData.Builder();
+  }
+
+  @Override
+  public EntityDataBuilder<? extends EntityData> emptySuperDataBuilder() {
+    return new ImmutableProviderCommonData.Builder();
+  }
+
+  @Override
   public Class<? extends EntityData> dataClass() {
     return FeatureProviderWfsData.class;
   }
@@ -100,6 +119,10 @@ public class FeatureProviderWfsFactory
   @Override
   public EntityData hydrateData(EntityData entityData) {
     FeatureProviderWfsData data = (FeatureProviderWfsData) entityData;
+
+    if (skipHydration) {
+      return data;
+    }
 
     if (data.isAuto()) {
       LOGGER.info(

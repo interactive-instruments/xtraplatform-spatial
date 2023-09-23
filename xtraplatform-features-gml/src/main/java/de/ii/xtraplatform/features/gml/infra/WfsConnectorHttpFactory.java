@@ -42,7 +42,7 @@ public class WfsConnectorHttpFactory
 
   @Override
   public String type() {
-    return FeatureProviderWfs.PROVIDER_TYPE;
+    return FeatureProviderWfs.PROVIDER_SUB_TYPE;
   }
 
   @Override

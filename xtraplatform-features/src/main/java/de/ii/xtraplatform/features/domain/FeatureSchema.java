@@ -33,6 +33,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,10 +123,16 @@ public interface FeatureSchema
    *     <p>
    * @default STRING/OBJECT
    */
+  @Nullable
+  @JsonProperty("type")
+  Type getDesiredType();
+
   @Value.Default
+  @JsonIgnore
   @Override
   default Type getType() {
-    return getPropertyMap().isEmpty() ? Type.STRING : Type.OBJECT;
+    return Objects.requireNonNullElse(
+        getDesiredType(), getPropertyMap().isEmpty() ? Type.STRING : Type.OBJECT);
   }
 
   /**

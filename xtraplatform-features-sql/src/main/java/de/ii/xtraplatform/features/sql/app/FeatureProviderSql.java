@@ -55,6 +55,7 @@ import de.ii.xtraplatform.features.domain.ImmutableSubQuery;
 import de.ii.xtraplatform.features.domain.MultiFeatureQueries;
 import de.ii.xtraplatform.features.domain.MultiFeatureQuery;
 import de.ii.xtraplatform.features.domain.MultiFeatureQuery.SubQuery;
+import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.Query;
 import de.ii.xtraplatform.features.domain.SchemaBase;
@@ -86,6 +87,8 @@ import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.features.sql.infra.db.SourceSchemaValidatorSql;
+import de.ii.xtraplatform.store.domain.entities.Entity;
+import de.ii.xtraplatform.store.domain.entities.Entity.SubType;
 import de.ii.xtraplatform.store.domain.entities.EntityRegistry;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
@@ -113,6 +116,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
+@Entity(
+    type = ProviderData.ENTITY_TYPE,
+    subTypes = {
+      @SubType(key = ProviderData.PROVIDER_TYPE_KEY, value = FeatureProvider2.PROVIDER_TYPE),
+      @SubType(
+          key = ProviderData.PROVIDER_SUB_TYPE_KEY,
+          value = FeatureProviderSql.PROVIDER_SUB_TYPE,
+          keyAlias = {FeatureProviderDataV2.PROVIDER_SUB_TYPE_KEY_OLD})
+    },
+    data = FeatureProviderSqlData.class)
 public class FeatureProviderSql
     extends AbstractFeatureProvider<SqlRow, SqlQueryBatch, SqlQueryOptions, SchemaSql>
     implements FeatureProvider2,
@@ -125,7 +138,7 @@ public class FeatureProviderSql
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSql.class);
 
   public static final String ENTITY_SUB_TYPE = "feature/sql";
-  public static final String PROVIDER_TYPE = "SQL";
+  public static final String PROVIDER_SUB_TYPE = "SQL";
 
   private final CrsTransformerFactory crsTransformerFactory;
   private final CrsInfo crsInfo;

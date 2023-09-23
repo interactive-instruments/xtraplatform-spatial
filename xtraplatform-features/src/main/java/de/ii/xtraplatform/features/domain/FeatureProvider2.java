@@ -11,13 +11,11 @@ import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
 
 public interface FeatureProvider2 extends PersistentEntity {
 
-  String ENTITY_TYPE = "providers";
-  String PROVIDER_TYPE_KEY = "providerType";
   String PROVIDER_TYPE = "FEATURE";
 
   @Override
   default String getType() {
-    return ENTITY_TYPE;
+    return ProviderData.ENTITY_TYPE;
   }
 
   @Override

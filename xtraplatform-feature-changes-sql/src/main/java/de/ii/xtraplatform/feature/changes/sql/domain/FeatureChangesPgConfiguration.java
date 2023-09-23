@@ -8,12 +8,14 @@
 package de.ii.xtraplatform.feature.changes.sql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.docs.JsonDynamicSubType;
 import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
 import io.dropwizard.util.Duration;
 import java.util.List;
 import org.immutables.value.Value;
 
 /**
+ * @type FEATURE_CHANGES_PG
  * @langAll <code>
  * ```yaml
  * - type: FEATURE_CHANGES_PG
@@ -26,6 +28,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @Value.Style(builder = "new")
+@JsonDynamicSubType(superType = ExtensionConfiguration.class, id = "FEATURE_CHANGES_PG")
 @JsonDeserialize(builder = ImmutableFeatureChangesPgConfiguration.Builder.class)
 public interface FeatureChangesPgConfiguration extends ExtensionConfiguration {
 

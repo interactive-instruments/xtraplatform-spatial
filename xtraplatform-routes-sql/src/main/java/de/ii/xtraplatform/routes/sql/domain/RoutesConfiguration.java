@@ -7,9 +7,11 @@
  */
 package de.ii.xtraplatform.routes.sql.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.docs.DocIgnore;
+import de.ii.xtraplatform.docs.JsonDynamicSubType;
 import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
 import java.util.Map;
 import java.util.Objects;
@@ -17,6 +19,7 @@ import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 /**
+ * @type ROUTES
  * @langAll <code>
  * ```yaml
  * extensions:
@@ -119,6 +122,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @Value.Style(builder = "new")
+@JsonDynamicSubType(superType = ExtensionConfiguration.class, id = "ROUTES")
 @JsonDeserialize(builder = ImmutableRoutesConfiguration.Builder.class)
 public interface RoutesConfiguration extends ExtensionConfiguration {
 
@@ -162,6 +166,7 @@ public interface RoutesConfiguration extends ExtensionConfiguration {
    * @default null
    * @since v3.1
    */
+  @Nullable
   String getRouteQuery();
 
   /**
@@ -193,6 +198,7 @@ public interface RoutesConfiguration extends ExtensionConfiguration {
    * @default CRS84
    * @since v3.1
    */
+  @Nullable
   EpsgCrs getNativeCrs();
 
   /**
@@ -268,6 +274,7 @@ public interface RoutesConfiguration extends ExtensionConfiguration {
   @Nullable
   Boolean getWarmup();
 
+  @JsonIgnore
   @Value.Lazy
   default boolean shouldWarmup() {
     return Objects.equals(getWarmup(), true);

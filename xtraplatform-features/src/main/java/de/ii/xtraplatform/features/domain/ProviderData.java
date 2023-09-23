@@ -15,6 +15,10 @@ import org.immutables.value.Value;
 
 public interface ProviderData extends EntityData {
 
+  String ENTITY_TYPE = "providers";
+  String PROVIDER_TYPE_KEY = "providerType";
+  String PROVIDER_SUB_TYPE_KEY = "providerSubType";
+
   String getProviderType();
 
   @JsonAlias("featureProviderType")
