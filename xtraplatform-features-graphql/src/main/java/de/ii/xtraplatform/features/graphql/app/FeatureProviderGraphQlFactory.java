@@ -16,6 +16,7 @@ import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
+import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
 import de.ii.xtraplatform.features.domain.SchemaReferenceResolver;
@@ -65,7 +66,7 @@ public class FeatureProviderGraphQlFactory
 
   @Override
   public String type() {
-    return FeatureProviderGraphQl.ENTITY_TYPE;
+    return ProviderData.ENTITY_TYPE;
   }
 
   @Override
@@ -86,6 +87,11 @@ public class FeatureProviderGraphQlFactory
   @Override
   public EntityDataBuilder<? extends EntityData> superDataBuilder() {
     return new ImmutableProviderCommonData.Builder();
+  }
+
+  @Override
+  public EntityDataBuilder<? extends EntityData> emptyDataBuilder() {
+    return new ImmutableFeatureProviderGraphQlData.Builder();
   }
 
   @Override
