@@ -174,7 +174,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     return objectSchema;
   }
 
-  private T deriveValueSchema(FeatureSchema schema) {
+  protected T deriveValueSchema(FeatureSchema schema) {
     if (schema.getTransformations().stream()
         .anyMatch(t -> t.getRemove().map(v -> ALWAYS.name().equals(v)).isPresent())) {
       return null;
@@ -195,7 +195,13 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     Optional<String> refUriTemplate =
         schema
             .getRefUriTemplate()
-            .map(template -> StringTemplateFilters.applyTemplate(template, "{featureId}"));
+            // via temporary value to avoid URL-encoding side effects
+            .map(
+                template ->
+                    StringTemplateFilters.applyTemplate(
+                            template, Map.of("value", "__featureId__", "apiUri", "__apiUri__")::get)
+                        .replace("__apiUri__", "{apiUri}")
+                        .replace("__featureId__", "{featureId}"));
 
     switch (propertyType) {
       case VALUE:

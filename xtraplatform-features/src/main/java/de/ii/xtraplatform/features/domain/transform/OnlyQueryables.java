@@ -11,6 +11,8 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
+import de.ii.xtraplatform.features.domain.SchemaBase;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
@@ -79,13 +81,44 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
         visitedProperties.stream()
             .filter(Objects::nonNull)
             .map(
-                featureSchema ->
+                property ->
                     new SimpleImmutableEntry<>(
-                        featureSchema.getFullPathAsString(pathSeparator), featureSchema))
+                        property.getFullPathAsString(pathSeparator), property))
             .collect(
                 ImmutableMap.toImmutableMap(
                     Entry::getKey, Entry::getValue, (first, second) -> second));
 
-    return new Builder().from(schema2).propertyMap(visitedPropertiesMap).concat(List.of()).build();
+    return new Builder()
+        .from(adjustType(parents, schema2))
+        .propertyMap(visitedPropertiesMap)
+        .concat(List.of())
+        .build();
+  }
+
+  private FeatureSchema adjustType(List<FeatureSchema> parents, FeatureSchema property) {
+    if (!property.queryable()) {
+      // not a queryable, we have an object that has embedded queryables
+      return property;
+    }
+
+    if (parents.stream().noneMatch(SchemaBase::isArray)) {
+      // nothing to do, the property is not embedded in an array
+      return property;
+    }
+
+    if (property.isArray()) {
+      // nothing to do, already an array
+      return property;
+    }
+
+    if (Objects.requireNonNull(property.getType()) == Type.FEATURE_REF) {
+      return new Builder().from(property).type(Type.FEATURE_REF_ARRAY).build();
+    }
+
+    return new ImmutableFeatureSchema.Builder()
+        .from(property)
+        .type(Type.VALUE_ARRAY)
+        .valueType(property.getType())
+        .build();
   }
 }
