@@ -56,9 +56,9 @@ class QuerySchemaDeriverSpec extends Specification {
         "nested joins"                               | FeatureSchemaFixtures.NESTED_JOINS                        || QuerySchemaFixtures.NESTED_JOINS
         "nested value array"                         | FeatureSchemaFixtures.NESTED_VALUE_ARRAY                  || QuerySchemaFixtures.NESTED_VALUE_ARRAY
         "simple connector"                           | FeatureSchemaFixtures.CONNECTOR_SIMPLE                    || QuerySchemaFixtures.CONNECTOR
-        "merge connector"                            | FeatureSchemaFixtures.CONNECTOR_MERGE                     || QuerySchemaFixtures.CONNECTOR
-        "object connector"                           | FeatureSchemaFixtures.CONNECTOR_OBJECT                    || QuerySchemaFixtures.CONNECTOR
-        "merge object connector"                     | FeatureSchemaFixtures.CONNECTOR_MERGE_OBJECT              || QuerySchemaFixtures.CONNECTOR
+        "merge connector"                            | FeatureSchemaFixtures.CONNECTOR_MERGE                     || QuerySchemaFixtures.CONNECTOR_MERGE
+        "object connector"                           | FeatureSchemaFixtures.CONNECTOR_OBJECT                    || QuerySchemaFixtures.CONNECTOR_OBJECT
+        "merge object connector"                     | FeatureSchemaFixtures.CONNECTOR_MERGE_OBJECT              || QuerySchemaFixtures.CONNECTOR_MERGE_OBJECT
     }
 
 

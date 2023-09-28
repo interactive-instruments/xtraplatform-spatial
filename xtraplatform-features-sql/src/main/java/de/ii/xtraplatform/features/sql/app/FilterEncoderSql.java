@@ -50,7 +50,9 @@ import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.sql.domain.SqlRelation;
 import java.time.Instant;
@@ -193,6 +195,11 @@ public class FilterEncoderSql {
         return rootSchema.getAllObjects().stream()
             .filter(getPropertyNameMatcher(propertyName, true))
             .findFirst()
+            .or(
+                () ->
+                    rootSchema.getAllObjects().stream()
+                        .filter(table -> getPropertyFromSubDecoder(table, propertyName).isPresent())
+                        .findFirst())
             .or(() -> allowColumnFallback ? Optional.of(rootSchema) : Optional.empty())
             .orElseThrow(
                 () ->
@@ -205,6 +212,11 @@ public class FilterEncoderSql {
                   obj.getProperties().stream()
                       .anyMatch(getPropertyNameMatcher(propertyName, false)))
           .findFirst()
+          .or(
+              () ->
+                  rootSchema.getAllObjects().stream()
+                      .filter(table -> getPropertyFromSubDecoder(table, propertyName).isPresent())
+                      .findFirst())
           .or(() -> allowColumnFallback ? Optional.of(rootSchema) : Optional.empty())
           .orElseThrow(
               () ->
@@ -212,41 +224,75 @@ public class FilterEncoderSql {
                       String.format("Filter is invalid. Unknown property: %s", propertyName)));
     }
 
-    protected String getQualifiedColumn(
+    protected Tuple<String, Optional<String>> getQualifiedColumn(
         SchemaSql table, String propertyName, String alias, boolean allowColumnFallback) {
       // TODO: support nested mapping filters
       if (Objects.equals(table.getParentPath(), ImmutableList.of("_route_"))
           && propertyName.equals("node")) {
-        return "_route_" + propertyName;
+        return Tuple.of("_route_" + propertyName, Optional.<String>empty());
       }
       if (Objects.equals(table.getParentPath(), ImmutableList.of("_route_"))
           && propertyName.equals("source")) {
-        return String.format("%s.%s", alias, propertyName);
+        return Tuple.of(String.format("%s.%s", alias, propertyName), Optional.<String>empty());
       }
       return table.getProperties().stream()
           .filter(getPropertyNameMatcher(propertyName, false))
           .findFirst()
           .map(
               column -> {
+                if (column.getSubDecoder().isPresent()) {
+                  return Tuple.of(
+                      mapToSubDecoder(alias, column, propertyName), column.getSubDecoder());
+                }
                 String qualifiedColumn = String.format("%s.%s", alias, column.getName());
                 if (column.isTemporal()) {
-                  if (column.getType() == DATE) return sqlDialect.applyToDate(qualifiedColumn);
-                  return sqlDialect.applyToDatetime(qualifiedColumn);
+                  if (column.getType() == DATE)
+                    return Tuple.of(
+                        sqlDialect.applyToDate(qualifiedColumn), Optional.<String>empty());
+                  return Tuple.of(
+                      sqlDialect.applyToDatetime(qualifiedColumn), Optional.<String>empty());
                 }
-                return qualifiedColumn;
+                return Tuple.of(qualifiedColumn, Optional.<String>empty());
+              })
+          .or(
+              () -> {
+                Optional<SchemaSql> column = getPropertyFromSubDecoder(table, propertyName);
+                return column.map(
+                    c -> Tuple.of(mapToSubDecoder(alias, c, propertyName), c.getSubDecoder()));
               })
           .or(
               () ->
                   allowColumnFallback
                       ? Optional.of(
-                          String.format(
-                              "%s.%s",
-                              alias, propertyName.substring(propertyName.lastIndexOf(".") + 1)))
+                          Tuple.of(
+                              String.format(
+                                  "%s.%s",
+                                  alias, propertyName.substring(propertyName.lastIndexOf(".") + 1)),
+                              Optional.<String>empty()))
                       : Optional.empty())
           .orElseThrow(
               () ->
                   new IllegalArgumentException(
                       String.format("Filter is invalid. Unknown property: %s", propertyName)));
+    }
+
+    private Optional<SchemaSql> getPropertyFromSubDecoder(SchemaSql schema, String propertyName) {
+      return schema.getProperties().stream()
+          .filter(p -> p.getSubDecoderPaths().containsKey(propertyName))
+          .findFirst();
+    }
+
+    private String mapToSubDecoder(String alias, SchemaSql column, String propertyName) {
+      if (column.getSubDecoder().filter("JSON"::equals).isPresent()) {
+        PropertyTypeInfo typeInfo = column.getSubDecoderTypes().get(propertyName);
+        return sqlDialect.applyToJsonValue(
+            alias, column.getName(), column.getSubDecoderPaths().get(propertyName), typeInfo);
+      }
+
+      throw new IllegalStateException(
+          String.format(
+              "Unknown Sub-Decoder '%s' in source path '%s' for property '%s'.",
+              column.getSubDecoder(), column.getFullPathAsString(), propertyName));
     }
 
     @Override
@@ -261,7 +307,8 @@ public class FilterEncoderSql {
       List<String> aliases = AliasGenerator.getAliases(parents, table, 1);
       String qualifiedColumn =
           getQualifiedColumn(
-              table, propertyName, aliases.get(aliases.size() - 1), allowColumnFallback);
+                  table, propertyName, aliases.get(aliases.size() - 1), allowColumnFallback)
+              .first();
 
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace("PROP {} {}", table.getName(), qualifiedColumn);
@@ -933,45 +980,74 @@ public class FilterEncoderSql {
       String propertyName = ((Property) arrayOperation.getArgs().get(notInverse ? 0 : 1)).getName();
       SchemaSql table = getTable(propertyName, false, false);
       List<String> aliases = AliasGenerator.getAliases(table, 1);
-      String qualifiedColumn =
+      Tuple<String, Optional<String>> qualifiedColumn =
           getQualifiedColumn(table, propertyName, aliases.get(aliases.size() - 1), false);
 
-      if (notInverse
-          ? arrayOperation.getArrayOperator() == A_CONTAINS
-          : arrayOperation.getArrayOperator() == A_CONTAINEDBY) {
-        String arrayQuery =
-            String.format(
-                " IN %1$s GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s",
-                secondExpression,
-                aliases.get(0),
-                rootSchema.getSortKey().get(),
-                qualifiedColumn,
-                elementCount);
-        return String.format(mainExpression, "", arrayQuery);
-      } else if (arrayOperation.getArrayOperator() == A_EQUALS) {
-        String arrayQuery =
-            String.format(
-                " IS NOT NULL GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s AND count(case when %4$s not in %1$s then %4$s else null end) = 0",
-                secondExpression,
-                aliases.get(0),
-                rootSchema.getSortKey().get(),
-                qualifiedColumn,
-                elementCount);
-        return String.format(mainExpression, "", arrayQuery);
-      } else if (arrayOperation.getArrayOperator() == A_OVERLAPS) {
-        String arrayQuery =
-            String.format(
-                " IN %1$s GROUP BY %2$s.%3$s",
-                secondExpression, aliases.get(0), rootSchema.getSortKey().get());
-        return String.format(mainExpression, "", arrayQuery);
-      } else if (notInverse
-          ? arrayOperation.getArrayOperator() == A_CONTAINEDBY
-          : arrayOperation.getArrayOperator() == A_CONTAINS) {
-        String arrayQuery =
-            String.format(
-                " IS NOT NULL GROUP BY %2$s.%3$s HAVING count(case when %4$s not in %1$s then %4$s else null end) = 0",
-                secondExpression, aliases.get(0), rootSchema.getSortKey().get(), qualifiedColumn);
-        return String.format(mainExpression, "", arrayQuery);
+      if (qualifiedColumn.second().isEmpty()) {
+        if (notInverse
+            ? arrayOperation.getArrayOperator() == A_CONTAINS
+            : arrayOperation.getArrayOperator() == A_CONTAINEDBY) {
+          String arrayQuery =
+              String.format(
+                  " IN %1$s GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s",
+                  secondExpression,
+                  aliases.get(0),
+                  rootSchema.getSortKey().get(),
+                  qualifiedColumn.first(),
+                  elementCount);
+          return String.format(mainExpression, "", arrayQuery);
+        } else if (arrayOperation.getArrayOperator() == A_EQUALS) {
+          String arrayQuery =
+              String.format(
+                  " IS NOT NULL GROUP BY %2$s.%3$s HAVING count(distinct %4$s) = %5$s AND count(case when %4$s not in %1$s then %4$s else null end) = 0",
+                  secondExpression,
+                  aliases.get(0),
+                  rootSchema.getSortKey().get(),
+                  qualifiedColumn.first(),
+                  elementCount);
+          return String.format(mainExpression, "", arrayQuery);
+        } else if (arrayOperation.getArrayOperator() == A_OVERLAPS) {
+          String arrayQuery =
+              String.format(
+                  " IN %1$s GROUP BY %2$s.%3$s",
+                  secondExpression, aliases.get(0), rootSchema.getSortKey().get());
+          return String.format(mainExpression, "", arrayQuery);
+        } else if (notInverse
+            ? arrayOperation.getArrayOperator() == A_CONTAINEDBY
+            : arrayOperation.getArrayOperator() == A_CONTAINS) {
+          String arrayQuery =
+              String.format(
+                  " IS NOT NULL GROUP BY %2$s.%3$s HAVING count(case when %4$s not in %1$s then %4$s else null end) = 0",
+                  secondExpression,
+                  aliases.get(0),
+                  rootSchema.getSortKey().get(),
+                  qualifiedColumn.first());
+          return String.format(mainExpression, "", arrayQuery);
+        }
+      } else {
+        if (qualifiedColumn.second().filter("JSON"::equals).isPresent()) {
+          String jsonValueArray =
+              secondExpression.replaceAll("'", "\"").replace('(', '[').replace(')', ']');
+          if (notInverse
+              ? arrayOperation.getArrayOperator() == A_CONTAINS
+              : arrayOperation.getArrayOperator() == A_CONTAINEDBY) {
+            String arrayQuery = String.format(" @> '%s'", jsonValueArray);
+            return String.format(mainExpression, "", arrayQuery);
+          } else if (arrayOperation.getArrayOperator() == A_EQUALS) {
+            String arrayQuery = String.format(" = '%s'", jsonValueArray);
+            return String.format(mainExpression, "", arrayQuery);
+          } else if (arrayOperation.getArrayOperator() == A_OVERLAPS) {
+            // TODO: can we express a_overlaps
+            throw new IllegalArgumentException("A_OVERLAPS is not supported in JSON columns.");
+          } else if (notInverse
+              ? arrayOperation.getArrayOperator() == A_CONTAINEDBY
+              : arrayOperation.getArrayOperator() == A_CONTAINS) {
+            String arrayQuery = String.format(" <@ '%s'", jsonValueArray);
+            return String.format(mainExpression, "", arrayQuery);
+          }
+        } else {
+          throw new IllegalStateException("unexpected connector: " + qualifiedColumn.second());
+        }
       }
       throw new IllegalStateException("unexpected array operator: " + arrayOperation);
     }
@@ -1082,7 +1158,8 @@ public class FilterEncoderSql {
               ? aliases.get(allowedColumnPrefixes.indexOf(prefix))
               : aliases.get(aliases.size() - 1);
       String qualifiedColumn =
-          getQualifiedColumn(schema, propertyName, alias, !isUserFilter && allowColumnFallback);
+          getQualifiedColumn(schema, propertyName, alias, !isUserFilter && allowColumnFallback)
+              .first();
 
       // TODO: support nested mapping filters
       if (qualifiedColumn.startsWith("_route_")) {

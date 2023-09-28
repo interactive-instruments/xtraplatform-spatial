@@ -13,6 +13,7 @@ import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,6 +27,10 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
   List<SqlRelation> getRelation();
 
   Optional<String> getSubDecoder();
+
+  Map<String, String> getSubDecoderPaths();
+
+  Map<String, PropertyTypeInfo> getSubDecoderTypes();
 
   Optional<String> getPrimaryKey();
 
@@ -169,5 +174,22 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
               return Stream.concat(Stream.of(current), current.getAllNestedProperties().stream());
             })
         .collect(Collectors.toList());
+  }
+
+  @Value.Immutable
+  interface PropertyTypeInfo {
+
+    static PropertyTypeInfo of(Type t, Optional<Type> vt, boolean inArray) {
+      return new ImmutablePropertyTypeInfo.Builder().type(t).valueType(vt).inArray(inArray).build();
+    }
+
+    Type getType();
+
+    Optional<Type> getValueType();
+
+    @Value.Default
+    default boolean getInArray() {
+      return false;
+    }
   }
 }

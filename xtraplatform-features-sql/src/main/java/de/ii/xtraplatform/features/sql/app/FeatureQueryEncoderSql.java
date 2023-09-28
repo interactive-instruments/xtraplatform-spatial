@@ -19,6 +19,8 @@ import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCapabilities;
 import de.ii.xtraplatform.features.domain.ImmutableSortKey;
 import de.ii.xtraplatform.features.domain.MultiFeatureQuery;
 import de.ii.xtraplatform.features.domain.Query;
+import de.ii.xtraplatform.features.domain.SchemaBase;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.domain.TypeQuery;
@@ -27,6 +29,8 @@ import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQuerySet.Builder;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
+import de.ii.xtraplatform.features.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlQuerySet;
@@ -52,15 +56,18 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
   private final Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations;
   private final int chunkSize;
   private final boolean skipRedundantMetaQueries;
+  private final SqlDialect sqlDialect;
 
   FeatureQueryEncoderSql(
       Map<String, List<SqlQueryTemplates>> allQueryTemplates,
       Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations,
-      QueryGeneratorSettings queryGeneratorSettings) {
+      QueryGeneratorSettings queryGeneratorSettings,
+      SqlDialect sqlDialect) {
     this.allQueryTemplates = allQueryTemplates;
     this.allQueryTemplatesMutations = allQueryTemplatesMutations;
     this.chunkSize = queryGeneratorSettings.getChunkSize();
     this.skipRedundantMetaQueries = !queryGeneratorSettings.getComputeNumberMatched();
+    this.sqlDialect = sqlDialect;
   }
 
   // TODO: add cql2 classes
@@ -251,9 +258,28 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
                       .filter(propertyMatches)
                       .filter(attribute -> !attribute.isSpatial() && !attribute.isConstant())
                       .findFirst()
-                      .map(SchemaSql::getName);
+                      .map(SchemaBase::getName)
+                      .or(
+                          // also check for sortables in a JSON column
+                          () ->
+                              mainTable.getProperties().stream()
+                                  .filter(
+                                      p ->
+                                          (p.getSubDecoder().filter("JSON"::equals).isPresent()
+                                              && p.getSubDecoderTypes()
+                                                  .containsKey(sortKey.getField())
+                                              && typeIsSortable(
+                                                  p.getSubDecoderTypes().get(sortKey.getField()))))
+                                  .findFirst()
+                                  .map(
+                                      p -> {
+                                        PropertyTypeInfo typeInfo =
+                                            p.getSubDecoderTypes().get(sortKey.getField());
+                                        return sqlDialect.applyToJsonValue(
+                                            "", p.getName(), sortKey.getField(), typeInfo);
+                                      }));
 
-              if (!column.isPresent()) {
+              if (column.isEmpty()) {
                 throw new IllegalArgumentException(
                     String.format(
                         "Sort key is invalid, property '%s' is either unknown or inapplicable.",
@@ -263,5 +289,16 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
               return ImmutableSortKey.builder().from(sortKey).field(column.get()).build();
             })
         .collect(ImmutableList.toImmutableList());
+  }
+
+  private boolean typeIsSortable(PropertyTypeInfo typeInfo) {
+    if (typeInfo.getInArray()) {
+      return false;
+    }
+    Type t = typeInfo.getType();
+    if (typeInfo.getType() == Type.VALUE) {
+      t = typeInfo.getValueType().orElse(Type.STRING);
+    }
+    return t == Type.STRING || t == Type.INTEGER || t == Type.FLOAT || t == Type.FEATURE_REF;
   }
 }

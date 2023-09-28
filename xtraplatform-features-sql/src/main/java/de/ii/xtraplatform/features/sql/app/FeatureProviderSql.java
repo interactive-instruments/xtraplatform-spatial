@@ -289,7 +289,10 @@ public class FeatureProviderSql
 
     this.queryTransformer =
         new FeatureQueryEncoderSql(
-            allQueryTemplates, allQueryTemplatesMutations, getData().getQueryGeneration());
+            allQueryTemplates,
+            allQueryTemplatesMutations,
+            getData().getQueryGeneration(),
+            sqlDialect);
 
     this.aggregateStatsReader =
         new AggregateStatsReaderSql(

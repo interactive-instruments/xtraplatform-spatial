@@ -9,11 +9,13 @@ package de.ii.xtraplatform.features.sql.domain;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import de.ii.xtraplatform.cql.domain.ArrayOperator;
 import de.ii.xtraplatform.cql.domain.SpatialOperator;
 import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +43,14 @@ public interface SqlDialect {
   String applyToInstantMax();
 
   String applyToDiameter(String geomExpression, boolean is3d);
+
+  String applyToJsonValue(String alias, String column, String path, PropertyTypeInfo typeInfo);
+
+  default String applyToJsonArrayOp(
+      ArrayOperator op, boolean notInverse, String mainExpression, String jsonValueArray) {
+    throw new IllegalArgumentException(
+        "Arrays as queryables are not supported for this feature provider.");
+  }
 
   String castToBigInt(int value);
 

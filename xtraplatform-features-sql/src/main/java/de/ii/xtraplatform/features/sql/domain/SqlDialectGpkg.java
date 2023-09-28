@@ -12,6 +12,8 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -117,6 +119,60 @@ public class SqlDialectGpkg implements SqlDialect {
   public String applyToDiameter(String geomExpression, boolean is3d) {
     throw new IllegalArgumentException(
         "DIAMETER2D()/DIAMETER3D() is not supported for GeoPackage feature providers.");
+  }
+
+  @Override
+  public String applyToJsonValue(
+      String alias, String column, String path, PropertyTypeInfo typeInfo) {
+
+    if (typeInfo.getInArray()) {
+      throw new IllegalArgumentException(
+          "Queryables that are values in an array are not supported for GeoPackage feature providers.");
+    }
+
+    String cast = "";
+    if (Objects.nonNull(typeInfo.getType())) {
+      switch (typeInfo.getType()) {
+        case STRING:
+        case FLOAT:
+        case INTEGER:
+        case BOOLEAN:
+          cast = getCast(typeInfo.getType());
+          break;
+        case VALUE:
+        case FEATURE_REF:
+          cast = typeInfo.getValueType().map(this::getCast).orElse(getCast(Type.STRING));
+          break;
+        case VALUE_ARRAY:
+        case FEATURE_REF_ARRAY:
+          throw new IllegalArgumentException(
+              "Arrays as queryables are not supported for GeoPackage feature providers.");
+      }
+    }
+
+    if (Objects.isNull(path)) {
+      if (cast.isEmpty()) {
+        return String.format("%s.%s", alias, column);
+      }
+      return String.format("cast(%s.%s as %s)", alias, column, cast);
+    }
+    if (cast.isEmpty()) {
+      return String.format("%s.%s ->> '$.%s'", alias, column, path);
+    }
+    return String.format("cast((%s.%s ->> '$.%s') as %s)", alias, column, path, cast);
+  }
+
+  private String getCast(Type valueType) {
+    switch (valueType) {
+      case FLOAT:
+        return "real";
+      case INTEGER:
+      case BOOLEAN:
+        return "integer";
+      default:
+      case STRING:
+        return "text";
+    }
   }
 
   @Override

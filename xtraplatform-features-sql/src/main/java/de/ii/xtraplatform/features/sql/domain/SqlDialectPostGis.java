@@ -7,13 +7,21 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINEDBY;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINS;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_EQUALS;
+import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_OVERLAPS;
+
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.cql.domain.ArrayOperator;
 import de.ii.xtraplatform.cql.domain.SpatialOperator;
 import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -177,6 +185,83 @@ public class SqlDialectPostGis implements SqlDialect {
     }
     return String.format(
         "ST_Length(ST_BoundingDiagonal(Box2D(ST_Transform(%s,3857))))", geomExpression);
+  }
+
+  @Override
+  public String applyToJsonValue(
+      String alias, String column, String path, PropertyTypeInfo typeInfo) {
+
+    if (typeInfo.getInArray()) {
+      return String.format("jsonb_path_query_array(%s.%s::jsonb,'$.%s')", alias, column, path);
+    }
+
+    String cast = "";
+    if (Objects.nonNull(typeInfo.getType())) {
+      switch (typeInfo.getType()) {
+        case STRING:
+        case FLOAT:
+        case INTEGER:
+        case BOOLEAN:
+          cast = getCast(typeInfo.getType());
+          break;
+        case VALUE:
+        case FEATURE_REF:
+        case VALUE_ARRAY:
+        case FEATURE_REF_ARRAY:
+          cast = typeInfo.getValueType().map(this::getCast).orElse(getCast(Type.STRING));
+          break;
+      }
+    }
+
+    String finalAlias = alias.isEmpty() ? alias : String.format("%s.", alias);
+    if (typeInfo.getType() == Type.VALUE_ARRAY || typeInfo.getType() == Type.FEATURE_REF_ARRAY) {
+      if (Objects.isNull(path)) {
+        return String.format("%s.%s::jsonb", alias, column);
+      } else if (path.contains(".")) {
+        return String.format("(%s%s #> '{%s}')", finalAlias, column, path.replaceAll("\\.", ","));
+      }
+      return String.format("(%s%s -> '%s')", finalAlias, column, path);
+    }
+
+    if (Objects.isNull(path)) {
+      return String.format("%s%s%s", finalAlias, column, cast);
+    } else if (path.contains(".")) {
+      return String.format(
+          "(%s%s #>> '{%s}')%s", finalAlias, column, path.replaceAll("\\.", ","), cast);
+    }
+    return String.format("(%s%s ->> '%s')%s", finalAlias, column, path, cast);
+  }
+
+  private String getCast(Type valueType) {
+    switch (valueType) {
+      case FLOAT:
+        return "::double";
+      case INTEGER:
+        return "::integer";
+      case BOOLEAN:
+        return "::boolean";
+      default:
+      case STRING:
+        return "::varchar";
+    }
+  }
+
+  @Override
+  public String applyToJsonArrayOp(
+      ArrayOperator op, boolean notInverse, String mainExpression, String jsonValueArray) {
+    if (notInverse ? op == A_CONTAINS : op == A_CONTAINEDBY) {
+      String arrayQuery = String.format(" @> '%s'", jsonValueArray);
+      return String.format(mainExpression, "", arrayQuery);
+    } else if (op == A_EQUALS) {
+      String arrayQuery = String.format(" = '%s'", jsonValueArray);
+      return String.format(mainExpression, "", arrayQuery);
+    } else if (op == A_OVERLAPS) {
+      throw new IllegalArgumentException("A_OVERLAPS is not supported in JSON columns.");
+    } else if (notInverse ? op == A_CONTAINEDBY : op == A_CONTAINS) {
+      String arrayQuery = String.format(" <@ '%s'", jsonValueArray);
+      return String.format(mainExpression, "", arrayQuery);
+    }
+    throw new IllegalStateException("unexpected array operator: " + op);
   }
 
   @Override

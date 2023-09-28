@@ -19,9 +19,11 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
   @Override
   default List<T> visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<List<T>> visitedProperties) {
-    List<U> currentPaths = parseSourcePaths(schema);
-
     List<List<U>> parentPaths1 = getParentPaths(parents);
+
+    List<U> currentPaths = parseSourcePaths(schema, parentPaths1);
+
+    boolean nestedArray = parents.stream().anyMatch(SchemaBase::isArray);
 
     List<T> properties =
         visitedProperties.stream().flatMap(Collection::stream).collect(Collectors.toList());
@@ -47,7 +49,8 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
                                                 || Objects.equals(prop.getParentPath(), fullPath))
                                     .collect(Collectors.toList());
 
-                            return create(schema, currentPath, matchingProperties, parentPath);
+                            return create(
+                                schema, currentPath, matchingProperties, parentPath, nestedArray);
                           }))
           .collect(Collectors.toList());
     }
@@ -80,7 +83,7 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
   }
 
   default List<List<U>> getParentPaths(FeatureSchema current, List<List<U>> parents) {
-    List<U> children = parseSourcePaths(current);
+    List<U> children = parseSourcePaths(current, parents);
 
     if (parents.isEmpty()) {
       return children.stream().map(List::of).collect(Collectors.toList());
@@ -101,9 +104,14 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
         .collect(Collectors.toList());
   }
 
-  List<U> parseSourcePaths(FeatureSchema sourceSchema);
+  List<U> parseSourcePaths(FeatureSchema sourceSchema, List<List<U>> parents);
 
-  T create(FeatureSchema targetSchema, U path, List<T> visitedProperties, List<U> parentPaths);
+  T create(
+      FeatureSchema targetSchema,
+      U path,
+      List<T> visitedProperties,
+      List<U> parentPaths,
+      boolean nestedArray);
 
   List<T> merge(FeatureSchema targetSchema, List<String> parentPath, List<T> visitedProperties);
 }
