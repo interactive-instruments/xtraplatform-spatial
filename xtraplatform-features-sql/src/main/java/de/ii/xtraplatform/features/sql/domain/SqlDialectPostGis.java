@@ -256,7 +256,6 @@ public class SqlDialectPostGis implements SqlDialect {
       String arrayQuery = String.format(" = '%s'", jsonValueArray);
       return String.format(mainExpression, "", arrayQuery);
     } else if (op == A_OVERLAPS) {
-      // TODO: can we express a_overlaps?
       throw new IllegalArgumentException("A_OVERLAPS is not supported in JSON columns.");
     } else if (notInverse ? op == A_CONTAINEDBY : op == A_CONTAINS) {
       String arrayQuery = String.format(" <@ '%s'", jsonValueArray);
