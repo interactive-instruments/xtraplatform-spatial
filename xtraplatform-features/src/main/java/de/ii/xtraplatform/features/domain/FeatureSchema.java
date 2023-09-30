@@ -127,7 +127,7 @@ public interface FeatureSchema
   @JsonProperty("type")
   Type getDesiredType();
 
-  @Value.Default
+  @Value.Derived
   @JsonIgnore
   @Override
   default Type getType() {
@@ -380,6 +380,14 @@ public interface FeatureSchema
   abstract class Builder
       extends PropertiesSchema.Builder<FeatureSchema, ImmutableFeatureSchema.Builder, FeatureSchema>
       implements PropertiesSchema.BuilderWithName<FeatureSchema, ImmutableFeatureSchema.Builder> {
+
+    public abstract ImmutableFeatureSchema.Builder desiredType(
+        @Nullable SchemaBase.Type desiredType);
+
+    @JsonIgnore
+    public ImmutableFeatureSchema.Builder type(SchemaBase.Type type) {
+      return desiredType(type);
+    }
 
     @JsonIgnore
     public abstract ImmutableFeatureSchema.Builder concat(
