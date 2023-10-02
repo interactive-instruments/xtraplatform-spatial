@@ -131,7 +131,7 @@ public interface CodelistData extends EntityData {
    * @langDe `TEMPLATES` für alle manuell erstellte Codelisten.
    * @default TEMPLATES
    */
-  ImportType getSourceType();
+  Optional<ImportType> getSourceType();
 
   @DocIgnore
   Optional<String> getSourceUrl();
