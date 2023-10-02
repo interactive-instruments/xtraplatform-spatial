@@ -43,7 +43,8 @@ public interface FeaturePropertyTransformerCodelist extends FeaturePropertyValue
     Codelist cl = getCodelists().get(getParameter());
     String resolvedValue = cl.getValue(input);
 
-    if (cl.getData().getSourceType() == ImportType.TEMPLATES) {
+    if (cl.getData().getSourceType().isEmpty()
+        || cl.getData().getSourceType().get() == ImportType.TEMPLATES) {
       resolvedValue =
           StringTemplateFilters.applyFilterMarkdown(
               StringTemplateFilters.applyTemplate(resolvedValue, input));
