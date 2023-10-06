@@ -9,9 +9,9 @@ package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocIgnore;
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
+import de.ii.xtraplatform.entities.domain.maptobuilder.Buildable;
+import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableBuilder;
+import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableMap;
 import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;

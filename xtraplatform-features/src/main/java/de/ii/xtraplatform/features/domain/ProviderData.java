@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.ii.xtraplatform.store.domain.entities.EntityData;
+import de.ii.xtraplatform.entities.domain.EntityData;
 import java.util.Optional;
 import org.immutables.value.Value;
 

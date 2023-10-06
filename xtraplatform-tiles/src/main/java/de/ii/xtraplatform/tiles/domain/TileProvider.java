@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import de.ii.xtraplatform.crs.domain.BoundingBox;
-import de.ii.xtraplatform.store.domain.entities.PersistentEntity;
+import de.ii.xtraplatform.entities.domain.PersistentEntity;
 import java.util.Optional;
 
 public interface TileProvider extends PersistentEntity {

@@ -8,8 +8,8 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.base.Joiner;
+import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableBuilder;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

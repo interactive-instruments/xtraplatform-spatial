@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
+import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableMap;
 
 public interface WithTmsLevelsMergeable extends WithTmsLevels {
   @Override

@@ -8,10 +8,10 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import de.ii.xtraplatform.entities.domain.maptobuilder.Buildable;
+import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableBuilder;
+import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableMap;
 import de.ii.xtraplatform.features.domain.PropertiesSchema.BuilderWithName;
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.Buildable;
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableBuilder;
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.BuildableMap;
 import java.util.Map;
 
 public interface PropertiesSchema<
