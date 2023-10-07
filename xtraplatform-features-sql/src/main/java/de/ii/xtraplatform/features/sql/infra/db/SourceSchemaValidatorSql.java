@@ -9,13 +9,13 @@ package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.entities.domain.ImmutableValidationResult;
+import de.ii.xtraplatform.entities.domain.ValidationResult;
+import de.ii.xtraplatform.entities.domain.ValidationResult.MODE;
 import de.ii.xtraplatform.features.domain.SourceSchemaValidator;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlRelation;
-import de.ii.xtraplatform.store.domain.entities.ImmutableValidationResult;
-import de.ii.xtraplatform.store.domain.entities.ValidationResult;
-import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;

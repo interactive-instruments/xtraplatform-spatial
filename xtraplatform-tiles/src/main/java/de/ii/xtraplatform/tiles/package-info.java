@@ -13,5 +13,5 @@
 package de.ii.xtraplatform.tiles;
 
 import de.ii.xtraplatform.docs.DocIgnore;
-import de.ii.xtraplatform.store.domain.entities.maptobuilder.encoding.BuildableMapEncodingEnabled;
+import de.ii.xtraplatform.entities.domain.maptobuilder.encoding.BuildableMapEncodingEnabled;
 import org.immutables.value.Value;

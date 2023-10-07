@@ -7,8 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import de.ii.xtraplatform.store.domain.entities.ValidationResult;
-import de.ii.xtraplatform.store.domain.entities.ValidationResult.MODE;
+import de.ii.xtraplatform.entities.domain.ValidationResult;
+import de.ii.xtraplatform.entities.domain.ValidationResult.MODE;
 import java.util.List;
 
 public interface SourceSchemaValidator<T extends SchemaBase<T>> {

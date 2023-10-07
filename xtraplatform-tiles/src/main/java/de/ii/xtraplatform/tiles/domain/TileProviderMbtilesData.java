@@ -17,8 +17,8 @@ import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
 import de.ii.xtraplatform.docs.DocVar;
-import de.ii.xtraplatform.store.domain.entities.EntityDataBuilder;
-import de.ii.xtraplatform.store.domain.entities.EntityDataDefaults;
+import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
+import de.ii.xtraplatform.entities.domain.EntityDataDefaults;
 import java.util.Map;
 import org.immutables.value.Value;
 

@@ -5,7 +5,7 @@ import de.ii.xtraplatform.features.domain.*
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 import de.ii.xtraplatform.schemas.ext.domain.ImmutableJsonSchemaConfiguration
-import de.ii.xtraplatform.store.domain.BlobStore
+import de.ii.xtraplatform.blobs.domain.BlobStore
 import spock.lang.Shared
 import spock.lang.Specification
 

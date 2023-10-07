@@ -8,8 +8,8 @@
 package de.ii.xtraplatform.tiles.app;
 
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.entities.domain.AbstractPersistentEntity;
 import de.ii.xtraplatform.services.domain.AbstractService;
-import de.ii.xtraplatform.store.domain.entities.AbstractPersistentEntity;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
