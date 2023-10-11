@@ -13,7 +13,7 @@ dependencies {
     embeddedFlat 'net.jimblackler.jsonschemafriend:core:0.12.2'
     embeddedFlat 'com.damnhandy:handy-uri-templates:2.1.8'
     embedded 'org.jruby.joni:joni:2.1.41'
-    embedded 'org.jsoup:jsoup:1.14.2'
+    embedded 'org.jsoup:jsoup:1.16.1'
 
     testImplementation(testFixtures(project(":xtraplatform-features")))
     testImplementation project(':xtraplatform-crs')
