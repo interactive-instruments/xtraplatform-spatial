@@ -10,9 +10,10 @@ dependencies {
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-geometries')
 
-    embeddedFlat 'net.jimblackler.jsonschemafriend:core:0.11.4'
+    embeddedFlat 'net.jimblackler.jsonschemafriend:core:0.12.2'
     embeddedFlat 'com.damnhandy:handy-uri-templates:2.1.8'
     embedded 'org.jruby.joni:joni:2.1.41'
+    embedded 'org.jsoup:jsoup:1.14.2'
 
     testImplementation(testFixtures(project(":xtraplatform-features")))
     testImplementation project(':xtraplatform-crs')
