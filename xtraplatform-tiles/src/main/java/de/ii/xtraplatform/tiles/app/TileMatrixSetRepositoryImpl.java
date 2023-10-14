@@ -80,7 +80,7 @@ public class TileMatrixSetRepositoryImpl implements TileMatrixSetRepository, App
             String tileMatrixSetId = Files.getNameWithoutExtension(path.getFileName().toString());
             try {
               TileMatrixSet.fromInputStream(
-                      customTileMatrixSetsStore.get(path).get(), tileMatrixSetId)
+                      customTileMatrixSetsStore.content(path).get(), tileMatrixSetId)
                   .ifPresent(tms -> tileMatrixSets.put(tileMatrixSetId, tms));
             } catch (IOException e) {
               LOGGER.debug("Tile matrix set '{}' not found: {}", tileMatrixSetId, e.getMessage());

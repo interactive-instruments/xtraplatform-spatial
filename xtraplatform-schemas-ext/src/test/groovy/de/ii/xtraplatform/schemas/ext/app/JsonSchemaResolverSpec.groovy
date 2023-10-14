@@ -31,7 +31,7 @@ class JsonSchemaResolverSpec extends Specification {
     @Shared
     BlobStore schemaStore = Mock {
         has(_) >> { args -> new File("src/test/resources/schemas/${args[0]}").exists() }
-        get(_) >> { args -> Optional.ofNullable(new File("src/test/resources/schemas/${args[0]}").newInputStream()) }
+        content(_) >> { args -> Optional.ofNullable(new File("src/test/resources/schemas/${args[0]}").newInputStream()) }
     }
     @Shared
     BlobStore schemaStore2 = Mock {

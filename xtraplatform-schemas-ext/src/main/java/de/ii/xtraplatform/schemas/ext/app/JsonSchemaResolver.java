@@ -174,7 +174,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
           return Optional.empty();
         }
 
-        try (InputStream inputStream = schemaStore.get(path).get()) {
+        try (InputStream inputStream = schemaStore.content(path).get()) {
           Schema schema = schemaParser.loadSchema(inputStream);
 
           if (Objects.nonNull(schemaUri.getFragment())) {

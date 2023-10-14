@@ -48,7 +48,7 @@ class TileStorePlain implements TileStore {
 
   @Override
   public TileResult get(TileQuery tile) throws IOException {
-    Optional<InputStream> content = blobStore.get(path(tile));
+    Optional<InputStream> content = blobStore.content(path(tile));
 
     if (content.isEmpty()) {
       return TileResult.notFound();
