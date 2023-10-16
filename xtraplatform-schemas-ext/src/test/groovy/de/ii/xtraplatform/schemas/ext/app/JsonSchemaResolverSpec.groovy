@@ -5,7 +5,7 @@ import de.ii.xtraplatform.features.domain.*
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 import de.ii.xtraplatform.schemas.ext.domain.ImmutableJsonSchemaConfiguration
-import de.ii.xtraplatform.blobs.domain.BlobStore
+import de.ii.xtraplatform.blobs.domain.ResourceStore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -29,12 +29,12 @@ class JsonSchemaResolverSpec extends Specification {
     @Shared
     ObjectMapper objectMapper = YamlSerialization.createYamlMapper()
     @Shared
-    BlobStore schemaStore = Mock {
+    ResourceStore schemaStore = Mock {
         has(_) >> { args -> new File("src/test/resources/schemas/${args[0]}").exists() }
         content(_) >> { args -> Optional.ofNullable(new File("src/test/resources/schemas/${args[0]}").newInputStream()) }
     }
     @Shared
-    BlobStore schemaStore2 = Mock {
+    ResourceStore schemaStore2 = Mock {
         with(_) >> schemaStore
     }
     @Shared

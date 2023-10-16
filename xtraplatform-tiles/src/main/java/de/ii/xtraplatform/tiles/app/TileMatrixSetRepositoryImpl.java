@@ -12,7 +12,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import de.ii.xtraplatform.base.domain.AppLifeCycle;
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.blobs.domain.BlobStore;
+import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSet;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
 import java.io.IOException;
@@ -33,12 +33,12 @@ public class TileMatrixSetRepositoryImpl implements TileMatrixSetRepository, App
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileMatrixSetRepositoryImpl.class);
   private static final String STORE_RESOURCE_TYPE = "tile-matrix-sets";
-  private final BlobStore customTileMatrixSetsStore;
+  private final ResourceStore customTileMatrixSetsStore;
   private final Map<String, TileMatrixSet> tileMatrixSets;
 
   /** set data directory */
   @Inject
-  public TileMatrixSetRepositoryImpl(BlobStore blobStore) {
+  public TileMatrixSetRepositoryImpl(ResourceStore blobStore) {
     this.customTileMatrixSetsStore = blobStore.with(STORE_RESOURCE_TYPE);
     this.tileMatrixSets = new HashMap<>();
   }

@@ -1,63 +1,27 @@
 package de.ii.xtraplatform.codelists.app
 
-
-import de.ii.xtraplatform.codelists.domain.CodelistData
-import de.ii.xtraplatform.codelists.domain.ImmutableCodelistData
-import spock.lang.Shared
+import de.ii.xtraplatform.codelists.domain.Codelist
+import de.ii.xtraplatform.codelists.domain.ImmutableCodelist
 import spock.lang.Specification
 
+class CodelistEntitySpec extends Specification {
 
-class CodelistEntitySpec extends Specification{
-
-    @Shared
-    CodelistFactory codelistFactory
-
-    def setupSpec() {
-        codelistFactory = new CodelistFactory(new CodelistFactory.CodelistFactoryAssisted() {
-            @Override
-            CodelistEntity create(CodelistData data) {
-                return new CodelistEntity(data)
-            }
-
-        })
-    }
-
-    def "Test onStarted"(){
-        when:
-        CodelistEntity codeListEntity =  codelistFactory.createInstance( new ImmutableCodelistData.Builder().id("cab").
-                label("Cable Type").sourceType(CodelistData.ImportType.GML_DICTIONARY).build()).get()
-
-        then:
-
-        codeListEntity.onStarted()
-    }
-
-    def "Test onReloaded"(){
-        when:
-
-        CodelistEntity codeListEntity =  codelistFactory.createInstance( new ImmutableCodelistData.Builder().id("cab").
-                label("Cable Type").sourceType(CodelistData.ImportType.GML_DICTIONARY).build()).get()
-
-        then:
-        codeListEntity.onReloaded()
-    }
-
-    def "Test Get Value"(){
+    def "Test Get Value"() {
         when:
 
         Map<String, String> entries = new HashMap<>()
         entries.put(key, value)
 
-        CodelistEntity codeListEntity =  codelistFactory.createInstance( new ImmutableCodelistData.Builder().id("cab").
-                label("Cable Type").putAllEntries(entries).sourceType(CodelistData.ImportType.GML_DICTIONARY).build()).get()
+        Codelist cl = new ImmutableCodelist.Builder().
+                label("Cable Type").putAllEntries(entries).sourceType(Codelist.ImportType.GML_DICTIONARY).build()
 
         then:
 
-        value == codeListEntity.getValue(key)
+        value == cl.getValue(key)
 
         where:
 
-        key        | value
+        key       | value
         "-999999" | "No Information"
         "10"      | "No Tethering"
         "11"      | "Load Bearing"
@@ -80,31 +44,14 @@ class CodelistEntitySpec extends Specification{
         entries.put("15", "Towing")
         entries.put("19", "Cableway")
 
-        CodelistEntity codeListEntity = codelistFactory.createInstance(new ImmutableCodelistData.Builder().id("cab").
-                label("Cable Type").putAllEntries(entries).sourceType(CodelistData.ImportType.GML_DICTIONARY).build()).get()
+        Codelist cl = new ImmutableCodelist.Builder().
+                label("Cable Type").putAllEntries(entries).sourceType(Codelist.ImportType.GML_DICTIONARY).build()
 
         then:
 
-        CodelistData cl = codeListEntity.getData()
-
-        "cab" == cl.getId()
         "Cable Type" == cl.getLabel().get()
         cl.getEntries().containsKey("19")
         cl.getEntries().containsValue("Cableway")
-
-
-    }
-
-    def "Test getType"(){
-
-        when:
-
-        CodelistEntity codeListEntity =  codelistFactory.createInstance( new ImmutableCodelistData.Builder().id("cab").
-                label("Cable Type").sourceType(CodelistData.ImportType.GML_DICTIONARY).build()).get()
-
-        then:
-
-        "codelists" == codeListEntity.getType()
 
 
     }

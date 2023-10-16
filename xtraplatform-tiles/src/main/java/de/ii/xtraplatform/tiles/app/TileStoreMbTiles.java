@@ -10,7 +10,7 @@ package de.ii.xtraplatform.tiles.app;
 import static de.ii.xtraplatform.base.domain.util.LambdaWithException.consumerMayThrow;
 
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.blobs.domain.BlobStore;
+import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.tiles.domain.ImmutableMbtilesMetadata;
 import de.ii.xtraplatform.tiles.domain.ImmutableVectorLayer;
@@ -58,7 +58,7 @@ public class TileStoreMbTiles implements TileStore {
   }
 
   static TileStore readWrite(
-      BlobStore rootStore,
+      ResourceStore rootStore,
       String providerId,
       Map<String, Map<String, TileGenerationSchema>> tileSchemas) {
 
@@ -97,13 +97,13 @@ public class TileStoreMbTiles implements TileStore {
   }
 
   private final String providerId;
-  private final BlobStore rootStore;
+  private final ResourceStore rootStore;
   private final Map<String, Map<String, TileGenerationSchema>> tileSchemas;
   private final Map<String, MbtilesTileset> tileSets;
 
   private TileStoreMbTiles(
       String providerId,
-      BlobStore rootStore,
+      ResourceStore rootStore,
       Map<String, MbtilesTileset> tileSets,
       Map<String, Map<String, TileGenerationSchema>> tileSchemas) {
     this.providerId = providerId;
@@ -337,7 +337,7 @@ public class TileStoreMbTiles implements TileStore {
 
   // TODO: minzoom, maxzoom, bounds, center
   private static MbtilesTileset createTileSet(
-      BlobStore rootStore,
+      ResourceStore rootStore,
       String name,
       String tileset,
       String tileMatrixSet,
