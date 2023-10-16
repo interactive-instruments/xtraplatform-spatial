@@ -7,20 +7,25 @@
  */
 package de.ii.xtraplatform.tiles.app;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Files;
+import com.google.common.io.Resources;
 import de.ii.xtraplatform.base.domain.AppLifeCycle;
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSet;
+import de.ii.xtraplatform.tiles.domain.TileMatrixSetData;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
+import de.ii.xtraplatform.values.domain.KeyValueStore;
+import de.ii.xtraplatform.values.domain.ValueStore;
 import java.io.IOException;
-import java.nio.file.Path;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -32,14 +37,13 @@ import org.slf4j.LoggerFactory;
 public class TileMatrixSetRepositoryImpl implements TileMatrixSetRepository, AppLifeCycle {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileMatrixSetRepositoryImpl.class);
-  private static final String STORE_RESOURCE_TYPE = "tile-matrix-sets";
-  private final ResourceStore customTileMatrixSetsStore;
+  private final KeyValueStore<TileMatrixSetData> customTileMatrixSetsStore;
   private final Map<String, TileMatrixSet> tileMatrixSets;
 
   /** set data directory */
   @Inject
-  public TileMatrixSetRepositoryImpl(ResourceStore blobStore) {
-    this.customTileMatrixSetsStore = blobStore.with(STORE_RESOURCE_TYPE);
+  public TileMatrixSetRepositoryImpl(ValueStore valueStore) {
+    this.customTileMatrixSetsStore = valueStore.forType(TileMatrixSetData.class);
     this.tileMatrixSets = new HashMap<>();
   }
 
@@ -63,31 +67,63 @@ public class TileMatrixSetRepositoryImpl implements TileMatrixSetRepository, App
   private void initCache() {
     PREDEFINED_TILE_MATRIX_SETS.forEach(
         tileMatrixSetId ->
-            TileMatrixSet.fromWellKnownId(tileMatrixSetId)
+            fromWellKnownId(tileMatrixSetId)
                 .ifPresent(tms -> tileMatrixSets.put(tileMatrixSetId, tms)));
 
-    try (Stream<Path> fileStream =
-        customTileMatrixSetsStore.walk(
-            Path.of(""),
-            1,
-            (path, attributes) ->
-                attributes.isValue()
-                    && !attributes.isHidden()
-                    && com.google.common.io.Files.getFileExtension(path.getFileName().toString())
-                        .equals("json"))) {
-      fileStream.forEach(
-          path -> {
-            String tileMatrixSetId = Files.getNameWithoutExtension(path.getFileName().toString());
-            try {
-              TileMatrixSet.fromInputStream(
-                      customTileMatrixSetsStore.content(path).get(), tileMatrixSetId)
-                  .ifPresent(tms -> tileMatrixSets.put(tileMatrixSetId, tms));
-            } catch (IOException e) {
-              LOGGER.debug("Tile matrix set '{}' not found: {}", tileMatrixSetId, e.getMessage());
-            }
-          });
+    customTileMatrixSetsStore
+        .identifiers()
+        .forEach(
+            identifier -> {
+              TileMatrixSetData tileMatrixSetData = customTileMatrixSetsStore.get(identifier);
+
+              tileMatrixSets.put(
+                  tileMatrixSetData.getId(), new TileMatrixSetImpl(tileMatrixSetData));
+            });
+  }
+
+  static Optional<TileMatrixSet> fromWellKnownId(String tileMatrixSetId) {
+    InputStream inputStream;
+    try {
+      inputStream =
+          Resources.asByteSource(
+                  Resources.getResource(
+                      TileMatrixSetImpl.class, "/tilematrixsets/" + tileMatrixSetId + ".json"))
+              .openStream();
+    } catch (IllegalArgumentException e) {
+      LOGGER.debug("Tile matrix set '{}' not found: {}", tileMatrixSetId, e.getMessage());
+      return Optional.empty();
     } catch (IOException e) {
-      LogContext.error(LOGGER, e, "Could not parse tile matrix sets");
+      LOGGER.error("Could not load tile matrix set '{}': {}", tileMatrixSetId, e.getMessage());
+      if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
+        LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
+      }
+      return Optional.empty();
     }
+
+    return fromInputStream(inputStream, tileMatrixSetId);
+  }
+
+  static Optional<TileMatrixSet> fromInputStream(
+      InputStream tileMatrixSetInputStream, String tileMatrixSetId) {
+    // prepare Jackson mapper for deserialization
+    final ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new Jdk8Module());
+    mapper.registerModule(new GuavaModule());
+    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+    mapper.enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY);
+
+    TileMatrixSetData data;
+    try {
+      data = mapper.readValue(tileMatrixSetInputStream, TileMatrixSetData.class);
+    } catch (IOException e) {
+      LOGGER.error(
+          "Could not deserialize tile matrix set '{}': {}", tileMatrixSetId, e.getMessage());
+      if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
+        LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
+      }
+      return Optional.empty();
+    }
+
+    return Optional.of(new TileMatrixSetImpl(data));
   }
 }

@@ -14,6 +14,8 @@ import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
 import de.ii.xtraplatform.docs.DocTable;
 import de.ii.xtraplatform.docs.DocTable.ColumnSet;
+import de.ii.xtraplatform.values.domain.StoredValue;
+import de.ii.xtraplatform.values.domain.ValueBuilder;
 import de.ii.xtraplatform.values.domain.annotations.FromValueStore;
 import java.util.Map;
 import java.util.Optional;
@@ -96,7 +98,7 @@ import org.immutables.value.Value;
     passAnnotations = DocIgnore.class)
 @FromValueStore(type = "codelists")
 @JsonDeserialize(builder = ImmutableCodelist.Builder.class)
-public interface Codelist extends de.ii.xtraplatform.values.domain.Value {
+public interface Codelist extends StoredValue {
 
   enum ImportType {
     TEMPLATES,
@@ -104,7 +106,7 @@ public interface Codelist extends de.ii.xtraplatform.values.domain.Value {
     ONEO_SCHLUESSELLISTE
   }
 
-  abstract class Builder implements de.ii.xtraplatform.values.domain.Builder<Codelist> {}
+  abstract class Builder implements ValueBuilder<Codelist> {}
 
   /**
    * @langEn Human readable label.
