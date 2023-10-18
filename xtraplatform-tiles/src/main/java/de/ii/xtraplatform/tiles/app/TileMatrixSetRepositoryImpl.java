@@ -19,8 +19,8 @@ import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSet;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetData;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
-import de.ii.xtraplatform.values.domain.KeyValueStore;
 import de.ii.xtraplatform.values.domain.ValueStore;
+import de.ii.xtraplatform.values.domain.Values;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 public class TileMatrixSetRepositoryImpl implements TileMatrixSetRepository, AppLifeCycle {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileMatrixSetRepositoryImpl.class);
-  private final KeyValueStore<TileMatrixSetData> customTileMatrixSetsStore;
+  private final Values<TileMatrixSetData> customTileMatrixSetsStore;
   private final Map<String, TileMatrixSet> tileMatrixSets;
 
   /** set data directory */

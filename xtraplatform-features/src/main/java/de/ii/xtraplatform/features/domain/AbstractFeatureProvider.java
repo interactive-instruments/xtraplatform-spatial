@@ -24,7 +24,7 @@ import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Runner;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
-import de.ii.xtraplatform.values.domain.KeyValueStore;
+import de.ii.xtraplatform.values.domain.Values;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +55,7 @@ public abstract class AbstractFeatureProvider<
   private final Reactive reactive;
   private final CrsTransformerFactory crsTransformerFactory;
   private final ProviderExtensionRegistry extensionRegistry;
-  private final KeyValueStore<Codelist> codelistStore;
+  private final Values<Codelist> codelistStore;
   private final FeatureChangeHandler changeHandler;
   private final ScheduledExecutorService delayedDisposer;
   private Reactive.Runner streamRunner;
@@ -68,7 +68,7 @@ public abstract class AbstractFeatureProvider<
       Reactive reactive,
       CrsTransformerFactory crsTransformerFactory,
       ProviderExtensionRegistry extensionRegistry,
-      KeyValueStore<Codelist> codelistStore,
+      Values<Codelist> codelistStore,
       FeatureProviderDataV2 data) {
     super(data);
     this.connectorFactory = connectorFactory;
