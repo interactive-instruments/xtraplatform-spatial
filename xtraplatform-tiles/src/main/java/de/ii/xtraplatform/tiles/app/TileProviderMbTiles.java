@@ -161,6 +161,11 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   }
 
   @Override
+  public boolean tilesMayBeUnavailable() {
+    return true;
+  }
+
+  @Override
   public String getType() {
     return TileProviderMbtilesData.PROVIDER_TYPE;
   }
