@@ -344,7 +344,13 @@ public class TileStoreMbTiles implements TileStore {
       List<VectorLayer> vectorLayers)
       throws IOException {
     Path relPath = Path.of(tileset).resolve(tileMatrixSet + MBTILES_SUFFIX);
-    Optional<Path> filePath = rootStore.asLocalPath(relPath, true);
+    Optional<Path> filePath;
+
+    try {
+      filePath = rootStore.asLocalPath(relPath, true);
+    } catch (Throwable e) {
+      throw new IllegalStateException("Could not create MBTiles file.", e);
+    }
 
     if (filePath.isEmpty()) {
       throw new IllegalStateException(
