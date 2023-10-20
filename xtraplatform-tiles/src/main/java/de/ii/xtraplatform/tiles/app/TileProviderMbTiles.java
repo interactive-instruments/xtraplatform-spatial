@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,11 +108,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
                     source = localPath.get();
                   }
 
-                  Set<String> tmsSet = entry.getValue().getLevels().keySet();
-                  if (tmsSet.isEmpty()) {
-                    tmsSet = getData().getTilesetDefaults().getLevels().keySet();
-                  }
-                  String tms = tmsSet.isEmpty() ? "WebMercatorQuad" : tmsSet.iterator().next();
+                  String tms = entry.getValue().getTileMatrixSet();
 
                   return new SimpleImmutableEntry<>(toTilesetKey(entry.getKey(), tms), source);
                 })

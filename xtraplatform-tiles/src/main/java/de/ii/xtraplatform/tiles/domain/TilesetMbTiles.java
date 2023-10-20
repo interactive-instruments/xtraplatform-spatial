@@ -35,6 +35,17 @@ public interface TilesetMbTiles extends TilesetCommon {
    */
   String getSource();
 
+  /**
+   * @langEn Tile Matrix Set of the tiles in the MBTiles file.
+   * @langDe Kachelschema der Kacheln in der MBTiles-Datei.
+   * @default WebMercatorQuad
+   * @since v3.6
+   */
+  @Value.Default
+  default String getTileMatrixSet() {
+    return "WebMercatorQuad";
+  }
+
   @Value.Check
   default void checkSingleTileMatrixSet() {
     Preconditions.checkState(
