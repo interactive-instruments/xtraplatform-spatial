@@ -136,19 +136,37 @@ public interface FeatureSchema
   }
 
   /**
-   * @langEn `ID` has to be set for the property that should be used as the unique feature id. As a
-   *     rule that should be the first property ion the `properties` object. Property names cannot
-   *     contain spaces (" ") or slashes ("/"). Set `TYPE` for a property that specifies the type
-   *     name of the object.
-   * @langDe Kennzeichnet besondere Bedeutungen der Eigenschaft.
-   *     <p><code>
-   * - `ID` ist bei der Eigenschaft eines Objekts anzugeben, die für die `featureId` in der API zu verwenden ist. Diese Eigenschaft ist typischerweise die erste Eigenschaft im `properties`-Objekt. Erlaubte Zeichen in diesen Eigenschaften sind alle Zeichen bis auf das Leerzeichen (" ") und der Querstrich ("/").
-   * - `TYPE` ist optional bei der Eigenschaft eines Objekts anzugeben, die den Namen einer Unterobjektart enthält.
-   * - Hat eine Objektart mehrere Geometrieeigenschaften, dann ist `PRIMARY_GEOMETRY` bei der Eigenschaft anzugeben, die für `bbox`-Abfragen verwendet werden soll und die in GeoJSON in `geometry` oder in JSON-FG in `where` kodiert werden soll.
-   * - Hat eine Objektart mehrere zeitliche Eigenschaften, dann sollte `PRIMARY_INSTANT` bei der Eigenschaft angegeben werden, die für `datetime`-Abfragen verwendet werden soll, sofern ein Zeitpunkt die zeitliche Ausdehnung der Features beschreibt.
-   * - Ist die zeitliche Ausdehnung hingegen ein Zeitintervall, dann sind `PRIMARY_INTERVAL_START` und `PRIMARY_INTERVAL_END` bei den jeweiligen zeitlichen Eigenschaften anzugeben.
-   * </code>
-   *     <p>
+   * @langEn Indicates special meanings of the property. `ID` is to be specified at the property of
+   *     an object to be used for the `featureId` in the API. This property is typically the first
+   *     property in the `properties` object. Allowed characters in these properties are all
+   *     characters except the space character (" ") and the horizontal bar ("/"). `TYPE` can be
+   *     specified at the property of an object that contains the name of a subobject type. If an
+   *     object type has multiple geometry properties, then specify `PRIMARY_GEOMETRY` at the
+   *     property to be used for `bbox` queries and to be encoded in data formats with exactly one
+   *     or a singled out geometry (e.g. in GeoJSON `geometry`). If an object type has multiple
+   *     temporal properties, then `PRIMARY_INSTANT` should be specified at the property to be used
+   *     for `datetime` queries, provided that a time instant describes the temporal extent of the
+   *     features. If, on the other hand, the temporal extent is a time interval, then
+   *     `PRIMARY_INTERVAL_START` and `PRIMARY_INTERVAL_END` should be specified at the respective
+   *     temporal properties. If, on the other hand, a property is to be used only for queries (as a
+   *     queryable or sortable), but never coded in the objects themselves, then specify
+   *     `NOT_RETURNABLE`.
+   * @langDe Kennzeichnet besondere Bedeutungen der Eigenschaft. `ID` ist bei der Eigenschaft eines
+   *     Objekts anzugeben, die für die `featureId` in der API zu verwenden ist. Diese Eigenschaft
+   *     ist typischerweise die erste Eigenschaft im `properties`-Objekt. Erlaubte Zeichen in diesen
+   *     Eigenschaften sind alle Zeichen bis auf das Leerzeichen (" ") und der Querstrich ("/").
+   *     `TYPE` kann bei der Eigenschaft eines Objekts angegeben werden, die den Namen einer
+   *     Unterobjektart enthält. Hat eine Objektart mehrere Geometrieeigenschaften, dann ist
+   *     `PRIMARY_GEOMETRY` bei der Eigenschaft anzugeben, die für `bbox`-Abfragen verwendet werden
+   *     soll und die in Datenformaten mit genau einer oder einer herausgehobenen Geometrie (z.B. in
+   *     GeoJSON `geometry`) kodiert werden soll. Hat eine Objektart mehrere zeitliche
+   *     Eigenschaften, dann sollte `PRIMARY_INSTANT` bei der Eigenschaft angegeben werden, die für
+   *     `datetime`-Abfragen verwendet werden soll, sofern ein Zeitpunkt die zeitliche Ausdehnung
+   *     der Features beschreibt. Ist die zeitliche Ausdehnung hingegen ein Zeitintervall, dann sind
+   *     `PRIMARY_INTERVAL_START` und `PRIMARY_INTERVAL_END` bei den jeweiligen zeitlichen
+   *     Eigenschaften anzugeben. Soll eine Eigenschaft hingegen nur für Abfragen verwendet werden
+   *     (als Queryable oder Sortable), aber nie in den Objekten selbst kodiert werden, dann ist
+   *     `NOT_RETURNABLE` anzugeben.
    * @default null
    */
   @Override
@@ -157,7 +175,7 @@ public interface FeatureSchema
   /**
    * @langEn Only needed when `type` is `VALUE_ARRAY`. Possible values: `FLOAT`, `INTEGER`,
    *     `STRING`, `BOOLEAN`, `DATETIME`, `DATE`
-   * @langDe Wird nur benötigt wenn `type` auf `VALUE_ARRAY` gesetzt ist. Mögliche Werte: `FLOAT`,
+   * @langDe Wird nur benötigt, wenn `type` auf `VALUE_ARRAY` gesetzt ist. Mögliche Werte: `FLOAT`,
    *     `INTEGER`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE`
    * @default STRING
    */

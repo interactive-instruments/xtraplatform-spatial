@@ -58,7 +58,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     PRIMARY_INSTANT,
     PRIMARY_INTERVAL_START,
     PRIMARY_INTERVAL_END,
-    SECONDARY_GEOMETRY
+    SECONDARY_GEOMETRY,
+    NOT_RETURNABLE
   }
 
   enum Type {
@@ -409,6 +410,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default boolean isType() {
     return getRole().filter(role -> role == Role.TYPE).isPresent();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isNotReturnable() {
+    return getRole().filter(role -> role == Role.NOT_RETURNABLE).isPresent();
   }
 
   @JsonIgnore
