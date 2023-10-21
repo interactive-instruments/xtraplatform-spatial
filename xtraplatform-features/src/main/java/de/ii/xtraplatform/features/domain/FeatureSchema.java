@@ -148,9 +148,7 @@ public interface FeatureSchema
    *     for `datetime` queries, provided that a time instant describes the temporal extent of the
    *     features. If, on the other hand, the temporal extent is a time interval, then
    *     `PRIMARY_INTERVAL_START` and `PRIMARY_INTERVAL_END` should be specified at the respective
-   *     temporal properties. If, on the other hand, a property is to be used only for queries (as a
-   *     queryable or sortable), but never coded in the objects themselves, then specify
-   *     `NOT_RETURNABLE`.
+   *     temporal properties.
    * @langDe Kennzeichnet besondere Bedeutungen der Eigenschaft. `ID` ist bei der Eigenschaft eines
    *     Objekts anzugeben, die für die `featureId` in der API zu verwenden ist. Diese Eigenschaft
    *     ist typischerweise die erste Eigenschaft im `properties`-Objekt. Erlaubte Zeichen in diesen
@@ -164,9 +162,7 @@ public interface FeatureSchema
    *     `datetime`-Abfragen verwendet werden soll, sofern ein Zeitpunkt die zeitliche Ausdehnung
    *     der Features beschreibt. Ist die zeitliche Ausdehnung hingegen ein Zeitintervall, dann sind
    *     `PRIMARY_INTERVAL_START` und `PRIMARY_INTERVAL_END` bei den jeweiligen zeitlichen
-   *     Eigenschaften anzugeben. Soll eine Eigenschaft hingegen nur für Abfragen verwendet werden
-   *     (als Queryable oder Sortable), aber nie in den Objekten selbst kodiert werden, dann ist
-   *     `NOT_RETURNABLE` anzugeben.
+   *     Eigenschaften anzugeben.
    * @default null
    */
   @Override
@@ -327,6 +323,25 @@ public interface FeatureSchema
    */
   @Override
   Optional<Boolean> getIsSortable();
+
+  /**
+   * @langEn If a property is to be used only for queries (as a queryable or sortable), but never
+   *     coded in the objects themselves, then set the value to `false`.
+   * @langDe Soll eine Eigenschaft nur für Abfragen verwendet werden (als Queryable oder Sortable),
+   *     aber nie in den Objekten selbst kodiert werden, dann ist `false` anzugeben.
+   * @default `true`
+   */
+  @Override
+  Optional<Boolean> getIsReturnable();
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  @Override
+  default boolean returnable() {
+    return getScope().filter(s -> s.equals(Scope.MUTATIONS)).isEmpty()
+        && getIsReturnable().orElse(true);
+  }
 
   /**
    * @langEn Identifies a DATETIME property as a property that contains the timestamp when the

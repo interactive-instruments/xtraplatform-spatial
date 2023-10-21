@@ -22,14 +22,14 @@ public class OnlyReturnables implements SchemaVisitorTopDown<SchemaSql, SchemaSq
   public SchemaSql visit(
       SchemaSql schema, List<SchemaSql> parents, List<SchemaSql> visitedProperties) {
 
-    if (schema.isNotReturnable()) {
-      return null;
+    if (schema.returnable()) {
+      return new ImmutableSchemaSql.Builder()
+          .from(schema)
+          .properties(
+              visitedProperties.stream().filter(Objects::nonNull).collect(Collectors.toList()))
+          .build();
     }
 
-    return new ImmutableSchemaSql.Builder()
-        .from(schema)
-        .properties(
-            visitedProperties.stream().filter(Objects::nonNull).collect(Collectors.toList()))
-        .build();
+    return null;
   }
 }

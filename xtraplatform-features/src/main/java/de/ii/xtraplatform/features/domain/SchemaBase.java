@@ -21,36 +21,6 @@ import org.immutables.value.Value;
 
 public interface SchemaBase<T extends SchemaBase<T>> {
 
-  /**
-   * @langEn `ID` has to be set for the property that should be used as the unique feature id. As a
-   *     rule that should be the first property ion the `properties` object. Property names cannot
-   *     contain spaces (" ") or slashes ("/"). Set `TYPE` for a property that specifies the type
-   *     name of the object.
-   * @langDe Kennzeichnet besondere Bedeutungen der Eigenschaft.
-   *     <ul>
-   *       <li><code>ID</code> ist bei der Eigenschaft eines Objekts anzugeben, die für die <code>
-   *           featureId</code> in der API zu verwenden ist. Diese Eigenschaft ist typischerweise
-   *           die erste Eigenschaft im <code>properties</code>-Objekt. Erlaubte Zeichen in diesen
-   *           Eigenschaften sind alle Zeichen bis auf das Leerzeichen (" ") und der Querstrich
-   *           ("/").
-   *       <li><code>TYPE</code> ist optional bei der Eigenschaft eines Objekts anzugeben, die den
-   *           Namen einer Unterobjektart enthält.
-   *       <li>Hat eine Objektart mehrere Geometrieeigenschaften, dann ist <code>PRIMARY_GEOMETRY
-   *           </code> bei der Eigenschaft anzugeben, die für <code>bbox</code>-Abfragen verwendet
-   *           werden soll und die z.B. in GeoJSON in <code>geometry</code> kodiert werden soll. Bei
-   *           JSON-FG wird in <code>place</code> die <code>SECONDARY_GEOMETRY</code> kodiert,
-   *           sofern die Rolle gesetzt ist, ansonsten auch die <code>PRIMARY_GEOMETRY</code>.
-   *       <li>Hat eine Objektart mehrere zeitliche Eigenschaften, dann sollte <code>PRIMARY_INSTANT
-   *           </code> bei der Eigenschaft angegeben werden, die für <code>datetime</code>-Abfragen
-   *           verwendet werden soll, sofern ein Zeitpunkt die zeitliche Ausdehnung der Features
-   *           beschreibt.
-   *       <li>Ist die zeitliche Ausdehnung hingegen ein Zeitintervall, dann sind <code>
-   *           PRIMARY_INTERVAL_START</code> und <code>PRIMARY_INTERVAL_END</code> bei den
-   *           jeweiligen zeitlichen Eigenschaften anzugeben.
-   *     </ul>
-   *
-   * @default `null`
-   */
   enum Role {
     ID,
     TYPE,
@@ -58,8 +28,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     PRIMARY_INSTANT,
     PRIMARY_INTERVAL_START,
     PRIMARY_INTERVAL_END,
-    SECONDARY_GEOMETRY,
-    NOT_RETURNABLE
+    SECONDARY_GEOMETRY
   }
 
   enum Type {
@@ -142,6 +111,15 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         && !Objects.equals(getType(), Type.BOOLEAN)
         && !Objects.equals(getType(), Type.UNKNOWN)
         && getIsSortable().orElse(true);
+  }
+
+  Optional<Boolean> getIsReturnable();
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean returnable() {
+    return getIsReturnable().orElse(true);
   }
 
   Optional<Boolean> getIsLastModified();
@@ -410,13 +388,6 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default boolean isType() {
     return getRole().filter(role -> role == Role.TYPE).isPresent();
-  }
-
-  @JsonIgnore
-  @Value.Derived
-  @Value.Auxiliary
-  default boolean isNotReturnable() {
-    return getRole().filter(role -> role == Role.NOT_RETURNABLE).isPresent();
   }
 
   @JsonIgnore

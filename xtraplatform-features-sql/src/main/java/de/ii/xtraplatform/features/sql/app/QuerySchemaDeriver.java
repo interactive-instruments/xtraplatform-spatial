@@ -467,6 +467,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             .valueType(valueType)
             .geometryType(targetSchema.getGeometryType())
             .role(targetSchema.getRole())
+            .isReturnable(targetSchema.getIsReturnable())
             .sourcePath(targetSchema.getName())
             .relation(relations)
             .subDecoder(connector)
