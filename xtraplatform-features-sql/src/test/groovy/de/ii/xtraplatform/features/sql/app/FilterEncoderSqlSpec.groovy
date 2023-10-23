@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.features.sql.app
 
-
+import de.ii.xtraplatform.blobs.domain.ResourceStore
 import de.ii.xtraplatform.cql.app.CqlFilterExamples
 import de.ii.xtraplatform.cql.app.CqlImpl
 import de.ii.xtraplatform.cql.domain.Not
@@ -32,8 +32,8 @@ class FilterEncoderSqlSpec extends Specification {
     def setupSpec() {
 
         filterEncoder = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), null, null, new CqlImpl(), null)
-
-        CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
+        ResourceStore resourceStore = Stub()
+        CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore)
         transformerFactory.onStart()
         filterEncoder2 = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), (CrsTransformerFactory) transformerFactory, null, new CqlImpl(), null)
 
