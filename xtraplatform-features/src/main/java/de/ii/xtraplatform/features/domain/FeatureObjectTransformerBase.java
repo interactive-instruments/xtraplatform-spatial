@@ -184,12 +184,12 @@ public abstract class FeatureObjectTransformerBase<
 
   private Map<List<String>, T> getChildMappings(U mapping, List<String> path) {
     if (path.isEmpty()) {
-      return mapping.getTargetSchemasByPath().entrySet().stream()
+      return mapping.getSchemasByTargetPath().entrySet().stream()
           .filter(e -> e.getKey().size() > path.size() && !e.getValue().get(0).isPrimaryGeometry())
           .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(0)));
     }
 
-    return mapping.getTargetSchemasByPath().entrySet().stream()
+    return mapping.getSchemasByTargetPath().entrySet().stream()
         .filter(
             e ->
                 e.getKey().size() >= path.size()

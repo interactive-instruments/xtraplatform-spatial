@@ -43,7 +43,7 @@ public interface TransformerChain<T, U> {
       return ImmutableList.of();
     }
 
-    return schemaMapping.getTargetSchemasByPath().entrySet().stream()
+    return schemaMapping.getSchemasByTargetPath().entrySet().stream()
         .filter(
             entry ->
                 entry.getValue().stream()
@@ -65,7 +65,7 @@ public interface TransformerChain<T, U> {
       return ImmutableList.of();
     }
 
-    return schemaMapping.getTargetSchemasByPath().entrySet().stream()
+    return schemaMapping.getSchemasByTargetPath().entrySet().stream()
         .filter(
             entry ->
                 entry.getValue().stream()

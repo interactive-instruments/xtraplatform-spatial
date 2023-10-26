@@ -72,16 +72,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
   @Override
   public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    // TODO: who uses original, simplify
-    // TODO: slow, precompute, same for original in decoder
-    ImmutableMap<String, SchemaMapping> mappings =
-        getContext().mappings().entrySet().stream()
-            .map(
-                entry ->
-                    new SimpleImmutableEntry<>(
-                        entry.getKey(), SchemaMapping.withTargetPaths(entry.getValue())))
-            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
-    // SchemaMapping schemaMapping = SchemaMapping.withTargetPaths(getContext().mapping());
+    Map<String, SchemaMapping> mappings = getContext().mappings();
     this.newContext =
         createContext()
             .setMappings(mappings)
@@ -254,7 +245,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
             "OBJECT NOT FOUND {} {}",
             context.pathAsString(),
             Objects.nonNull(context.mapping())
-                ? context.mapping().getTargetSchemasByPath().keySet()
+                ? context.mapping().getSchemasByTargetPath().keySet()
                 : "{}");
       }
       return;
@@ -294,7 +285,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
             "ARRAY NOT FOUND {} {}",
             context.pathAsString(),
             Objects.nonNull(context.mapping())
-                ? context.mapping().getTargetSchemasByPath().keySet()
+                ? context.mapping().getSchemasByTargetPath().keySet()
                 : "{}");
       }
       return;
@@ -334,7 +325,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
             "VALUE NOT FOUND {} {}",
             context.pathAsString(),
             Objects.nonNull(context.mapping())
-                ? context.mapping().getTargetSchemasByPath().keySet()
+                ? context.mapping().getSchemasByTargetPath().keySet()
                 : "{}");
       }
       return;
@@ -383,6 +374,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   private void handleNesting(
       FeatureSchema schema, List<FeatureSchema> parentSchemas, List<Integer> indexes) {
 
+    // new higher level property or new object in array???
     while (nestingTracker.isNested()
         && (nestingTracker.doesNotStartWithPreviousPath(schema.getFullPath())
             || (nestingTracker.inArray()
@@ -396,6 +388,7 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       }
     }
 
+    // new object in array???
     if (nestingTracker.inObject()
         && newContext.inArray()
         && nestingTracker.isSamePath(schema.getFullPath())
@@ -409,24 +402,29 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
       openObject(parentSchemas.get(0));
     }
 
+    // new array
     if (schema.isArray() && !nestingTracker.isSamePath(schema.getFullPath())) {
       openParents(parentSchemas, indexes);
       newContext.pathTracker().track(schema.getFullPath());
       openArray(schema);
+      // first object in array???
     } else if (schema.isObject() && schema.isArray() && nestingTracker.isFirst(indexes)) {
       newContext.pathTracker().track(schema.getFullPath());
       newContext.setIndexes(indexes);
       openObject(schema);
+      // new object
     } else if (schema.isObject()
         && !schema.isArray()
         && !nestingTracker.isSamePath(schema.getFullPath())) {
       openParents(parentSchemas, indexes);
       newContext.pathTracker().track(schema.getFullPath());
       openObject(schema);
+      // new value or value array
     } else if (schema.isValue() && (!schema.isArray() || nestingTracker.isFirst(indexes))) {
       openParents(parentSchemas, indexes);
     }
 
+    // value array entry
     if (schema.isValue() && schema.isArray()) {
       newContext.setIndexes(indexes);
     }
@@ -511,12 +509,14 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
   }
 
   private void openParents(List<FeatureSchema> parentSchemas, List<Integer> indexes) {
+    // parent is feature
     if (parentSchemas.size() < 2) {
       return;
     }
 
     FeatureSchema parent = parentSchemas.get(0);
 
+    // parent already handled by onObject/onArray
     if (parent.getSourcePath().isPresent()) {
       return;
     }

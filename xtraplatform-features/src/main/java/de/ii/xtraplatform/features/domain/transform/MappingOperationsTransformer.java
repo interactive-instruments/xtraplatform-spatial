@@ -51,7 +51,7 @@ public class MappingOperationsTransformer implements ContextTransformer {
             "PATH NOT FOUND {} {}",
             context.pathAsString(),
             Objects.nonNull(context.mapping())
-                ? context.mapping().getTargetSchemasByPath().keySet()
+                ? context.mapping().getSchemasByTargetPath().keySet()
                 : "{}");
       }
       return false;

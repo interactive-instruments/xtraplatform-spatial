@@ -20,20 +20,21 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class SchemaToSourcePathsVisitor<T extends SchemaBase<T>>
+public class SchemaToPathsVisitor<T extends SchemaBase<T>>
     implements SchemaVisitor<T, Multimap<List<String>, T>> {
 
   static final Splitter SPLITTER = Splitter.on('/').omitEmptyStrings();
+  static final BiFunction<String, Boolean, String> IDENTITY = (path, isValue) -> path;
 
   private final BiFunction<String, Boolean, String> sourcePathTransformer;
   private final boolean useTargetPath;
   private int counter;
 
-  public SchemaToSourcePathsVisitor(BiFunction<String, Boolean, String> sourcePathTransformer) {
-    this(false, sourcePathTransformer);
+  SchemaToPathsVisitor(boolean useTargetPath) {
+    this(useTargetPath, IDENTITY);
   }
 
-  private SchemaToSourcePathsVisitor(
+  SchemaToPathsVisitor(
       boolean useTargetPath, BiFunction<String, Boolean, String> sourcePathTransformer) {
     this.sourcePathTransformer = sourcePathTransformer;
     this.useTargetPath = useTargetPath;
@@ -96,18 +97,6 @@ public class SchemaToSourcePathsVisitor<T extends SchemaBase<T>>
                     }))
         .collect(
             ImmutableListMultimap.toImmutableListMultimap(Map.Entry::getKey, Map.Entry::getValue));
-
-    /*return Stream.concat(
-            path.isEmpty()
-                    ? Stream.empty()
-                    : Stream.of(new AbstractMap.SimpleImmutableEntry<>(path, schema)),
-            visitedProperties.stream()
-                             .flatMap(map -> map.asMap()
-                                                .entrySet()
-                                                .stream()
-                                                .flatMap(entry -> prependToKey(entry, path)))
-    )
-                 .collect(ImmutableListMultimap.toImmutableListMultimap(Map.Entry::getKey, Map.Entry::getValue));*/
   }
 
   private Stream<Map.Entry<List<String>, T>> prependToKey(
