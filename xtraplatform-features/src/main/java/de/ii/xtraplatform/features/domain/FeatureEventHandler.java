@@ -92,6 +92,11 @@ public interface FeatureEventHandler<
       return false;
     }
 
+    @Value.Default
+    default boolean isUseTargetPaths() {
+      return false;
+    }
+
     Map<String, String> additionalInfo();
 
     @Value.Lazy
@@ -111,7 +116,10 @@ public interface FeatureEventHandler<
         return Optional.ofNullable(mapping().getTargetSchema());
       }
 
-      List<T> targetSchemas = mapping().getTargetSchemas(path);
+      List<T> targetSchemas =
+          isUseTargetPaths()
+              ? mapping().getSchemasForTargetPath(path)
+              : mapping().getSchemasForSourcePath(path);
 
       if (targetSchemas.isEmpty()) {
         // LOGGER.warn("No mapping found for path {}.", path);
@@ -130,6 +138,57 @@ public interface FeatureEventHandler<
     }
 
     @Value.Lazy
+    default int pos() {
+      if (Objects.isNull(mapping())) {
+        return -1;
+      }
+
+      List<String> path = path();
+
+      if (path.isEmpty()) {
+        return -1;
+      }
+
+      List<Integer> positions =
+          isUseTargetPaths()
+              ? mapping().getPositionsByTargetPath().getOrDefault(path, List.of(-1))
+              : mapping().getPositionsBySourcePath().getOrDefault(path, List.of(-1));
+
+      int schemaIndex = schemaIndex() > -1 ? schemaIndex() : positions.size() - 1;
+      if (positions.size() > schemaIndex) {
+        return positions.get(schemaIndex);
+      }
+
+      return -1;
+    }
+
+    @Value.Lazy
+    default List<Integer> parentPos() {
+      if (Objects.isNull(mapping())) {
+        return List.of();
+      }
+
+      List<String> path = path();
+
+      if (path.isEmpty()) {
+        return List.of();
+      }
+
+      // TODO: by target path?
+      List<List<Integer>> positions =
+          isUseTargetPaths()
+              ? mapping().getParentPositionsByTargetPath().getOrDefault(path, List.of(List.of()))
+              : mapping().getParentPositionsBySourcePath().getOrDefault(path, List.of(List.of()));
+
+      int schemaIndex = schemaIndex() > -1 ? schemaIndex() : positions.size() - 1;
+      if (positions.size() > schemaIndex) {
+        return positions.get(schemaIndex);
+      }
+
+      return List.of();
+    }
+
+    @Value.Lazy
     default List<T> parentSchemas() {
       if (Objects.isNull(mapping())) {
         return ImmutableList.of();
@@ -141,7 +200,7 @@ public interface FeatureEventHandler<
         return ImmutableList.of();
       }
 
-      List<List<T>> parentSchemas = mapping().getParentSchemas(path);
+      List<List<T>> parentSchemas = mapping().getParentSchemasForTargetPath(path);
 
       if (parentSchemas.isEmpty()) {
         return ImmutableList.of();
@@ -280,6 +339,8 @@ public interface FeatureEventHandler<
     ModifiableContext<T, U> putTransformed(String key, String value);
 
     ModifiableContext<T, U> setIsBuffering(boolean inArray);
+
+    ModifiableContext<T, U> setIsUseTargetPaths(boolean isUseTargetPaths);
 
     ModifiableContext<T, U> putAdditionalInfo(String key, String value);
   }

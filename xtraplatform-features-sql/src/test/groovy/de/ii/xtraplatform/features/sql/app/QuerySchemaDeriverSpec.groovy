@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlImpl
+import de.ii.xtraplatform.features.domain.FeatureSchemaFixtures
 import de.ii.xtraplatform.features.domain.MappingOperationResolver
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults
 import de.ii.xtraplatform.features.sql.domain.SchemaSql
@@ -43,7 +44,7 @@ class QuerySchemaDeriverSpec extends Specification {
         where:
 
         casename                                     | source                                                    || expected
-        "value array"                                | FeatureSchemaFixtures.VALUE_ARRAY                         || QuerySchemaFixtures.VALUE_ARRAY
+        "value array"                                | FeatureSchemaFixtures.VALUE_ARRAY || QuerySchemaFixtures.VALUE_ARRAY
         "object array"                               | FeatureSchemaFixtures.OBJECT_ARRAY                        || QuerySchemaFixtures.OBJECT_ARRAY
         "merge"                                      | FeatureSchemaFixtures.MERGE                               || QuerySchemaFixtures.MERGE
         "self joins"                                 | FeatureSchemaFixtures.SELF_JOINS                          || QuerySchemaFixtures.SELF_JOINS

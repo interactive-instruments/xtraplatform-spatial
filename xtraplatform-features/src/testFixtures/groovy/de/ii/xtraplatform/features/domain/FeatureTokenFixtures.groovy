@@ -9,68 +9,10 @@ package de.ii.xtraplatform.features.domain
 
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 
-import static de.ii.xtraplatform.features.domain.SchemaBase.Role
 import static de.ii.xtraplatform.features.domain.SchemaBase.Type
 
 class FeatureTokenFixtures {
 
-    public static final FeatureSchema SCHEMA = new ImmutableFeatureSchema.Builder()
-            .name("biotop")
-            .type(Type.OBJECT)
-            .sourcePath("/biotop")
-            .putProperties2("id",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.STRING)
-                            .role(Role.ID)
-                            .sourcePath("id"))
-            .putProperties2("erfasser_array_join",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.VALUE_ARRAY)
-                            .valueType(Type.STRING)
-                            .sourcePath("[eid=id]erfasser/name"))
-            .putProperties2("kennung",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.STRING)
-                            .sourcePath("kennung"))
-            .putProperties2("erfasser",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.OBJECT)
-                            .putProperties2("name",
-                                    new ImmutableFeatureSchema.Builder()
-                                            .type(Type.STRING)
-                                            .sourcePath("name")))
-            .putProperties2("erfasser_required",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.OBJECT)
-                            .constraints(new ImmutableSchemaConstraints.Builder()
-                                    .required(true)
-                                    .build())
-                            .putProperties2("name",
-                                    new ImmutableFeatureSchema.Builder()
-                                            .type(Type.STRING)
-                                            .sourcePath("name")))
-            .putProperties2("erfasser_array",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.VALUE_ARRAY)
-                            .valueType(Type.STRING)
-                            .sourcePath("name"))
-            .putProperties2("erfasser_array_required",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.VALUE_ARRAY)
-                            .valueType(Type.STRING)
-                            .constraints(new ImmutableSchemaConstraints.Builder()
-                                    .required(true)
-                                    .build())
-                            .sourcePath("name"))
-            .build()
-
-    public static final SchemaMapping MAPPING = new ImmutableSchemaMapping.Builder()
-            .targetSchema(SCHEMA)
-            .useTargetPaths(false)
-            .sourcePathTransformer((path, isValue) -> path)
-            .build()
-
-    public static final SchemaMapping MAPPING_OLD = SchemaMapping.withTargetPaths(MAPPING)
 
     public static final List<Object> SINGLE_FEATURE = [
             FeatureTokenType.INPUT,
@@ -128,7 +70,9 @@ class FeatureTokenFixtures {
             "49.698295103021096",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.OBJECT_END,
+            ["geometry"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -168,7 +112,9 @@ class FeatureTokenFixtures {
             "51.1501333536934",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.OBJECT_END,
+            ["geometry"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "580410003-1",
@@ -212,7 +158,9 @@ class FeatureTokenFixtures {
             "49.69823291309017",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.ARRAY,
             ["geometry"],
             FeatureTokenType.ARRAY,
@@ -234,6 +182,7 @@ class FeatureTokenFixtures {
             "49.69836248910692",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.ARRAY,
             ["geometry"],
             FeatureTokenType.VALUE,
@@ -253,9 +202,13 @@ class FeatureTokenFixtures {
             "49.69866280390489",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.OBJECT_END,
+            ["geometry"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "631510001-1",
@@ -297,7 +250,9 @@ class FeatureTokenFixtures {
                     "              ",
             Type.STRING,
             FeatureTokenType.ARRAY_END,
+            ["bag:pand", "bag:geom", "gml:Polygon"],
             FeatureTokenType.OBJECT_END,
+            ["bag:pand", "bag:geom"],
             FeatureTokenType.VALUE,
             ["bag:pand", "bag:identificatie"],
             "0150100000004952",
@@ -321,6 +276,7 @@ class FeatureTokenFixtures {
             "John Doe",
             Type.STRING,
             FeatureTokenType.OBJECT_END,
+            ["erfasser"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -340,6 +296,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.OBJECT,
             ["erfasser"],
             FeatureTokenType.OBJECT_END,
+            ["erfasser"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -359,6 +316,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.OBJECT,
             ["erfasser_required"],
             FeatureTokenType.OBJECT_END,
+            ["erfasser_required"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -386,6 +344,7 @@ class FeatureTokenFixtures {
             "Jane Doe",
             Type.STRING,
             FeatureTokenType.ARRAY_END,
+            ["erfasser_array"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -405,6 +364,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.ARRAY,
             ["erfasser_array"],
             FeatureTokenType.ARRAY_END,
+            ["erfasser_array"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -424,6 +384,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.ARRAY,
             ["erfasser_array_required"],
             FeatureTokenType.ARRAY_END,
+            ["erfasser_array_required"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -445,16 +406,17 @@ class FeatureTokenFixtures {
             "611320001-1",
             Type.STRING,
             FeatureTokenType.ARRAY,
-            ["biotop", "erfasser_array_join"],
+            ["biotop", "[eid=id]erfasser"],
             FeatureTokenType.VALUE,
-            ["biotop", "erfasser_array_join"],
+            ["biotop", "[eid=id]erfasser", "name"],
             "John Doe",
             Type.STRING,
             FeatureTokenType.VALUE,
-            ["biotop", "erfasser_array_join"],
+            ["biotop", "[eid=id]erfasser", "name"],
             "Jane Doe",
             Type.STRING,
             FeatureTokenType.ARRAY_END,
+            ["biotop", "[eid=id]erfasser"],
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
@@ -468,18 +430,47 @@ class FeatureTokenFixtures {
             "24",
             Type.STRING,
             FeatureTokenType.ARRAY,
-            ["biotop", "erfasser_array_join"],
+            ["biotop", "[eid=id]erfasser"],
             FeatureTokenType.VALUE,
-            ["biotop", "erfasser_array_join"],
+            ["biotop", "[eid=id]erfasser", "name"],
             "John Doe",
             Type.STRING,
             FeatureTokenType.VALUE,
-            ["biotop", "erfasser_array_join"],
+            ["biotop", "[eid=id]erfasser", "name"],
             "Jane Doe",
             Type.STRING,
             FeatureTokenType.ARRAY_END,
+            ["biotop", "[eid=id]erfasser"],
             FeatureTokenType.VALUE,
             ["biotop", "kennung"],
+            "611320001-1",
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> SINGLE_FEATURE_VALUE_ARRAY_IN_ORDER_MAPPED = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["erfasser_array_join"],
+            FeatureTokenType.VALUE,
+            ["erfasser_array_join"],
+            "John Doe",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["erfasser_array_join"],
+            "Jane Doe",
+            Type.STRING,
+            FeatureTokenType.ARRAY_END,
+            ["erfasser_array_join"],
+            FeatureTokenType.VALUE,
+            ["kennung"],
             "611320001-1",
             Type.STRING,
             FeatureTokenType.FEATURE_END,
@@ -513,7 +504,9 @@ class FeatureTokenFixtures {
             "34",
             Type.INTEGER,
             FeatureTokenType.ARRAY_END,
+            ["raumreferenz", "ortsangabe", "flurstueckskennzeichen"],
             FeatureTokenType.OBJECT_END,
+            ["raumreferenz", "ortsangabe"],
             FeatureTokenType.OBJECT,
             ["raumreferenz", "ortsangabe"],
             FeatureTokenType.ARRAY,
@@ -527,7 +520,9 @@ class FeatureTokenFixtures {
             "36",
             Type.INTEGER,
             FeatureTokenType.ARRAY_END,
+            ["raumreferenz", "ortsangabe", "flurstueckskennzeichen"],
             FeatureTokenType.OBJECT_END,
+            ["raumreferenz", "ortsangabe"],
             FeatureTokenType.OBJECT,
             ["raumreferenz", "ortsangabe"],
             FeatureTokenType.VALUE,
@@ -541,14 +536,127 @@ class FeatureTokenFixtures {
             "37",
             Type.INTEGER,
             FeatureTokenType.ARRAY_END,
+            ["raumreferenz", "ortsangabe", "flurstueckskennzeichen"],
             FeatureTokenType.OBJECT_END,
+            ["raumreferenz", "ortsangabe"],
             FeatureTokenType.ARRAY_END,
+            ["raumreferenz", "ortsangabe"],
             FeatureTokenType.OBJECT_END,
+            ["raumreferenz"],
             FeatureTokenType.ARRAY_END,
+            ["raumreferenz"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
             Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> EXPLORATION_SITE_OBJECT_ARRAY = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.OBJECT,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.VALUE,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task", "projectname"],
+            "11",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task", "id"],
+            "34",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.OBJECT,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.VALUE,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task", "projectname"],
+            "35",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task", "id"],
+            "36",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.OBJECT,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.VALUE,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task", "projectname"],
+            "12",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task", "id"],
+            "37",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.ARRAY_END,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.VALUE,
+            ["explorationsite", "kennung"],
+            "611320001-1",
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> EXPLORATION_SITE_OBJECT_ARRAY_MAPPED = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["task"],
+            FeatureTokenType.OBJECT,
+            ["task"],
+            FeatureTokenType.VALUE,
+            ["task", "title"],
+            "11",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["task", "href"],
+            "34",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["task"],
+            FeatureTokenType.OBJECT,
+            ["task"],
+            FeatureTokenType.VALUE,
+            ["task", "title"],
+            "35",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["task", "href"],
+            "36",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["task"],
+            FeatureTokenType.OBJECT,
+            ["task"],
+            FeatureTokenType.VALUE,
+            ["task", "title"],
+            "12",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["task", "href"],
+            "37",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["task"],
+            FeatureTokenType.ARRAY_END,
+            ["task"],
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
@@ -577,7 +685,9 @@ class FeatureTokenFixtures {
             "50.11336914792363",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.OBJECT_END,
+            ["geometry"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "580340001-1",
@@ -613,7 +723,9 @@ class FeatureTokenFixtures {
             "50.1501333536934",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.OBJECT_END,
+            ["geometry"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "631510001-1",

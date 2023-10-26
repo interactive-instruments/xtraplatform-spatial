@@ -147,6 +147,8 @@ public class FeatureTokenReader<
         break;
       case ARRAY_END:
       case OBJECT_END:
+        tryReadPath(context);
+        break;
       case FEATURE_END:
       case INPUT_END:
         break;

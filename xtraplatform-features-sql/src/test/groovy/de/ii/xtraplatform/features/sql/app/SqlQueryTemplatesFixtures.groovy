@@ -55,7 +55,7 @@ class SqlQueryTemplatesFixtures {
 
     static List<String> OBJECT_ARRAY = [
             "SELECT A.id AS SKEY, A.id FROM explorationsite A ORDER BY 1",
-            "SELECT A.id AS SKEY, C.id AS SKEY_1, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) ORDER BY 1,2"
+            "SELECT A.id AS SKEY, C.id AS SKEY_1, C.id, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) ORDER BY 1,2"
     ]
 
     static List<String> MERGE = [
@@ -87,27 +87,27 @@ class SqlQueryTemplatesFixtures {
 
     static List<String> OBJECT_ARRAY_PAGING = [
             "SELECT A.id AS SKEY, A.id FROM explorationsite A WHERE (A.id >= 10 AND A.id <= 19) ORDER BY 1",
-            "SELECT A.id AS SKEY, C.id AS SKEY_1, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id >= 10 AND A.id <= 19) ORDER BY 1,2"
+            "SELECT A.id AS SKEY, C.id AS SKEY_1, C.id, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id >= 10 AND A.id <= 19) ORDER BY 1,2"
     ]
 
     static List<String> OBJECT_ARRAY_SORTBY = [
             "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A ORDER BY 1,2",
-            "SELECT A.created AS CSKEY_0, A.id AS SKEY, C.id AS SKEY_1, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) ORDER BY 1,2,3"
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, C.id AS SKEY_1, C.id, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) ORDER BY 1,2,3"
     ]
 
     static List<String> OBJECT_ARRAY_SORTBY_FILTER = [
             "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A WHERE (A.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo')) ORDER BY 1,2",
-            "SELECT A.created AS CSKEY_0, A.id AS SKEY, C.id AS SKEY_1, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo')) ORDER BY 1,2,3"
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, C.id AS SKEY_1, C.id, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo')) ORDER BY 1,2,3"
     ]
 
     static List<String> OBJECT_ARRAY_SORTBY_PAGING = [
             "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A ORDER BY 1,2 LIMIT 10 OFFSET 10",
-            "SELECT A.created AS CSKEY_0, A.id AS SKEY, C.id AS SKEY_1, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AA.id FROM explorationsite AA ORDER BY AA.created,AA.id LIMIT 10 OFFSET 10)) ORDER BY 1,2,3"
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, C.id AS SKEY_1, C.id, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AA.id FROM explorationsite AA ORDER BY AA.created,AA.id LIMIT 10 OFFSET 10)) ORDER BY 1,2,3"
     ]
 
     static List<String> OBJECT_ARRAY_SORTBY_PAGING_FILTER = [
             "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A WHERE ((A.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo') AND A.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.id = 'bar'))) ORDER BY 1,2 LIMIT 10 OFFSET 10",
-            "SELECT A.created AS CSKEY_0, A.id AS SKEY, C.id AS SKEY_1, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AAA.id FROM explorationsite AAA WHERE ((AAA.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo') AND AAA.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.id = 'bar'))) ORDER BY AAA.created,AAA.id LIMIT 10 OFFSET 10)) ORDER BY 1,2,3"
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, C.id AS SKEY_1, C.id, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AAA.id FROM explorationsite AAA WHERE ((AAA.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo') AND AAA.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.id = 'bar'))) ORDER BY AAA.created,AAA.id LIMIT 10 OFFSET 10)) ORDER BY 1,2,3"
     ]
 
     static List<String> PROPERTY_WITH_MULTIPLE_SOURCE_PATHS = [

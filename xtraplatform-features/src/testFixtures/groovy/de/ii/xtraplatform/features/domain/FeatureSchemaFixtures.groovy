@@ -5,12 +5,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.sql.app
+package de.ii.xtraplatform.features.domain
 
 
-import de.ii.xtraplatform.features.domain.FeatureSchema
-import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema
-import de.ii.xtraplatform.features.domain.SchemaBase
 import de.ii.xtraplatform.features.domain.SchemaBase.Type
 
 class FeatureSchemaFixtures {
@@ -41,6 +38,9 @@ class FeatureSchemaFixtures {
                     .sourcePath("[id=explorationsite_fk]explorationsite_task/[task_fk=id]task")
                     .type(Type.OBJECT_ARRAY)
                     .objectType("Link")
+                    .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("id")
+                            .type(Type.STRING))
                     .putProperties2("title", new ImmutableFeatureSchema.Builder()
                             .sourcePath("projectname")
                             .type(Type.STRING))
@@ -325,7 +325,59 @@ class FeatureSchemaFixtures {
                     .type(Type.STRING))
             .build()
 
-    //TODO: flags
 
+    public static final FeatureSchema BIOTOP = new ImmutableFeatureSchema.Builder()
+            .name("biotop")
+            .type(Type.OBJECT)
+            .sourcePath("/biotop")
+            .putProperties2("id",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.STRING)
+                            .role(SchemaBase.Role.ID)
+                            .sourcePath("id"))
+            .putProperties2("erfasser_array_join",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.VALUE_ARRAY)
+                            .valueType(Type.STRING)
+                            .sourcePath("[eid=id]erfasser/name"))
+            .putProperties2("kennung",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.STRING)
+                            .sourcePath("kennung"))
+            .putProperties2("erfasser",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.OBJECT)
+                            .putProperties2("name",
+                                    new ImmutableFeatureSchema.Builder()
+                                            .type(Type.STRING)
+                                            .sourcePath("name")))
+            .putProperties2("erfasser_required",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.OBJECT)
+                            .constraints(new ImmutableSchemaConstraints.Builder()
+                                    .required(true)
+                                    .build())
+                            .putProperties2("name",
+                                    new ImmutableFeatureSchema.Builder()
+                                            .type(Type.STRING)
+                                            .sourcePath("name")))
+            .putProperties2("erfasser_array",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.VALUE_ARRAY)
+                            .valueType(Type.STRING)
+                            .sourcePath("name"))
+            .putProperties2("erfasser_array_required",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.VALUE_ARRAY)
+                            .valueType(Type.STRING)
+                            .constraints(new ImmutableSchemaConstraints.Builder()
+                                    .required(true)
+                                    .build())
+                            .sourcePath("name"))
+            .build()
 
+    public static final SchemaMapping BIOTOP_MAPPING = new ImmutableSchemaMapping.Builder()
+            .targetSchema(BIOTOP)
+            .sourcePathTransformer((path, isValue) -> path)
+            .build()
 }
