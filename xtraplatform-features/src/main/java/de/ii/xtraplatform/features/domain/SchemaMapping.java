@@ -15,10 +15,12 @@ import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -101,8 +103,32 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
   @Value.Derived
   @Value.Auxiliary
   default Map<List<String>, List<Integer>> getPositionsBySourcePath() {
-    return getPositionsByPath(
-        new SchemaToPathsVisitor<>(false, getSourcePathTransformer()), SchemaMapping::cleanPath);
+    // return getPositionsByPath(
+    //    new SchemaToPathsVisitor<>(false, getSourcePathTransformer()), SchemaMapping::cleanPath);
+    final int[] i = {0};
+    final Set<List<FeatureSchema>> seen = new HashSet<>();
+
+    return getTargetSchema()
+        .accept(new SchemaToPathsVisitor<>(false, getSourcePathTransformer()))
+        .asMap()
+        .keySet()
+        .stream()
+        .map(
+            path -> {
+              if (seen.add(getSchemasBySourcePath().get(cleanPath(path)))) {
+                i[0]++;
+              }
+              return new SimpleImmutableEntry<>(cleanPath(path), Lists.newArrayList(i[0]));
+            })
+        .collect(
+            ImmutableMap.toImmutableMap(
+                Entry::getKey,
+                Entry::getValue,
+                (first, second) -> {
+                  ArrayList<Integer> positions = new ArrayList<>(first);
+                  positions.addAll(second);
+                  return positions;
+                }));
   }
 
   @Override

@@ -77,7 +77,8 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
         createContext()
             .setMappings(mappings)
             .setQuery(getContext().query())
-            .setMetadata(getContext().metadata());
+            .setMetadata(getContext().metadata())
+            .setIsUseTargetPaths(true);
 
     this.schemaTransformerChains =
         mappings.entrySet().stream()

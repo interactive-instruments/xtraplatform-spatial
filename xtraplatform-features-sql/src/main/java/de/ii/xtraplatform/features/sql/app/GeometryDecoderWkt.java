@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
 
 public class GeometryDecoderWkt {
 
@@ -98,6 +100,8 @@ public class GeometryDecoderWkt {
 
     context.setInGeometry(false);
     handler.onObjectEnd(context);
+    context.setGeometryType(Optional.empty());
+    context.setGeometryDimension(OptionalInt.empty());
   }
 
   private static final Splitter COMMA_SPLITTER = Splitter.on(',').omitEmptyStrings().trimResults();

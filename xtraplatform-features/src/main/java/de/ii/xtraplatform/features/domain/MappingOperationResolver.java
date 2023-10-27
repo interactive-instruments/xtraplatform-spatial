@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  * example:
  *   sourcePath: /main
  *   type: OBJECT
- *   allOf:
+ *   merge:
  *   - properties:
  *       id:
  *         sourcePath: id
@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
  * example:
  *   sourcePath: /main
  *   type: OBJECT
- *   allOf:
+ *   merge:
  *   - properties:
  *       id:
  *         sourcePath: id
@@ -141,7 +141,7 @@ import java.util.stream.Collectors;
  * example:
  *   sourcePath: /main
  *   type: OBJECT
- *   allOf:
+ *   merge:
  *   - properties:
  *       id:
  *         sourcePath: id
@@ -157,7 +157,7 @@ import java.util.stream.Collectors;
  * example:
  *   sourcePath: /main
  *   type: OBJECT
- *   allOf:
+ *   merge:
  *   - properties:
  *       id:
  *         sourcePath: id

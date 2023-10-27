@@ -46,7 +46,6 @@ import de.ii.xtraplatform.features.domain.FeatureStreamImpl;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.FeatureTokenSource;
 import de.ii.xtraplatform.features.domain.FeatureTokenTransformer;
-import de.ii.xtraplatform.features.domain.FeatureTokenTransformerSorting;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Type;
@@ -521,7 +520,7 @@ public class FeatureProviderSql
 
   @Override
   protected List<FeatureTokenTransformer> getDecoderTransformers() {
-    return ImmutableList.of(new FeatureTokenTransformerSorting());
+    return ImmutableList.of(); // new FeatureTokenTransformerSorting());
   }
 
   @Override
