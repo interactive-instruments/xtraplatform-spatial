@@ -173,20 +173,20 @@ public class FeatureProviderWfs
   @Override
   protected FeatureTokenDecoder<
           byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(Query query) {
-    return getDecoder(query, false);
+      getDecoder(Query query, Map<String, SchemaMapping> mappings) {
+    return getDecoder(query, mappings, false);
   }
 
   @Override
   protected FeatureTokenDecoder<
           byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
       getDecoderPassThrough(Query query) {
-    return getDecoder(query, true);
+    return getDecoder(query, Map.of(), true);
   }
 
   private FeatureTokenDecoder<
           byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(Query query, boolean passThrough) {
+      getDecoder(Query query, Map<String, SchemaMapping> mappings, boolean passThrough) {
     if (!(query instanceof FeatureQuery)) {
       throw new IllegalArgumentException();
     }
@@ -201,7 +201,12 @@ public class FeatureProviderWfs
             namespaceNormalizer.getNamespaceURI(namespaceNormalizer.extractURI(name)),
             namespaceNormalizer.getLocalName(name));
     return new FeatureTokenDecoderGml(
-        namespaces, ImmutableList.of(qualifiedName), featureSchema, featureQuery, passThrough);
+        namespaces,
+        ImmutableList.of(qualifiedName),
+        featureSchema,
+        featureQuery,
+        mappings,
+        passThrough);
   }
 
   @Override

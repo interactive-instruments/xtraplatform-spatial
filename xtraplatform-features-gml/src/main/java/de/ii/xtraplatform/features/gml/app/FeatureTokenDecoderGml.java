@@ -11,12 +11,10 @@ import com.fasterxml.aalto.AsyncByteArrayFeeder;
 import com.fasterxml.aalto.AsyncXMLStreamReader;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
-import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.gml.domain.GmlGeometryType;
@@ -56,6 +54,7 @@ public class FeatureTokenDecoderGml
   private final XMLNamespaceNormalizer namespaceNormalizer;
   private final FeatureSchema featureSchema;
   private final FeatureQuery featureQuery;
+  private final Map<String, SchemaMapping> mappings;
   private final List<QName> featureTypes;
   private final StringBuilder buffer;
   private final GmlMultiplicityTracker multiplicityTracker;
@@ -74,10 +73,12 @@ public class FeatureTokenDecoderGml
       List<QName> featureTypes,
       FeatureSchema featureSchema,
       FeatureQuery query,
+      Map<String, SchemaMapping> mappings,
       boolean passThrough) {
     this.namespaceNormalizer = new XMLNamespaceNormalizer(namespaces);
     this.featureSchema = featureSchema;
     this.featureQuery = query;
+    this.mappings = mappings;
     this.featureTypes = featureTypes;
     this.buffer = new StringBuilder();
     this.multiplicityTracker = new GmlMultiplicityTracker();
@@ -97,13 +98,7 @@ public class FeatureTokenDecoderGml
     this.context =
         createContext()
             .setType(featureSchema.getName())
-            .setMappings(
-                ImmutableMap.of(
-                    featureSchema.getName(),
-                    new ImmutableSchemaMapping.Builder()
-                        .targetSchema(featureSchema)
-                        .sourcePathTransformer((path, isValue) -> path)
-                        .build()))
+            .setMappings(mappings)
             .setQuery(featureQuery);
   }
 

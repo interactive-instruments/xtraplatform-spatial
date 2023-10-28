@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.transform.FeatureEventBuffer;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
   private FeatureEventBuffer<
           FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
       downstream;
+  private ModifiableContext<FeatureSchema, SchemaMapping> newContext;
   private NestingTracker2 nestingTracker;
 
   public FeatureTokenTransformerMappings(
@@ -32,33 +34,37 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
 
   @Override
   public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    this.downstream = new FeatureEventBuffer<>(getDownstream(), context);
-    // featureWriter.forEach(f -> featureWriters.add(f.apply(downstream)));
-    // executePipeline(featureWriters.iterator()).accept(FeatureTokenType.INPUT, context);
+    this.newContext =
+        createContext()
+            .setMappings(context.mappings())
+            .setQuery(context.query())
+            .setMetadata(context.metadata())
+            .setIsUseTargetPaths(true);
+
+    this.downstream = new FeatureEventBuffer<>(getDownstream(), newContext);
 
     this.nestingTracker = new NestingTracker2(downstream);
-    downstream.onStart(context);
+    downstream.onStart(newContext);
   }
 
   @Override
   public void onEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    // executePipeline(featureWriters.iterator()).accept(FeatureTokenType.INPUT_END, context);
 
-    downstream.onEnd(context);
+    downstream.onEnd(newContext);
   }
 
   @Override
   public void onFeatureStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    // executePipeline(featureWriters.iterator()).accept(FeatureTokenType.FEATURE, context);
+    newContext.pathTracker().track(List.of());
+    newContext.setType(context.type());
 
-    downstream.onFeatureStart(context);
+    downstream.onFeatureStart(newContext);
     downstream.bufferStart();
     downstream.next(0);
   }
 
   @Override
   public void onFeatureEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    // executePipeline(featureWriters.iterator()).accept(FeatureTokenType.FEATURE_END, context);
 
     while (nestingTracker.isNested()) {
       if (nestingTracker.inObject()) {
@@ -79,7 +85,9 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
     }
 
     downstream.bufferStop(true);
-    downstream.onFeatureEnd(context);
+
+    newContext.pathTracker().track(List.of());
+    downstream.onFeatureEnd(newContext);
   }
 
   @Override
@@ -87,13 +95,10 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
     int pos = context.pos();
     if (pos > -1) {
       downstream.next(pos, context.parentPos());
-      // executePipeline(featureWriters.iterator()).accept(FeatureTokenType.OBJECT, context);
 
       if (context.schema().filter(schema -> schema.isObject() || schema.isSpatial()).isPresent()) {
         FeatureSchema schema = context.schema().get();
-        // if (!nestingTracker.isSamePath(schema.getFullPath())) {
         nestingTracker.openObject(schema.getFullPath(), context.path(), context.geometryType());
-        // }
       }
     }
   }
@@ -103,7 +108,6 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
     int pos = context.pos();
     if (pos > -1) {
       downstream.next(pos, context.parentPos());
-      // executePipeline(featureWriters.iterator()).accept(FeatureTokenType.OBJECT_END, context);
 
       nestingTracker.closeObject();
     }
@@ -114,13 +118,10 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
     int pos = context.pos();
     if (pos > -1) {
       downstream.next(pos, context.parentPos());
-      // executePipeline(featureWriters.iterator()).accept(FeatureTokenType.ARRAY, context);
 
       if (context.schema().filter(schema -> schema.isArray() || schema.isSpatial()).isPresent()) {
         FeatureSchema schema = context.schema().get();
-        // if (!nestingTracker.isSamePath(schema.getFullPath())) {
         nestingTracker.openArray(schema.getFullPath(), context.path());
-        // }
       }
     }
   }
@@ -130,7 +131,6 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
     int pos = context.pos();
     if (pos > -1) {
       downstream.next(pos, context.parentPos());
-      // executePipeline(featureWriters.iterator()).accept(FeatureTokenType.ARRAY_END, context);
 
       nestingTracker.closeArray();
     }
@@ -139,7 +139,6 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
   @Override
   public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     downstream.next(context.pos(), context.parentPos());
-    // executePipeline(featureWriters.iterator()).accept(FeatureTokenType.VALUE, context);
 
     if (context.schema().filter(FeatureSchema::isArray).isPresent()) {
       FeatureSchema schema = context.schema().get();
@@ -150,8 +149,7 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
 
     if (context.schema().filter(FeatureSchema::isValue).isPresent()) {
       FeatureSchema schema = context.schema().get();
-      downstream.onValue(
-          /*schema.getFullPath()*/ context.path(), context.value(), context.valueType());
+      downstream.onValue(schema.getFullPath(), context.value(), context.valueType());
     }
   }
 }

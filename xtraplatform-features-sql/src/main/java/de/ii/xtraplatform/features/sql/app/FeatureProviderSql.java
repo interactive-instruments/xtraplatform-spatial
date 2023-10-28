@@ -52,7 +52,6 @@ import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Typ
 import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery;
 import de.ii.xtraplatform.features.domain.ImmutableMultiFeatureQuery;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
-import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
 import de.ii.xtraplatform.features.domain.ImmutableSubQuery;
 import de.ii.xtraplatform.features.domain.MultiFeatureQueries;
 import de.ii.xtraplatform.features.domain.MultiFeatureQuery;
@@ -66,7 +65,6 @@ import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SourceSchemaValidator;
 import de.ii.xtraplatform.features.domain.transform.OnlyQueryables;
 import de.ii.xtraplatform.features.domain.transform.OnlySortables;
-import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.features.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.features.sql.SqlPathSyntax;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
@@ -452,7 +450,8 @@ public class FeatureProviderSql
     return Optional.ofNullable(sourceSchemaValidator);
   }
 
-  private String applySourcePathDefaults(String path, boolean isValue) {
+  @Override
+  protected String applySourcePathDefaults(String path, boolean isValue) {
     Optional<String> schemaPrefix = getData().getSourcePathDefaults().getSchema();
     if (schemaPrefix.isPresent() && !isValue) {
       return pathParser3.tablePathWithDefaults(path);
@@ -463,22 +462,9 @@ public class FeatureProviderSql
   @Override
   protected FeatureTokenDecoder<
           SqlRow, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(Query query) {
+      getDecoder(Query query, Map<String, SchemaMapping> mappings) {
     if (query instanceof FeatureQuery) {
       FeatureQuery featureQuery = (FeatureQuery) query;
-
-      WithScope withScope =
-          featureQuery.getSchemaScope() == FeatureSchemaBase.Scope.QUERIES
-              ? WITH_SCOPE_QUERIES
-              : WITH_SCOPE_MUTATIONS;
-
-      Map<String, SchemaMapping> mappings =
-          ImmutableMap.of(
-              featureQuery.getType(),
-              new ImmutableSchemaMapping.Builder()
-                  .targetSchema(getData().getTypes().get(featureQuery.getType()).accept(withScope))
-                  .sourcePathTransformer(this::applySourcePathDefaults)
-                  .build());
 
       List<SchemaSql> schemas =
           featureQuery.getSchemaScope() == FeatureSchemaBase.Scope.QUERIES
@@ -490,22 +476,6 @@ public class FeatureProviderSql
 
     if (query instanceof MultiFeatureQuery) {
       MultiFeatureQuery multiFeatureQuery = (MultiFeatureQuery) query;
-
-      Map<String, SchemaMapping> mappings =
-          multiFeatureQuery.getQueries().stream()
-              .map(
-                  typeQuery ->
-                      new SimpleImmutableEntry<>(
-                          typeQuery.getType(),
-                          new ImmutableSchemaMapping.Builder()
-                              .targetSchema(
-                                  getData()
-                                      .getTypes()
-                                      .get(typeQuery.getType())
-                                      .accept(WITH_SCOPE_QUERIES))
-                              .sourcePathTransformer(this::applySourcePathDefaults)
-                              .build()))
-              .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
       List<SchemaSql> schemas =
           multiFeatureQuery.getQueries().stream()

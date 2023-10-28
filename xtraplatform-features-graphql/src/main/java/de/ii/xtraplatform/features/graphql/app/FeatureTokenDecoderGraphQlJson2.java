@@ -13,19 +13,18 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.async.ByteArrayFeeder;
-import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.Decoder;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
-import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.json.domain.DecoderJsonProperties;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -45,6 +44,7 @@ public class FeatureTokenDecoderGraphQlJson2
   private final ByteArrayFeeder feeder;
   private final FeatureSchema featureSchema;
   private final FeatureQuery featureQuery;
+  private final Map<String, SchemaMapping> mappings;
   private final String type;
   private final String wrapper;
   private final Optional<String> nullValue;
@@ -65,13 +65,18 @@ public class FeatureTokenDecoderGraphQlJson2
   private DecoderJsonProperties decoderJsonProperties;
 
   public FeatureTokenDecoderGraphQlJson2(
-      FeatureSchema featureSchema, FeatureQuery query, String type, String wrapper) {
-    this(featureSchema, query, type, wrapper, Optional.empty());
+      FeatureSchema featureSchema,
+      FeatureQuery query,
+      Map<String, SchemaMapping> mappings,
+      String type,
+      String wrapper) {
+    this(featureSchema, query, mappings, type, wrapper, Optional.empty());
   }
 
   public FeatureTokenDecoderGraphQlJson2(
       FeatureSchema featureSchema,
       FeatureQuery query,
+      Map<String, SchemaMapping> mappings,
       String type,
       String wrapper,
       Optional<String> nullValue) {
@@ -83,6 +88,7 @@ public class FeatureTokenDecoderGraphQlJson2
     this.feeder = (ByteArrayFeeder) parser.getNonBlockingInputFeeder();
     this.featureSchema = featureSchema;
     this.featureQuery = query;
+    this.mappings = mappings;
     this.type = type;
     this.wrapper = wrapper;
     this.nullValue = nullValue;
@@ -93,13 +99,7 @@ public class FeatureTokenDecoderGraphQlJson2
     this.context =
         createContext()
             .setType(featureSchema.getName())
-            .setMappings(
-                ImmutableMap.of(
-                    featureSchema.getName(),
-                    new ImmutableSchemaMapping.Builder()
-                        .targetSchema(featureSchema)
-                        .sourcePathTransformer((path, isValue) -> path)
-                        .build()))
+            .setMappings(mappings)
             .setQuery(featureQuery);
 
     this.arrayPaths =

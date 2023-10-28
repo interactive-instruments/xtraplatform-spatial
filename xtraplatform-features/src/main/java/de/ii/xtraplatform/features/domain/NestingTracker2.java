@@ -58,7 +58,7 @@ public class NestingTracker2 {
         downstream.onArrayStart(context);
       }
     }*/
-    downstream.onArrayStart(payload /*path*/);
+    downstream.onArrayStart(path);
 
     push("A", path, payload);
     // context.setInArray(true);
@@ -75,7 +75,7 @@ public class NestingTracker2 {
         downstream.onObjectStart(context);
       }
     }*/
-    downstream.onObjectStart(payload /*path*/, geometryType, OptionalInt.empty());
+    downstream.onObjectStart(path, geometryType, OptionalInt.empty());
 
     push("O", path, payload);
     // context.setInObject(true);
@@ -100,7 +100,7 @@ public class NestingTracker2 {
         downstream.onObjectEnd(context);
       }
     }*/
-    downstream.onObjectEnd(getCurrentNestingPayload() /*getCurrentNestingPath()*/);
+    downstream.onObjectEnd(getCurrentNestingPath());
 
     pop();
 
@@ -130,7 +130,7 @@ public class NestingTracker2 {
         downstream.onArrayEnd(context);
       }
     }*/
-    downstream.onArrayEnd(getCurrentNestingPayload() /*getCurrentNestingPath()*/);
+    downstream.onArrayEnd(getCurrentNestingPath());
 
     pop();
 

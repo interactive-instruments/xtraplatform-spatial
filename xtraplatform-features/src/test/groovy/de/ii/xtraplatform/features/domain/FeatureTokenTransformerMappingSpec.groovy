@@ -13,7 +13,6 @@ import spock.lang.Specification
 /**
  * @author zahnen
  */
-@Ignore // temporarily switched to source paths
 class FeatureTokenTransformerMappingSpec extends Specification {
 
     def createReader(FeatureSchema schema, List<Object> tokens) {

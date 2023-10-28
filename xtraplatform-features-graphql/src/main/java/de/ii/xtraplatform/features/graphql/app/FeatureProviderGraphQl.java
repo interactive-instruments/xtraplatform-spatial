@@ -150,13 +150,7 @@ public class FeatureProviderGraphQl
   @Override
   protected FeatureTokenDecoder<
           byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(Query query) {
-    return getDecoder(query, false);
-  }
-
-  private FeatureTokenDecoder<
-          byte[], FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(Query query, boolean passThrough) {
+      getDecoder(Query query, Map<String, SchemaMapping> mappings) {
     if (!(query instanceof FeatureQuery)) {
       throw new IllegalArgumentException();
     }
@@ -170,7 +164,9 @@ public class FeatureProviderGraphQl
             ? getData().getQueries().getSingle().get().getName(name)
             : getData().getQueries().getCollection().getName(name);
 
-    return new FeatureTokenDecoderGraphQlJson2(featureSchema, featureQuery, name, wrapper);
+    // TODO: does mapping need SchemaDeriverGraphQl applied?
+    return new FeatureTokenDecoderGraphQlJson2(
+        featureSchema, featureQuery, mappings, name, wrapper);
   }
 
   @Override
