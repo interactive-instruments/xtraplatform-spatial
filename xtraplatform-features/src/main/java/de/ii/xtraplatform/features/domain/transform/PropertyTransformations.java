@@ -135,6 +135,10 @@ public interface PropertyTransformations {
     return new ContextTransformerChain(getTransformations(), schemaMapping);
   }
 
+  default TokenSliceTransformerChain getTokenSliceTransformations(SchemaMapping schemaMapping) {
+    return new TokenSliceTransformerChain(getTransformations(), schemaMapping);
+  }
+
   default TransformerChain<String, FeaturePropertyValueTransformer> getValueTransformations(
       SchemaMapping schemaMapping,
       Map<String, Codelist> codelists,

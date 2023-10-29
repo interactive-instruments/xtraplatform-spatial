@@ -13,11 +13,13 @@ import de.ii.xtraplatform.features.domain.FeatureTokenEmitter2;
 import de.ii.xtraplatform.features.domain.FeatureTokenReader;
 import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.SchemaBase;
+import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.SchemaMappingBase;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
-import java.util.stream.Stream;
 
 public class FeatureEventBuffer<
         U extends SchemaBase<U>, V extends SchemaMappingBase<U>, W extends ModifiableContext<U, V>>
@@ -27,25 +29,32 @@ public class FeatureEventBuffer<
   private final List<Object> buffer;
   private final FeatureTokenEmitter2<U, V, W> bufferIn;
   private final FeatureTokenReader<U, V, W> bufferOut;
+
+  private final Vector<Integer> events;
   private boolean doBuffer;
-  private int mark;
-  private int previous;
   private int current;
   private List<Integer> currentEnclosing;
 
-  private final Vector<Integer> events;
-
-  public FeatureEventBuffer(FeatureEventHandler<U, V, W> downstream, W context) {
+  public FeatureEventBuffer(
+      FeatureEventHandler<U, V, W> downstream, W context, Map<String, SchemaMapping> mappings) {
     this.downstream = downstream;
     this.buffer = new ArrayList<>();
     this.bufferIn = (FeatureTokenEmitter2<U, V, W>) (this::append);
     this.bufferOut = new FeatureTokenReader<>(downstream, context);
     this.events = new Vector<>();
+
     this.doBuffer = false;
-    this.mark = -1;
-    this.previous = 0;
     this.current = 0;
     this.currentEnclosing = List.of();
+
+    int maxEvents =
+        mappings.values().stream()
+                    .mapToInt(SchemaMappingBase::getNumberOfTargets)
+                    .max()
+                    .orElseThrow()
+                * 2
+            + 2;
+    events.setSize(maxEvents);
   }
 
   public FeatureTokenEmitter2<U, V, W> getBuffer() {
@@ -57,18 +66,8 @@ public class FeatureEventBuffer<
   }
 
   public void next(int pos, List<Integer> enclosing) {
-    this.previous = current;
     this.current = pos;
     this.currentEnclosing = enclosing;
-    // System.out.println("POS " + pos + " " + enclosing);
-  }
-
-  int current() {
-    return current;
-  }
-
-  int previous() {
-    return previous;
   }
 
   /**
@@ -113,12 +112,6 @@ public class FeatureEventBuffer<
     for (int i = (pos + 1) * 2; i < events.size(); i += 2) {
       events.set(i, events.get(i) + 1);
     }
-
-    // increase length of enclosing pos
-    /*for (int pos2 : enclosing) {
-      int lenPos2 = (pos2 * 2) + 1;
-      events.set(lenPos2, events.get(lenPos2) + 1);
-    }*/
   }
 
   /**
@@ -136,8 +129,6 @@ public class FeatureEventBuffer<
     return enclosing.get(enclosing.size() - 1);
   }
 
-  // TODO: should save nextIndex instead of length
-  // TODO: do we need start at all?
   void append(Object token) {
     int end = end(current);
     buffer.add(end, token);
@@ -145,22 +136,10 @@ public class FeatureEventBuffer<
     int minPos = minPos(current, currentEnclosing);
 
     increase(minPos);
-
-    // System.out.println("APPEND " + current + " " + end + " " + events.toString());
-  }
-
-  void clear(int max) {
-    // buffer.setSize(max*4);
-    events.setSize((max * 2) + 2);
-    /*for (int i = 0; i <= max * 2; i += 2) {
-      events.set(i, 0);
-      events.set(i + 1, 0);
-    }*/
   }
 
   void reset() {
-    events.replaceAll(ignored -> 0);
-    // System.out.println("CLEAR " + events.toString());
+    Collections.fill(events, 0);
   }
 
   public void bufferStart() {
@@ -178,28 +157,30 @@ public class FeatureEventBuffer<
     buffer.add(FeatureTokenType.FLUSH);
     buffer.forEach(bufferOut::onToken);
     buffer.clear();
-    this.mark = -1;
-  }
-
-  public void bufferMark() {
-    this.mark = buffer.size();
-  }
-
-  public void bufferInsert(Object token) {
-    if (mark > -1) {
-      buffer.add(mark, token);
-      this.mark++;
-    } else {
-      throw new IllegalStateException("no mark set");
-    }
   }
 
   public boolean isBuffering() {
     return doBuffer;
   }
 
-  public Stream<Object> bufferAsStream() {
-    return buffer.stream();
+  public List<Object> getSlice(int pos) {
+    if (pos < 1) {
+      return List.of();
+    }
+
+    return Collections.unmodifiableList(buffer.subList(start(pos), end(pos)));
+  }
+
+  public boolean replaceSlice(int pos, List<Object> replacement) {
+    if (pos < 1) {
+      return false;
+    }
+
+    List<Object> slice = buffer.subList(start(pos), end(pos));
+    slice.clear();
+    slice.addAll(replacement);
+
+    return true;
   }
 
   @Override
@@ -209,14 +190,6 @@ public class FeatureEventBuffer<
 
   @Override
   public void onStart(W context) {
-    int max =
-        context.mappings().values().stream()
-            .mapToInt(SchemaMappingBase::getNumberOfTargets)
-            .max()
-            .orElse(128);
-    // System.out.println("MAX_EVENTS " + max);
-    clear(max);
-
     if (doBuffer) {
       bufferIn.onStart(context);
     } else {

@@ -204,7 +204,8 @@ public class FeatureStreamImpl implements FeatureStream {
 
     FeatureTokenValidator validator = new FeatureTokenValidator();
 
-    FeatureTokenTransformerMappings mappings = new FeatureTokenTransformerMappings(Map.of());
+    FeatureTokenTransformerMappings mappings =
+        new FeatureTokenTransformerMappings(propertyTransformations);
 
     return featureTokenSource
         .via(mappings)

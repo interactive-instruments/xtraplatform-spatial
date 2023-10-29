@@ -23,6 +23,7 @@ import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.LIFECYCLE_HOOK
 import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.features.domain.transform.WithScope;
+import de.ii.xtraplatform.features.domain.transform.WithoutProperties;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Runner;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
@@ -431,6 +432,8 @@ public abstract class AbstractFeatureProvider<
 
   private Map<String, SchemaMapping> createMapping(
       Query query, Map<String, PropertyTransformations> propertyTransformations) {
+    // TODO: apply schema transformations
+
     if (query instanceof FeatureQuery) {
       FeatureQuery featureQuery = (FeatureQuery) query;
 
@@ -442,7 +445,14 @@ public abstract class AbstractFeatureProvider<
       return ImmutableMap.of(
           featureQuery.getType(),
           new ImmutableSchemaMapping.Builder()
-              .targetSchema(getData().getTypes().get(featureQuery.getType()).accept(withScope))
+              .targetSchema(
+                  getData()
+                      .getTypes()
+                      .get(featureQuery.getType())
+                      .accept(withScope)
+                      .accept(
+                          new WithoutProperties(
+                              featureQuery.getFields(), featureQuery.skipGeometry())))
               .sourcePathTransformer(this::applySourcePathDefaults)
               .build());
     }
@@ -459,7 +469,10 @@ public abstract class AbstractFeatureProvider<
                                   getData()
                                       .getTypes()
                                       .get(typeQuery.getType())
-                                      .accept(WITH_SCOPE_QUERIES))
+                                      .accept(WITH_SCOPE_QUERIES)
+                                      .accept(
+                                          new WithoutProperties(
+                                              typeQuery.getFields(), typeQuery.skipGeometry())))
                               .sourcePathTransformer(this::applySourcePathDefaults)
                               .build()))
               .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));

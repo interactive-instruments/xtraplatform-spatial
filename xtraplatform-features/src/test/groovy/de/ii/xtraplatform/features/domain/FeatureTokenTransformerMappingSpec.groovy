@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain
 
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformation
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformations
 import spock.lang.Ignore
 import spock.lang.Specification
 
@@ -16,7 +18,12 @@ import spock.lang.Specification
 class FeatureTokenTransformerMappingSpec extends Specification {
 
     def createReader(FeatureSchema schema, List<Object> tokens) {
-        FeatureTokenTransformerMappings mapper = new FeatureTokenTransformerMappings(Map.of())
+        FeatureTokenTransformerMappings mapper = new FeatureTokenTransformerMappings(["test": new PropertyTransformations() {
+            @Override
+            Map<String, List<PropertyTransformation>> getTransformations() {
+                return Map<String,List<PropertyTransformation>>.of();
+            }
+        }])
         FeatureQuery query = ImmutableFeatureQuery.builder().type("test").build()
         FeatureEventHandler.ModifiableContext context = mapper.createContext()
                 .setQuery(query)

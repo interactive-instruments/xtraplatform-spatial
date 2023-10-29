@@ -7,10 +7,14 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.transform.FeatureEventBuffer;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.features.domain.transform.TokenSliceTransformerChain;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +22,9 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FeatureTokenTransformerMappings.class);
+
+  private final Map<String, PropertyTransformations> propertyTransformations;
+  private Map<String, TokenSliceTransformerChain> sliceTransformerChains;
   private FeatureEventBuffer<
           FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
       downstream;
@@ -25,7 +32,9 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
   private NestingTracker2 nestingTracker;
 
   public FeatureTokenTransformerMappings(
-      Map<String, PropertyTransformations> propertyTransformations) {}
+      Map<String, PropertyTransformations> propertyTransformations) {
+    this.propertyTransformations = propertyTransformations;
+  }
 
   @Override
   protected void init() {
@@ -34,14 +43,41 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
 
   @Override
   public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
+    this.sliceTransformerChains =
+        context.mappings().entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(
+                        entry.getKey(),
+                        propertyTransformations
+                            .get(entry.getKey())
+                            .getTokenSliceTransformations(entry.getValue())))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+    Map<String, SchemaMapping> newMappings =
+        context.mappings().entrySet().stream()
+            .map(
+                entry ->
+                    Map.entry(
+                        entry.getKey(),
+                        new ImmutableSchemaMapping.Builder()
+                            .from(entry.getValue())
+                            .targetSchema(
+                                entry
+                                    .getValue()
+                                    .getTargetSchema()
+                                    .accept(sliceTransformerChains.get(entry.getKey())))
+                            .build()))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
     this.newContext =
         createContext()
-            .setMappings(context.mappings())
+            .setMappings(newMappings)
             .setQuery(context.query())
             .setMetadata(context.metadata())
             .setIsUseTargetPaths(true);
 
-    this.downstream = new FeatureEventBuffer<>(getDownstream(), newContext);
+    this.downstream = new FeatureEventBuffer<>(getDownstream(), newContext, context.mappings());
 
     this.nestingTracker = new NestingTracker2(downstream);
     downstream.onStart(newContext);
@@ -84,10 +120,16 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
       }
     }
 
+    applyTokenSliceTransformers(context.type());
+
     downstream.bufferStop(true);
 
     newContext.pathTracker().track(List.of());
     downstream.onFeatureEnd(newContext);
+  }
+
+  private void applyTokenSliceTransformers(String type) {
+    sliceTransformerChains.get(type).transform(downstream);
   }
 
   @Override
@@ -138,18 +180,21 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
 
   @Override
   public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    downstream.next(context.pos(), context.parentPos());
+    int pos = context.pos();
+    if (pos > -1) {
+      downstream.next(pos, context.parentPos());
 
-    if (context.schema().filter(FeatureSchema::isArray).isPresent()) {
-      FeatureSchema schema = context.schema().get();
-      if (!nestingTracker.isSamePath(schema.getFullPath())) {
-        nestingTracker.openArray(schema.getFullPath(), context.path());
+      if (context.schema().filter(FeatureSchema::isArray).isPresent()) {
+        FeatureSchema schema = context.schema().get();
+        if (!nestingTracker.isSamePath(schema.getFullPath())) {
+          nestingTracker.openArray(schema.getFullPath(), context.path());
+        }
       }
-    }
 
-    if (context.schema().filter(FeatureSchema::isValue).isPresent()) {
-      FeatureSchema schema = context.schema().get();
-      downstream.onValue(schema.getFullPath(), context.value(), context.valueType());
+      if (context.schema().filter(FeatureSchema::isValue).isPresent()) {
+        FeatureSchema schema = context.schema().get();
+        downstream.onValue(schema.getFullPath(), context.value(), context.valueType());
+      }
     }
   }
 }

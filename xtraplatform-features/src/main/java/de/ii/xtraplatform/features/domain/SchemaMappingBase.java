@@ -9,15 +9,21 @@ package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import de.ii.xtraplatform.features.domain.SchemaBase.Role;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,15 +33,60 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
 
   T getTargetSchema();
 
-  int getNumberOfTargets();
+  @Value.Default
+  default BiFunction<String, Boolean, String> getSourcePathTransformer() {
+    return (path, isValue) -> path;
+  }
 
-  Map<List<String>, List<T>> getSchemasBySourcePath();
+  default List<String> cleanPath(List<String> path) {
+    return path;
+  }
 
-  Map<List<String>, List<T>> getSchemasByTargetPath();
+  default String cleanPath(String path) {
+    return path;
+  }
 
-  Map<List<String>, List<Integer>> getPositionsByTargetPath();
+  @Value.Derived
+  @Value.Auxiliary
+  default int getNumberOfTargets() {
+    return getTargetSchema()
+        .accept(new SchemaToPathsVisitor<>(false, getSourcePathTransformer()))
+        .asMap()
+        .keySet()
+        .size();
+  }
 
-  Map<List<String>, List<Integer>> getPositionsBySourcePath();
+  @Value.Derived
+  @Value.Auxiliary
+  default Map<List<String>, List<T>> getSchemasBySourcePath() {
+    return getSchemasByPath(
+        getTargetSchema(),
+        new SchemaToPathsVisitor<>(false, getSourcePathTransformer()),
+        this::cleanPath);
+  }
+
+  @Value.Derived
+  @Value.Auxiliary
+  default Map<List<String>, List<T>> getSchemasByTargetPath() {
+    return getSchemasByPath(
+        getTargetSchema(), new SchemaToPathsVisitor<>(true), Function.identity());
+  }
+
+  @Value.Derived
+  @Value.Auxiliary
+  default Map<List<String>, List<Integer>> getPositionsBySourcePath() {
+    return getPositionsByPath(
+        getTargetSchema(),
+        new SchemaToPathsVisitor<>(false, getSourcePathTransformer()),
+        this::cleanPath);
+  }
+
+  @Value.Derived
+  @Value.Auxiliary
+  default Map<List<String>, List<Integer>> getPositionsByTargetPath() {
+    return getPositionsByPath(
+        getTargetSchema(), new SchemaToPathsVisitor<>(true), Function.identity());
+  }
 
   @Value.Derived
   @Value.Auxiliary
@@ -47,6 +98,67 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default Map<List<String>, List<List<T>>> getParentSchemasByTargetPath() {
     return getParentSchemasByPath(getSchemasByTargetPath());
+  }
+
+  @Value.Derived
+  @Value.Auxiliary
+  default Map<List<String>, List<List<Integer>>> getParentPositionsBySourcePath() {
+    return getParentPositionsByPath(
+        getParentSchemasBySourcePath(), this::getPositionsForTargetPath);
+  }
+
+  @Value.Derived
+  @Value.Auxiliary
+  default Map<List<String>, List<List<Integer>>> getParentPositionsByTargetPath() {
+    return getParentPositionsByPath(
+        getParentSchemasByTargetPath(), this::getPositionsForTargetPath);
+  }
+
+  default Map<List<String>, List<T>> getSchemasByPath(
+      T targetSchema,
+      SchemaToPathsVisitor<T> pathsVisitor,
+      Function<List<String>, List<String>> pathCleaner) {
+    return targetSchema.accept(pathsVisitor).asMap().entrySet().stream()
+        .map(
+            entry ->
+                new SimpleImmutableEntry<>(
+                    pathCleaner.apply(entry.getKey()), Lists.newArrayList(entry.getValue())))
+        .collect(
+            ImmutableMap.toImmutableMap(
+                Entry::getKey,
+                Entry::getValue,
+                (first, second) -> {
+                  ArrayList<T> schemas = new ArrayList<>(first);
+                  schemas.addAll(second);
+                  return schemas;
+                }));
+  }
+
+  default Map<List<String>, List<Integer>> getPositionsByPath(
+      T targetSchema,
+      SchemaToPathsVisitor<T> pathsVisitor,
+      Function<List<String>, List<String>> pathCleaner) {
+    final int[] i = {-1};
+    final Set<List<String>> seen = new HashSet<>();
+
+    return targetSchema.accept(pathsVisitor).asMap().keySet().stream()
+        .map(
+            path -> {
+              List<String> cleanPath = pathCleaner.apply(path);
+              if (seen.add(cleanPath)) {
+                i[0]++;
+              }
+              return Map.entry(cleanPath, Lists.newArrayList(i[0]));
+            })
+        .collect(
+            ImmutableMap.toImmutableMap(
+                Entry::getKey,
+                Entry::getValue,
+                (first, second) -> {
+                  ArrayList<Integer> positions = new ArrayList<>(first);
+                  positions.addAll(second);
+                  return positions;
+                }));
   }
 
   default Map<List<String>, List<List<T>>> getParentSchemasByPath(
@@ -62,20 +174,6 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
               return new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), parentSchemas);
             })
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-  }
-
-  @Value.Derived
-  @Value.Auxiliary
-  default Map<List<String>, List<List<Integer>>> getParentPositionsBySourcePath() {
-    return getParentPositionsByPath(
-        getParentSchemasBySourcePath(), this::getPositionsForTargetPath);
-  }
-
-  @Value.Derived
-  @Value.Auxiliary
-  default Map<List<String>, List<List<Integer>>> getParentPositionsByTargetPath() {
-    return getParentPositionsByPath(
-        getParentSchemasByTargetPath(), this::getPositionsForTargetPath);
   }
 
   default Map<List<String>, List<List<Integer>>> getParentPositionsByPath(
@@ -129,11 +227,21 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
   }
 
   default List<Integer> getPositionsForSourcePath(List<String> path) {
-    return getPositionsBySourcePath().getOrDefault(path, ImmutableList.of());
+    return getPositionsBySourcePath().getOrDefault(path, ImmutableList.of(-1));
   }
 
   default List<Integer> getPositionsForTargetPath(List<String> path) {
-    return getPositionsByTargetPath().getOrDefault(path, ImmutableList.of());
+    return getPositionsByTargetPath().getOrDefault(path, ImmutableList.of(-1));
+  }
+
+  default List<List<Integer>> getParentPositionsForSourcePath(List<String> path) {
+    return getParentPositionsBySourcePath()
+        .getOrDefault(path, ImmutableList.of(ImmutableList.of()));
+  }
+
+  default List<List<Integer>> getParentPositionsForTargetPath(List<String> path) {
+    return getParentPositionsByTargetPath()
+        .getOrDefault(path, ImmutableList.of(ImmutableList.of()));
   }
 
   default Optional<T> getTargetSchema(Type type) {

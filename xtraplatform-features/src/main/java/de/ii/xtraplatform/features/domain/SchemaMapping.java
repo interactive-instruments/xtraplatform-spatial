@@ -9,31 +9,21 @@ package de.ii.xtraplatform.features.domain;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import de.ii.xtraplatform.features.domain.ImmutableMappingInfo.Builder;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
-
-  @Value.Default
-  default BiFunction<String, Boolean, String> getSourcePathTransformer() {
-    return (path, isValue) -> path;
-  }
 
   @Override
   default FeatureSchema schemaWithGeometryType(
@@ -45,106 +35,11 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
     return new ImmutableSchemaMapping.Builder().targetSchema(schema).build();
   }
 
-  @Override
-  @Value.Derived
-  @Value.Auxiliary
-  default int getNumberOfTargets() {
-    return getTargetSchema()
-        .accept(new SchemaToPathsVisitor<>(false, getSourcePathTransformer()))
-        .asMap()
-        .keySet()
-        .size();
-  }
-
-  @Override
-  @Value.Derived
-  @Value.Auxiliary
-  default Map<List<String>, List<FeatureSchema>> getSchemasBySourcePath() {
-    return getTargetSchema()
-        .accept(new SchemaToPathsVisitor<>(false, getSourcePathTransformer()))
-        .asMap()
-        .entrySet()
-        .stream()
-        .map(
-            entry ->
-                new SimpleImmutableEntry<>(
-                    cleanPath(entry.getKey()), Lists.newArrayList(entry.getValue())))
-        .collect(
-            ImmutableMap.toImmutableMap(
-                Entry::getKey,
-                Entry::getValue,
-                (first, second) -> {
-                  ArrayList<FeatureSchema> schemas = new ArrayList<>(first);
-                  schemas.addAll(second);
-                  return schemas;
-                }));
-  }
-
-  @Override
-  @Value.Derived
-  @Value.Auxiliary
-  default Map<List<String>, List<FeatureSchema>> getSchemasByTargetPath() {
-    return getTargetSchema().accept(new SchemaToPathsVisitor<>(true)).asMap().entrySet().stream()
-        .map(
-            entry ->
-                new SimpleImmutableEntry<>(entry.getKey(), Lists.newArrayList(entry.getValue())))
-        .collect(
-            ImmutableMap.toImmutableMap(
-                Entry::getKey,
-                Entry::getValue,
-                (first, second) -> {
-                  ArrayList<FeatureSchema> schemas = new ArrayList<>(first);
-                  schemas.addAll(second);
-                  return schemas;
-                }));
-  }
-
-  @Override
-  @Value.Derived
-  @Value.Auxiliary
-  default Map<List<String>, List<Integer>> getPositionsBySourcePath() {
-    // return getPositionsByPath(
-    //    new SchemaToPathsVisitor<>(false, getSourcePathTransformer()), SchemaMapping::cleanPath);
-    final int[] i = {0};
-    final Set<List<FeatureSchema>> seen = new HashSet<>();
-
-    return getTargetSchema()
-        .accept(new SchemaToPathsVisitor<>(false, getSourcePathTransformer()))
-        .asMap()
-        .keySet()
-        .stream()
-        .map(
-            path -> {
-              if (seen.add(getSchemasBySourcePath().get(cleanPath(path)))) {
-                i[0]++;
-              }
-              return new SimpleImmutableEntry<>(cleanPath(path), Lists.newArrayList(i[0]));
-            })
-        .collect(
-            ImmutableMap.toImmutableMap(
-                Entry::getKey,
-                Entry::getValue,
-                (first, second) -> {
-                  ArrayList<Integer> positions = new ArrayList<>(first);
-                  positions.addAll(second);
-                  return positions;
-                }));
-  }
-
-  @Override
-  @Value.Derived
-  @Value.Auxiliary
-  default Map<List<String>, List<Integer>> getPositionsByTargetPath() {
-    return getPositionsByPath(new SchemaToPathsVisitor<>(true), Function.identity());
-  }
-
   @Value.Derived
   @Value.Auxiliary
   default Map<List<String>, List<MappingInfo>> forSourcePath() {
     return forPath(
-        new SchemaToPathsVisitor<>(false, getSourcePathTransformer()),
-        SchemaMapping::cleanPath,
-        false);
+        new SchemaToPathsVisitor<>(false, getSourcePathTransformer()), this::cleanPath, false);
   }
 
   @Value.Derived
@@ -153,24 +48,7 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
     return forPath(new SchemaToPathsVisitor<>(true), Function.identity(), true);
   }
 
-  default Map<List<String>, List<Integer>> getPositionsByPath(
-      SchemaToPathsVisitor<FeatureSchema> pathsVisitor,
-      Function<List<String>, List<String>> pathCleaner) {
-    final int[] i = {0};
-    return getTargetSchema().accept(pathsVisitor).asMap().keySet().stream()
-        .map(
-            path -> new SimpleImmutableEntry<>(pathCleaner.apply(path), Lists.newArrayList(i[0]++)))
-        .collect(
-            ImmutableMap.toImmutableMap(
-                Entry::getKey,
-                Entry::getValue,
-                (first, second) -> {
-                  ArrayList<Integer> positions = new ArrayList<>(first);
-                  positions.addAll(second);
-                  return positions;
-                }));
-  }
-
+  // TODO: needed?
   default Map<List<String>, List<MappingInfo>> forPath(
       SchemaToPathsVisitor<FeatureSchema> pathsVisitor,
       Function<List<String>, List<String>> pathCleaner,
@@ -182,25 +60,15 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
               List<FeatureSchema> schemas =
                   useTargetPath ? getSchemasForTargetPath(path) : getSchemasForSourcePath(path);
               List<Integer> positions =
-                  useTargetPath
-                      ? getPositionsByTargetPath().getOrDefault(path, List.of())
-                      : getPositionsBySourcePath().getOrDefault(path, List.of());
+                  useTargetPath ? getPositionsForTargetPath(path) : getPositionsForSourcePath(path);
               List<List<FeatureSchema>> parentSchemas =
                   useTargetPath
                       ? getParentSchemasForTargetPath(path)
                       : getParentSchemasForSourcePath(path);
               List<List<Integer>> parentPositions =
-                  parentSchemas.stream()
-                      .map(
-                          parents ->
-                              parents.stream()
-                                  .map(
-                                      parent ->
-                                          getPositionsByTargetPath()
-                                              .getOrDefault(parent.getFullPath(), List.of(-1))
-                                              .get(0))
-                                  .collect(Collectors.toList()))
-                      .collect(Collectors.toList());
+                  useTargetPath
+                      ? getParentPositionsForTargetPath(path)
+                      : getParentPositionsForSourcePath(path);
 
               Preconditions.checkState(
                   schemas.size() == positions.size()
@@ -235,7 +103,8 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
                 }));
   }
 
-  static List<String> cleanPath(List<String> path) {
+  @Override
+  default List<String> cleanPath(List<String> path) {
     if (path.get(path.size() - 1).contains("{")) {
       List<String> key = new ArrayList<>(path.subList(0, path.size() - 1));
       key.add(cleanPath(path.get(path.size() - 1)));
@@ -245,7 +114,8 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
   }
 
   // TODO: static cleanup method in PathParser
-  static String cleanPath(String path) {
+  @Override
+  default String cleanPath(String path) {
     if (path.contains("{")) {
       int i = path.indexOf("{");
       if (path.startsWith("filter", i + 1)) {

@@ -359,7 +359,9 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default boolean isFeatureRef() {
-    return getType() == Type.FEATURE_REF || getType() == Type.FEATURE_REF_ARRAY;
+    return getType() == Type.FEATURE_REF
+        || getType() == Type.FEATURE_REF_ARRAY
+        || (isObject() && getRefType().isPresent());
   }
 
   @JsonIgnore

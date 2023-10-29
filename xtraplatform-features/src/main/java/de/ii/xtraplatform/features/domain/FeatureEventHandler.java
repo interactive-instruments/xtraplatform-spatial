@@ -151,8 +151,8 @@ public interface FeatureEventHandler<
 
       List<Integer> positions =
           isUseTargetPaths()
-              ? mapping().getPositionsByTargetPath().getOrDefault(path, List.of(-1))
-              : mapping().getPositionsBySourcePath().getOrDefault(path, List.of(-1));
+              ? mapping().getPositionsForTargetPath(path)
+              : mapping().getPositionsForSourcePath(path);
 
       int schemaIndex = schemaIndex() > -1 ? schemaIndex() : positions.size() - 1;
       if (positions.size() > schemaIndex) {
@@ -177,8 +177,8 @@ public interface FeatureEventHandler<
       // TODO: by target path?
       List<List<Integer>> positions =
           isUseTargetPaths()
-              ? mapping().getParentPositionsByTargetPath().getOrDefault(path, List.of(List.of()))
-              : mapping().getParentPositionsBySourcePath().getOrDefault(path, List.of(List.of()));
+              ? mapping().getParentPositionsForTargetPath(path)
+              : mapping().getParentPositionsForSourcePath(path);
 
       int schemaIndex = schemaIndex() > -1 ? schemaIndex() : positions.size() - 1;
       if (positions.size() > schemaIndex) {

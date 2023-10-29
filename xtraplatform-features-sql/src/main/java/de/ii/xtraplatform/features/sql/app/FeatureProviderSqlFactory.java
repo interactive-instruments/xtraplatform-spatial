@@ -39,6 +39,7 @@ import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
 import de.ii.xtraplatform.features.domain.SchemaReferenceResolver;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
+import de.ii.xtraplatform.features.domain.transform.FeatureRefResolver;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
@@ -64,6 +65,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -183,9 +185,10 @@ public class FeatureProviderSqlFactory
       return resolveMappingOperationsIfNecessary(
           resolveSchemasIfNecessary(
               normalizeConstants(
-                  cleanupAutoPersist(
-                      cleanupAdditionalInfo(
-                          generateNativeCrsIfNecessary(generateTypesIfNecessary(data)))))));
+                  normalizeFeatureRefs(
+                      cleanupAutoPersist(
+                          cleanupAdditionalInfo(
+                              generateNativeCrsIfNecessary(generateTypesIfNecessary(data))))))));
     } catch (Throwable e) {
       LogContext.error(
           LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
@@ -429,18 +432,31 @@ public class FeatureProviderSqlFactory
   }
 
   private FeatureProviderSqlData normalizeConstants(FeatureProviderSqlData data) {
-    boolean hasConstants =
+    return applySchemaTransformation(
+        data, p -> p.isConstant() && p.getSourcePaths().isEmpty(), new NormalizeConstants());
+  }
+
+  private FeatureProviderSqlData normalizeFeatureRefs(FeatureProviderSqlData data) {
+    return applySchemaTransformation(
+        data, p -> p.isFeatureRef() && p.getProperties().isEmpty(), new FeatureRefResolver());
+  }
+
+  private FeatureProviderSqlData applySchemaTransformation(
+      FeatureProviderSqlData data,
+      Predicate<FeatureSchema> propertyMatcher,
+      SchemaVisitorTopDown<FeatureSchema, FeatureSchema> transformer) {
+    boolean anyPropertyMatches =
         data.getTypes().values().stream()
             .flatMap(t -> t.getAllNestedProperties().stream())
-            .anyMatch(p -> p.isConstant() && p.getSourcePaths().isEmpty());
+            .anyMatch(propertyMatcher);
 
-    if (hasConstants) {
+    if (anyPropertyMatches) {
       Map<String, FeatureSchema> types =
           data.getTypes().entrySet().stream()
               .map(
                   entry ->
                       new SimpleImmutableEntry<>(
-                          entry.getKey(), entry.getValue().accept(new NormalizeConstants())))
+                          entry.getKey(), entry.getValue().accept(transformer)))
               .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
       return new Builder().from(data).types(types).build();
