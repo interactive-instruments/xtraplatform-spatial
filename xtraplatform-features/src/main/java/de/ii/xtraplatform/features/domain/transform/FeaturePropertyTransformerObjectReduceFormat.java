@@ -14,20 +14,21 @@ import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface FeaturePropertyTransformerReduceStringFormat
+public interface FeaturePropertyTransformerObjectReduceFormat
     extends FeaturePropertyTokenSliceTransformer {
 
-  String TYPE = "REDUCE_STRING_FORMAT";
+  String TYPE = "OBJECT_REDUCE_FORMAT";
 
   @Override
   default String getType() {
     return TYPE;
   }
+
+  Function<String, String> getSubstitutionLookup();
 
   @Override
   default FeatureSchema transformSchema(FeatureSchema schema) {
@@ -39,27 +40,17 @@ public interface FeaturePropertyTransformerReduceStringFormat
   }
 
   @Override
-  default List<Object> transform(String currentPropertyPath, List<Object> input) {
-    // TODO: git from slice
-    Map<String, String> properties = Map.of("id", "21", "type", "foo");
+  default List<Object> transform(String currentPropertyPath, List<Object> slice) {
+    if (slice.isEmpty()) {
+      return slice;
+    }
+
+    List<String> path = getRootObjectPath(slice);
 
     Function<String, String> lookup =
-        key -> {
-          if (Objects.isNull(key)) {
-            return null;
-          }
-
-          if (properties.containsKey(key)) {
-            return properties.get(key);
-          }
-
-          return properties.get(currentPropertyPath + "." + key);
-        };
+        getValueLookup(currentPropertyPath, slice, getSubstitutionLookup());
 
     String value = StringTemplateFilters.applyTemplate(getParameter(), lookup);
-
-    // TODO: get from slice
-    List<String> path = List.of("gehoertZuPlan");
 
     return List.of(FeatureTokenType.VALUE, path, value, Type.STRING);
   }

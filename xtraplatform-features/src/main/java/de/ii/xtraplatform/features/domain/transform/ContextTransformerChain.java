@@ -143,7 +143,7 @@ public class ContextTransformerChain
     propertyTransformations.forEach(
         propertyTransformation -> {
           propertyTransformation
-              .getReduceStringFormat()
+              .getObjectReduceFormat()
               .ifPresent(
                   ignore ->
                       transformers.add(

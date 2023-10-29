@@ -17,6 +17,13 @@ import java.util.Optional;
 
 public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
+  public static final String ID = "id";
+  public static final String TYPE = "type";
+  public static final String TITLE = "title";
+  public static final String SUB_ID = "{{id}}";
+  public static final String SUB_TYPE = "{{type}}";
+  public static final String SUB_TITLE = "{{title}}";
+
   public FeatureRefResolver() {}
 
   @Override
@@ -45,12 +52,13 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
               .valueType(Optional.empty())
               .sourcePath(objectSourcePath)
               .putProperties2(
-                  "id",
+                  ID,
                   new Builder()
                       .type(schema.getValueType().orElse(Type.STRING))
                       .sourcePath(idSourcePath))
+              .putProperties2(TITLE, new Builder().type(Type.STRING).sourcePath(idSourcePath))
               .putProperties2(
-                  "type", new Builder().type(Type.STRING).constantValue(schema.getRefType()))
+                  TYPE, new Builder().type(Type.STRING).constantValue(schema.getRefType()))
               .build();
       return build;
     }

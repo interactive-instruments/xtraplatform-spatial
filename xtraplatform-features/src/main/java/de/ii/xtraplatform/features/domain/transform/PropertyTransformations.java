@@ -114,6 +114,23 @@ public interface PropertyTransformations {
       }
 
       @Override
+      public TokenSliceTransformerChain getTokenSliceTransformations(SchemaMapping schemaMapping) {
+        return PropertyTransformations.super.getTokenSliceTransformations(
+            schemaMapping, substitutions::get);
+      }
+
+      @Override
+      public TokenSliceTransformerChain getTokenSliceTransformations(
+          SchemaMapping schemaMapping, Function<String, String> substitutionLookup) {
+        return PropertyTransformations.super.getTokenSliceTransformations(
+            schemaMapping,
+            key ->
+                substitutions.containsKey(key)
+                    ? substitutions.get(key)
+                    : substitutionLookup.apply(key));
+      }
+
+      @Override
       public PropertyTransformations mergeInto(PropertyTransformations source) {
         return PropertyTransformations.super.mergeInto(source).withSubstitutions(substitutions);
       }
@@ -136,7 +153,12 @@ public interface PropertyTransformations {
   }
 
   default TokenSliceTransformerChain getTokenSliceTransformations(SchemaMapping schemaMapping) {
-    return new TokenSliceTransformerChain(getTransformations(), schemaMapping);
+    return new TokenSliceTransformerChain(getTransformations(), schemaMapping, key -> null);
+  }
+
+  default TokenSliceTransformerChain getTokenSliceTransformations(
+      SchemaMapping schemaMapping, Function<String, String> substitutionLookup) {
+    return new TokenSliceTransformerChain(getTransformations(), schemaMapping, substitutionLookup);
   }
 
   default TransformerChain<String, FeaturePropertyValueTransformer> getValueTransformations(

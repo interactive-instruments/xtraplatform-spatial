@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -33,7 +34,9 @@ public class TokenSliceTransformerChain
 
   // TODO: save position and schema
   public TokenSliceTransformerChain(
-      Map<String, List<PropertyTransformation>> allTransformations, SchemaMapping schemaMapping) {
+      Map<String, List<PropertyTransformation>> allTransformations,
+      SchemaMapping schemaMapping,
+      Function<String, String> substitutionLookup) {
     this.schemaMapping = schemaMapping;
     this.transformers =
         allTransformations.entrySet().stream()
@@ -44,14 +47,16 @@ public class TokenSliceTransformerChain
 
                   if (hasWildcard(propertyPath, OBJECT_TYPE_WILDCARD)) {
                     return createSliceTransformersForObjectType(
-                        propertyPath, schemaMapping, transformation)
+                        propertyPath, schemaMapping, transformation, substitutionLookup)
                         .entrySet()
                         .stream();
                   }
 
                   return Stream.of(
                       new SimpleEntry<>(
-                          propertyPath, createSliceTransformers(propertyPath, transformation)));
+                          propertyPath,
+                          createSliceTransformers(
+                              propertyPath, transformation, substitutionLookup)));
                 })
             .collect(
                 ImmutableMap.toImmutableMap(
@@ -77,8 +82,8 @@ public class TokenSliceTransformerChain
   }
 
   public void transform(FeatureEventBuffer buffer) {
-    transformers
-        .keySet()
+    transformers.keySet().stream()
+        .filter(path -> !transformers.get(path).isEmpty())
         .forEach(
             path -> {
               schemaMapping
@@ -157,20 +162,43 @@ public class TokenSliceTransformerChain
   }
 
   private List<FeaturePropertyTokenSliceTransformer> createSliceTransformers(
-      String path, List<PropertyTransformation> propertyTransformations) {
+      String path,
+      List<PropertyTransformation> propertyTransformations,
+      Function<String, String> substitutionLookup) {
     List<FeaturePropertyTokenSliceTransformer> transformers = new ArrayList<>();
 
     propertyTransformations.forEach(
         propertyTransformation -> {
           propertyTransformation
-              .getReduceStringFormat()
+              .getObjectReduceFormat()
               .ifPresent(
                   stringFormat ->
                       transformers.add(
-                          ImmutableFeaturePropertyTransformerReduceStringFormat.builder()
+                          ImmutableFeaturePropertyTransformerObjectReduceFormat.builder()
                               .propertyPath(path)
                               .parameter(stringFormat)
+                              .substitutionLookup(substitutionLookup)
                               .build()));
+
+          propertyTransformation
+              .getObjectReduceSelect()
+              .ifPresent(
+                  selected ->
+                      transformers.add(
+                          ImmutableFeaturePropertyTransformerObjectReduceSelect.builder()
+                              .propertyPath(path)
+                              .parameter(selected)
+                              .build()));
+
+          if (!propertyTransformation.getObjectMapFormat().isEmpty()) {
+            transformers.add(
+                ImmutableFeaturePropertyTransformerObjectMapFormat.builder()
+                    .propertyPath(path)
+                    .parameter("")
+                    .substitutionLookup(substitutionLookup)
+                    .mapping(propertyTransformation.getObjectMapFormat())
+                    .build());
+          }
         });
 
     return transformers;
@@ -180,7 +208,8 @@ public class TokenSliceTransformerChain
       createSliceTransformersForObjectType(
           String transformationKey,
           SchemaMapping schemaMapping,
-          List<PropertyTransformation> propertyTransformation) {
+          List<PropertyTransformation> propertyTransformation,
+          Function<String, String> substitutionLookup) {
     return explodeWildcard(
             transformationKey,
             OBJECT_TYPE_WILDCARD,
@@ -190,7 +219,9 @@ public class TokenSliceTransformerChain
         .map(
             propertyPath ->
                 new SimpleEntry<>(
-                    propertyPath, createSliceTransformers(propertyPath, propertyTransformation)))
+                    propertyPath,
+                    createSliceTransformers(
+                        propertyPath, propertyTransformation, substitutionLookup)))
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
