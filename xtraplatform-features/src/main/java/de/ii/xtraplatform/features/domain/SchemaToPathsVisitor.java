@@ -64,7 +64,7 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
                             p.get(p.size() - 1)
                                 + sourcePath
                                     .substring(i)
-                                    .replaceAll("\\{constant=.*?\\}", "")
+                                    .replaceAll("\\{constant=.*?'\\}", "")
                                     .replaceAll("\\{sortKey=.*?\\}", "")
                                     .replaceAll("\\{primaryKey=.*?\\}", "")
                                 + (schema.isValue() ? "{priority=" + (counter++) + "}" : ""));

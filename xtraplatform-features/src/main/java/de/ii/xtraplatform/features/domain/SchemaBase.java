@@ -92,6 +92,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
 
   Optional<String> getRefUriTemplate();
 
+  Optional<String> getRefKeyTemplate();
+
   List<String> getPath();
 
   List<String> getParentPath();
@@ -361,7 +363,10 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   default boolean isFeatureRef() {
     return getType() == Type.FEATURE_REF
         || getType() == Type.FEATURE_REF_ARRAY
-        || (isObject() && getRefType().isPresent());
+        || (isObject()
+            && (getRefType().isPresent()
+                || getRefUriTemplate().isPresent()
+                || getRefKeyTemplate().isPresent()));
   }
 
   @JsonIgnore
