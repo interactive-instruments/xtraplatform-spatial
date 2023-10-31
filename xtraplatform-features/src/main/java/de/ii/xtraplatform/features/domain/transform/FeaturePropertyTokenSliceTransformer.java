@@ -11,6 +11,7 @@ import com.google.common.base.Joiner;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +25,49 @@ public interface FeaturePropertyTokenSliceTransformer
 
   FeatureSchema transformSchema(FeatureSchema schema);
 
+  void transformObject(
+      String currentPropertyPath,
+      List<Object> slice,
+      List<String> rootPath,
+      int start,
+      int end,
+      List<Object> result);
+
+  @Override
+  default List<Object> transform(String currentPropertyPath, List<Object> slice) {
+    if (slice.isEmpty()) {
+      return slice;
+    }
+
+    List<String> rootPath = getRootObjectPath(slice);
+    boolean isArray = slice.get(0) == FeatureTokenType.ARRAY;
+    List<Object> transformed = new ArrayList<>();
+
+    if (!isArray) {
+      transformObject(currentPropertyPath, slice, rootPath, 0, slice.size(), transformed);
+
+      return transformed;
+    }
+
+    transformed.add(FeatureTokenType.ARRAY);
+    transformed.add(rootPath);
+
+    int start = findPos(slice, FeatureTokenType.OBJECT, rootPath, 0);
+    int end = findPos(slice, FeatureTokenType.OBJECT_END, rootPath, start);
+
+    while (start > -1 && end > -1) {
+      transformObject(currentPropertyPath, slice, rootPath, start, end, transformed);
+
+      start = findPos(slice, FeatureTokenType.OBJECT, rootPath, end);
+      end = findPos(slice, FeatureTokenType.OBJECT_END, rootPath, start);
+    }
+
+    transformed.add(FeatureTokenType.ARRAY_END);
+    transformed.add(rootPath);
+
+    return transformed;
+  }
+
   Joiner PATH_JOINER = Joiner.on('.');
 
   default String pathAsString(List<String> path) {
@@ -32,12 +76,35 @@ public interface FeaturePropertyTokenSliceTransformer
 
   default List<String> getRootObjectPath(List<Object> slice) {
     if (slice.size() < 2
-        || slice.get(0) != FeatureTokenType.OBJECT
+        || (slice.get(0) != FeatureTokenType.OBJECT && slice.get(0) != FeatureTokenType.ARRAY)
         || !(slice.get(1) instanceof List)) {
       throw new IllegalArgumentException("Not a valid object");
     }
 
     return (List<String>) slice.get(1);
+  }
+
+  default void checkObject(FeatureSchema schema) {
+    if (schema.getType() != Type.OBJECT && schema.getType() != Type.OBJECT_ARRAY) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Transformer %s can only be applied to OBJECT or OBJECT_ARRAY, found: %s",
+              getType(), schema.getType()));
+    }
+  }
+
+  default int findPos(List<Object> slice, FeatureTokenType type, List<String> path, int offset) {
+    if (offset == -1) {
+      return -1;
+    }
+
+    for (int i = offset; i < slice.size() - 1; i++) {
+      if (Objects.equals(slice.get(i), type) && Objects.equals(slice.get(i + 1), path)) {
+        return i;
+      }
+    }
+
+    return -1;
   }
 
   default List<Object> valueSlice(List<String> path, @Nullable String value, Type type) {
@@ -51,8 +118,17 @@ public interface FeaturePropertyTokenSliceTransformer
   }
 
   default Function<String, String> getValueLookup(
-      String currentPropertyPath, List<Object> slice, Function<String, String> genericLookup) {
-    Map<String, Integer> valueIndexes = getValueIndexes(slice);
+      String currentPropertyPath, Function<String, String> genericLookup, List<Object> slice) {
+    return getValueLookup(currentPropertyPath, genericLookup, slice, 0, slice.size());
+  }
+
+  default Function<String, String> getValueLookup(
+      String currentPropertyPath,
+      Function<String, String> genericLookup,
+      List<Object> slice,
+      int from,
+      int to) {
+    Map<String, Integer> valueIndexes = getValueIndexes(slice, from, to);
 
     return key -> {
       if (Objects.isNull(key)) {
@@ -84,12 +160,12 @@ public interface FeaturePropertyTokenSliceTransformer
     };
   }
 
-  static Map<String, Integer> getValueIndexes(List<Object> slice) {
+  static Map<String, Integer> getValueIndexes(List<Object> slice, int from, int to) {
     Map<String, Integer> valueIndexes = new HashMap<>();
 
-    for (int i = 0; i < slice.size(); i++) {
+    for (int i = from; i < to; i++) {
       if (slice.get(i) == FeatureTokenType.VALUE) {
-        if (i + 2 < slice.size() && slice.get(i + 1) instanceof List) {
+        if (i + 2 < to && slice.get(i + 1) instanceof List) {
           valueIndexes.put(PATH_JOINER.join((List<String>) slice.get(i + 1)), i + 2);
         }
       }
@@ -104,5 +180,53 @@ public interface FeaturePropertyTokenSliceTransformer
     }
 
     return null;
+  }
+
+  static int getValueIndex(List<Object> slice, String path, int from, int to) {
+    for (int i = from; i < to; i++) {
+      if (slice.get(i) == FeatureTokenType.VALUE) {
+        if (i + 2 < to && slice.get(i + 1) instanceof List) {
+          if (Objects.equals(path, PATH_JOINER.join((List<String>) slice.get(i + 1)))) {
+            return i + 2;
+          }
+        }
+      }
+    }
+
+    return -1;
+  }
+
+  default String getValue(List<Object> slice, String path) {
+    return getValue(slice, path, 0, slice.size());
+  }
+
+  default String getValue(List<Object> slice, String path, int start, int end) {
+    int valueIndex = getValueIndex(slice, path, start, end);
+
+    if (valueIndex < 0) {
+      return null;
+    }
+
+    return (String) slice.get(valueIndex);
+  }
+
+  default Tuple<String, Type> getValueAndType(List<Object> slice, String path) {
+    return getValueAndType(slice, path, 0, slice.size());
+  }
+
+  default Tuple<String, Type> getValueAndType(List<Object> slice, String path, int start, int end) {
+    int valueIndex = getValueIndex(slice, path, start, end);
+
+    if (valueIndex < 0) {
+      return Tuple.of(null, Type.STRING);
+    }
+
+    String value = (String) slice.get(valueIndex);
+    Type type =
+        slice.size() > valueIndex + 1 && slice.get(valueIndex + 1) instanceof Type
+            ? (Type) slice.get(valueIndex + 1)
+            : Type.STRING;
+
+    return Tuple.of(value, type);
   }
 }

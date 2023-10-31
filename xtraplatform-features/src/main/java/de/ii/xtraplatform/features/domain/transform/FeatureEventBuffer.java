@@ -33,8 +33,8 @@ public class FeatureEventBuffer<
 
   private final Vector<Integer> events;
   private boolean doBuffer;
-  private int current;
-  private List<Integer> currentEnclosing;
+  public int current;
+  public List<Integer> currentEnclosing;
 
   public FeatureEventBuffer(
       FeatureEventHandler<U, V, W> downstream, W context, Map<String, SchemaMapping> mappings) {

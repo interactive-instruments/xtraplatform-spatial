@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
@@ -32,26 +31,29 @@ public interface FeaturePropertyTransformerObjectReduceFormat
 
   @Override
   default FeatureSchema transformSchema(FeatureSchema schema) {
+    checkObject(schema);
+
     return new ImmutableFeatureSchema.Builder()
         .from(schema)
-        .type(Type.STRING)
+        .type(schema.isArray() ? Type.VALUE_ARRAY : Type.VALUE)
+        .valueType(Type.STRING)
         .propertyMap(Map.of())
         .build();
   }
 
   @Override
-  default List<Object> transform(String currentPropertyPath, List<Object> slice) {
-    if (slice.isEmpty()) {
-      return slice;
-    }
-
-    List<String> path = getRootObjectPath(slice);
-
+  default void transformObject(
+      String currentPropertyPath,
+      List<Object> slice,
+      List<String> rootPath,
+      int start,
+      int end,
+      List<Object> result) {
     Function<String, String> lookup =
-        getValueLookup(currentPropertyPath, slice, getSubstitutionLookup());
+        getValueLookup(currentPropertyPath, getSubstitutionLookup(), slice, start, end);
 
     String value = StringTemplateFilters.applyTemplate(getParameter(), lookup);
 
-    return List.of(FeatureTokenType.VALUE, path, value, Type.STRING);
+    result.addAll(valueSlice(rootPath, value, Type.STRING));
   }
 }

@@ -51,7 +51,7 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
         FeatureSchema build =
             new Builder()
                 .from(schema)
-                .type(Type.OBJECT)
+                .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
                 .valueType(Optional.empty())
                 .sourcePath(objectSourcePath)
                 .putProperties2(
@@ -117,7 +117,7 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
 
         return new ImmutableFeatureSchema.Builder()
             .from(schema)
-            .type(Type.OBJECT)
+            .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
             .propertyMap(asMap(newVisitedProperties, FeatureSchema::getFullPathAsString))
             .build();
       }

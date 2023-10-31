@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
@@ -31,6 +30,8 @@ public interface FeaturePropertyTransformerObjectReduceSelect
 
   @Override
   default FeatureSchema transformSchema(FeatureSchema schema) {
+    checkObject(schema);
+
     Optional<FeatureSchema> selected =
         schema.getProperties().stream()
             .filter(property -> Objects.equals(property.getName(), getParameter()))
@@ -47,6 +48,8 @@ public interface FeaturePropertyTransformerObjectReduceSelect
     ImmutableFeatureSchema build =
         new Builder()
             .from(selected.get())
+            .type(schema.isArray() ? Type.VALUE_ARRAY : Type.VALUE)
+            .valueType(selected.get().getValueType().orElse(selected.get().getType()))
             .name(schema.getName())
             .sourcePath(mergedSourcePath)
             .path(schema.getPath())
@@ -56,56 +59,16 @@ public interface FeaturePropertyTransformerObjectReduceSelect
   }
 
   @Override
-  default List<Object> transform(String currentPropertyPath, List<Object> slice) {
-    if (slice.isEmpty()) {
-      return slice;
-    }
-
-    List<String> path = getRootObjectPath(slice);
-
+  default void transformObject(
+      String currentPropertyPath,
+      List<Object> slice,
+      List<String> rootPath,
+      int start,
+      int end,
+      List<Object> result) {
     Tuple<String, Type> valueAndType =
-        getValueAndType(slice, getPropertyPath() + "." + getParameter());
+        getValueAndType(slice, getPropertyPath() + "." + getParameter(), start, end);
 
-    return valueSlice(path, valueAndType.first(), valueAndType.second());
-  }
-
-  static int getValueIndex(List<Object> slice, String path) {
-    for (int i = 0; i < slice.size(); i++) {
-      if (slice.get(i) == FeatureTokenType.VALUE) {
-        if (i + 2 < slice.size() && slice.get(i + 1) instanceof List) {
-          if (Objects.equals(path, PATH_JOINER.join((List<String>) slice.get(i + 1)))) {
-            return i + 2;
-          }
-        }
-      }
-    }
-
-    return -1;
-  }
-
-  static String getValue(List<Object> slice, String path) {
-    int valueIndex = getValueIndex(slice, path);
-
-    if (valueIndex < 0) {
-      return null;
-    }
-
-    return (String) slice.get(valueIndex);
-  }
-
-  static Tuple<String, Type> getValueAndType(List<Object> slice, String path) {
-    int valueIndex = getValueIndex(slice, path);
-
-    if (valueIndex < 0) {
-      return Tuple.of(null, Type.STRING);
-    }
-
-    String value = (String) slice.get(valueIndex);
-    Type type =
-        slice.size() > valueIndex + 1 && slice.get(valueIndex + 1) instanceof Type
-            ? (Type) slice.get(valueIndex + 1)
-            : Type.STRING;
-
-    return Tuple.of(value, type);
+    result.addAll(valueSlice(rootPath, valueAndType.first(), valueAndType.second()));
   }
 }

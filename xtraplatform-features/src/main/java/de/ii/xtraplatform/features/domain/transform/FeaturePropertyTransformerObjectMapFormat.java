@@ -36,7 +36,9 @@ public interface FeaturePropertyTransformerObjectMapFormat
 
   @Override
   default FeatureSchema transformSchema(FeatureSchema schema) {
-    Builder builder = new Builder().from(schema).type(Type.OBJECT).propertyMap(Map.of());
+    checkObject(schema);
+
+    Builder builder = new Builder().from(schema).propertyMap(Map.of());
 
     getMapping()
         .keySet()
@@ -48,20 +50,18 @@ public interface FeaturePropertyTransformerObjectMapFormat
     return builder.build();
   }
 
-  @Override
-  default List<Object> transform(String currentPropertyPath, List<Object> slice) {
-    if (slice.isEmpty()) {
-      return slice;
-    }
-
-    List<String> rootPath = getRootObjectPath(slice);
-
+  default void transformObject(
+      String currentPropertyPath,
+      List<Object> slice,
+      List<String> rootPath,
+      int start,
+      int end,
+      List<Object> result) {
     Function<String, String> lookup =
-        getValueLookup(currentPropertyPath, slice, getSubstitutionLookup());
+        getValueLookup(currentPropertyPath, getSubstitutionLookup(), slice, start, end);
 
-    List<Object> transformed = new ArrayList<>();
-    transformed.add(FeatureTokenType.OBJECT);
-    transformed.add(rootPath);
+    result.add(FeatureTokenType.OBJECT);
+    result.add(rootPath);
 
     getMapping()
         .forEach(
@@ -71,12 +71,10 @@ public interface FeaturePropertyTransformerObjectMapFormat
 
               String value = StringTemplateFilters.applyTemplate(template, lookup);
 
-              transformed.addAll(valueSlice(path, value, Type.STRING));
+              result.addAll(valueSlice(path, value, Type.STRING));
             });
 
-    transformed.add(FeatureTokenType.OBJECT_END);
-    transformed.add(rootPath);
-
-    return transformed;
+    result.add(FeatureTokenType.OBJECT_END);
+    result.add(rootPath);
   }
 }

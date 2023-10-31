@@ -182,10 +182,10 @@ public class FeatureProviderSqlFactory
     }
 
     try {
-      return resolveMappingOperationsIfNecessary(
-          resolveSchemasIfNecessary(
-              normalizeConstants(
-                  normalizeFeatureRefs(
+      return normalizeConstants(
+          normalizeFeatureRefs(
+              resolveMappingOperationsIfNecessary(
+                  resolveSchemasIfNecessary(
                       cleanupAutoPersist(
                           cleanupAdditionalInfo(
                               generateNativeCrsIfNecessary(generateTypesIfNecessary(data))))))));

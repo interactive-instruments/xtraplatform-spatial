@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.domain;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.transform.FeatureEventBuffer;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.features.domain.transform.SchemaTransformerChain;
 import de.ii.xtraplatform.features.domain.transform.TokenSliceTransformerChain;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
@@ -24,6 +25,7 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
       LoggerFactory.getLogger(FeatureTokenTransformerMappings.class);
 
   private final Map<String, PropertyTransformations> propertyTransformations;
+  private Map<String, SchemaTransformerChain> schemaTransformerChains;
   private Map<String, TokenSliceTransformerChain> sliceTransformerChains;
   private FeatureEventBuffer<
           FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
@@ -43,6 +45,21 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
 
   @Override
   public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
+    this.schemaTransformerChains =
+        context.mappings().entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(
+                        entry.getKey(),
+                        propertyTransformations
+                            .get(entry.getKey())
+                            .getSchemaTransformations(
+                                entry.getValue(),
+                                (!(context.query() instanceof FeatureQuery)
+                                    || !((FeatureQuery) context.query()).returnsSingleFeature()),
+                                (sep, nam) -> nam)))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
     this.sliceTransformerChains =
         context.mappings().entrySet().stream()
             .map(
@@ -66,6 +83,7 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
                                 entry
                                     .getValue()
                                     .getTargetSchema()
+                                    .accept(schemaTransformerChains.get(entry.getKey()))
                                     .accept(sliceTransformerChains.get(entry.getKey())))
                             .build()))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
@@ -102,19 +120,21 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
   @Override
   public void onFeatureEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
 
+    // TODO: dangerous, infinite loop
     while (nestingTracker.isNested()) {
       if (nestingTracker.inObject()) {
         context.pathTracker().track(nestingTracker.getCurrentNestingPayload());
         int pos = context.pos();
+
         if (pos > -1) {
-          downstream.next(pos);
+          downstream.next(pos, context.parentPos());
           nestingTracker.closeObject();
         }
       } else if (nestingTracker.inArray()) {
         context.pathTracker().track(nestingTracker.getCurrentNestingPayload());
         int pos = context.pos();
         if (pos > -1) {
-          downstream.next(pos);
+          downstream.next(pos, context.parentPos());
           nestingTracker.closeArray();
         }
       }
@@ -139,8 +159,9 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
       downstream.next(pos, context.parentPos());
 
       if (context.schema().filter(schema -> schema.isObject() || schema.isSpatial()).isPresent()) {
-        FeatureSchema schema = context.schema().get();
-        nestingTracker.openObject(schema.getFullPath(), context.path(), context.geometryType());
+        // nestingTracker.open(context.schema().get(), context.parentSchemas(), context.indexes());
+        nestingTracker.openObject(
+            context.schema().get(), context.path(), context.geometryType(), context.mapping());
       }
     }
   }
@@ -162,8 +183,8 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
       downstream.next(pos, context.parentPos());
 
       if (context.schema().filter(schema -> schema.isArray() || schema.isSpatial()).isPresent()) {
-        FeatureSchema schema = context.schema().get();
-        nestingTracker.openArray(schema.getFullPath(), context.path());
+        // nestingTracker.open(context.schema().get(), context.parentSchemas(), context.indexes());
+        nestingTracker.openArray(context.schema().get(), context.path());
       }
     }
   }
@@ -187,12 +208,15 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
       if (context.schema().filter(FeatureSchema::isArray).isPresent()) {
         FeatureSchema schema = context.schema().get();
         if (!nestingTracker.isSamePath(schema.getFullPath())) {
-          nestingTracker.openArray(schema.getFullPath(), context.path());
+          nestingTracker.openArray(schema, context.path());
         }
       }
 
       if (context.schema().filter(FeatureSchema::isValue).isPresent()) {
         FeatureSchema schema = context.schema().get();
+
+        nestingTracker.open(schema, context.parentSchemas(), context.path(), context.mapping());
+
         downstream.onValue(schema.getFullPath(), context.value(), context.valueType());
       }
     }

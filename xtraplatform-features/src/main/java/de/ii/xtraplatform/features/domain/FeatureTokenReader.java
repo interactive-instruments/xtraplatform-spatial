@@ -11,7 +11,9 @@ import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -25,6 +27,7 @@ public class FeatureTokenReader<
   private int contextIndex;
   private V context;
   private List<String> nestingStack;
+  private Map<List<String>, Integer> schemaIndexes;
 
   // TODO
   public FeatureTokenReader(FeatureEventConsumer eventConsumer) {
@@ -35,12 +38,14 @@ public class FeatureTokenReader<
     this.eventHandler = eventHandler;
     this.context = context;
     this.nestingStack = new ArrayList<>();
+    this.schemaIndexes = new HashMap<>();
   }
 
   public void onToken(Object token) {
     if (token instanceof FeatureTokenType) {
       if (Objects.nonNull(currentType)) {
         emitEvent();
+        this.context.setSchemaIndex(-1);
       }
       if (token == FeatureTokenType.FLUSH) {
         this.currentType = null;
@@ -61,13 +66,16 @@ public class FeatureTokenReader<
     this.contextIndex = 0;
 
     context.pathTracker().track(0);
-    context.setGeometryType(Optional.empty());
-    context.setGeometryDimension(OptionalInt.empty());
     context.setValueType(Type.UNKNOWN);
     context.setValue(null);
 
     switch (currentType) {
+      case FEATURE:
+      case FLUSH:
+        schemaIndexes.replaceAll((p, i) -> -1);
+        break;
       case OBJECT:
+        schemaIndexes.replaceAll((p, i) -> -1);
         this.context.setInObject(true);
         if (inArray()) {
           this.context
@@ -79,6 +87,7 @@ public class FeatureTokenReader<
         push("O");
         break;
       case ARRAY:
+        schemaIndexes.replaceAll((p, i) -> -1);
         this.context.setInArray(true);
         this.context.indexes().add(0);
         push("A");
@@ -101,6 +110,8 @@ public class FeatureTokenReader<
         break;
       case OBJECT_END:
         if (this.context.inGeometry()) {
+          this.context.setGeometryType(Optional.empty());
+          this.context.setGeometryDimension(OptionalInt.empty());
           this.context.setInGeometry(false);
         }
         pop();
@@ -139,6 +150,13 @@ public class FeatureTokenReader<
         break;
       case VALUE:
         tryReadPath(context);
+        if (!this.context.inGeometry()
+            && !inArray()
+            && contextIndex == 0
+            && context instanceof List) {
+          schemaIndexes.compute((List<String>) context, (k, v) -> (v == null) ? 0 : v + 1);
+          this.context.setSchemaIndex(schemaIndexes.get((List<String>) context));
+        }
         if (contextIndex == 1 && context instanceof String) {
           this.context.setValue((String) context);
         } else if (contextIndex == 2 && context instanceof SchemaBase.Type) {

@@ -553,6 +553,50 @@ class FeatureTokenFixtures {
             FeatureTokenType.INPUT_END
     ]
 
+    public static final List<Object> OBJECT_WITHOUT_SOURCE_PATH = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "legalavailability_fk"],
+            "11",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "legalavailability_fk"],
+            "11",
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> OBJECT_WITHOUT_SOURCE_PATH_MAPPED = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.OBJECT,
+            ["legalAvailability"],
+            FeatureTokenType.VALUE,
+            ["legalAvailability", "title"],
+            "11",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["legalAvailability", "href"],
+            "11",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["legalAvailability"],
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
     public static final List<Object> EXPLORATION_SITE_OBJECT_ARRAY = [
             FeatureTokenType.INPUT,
             true,
@@ -626,7 +670,7 @@ class FeatureTokenFixtures {
             "11",
             Type.STRING,
             FeatureTokenType.VALUE,
-            ["task", "href"],
+            ["task", "id"],
             "34",
             Type.STRING,
             FeatureTokenType.OBJECT_END,
@@ -638,7 +682,7 @@ class FeatureTokenFixtures {
             "35",
             Type.STRING,
             FeatureTokenType.VALUE,
-            ["task", "href"],
+            ["task", "id"],
             "36",
             Type.STRING,
             FeatureTokenType.OBJECT_END,
@@ -650,7 +694,7 @@ class FeatureTokenFixtures {
             "12",
             Type.STRING,
             FeatureTokenType.VALUE,
-            ["task", "href"],
+            ["task", "id"],
             "37",
             Type.STRING,
             FeatureTokenType.OBJECT_END,

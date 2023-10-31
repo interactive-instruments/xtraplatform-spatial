@@ -200,7 +200,10 @@ public interface FeatureEventHandler<
         return ImmutableList.of();
       }
 
-      List<List<T>> parentSchemas = mapping().getParentSchemasForTargetPath(path);
+      List<List<T>> parentSchemas =
+          isUseTargetPaths()
+              ? mapping().getParentSchemasForTargetPath(path)
+              : mapping().getParentSchemasForSourcePath(path);
 
       if (parentSchemas.isEmpty()) {
         return ImmutableList.of();

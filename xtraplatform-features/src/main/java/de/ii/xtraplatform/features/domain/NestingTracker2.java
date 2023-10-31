@@ -12,6 +12,7 @@ import de.ii.xtraplatform.features.domain.transform.FeatureEventBuffer;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -25,6 +26,7 @@ public class NestingTracker2 {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(NestingTracker2.class);
 
+  private final FeatureEventBuffer<?, ?, ModifiableContext<?, ?>> buffer;
   private final FeatureTokenEmitter2<?, ?, ModifiableContext<?, ?>> downstream;
   // private final ModifiableContext<?, ?> context;
   // private final List<List<String>> mainPaths;
@@ -38,6 +40,7 @@ public class NestingTracker2 {
 
   public <T extends ModifiableContext<?, ?>> NestingTracker2(
       FeatureEventBuffer<?, ?, T> downstream) {
+    this.buffer = (FeatureEventBuffer<?, ?, ModifiableContext<?, ?>>) downstream;
     this.downstream = (FeatureTokenEmitter2<?, ?, ModifiableContext<?, ?>>) downstream.getBuffer();
     // this.context = context;
     // this.mainPaths = mainPaths;
@@ -50,7 +53,115 @@ public class NestingTracker2 {
     this.flattened = new ArrayList<>();
   }
 
-  public void openArray(List<String> path, List<String> payload) {
+  public void open(
+      FeatureSchema schema,
+      List<FeatureSchema> parentSchemas,
+      List<String> payload,
+      SchemaMapping mapping) {
+    // TODO
+    List<Integer> indexes = new ArrayList<>();
+
+    // new higher level property or new object in array???
+    while (isNested()
+        && (doesNotStartWithPreviousPath(schema.getFullPath())
+        /*TODO || (inArray()
+        && isSamePath(schema.getFullPath())
+        && hasParentIndexChanged(indexes))*/ )) {
+
+      if (inObject()) {
+        closeObject();
+      } else if (inArray()) {
+        closeArray();
+      }
+    }
+
+    // new object in array???
+    /*if (nestingTracker.inObject()
+        && newContext.inArray()
+        && nestingTracker.isSamePath(schema.getFullPath())
+        && nestingTracker.hasIndexChanged(indexes)) {
+      closeObject();
+      newContext.setIndexes(indexes);
+      openObject(schema);
+    } else if (newContext.transformed().containsKey("concatNewObject")) {
+      newContext.transformed().remove("concatNewObject");
+      closeObject();
+      openObject(parentSchemas.get(0));
+    }*/
+
+    // new array
+    if (schema.isArray() && !isSamePath(schema.getFullPath())) {
+      openParents(parentSchemas, payload, mapping);
+      // newContext.pathTracker().track(schema.getFullPath());
+      openArray(schema, payload);
+      // first object in array???
+    } else if (schema.isObject() && schema.isArray() && isFirst(indexes)) {
+      // newContext.pathTracker().track(schema.getFullPath());
+      // newContext.setIndexes(indexes);
+      openObject(schema, payload, Optional.empty(), mapping);
+      // new object
+    } else if (schema.isObject() && !schema.isArray() && !isSamePath(schema.getFullPath())) {
+      openParents(parentSchemas, payload, mapping);
+      // newContext.pathTracker().track(schema.getFullPath());
+      openObject(schema, payload, Optional.empty(), mapping);
+      // new value or value array
+    } else if (schema.isValue() && (!schema.isArray() || isFirst(indexes))) {
+      openParents(parentSchemas, payload, mapping);
+    }
+
+    // value array entry
+    if (schema.isValue() && schema.isArray()) {
+      // newContext.setIndexes(indexes);
+    }
+  }
+
+  private void openParents(
+      List<FeatureSchema> parentSchemas, List<String> payload, SchemaMapping mapping) {
+    // parent is feature
+    if (parentSchemas.size() < 2) {
+      return;
+    }
+
+    FeatureSchema parent = parentSchemas.get(0);
+
+    // parent already handled by onObject/onArray
+    if (parent.getSourcePath().isPresent()) {
+      return;
+    }
+
+    List<Integer> newIndexes = new ArrayList<>(); // newContext.indexes());
+    /*List<List<String>> arrays = new ArrayList<>();
+
+    for (int i = parentSchemas.size() - 1; i >= 0; i--) {
+      FeatureSchema schema = parentSchemas.get(i);
+
+      if (schema.getType() == Type.OBJECT_ARRAY && schema.getSourcePath().isEmpty()) {
+        arrays.add(schema.getFullPath());
+        if (!indexedArrays.contains(schema.getFullPath())) {
+          indexedArrays.add(schema.getFullPath());
+          newIndexes.add(1);
+          newContext.setIndexes(newIndexes);
+        }
+      }
+    }
+
+    indexedArrays.removeIf(strings -> !arrays.contains(strings));
+    openedArrays.removeIf(strings -> !arrays.contains(strings));*/
+
+    if (parent.isArray()) {
+      if (! /*openedArrays*/pathStack.contains(parent.getFullPath())) {
+        open(parent, parentSchemas.subList(1, parentSchemas.size()), payload, mapping);
+        if (parent.isObject()) {
+          open(parent, parentSchemas.subList(1, parentSchemas.size()), payload, mapping);
+        }
+        // openedArrays.add(parent.getFullPath());
+      }
+    } else if (parent.isObject()) {
+      open(parent, parentSchemas.subList(1, parentSchemas.size()), payload, mapping);
+    }
+  }
+
+  public void openArray(FeatureSchema schema, List<String> payload) {
     /*if (flattenArrays) {
       flattened.add(context.currentSchema().get().getName());
     } else {
@@ -58,14 +169,17 @@ public class NestingTracker2 {
         downstream.onArrayStart(context);
       }
     }*/
-    downstream.onArrayStart(path);
+    downstream.onArrayStart(schema.getFullPath());
 
-    push("A", path, payload);
+    push("A", schema.getFullPath(), payload);
     // context.setInArray(true);
   }
 
   public void openObject(
-      List<String> path, List<String> payload, Optional<SimpleFeatureGeometry> geometryType) {
+      FeatureSchema schema,
+      List<String> payload,
+      Optional<SimpleFeatureGeometry> geometryType,
+      SchemaMapping mapping) {
     /*if (flattenArrays && inArray()) {
       flattened.add(String.valueOf(context.index()));
     } else if (flattenObjects && (flattenArrays || !inArray())) {
@@ -75,9 +189,34 @@ public class NestingTracker2 {
         downstream.onObjectStart(context);
       }
     }*/
-    downstream.onObjectStart(path, geometryType, OptionalInt.empty());
+    // TODO: make empty source paths easily retrievable from mapping
+    if (schema.getSourcePath().isEmpty()) {
+      List<String> sourcePath =
+          mapping.getSchemasBySourcePath().entrySet().stream()
+              .filter(entry -> entry.getValue().contains(schema))
+              .map(Entry::getKey)
+              .findFirst()
+              .orElseThrow();
 
-    push("O", path, payload);
+      List<Integer> positionsForSourcePath = mapping.getPositionsForSourcePath(sourcePath);
+      List<List<Integer>> parentPositionsForSourcePath =
+          mapping.getParentPositionsForSourcePath(sourcePath);
+
+      int prev = buffer.current;
+      List<Integer> prevEnc = buffer.currentEnclosing;
+
+      buffer.next(positionsForSourcePath.get(0), parentPositionsForSourcePath.get(0));
+
+      downstream.onObjectStart(schema.getFullPath(), geometryType, OptionalInt.empty());
+
+      push("O", schema.getFullPath(), sourcePath);
+
+      buffer.next(prev, prevEnc);
+    } else {
+      downstream.onObjectStart(schema.getFullPath(), geometryType, OptionalInt.empty());
+
+      push("O", schema.getFullPath(), payload);
+    }
     // context.setInObject(true);
   }
 

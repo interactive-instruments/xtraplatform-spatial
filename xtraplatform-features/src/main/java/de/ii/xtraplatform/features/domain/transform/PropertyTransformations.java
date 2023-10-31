@@ -137,11 +137,10 @@ public interface PropertyTransformations {
     };
   }
 
-  default TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer>
-      getSchemaTransformations(
-          SchemaMapping schemaMapping,
-          boolean inCollection,
-          BiFunction<String, String, String> flattenedPathProvider) {
+  default SchemaTransformerChain getSchemaTransformations(
+      SchemaMapping schemaMapping,
+      boolean inCollection,
+      BiFunction<String, String, String> flattenedPathProvider) {
     return new SchemaTransformerChain(
         getTransformations(), schemaMapping, inCollection, flattenedPathProvider);
   }

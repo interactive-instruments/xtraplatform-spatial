@@ -10,7 +10,9 @@ package de.ii.xtraplatform.features.domain.transform;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
+import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +23,8 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 public class SchemaTransformerChain
-    implements TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> {
+    implements TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer>,
+        SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
   public static final String OBJECT_TYPE_WILDCARD = "*{objectType=";
 
@@ -67,6 +70,17 @@ public class SchemaTransformerChain
                             .addAll(first)
                             .addAll(second)
                             .build()));
+  }
+
+  @Override
+  public FeatureSchema visit(
+      FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
+    return transform(
+        schema.getFullPathAsString(),
+        new ImmutableFeatureSchema.Builder()
+            .from(schema)
+            .propertyMap(asMap(visitedProperties, FeatureSchema::getFullPathAsString))
+            .build());
   }
 
   @Nullable
@@ -171,16 +185,16 @@ public class SchemaTransformerChain
                               .inCollection(inCollection)
                               .build()));
 
-          propertyTransformation
-              .getFlatten()
-              .ifPresent(
-                  flatten ->
-                      transformers.add(
-                          ImmutableFeaturePropertyTransformerFlatten.builder()
-                              .propertyPath(path)
-                              .parameter(flatten)
-                              .flattenedPathProvider(flattenedPathProvider)
-                              .build()));
+          /*propertyTransformation
+          .getFlatten()
+          .ifPresent(
+              flatten ->
+                  transformers.add(
+                      ImmutableFeaturePropertyTransformerFlatten.builder()
+                          .propertyPath(path)
+                          .parameter(flatten)
+                          .flattenedPathProvider(flattenedPathProvider)
+                          .build()));*/
 
           // TODO
           /*mapping.getFlattenObjects()

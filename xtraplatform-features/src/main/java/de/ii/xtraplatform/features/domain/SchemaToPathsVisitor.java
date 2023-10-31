@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,6 +30,7 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
   private final BiFunction<String, Boolean, String> sourcePathTransformer;
   private final boolean useTargetPath;
   private int counter;
+  private int emptyCounter;
 
   SchemaToPathsVisitor(boolean useTargetPath) {
     this(useTargetPath, IDENTITY);
@@ -39,6 +41,7 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
     this.sourcePathTransformer = sourcePathTransformer;
     this.useTargetPath = useTargetPath;
     this.counter = 0;
+    this.emptyCounter = 0;
   }
 
   @Override
@@ -78,6 +81,10 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
                     })
                 .collect(Collectors.toList());
 
+    if (!useTargetPath && paths.isEmpty()) {
+      paths = List.of(List.of("__EMPTY__", String.valueOf(counter++)));
+    }
+
     return (paths.isEmpty()
             ? visitedProperties.stream()
                 .flatMap(
@@ -109,7 +116,7 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
   }
 
   private List<String> merge(List<String> parentPath, List<String> path) {
-    if (parentPath.isEmpty()) {
+    if (parentPath.isEmpty() || Objects.equals(parentPath.get(0), "__EMPTY__")) {
       return path;
     }
 

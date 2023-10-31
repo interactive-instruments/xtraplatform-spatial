@@ -9,7 +9,6 @@ package de.ii.xtraplatform.features.domain
 
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations
-import spock.lang.Ignore
 import spock.lang.Specification
 
 /**
@@ -21,7 +20,7 @@ class FeatureTokenTransformerMappingSpec extends Specification {
         FeatureTokenTransformerMappings mapper = new FeatureTokenTransformerMappings(["test": new PropertyTransformations() {
             @Override
             Map<String, List<PropertyTransformation>> getTransformations() {
-                return Map<String,List<PropertyTransformation>>.of();
+                return Map<String, List<PropertyTransformation>>.of();
             }
         }])
         FeatureQuery query = ImmutableFeatureQuery.builder().type("test").build()
@@ -54,9 +53,10 @@ class FeatureTokenTransformerMappingSpec extends Specification {
 
         where:
 
-        casename                                  | schema                             | source                                                 | expected
-        "joined value array between main columns" | FeatureSchemaFixtures.BIOTOP       | FeatureTokenFixtures.SINGLE_FEATURE_VALUE_ARRAY_AT_END | FeatureTokenFixtures.SINGLE_FEATURE_VALUE_ARRAY_IN_ORDER_MAPPED
-        "joined object array"                     | FeatureSchemaFixtures.OBJECT_ARRAY | FeatureTokenFixtures.EXPLORATION_SITE_OBJECT_ARRAY     | FeatureTokenFixtures.EXPLORATION_SITE_OBJECT_ARRAY_MAPPED
+        casename                                  | schema                                           | source                                                 | expected
+        "joined value array between main columns" | FeatureSchemaFixtures.BIOTOP                     | FeatureTokenFixtures.SINGLE_FEATURE_VALUE_ARRAY_AT_END | FeatureTokenFixtures.SINGLE_FEATURE_VALUE_ARRAY_IN_ORDER_MAPPED
+        "joined object array"                     | FeatureSchemaFixtures.OBJECT_ARRAY               | FeatureTokenFixtures.EXPLORATION_SITE_OBJECT_ARRAY     | FeatureTokenFixtures.EXPLORATION_SITE_OBJECT_ARRAY_MAPPED
+        "object without source path"              | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH | FeatureTokenFixtures.OBJECT_WITHOUT_SOURCE_PATH        | FeatureTokenFixtures.OBJECT_WITHOUT_SOURCE_PATH_MAPPED
 
     }
 
