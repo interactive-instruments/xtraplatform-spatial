@@ -19,7 +19,6 @@ import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityData;
 import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
 import de.ii.xtraplatform.entities.domain.EntityFactory;
-import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.entities.domain.PersistentEntity;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
@@ -34,6 +33,7 @@ import de.ii.xtraplatform.features.gml.domain.ImmutableFeatureProviderWfsData;
 import de.ii.xtraplatform.features.gml.infra.WfsConnectorHttp;
 import de.ii.xtraplatform.features.gml.infra.WfsSchemaCrawler;
 import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.values.domain.ValueStore;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
@@ -62,7 +62,7 @@ public class FeatureProviderWfsFactory
       Cql cql,
       ConnectorFactory connectorFactory,
       Reactive reactive,
-      EntityRegistry entityRegistry,
+      ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
       ProviderWfsFactoryAssisted providerWfsFactoryAssisted) {
     super(providerWfsFactoryAssisted);

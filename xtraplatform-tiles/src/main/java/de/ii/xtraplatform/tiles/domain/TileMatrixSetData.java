@@ -8,6 +8,9 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ii.xtraplatform.values.domain.StoredValue;
+import de.ii.xtraplatform.values.domain.ValueBuilder;
+import de.ii.xtraplatform.values.domain.annotations.FromValueStore;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
@@ -16,8 +19,9 @@ import org.immutables.value.Value;
 /** This class specifies the data structure of a tile matrix set. */
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new")
+@FromValueStore(type = "tile-matrix-sets")
 @JsonDeserialize(builder = ImmutableTileMatrixSetData.Builder.class)
-public interface TileMatrixSetData {
+public interface TileMatrixSetData extends StoredValue {
 
   String getId();
 
@@ -38,4 +42,6 @@ public interface TileMatrixSetData {
   List<TileMatrix> getTileMatrices();
 
   List<String> getOrderedAxes();
+
+  abstract class Builder implements ValueBuilder<TileMatrixSetData> {}
 }

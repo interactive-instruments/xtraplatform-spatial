@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.base.domain.AppLifeCycle;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
@@ -19,6 +20,8 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.proj.domain.ProjLoader;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -66,14 +69,16 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
   private static final Logger LOGGER = LoggerFactory.getLogger(CrsTransformerFactoryProj.class);
 
   private final ProjLoader projLoader;
+  private final ResourceStore projStore;
   private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
   private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
   private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCacheForce2d;
   private final boolean useCaches = true;
 
   @Inject
-  public CrsTransformerFactoryProj(ProjLoader projLoader) {
+  public CrsTransformerFactoryProj(ProjLoader projLoader, ResourceStore resourceStore) {
     this.projLoader = projLoader;
+    this.projStore = resourceStore.with("proj");
     this.crsCache = new ConcurrentHashMap<>();
     this.transformerCache = new ConcurrentHashMap<>();
     this.transformerCacheForce2d = new ConcurrentHashMap<>();
@@ -83,18 +88,25 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
   public void onStart() {
     try {
       projLoader.load();
-      // TODO: to projLoader?
-      if (!projLoader.getDataDirectory().toFile().exists()
-          || !projLoader.getDataDirectory().resolve("proj.db").toFile().exists()) {
-        throw new IllegalArgumentException(
-            "Not a valid PROJ location: " + projLoader.getDataDirectory());
+
+      Optional<Path> customPath = Optional.empty();
+      try {
+        customPath = projStore.asLocalPath(Path.of(""), false);
+      } catch (IOException e) {
+        LogContext.error(LOGGER, e, "Could not initialize PROJ custom data directory");
       }
-      Proj.setSearchPath(projLoader.getDataDirectory().toString());
+
+      String[] locations =
+          customPath.isPresent()
+              ? new String[] {
+                projLoader.getDataDirectory().toString(), customPath.get().normalize().toString()
+              }
+              : new String[] {projLoader.getDataDirectory().toString()};
+
+      Proj.setSearchPath(locations);
       Proj.version()
           .ifPresent(
-              version ->
-                  LOGGER.debug(
-                      "PROJ version: {}, location: {}", version, projLoader.getDataDirectory()));
+              version -> LOGGER.debug("PROJ version: {}, locations: {}", version, locations));
       System.setProperty("org.kortforsyningen.proj.maxThreadsPerInstance", "16");
     } catch (Throwable e) {
       LogContext.error(LOGGER, e, "PROJ");

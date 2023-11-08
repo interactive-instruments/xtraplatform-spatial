@@ -24,6 +24,7 @@ import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Runner;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
+import de.ii.xtraplatform.values.domain.Values;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +55,7 @@ public abstract class AbstractFeatureProvider<
   private final Reactive reactive;
   private final CrsTransformerFactory crsTransformerFactory;
   private final ProviderExtensionRegistry extensionRegistry;
+  private final Values<Codelist> codelistStore;
   private final FeatureChangeHandler changeHandler;
   private final ScheduledExecutorService delayedDisposer;
   private Reactive.Runner streamRunner;
@@ -66,12 +68,14 @@ public abstract class AbstractFeatureProvider<
       Reactive reactive,
       CrsTransformerFactory crsTransformerFactory,
       ProviderExtensionRegistry extensionRegistry,
+      Values<Codelist> codelistStore,
       FeatureProviderDataV2 data) {
     super(data);
     this.connectorFactory = connectorFactory;
     this.reactive = reactive;
     this.crsTransformerFactory = crsTransformerFactory;
     this.extensionRegistry = extensionRegistry;
+    this.codelistStore = codelistStore;
     this.changeHandler = new FeatureChangeHandlerImpl();
     this.delayedDisposer =
         MoreExecutors.getExitingScheduledExecutorService(
@@ -341,7 +345,9 @@ public abstract class AbstractFeatureProvider<
     return ImmutableList.of();
   }
 
-  protected abstract Map<String, Codelist> getCodelists();
+  protected Map<String, Codelist> getCodelists() {
+    return codelistStore.asMap();
+  }
 
   @Override
   public final FeatureProviderCapabilities getCapabilities() {

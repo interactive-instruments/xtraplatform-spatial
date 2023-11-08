@@ -10,7 +10,7 @@ package de.ii.xtraplatform.features.sql.infra.db;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.base.Strings;
 import de.ii.xtraplatform.base.domain.AppContext;
-import de.ii.xtraplatform.blobs.domain.BlobStore;
+import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.spatialite.domain.SpatiaLiteLoader;
 import java.io.IOException;
@@ -35,7 +35,7 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(SqlDataSourceFactoryImpl.class);
 
   private final Path dataDir;
-  private final BlobStore featuresStore;
+  private final ResourceStore featuresStore;
   private final String applicationName;
   private final SpatiaLiteLoader spatiaLiteLoader;
 
@@ -43,7 +43,7 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
 
   @Inject
   public SqlDataSourceFactoryImpl(
-      AppContext appContext, BlobStore blobStore, SpatiaLiteLoader spatiaLiteLoader) {
+      AppContext appContext, ResourceStore blobStore, SpatiaLiteLoader spatiaLiteLoader) {
     this.dataDir = appContext.getDataDir();
     this.featuresStore = blobStore.with("features");
     this.applicationName =

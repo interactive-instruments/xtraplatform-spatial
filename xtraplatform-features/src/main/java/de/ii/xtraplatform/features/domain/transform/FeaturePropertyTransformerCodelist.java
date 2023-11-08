@@ -8,7 +8,7 @@
 package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.codelists.domain.Codelist;
-import de.ii.xtraplatform.codelists.domain.CodelistData.ImportType;
+import de.ii.xtraplatform.codelists.domain.Codelist.ImportType;
 import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -43,8 +43,7 @@ public interface FeaturePropertyTransformerCodelist extends FeaturePropertyValue
     Codelist cl = getCodelists().get(getParameter());
     String resolvedValue = cl.getValue(input);
 
-    if (cl.getData().getSourceType().isEmpty()
-        || cl.getData().getSourceType().get() == ImportType.TEMPLATES) {
+    if (cl.getSourceType().isEmpty() || cl.getSourceType().get() == ImportType.TEMPLATES) {
       resolvedValue =
           StringTemplateFilters.applyFilterMarkdown(
               StringTemplateFilters.applyTemplate(resolvedValue, input));
