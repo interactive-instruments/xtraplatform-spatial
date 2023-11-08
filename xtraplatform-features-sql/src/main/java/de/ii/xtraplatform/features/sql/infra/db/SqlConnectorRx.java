@@ -338,7 +338,7 @@ public class SqlConnectorRx implements SqlConnector {
     return Duration.parse("PT" + duration).toMillis();
   }
 
-  private static String getPassword(ConnectionInfoSql connectionInfo) {
+  public static String getPassword(ConnectionInfoSql connectionInfo) {
     String password = connectionInfo.getPassword().orElse("");
     try {
       password = new String(Base64.getDecoder().decode(password), Charsets.UTF_8);

@@ -14,20 +14,20 @@ import de.ii.xtraplatform.features.domain.FeatureSchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaGenerator;
-import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.app.SimpleFeatureGeometryFromToWkt;
-import de.ii.xtraplatform.features.sql.domain.SqlClient;
+import de.ii.xtraplatform.features.sql.domain.SqlClientBasic;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect.GeoInfo;
-import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import schemacrawler.schema.Catalog;
@@ -36,39 +36,85 @@ import schemacrawler.schema.ColumnDataType;
 import schemacrawler.schema.Schema;
 import schemacrawler.schema.Table;
 
-public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
+public class SchemaGeneratorSql implements SchemaGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaGeneratorSql.class);
 
-  private final SqlClient sqlClient;
+  private final SqlClientBasic sqlClientBasic;
   private final Connection connection;
   private final SqlSchemaCrawler schemaCrawler;
-  private final List<String> schemas;
-  private final List<String> includeTables;
   private final SqlDialect dialect;
 
-  public SchemaGeneratorSql(
-      SqlClient sqlClient, List<String> schemas, List<String> includeTables, SqlDialect dialect) {
-    this.sqlClient = sqlClient;
-    this.connection = sqlClient.getConnection();
-    this.schemaCrawler = new SqlSchemaCrawler(sqlClient.getConnection());
-    this.schemas = schemas;
-    this.includeTables = includeTables;
-    this.dialect = dialect;
+  public SchemaGeneratorSql(SqlClientBasic sqlClientBasic) {
+    this.sqlClientBasic = sqlClientBasic;
+    this.connection = sqlClientBasic.getConnection();
+    this.schemaCrawler = new SqlSchemaCrawler(connection);
+    this.dialect = sqlClientBasic.getSqlDialect();
   }
 
   @Override
-  public List<FeatureSchema> generate() {
+  public Map<String, List<String>> analyze() {
+    try {
+      Catalog catalog =
+          schemaCrawler.getCatalog(dialect.getSystemSchemas(), dialect.getSystemTables());
+
+      return catalog.getSchemas().stream()
+          .map(
+              schema ->
+                  Map.entry(
+                      Objects.requireNonNullElse(schema.getName(), ""),
+                      catalog.getTables(schema).stream()
+                          .map(Table::getName)
+                          .collect(Collectors.toList())))
+          .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    } catch (Throwable e) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("Stacktrace:", e);
+      }
+      throw new IllegalStateException("Could not crawl schema", e);
+    }
+  }
+
+  @Override
+  public List<FeatureSchema> generate(
+      Map<String, List<String>> types, Consumer<Map<String, List<String>>> tracker) {
     try {
       LOGGER.debug("Crawling SQL schema");
 
-      Tuple<Catalog, List<String>> catalogAndMatching =
-          schemaCrawler.getCatalogAndMatching(schemas, includeTables, dialect.getSystemTables());
-
-      Map<String, List<String>> geometryInfos = getGeometryInfos();
+      Map<String, List<String>> progress = new LinkedHashMap<>();
+      Map<String, GeoInfo> geoInfo = sqlClientBasic.getGeoInfo();
 
       List<FeatureSchema> featureTypes =
-          getFeatureTypes(catalogAndMatching.first(), catalogAndMatching.second(), geometryInfos);
+          types.entrySet().stream()
+              .flatMap(
+                  schema ->
+                      schema.getValue().stream()
+                          .map(
+                              tableName -> {
+                                track(progress, tracker, schema.getKey(), tableName);
+
+                                try {
+                                  Catalog catalog =
+                                      schemaCrawler.getCatalog(schema.getKey(), tableName);
+
+                                  Table table =
+                                      catalog
+                                          .lookupSchema(schema.getKey())
+                                          .flatMap(s -> catalog.lookupTable(s, tableName))
+                                          .map(t -> (Table) t)
+                                          .orElseThrow(
+                                              () ->
+                                                  new RuntimeException(
+                                                      String.format(
+                                                          "Could not crawl schema for %s.%s",
+                                                          schema.getKey(), tableName)));
+
+                                  return getFeatureType(table, geoInfo);
+                                } catch (Throwable e) {
+                                  return null;
+                                }
+                              }))
+              .collect(Collectors.toList());
 
       LOGGER.debug("Finished crawling SQL schema");
 
@@ -77,12 +123,32 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug("Stacktrace:", e);
       }
-      throw new IllegalStateException("Could not crawl schema: " + e.getMessage());
+      throw new IllegalStateException("Could not crawl schema", e);
+    }
+  }
+
+  private static void track(
+      Map<String, List<String>> progress,
+      Consumer<Map<String, List<String>>> tracker,
+      String schema,
+      String table) {
+    boolean changed = false;
+
+    if (!progress.containsKey(schema)) {
+      progress.put(schema, new ArrayList<>());
+      changed = true;
+    }
+    if (!progress.get(schema).contains(table)) {
+      progress.get(schema).add(table);
+      changed = true;
+    }
+    if (changed) {
+      tracker.accept(progress);
     }
   }
 
   private List<FeatureSchema> getFeatureTypes(
-      Catalog catalog, List<String> includeTables, Map<String, List<String>> geometryInfos) {
+      Catalog catalog, List<String> includeTables, Map<String, GeoInfo> geometryInfos) {
     ImmutableList.Builder<FeatureSchema> featureTypes = new ImmutableList.Builder<>();
 
     for (final Schema schema : catalog.getSchemas()) {
@@ -123,21 +189,22 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
               if (!geometryInfos.containsKey(table.getName())) {
                 continue;
               }
-              List<String> geometryInfo = geometryInfos.get(table.getName());
+              GeoInfo geometryInfo = geometryInfos.get(table.getName());
 
               // if srid=0, do not set, will use default
               try {
-                int srid = Integer.parseInt(geometryInfo.get(1));
+                int srid = Integer.parseInt(geometryInfo.getSrid());
                 if (srid > 0) {
                   featureProperty.additionalInfo(
-                      ImmutableMap.of("crs", String.valueOf(srid), "force", geometryInfo.get(2)));
+                      ImmutableMap.of(
+                          "crs", String.valueOf(srid), "force", geometryInfo.getForce()));
                 }
               } catch (Throwable e) {
                 // ignore
               }
 
               featureProperty.geometryType(
-                  SimpleFeatureGeometryFromToWkt.fromString(geometryInfo.get(0))
+                  SimpleFeatureGeometryFromToWkt.fromString(geometryInfo.getType())
                       .toSimpleFeatureGeometry());
             }
             featureType.putPropertyMap(column.getName(), featureProperty.build());
@@ -156,6 +223,71 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
       }
     }
     return featureTypes.build();
+  }
+
+  private FeatureSchema getFeatureType(Table table, Map<String, GeoInfo> geometryInfos) {
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Generating type '{}'", table.getName());
+    }
+
+    SchemaInfo schemaInfo = new SchemaInfo(List.of(table));
+
+    ImmutableFeatureSchema.Builder featureType =
+        new ImmutableFeatureSchema.Builder()
+            .name(table.getName())
+            .sourcePath("/" + table.getName().toLowerCase());
+
+    boolean idFound = false;
+
+    for (final Column column : table.getColumns()) {
+      SchemaBase.Type featurePropertyType = getFeaturePropertyType(column.getColumnDataType());
+      if (featurePropertyType != SchemaBase.Type.UNKNOWN) {
+        ImmutableFeatureSchema.Builder featureProperty =
+            new ImmutableFeatureSchema.Builder()
+                .name(column.getName())
+                .sourcePath(column.getName())
+                .type(featurePropertyType);
+        if (!idFound && schemaInfo.isColumnUnique(column.getName(), table.getName(), false)) {
+          featureProperty.role(SchemaBase.Role.ID);
+          idFound = true;
+        }
+        if (schemaInfo.isColumnReadOnly(column.getName(), table.getName())) {
+          featureProperty.scope(Scope.QUERIES);
+        }
+        if (featurePropertyType == SchemaBase.Type.GEOMETRY) {
+          if (!geometryInfos.containsKey(table.getName())) {
+            continue;
+          }
+          GeoInfo geometryInfo = geometryInfos.get(table.getName());
+
+          // if srid=0, do not set, will use default
+          try {
+            int srid = Integer.parseInt(geometryInfo.getSrid());
+            if (srid > 0) {
+              featureProperty.additionalInfo(
+                  ImmutableMap.of("crs", String.valueOf(srid), "force", geometryInfo.getForce()));
+            }
+          } catch (Throwable e) {
+            // ignore
+          }
+
+          featureProperty.geometryType(
+              SimpleFeatureGeometryFromToWkt.fromString(geometryInfo.getType())
+                  .toSimpleFeatureGeometry());
+        }
+        featureType.putPropertyMap(column.getName(), featureProperty.build());
+      }
+    }
+
+    FeatureSchema featureSchema = featureType.build();
+
+    if (featureSchema.getProperties().stream().noneMatch(FeatureSchema::isId)) {
+      LOGGER.warn(
+          "No primary key or unique column found for table '{}', you have to adjust the type configuration manually.",
+          table.getName());
+    }
+
+    return featureSchema;
   }
 
   private SchemaBase.Type getFeaturePropertyType(ColumnDataType columnDataType) {
@@ -179,28 +311,6 @@ public class SchemaGeneratorSql implements SchemaGenerator, Closeable {
       default:
         return SchemaBase.Type.UNKNOWN;
     }
-  }
-
-  // TODO: use SqlClient
-  private Map<String, List<String>> getGeometryInfos() {
-    Map<String, List<String>> geometry = new HashMap<>();
-    Map<String, String> dbInfo = sqlClient.getDbInfo();
-    String query = dialect.geometryInfoQuery(dbInfo);
-    String force = dialect.forceAxisOrder(dbInfo).name();
-
-    try {
-      Statement stmt = connection.createStatement();
-      ResultSet rs = stmt.executeQuery(query);
-      while (rs.next()) {
-        geometry.put(
-            rs.getString(GeoInfo.TABLE),
-            ImmutableList.of(rs.getString(GeoInfo.TYPE), rs.getString(GeoInfo.SRID), force));
-      }
-    } catch (SQLException e) {
-      LOGGER.debug("SQL QUERY EXCEPTION", e);
-    }
-
-    return geometry;
   }
 
   @Override

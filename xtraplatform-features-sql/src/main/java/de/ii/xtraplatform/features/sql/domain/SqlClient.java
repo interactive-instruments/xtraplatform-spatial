@@ -13,13 +13,12 @@ import de.ii.xtraplatform.streams.domain.Reactive;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public interface SqlClient {
+public interface SqlClient extends SqlClientBasic {
 
   CompletableFuture<Collection<SqlRow>> run(String query, SqlQueryOptions options);
 
@@ -35,10 +34,6 @@ public interface SqlClient {
       Function<FeatureSql, List<Function<FeatureSql, Tuple<String, Consumer<String>>>>> mutations,
       Object executionContext,
       Optional<String> id);
-
-  Connection getConnection();
-
-  Map<String, String> getDbInfo();
 
   List<String> getNotifications(Connection connection);
 }

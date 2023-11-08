@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.features.sql.infra.db;
 
-import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.ImmutableTuple;
 import de.ii.xtraplatform.features.domain.Tuple;
 import java.io.Closeable;
@@ -25,6 +24,7 @@ import schemacrawler.inclusionrule.RegularExpressionRule;
 import schemacrawler.schema.Catalog;
 import schemacrawler.schema.Table;
 import schemacrawler.schemacrawler.LimitOptionsBuilder;
+import schemacrawler.schemacrawler.LoadOptions;
 import schemacrawler.schemacrawler.LoadOptionsBuilder;
 import schemacrawler.schemacrawler.SchemaCrawlerException;
 import schemacrawler.schemacrawler.SchemaCrawlerOptions;
@@ -40,9 +40,15 @@ public class SqlSchemaCrawler implements Closeable {
     this.connection = connection;
   }
 
-  public Catalog getCatalog(List<String> schemas, List<String> excludeTables)
+  public Catalog getCatalog(List<String> excludeSchemas, List<String> excludeTables)
       throws SchemaCrawlerException {
-    return getCatalog(schemas, ImmutableList.of(), excludeTables);
+    return crawlSchemasAndTables(excludeSchemas, excludeTables);
+  }
+
+  public Catalog getCatalog(String schema, String table) throws SchemaCrawlerException {
+    return getCatalogAndMatching(
+            schema.isEmpty() ? List.of() : List.of(schema), List.of(table), List.of())
+        .first();
   }
 
   public Catalog getCatalog(
@@ -54,7 +60,7 @@ public class SqlSchemaCrawler implements Closeable {
   public Tuple<Catalog, List<String>> getCatalogAndMatching(
       List<String> schemas, List<String> includeTables, List<String> excludeTables)
       throws SchemaCrawlerException {
-    Catalog catalog = crawlSchema(schemas, includeTables, excludeTables);
+    Catalog catalog = crawlWithDetails(schemas, includeTables, excludeTables);
     List<String> matchingTables =
         catalog.getTables().stream().map(Table::getName).collect(Collectors.toList());
 
@@ -70,14 +76,14 @@ public class SqlSchemaCrawler implements Closeable {
 
       if (additionalTables.size() > includeTables.size()) {
         return ImmutableTuple.of(
-            crawlSchema(schemas, additionalTables, excludeTables), matchingTables);
+            crawlWithDetails(schemas, additionalTables, excludeTables), matchingTables);
       }
     }
 
     return ImmutableTuple.of(catalog, matchingTables);
   }
 
-  private Catalog crawlSchema(
+  private Catalog crawlWithDetails(
       List<String> schemas, List<String> includeTables, List<String> excludeTables)
       throws SchemaCrawlerException {
     String includeSchemas = schemas.stream().distinct().collect(Collectors.joining("|", "(", ")"));
@@ -103,45 +109,39 @@ public class SqlSchemaCrawler implements Closeable {
     if (!schemas.isEmpty()) {
       limitOptionsBuilder.includeSchemas(new RegularExpressionInclusionRule(includeSchemas));
     }
-    LoadOptionsBuilder loadOptionsBuilder =
-        LoadOptionsBuilder.builder()
-            .withSchemaInfoLevel(
-                SchemaInfoLevelBuilder.builder()
-                    .setRetrieveColumnDataTypes(true)
-                    .setRetrieveIndexes(true)
-                    .setRetrieveIndexInformation(true)
-                    .setRetrieveTableColumns(true)
-                    .setRetrieveTableConstraintDefinitions(true) // needed???
-                    .setRetrieveTableConstraintInformation(true)
-                    .setRetrieveTableDefinitionsInformation(true)
-                    .setRetrieveTables(true)
-                    .setRetrieveUserDefinedColumnDataTypes(true)
-                    .setRetrieveViewInformation(true)
-                    .setRetrieveViewViewTableUsage(true)
-                    .setRetrieveAdditionalColumnAttributes(false)
-                    .setRetrieveAdditionalColumnMetadata(false)
-                    .setRetrieveAdditionalDatabaseInfo(false)
-                    .setRetrieveAdditionalJdbcDriverInfo(false)
-                    .setRetrieveAdditionalTableAttributes(false)
-                    .setRetrieveDatabaseInfo(false)
-                    .setRetrieveDatabaseUsers(false)
-                    .setRetrieveForeignKeys(false)
-                    .setRetrieveRoutineInformation(false)
-                    .setRetrieveRoutineParameters(false)
-                    .setRetrieveRoutines(false)
-                    .setRetrieveSequenceInformation(false)
-                    .setRetrieveServerInfo(false)
-                    .setRetrieveSynonymInformation(false)
-                    .setRetrieveTableColumnPrivileges(false)
-                    .setRetrieveTablePrivileges(false)
-                    .setRetrieveTriggerInformation(false)
-                    .setRetrieveWeakAssociations(false)
-                    .toOptions());
 
     SchemaCrawlerOptions options =
         SchemaCrawlerOptionsBuilder.newSchemaCrawlerOptions()
             .withLimitOptions(limitOptionsBuilder.toOptions())
-            .withLoadOptions(loadOptionsBuilder.toOptions());
+            .withLoadOptions(fullDetails());
+
+    return SchemaCrawlerUtility.getCatalog(connection, options);
+  }
+
+  private Catalog crawlSchemasAndTables(List<String> excludeSchemas, List<String> excludeTables)
+      throws SchemaCrawlerException {
+    LimitOptionsBuilder limitOptionsBuilder =
+        LimitOptionsBuilder.builder()
+            .tableTypes("BASE TABLE", "TABLE", "VIEW", "MATERIALIZED VIEW");
+
+    if (!excludeSchemas.isEmpty()) {
+      String excludeSchemasString =
+          excludeSchemas.stream().distinct().collect(Collectors.joining("|", "(", ")"));
+      limitOptionsBuilder.includeSchemas(new RegularExpressionExclusionRule(excludeSchemasString));
+    }
+    if (!excludeTables.isEmpty()) {
+      Collector<CharSequence, ?, String> tableCollector =
+          excludeSchemas.isEmpty()
+              ? Collectors.joining("|", "(", ")")
+              : Collectors.joining("|.*\\.", "(.*\\.", ")");
+      String excludeTablesString = excludeTables.stream().distinct().collect(tableCollector);
+      limitOptionsBuilder.includeTables(new RegularExpressionExclusionRule(excludeTablesString));
+    }
+
+    SchemaCrawlerOptions options =
+        SchemaCrawlerOptionsBuilder.newSchemaCrawlerOptions()
+            .withLimitOptions(limitOptionsBuilder.toOptions())
+            .withLoadOptions(onlyTableNames());
 
     return SchemaCrawlerUtility.getCatalog(connection, options);
   }
@@ -153,5 +153,79 @@ public class SqlSchemaCrawler implements Closeable {
     } catch (SQLException exception) {
       throw new IOException(exception);
     }
+  }
+
+  private static LoadOptions onlyTableNames() {
+    return LoadOptionsBuilder.builder()
+        .withSchemaInfoLevel(
+            SchemaInfoLevelBuilder.builder()
+                .setRetrieveTables(true)
+                .setRetrieveViewInformation(true) // needed???
+                .setRetrieveColumnDataTypes(false)
+                .setRetrieveIndexes(false)
+                .setRetrieveIndexInformation(false)
+                .setRetrieveTableColumns(false)
+                .setRetrieveTableConstraintDefinitions(false)
+                .setRetrieveTableConstraintInformation(false)
+                .setRetrieveTableDefinitionsInformation(false)
+                .setRetrieveUserDefinedColumnDataTypes(false)
+                .setRetrieveViewViewTableUsage(false)
+                .setRetrieveAdditionalColumnAttributes(false)
+                .setRetrieveAdditionalColumnMetadata(false)
+                .setRetrieveAdditionalDatabaseInfo(false)
+                .setRetrieveAdditionalJdbcDriverInfo(false)
+                .setRetrieveAdditionalTableAttributes(false)
+                .setRetrieveDatabaseInfo(false)
+                .setRetrieveDatabaseUsers(false)
+                .setRetrieveForeignKeys(false)
+                .setRetrieveRoutineInformation(false)
+                .setRetrieveRoutineParameters(false)
+                .setRetrieveRoutines(false)
+                .setRetrieveSequenceInformation(false)
+                .setRetrieveServerInfo(false)
+                .setRetrieveSynonymInformation(false)
+                .setRetrieveTableColumnPrivileges(false)
+                .setRetrieveTablePrivileges(false)
+                .setRetrieveTriggerInformation(false)
+                .setRetrieveWeakAssociations(false)
+                .toOptions())
+        .toOptions();
+  }
+
+  private static LoadOptions fullDetails() {
+    return LoadOptionsBuilder.builder()
+        .withSchemaInfoLevel(
+            SchemaInfoLevelBuilder.builder()
+                .setRetrieveColumnDataTypes(true)
+                .setRetrieveIndexes(true)
+                .setRetrieveIndexInformation(true)
+                .setRetrieveTableColumns(true)
+                .setRetrieveTableConstraintDefinitions(true) // needed???
+                .setRetrieveTableConstraintInformation(true)
+                .setRetrieveTableDefinitionsInformation(true)
+                .setRetrieveTables(true)
+                .setRetrieveUserDefinedColumnDataTypes(true)
+                .setRetrieveViewInformation(true)
+                .setRetrieveViewViewTableUsage(true)
+                .setRetrieveAdditionalColumnAttributes(false)
+                .setRetrieveAdditionalColumnMetadata(false)
+                .setRetrieveAdditionalDatabaseInfo(false)
+                .setRetrieveAdditionalJdbcDriverInfo(false)
+                .setRetrieveAdditionalTableAttributes(false)
+                .setRetrieveDatabaseInfo(false)
+                .setRetrieveDatabaseUsers(false)
+                .setRetrieveForeignKeys(false)
+                .setRetrieveRoutineInformation(false)
+                .setRetrieveRoutineParameters(false)
+                .setRetrieveRoutines(false)
+                .setRetrieveSequenceInformation(false)
+                .setRetrieveServerInfo(false)
+                .setRetrieveSynonymInformation(false)
+                .setRetrieveTableColumnPrivileges(false)
+                .setRetrieveTablePrivileges(false)
+                .setRetrieveTriggerInformation(false)
+                .setRetrieveWeakAssociations(false)
+                .toOptions())
+        .toOptions();
   }
 }
