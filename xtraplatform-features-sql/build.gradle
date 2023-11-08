@@ -23,7 +23,7 @@ dependencies {
 
     embeddedFlat group: 'org.postgresql', name: 'postgresql', version: '42.5.1'
 
-    embeddedExport group: 'org.xerial', name: 'sqlite-jdbc', version: '3.41.2.2'
+    embeddedFlatExport group: 'org.xerial', name: 'sqlite-jdbc', version: '3.43.2.2'
 
     embedded group: 'us.fatehi', name: 'schemacrawler-api', version: '16.11.6'
     embedded group: 'us.fatehi', name: 'schemacrawler-tools', version: '16.11.6'

@@ -180,7 +180,7 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
           "Using an absolute path for a Geopackage file in connectionInfo.database is deprecated and will stop working in v4. Move the file to (api-)resources/features and provide the path relative to that directory in connectionInfo.database.");
     }
 
-    if (!spatiaLiteInitialized) {
+    if (!spatiaLiteInitialized && Objects.nonNull(spatiaLiteLoader)) {
       spatiaLiteLoader.load();
 
       this.spatiaLiteInitialized = true;
@@ -193,12 +193,14 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
               throws SQLException {
             SQLiteConnection connection = super.getConnection(username, password);
 
-            try (var statement = connection.createStatement()) {
-              // connection was created a few milliseconds before, so set query timeout is omitted
-              // (we assume it will succeed)
-              statement.execute(
-                  String.format(
-                      "SELECT load_extension('%s');", spatiaLiteLoader.getExtensionPath()));
+            if (Objects.nonNull(spatiaLiteLoader)) {
+              try (var statement = connection.createStatement()) {
+                // connection was created a few milliseconds before, so set query timeout is omitted
+                // (we assume it will succeed)
+                statement.execute(
+                    String.format(
+                        "SELECT load_extension('%s');", spatiaLiteLoader.getExtensionPath()));
+              }
             }
 
             return connection;
