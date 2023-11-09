@@ -128,7 +128,7 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
 
         if (pos > -1) {
           downstream.next(pos, context.parentPos());
-          nestingTracker.closeObject();
+          nestingTracker.closeObject(context.mapping());
         }
       } else if (nestingTracker.inArray()) {
         context.pathTracker().track(nestingTracker.getCurrentNestingPayload());
@@ -172,7 +172,7 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
     if (pos > -1) {
       downstream.next(pos, context.parentPos());
 
-      nestingTracker.closeObject();
+      nestingTracker.closeObject(context.mapping());
     }
   }
 

@@ -764,12 +764,6 @@ public interface FeatureSchema
             .findFirst()
             .orElse(getType()),
         getFullPathAsString());
-
-    Preconditions.checkState(
-        getType() != Type.VALUE || !getCoalesce().isEmpty(),
-        "Type VALUE may only be used with coalesce. Found: %s. Path: %s.",
-        getType(),
-        getFullPathAsString());
   }
 
   @Value.Check
@@ -830,7 +824,7 @@ public interface FeatureSchema
     return visitor.visit(
         this,
         parents,
-        getProperties().stream().map(visit).collect(Collectors.toList()),
+        getPropertyMap().values().stream().map(visit).collect(Collectors.toList()),
         getMerge().stream()
             .map(
                 partial -> {

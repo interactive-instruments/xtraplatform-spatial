@@ -15,6 +15,7 @@ import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.features.domain.FeatureSchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.SchemaBase.Role;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.transform.FeatureRefResolver;
 import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -42,7 +43,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     if (parents.isEmpty()) {
       return deriveRootSchema(schema, visitedProperties);
     }
-    if (schema.isValue()) {
+    if (schema.isValue() || schema.isFeatureRef()) {
       return deriveValueSchema(schema);
     }
 
@@ -199,7 +200,9 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
             .map(
                 template ->
                     StringTemplateFilters.applyTemplate(
-                            template, Map.of("value", "__featureId__", "apiUri", "__apiUri__")::get)
+                            template,
+                            Map.of(FeatureRefResolver.ID, "__featureId__", "apiUri", "__apiUri__")
+                                ::get)
                         .replace("__apiUri__", "{apiUri}")
                         .replace("__featureId__", "{featureId}"));
 
@@ -261,8 +264,11 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       case GEOMETRY:
         valueSchema = getSchemaForGeometry(schema, role);
         break;
-      case FEATURE_REF:
-      case FEATURE_REF_ARRAY:
+      case OBJECT:
+      case OBJECT_ARRAY:
+        if (!schema.isFeatureRef()) {
+          break;
+        }
         if ((!schema.getConcat().isEmpty() || !schema.getCoalesce().isEmpty())
             && schema.getRefType().isEmpty()) {
           List<T> valueSchemas2 =

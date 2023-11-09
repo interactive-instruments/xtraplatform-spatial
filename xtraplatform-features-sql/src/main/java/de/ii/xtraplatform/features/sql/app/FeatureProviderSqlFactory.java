@@ -249,7 +249,9 @@ public class FeatureProviderSqlFactory
 
   private FeatureProviderSqlData normalizeFeatureRefs(FeatureProviderSqlData data) {
     return applySchemaTransformation(
-        data, p -> p.isFeatureRef() && p.getProperties().isEmpty(), new FeatureRefResolver());
+        data,
+        p -> p.getType() == Type.FEATURE_REF || p.getType() == Type.FEATURE_REF_ARRAY,
+        new FeatureRefResolver());
   }
 
   private FeatureProviderSqlData applySchemaTransformation(

@@ -29,6 +29,7 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
   public static final String SUB_TITLE = "{{title}}";
   public static final String SUB_URI_TEMPLATE = "{{uriTemplate}}";
   public static final String SUB_KEY_TEMPLATE = "{{keyTemplate}}";
+  public static final String REF_TYPE_DYNAMIC = "DYNAMIC";
 
   public FeatureRefResolver() {}
 
@@ -84,7 +85,8 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
                   .build());
         }
 
-        if (schema.getRefType().isPresent()) {
+        if (visitedProperties.stream().noneMatch(schema1 -> Objects.equals(schema1.getName(), TYPE))
+            && schema.getRefType().isPresent()) {
           newVisitedProperties.add(
               new Builder()
                   .name(TYPE)
@@ -118,6 +120,7 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
         return new ImmutableFeatureSchema.Builder()
             .from(schema)
             .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
+            .refType(schema.getRefType().orElse(REF_TYPE_DYNAMIC))
             .propertyMap(asMap(newVisitedProperties, FeatureSchema::getFullPathAsString))
             .build();
       }

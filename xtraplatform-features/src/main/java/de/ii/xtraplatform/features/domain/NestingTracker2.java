@@ -69,7 +69,7 @@ public class NestingTracker2 {
         && hasParentIndexChanged(indexes))*/ )) {
 
       if (inObject()) {
-        closeObject();
+        closeObject(mapping);
       } else if (inArray()) {
         closeArray();
       }
@@ -220,7 +220,7 @@ public class NestingTracker2 {
     // context.setInObject(true);
   }
 
-  public void closeObject() {
+  public void closeObject(SchemaMapping mapping) {
     if (nestingStack.isEmpty() || !Objects.equals(nestingStack.get(nestingStack.size() - 1), "O")) {
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug("No object to close");
@@ -239,9 +239,23 @@ public class NestingTracker2 {
         downstream.onObjectEnd(context);
       }
     }*/
+
+    List<String> sourcePath = getCurrentNestingPayload();
+
+    List<Integer> positionsForSourcePath = mapping.getPositionsForSourcePath(sourcePath);
+    List<List<Integer>> parentPositionsForSourcePath =
+        mapping.getParentPositionsForSourcePath(sourcePath);
+
+    int prev = buffer.current;
+    List<Integer> prevEnc = buffer.currentEnclosing;
+
+    buffer.next(positionsForSourcePath.get(0), parentPositionsForSourcePath.get(0));
+
     downstream.onObjectEnd(getCurrentNestingPath());
 
     pop();
+
+    buffer.next(prev, prevEnc);
 
     /*if (!nestingStack.contains("O")) {
       context.setInObject(false);
@@ -285,7 +299,7 @@ public class NestingTracker2 {
     return (int) nestingStack.stream().filter("A"::equals).count();
   }
 
-  public void close() {
+  /*public void close() {
     if (nestingStack.isEmpty()) {
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug("No object or array to close");
@@ -293,11 +307,11 @@ public class NestingTracker2 {
       return;
     }
     if (inObject()) {
-      closeObject();
+      closeObject(mapping);
     } else if (inArray()) {
       closeArray();
     }
-  }
+  }*/
 
   private void push(String type, List<String> path, List<String> payload) {
     nestingStack.add(type);
