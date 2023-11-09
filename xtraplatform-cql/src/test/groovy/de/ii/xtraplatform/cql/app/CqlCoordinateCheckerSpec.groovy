@@ -9,6 +9,7 @@ package de.ii.xtraplatform.cql.app
 
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
+import de.ii.xtraplatform.blobs.domain.ResourceStore
 import de.ii.xtraplatform.cql.domain.*
 import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes
 import de.ii.xtraplatform.crs.domain.BoundingBox
@@ -33,6 +34,9 @@ class CqlCoordinateCheckerSpec extends Specification {
     Cql cql
 
     @Shared
+    ResourceStore resourceStore
+
+    @Shared
     CrsTransformerFactoryProj transformerFactory
 
     @Shared
@@ -47,7 +51,8 @@ class CqlCoordinateCheckerSpec extends Specification {
 
     def setupSpec() {
         cql = new CqlImpl()
-        transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
+        resourceStore = Stub()
+        transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore)
         transformerFactory.onStart()
         visitor1 = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactory, (CrsInfo) transformerFactory, OgcCrs.CRS84, EpsgCrs.of(5555))
         visitor2 = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactory, (CrsInfo) transformerFactory, OgcCrs.CRS84, OgcCrs.CRS84)
@@ -76,7 +81,7 @@ class CqlCoordinateCheckerSpec extends Specification {
 
     def "Native not present"() {
         when:
-        CrsTransformerFactoryProj transformerFactoryOptionalEmpty = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
+        CrsTransformerFactoryProj transformerFactoryOptionalEmpty = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore)
         CqlCoordinateChecker visitor1OptionalEmpty = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactoryOptionalEmpty, (CrsInfo) transformerFactoryOptionalEmpty, OgcCrs.CRS84, null)
         CqlCoordinateChecker visitor2OptionalEmpty = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactoryOptionalEmpty, (CrsInfo) transformerFactoryOptionalEmpty, OgcCrs.CRS84, null)
         then:

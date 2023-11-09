@@ -24,7 +24,6 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entities.domain.Entity;
 import de.ii.xtraplatform.entities.domain.Entity.SubType;
-import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
@@ -93,6 +92,7 @@ import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.streams.domain.Reactive.Transformer;
+import de.ii.xtraplatform.values.domain.ValueStore;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -140,7 +140,6 @@ public class FeatureProviderSql
   private final CrsTransformerFactory crsTransformerFactory;
   private final CrsInfo crsInfo;
   private final Cql cql;
-  private final EntityRegistry entityRegistry;
   private final Map<String, Supplier<Decoder>> subdecoders;
 
   private FeatureQueryEncoderSql queryTransformer;
@@ -159,16 +158,21 @@ public class FeatureProviderSql
       Cql cql,
       ConnectorFactory connectorFactory,
       Reactive reactive,
-      EntityRegistry entityRegistry,
+      ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
       DecoderFactories decoderFactories,
       @Assisted FeatureProviderDataV2 data) {
-    super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry, data);
+    super(
+        connectorFactory,
+        reactive,
+        crsTransformerFactory,
+        extensionRegistry,
+        valueStore.forType(Codelist.class),
+        data);
 
     this.crsTransformerFactory = crsTransformerFactory;
     this.crsInfo = crsInfo;
     this.cql = cql;
-    this.entityRegistry = entityRegistry;
 
     this.subdecoders =
         Map.of(
@@ -491,16 +495,6 @@ public class FeatureProviderSql
   @Override
   protected List<FeatureTokenTransformer> getDecoderTransformers() {
     return ImmutableList.of(); // new FeatureTokenTransformerSorting());
-  }
-
-  @Override
-  protected Map<String, Codelist> getCodelists() {
-    // TODO
-    getData().getCodelists();
-
-    return entityRegistry.getEntitiesForType(Codelist.class).stream()
-        .map(codelist -> new SimpleImmutableEntry<>(codelist.getId(), codelist))
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   @Override

@@ -10,7 +10,7 @@ package de.ii.xtraplatform.schemas.ext.app;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.blobs.domain.BlobStore;
+import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.entities.domain.ValidationResult.MODE;
 import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
 import de.ii.xtraplatform.features.domain.FeatureProvider2;
@@ -90,10 +90,10 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
   private static final Set<String> SCHEMES = ImmutableSet.of("http", "https");
 
   private final SchemaStore schemaParser;
-  private final BlobStore schemaStore;
+  private final ResourceStore schemaStore;
 
   @Inject
-  public JsonSchemaResolver(BlobStore blobStore) {
+  public JsonSchemaResolver(ResourceStore blobStore) {
     this.schemaStore = blobStore.with("schemas");
     // TODO: custom loader with HttpClient
     this.schemaParser = new SchemaStore(new CacheLoader());
@@ -174,7 +174,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
           return Optional.empty();
         }
 
-        try (InputStream inputStream = schemaStore.get(path).get()) {
+        try (InputStream inputStream = schemaStore.content(path).get()) {
           Schema schema = schemaParser.loadSchema(inputStream);
 
           if (Objects.nonNull(schemaUri.getFragment())) {

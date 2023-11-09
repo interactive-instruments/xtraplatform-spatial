@@ -20,11 +20,11 @@ import com.sun.xml.xsom.parser.XSOMParser;
 import de.ii.xtraplatform.features.domain.FeatureProviderSchemaConsumer;
 import de.ii.xtraplatform.features.gml.infra.req.GML;
 import de.ii.xtraplatform.features.gml.infra.xml.XMLPathTracker;
-import de.ii.xtraplatform.services.domain.TaskProgress;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -48,40 +48,42 @@ public class GMLSchemaParser {
   private final XMLPathTracker currentPath;
   private final List<XSElementDecl> abstractObjectDecl;
   private final List<XSElementDecl> abstractFeatureDecl;
+  private final Map<String, String> namespaces;
   private XSType gcoObjectType;
   private Set<String> complexTypes;
   private final URI baseURI;
   private EntityResolver entityResolver;
 
-  public GMLSchemaParser(List<FeatureProviderSchemaConsumer> analyzers, URI baseURI) {
-    this(analyzers, baseURI, new OGCEntityResolver());
+  public GMLSchemaParser(
+      List<FeatureProviderSchemaConsumer> analyzers, URI baseURI, Map<String, String> namespaces) {
+    this(analyzers, baseURI, namespaces, new OGCEntityResolver());
   }
 
   public GMLSchemaParser(
-      List<FeatureProviderSchemaConsumer> analyzers, URI baseURI, EntityResolver entityResolver) {
+      List<FeatureProviderSchemaConsumer> analyzers,
+      URI baseURI,
+      Map<String, String> namespaces,
+      EntityResolver entityResolver) {
     this.analyzers = analyzers;
     this.currentPath = new XMLPathTracker();
     this.abstractObjectDecl = new ArrayList<XSElementDecl>();
     this.abstractFeatureDecl = new ArrayList<XSElementDecl>();
     this.baseURI = baseURI;
+    this.namespaces = namespaces;
     this.entityResolver = entityResolver;
   }
 
   public void parse(
-      InputStream inputStream, Map<String, List<String>> elements, TaskProgress taskProgress) {
+      InputStream inputStream,
+      Map<String, List<String>> elements,
+      Consumer<Map<String, List<String>>> tracker) {
     try {
-      taskProgress.setCompleteness(0.1);
-      taskProgress.setStatusMessage("retrieving GML application schema");
-
       InputSource is = new InputSource(inputStream);
-      parse(is, elements, taskProgress);
+      parse(is, elements, tracker);
 
       for (FeatureProviderSchemaConsumer analyzer : analyzers) {
         analyzer.analyzeSuccess();
       }
-
-      taskProgress.setCompleteness(1);
-      taskProgress.setStatusMessage("success");
 
     } catch (Exception ex) {
       LOGGER.error("Error parsing application schema. {}", ex);
@@ -89,21 +91,24 @@ public class GMLSchemaParser {
       for (FeatureProviderSchemaConsumer analyzer : analyzers) {
         analyzer.analyzeFailure(ex);
       }
-
-      taskProgress.setCompleteness(1);
-      taskProgress.setStatusMessage("failure");
     }
   }
 
   private void parse(
-      InputSource is, Map<String, List<String>> elements, TaskProgress taskProgress) {
-    parse(is, elements, true, taskProgress);
+      InputSource is,
+      Map<String, List<String>> elements,
+      Consumer<Map<String, List<String>>> tracker) {
+    parse(is, elements, true, tracker);
   }
 
   private void parse(
-      InputSource is, Map<String, List<String>> elements, boolean lax, TaskProgress taskProgress) {
+      InputSource is,
+      Map<String, List<String>> elements,
+      boolean lax,
+      Consumer<Map<String, List<String>>> tracker) {
     // LOGGER.debug("Parsing GML application schema");
     XSOMParser parser = new XSOMParser();
+    Map<String, List<String>> progress = new LinkedHashMap<>();
 
     try {
       parser.setErrorHandler(new GMLSchemaParserErrorHandler());
@@ -144,9 +149,6 @@ public class GMLSchemaParser {
         gcoObjectType = schema1.getElementDecl("AbstractObject").getType();
       }
 
-      int total = elements.values().stream().mapToInt(List::size).sum();
-      double count = 1.0;
-      double factor = 0.8 / total;
       for (Map.Entry<String, List<String>> ns : elements.entrySet()) {
 
         String nsuri = ns.getKey();
@@ -171,9 +173,7 @@ public class GMLSchemaParser {
         }
 
         for (String e : ns.getValue()) {
-          taskProgress.setCompleteness(0.1 + (count * factor));
-          taskProgress.setStatusMessage("analyzing feature type " + e);
-          count += 1.0;
+          track(tracker, e, nsuri, progress);
 
           XSElementDecl elem = schema.getElementDecl(e);
           if (elem != null && elem.getType().isComplexType()) {
@@ -231,6 +231,22 @@ public class GMLSchemaParser {
           "The GML application schema provided by the WFS is invalid. A valid GML application schema is required to determine the layers of the proxy service and its characteristics. Please contact the WFS provider to correct the schema error. \n"
               + msgex);
     }
+  }
+
+  private void track(
+      Consumer<Map<String, List<String>>> tracker,
+      String type,
+      String nsuri,
+      Map<String, List<String>> progress) {
+    String nsPrefix =
+        namespaces.entrySet().stream()
+            .filter(entry -> Objects.equals(entry.getValue(), nsuri))
+            .map(Map.Entry::getKey)
+            .findFirst()
+            .orElse(nsuri);
+    progress.putIfAbsent(nsPrefix, new ArrayList<>());
+    progress.get(nsPrefix).add(type);
+    tracker.accept(progress);
   }
 
   private void parseGroup(

@@ -7,9 +7,15 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import java.io.Closeable;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
-public interface SchemaGenerator {
+public interface SchemaGenerator extends Closeable {
 
-  List<FeatureSchema> generate();
+  Map<String, List<String>> analyze();
+
+  List<FeatureSchema> generate(
+      Map<String, List<String>> types, Consumer<Map<String, List<String>>> tracker);
 }

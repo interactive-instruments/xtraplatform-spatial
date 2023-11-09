@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.features.gml.app;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.codelists.domain.Codelist;
@@ -21,7 +20,6 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entities.domain.Entity;
 import de.ii.xtraplatform.entities.domain.Entity.SubType;
-import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
@@ -55,6 +53,7 @@ import de.ii.xtraplatform.features.gml.domain.WfsConnector;
 import de.ii.xtraplatform.features.gml.domain.XMLNamespaceNormalizer;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
+import de.ii.xtraplatform.values.domain.ValueStore;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +94,6 @@ public class FeatureProviderWfs
 
   private final CrsTransformerFactory crsTransformerFactory;
   private final Cql cql;
-  private final EntityRegistry entityRegistry;
 
   private FeatureQueryEncoderWfs queryTransformer;
   private AggregateStatsReader<FeatureSchema> aggregateStatsReader;
@@ -107,14 +105,19 @@ public class FeatureProviderWfs
       Cql cql,
       ConnectorFactory connectorFactory,
       Reactive reactive,
-      EntityRegistry entityRegistry,
+      ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
       @Assisted FeatureProviderDataV2 data) {
-    super(connectorFactory, reactive, crsTransformerFactory, extensionRegistry, data);
+    super(
+        connectorFactory,
+        reactive,
+        crsTransformerFactory,
+        extensionRegistry,
+        valueStore.forType(Codelist.class),
+        data);
 
     this.crsTransformerFactory = crsTransformerFactory;
     this.cql = cql;
-    this.entityRegistry = entityRegistry;
   }
 
   @Override
@@ -207,16 +210,6 @@ public class FeatureProviderWfs
         featureQuery,
         mappings,
         passThrough);
-  }
-
-  @Override
-  protected Map<String, Codelist> getCodelists() {
-    // TODO
-    getData().getCodelists();
-
-    return entityRegistry.getEntitiesForType(Codelist.class).stream()
-        .map(codelist -> new SimpleImmutableEntry<>(codelist.getId(), codelist))
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   @Override

@@ -245,12 +245,14 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
   Optional<Boolean> getAutoPersist();
 
   /**
-   * @langEn List of source types to include in derived `types` definitions when `auto: true`.
-   *     Currently only works for [SQL](sql.md).
-   * @langDe Liste von Quelltypen, die für die Ableitung der `types` Definitionen im Auto-Modus
-   *     berücksichtigt werden sollen. Funktioniert aktuell nur für [SQL](sql.md).
+   * @langEn *Deprecated, use the editor instead.* List of source types to include in derived
+   *     `types` definitions when `auto: true`. Currently only works for [SQL](sql.md).
+   * @langDe *Deprecated, wird vom Editor abgelöst.* Liste von Quelltypen, die für die Ableitung der
+   *     `types` Definitionen im Auto-Modus berücksichtigt werden sollen. Funktioniert aktuell nur
+   *     für [SQL](sql.md).
    * @default []
    */
+  @Deprecated(since = "3.6")
   List<String> getAutoTypes();
 
   // custom builder to automatically use keys of types as name of FeatureTypeV2

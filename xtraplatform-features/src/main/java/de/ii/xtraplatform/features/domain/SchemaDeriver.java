@@ -30,9 +30,9 @@ import java.util.stream.Stream;
 
 public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSchema, T> {
 
-  private final List<Codelist> codelists;
+  private final Map<String, Codelist> codelists;
 
-  public SchemaDeriver(List<Codelist> codelists) {
+  public SchemaDeriver(Map<String, Codelist> codelists) {
     this.codelists = codelists;
   }
 
@@ -359,7 +359,10 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
   protected abstract T withRequired(T schema);
 
   protected abstract T withConstraints(
-      T schema, SchemaConstraints constraints, FeatureSchema property, List<Codelist> codelists);
+      T schema,
+      SchemaConstraints constraints,
+      FeatureSchema property,
+      Map<String, Codelist> codelists);
 
   protected abstract T withReadOnly(T schema);
 

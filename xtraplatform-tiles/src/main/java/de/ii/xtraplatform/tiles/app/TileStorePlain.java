@@ -12,7 +12,7 @@ import static de.ii.xtraplatform.base.domain.util.LambdaWithException.consumerMa
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.blobs.domain.BlobStore;
+import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetBase;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
@@ -35,9 +35,9 @@ class TileStorePlain implements TileStore {
   private static Map<MediaType, String> EXTENSIONS =
       ImmutableMap.of(FeatureEncoderMVT.FORMAT, "mvt");
 
-  private final BlobStore blobStore;
+  private final ResourceStore blobStore;
 
-  TileStorePlain(BlobStore blobStore) {
+  TileStorePlain(ResourceStore blobStore) {
     this.blobStore = blobStore;
   }
 
@@ -48,7 +48,7 @@ class TileStorePlain implements TileStore {
 
   @Override
   public TileResult get(TileQuery tile) throws IOException {
-    Optional<InputStream> content = blobStore.get(path(tile));
+    Optional<InputStream> content = blobStore.content(path(tile));
 
     if (content.isEmpty()) {
       return TileResult.notFound();

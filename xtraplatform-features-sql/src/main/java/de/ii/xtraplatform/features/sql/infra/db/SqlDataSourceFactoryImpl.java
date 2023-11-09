@@ -10,7 +10,7 @@ package de.ii.xtraplatform.features.sql.infra.db;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.base.Strings;
 import de.ii.xtraplatform.base.domain.AppContext;
-import de.ii.xtraplatform.blobs.domain.BlobStore;
+import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.spatialite.domain.SpatiaLiteLoader;
 import java.io.IOException;
@@ -35,7 +35,7 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(SqlDataSourceFactoryImpl.class);
 
   private final Path dataDir;
-  private final BlobStore featuresStore;
+  private final ResourceStore featuresStore;
   private final String applicationName;
   private final SpatiaLiteLoader spatiaLiteLoader;
 
@@ -43,7 +43,7 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
 
   @Inject
   public SqlDataSourceFactoryImpl(
-      AppContext appContext, BlobStore blobStore, SpatiaLiteLoader spatiaLiteLoader) {
+      AppContext appContext, ResourceStore blobStore, SpatiaLiteLoader spatiaLiteLoader) {
     this.dataDir = appContext.getDataDir();
     this.featuresStore = blobStore.with("features");
     this.applicationName =
@@ -180,7 +180,7 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
           "Using an absolute path for a Geopackage file in connectionInfo.database is deprecated and will stop working in v4. Move the file to (api-)resources/features and provide the path relative to that directory in connectionInfo.database.");
     }
 
-    if (!spatiaLiteInitialized) {
+    if (!spatiaLiteInitialized && Objects.nonNull(spatiaLiteLoader)) {
       spatiaLiteLoader.load();
 
       this.spatiaLiteInitialized = true;
@@ -193,12 +193,14 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
               throws SQLException {
             SQLiteConnection connection = super.getConnection(username, password);
 
-            try (var statement = connection.createStatement()) {
-              // connection was created a few milliseconds before, so set query timeout is omitted
-              // (we assume it will succeed)
-              statement.execute(
-                  String.format(
-                      "SELECT load_extension('%s');", spatiaLiteLoader.getExtensionPath()));
+            if (Objects.nonNull(spatiaLiteLoader)) {
+              try (var statement = connection.createStatement()) {
+                // connection was created a few milliseconds before, so set query timeout is omitted
+                // (we assume it will succeed)
+                statement.execute(
+                    String.format(
+                        "SELECT load_extension('%s');", spatiaLiteLoader.getExtensionPath()));
+              }
             }
 
             return connection;
