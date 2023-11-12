@@ -121,6 +121,17 @@ public interface EpsgCrs {
   }
 
   @Value.Lazy
+  default String toSafeCurie() {
+    if (Objects.equals(this, OgcCrs.CRS84)) {
+      return OgcCrs.CRS84_CURIE;
+    }
+    if (Objects.equals(this, OgcCrs.CRS84h)) {
+      return OgcCrs.CRS84h_CURIE;
+    }
+    return String.format("[EPSG:%d]", getCode());
+  }
+
+  @Value.Lazy
   default String toHumanReadableString() {
     String lonlat =
         getForceAxisOrder() == Force.LON_LAT ? String.format(" (%s)", Force.LON_LAT) : "";

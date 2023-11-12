@@ -13,7 +13,7 @@ import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
-import de.ii.xtraplatform.blobs.domain.BlobStore;
+import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -89,7 +89,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   private final List<TileCache> generatorCaches;
   private final List<TileCache> combinerCaches;
   private final Map<String, TilesetMetadata> metadata;
-  private final BlobStore tilesStore;
+  private final ResourceStore tilesStore;
 
   @AssistedInject
   public TileProviderFeatures(
@@ -98,7 +98,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       EntityRegistry entityRegistry,
       AppContext appContext,
       Cql cql,
-      BlobStore blobStore,
+      ResourceStore blobStore,
       TileWalker tileWalker,
       @Assisted TileProviderFeaturesData data) {
     super(data);
@@ -121,7 +121,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     for (int i = 0; i < data.getCaches().size(); i++) {
       Cache cache = data.getCaches().get(i);
-      BlobStore cacheStore =
+      ResourceStore cacheStore =
           tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
       TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getTilesets());
 
@@ -143,7 +143,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     for (int i = 0; i < data.getCaches().size(); i++) {
       Cache cache = data.getCaches().get(i);
-      BlobStore cacheStore =
+      ResourceStore cacheStore =
           tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
       TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getTilesets());
 
@@ -162,7 +162,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private TileStore getTileStore(
-      Cache cache, BlobStore cacheStore, String id, Map<String, TilesetFeatures> tilesets) {
+      Cache cache, ResourceStore cacheStore, String id, Map<String, TilesetFeatures> tilesets) {
     return tileStores
         .get(cache.getType())
         .computeIfAbsent(
@@ -423,7 +423,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     }
   }
 
-  private List<Path> getUnknownDirs(BlobStore tileStore) throws IOException {
+  private List<Path> getUnknownDirs(ResourceStore tileStore) throws IOException {
     try (Stream<Path> paths = tileStore.walk(Path.of(""), 1, (p, a) -> !a.isValue()).skip(1)) {
       return paths
           .map(Path::getFileName)
@@ -437,7 +437,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     }
   }
 
-  private void deleteDir(BlobStore blobStore, Path dir) {
+  private void deleteDir(ResourceStore blobStore, Path dir) {
     try (Stream<Path> paths = blobStore.walk(dir, 6, (p, a) -> true)) {
       paths
           .sorted(Comparator.reverseOrder())

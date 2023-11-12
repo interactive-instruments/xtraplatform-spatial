@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.crs.infra
 
+import de.ii.xtraplatform.blobs.domain.ResourceStore
 import de.ii.xtraplatform.crs.domain.*
 import de.ii.xtraplatform.proj.domain.ProjLoaderImpl
 import org.kortforsyningen.proj.Units
@@ -24,7 +25,8 @@ class CrsTransformerProjSpec extends Specification {
     //NOTE: if tests fail after a proj upgrade, you might copy the previous proj data directory
     // to the location below to find out if the failures result from changes in the code or the data
     def setupSpec() {
-        transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")))
+        ResourceStore resourceStore = Stub()
+        transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore)
         transformerFactory.onStart()
     }
 

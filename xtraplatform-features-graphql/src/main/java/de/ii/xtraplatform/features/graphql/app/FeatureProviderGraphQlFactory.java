@@ -16,7 +16,6 @@ import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityData;
 import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
 import de.ii.xtraplatform.entities.domain.EntityFactory;
-import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.entities.domain.PersistentEntity;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
@@ -29,6 +28,7 @@ import de.ii.xtraplatform.features.domain.SchemaReferenceResolver;
 import de.ii.xtraplatform.features.graphql.domain.FeatureProviderGraphQlData;
 import de.ii.xtraplatform.features.graphql.domain.ImmutableFeatureProviderGraphQlData;
 import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.values.domain.ValueStore;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -56,7 +56,7 @@ public class FeatureProviderGraphQlFactory
       Cql cql,
       ConnectorFactory connectorFactory,
       Reactive reactive,
-      EntityRegistry entityRegistry,
+      ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
       ProviderGraphQlFactoryAssisted providerGraphQlFactoryAssisted) {
     super(providerGraphQlFactoryAssisted);

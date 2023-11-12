@@ -12,7 +12,7 @@ import com.google.common.collect.ImmutableMap;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.blobs.domain.BlobStore;
+import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
@@ -57,7 +57,7 @@ public class TileProviderFeaturesFactory
       EntityRegistry entityRegistry,
       AppContext appContext,
       Cql cql,
-      BlobStore blobStore,
+      ResourceStore blobStore,
       TileWalker tileWalker,
       TileProviderFeaturesFactoryAssisted factoryAssisted) {
     super(factoryAssisted);

@@ -7,20 +7,11 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Resources;
-import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.tiles.app.TileMatrixSetImpl;
-import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -33,52 +24,6 @@ import org.slf4j.LoggerFactory;
 public interface TileMatrixSet extends TileMatrixSetBase {
 
   Logger LOGGER = LoggerFactory.getLogger(TileMatrixSet.class);
-
-  static Optional<TileMatrixSet> fromWellKnownId(String tileMatrixSetId) {
-    InputStream inputStream;
-    try {
-      inputStream =
-          Resources.asByteSource(
-                  Resources.getResource(
-                      TileMatrixSetImpl.class, "/tilematrixsets/" + tileMatrixSetId + ".json"))
-              .openStream();
-    } catch (IllegalArgumentException e) {
-      LOGGER.debug("Tile matrix set '{}' not found: {}", tileMatrixSetId, e.getMessage());
-      return Optional.empty();
-    } catch (IOException e) {
-      LOGGER.error("Could not load tile matrix set '{}': {}", tileMatrixSetId, e.getMessage());
-      if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
-        LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
-      }
-      return Optional.empty();
-    }
-
-    return fromInputStream(inputStream, tileMatrixSetId);
-  }
-
-  static Optional<TileMatrixSet> fromInputStream(
-      InputStream tileMatrixSetInputStream, String tileMatrixSetId) {
-    // prepare Jackson mapper for deserialization
-    final ObjectMapper mapper = new ObjectMapper();
-    mapper.registerModule(new Jdk8Module());
-    mapper.registerModule(new GuavaModule());
-    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
-    mapper.enable(DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY);
-
-    TileMatrixSetData data;
-    try {
-      data = mapper.readValue(tileMatrixSetInputStream, TileMatrixSetData.class);
-    } catch (IOException e) {
-      LOGGER.error(
-          "Could not deserialize tile matrix set '{}': {}", tileMatrixSetId, e.getMessage());
-      if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
-        LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
-      }
-      return Optional.empty();
-    }
-
-    return Optional.of(new TileMatrixSetImpl(data));
-  }
 
   /**
    * fetch the local identifier for the tiling scheme
