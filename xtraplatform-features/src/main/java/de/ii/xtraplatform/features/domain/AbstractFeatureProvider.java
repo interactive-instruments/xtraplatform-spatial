@@ -26,6 +26,7 @@ import de.ii.xtraplatform.streams.domain.Reactive.Runner;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.values.domain.Values;
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,9 +48,9 @@ public abstract class AbstractFeatureProvider<
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
   protected static final WithScope WITH_SCOPE_QUERIES =
-      new WithScope(FeatureSchemaBase.Scope.QUERIES);
+      new WithScope(EnumSet.of(SchemaBase.Scope.RETURNABLE, SchemaBase.Scope.SORTABLE));
   protected static final WithScope WITH_SCOPE_MUTATIONS =
-      new WithScope(FeatureSchemaBase.Scope.MUTATIONS);
+      new WithScope(SchemaBase.Scope.RECEIVABLE);
 
   private final ConnectorFactory connectorFactory;
   private final Reactive reactive;

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,6 +49,7 @@ import org.slf4j.LoggerFactory;
 @JsonDeserialize(builder = ImmutableFeatureSchema.Builder.class)
 @JsonPropertyOrder({
   "sourcePath",
+  "sourcePaths",
   "type",
   "role",
   "valueType",
@@ -56,6 +58,8 @@ import org.slf4j.LoggerFactory;
   "label",
   "description",
   "unit",
+  "scope",
+  "excludedScopes",
   "transformations",
   "constraints",
   "properties"
@@ -230,13 +234,74 @@ public interface FeatureSchema
   Optional<String> getConstantValue();
 
   /**
-   * @langEn Optional scope for properties that should only be used when either reading (`QUERIES`)
-   *     or writing (`MUTATIONS`) features.
-   * @langDe Optionaler Geltungsbereich für Eigenschaften die entweder nur beim Lesen (`QUERIES`) *
-   *     oder beim Schreiben (`MUTATIONS`) verwendet werden sollen.
+   * @langEn *Deprecated, use the `getExcludedScoped` instead.* Optional scope for properties that
+   *     should only be used when either reading (`QUERIES`) or writing (`MUTATIONS`) features.
+   * @langDe *Deprecated, benutzen Sie stattdessen `getExcludedScoped`.* Optionaler Geltungsbereich
+   *     für Eigenschaften die entweder nur beim Lesen (`QUERIES`) oder beim Schreiben (`MUTATIONS`)
+   *     verwendet werden sollen.
    * @default null
    */
+  @Override
+  @Deprecated(since = "3.6")
   Optional<Scope> getScope();
+
+  /**
+   * @langEn Optional exclusion of a property from a schema scope. See [Schema
+   *     Scopes](../details/scopes.md) for a description of the scopes.
+   * @langDe Optionaler Ausschluss einer Eigenschaft aus einem Schema-Anwendungsbereich. Siehe
+   *     [Schema-Anwendungsbereiche](../details/scopes.md) für eine Beschreibung der Bereiche.
+   * @default []
+   */
+  @Override
+  Set<Scope> getExcludedScopes();
+
+  @Override
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean queryable() {
+    return !isObject()
+        && !Objects.equals(getType(), Type.UNKNOWN)
+        && getConcat().isEmpty()
+        && getCoalesce().isEmpty()
+        && getIsQueryable().orElse(true)
+        && !getExcludedScopes().contains(Scope.QUERYABLE);
+  }
+
+  @Override
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean sortable() {
+    return !isSpatial()
+        && !isObject()
+        && !isArray()
+        && !Objects.equals(getType(), Type.BOOLEAN)
+        && !Objects.equals(getType(), Type.UNKNOWN)
+        && getConcat().isEmpty()
+        && getCoalesce().isEmpty()
+        && getIsSortable().orElse(true)
+        && !getExcludedScopes().contains(Scope.SORTABLE);
+  }
+
+  @Override
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean returnable() {
+    return getScope().filter(s -> s.equals(Scope.MUTATIONS)).isEmpty()
+        && !getExcludedScopes().contains(Scope.RETURNABLE);
+  }
+
+  @Override
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean receivable() {
+    return getScope().filter(s -> s.equals(Scope.QUERIES)).isEmpty()
+        && !isConstant()
+        && !getExcludedScopes().contains(Scope.RECEIVABLE);
+  }
 
   /**
    * @langEn Reference to an external schema definition. The default resolver will resolve
@@ -292,56 +357,42 @@ public interface FeatureSchema
   Optional<Boolean> getForcePolygonCCW();
 
   /**
-   * @langEn Properties that are not of type OBJECT or OBJECT_ARRAY are by default eligible as
-   *     queryables. This setting can be used to declare a property as ineligible, for example, if
-   *     the property is not optimized for use in queries. If an eligible property can actually be
-   *     queried is decided by the provider implementation, that might not be feasible due to
-   *     technical reasons.
-   * @langDe Eigenschaften, die nicht vom Typ OBJECT oder OBJECT_ARRAY sind, sind standardmäßig für
-   *     Abfragen geeignet. Diese Einstellung kann verwendet werden, um eine Eigenschaft als nicht
-   *     abfragefähig zu markieren, z. B. wenn die Eigenschaft nicht für die Verwendung in Abfragen
-   *     optimiert ist. Ob eine geeignete Eigenschaft tatsächlich abgefragt werden kann entscheidet
-   *     die Provider-Implementierung, das könnte aufgrund technischer Gründe nicht möglich sein.
+   * @langEn *Deprecated, use the `getExcludedScoped` instead.* Properties that are not of type
+   *     OBJECT or OBJECT_ARRAY are by default eligible as queryables. This setting can be used to
+   *     declare a property as ineligible, for example, if the property is not optimized for use in
+   *     queries. If an eligible property can actually be queried is decided by the provider
+   *     implementation, that might not be feasible due to technical reasons.
+   * @langDe *Deprecated, benutzen Sie stattdessen `getExcludedScoped`.* Eigenschaften, die nicht
+   *     vom Typ OBJECT oder OBJECT_ARRAY sind, sind standardmäßig für Abfragen geeignet. Diese
+   *     Einstellung kann verwendet werden, um eine Eigenschaft als nicht abfragefähig zu markieren,
+   *     z. B. wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert ist. Ob eine
+   *     geeignete Eigenschaft tatsächlich abgefragt werden kann entscheidet die
+   *     Provider-Implementierung, das könnte aufgrund technischer Gründe nicht möglich sein.
    * @default see description
    */
   @Override
+  @Deprecated(since = "3.6")
   Optional<Boolean> getIsQueryable();
 
   /**
-   * @langEn Only the direct properties of a feature type that are of type STRING, FLOAT, INTEGER,
-   *     DATE, or DATETIME are eligible as sortables. This setting can be used to declare a property
-   *     as ineligible, for example, if the property is not optimized for use in queries. If an
-   *     eligible property can actually be used as sortable is decided by the provider
-   *     implementation, that might not be feasible due to technical reasons.
-   * @langDe Nur die direkten Feature-Eigenschaften einer Objektart, die vom Typ STRING, FLOAT,
-   *     INTEGER, DATE oder DATETIME sind, kommen als Sortierkriterien in Frage. Diese Einstellung
-   *     kann verwendet werden, um eine Eigenschaft als nicht geeignet zu deklarieren, zum Beispiel,
-   *     wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert ist. Ob eine geeignete
+   * @langEn *Deprecated, use the `getExcludedScoped` instead.* Only the direct properties of a
+   *     feature type that are of type STRING, FLOAT, INTEGER, DATE, or DATETIME are eligible as
+   *     sortables. This setting can be used to declare a property as ineligible, for example, if
+   *     the property is not optimized for use in queries. If an eligible property can actually be
+   *     used as sortable is decided by the provider implementation, that might not be feasible due
+   *     to technical reasons.
+   * @langDe *Deprecated, benutzen Sie stattdessen `getExcludedScoped`.* Nur die direkten
+   *     Feature-Eigenschaften einer Objektart, die vom Typ STRING, FLOAT, INTEGER, DATE oder
+   *     DATETIME sind, kommen als Sortierkriterien in Frage. Diese Einstellung kann verwendet
+   *     werden, um eine Eigenschaft als nicht geeignet zu deklarieren, zum Beispiel, wenn die
+   *     Eigenschaft nicht für die Verwendung in Abfragen optimiert ist. Ob eine geeignete
    *     Eigenschaft tatsächlich als Sortierkriterium verwendet werden kann entscheidet die
    *     Provider-Implementierung, das könnte aufgrund technischer Gründe nicht möglich sein.
    * @default see description
    */
   @Override
+  @Deprecated(since = "3.6")
   Optional<Boolean> getIsSortable();
-
-  /**
-   * @langEn If a property is to be used only for queries (as a queryable or sortable), but never
-   *     coded in the objects themselves, then set the value to `false`.
-   * @langDe Soll eine Eigenschaft nur für Abfragen verwendet werden (als Queryable oder Sortable),
-   *     aber nie in den Objekten selbst kodiert werden, dann ist `false` anzugeben.
-   * @default `true`
-   */
-  @Override
-  Optional<Boolean> getIsReturnable();
-
-  @JsonIgnore
-  @Value.Derived
-  @Value.Auxiliary
-  @Override
-  default boolean returnable() {
-    return getScope().filter(s -> s.equals(Scope.MUTATIONS)).isEmpty()
-        && getIsReturnable().orElse(true);
-  }
 
   /**
    * @langEn Identifies a DATETIME property as a property that contains the timestamp when the
@@ -823,8 +874,9 @@ public interface FeatureSchema
                 && !isArray()
                 && !Objects.equals(getType(), Type.BOOLEAN)
                 && !Objects.equals(getType(), Type.UNKNOWN)),
-        "A sortable property must be a string, a number or an instant. Found %s",
-        getType());
+        "A sortable property must be a string, a number or an instant. Found %s. Path: %s.",
+        getType(),
+        getFullPathAsString());
   }
 
   @JsonIgnore

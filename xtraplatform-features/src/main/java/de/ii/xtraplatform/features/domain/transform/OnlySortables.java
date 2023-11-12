@@ -52,10 +52,6 @@ public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, Featur
       return null;
     }
 
-    if (!schema.getConcat().isEmpty() || !schema.getCoalesce().isEmpty()) {
-      return null;
-    }
-
     if (schema.sortable()) {
       String path = schema.getFullPathAsString(pathSeparator);
       // ignore property, if it is not included (by default or explicitly) or if it is excluded

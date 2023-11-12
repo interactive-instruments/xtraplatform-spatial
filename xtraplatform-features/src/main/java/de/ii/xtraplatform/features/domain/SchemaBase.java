@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.List;
 import java.util.Objects;
@@ -46,6 +47,80 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     FEATURE_REF,
     FEATURE_REF_ARRAY,
     UNKNOWN
+  }
+
+  /**
+   * @langEn # Schema Scopes
+   *     <p>Schemas are used with different scopes. Properties may be applicable only for a subset
+   *     of the scopes depending on the characteristics of the property or the API design. The four
+   *     scopes are discussed below.
+   *     <p>## `RETURNABLE`
+   *     <p>Returnable properties are the properties that are included in feature representations
+   *     when features are fetched. By default, all properties are returnable unless the property is
+   *     explicitly excluded. Eligible properties may be explicitly excluded, for example, if the
+   *     property should be used only in queries (as a queryable or sortable), but never coded in
+   *     the features themselves.
+   *     <p>## `RECEIVABLE`
+   *     <p>Receivable properties are the properties that may be included in feature representations
+   *     when features are created or updated. By default, all properties are receivable unless the
+   *     property is constant or explicitly excluded. Eligible properties may be explicitly
+   *     excluded, for example, if the property is derived or uses a different representation in the
+   *     data store than in the response.
+   *     <p>## `QUERYABLE`
+   *     <p>Queryable properties are the properties that may be used in filter expressions. By
+   *     default, all properties may be queryable unless the property is explicitly excluded, uses
+   *     `concat` / `coalesce`, or is of type `OBJECT` / `OBJECT_ARRAY`. Eligible properties may be
+   *     explicitly excluded, for example, if the property is not optimized for use in queries.
+   *     <p>## `SORTABLE`
+   *     <p>Sortable properties are the properties that may be used to sort features in responses.
+   *     By default, all direct properties of a feature type that are of type STRING, FLOAT,
+   *     INTEGER, DATE, or DATETIME may be sortable unless the property is explicitly excluded, or
+   *     uses `concat` / `coalesce`. Eligible properties may be explicitly excluded, for example, if
+   *     the property is not optimized for use in queries.
+   * @langDe # Schema-Anwendungsbereiche
+   *     <p>Schemas werden mit unterschiedlichen Anwendungsbereichen verwendet. Objekteigenschaften
+   *     können je nach den Merkmalen der Eigenschaft oder dem API-Design nur für eine Teilmenge der
+   *     Bereiche anwendbar sein. Die vier Anwendungsbereiche werden im Folgenden erläutert.
+   *     <p>## `RETURNABLE`
+   *     <p>Rückgabefähige Eigenschaften sind die Eigenschaften, die in Feature-Darstellungen
+   *     enthalten sind, wenn Features abgerufen werden. Standardmäßig sind alle Eigenschaften
+   *     rückgabefähig, es sei denn, die Eigenschaft wird explizit ausgeschlossen. In Frage kommende
+   *     Eigenschaften können explizit ausgeschlossen werden, z. B. wenn die Eigenschaft nur in
+   *     Abfragen verwendet werden soll (als Queryable oder Sortable), aber niemals in den Features
+   *     selbst kodiert werden soll.
+   *     <p>## `RECEIVABLE`
+   *     <p>Empfangbare Eigenschaften sind die Eigenschaften, die in Feature-Darstellungen enthalten
+   *     sein können, wenn Features erzeugt oder aktualisiert werden. Standardmäßig sind alle
+   *     Eigenschaften empfangbar, es sei denn, die Eigenschaft ist konstant oder explizit
+   *     ausgeschlossen. In Frage kommende Eigenschaften können explizit ausgeschlossen werden, z.B.
+   *     wenn die Eigenschaft abgeleitet ist oder eine andere Darstellung im Datenspeicher als in
+   *     der Antwort verwendet.
+   *     <p>## `QUERYABLE`
+   *     <p>Abfragbare Eigenschaften sind die Eigenschaften, die in Filterausdrücken verwendet
+   *     werden können. Standardmäßig können alle Eigenschaften abgefragt werden, es sei denn, die
+   *     Eigenschaft ist explizit ausgeschlossen, verwendet `concat` / `coalesce` oder ist vom Typ
+   *     `OBJECT` / `OBJECT_ARRAY`. In Frage kommende Eigenschaften können explizit ausgeschlossen
+   *     werden, zum Beispiel, wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert
+   *     ist.
+   *     <p>## `SORTABLE`
+   *     <p>Sortierbare Eigenschaften sind die Eigenschaften, die zum Sortieren von Features in
+   *     Antworten verwendet werden können. Standardmäßig können alle direkten Eigenschaften einer
+   *     Objektart, die vom Typ `STRING`, `FLOAT`, `INTEGER`, `DATE` oder `DATETIME` sind,
+   *     sortierbar sein, es sei denn, die Eigenschaft wird explizit ausgeschlossen oder verwendet
+   *     `concat` / `coalesce`. In Frage kommende Eigenschaften können explizit ausgeschlossen
+   *     werden, zum Beispiel wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert
+   *     ist.
+   */
+  @DocFile(path = "providers/details", name = "scopes.md")
+  enum Scope {
+    @Deprecated(since = "3.6")
+    QUERIES,
+    RETURNABLE,
+    @Deprecated(since = "3.6")
+    MUTATIONS,
+    RECEIVABLE,
+    QUERYABLE,
+    SORTABLE
   }
 
   String getName();
@@ -90,16 +165,26 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     return getForcePolygonCCW().filter(force -> force == false).isEmpty();
   }
 
+  @Deprecated(since = "3.6")
+  Optional<Scope> getScope();
+
+  Set<Scope> getExcludedScopes();
+
+  @Deprecated(since = "3.6")
   Optional<Boolean> getIsQueryable();
+
+  @Deprecated(since = "3.6")
+  Optional<Boolean> getIsSortable();
 
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
   default boolean queryable() {
-    return !isObject() && !Objects.equals(getType(), Type.UNKNOWN) && getIsQueryable().orElse(true);
+    return !isObject()
+        && !Objects.equals(getType(), Type.UNKNOWN)
+        && getIsQueryable().orElse(true)
+        && !getExcludedScopes().contains(Scope.SORTABLE);
   }
-
-  Optional<Boolean> getIsSortable();
 
   @JsonIgnore
   @Value.Derived
@@ -110,16 +195,42 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         && !isArray()
         && !Objects.equals(getType(), Type.BOOLEAN)
         && !Objects.equals(getType(), Type.UNKNOWN)
-        && getIsSortable().orElse(true);
+        && getIsSortable().orElse(true)
+        && !getExcludedScopes().contains(Scope.QUERYABLE);
   }
-
-  Optional<Boolean> getIsReturnable();
 
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
   default boolean returnable() {
-    return getIsReturnable().orElse(true);
+    return getScope().filter(s -> s.equals(Scope.MUTATIONS)).isEmpty()
+        && !getExcludedScopes().contains(Scope.RETURNABLE);
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean receivable() {
+    return getScope().filter(s -> s.equals(Scope.QUERIES)).isEmpty()
+        && !getExcludedScopes().contains(Scope.RECEIVABLE);
+  }
+
+  default boolean hasOneOf(Set<Scope> scopes) {
+    return scopes.stream()
+        .anyMatch(
+            s -> {
+              switch (s) {
+                case RETURNABLE:
+                  return receivable();
+                case RECEIVABLE:
+                  return returnable();
+                case QUERYABLE:
+                  return queryable();
+                case SORTABLE:
+                  return sortable();
+              }
+              return false;
+            });
   }
 
   Optional<Boolean> getIsLastModified();
