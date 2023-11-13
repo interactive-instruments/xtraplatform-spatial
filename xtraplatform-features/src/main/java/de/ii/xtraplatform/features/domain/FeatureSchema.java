@@ -234,10 +234,10 @@ public interface FeatureSchema
   Optional<String> getConstantValue();
 
   /**
-   * @langEn *Deprecated, use the `getExcludedScoped` instead.* Optional scope for properties that
-   *     should only be used when either reading (`QUERIES`) or writing (`MUTATIONS`) features.
-   * @langDe *Deprecated, benutzen Sie stattdessen `getExcludedScoped`.* Optionaler Geltungsbereich
-   *     für Eigenschaften die entweder nur beim Lesen (`QUERIES`) oder beim Schreiben (`MUTATIONS`)
+   * @langEn `*Deprecated, use `excludedScopes` instead.*` Optional scope for properties that should
+   *     only be used when either reading (`QUERIES`) or writing (`MUTATIONS`) features.
+   * @langDe *Deprecated, benutzen Sie stattdessen `excludedScopes`.* Optionaler Geltungsbereich für
+   *     Eigenschaften die entweder nur beim Lesen (`QUERIES`) oder beim Schreiben (`MUTATIONS`)
    *     verwendet werden sollen.
    * @default null
    */
@@ -357,13 +357,13 @@ public interface FeatureSchema
   Optional<Boolean> getForcePolygonCCW();
 
   /**
-   * @langEn *Deprecated, use the `getExcludedScoped` instead.* Properties that are not of type
-   *     OBJECT or OBJECT_ARRAY are by default eligible as queryables. This setting can be used to
-   *     declare a property as ineligible, for example, if the property is not optimized for use in
-   *     queries. If an eligible property can actually be queried is decided by the provider
-   *     implementation, that might not be feasible due to technical reasons.
-   * @langDe *Deprecated, benutzen Sie stattdessen `getExcludedScoped`.* Eigenschaften, die nicht
-   *     vom Typ OBJECT oder OBJECT_ARRAY sind, sind standardmäßig für Abfragen geeignet. Diese
+   * @langEn *Deprecated, use `excludedScopes` instead.* Properties that are not of type OBJECT or
+   *     OBJECT_ARRAY are by default eligible as queryables. This setting can be used to declare a
+   *     property as ineligible, for example, if the property is not optimized for use in queries.
+   *     If an eligible property can actually be queried is decided by the provider implementation,
+   *     that might not be feasible due to technical reasons.
+   * @langDe *Deprecated, benutzen Sie stattdessen `excludedScopes`.* Eigenschaften, die nicht vom
+   *     Typ OBJECT oder OBJECT_ARRAY sind, sind standardmäßig für Abfragen geeignet. Diese
    *     Einstellung kann verwendet werden, um eine Eigenschaft als nicht abfragefähig zu markieren,
    *     z. B. wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert ist. Ob eine
    *     geeignete Eigenschaft tatsächlich abgefragt werden kann entscheidet die
@@ -375,13 +375,13 @@ public interface FeatureSchema
   Optional<Boolean> getIsQueryable();
 
   /**
-   * @langEn *Deprecated, use the `getExcludedScoped` instead.* Only the direct properties of a
-   *     feature type that are of type STRING, FLOAT, INTEGER, DATE, or DATETIME are eligible as
-   *     sortables. This setting can be used to declare a property as ineligible, for example, if
-   *     the property is not optimized for use in queries. If an eligible property can actually be
-   *     used as sortable is decided by the provider implementation, that might not be feasible due
-   *     to technical reasons.
-   * @langDe *Deprecated, benutzen Sie stattdessen `getExcludedScoped`.* Nur die direkten
+   * @langEn *Deprecated, use `excludedScopes` instead.* Only the direct properties of a feature
+   *     type that are of type STRING, FLOAT, INTEGER, DATE, or DATETIME are eligible as sortables.
+   *     This setting can be used to declare a property as ineligible, for example, if the property
+   *     is not optimized for use in queries. If an eligible property can actually be used as
+   *     sortable is decided by the provider implementation, that might not be feasible due to
+   *     technical reasons.
+   * @langDe *Deprecated, benutzen Sie stattdessen `excludedScopes`.* Nur die direkten
    *     Feature-Eigenschaften einer Objektart, die vom Typ STRING, FLOAT, INTEGER, DATE oder
    *     DATETIME sind, kommen als Sortierkriterien in Frage. Diese Einstellung kann verwendet
    *     werden, um eine Eigenschaft als nicht geeignet zu deklarieren, zum Beispiel, wenn die
