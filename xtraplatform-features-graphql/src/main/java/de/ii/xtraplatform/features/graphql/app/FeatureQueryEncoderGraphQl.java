@@ -19,7 +19,6 @@ import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCapabilities;
 import de.ii.xtraplatform.features.domain.Query;
-import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.TypeQuery;
 import de.ii.xtraplatform.features.graphql.domain.ConnectionInfoGraphQlHttp;
 import de.ii.xtraplatform.features.graphql.domain.GraphQlQueries;
@@ -116,7 +115,7 @@ public class FeatureQueryEncoderGraphQl implements FeatureQueryEncoder<String, Q
 
   public String getFields(FeatureSchema featureSchema, String indentation) {
     return featureSchema.getProperties().stream()
-        .filter(SchemaBase::returnable)
+        .filter(FeatureSchema::returnable)
         .map(
             prop -> {
               if (prop.isValue()) {

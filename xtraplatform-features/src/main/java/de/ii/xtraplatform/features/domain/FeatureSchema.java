@@ -264,7 +264,6 @@ public interface FeatureSchema
         && !Objects.equals(getType(), Type.UNKNOWN)
         && getConcat().isEmpty()
         && getCoalesce().isEmpty()
-        && getIsQueryable().orElse(true)
         && !getExcludedScopes().contains(Scope.QUERYABLE);
   }
 
@@ -280,27 +279,17 @@ public interface FeatureSchema
         && !Objects.equals(getType(), Type.UNKNOWN)
         && getConcat().isEmpty()
         && getCoalesce().isEmpty()
-        && getIsSortable().orElse(true)
         && !getExcludedScopes().contains(Scope.SORTABLE);
   }
 
-  @Override
-  @JsonIgnore
-  @Value.Derived
-  @Value.Auxiliary
-  default boolean returnable() {
-    return getScope().filter(s -> s.equals(Scope.MUTATIONS)).isEmpty()
-        && !getExcludedScopes().contains(Scope.RETURNABLE);
-  }
+  // returnable() is unchanged, no need to override
 
   @Override
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
   default boolean receivable() {
-    return getScope().filter(s -> s.equals(Scope.QUERIES)).isEmpty()
-        && !isConstant()
-        && !getExcludedScopes().contains(Scope.RECEIVABLE);
+    return !isConstant() && !getExcludedScopes().contains(Scope.RECEIVABLE);
   }
 
   /**
@@ -877,6 +866,41 @@ public interface FeatureSchema
         "A sortable property must be a string, a number or an instant. Found %s. Path: %s.",
         getType(),
         getFullPathAsString());
+  }
+
+  @Value.Check
+  default FeatureSchema backwardsCompatibility() {
+    boolean migrate =
+        !getIsQueryable().orElse(true) || !getIsSortable().orElse(true) || getScope().isPresent();
+    if (migrate) {
+      ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(this);
+
+      if (!getIsQueryable().orElse(true)) {
+        builder.addExcludedScopes(Scope.QUERYABLE).isQueryable(Optional.empty());
+      }
+
+      if (!getIsSortable().orElse(true)) {
+        builder.addExcludedScopes(Scope.SORTABLE).isSortable(Optional.empty());
+      }
+
+      getScope()
+          .ifPresent(
+              scope -> {
+                if (scope.equals(Scope.MUTATIONS)) {
+                  builder.addExcludedScopes(Scope.RETURNABLE).scope(Optional.empty());
+                } else if (scope.equals(Scope.QUERIES)) {
+                  builder.addExcludedScopes(Scope.RECEIVABLE).scope(Optional.empty());
+                } else {
+                  throw new IllegalStateException(
+                      String.format(
+                          "Unexpected scope value. Expected QUERIES or MUTATIONS. Found: %s",
+                          scope));
+                }
+              });
+
+      return builder.build();
+    }
+    return this;
   }
 
   @JsonIgnore

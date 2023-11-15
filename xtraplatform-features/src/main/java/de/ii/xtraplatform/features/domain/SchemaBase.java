@@ -182,8 +182,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   default boolean queryable() {
     return !isObject()
         && !Objects.equals(getType(), Type.UNKNOWN)
-        && getIsQueryable().orElse(true)
-        && !getExcludedScopes().contains(Scope.SORTABLE);
+        && !getExcludedScopes().contains(Scope.QUERYABLE);
   }
 
   @JsonIgnore
@@ -195,24 +194,21 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         && !isArray()
         && !Objects.equals(getType(), Type.BOOLEAN)
         && !Objects.equals(getType(), Type.UNKNOWN)
-        && getIsSortable().orElse(true)
-        && !getExcludedScopes().contains(Scope.QUERYABLE);
+        && !getExcludedScopes().contains(Scope.SORTABLE);
   }
 
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
   default boolean returnable() {
-    return getScope().filter(s -> s.equals(Scope.MUTATIONS)).isEmpty()
-        && !getExcludedScopes().contains(Scope.RETURNABLE);
+    return !getExcludedScopes().contains(Scope.RETURNABLE);
   }
 
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
   default boolean receivable() {
-    return getScope().filter(s -> s.equals(Scope.QUERIES)).isEmpty()
-        && !getExcludedScopes().contains(Scope.RECEIVABLE);
+    return !getExcludedScopes().contains(Scope.RECEIVABLE);
   }
 
   default boolean hasOneOf(Set<Scope> scopes) {
