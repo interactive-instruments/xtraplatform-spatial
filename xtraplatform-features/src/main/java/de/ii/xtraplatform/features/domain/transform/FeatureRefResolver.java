@@ -10,12 +10,15 @@ package de.ii.xtraplatform.features.domain.transform;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
+import de.ii.xtraplatform.features.domain.MappingOperationResolver;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
@@ -36,99 +39,134 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
   @Override
   public FeatureSchema visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
-    // TODO
-    if (schema.isFeatureRef() && schema.getCoalesce().isEmpty() && schema.getConcat().isEmpty()) {
-      if (visitedProperties.isEmpty()) {
-        String sourcePath = schema.getSourcePath().orElse("");
-        Optional<String> objectSourcePath =
-            sourcePath.contains("/")
-                ? Optional.of(sourcePath.substring(0, sourcePath.lastIndexOf('/')))
-                : Optional.empty();
-        String idSourcePath =
-            sourcePath.contains("/")
-                ? sourcePath.substring(sourcePath.lastIndexOf('/') + 1)
-                : sourcePath;
-
-        FeatureSchema build =
+    if (schema.isFeatureRef()) {
+      if (!schema.getConcat().isEmpty()) {
+        ImmutableFeatureSchema visited =
             new Builder()
                 .from(schema)
                 .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
-                .valueType(Optional.empty())
-                .sourcePath(objectSourcePath)
-                .putProperties2(
-                    ID,
-                    new Builder()
-                        .type(schema.getValueType().orElse(Type.STRING))
-                        .sourcePath(idSourcePath))
-                .putProperties2(TITLE, new Builder().type(Type.STRING).sourcePath(idSourcePath))
-                .putProperties2(
-                    TYPE, new Builder().type(Type.STRING).constantValue(schema.getRefType()))
+                .refType(schema.getRefType().orElse(REF_TYPE_DYNAMIC))
+                .propertyMap(Map.of())
+                .concat(resolveAll(schema.getConcat(), schema.getValueType(), schema.getRefType()))
                 .build();
-        return build;
-      } else {
-        List<FeatureSchema> newVisitedProperties = new ArrayList<>(visitedProperties);
 
-        if (visitedProperties.stream()
-            .noneMatch(schema1 -> Objects.equals(schema1.getName(), TITLE))) {
-          FeatureSchema idSchema =
-              visitedProperties.stream()
-                  .filter(schema1 -> Objects.equals(schema1.getName(), ID))
-                  .findFirst()
-                  .orElseThrow();
-
-          newVisitedProperties.add(
-              new Builder()
-                  .from(idSchema)
-                  .name(TITLE)
-                  .type(Type.STRING)
-                  .path(List.of(TITLE))
-                  .build());
-        }
-
-        if (visitedProperties.stream().noneMatch(schema1 -> Objects.equals(schema1.getName(), TYPE))
-            && schema.getRefType().isPresent()) {
-          newVisitedProperties.add(
-              new Builder()
-                  .name(TYPE)
-                  .type(Type.STRING)
-                  .path(List.of(TYPE))
-                  .parentPath(schema.getPath())
-                  .constantValue(schema.getRefType())
-                  .build());
-        }
-        if (schema.getRefUriTemplate().isPresent()) {
-          newVisitedProperties.add(
-              new Builder()
-                  .name(URI_TEMPLATE)
-                  .type(Type.STRING)
-                  .path(List.of(URI_TEMPLATE))
-                  .parentPath(schema.getPath())
-                  .constantValue(schema.getRefUriTemplate())
-                  .build());
-        }
-        if (schema.getRefKeyTemplate().isPresent()) {
-          newVisitedProperties.add(
-              new Builder()
-                  .name(KEY_TEMPLATE)
-                  .type(Type.STRING)
-                  .path(List.of(KEY_TEMPLATE))
-                  .parentPath(schema.getPath())
-                  .constantValue(schema.getRefKeyTemplate())
-                  .build());
-        }
-
-        return new ImmutableFeatureSchema.Builder()
-            .from(schema)
-            .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
-            .refType(schema.getRefType().orElse(REF_TYPE_DYNAMIC))
-            .propertyMap(asMap(newVisitedProperties, FeatureSchema::getFullPathAsString))
-            .build();
+        return MappingOperationResolver.resolveConcat(visited);
       }
+      if (!schema.getCoalesce().isEmpty()) {
+        ImmutableFeatureSchema visited =
+            new Builder()
+                .from(schema)
+                .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
+                .refType(schema.getRefType().orElse(REF_TYPE_DYNAMIC))
+                .propertyMap(Map.of())
+                .coalesce(
+                    resolveAll(schema.getCoalesce(), schema.getValueType(), schema.getRefType()))
+                .build();
+
+        FeatureSchema featureSchema = MappingOperationResolver.resolveCoalesce(visited);
+        return featureSchema;
+      }
+
+      return resolve(schema, visitedProperties, Optional.empty(), Optional.empty());
     }
 
     return new ImmutableFeatureSchema.Builder()
         .from(schema)
         .propertyMap(asMap(visitedProperties, FeatureSchema::getFullPathAsString))
+        .build();
+  }
+
+  public List<FeatureSchema> resolveAll(
+      List<FeatureSchema> schemas,
+      Optional<Type> fallbackValueType,
+      Optional<String> fallbackRefType) {
+    return schemas.stream()
+        .map(schema -> resolve(schema, schema.getProperties(), fallbackValueType, fallbackRefType))
+        .collect(Collectors.toList());
+  }
+
+  public FeatureSchema resolve(
+      FeatureSchema schema,
+      List<FeatureSchema> properties,
+      Optional<Type> fallbackValueType,
+      Optional<String> fallbackRefType) {
+    Type valueType = schema.getValueType().orElse(fallbackValueType.orElse(Type.STRING));
+    Optional<String> refType = schema.getRefType().or(() -> fallbackRefType);
+
+    if (properties.isEmpty()) {
+      String sourcePath = schema.getSourcePath().orElse("");
+      Optional<String> objectSourcePath =
+          sourcePath.contains("/")
+              ? Optional.of(sourcePath.substring(0, sourcePath.lastIndexOf('/')))
+              : Optional.empty();
+      String idSourcePath =
+          sourcePath.contains("/")
+              ? sourcePath.substring(sourcePath.lastIndexOf('/') + 1)
+              : sourcePath;
+
+      FeatureSchema build =
+          new Builder()
+              .from(schema)
+              .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
+              .valueType(Optional.empty())
+              .sourcePath(objectSourcePath)
+              .putProperties2(ID, new Builder().type(valueType).sourcePath(idSourcePath))
+              .putProperties2(TITLE, new Builder().type(Type.STRING).sourcePath(idSourcePath))
+              .putProperties2(TYPE, new Builder().type(Type.STRING).constantValue(refType))
+              .build();
+      return build;
+    }
+
+    List<FeatureSchema> newVisitedProperties = new ArrayList<>(properties);
+
+    if (properties.stream().noneMatch(schema1 -> Objects.equals(schema1.getName(), TITLE))) {
+      FeatureSchema idSchema =
+          properties.stream()
+              .filter(schema1 -> Objects.equals(schema1.getName(), ID))
+              .findFirst()
+              .orElseThrow();
+
+      newVisitedProperties.add(
+          new Builder().from(idSchema).name(TITLE).type(Type.STRING).path(List.of(TITLE)).build());
+    }
+
+    if (properties.stream().noneMatch(schema1 -> Objects.equals(schema1.getName(), TYPE))
+        && schema.getRefType().isPresent()) {
+      newVisitedProperties.add(
+          new Builder()
+              .name(TYPE)
+              .type(Type.STRING)
+              .path(List.of(TYPE))
+              .parentPath(schema.getPath())
+              .constantValue(refType)
+              .build());
+    }
+    if (schema.getRefUriTemplate().isPresent()) {
+      newVisitedProperties.add(
+          new Builder()
+              .name(URI_TEMPLATE)
+              .type(Type.STRING)
+              .path(List.of(URI_TEMPLATE))
+              .parentPath(schema.getPath())
+              .constantValue(schema.getRefUriTemplate())
+              .build());
+    }
+    if (schema.getRefKeyTemplate().isPresent()) {
+      newVisitedProperties.add(
+          new Builder()
+              .name(KEY_TEMPLATE)
+              .type(Type.STRING)
+              .path(List.of(KEY_TEMPLATE))
+              .parentPath(schema.getPath())
+              .constantValue(schema.getRefKeyTemplate())
+              .build());
+    }
+
+    return new ImmutableFeatureSchema.Builder()
+        .from(schema)
+        .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
+        .refType(refType.orElse(REF_TYPE_DYNAMIC))
+        .propertyMap(asMap(newVisitedProperties, FeatureSchema::getFullPathAsString))
         .build();
   }
 }

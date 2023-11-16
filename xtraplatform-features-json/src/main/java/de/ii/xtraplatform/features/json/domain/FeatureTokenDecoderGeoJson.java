@@ -19,6 +19,8 @@ import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -44,6 +46,7 @@ public class FeatureTokenDecoderGeoJson
   private int lastNameIsArrayDepth = 0;
   private int startArray = 0;
   private int endArray = 0;
+  private List<String> geoPath = new ArrayList<>();
 
   private ModifiableContext<FeatureSchema, SchemaMapping> context;
   private FeatureTokenBuffer<
@@ -217,6 +220,7 @@ public class FeatureTokenDecoderGeoJson
             downstream.onArrayEnd(context);
 
             if (context.inGeometry()) {
+              geoPath = context.path();
               checkBufferForDimension();
               context.pathTracker().track(depth - featureDepth - 1);
             }
@@ -241,11 +245,15 @@ public class FeatureTokenDecoderGeoJson
             if (depth > featureDepth
                 && (inProperties || context.inGeometry())
                 && !Objects.equals(currentName, "properties")) {
+              if (context.inGeometry()) {
+                context.pathTracker().track(geoPath);
+              }
               downstream.onObjectEnd(context);
             }
 
             // end geo
             if (context.inGeometry()) {
+              geoPath = new ArrayList<>();
               context.pathTracker().track(depth - featureDepth - 1);
             }
 

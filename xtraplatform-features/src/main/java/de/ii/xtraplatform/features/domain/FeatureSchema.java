@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -644,15 +645,14 @@ public interface FeatureSchema
         getConcat().isEmpty()
             || getType() != Type.FEATURE_REF_ARRAY
             || getConcat().stream()
-                .allMatch(
-                    s ->
-                        List.of(Type.STRING, Type.FEATURE_REF, Type.FEATURE_REF_ARRAY)
-                            .contains(s.getType())),
+                .map(FeatureSchema::getDesiredType)
+                .filter(Objects::nonNull)
+                .allMatch(type -> List.of(Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(type)),
         "Concat of type FEATURE_REF_ARRAY may only contain items of type FEATURE_REF_ARRAY or FEATURE_REF. Found: %s. Path: %s.",
         getConcat().stream()
-            .map(FeatureSchema::getType)
-            .filter(
-                t -> !List.of(Type.STRING, Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(t))
+            .map(FeatureSchema::getDesiredType)
+            .filter(Objects::nonNull)
+            .filter(type -> !List.of(Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(type))
             .findFirst()
             .orElse(getType()),
         getFullPathAsString());
@@ -670,9 +670,10 @@ public interface FeatureSchema
                                 Type.BOOLEAN,
                                 Type.DATE,
                                 Type.DATETIME,
-                                Type.VALUE_ARRAY)
+                                Type.VALUE_ARRAY,
+                                Type.VALUE)
                             .contains(s.getType())),
-        "Concat of type VALUE_ARRAY may only contain items of type VALUE_ARRAY, INTEGER, FLOAT, STRING, BOOLEAN, DATE or DATETIME. Found: %s. Path: %s.",
+        "Concat of type VALUE_ARRAY may only contain items of type VALUE_ARRAY, VALUE, INTEGER, FLOAT, STRING, BOOLEAN, DATE or DATETIME. Found: %s. Path: %s.",
         getConcat().stream()
             .map(FeatureSchema::getType)
             .filter(
@@ -684,16 +685,11 @@ public interface FeatureSchema
                             Type.BOOLEAN,
                             Type.DATE,
                             Type.DATETIME,
-                            Type.VALUE_ARRAY)
+                            Type.VALUE_ARRAY,
+                            Type.VALUE)
                         .contains(t))
             .findFirst()
             .orElse(getType()),
-        getFullPathAsString());
-
-    Preconditions.checkState(
-        getCoalesce().isEmpty() || !isArray(),
-        "Coalesce may not be used with array types. Found: %s. Path: %s.",
-        getType(),
         getFullPathAsString());
 
     Preconditions.checkState(
@@ -728,9 +724,10 @@ public interface FeatureSchema
                                 Type.BOOLEAN,
                                 Type.DATE,
                                 Type.DATETIME,
-                                Type.VALUE_ARRAY)
+                                Type.VALUE_ARRAY,
+                                Type.VALUE)
                             .contains(s.getType())),
-        "Coalesce of type VALUE may only contain items of type INTEGER, FLOAT, STRING, BOOLEAN, DATE, DATETIME or VALUE_ARRAY. Found: %s. Path: %s.",
+        "Coalesce of type VALUE may only contain items of type INTEGER, FLOAT, STRING, BOOLEAN, DATE, DATETIME, VALUE or VALUE_ARRAY. Found: %s. Path: %s.",
         getCoalesce().stream()
             .map(FeatureSchema::getType)
             .filter(
@@ -742,7 +739,8 @@ public interface FeatureSchema
                             Type.BOOLEAN,
                             Type.DATE,
                             Type.DATETIME,
-                            Type.VALUE_ARRAY)
+                            Type.VALUE_ARRAY,
+                            Type.VALUE)
                         .contains(t))
             .findFirst()
             .orElse(getType()),
@@ -846,5 +844,34 @@ public interface FeatureSchema
                       .build();
                 })
             .collect(Collectors.toList()));
+  }
+
+  default FeatureSchema with(Consumer<ImmutableFeatureSchema.Builder> changes) {
+    ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(this);
+
+    changes.accept(builder);
+
+    if (!getConcat().isEmpty()) {
+      builder.concat(
+          getConcat().stream().map(concat -> apply(concat, changes)).collect(Collectors.toList()));
+    }
+
+    if (!getCoalesce().isEmpty()) {
+      builder.coalesce(
+          getCoalesce().stream()
+              .map(coalesce -> apply(coalesce, changes))
+              .collect(Collectors.toList()));
+    }
+
+    return builder.build();
+  }
+
+  static FeatureSchema apply(
+      FeatureSchema schema, Consumer<ImmutableFeatureSchema.Builder> changes) {
+    ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(schema);
+
+    changes.accept(builder);
+
+    return builder.build();
   }
 }

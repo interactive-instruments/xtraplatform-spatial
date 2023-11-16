@@ -105,13 +105,17 @@ public class FeatureEventBuffer<
    * @param pos event position
    */
   private void increase(int pos) {
+    plus(pos, 1);
+  }
+
+  private void plus(int pos, int delta) {
     // increase length of pos
     int lenPos = (pos * 2) + 1;
-    events.set(lenPos, events.get(lenPos) + 1);
+    events.set(lenPos, events.get(lenPos) + delta);
 
     // increase start of following pos
     for (int i = (pos + 1) * 2; i < events.size(); i += 2) {
-      events.set(i, events.get(i) + 1);
+      events.set(i, events.get(i) + delta);
     }
   }
 
@@ -183,8 +187,14 @@ public class FeatureEventBuffer<
       return false;
     }
 
+    int delta = replacement.size() - slice.size();
+
     slice.clear();
     slice.addAll(replacement);
+
+    if (delta != 0) {
+      plus(pos, delta);
+    }
 
     return true;
   }

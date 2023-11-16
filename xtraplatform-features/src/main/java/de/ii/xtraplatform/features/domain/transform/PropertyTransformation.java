@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain.transform;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
@@ -167,6 +168,9 @@ public interface PropertyTransformation
    */
   Map<String, String> getObjectMapFormat();
 
+  @JsonIgnore
+  Optional<Boolean> getCoalesce();
+
   // Optional<String> getFlattenObjects();
 
   // Optional<String> getFlattenArrays();
@@ -227,12 +231,6 @@ public interface PropertyTransformation
   @Deprecated
   @JsonProperty(value = "null", access = JsonProperty.Access.WRITE_ONLY)
   Optional<String> getNull();
-
-  /**
-   * @langEn TODO
-   * @langDe TODO
-   */
-  Optional<String> getAsLink(); // TODO: implement, with support for title
 
   @Override
   default PropertyTransformation mergeInto(PropertyTransformation source) {

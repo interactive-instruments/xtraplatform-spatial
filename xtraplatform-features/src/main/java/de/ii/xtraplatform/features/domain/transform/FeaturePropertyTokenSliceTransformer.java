@@ -39,7 +39,7 @@ public interface FeaturePropertyTokenSliceTransformer
       return slice;
     }
 
-    List<String> rootPath = getRootObjectPath(slice);
+    List<String> rootPath = getRootPath(slice);
     boolean isArray = slice.get(0) == FeatureTokenType.ARRAY;
     List<Object> transformed = new ArrayList<>();
 
@@ -74,11 +74,11 @@ public interface FeaturePropertyTokenSliceTransformer
     return PATH_JOINER.join(path);
   }
 
-  default List<String> getRootObjectPath(List<Object> slice) {
+  default List<String> getRootPath(List<Object> slice) {
     if (slice.size() < 2
         || (slice.get(0) != FeatureTokenType.OBJECT && slice.get(0) != FeatureTokenType.ARRAY)
         || !(slice.get(1) instanceof List)) {
-      throw new IllegalArgumentException("Not a valid object");
+      throw new IllegalArgumentException("Not a valid object or array");
     }
 
     return (List<String>) slice.get(1);
@@ -89,6 +89,15 @@ public interface FeaturePropertyTokenSliceTransformer
       throw new IllegalArgumentException(
           String.format(
               "Transformer %s can only be applied to OBJECT or OBJECT_ARRAY, found: %s",
+              getType(), schema.getType()));
+    }
+  }
+
+  default void checkArray(FeatureSchema schema) {
+    if (schema.getType() != Type.VALUE_ARRAY && schema.getType() != Type.OBJECT_ARRAY) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Transformer %s can only be applied to VALUE_ARRAY or OBJECT_ARRAY, found: %s",
               getType(), schema.getType()));
     }
   }
@@ -166,12 +175,24 @@ public interface FeaturePropertyTokenSliceTransformer
     for (int i = from; i < to; i++) {
       if (slice.get(i) == FeatureTokenType.VALUE) {
         if (i + 2 < to && slice.get(i + 1) instanceof List) {
-          valueIndexes.put(PATH_JOINER.join((List<String>) slice.get(i + 1)), i + 2);
+          valueIndexes.put(joinPath((List<String>) slice.get(i + 1)), i + 2);
         }
       }
     }
 
     return valueIndexes;
+  }
+
+  static String joinPath(List<String> path) {
+    String last = path.get(path.size() - 1);
+    if (last.matches("[0-9]+_.*")) {
+      List<String> path2 = new ArrayList<>(path.subList(0, path.size() - 1));
+      path2.add(last.substring(last.indexOf("_") + 1));
+
+      return PATH_JOINER.join(path2);
+    }
+
+    return PATH_JOINER.join(path);
   }
 
   static String getValue(List<Object> slice, int valueIndex) {

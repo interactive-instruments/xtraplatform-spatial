@@ -199,6 +199,17 @@ public class TokenSliceTransformerChain
                     .mapping(propertyTransformation.getObjectMapFormat())
                     .build());
           }
+
+          propertyTransformation
+              .getCoalesce()
+              .ifPresent(
+                  isObject ->
+                      transformers.add(
+                          ImmutableFeaturePropertyTransformerCoalesce.builder()
+                              .propertyPath(path)
+                              .parameter("")
+                              .isObject(isObject)
+                              .build()));
         });
 
     return transformers;

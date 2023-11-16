@@ -49,7 +49,6 @@ import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults;
 import de.ii.xtraplatform.features.sql.domain.SqlClientBasicFactory;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.values.domain.ValueStore;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -266,11 +265,8 @@ public class FeatureProviderSqlFactory
     if (anyPropertyMatches) {
       Map<String, FeatureSchema> types =
           data.getTypes().entrySet().stream()
-              .map(
-                  entry ->
-                      new SimpleImmutableEntry<>(
-                          entry.getKey(), entry.getValue().accept(transformer)))
-              .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+              .map(entry -> Map.entry(entry.getKey(), entry.getValue().accept(transformer)))
+              .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
       return new Builder().from(data).types(types).build();
     }
@@ -291,21 +287,15 @@ public class FeatureProviderSqlFactory
     @Override
     public FeatureSchema visit(
         FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
-      Map<String, FeatureSchema> visitedPropertiesMap =
+      List<FeatureSchema> visitedProperties2 =
           visitedProperties.stream()
               .filter(Objects::nonNull)
-              .map(
-                  featureSchema ->
-                      new SimpleImmutableEntry<>(
-                          featureSchema.getName(),
-                          normalizeConstants(schema.getName(), featureSchema)))
-              .collect(
-                  ImmutableMap.toImmutableMap(
-                      Entry::getKey, Entry::getValue, (first, second) -> second));
+              .map(featureSchema -> normalizeConstants(schema.getName(), featureSchema))
+              .collect(Collectors.toList());
 
       return new ImmutableFeatureSchema.Builder()
           .from(schema)
-          .propertyMap(visitedPropertiesMap)
+          .propertyMap(asMap(visitedProperties2, FeatureSchema::getFullPathAsString))
           .build();
     }
 
@@ -317,10 +307,12 @@ public class FeatureProviderSqlFactory
                 : schema.getConstantValue().get();
         String constantSourcePath =
             String.format(
-                "constant_%s_%d{constant=%s}", parent, constantCounter[0]++, constantValue);
+                "%sconstant_%s_%d{constant=%s}",
+                schema.getSourcePath().orElse(""), parent, constantCounter[0]++, constantValue);
 
         return new ImmutableFeatureSchema.Builder()
             .from(schema)
+            .sourcePath(Optional.empty())
             .addSourcePaths(constantSourcePath)
             .build();
       }

@@ -13,6 +13,7 @@ import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.features.domain.transform.SchemaTransformerChain;
 import de.ii.xtraplatform.features.domain.transform.TokenSliceTransformerChain;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -123,7 +124,7 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
     // TODO: dangerous, infinite loop
     while (nestingTracker.isNested()) {
       if (nestingTracker.inObject()) {
-        context.pathTracker().track(nestingTracker.getCurrentNestingPayload());
+        context.pathTracker().track(nestingTracker.getCurrentNestingPayload2());
         int pos = context.pos();
 
         if (pos > -1) {
@@ -131,11 +132,11 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
           nestingTracker.closeObject(context.mapping());
         }
       } else if (nestingTracker.inArray()) {
-        context.pathTracker().track(nestingTracker.getCurrentNestingPayload());
+        context.pathTracker().track(nestingTracker.getCurrentNestingPayload2());
         int pos = context.pos();
         if (pos > -1) {
           downstream.next(pos, context.parentPos());
-          nestingTracker.closeArray();
+          nestingTracker.closeArray(context.mapping());
         }
       }
     }
@@ -161,7 +162,11 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
       if (context.schema().filter(schema -> schema.isObject() || schema.isSpatial()).isPresent()) {
         // nestingTracker.open(context.schema().get(), context.parentSchemas(), context.indexes());
         nestingTracker.openObject(
-            context.schema().get(), context.path(), context.geometryType(), context.mapping());
+            context.schema().get(),
+            context.path(),
+            context.indexes(),
+            context.geometryType(),
+            context.mapping());
       }
     }
   }
@@ -184,7 +189,8 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
 
       if (context.schema().filter(schema -> schema.isArray() || schema.isSpatial()).isPresent()) {
         // nestingTracker.open(context.schema().get(), context.parentSchemas(), context.indexes());
-        nestingTracker.openArray(context.schema().get(), context.path());
+        nestingTracker.openArray(
+            context.schema().get(), context.path(), context.indexes(), context.mapping());
       }
     }
   }
@@ -195,7 +201,7 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
     if (pos > -1) {
       downstream.next(pos, context.parentPos());
 
-      nestingTracker.closeArray();
+      nestingTracker.closeArray(context.mapping());
     }
   }
 
@@ -207,15 +213,25 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
 
       if (context.schema().filter(FeatureSchema::isArray).isPresent()) {
         FeatureSchema schema = context.schema().get();
+
+        if (schema.getSourcePaths().size() > 1) {
+          ArrayList<Integer> parentPos = new ArrayList<>(context.parentPos());
+          parentPos.addAll(context.mapping().getPositionsForTargetPath(schema.getFullPath()));
+
+          downstream.next(pos, parentPos);
+        }
+
         if (!nestingTracker.isSamePath(schema.getFullPath())) {
-          nestingTracker.openArray(schema, context.path());
+          nestingTracker.openArray(schema, context.path(), context.indexes(), context.mapping());
         }
       }
 
       if (context.schema().filter(FeatureSchema::isValue).isPresent()) {
         FeatureSchema schema = context.schema().get();
 
-        nestingTracker.open(schema, context.parentSchemas(), context.path(), context.mapping());
+        LOGGER.debug("INDEXES {} {}", context.indexes(), context.path());
+
+        nestingTracker.open(schema, context);
 
         downstream.onValue(schema.getFullPath(), context.value(), context.valueType());
       }

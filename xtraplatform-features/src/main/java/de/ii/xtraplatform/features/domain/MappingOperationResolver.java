@@ -12,6 +12,7 @@ import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformat
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -311,8 +312,8 @@ public class MappingOperationResolver implements TypesResolver {
         .build();
   }
 
-  private FeatureSchema resolveConcat(FeatureSchema type) {
-    if (type.getType() == Type.VALUE_ARRAY || type.getType() == Type.FEATURE_REF_ARRAY) {
+  public static FeatureSchema resolveConcat(FeatureSchema type) {
+    if (type.getType() == Type.VALUE_ARRAY) {
       String basePath = type.getSourcePath().map(p -> p + "/").orElse("");
 
       ImmutableFeatureSchema.Builder builder =
@@ -322,22 +323,21 @@ public class MappingOperationResolver implements TypesResolver {
         builder.addSourcePaths(basePath + concat.getSourcePath().orElse(""));
       }
 
-      if (type.getType() == Type.FEATURE_REF_ARRAY
-          && type.getConcat().stream().anyMatch(s -> s.getType() == Type.STRING)) {
-        builder.concat(
-            type.getConcat().stream()
-                .map(
-                    s -> {
-                      if (s.getType() == Type.STRING) {
-                        return new ImmutableFeatureSchema.Builder()
-                            .from(s)
-                            .type(type.getType())
-                            .build();
-                      }
-                      return s;
-                    })
-                .collect(Collectors.toList()));
-      }
+      builder.concat(
+          type.getConcat().stream()
+              .map(
+                  s -> {
+                    if (Objects.isNull(s.getDesiredType()) || s.getValueType().isEmpty()) {
+                      return new ImmutableFeatureSchema.Builder()
+                          .from(s)
+                          .type(Objects.isNull(s.getDesiredType()) ? type.getType() : s.getType())
+                          .valueType(
+                              s.getValueType().orElse(type.getValueType().orElse(Type.STRING)))
+                          .build();
+                    }
+                    return s;
+                  })
+              .collect(Collectors.toList()));
 
       return builder.build();
     }
@@ -352,29 +352,33 @@ public class MappingOperationResolver implements TypesResolver {
         String basePath2 =
             basePath + type.getConcat().get(i).getSourcePath().map(p -> p + "/").orElse("");
 
+        // TODO: duplicate queries
+        // builder.addSourcePaths(basePath2.endsWith("/") ?
+        // basePath2.substring(0,basePath2.length()-1) : basePath2);
+
         for (FeatureSchema prop : type.getConcat().get(i).getProperties()) {
-          builder.putProperties2(
+          builder.putPropertyMap(
               i + "_" + prop.getName(),
               new ImmutableFeatureSchema.Builder()
                   .from(prop)
                   .sourcePath(basePath2 + prop.getSourcePath().orElse(""))
-                  .path(List.of(i + "_" + prop.getName()))
-                  .putAdditionalInfo("concatIndex", String.valueOf(i))
-                  .putAdditionalInfo(
-                      type.getConcat().get(i).isArray() ? "concatArray" : "concatValue", "true")
-                  .transformations(List.of())
-                  .addTransformations(
-                      new ImmutablePropertyTransformation.Builder().rename(prop.getName()).build())
-                  .addAllTransformations(prop.getTransformations()));
+                  .path(List.of(i + "_" + prop.getName())));
+          // .putAdditionalInfo("concatIndex", String.valueOf(i))
+          // .putAdditionalInfo(
+          //    type.getConcat().get(i).isArray() ? "concatArray" : "concatValue", "true")
+          // .transformations(List.of())
+          // .addTransformations(
+          //    new ImmutablePropertyTransformation.Builder().rename(prop.getName()).build())
+          // .addAllTransformations(prop.getTransformations()));
         }
       }
 
-      if (type.getConcat().stream().anyMatch(s -> s.getType() == Type.STRING)) {
+      if (type.getConcat().stream().anyMatch(s -> Objects.isNull(s.getDesiredType()))) {
         builder.concat(
             type.getConcat().stream()
                 .map(
                     s -> {
-                      if (s.getType() == Type.STRING) {
+                      if (Objects.isNull(s.getDesiredType())) {
                         return new ImmutableFeatureSchema.Builder()
                             .from(s)
                             .type(type.getType())
@@ -391,33 +395,38 @@ public class MappingOperationResolver implements TypesResolver {
     return type;
   }
 
-  private FeatureSchema resolveCoalesce(FeatureSchema type) {
-    if (type.isValue() && !type.isArray()) {
+  public static FeatureSchema resolveCoalesce(FeatureSchema type) {
+    if (type.isValue() && !type.isFeatureRef() && !type.isArray()) {
       String basePath = type.getSourcePath().map(p -> p + "/").orElse("");
 
       ImmutableFeatureSchema.Builder builder =
-          new ImmutableFeatureSchema.Builder().from(type).sourcePath(Optional.empty());
+          new ImmutableFeatureSchema.Builder()
+              .from(type)
+              .type(Type.VALUE_ARRAY)
+              .valueType(type.getValueType().orElse(type.getType()))
+              .sourcePath(Optional.empty())
+              .addTransformations(
+                  new ImmutablePropertyTransformation.Builder().coalesce(false).build());
 
       for (FeatureSchema coalesce : type.getCoalesce()) {
         builder.addSourcePaths(basePath + coalesce.getSourcePath().orElse(""));
       }
 
-      if (type.getType() == Type.FEATURE_REF
-          && type.getCoalesce().stream().anyMatch(s -> s.getType() == Type.STRING)) {
-        builder.coalesce(
-            type.getCoalesce().stream()
-                .map(
-                    s -> {
-                      if (s.getType() == Type.STRING) {
-                        return new ImmutableFeatureSchema.Builder()
-                            .from(s)
-                            .type(type.getType())
-                            .build();
-                      }
-                      return s;
-                    })
-                .collect(Collectors.toList()));
-      }
+      builder.coalesce(
+          type.getCoalesce().stream()
+              .map(
+                  s -> {
+                    if (Objects.isNull(s.getDesiredType()) || s.getValueType().isEmpty()) {
+                      return new ImmutableFeatureSchema.Builder()
+                          .from(s)
+                          .type(Objects.isNull(s.getDesiredType()) ? type.getType() : s.getType())
+                          .valueType(
+                              s.getValueType().orElse(type.getValueType().orElse(Type.STRING)))
+                          .build();
+                    }
+                    return s;
+                  })
+              .collect(Collectors.toList()));
 
       return builder.build();
     }
@@ -426,36 +435,41 @@ public class MappingOperationResolver implements TypesResolver {
       String basePath = type.getSourcePath().map(p -> p + "/").orElse("");
 
       ImmutableFeatureSchema.Builder builder =
-          new ImmutableFeatureSchema.Builder().from(type).sourcePath(Optional.empty());
+          new ImmutableFeatureSchema.Builder()
+              .from(type)
+              .type(Type.OBJECT_ARRAY)
+              .sourcePath(Optional.empty())
+              .addTransformations(
+                  new ImmutablePropertyTransformation.Builder().coalesce(true).build());
 
       for (int i = 0; i < type.getCoalesce().size(); i++) {
         String basePath2 =
             basePath + type.getCoalesce().get(i).getSourcePath().map(p -> p + "/").orElse("");
 
         for (FeatureSchema prop : type.getCoalesce().get(i).getProperties()) {
-          builder.putProperties2(
+          builder.putPropertyMap(
               i + "_" + prop.getName(),
               new ImmutableFeatureSchema.Builder()
                   .from(prop)
                   .sourcePath(basePath2 + prop.getSourcePath().orElse(""))
-                  .path(List.of(i + "_" + prop.getName()))
-                  .putAdditionalInfo("coalesceIndex", String.valueOf(i))
-                  .putAdditionalInfo(
-                      type.getCoalesce().get(i).isArray() ? "coalesceArray" : "coalesceValue",
-                      "true")
-                  .transformations(List.of())
-                  .addTransformations(
-                      new ImmutablePropertyTransformation.Builder().rename(prop.getName()).build())
-                  .addAllTransformations(prop.getTransformations()));
+                  .path(List.of(i + "_" + prop.getName())));
+          /*.putAdditionalInfo("coalesceIndex", String.valueOf(i))
+          .putAdditionalInfo(
+              type.getCoalesce().get(i).isArray() ? "coalesceArray" : "coalesceValue",
+              "true")
+          .transformations(List.of())
+          .addTransformations(
+              new ImmutablePropertyTransformation.Builder().rename(prop.getName()).build())
+          .addAllTransformations(prop.getTransformations()));*/
         }
       }
 
-      if (type.getCoalesce().stream().anyMatch(s -> s.getType() == Type.STRING)) {
+      if (type.getCoalesce().stream().anyMatch(s -> Objects.isNull(s.getDesiredType()))) {
         builder.coalesce(
             type.getCoalesce().stream()
                 .map(
                     s -> {
-                      if (s.getType() == Type.STRING) {
+                      if (Objects.isNull(s.getDesiredType())) {
                         return new ImmutableFeatureSchema.Builder()
                             .from(s)
                             .type(type.getType())

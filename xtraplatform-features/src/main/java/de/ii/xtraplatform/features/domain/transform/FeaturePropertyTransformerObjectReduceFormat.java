@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
 import java.util.List;
@@ -33,12 +32,12 @@ public interface FeaturePropertyTransformerObjectReduceFormat
   default FeatureSchema transformSchema(FeatureSchema schema) {
     checkObject(schema);
 
-    return new ImmutableFeatureSchema.Builder()
-        .from(schema)
-        .type(schema.isArray() ? Type.VALUE_ARRAY : Type.VALUE)
-        .valueType(Type.STRING)
-        .propertyMap(Map.of())
-        .build();
+    return schema.with(
+        builder ->
+            builder
+                .type(schema.isArray() ? Type.VALUE_ARRAY : Type.VALUE)
+                .valueType(Type.STRING)
+                .propertyMap(Map.of()));
   }
 
   @Override
