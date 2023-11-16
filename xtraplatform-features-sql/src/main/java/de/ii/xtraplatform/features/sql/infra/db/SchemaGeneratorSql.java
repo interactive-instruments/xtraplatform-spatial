@@ -10,9 +10,9 @@ package de.ii.xtraplatform.features.sql.infra.db;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureSchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase;
+import de.ii.xtraplatform.features.domain.SchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.SchemaGenerator;
 import de.ii.xtraplatform.features.sql.app.SimpleFeatureGeometryFromToWkt;
 import de.ii.xtraplatform.features.sql.domain.SqlClientBasic;
@@ -183,7 +183,7 @@ public class SchemaGeneratorSql implements SchemaGenerator {
               idFound = true;
             }
             if (schemaInfo.isColumnReadOnly(column.getName(), table.getName())) {
-              featureProperty.scope(Scope.QUERIES);
+              featureProperty.scope(Scope.RETURNABLE);
             }
             if (featurePropertyType == SchemaBase.Type.GEOMETRY) {
               if (!geometryInfos.containsKey(table.getName())) {
@@ -252,7 +252,11 @@ public class SchemaGeneratorSql implements SchemaGenerator {
           idFound = true;
         }
         if (schemaInfo.isColumnReadOnly(column.getName(), table.getName())) {
-          featureProperty.scope(Scope.QUERIES);
+          if (featurePropertyType == SchemaBase.Type.GEOMETRY) {
+            featureProperty.addExcludedScopes(Scope.RECEIVABLE, Scope.SORTABLE);
+          } else {
+            featureProperty.addExcludedScopes(Scope.RECEIVABLE);
+          }
         }
         if (featurePropertyType == SchemaBase.Type.GEOMETRY) {
           if (!geometryInfos.containsKey(table.getName())) {

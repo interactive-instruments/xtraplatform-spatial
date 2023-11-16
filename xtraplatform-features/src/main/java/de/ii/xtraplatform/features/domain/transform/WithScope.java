@@ -9,35 +9,35 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureSchemaBase;
-import de.ii.xtraplatform.features.domain.FeatureSchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.SchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 
 public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
-  private final Scope scope;
+  private final Set<Scope> scopes;
 
   public WithScope(Scope scope) {
-    this.scope = scope;
+    this.scopes = EnumSet.of(scope);
+  }
+
+  public WithScope(Set<Scope> scopes) {
+    this.scopes = scopes;
   }
 
   @Override
   public FeatureSchema visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
-    if (schema.getScope().isPresent()
-        && !Objects.equals(schema.getScope().get(), scope)
-        && !schema.isId()) {
-      return null;
-    }
-
-    if (schema.isConstant() && scope == FeatureSchemaBase.Scope.MUTATIONS) {
+    // always include ID property
+    if (!schema.hasOneOf(scopes) && !schema.isId()) {
       return null;
     }
 

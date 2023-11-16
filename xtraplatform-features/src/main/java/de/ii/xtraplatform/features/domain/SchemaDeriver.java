@@ -12,7 +12,6 @@ import static de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransf
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
-import de.ii.xtraplatform.features.domain.FeatureSchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.SchemaBase.Role;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.FeatureRefResolver;
@@ -324,10 +323,9 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       valueSchema = withConstraints(valueSchema, schema.getConstraints().get(), schema, codelists);
     }
 
-    if (schema.isConstant()
-        || schema.getScope().filter(scope -> scope == Scope.QUERIES).isPresent()) {
+    if (!schema.receivable()) {
       valueSchema = withReadOnly(valueSchema);
-    } else if (schema.getScope().filter(scope -> scope == Scope.MUTATIONS).isPresent()) {
+    } else if (!schema.returnable()) {
       valueSchema = withWriteOnly(valueSchema);
     }
 

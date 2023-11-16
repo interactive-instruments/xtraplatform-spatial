@@ -21,6 +21,7 @@ import de.ii.xtraplatform.features.app.FeatureChangeHandlerImpl;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.LIFECYCLE_HOOK;
 import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
+import de.ii.xtraplatform.features.domain.SchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.features.domain.transform.WithoutProperties;
@@ -30,6 +31,7 @@ import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.values.domain.Values;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,9 +54,9 @@ public abstract class AbstractFeatureProvider<
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
   protected static final WithScope WITH_SCOPE_QUERIES =
-      new WithScope(FeatureSchemaBase.Scope.QUERIES);
+      new WithScope(EnumSet.of(SchemaBase.Scope.RETURNABLE, SchemaBase.Scope.SORTABLE));
   protected static final WithScope WITH_SCOPE_MUTATIONS =
-      new WithScope(FeatureSchemaBase.Scope.MUTATIONS);
+      new WithScope(SchemaBase.Scope.RECEIVABLE);
 
   private final ConnectorFactory connectorFactory;
   private final Reactive reactive;
@@ -444,7 +446,7 @@ public abstract class AbstractFeatureProvider<
       FeatureQuery featureQuery = (FeatureQuery) query;
 
       WithScope withScope =
-          featureQuery.getSchemaScope() == FeatureSchemaBase.Scope.QUERIES
+          featureQuery.getSchemaScope() == SchemaBase.Scope.RETURNABLE
               ? WITH_SCOPE_QUERIES
               : WITH_SCOPE_MUTATIONS;
 
