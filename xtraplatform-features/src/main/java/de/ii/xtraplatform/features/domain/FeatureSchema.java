@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,6 +49,7 @@ import org.slf4j.LoggerFactory;
 @JsonDeserialize(builder = ImmutableFeatureSchema.Builder.class)
 @JsonPropertyOrder({
   "sourcePath",
+  "sourcePaths",
   "type",
   "role",
   "valueType",
@@ -56,6 +58,8 @@ import org.slf4j.LoggerFactory;
   "label",
   "description",
   "unit",
+  "scope",
+  "excludedScopes",
   "transformations",
   "constraints",
   "properties"
@@ -136,19 +140,33 @@ public interface FeatureSchema
   }
 
   /**
-   * @langEn `ID` has to be set for the property that should be used as the unique feature id. As a
-   *     rule that should be the first property ion the `properties` object. Property names cannot
-   *     contain spaces (" ") or slashes ("/"). Set `TYPE` for a property that specifies the type
-   *     name of the object.
-   * @langDe Kennzeichnet besondere Bedeutungen der Eigenschaft.
-   *     <p><code>
-   * - `ID` ist bei der Eigenschaft eines Objekts anzugeben, die für die `featureId` in der API zu verwenden ist. Diese Eigenschaft ist typischerweise die erste Eigenschaft im `properties`-Objekt. Erlaubte Zeichen in diesen Eigenschaften sind alle Zeichen bis auf das Leerzeichen (" ") und der Querstrich ("/").
-   * - `TYPE` ist optional bei der Eigenschaft eines Objekts anzugeben, die den Namen einer Unterobjektart enthält.
-   * - Hat eine Objektart mehrere Geometrieeigenschaften, dann ist `PRIMARY_GEOMETRY` bei der Eigenschaft anzugeben, die für `bbox`-Abfragen verwendet werden soll und die in GeoJSON in `geometry` oder in JSON-FG in `where` kodiert werden soll.
-   * - Hat eine Objektart mehrere zeitliche Eigenschaften, dann sollte `PRIMARY_INSTANT` bei der Eigenschaft angegeben werden, die für `datetime`-Abfragen verwendet werden soll, sofern ein Zeitpunkt die zeitliche Ausdehnung der Features beschreibt.
-   * - Ist die zeitliche Ausdehnung hingegen ein Zeitintervall, dann sind `PRIMARY_INTERVAL_START` und `PRIMARY_INTERVAL_END` bei den jeweiligen zeitlichen Eigenschaften anzugeben.
-   * </code>
-   *     <p>
+   * @langEn Indicates special meanings of the property. `ID` is to be specified at the property of
+   *     an object to be used for the `featureId` in the API. This property is typically the first
+   *     property in the `properties` object. Allowed characters in these properties are all
+   *     characters except the space character (" ") and the horizontal bar ("/"). `TYPE` can be
+   *     specified at the property of an object that contains the name of a subobject type. If an
+   *     object type has multiple geometry properties, then specify `PRIMARY_GEOMETRY` at the
+   *     property to be used for `bbox` queries and to be encoded in data formats with exactly one
+   *     or a singled out geometry (e.g. in GeoJSON `geometry`). If an object type has multiple
+   *     temporal properties, then `PRIMARY_INSTANT` should be specified at the property to be used
+   *     for `datetime` queries, provided that a time instant describes the temporal extent of the
+   *     features. If, on the other hand, the temporal extent is a time interval, then
+   *     `PRIMARY_INTERVAL_START` and `PRIMARY_INTERVAL_END` should be specified at the respective
+   *     temporal properties.
+   * @langDe Kennzeichnet besondere Bedeutungen der Eigenschaft. `ID` ist bei der Eigenschaft eines
+   *     Objekts anzugeben, die für die `featureId` in der API zu verwenden ist. Diese Eigenschaft
+   *     ist typischerweise die erste Eigenschaft im `properties`-Objekt. Erlaubte Zeichen in diesen
+   *     Eigenschaften sind alle Zeichen bis auf das Leerzeichen (" ") und der Querstrich ("/").
+   *     `TYPE` kann bei der Eigenschaft eines Objekts angegeben werden, die den Namen einer
+   *     Unterobjektart enthält. Hat eine Objektart mehrere Geometrieeigenschaften, dann ist
+   *     `PRIMARY_GEOMETRY` bei der Eigenschaft anzugeben, die für `bbox`-Abfragen verwendet werden
+   *     soll und die in Datenformaten mit genau einer oder einer herausgehobenen Geometrie (z.B. in
+   *     GeoJSON `geometry`) kodiert werden soll. Hat eine Objektart mehrere zeitliche
+   *     Eigenschaften, dann sollte `PRIMARY_INSTANT` bei der Eigenschaft angegeben werden, die für
+   *     `datetime`-Abfragen verwendet werden soll, sofern ein Zeitpunkt die zeitliche Ausdehnung
+   *     der Features beschreibt. Ist die zeitliche Ausdehnung hingegen ein Zeitintervall, dann sind
+   *     `PRIMARY_INTERVAL_START` und `PRIMARY_INTERVAL_END` bei den jeweiligen zeitlichen
+   *     Eigenschaften anzugeben.
    * @default null
    */
   @Override
@@ -157,7 +175,7 @@ public interface FeatureSchema
   /**
    * @langEn Only needed when `type` is `VALUE_ARRAY`. Possible values: `FLOAT`, `INTEGER`,
    *     `STRING`, `BOOLEAN`, `DATETIME`, `DATE`
-   * @langDe Wird nur benötigt wenn `type` auf `VALUE_ARRAY` gesetzt ist. Mögliche Werte: `FLOAT`,
+   * @langDe Wird nur benötigt, wenn `type` auf `VALUE_ARRAY` gesetzt ist. Mögliche Werte: `FLOAT`,
    *     `INTEGER`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE`
    * @default STRING
    */
@@ -216,13 +234,63 @@ public interface FeatureSchema
   Optional<String> getConstantValue();
 
   /**
-   * @langEn Optional scope for properties that should only be used when either reading (`QUERIES`)
-   *     or writing (`MUTATIONS`) features.
-   * @langDe Optionaler Geltungsbereich für Eigenschaften die entweder nur beim Lesen (`QUERIES`) *
-   *     oder beim Schreiben (`MUTATIONS`) verwendet werden sollen.
+   * @langEn `*Deprecated, use `excludedScopes` instead.*` Optional scope for properties that should
+   *     only be used when either reading (`QUERIES`) or writing (`MUTATIONS`) features.
+   * @langDe *Deprecated, benutzen Sie stattdessen `excludedScopes`.* Optionaler Geltungsbereich für
+   *     Eigenschaften die entweder nur beim Lesen (`QUERIES`) oder beim Schreiben (`MUTATIONS`)
+   *     verwendet werden sollen.
    * @default null
    */
+  @Override
+  @Deprecated(since = "3.6")
   Optional<Scope> getScope();
+
+  /**
+   * @langEn Optional exclusion of a property from a schema scope. See [Schema
+   *     Scopes](../details/scopes.md) for a description of the scopes.
+   * @langDe Optionaler Ausschluss einer Eigenschaft aus einem Schema-Anwendungsbereich. Siehe
+   *     [Schema-Anwendungsbereiche](../details/scopes.md) für eine Beschreibung der Bereiche.
+   * @default []
+   */
+  @Override
+  Set<Scope> getExcludedScopes();
+
+  @Override
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean queryable() {
+    return !isObject()
+        && !Objects.equals(getType(), Type.UNKNOWN)
+        && getConcat().isEmpty()
+        && getCoalesce().isEmpty()
+        && !getExcludedScopes().contains(Scope.QUERYABLE);
+  }
+
+  @Override
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean sortable() {
+    return !isSpatial()
+        && !isObject()
+        && !isArray()
+        && !Objects.equals(getType(), Type.BOOLEAN)
+        && !Objects.equals(getType(), Type.UNKNOWN)
+        && getConcat().isEmpty()
+        && getCoalesce().isEmpty()
+        && !getExcludedScopes().contains(Scope.SORTABLE);
+  }
+
+  // returnable() is unchanged, no need to override
+
+  @Override
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean receivable() {
+    return !isConstant() && !getExcludedScopes().contains(Scope.RECEIVABLE);
+  }
 
   /**
    * @langEn Reference to an external schema definition. The default resolver will resolve
@@ -278,36 +346,41 @@ public interface FeatureSchema
   Optional<Boolean> getForcePolygonCCW();
 
   /**
-   * @langEn Properties that are not of type OBJECT or OBJECT_ARRAY are by default eligible as
-   *     queryables. This setting can be used to declare a property as ineligible, for example, if
-   *     the property is not optimized for use in queries. If an eligible property can actually be
-   *     queried is decided by the provider implementation, that might not be feasible due to
-   *     technical reasons.
-   * @langDe Eigenschaften, die nicht vom Typ OBJECT oder OBJECT_ARRAY sind, sind standardmäßig für
-   *     Abfragen geeignet. Diese Einstellung kann verwendet werden, um eine Eigenschaft als nicht
-   *     abfragefähig zu markieren, z. B. wenn die Eigenschaft nicht für die Verwendung in Abfragen
-   *     optimiert ist. Ob eine geeignete Eigenschaft tatsächlich abgefragt werden kann entscheidet
-   *     die Provider-Implementierung, das könnte aufgrund technischer Gründe nicht möglich sein.
+   * @langEn *Deprecated, use `excludedScopes` instead.* Properties that are not of type OBJECT or
+   *     OBJECT_ARRAY are by default eligible as queryables. This setting can be used to declare a
+   *     property as ineligible, for example, if the property is not optimized for use in queries.
+   *     If an eligible property can actually be queried is decided by the provider implementation,
+   *     that might not be feasible due to technical reasons.
+   * @langDe *Deprecated, benutzen Sie stattdessen `excludedScopes`.* Eigenschaften, die nicht vom
+   *     Typ OBJECT oder OBJECT_ARRAY sind, sind standardmäßig für Abfragen geeignet. Diese
+   *     Einstellung kann verwendet werden, um eine Eigenschaft als nicht abfragefähig zu markieren,
+   *     z. B. wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert ist. Ob eine
+   *     geeignete Eigenschaft tatsächlich abgefragt werden kann entscheidet die
+   *     Provider-Implementierung, das könnte aufgrund technischer Gründe nicht möglich sein.
    * @default see description
    */
   @Override
+  @Deprecated(since = "3.6")
   Optional<Boolean> getIsQueryable();
 
   /**
-   * @langEn Only the direct properties of a feature type that are of type STRING, FLOAT, INTEGER,
-   *     DATE, or DATETIME are eligible as sortables. This setting can be used to declare a property
-   *     as ineligible, for example, if the property is not optimized for use in queries. If an
-   *     eligible property can actually be used as sortable is decided by the provider
-   *     implementation, that might not be feasible due to technical reasons.
-   * @langDe Nur die direkten Feature-Eigenschaften einer Objektart, die vom Typ STRING, FLOAT,
-   *     INTEGER, DATE oder DATETIME sind, kommen als Sortierkriterien in Frage. Diese Einstellung
-   *     kann verwendet werden, um eine Eigenschaft als nicht geeignet zu deklarieren, zum Beispiel,
-   *     wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert ist. Ob eine geeignete
+   * @langEn *Deprecated, use `excludedScopes` instead.* Only the direct properties of a feature
+   *     type that are of type STRING, FLOAT, INTEGER, DATE, or DATETIME are eligible as sortables.
+   *     This setting can be used to declare a property as ineligible, for example, if the property
+   *     is not optimized for use in queries. If an eligible property can actually be used as
+   *     sortable is decided by the provider implementation, that might not be feasible due to
+   *     technical reasons.
+   * @langDe *Deprecated, benutzen Sie stattdessen `excludedScopes`.* Nur die direkten
+   *     Feature-Eigenschaften einer Objektart, die vom Typ STRING, FLOAT, INTEGER, DATE oder
+   *     DATETIME sind, kommen als Sortierkriterien in Frage. Diese Einstellung kann verwendet
+   *     werden, um eine Eigenschaft als nicht geeignet zu deklarieren, zum Beispiel, wenn die
+   *     Eigenschaft nicht für die Verwendung in Abfragen optimiert ist. Ob eine geeignete
    *     Eigenschaft tatsächlich als Sortierkriterium verwendet werden kann entscheidet die
    *     Provider-Implementierung, das könnte aufgrund technischer Gründe nicht möglich sein.
    * @default see description
    */
   @Override
+  @Deprecated(since = "3.6")
   Optional<Boolean> getIsSortable();
 
   /**
@@ -790,8 +863,44 @@ public interface FeatureSchema
                 && !isArray()
                 && !Objects.equals(getType(), Type.BOOLEAN)
                 && !Objects.equals(getType(), Type.UNKNOWN)),
-        "A sortable property must be a string, a number or an instant. Found %s",
-        getType());
+        "A sortable property must be a string, a number or an instant. Found %s. Path: %s.",
+        getType(),
+        getFullPathAsString());
+  }
+
+  @Value.Check
+  default FeatureSchema backwardsCompatibility() {
+    boolean migrate =
+        !getIsQueryable().orElse(true) || !getIsSortable().orElse(true) || getScope().isPresent();
+    if (migrate) {
+      ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(this);
+
+      if (!getIsQueryable().orElse(true)) {
+        builder.addExcludedScopes(Scope.QUERYABLE).isQueryable(Optional.empty());
+      }
+
+      if (!getIsSortable().orElse(true)) {
+        builder.addExcludedScopes(Scope.SORTABLE).isSortable(Optional.empty());
+      }
+
+      getScope()
+          .ifPresent(
+              scope -> {
+                if (scope.equals(Scope.MUTATIONS)) {
+                  builder.addExcludedScopes(Scope.RETURNABLE).scope(Optional.empty());
+                } else if (scope.equals(Scope.QUERIES)) {
+                  builder.addExcludedScopes(Scope.RECEIVABLE).scope(Optional.empty());
+                } else {
+                  throw new IllegalStateException(
+                      String.format(
+                          "Unexpected scope value. Expected QUERIES or MUTATIONS. Found: %s",
+                          scope));
+                }
+              });
+
+      return builder.build();
+    }
+    return this;
   }
 
   @JsonIgnore

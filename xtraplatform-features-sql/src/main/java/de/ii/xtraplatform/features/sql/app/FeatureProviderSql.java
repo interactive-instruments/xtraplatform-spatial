@@ -39,7 +39,6 @@ import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureQueryEncoder;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.FeatureSchemaBase;
 import de.ii.xtraplatform.features.domain.FeatureStream;
 import de.ii.xtraplatform.features.domain.FeatureStreamImpl;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
@@ -473,7 +472,7 @@ public class FeatureProviderSql
       FeatureQuery featureQuery = (FeatureQuery) query;
 
       WithScope withScope =
-          featureQuery.getSchemaScope() == FeatureSchemaBase.Scope.QUERIES
+          featureQuery.getSchemaScope() == SchemaBase.Scope.RETURNABLE
               ? WITH_SCOPE_QUERIES
               : WITH_SCOPE_MUTATIONS;
 
@@ -486,7 +485,7 @@ public class FeatureProviderSql
                   .build());
 
       List<SchemaSql> schemas =
-          featureQuery.getSchemaScope() == FeatureSchemaBase.Scope.QUERIES
+          featureQuery.getSchemaScope() == SchemaBase.Scope.RETURNABLE
               ? tableSchemas.get(featureQuery.getType())
               : tableSchemasMutations.get(featureQuery.getType());
 

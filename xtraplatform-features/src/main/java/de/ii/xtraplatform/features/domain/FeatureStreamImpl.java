@@ -239,7 +239,7 @@ public class FeatureStreamImpl implements FeatureStream {
     FeatureSchema featureSchema = data.getTypes().get(typeQuery.getType());
 
     if (typeQuery instanceof FeatureQuery
-        && ((FeatureQuery) typeQuery).getSchemaScope() == FeatureSchemaBase.Scope.MUTATIONS) {
+        && ((FeatureQuery) typeQuery).getSchemaScope() == SchemaBase.Scope.RECEIVABLE) {
       return () -> getProviderTransformationsMutations(featureSchema);
     }
 

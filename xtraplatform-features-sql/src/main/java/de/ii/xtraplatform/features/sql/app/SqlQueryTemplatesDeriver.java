@@ -191,7 +191,7 @@ public class SqlQueryTemplatesDeriver
     String columns =
         Stream.concat(
                 sortFields.stream(),
-                schema.getProperties().stream()
+                schema.accept(new OnlyReturnables()).getProperties().stream()
                     .filter(SchemaBase::isValue)
                     .map(
                         column -> {
