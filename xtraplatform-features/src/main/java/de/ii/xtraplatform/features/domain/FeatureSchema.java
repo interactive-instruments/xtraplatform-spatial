@@ -686,6 +686,16 @@ public interface FeatureSchema
   }
 
   @Value.Check
+  default void disallowFlattening() {
+    Preconditions.checkState(
+        getTransformations().isEmpty()
+            || getTransformations().stream()
+                .noneMatch(transformations -> transformations.getFlatten().isPresent()),
+        "The 'flatten' transformation is not allowed in the provider schema. Path: %s.",
+        isFeature() ? getName() : getFullPathAsString());
+  }
+
+  @Value.Check
   default void checkMappingOperations() {
     Preconditions.checkState(
         getConcat().isEmpty() || isArray(),

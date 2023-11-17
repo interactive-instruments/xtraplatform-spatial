@@ -143,6 +143,7 @@ public class FeatureTokenDecoderGeoJson
               case "geometry":
                 context.setInGeometry(true);
                 context.pathTracker().track(currentName, 0);
+                geoPath = context.path();
                 break;
               default:
                 if (inProperties /* || inGeometry*/) {
@@ -210,6 +211,10 @@ public class FeatureTokenDecoderGeoJson
             }
             // end prop/coord array
           } else if (Objects.nonNull(currentName) && (inProperties || context.inGeometry())) {
+            if (context.inGeometry()) {
+              context.pathTracker().track(geoPath);
+            }
+
             if (endArray > 0) {
               for (int i = 0; i < endArray - 1; i++) {
                 downstream.onArrayEnd(context);
@@ -220,7 +225,6 @@ public class FeatureTokenDecoderGeoJson
             downstream.onArrayEnd(context);
 
             if (context.inGeometry()) {
-              geoPath = context.path();
               checkBufferForDimension();
               context.pathTracker().track(depth - featureDepth - 1);
             }
@@ -253,7 +257,6 @@ public class FeatureTokenDecoderGeoJson
 
             // end geo
             if (context.inGeometry()) {
-              geoPath = new ArrayList<>();
               context.pathTracker().track(depth - featureDepth - 1);
             }
 
@@ -281,6 +284,7 @@ public class FeatureTokenDecoderGeoJson
           }
           if (Objects.equals(currentName, "geometry")) {
             context.setInGeometry(false);
+            geoPath = List.of();
             downstream.bufferStop(false);
           }
           if (inProperties) {
@@ -383,6 +387,10 @@ public class FeatureTokenDecoderGeoJson
               context.setValue(nullValue.get());
             } else {
               context.setValue(parser.getValueAsString());
+            }
+
+            if (context.inGeometry()) {
+              context.pathTracker().track(geoPath);
             }
 
             downstream.onValue(context);

@@ -99,8 +99,6 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
 
     }
 
-    //TODO
-    @Ignore
     def 'single feature with multipoint geometry'() {
 
         given:
@@ -118,8 +116,6 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
 
     }
 
-    //TODO
-    @Ignore
     def 'single feature with multipolygon geometry'() {
 
         given:
@@ -188,8 +184,6 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
 
     }
 
-    //TODO
-    @Ignore
     def 'collection with 3 features'() {
 
         given:
