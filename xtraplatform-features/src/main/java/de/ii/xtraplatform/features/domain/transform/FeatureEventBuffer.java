@@ -169,19 +169,22 @@ public class FeatureEventBuffer<
   }
 
   public List<Object> getSlice(int pos) {
-    if (pos < 1) {
+    if (pos < 0) {
       return List.of();
+    }
+    if (pos == 0) {
+      return Collections.unmodifiableList(buffer);
     }
 
     return Collections.unmodifiableList(buffer.subList(start(pos), end(pos)));
   }
 
   public boolean replaceSlice(int pos, List<Object> replacement) {
-    if (pos < 1) {
+    if (pos < 0) {
       return false;
     }
 
-    List<Object> slice = buffer.subList(start(pos), end(pos));
+    List<Object> slice = pos == 0 ? buffer : buffer.subList(start(pos), end(pos));
 
     if (Objects.equals(slice, replacement)) {
       return false;

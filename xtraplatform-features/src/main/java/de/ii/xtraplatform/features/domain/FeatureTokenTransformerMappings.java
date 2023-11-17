@@ -8,7 +8,9 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.features.domain.transform.DynamicTargetSchemaTransformer;
 import de.ii.xtraplatform.features.domain.transform.FeatureEventBuffer;
+import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.features.domain.transform.SchemaTransformerChain;
 import de.ii.xtraplatform.features.domain.transform.TokenSliceTransformerChain;
@@ -17,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,6 +83,21 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
                         entry.getKey(),
                         new ImmutableSchemaMapping.Builder()
                             .from(entry.getValue())
+                            .dynamicTransformer(
+                                sliceTransformerChains
+                                        .get(entry.getKey())
+                                        .has(PropertyTransformations.WILDCARD)
+                                    ? sliceTransformerChains
+                                        .get(entry.getKey())
+                                        .get(PropertyTransformations.WILDCARD)
+                                        .stream()
+                                        .filter(
+                                            transformer ->
+                                                transformer
+                                                    instanceof FeaturePropertyTransformerFlatten)
+                                        .map(flatten -> (DynamicTargetSchemaTransformer) flatten)
+                                        .findFirst()
+                                    : Optional.empty())
                             .targetSchema(
                                 entry
                                     .getValue()
@@ -228,8 +246,6 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
 
       if (context.schema().filter(FeatureSchema::isValue).isPresent()) {
         FeatureSchema schema = context.schema().get();
-
-        LOGGER.debug("INDEXES {} {}", context.indexes(), context.path());
 
         nestingTracker.open(schema, context);
 

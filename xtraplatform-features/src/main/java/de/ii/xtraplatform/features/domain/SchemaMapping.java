@@ -8,8 +8,10 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.ImmutableMappingInfo.Builder;
+import de.ii.xtraplatform.features.domain.transform.DynamicTargetSchemaTransformer;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -25,10 +27,28 @@ import org.immutables.value.Value;
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
 
+  Optional<DynamicTargetSchemaTransformer> getDynamicTransformer();
+
   @Override
   default FeatureSchema schemaWithGeometryType(
       FeatureSchema schema, SimpleFeatureGeometry geometryType) {
     return new ImmutableFeatureSchema.Builder().from(schema).geometryType(geometryType).build();
+  }
+
+  @Override
+  default List<FeatureSchema> getSchemasForTargetPath(List<String> path) {
+    if (getDynamicTransformer().isPresent()) {
+      DynamicTargetSchemaTransformer transformer = getDynamicTransformer().get();
+      if (transformer.isApplicableDynamic(path)) {
+        List<FeatureSchema> schemas =
+            getSchemasByTargetPath()
+                .getOrDefault(transformer.transformPathDynamic(path), ImmutableList.of());
+
+        return transformer.transformSchemaDynamic(schemas, path);
+      }
+    }
+
+    return SchemaMappingBase.super.getSchemasForTargetPath(path);
   }
 
   static SchemaMapping of(FeatureSchema schema) {

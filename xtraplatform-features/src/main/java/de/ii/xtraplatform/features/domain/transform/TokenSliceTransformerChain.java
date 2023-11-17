@@ -32,7 +32,6 @@ public class TokenSliceTransformerChain
   private final SchemaMapping schemaMapping;
   private final Map<String, List<FeaturePropertyTokenSliceTransformer>> transformers;
 
-  // TODO: save position and schema
   public TokenSliceTransformerChain(
       Map<String, List<PropertyTransformation>> allTransformations,
       SchemaMapping schemaMapping,
@@ -87,7 +86,10 @@ public class TokenSliceTransformerChain
         .forEach(
             path -> {
               schemaMapping
-                  .getPositionsForTargetPath(Splitter.on('.').splitToList(path))
+                  .getPositionsForTargetPath(
+                      Objects.equals(path, PropertyTransformations.WILDCARD)
+                          ? List.of()
+                          : Splitter.on('.').splitToList(path))
                   .forEach(
                       pos -> {
                         List<Object> slice = buffer.getSlice(pos);
@@ -209,6 +211,17 @@ public class TokenSliceTransformerChain
                               .propertyPath(path)
                               .parameter("")
                               .isObject(isObject)
+                              .build()));
+
+          propertyTransformation
+              .getFlatten()
+              .ifPresent(
+                  flatten ->
+                      transformers.add(
+                          ImmutableFeaturePropertyTransformerFlatten.builder()
+                              .propertyPath(path)
+                              .parameter(flatten)
+                              .flattenedPathProvider((separator, name) -> name)
                               .build()));
         });
 

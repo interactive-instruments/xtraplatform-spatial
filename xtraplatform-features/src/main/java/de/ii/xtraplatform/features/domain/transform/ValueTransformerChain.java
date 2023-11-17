@@ -173,17 +173,6 @@ public class ValueTransformerChain
                               .substitutionLookup(substitutionLookup)
                               .build()));
 
-          /*propertyTransformation
-          .getReduceStringFormat()
-          .ifPresent(
-              stringFormat ->
-                  transformers.add(
-                      ImmutableFeaturePropertyTransformerStringFormat.builder()
-                          .propertyPath(path)
-                          .parameter(stringFormat)
-                          .substitutionLookup(substitutionLookup)
-                          .build()));*/
-
           propertyTransformation
               .getDateFormat()
               .ifPresent(

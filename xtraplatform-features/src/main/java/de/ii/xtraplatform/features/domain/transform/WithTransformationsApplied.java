@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -138,18 +139,19 @@ public class WithTransformationsApplied
                         flatLabel(property, labelPrefix),
                         labelSeparator)
                         .stream()
-                    : Stream.of(flattenProperty(property, prefix, labelPrefix)))
+                    : Stream.of(flattenProperty(property, prefix, labelPrefix, nameSeparator)))
         .collect(Collectors.toList());
   }
 
   private FeatureSchema flattenProperty(
-      FeatureSchema property, String namePrefix, String labelPrefix) {
+      FeatureSchema property, String namePrefix, String labelPrefix, String nameSeparator) {
     return new ImmutableFeatureSchema.Builder()
         .from(property)
         .type(flatType(property))
         .valueType(Optional.empty())
         .name(flatName(property, namePrefix))
         .label(flatLabel(property, labelPrefix))
+        .path(flatPath(property, namePrefix, nameSeparator))
         .concat(List.of())
         .coalesce(List.of())
         .build();
@@ -157,6 +159,10 @@ public class WithTransformationsApplied
 
   private String flatName(FeatureSchema property, String prefix) {
     return prefix + property.getName() + (property.isArray() ? "[]" : "");
+  }
+
+  private List<String> flatPath(FeatureSchema property, String prefix, String nameSeparator) {
+    return Splitter.on(nameSeparator).splitToList(flatName(property, prefix));
   }
 
   private String flatLabel(FeatureSchema property, String prefix) {

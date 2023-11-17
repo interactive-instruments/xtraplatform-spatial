@@ -13,7 +13,6 @@ import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyContextTransformer;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertySchemaTransformer;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten;
-import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten.INCLUDE;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerObjectReduce;
 import de.ii.xtraplatform.features.domain.transform.MappingOperationsTransformer;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
@@ -125,39 +124,39 @@ public class FeatureTokenTransformerSchemaMappings extends FeatureTokenTransform
 
   private boolean flattenObjects(
       TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> schemaTransformerChain) {
-    return schemaTransformerChain.has(PropertyTransformations.WILDCARD)
-        && schemaTransformerChain.get(PropertyTransformations.WILDCARD).stream()
-            .anyMatch(
-                featurePropertySchemaTransformer ->
-                    featurePropertySchemaTransformer instanceof FeaturePropertyTransformerFlatten
-                        && (((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer)
-                                    .include()
-                                == INCLUDE.ALL
-                            || ((FeaturePropertyTransformerFlatten)
-                                        featurePropertySchemaTransformer)
-                                    .include()
-                                == INCLUDE.OBJECTS));
+    return false; /*schemaTransformerChain.has(PropertyTransformations.WILDCARD)
+                  && schemaTransformerChain.get(PropertyTransformations.WILDCARD).stream()
+                      .anyMatch(
+                          featurePropertySchemaTransformer ->
+                              featurePropertySchemaTransformer instanceof FeaturePropertyTransformerFlatten
+                                  && (((FeaturePropertyTransformerFlatten) featurePropertySchemaTransformer)
+                                              .include()
+                                          == INCLUDE.ALL
+                                      || ((FeaturePropertyTransformerFlatten)
+                                                  featurePropertySchemaTransformer)
+                                              .include()
+                                          == INCLUDE.OBJECTS));*/
   }
 
   private NestingTracker getNestingTracker(
       TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> schemaTransformerChain) {
     boolean flattenObjects = flattenObjects(schemaTransformerChain);
 
-    boolean flattenArrays =
-        schemaTransformerChain.has(PropertyTransformations.WILDCARD)
-            && schemaTransformerChain.get(PropertyTransformations.WILDCARD).stream()
-                .anyMatch(
-                    featurePropertySchemaTransformer ->
-                        featurePropertySchemaTransformer
-                                instanceof FeaturePropertyTransformerFlatten
-                            && (((FeaturePropertyTransformerFlatten)
-                                            featurePropertySchemaTransformer)
-                                        .include()
-                                    == INCLUDE.ALL
-                                || ((FeaturePropertyTransformerFlatten)
-                                            featurePropertySchemaTransformer)
-                                        .include()
-                                    == INCLUDE.ARRAYS));
+    boolean flattenArrays = false;
+    /*schemaTransformerChain.has(PropertyTransformations.WILDCARD)
+    && schemaTransformerChain.get(PropertyTransformations.WILDCARD).stream()
+        .anyMatch(
+            featurePropertySchemaTransformer ->
+                featurePropertySchemaTransformer
+                        instanceof FeaturePropertyTransformerFlatten
+                    && (((FeaturePropertyTransformerFlatten)
+                                    featurePropertySchemaTransformer)
+                                .include()
+                            == INCLUDE.ALL
+                        || ((FeaturePropertyTransformerFlatten)
+                                    featurePropertySchemaTransformer)
+                                .include()
+                            == INCLUDE.ARRAYS));*/
 
     return new NestingTracker(
         getDownstream(), newContext, ImmutableList.of(), flattenObjects, flattenArrays, true);
