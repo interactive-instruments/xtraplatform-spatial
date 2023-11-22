@@ -44,12 +44,30 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
     this.emptyCounter = 0;
   }
 
+  private static List<String> appendToLast(List<String> list, String suffix) {
+    if (list.isEmpty()) {
+      return list;
+    }
+    List<String> newList = new ArrayList<>(list.subList(0, list.size() - 1));
+    newList.add(list.get(list.size() - 1) + suffix);
+
+    return newList;
+  }
+
   @Override
   public Multimap<List<String>, T> visit(
       T schema, List<Multimap<List<String>, T>> visitedProperties) {
+    counter++;
+
     List<List<String>> paths =
         useTargetPath
-            ? ImmutableList.of(schema.getPath())
+            ? /*(schema.isValue()
+                  && schema instanceof FeatureSchema
+                  && !((FeatureSchema) schema).getCoalesce().isEmpty()
+              ? ((FeatureSchema) schema)
+                  .getCoalesce().stream().map(c -> merge(schema.getPath(), c.getPath())).collect(Collectors.toList())
+              : */ ImmutableList.of(
+                appendToLast(schema.getPath(), "{priority=" + (counter) + "}")) // )
             // TODO: static cleanup method in PathParser
             : schema.getEffectiveSourcePaths().stream()
                 .map(
@@ -70,19 +88,20 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
                                     .replaceAll("\\{constant=.*?'\\}", "")
                                     .replaceAll("\\{sortKey=.*?\\}", "")
                                     .replaceAll("\\{primaryKey=.*?\\}", "")
-                                + (schema.isValue() ? "{priority=" + (counter++) + "}" : ""));
+                                + "{priority="
+                                + (counter)
+                                + "}");
                         return p.stream()
                             .flatMap(s -> SPLITTER.splitToList(s).stream())
                             .collect(Collectors.toList());
                       }
 
-                      return SPLITTER.splitToList(
-                          sourcePath + (schema.isValue() ? "{priority=" + (counter++) + "}" : ""));
+                      return SPLITTER.splitToList(sourcePath + "{priority=" + (counter) + "}");
                     })
                 .collect(Collectors.toList());
 
     if (!useTargetPath && paths.isEmpty()) {
-      paths = List.of(List.of("__EMPTY__", String.valueOf(counter++)));
+      paths = List.of(List.of("__EMPTY__", String.valueOf(counter)));
     }
 
     return (paths.isEmpty()

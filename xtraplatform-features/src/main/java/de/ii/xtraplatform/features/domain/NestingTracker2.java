@@ -101,7 +101,12 @@ public class NestingTracker2 {
         newContext.transformed().remove("concatNewObject");
         closeObject();
         openObject(parentSchemas.get(0));
-      }*/
+      }*/ else if (inArray()
+        && schema.isObject()
+        && isSamePath(schema.getFullPath())
+        && hasIndexChanged(indexes)) {
+      openObject(schema, payload, indexes, context.geometryType(), mapping);
+    }
 
     // new array
     if (schema.isArray() && !isSamePath(schema.getFullPath())) {

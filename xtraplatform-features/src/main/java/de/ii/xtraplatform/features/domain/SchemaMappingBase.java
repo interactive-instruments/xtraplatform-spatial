@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -66,8 +67,7 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default Map<List<String>, List<T>> getSchemasByTargetPath() {
-    return getSchemasByPath(
-        getTargetSchema(), new SchemaToPathsVisitor<>(true), Function.identity());
+    return getSchemasByPath(getTargetSchema(), new SchemaToPathsVisitor<>(true), this::cleanPath);
   }
 
   @Value.Derived
@@ -82,8 +82,7 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default Map<List<String>, List<Integer>> getPositionsByTargetPath() {
-    return getPositionsByPath(
-        getTargetSchema(), new SchemaToPathsVisitor<>(true), Function.identity());
+    return getPositionsByPath(getTargetSchema(), new SchemaToPathsVisitor<>(true), this::cleanPath);
   }
 
   @Value.Derived
@@ -137,12 +136,23 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
       SchemaToPathsVisitor<T> pathsVisitor,
       Function<List<String>, List<String>> pathCleaner) {
     final int[] i = {-1};
+    final String[] prevPrio = {null};
 
     return targetSchema.accept(pathsVisitor).asMap().keySet().stream()
         .map(
             path -> {
+              String prio =
+                  path.isEmpty()
+                      ? ""
+                      : path.get(path.size() - 1)
+                          .substring(path.get(path.size() - 1).lastIndexOf("=") + 1);
+              if (!Objects.equals(prio, prevPrio[0])) {
+                i[0]++;
+              }
+              prevPrio[0] = prio;
+
               List<String> cleanPath = pathCleaner.apply(path);
-              i[0]++;
+
               return Map.entry(cleanPath, Lists.newArrayList(i[0]));
             })
         .collect(

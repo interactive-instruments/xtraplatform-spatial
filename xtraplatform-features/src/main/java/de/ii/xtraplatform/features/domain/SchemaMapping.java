@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -65,7 +66,7 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
   @Value.Derived
   @Value.Auxiliary
   default Map<List<String>, List<MappingInfo>> forTargetPath() {
-    return forPath(new SchemaToPathsVisitor<>(true), Function.identity(), true);
+    return forPath(new SchemaToPathsVisitor<>(true), this::cleanPath, true);
   }
 
   // TODO: needed?
@@ -90,13 +91,13 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
                       ? getParentPositionsForTargetPath(path)
                       : getParentPositionsForSourcePath(path);
 
-              Preconditions.checkState(
+              boolean b =
                   schemas.size() == positions.size()
                       && schemas.size() == parentSchemas.size()
                       && schemas.size() == parentPositions.size()
-                      && parentPositions.stream()
-                          .flatMap(List::stream)
-                          .noneMatch(pos -> pos == -1));
+                      && parentPositions.stream().flatMap(List::stream).noneMatch(pos -> pos == -1);
+
+              Preconditions.checkState(b);
 
               // TODO: if there is ever more than one value, loses position of duplicates
               List<MappingInfo> mappingInfos = new ArrayList<>();
@@ -125,11 +126,14 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
 
   @Override
   default List<String> cleanPath(List<String> path) {
-    if (path.get(path.size() - 1).contains("{")) {
+    if (path.stream().anyMatch(elem -> elem.contains("{"))) {
+      return path.stream().map(this::cleanPath).collect(Collectors.toList());
+    }
+    /*if (path.get(path.size() - 1).contains("{")) {
       List<String> key = new ArrayList<>(path.subList(0, path.size() - 1));
       key.add(cleanPath(path.get(path.size() - 1)));
       return key;
-    }
+    }*/
     return path;
   }
 

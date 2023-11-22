@@ -15,12 +15,14 @@ import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.SchemaMappingBase;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 public class FeatureEventBuffer<
         U extends SchemaBase<U>, V extends SchemaMappingBase<U>, W extends ModifiableContext<U, V>>
@@ -32,6 +34,7 @@ public class FeatureEventBuffer<
   private final FeatureTokenReader<U, V, W> bufferOut;
 
   private final Vector<Integer> events;
+  private final Vector<List<Integer>> enclosings;
   private boolean doBuffer;
   public int current;
   public List<Integer> currentEnclosing;
@@ -43,6 +46,7 @@ public class FeatureEventBuffer<
     this.bufferIn = (FeatureTokenEmitter2<U, V, W>) (this::append);
     this.bufferOut = new FeatureTokenReader<>(downstream, context);
     this.events = new Vector<>();
+    this.enclosings = new Vector<>();
 
     this.doBuffer = false;
     this.current = 0;
@@ -56,6 +60,7 @@ public class FeatureEventBuffer<
                 * 2
             + 2;
     events.setSize(maxEvents);
+    enclosings.setSize(maxEvents);
   }
 
   public FeatureTokenEmitter2<U, V, W> getBuffer() {
@@ -69,6 +74,7 @@ public class FeatureEventBuffer<
   public void next(int pos, List<Integer> enclosing) {
     this.current = pos;
     this.currentEnclosing = enclosing;
+    enclosings.set(pos, enclosing);
   }
 
   /**
@@ -108,14 +114,28 @@ public class FeatureEventBuffer<
     plus(pos, 1);
   }
 
+  private void increase(int pos, List<Integer> enclosing) {
+    plus(pos, 1);
+
+    for (int pos2 : enclosing) {
+      plus(pos2, 1, false);
+    }
+  }
+
   private void plus(int pos, int delta) {
+    plus(pos, delta, true);
+  }
+
+  private void plus(int pos, int delta, boolean propagate) {
     // increase length of pos
     int lenPos = (pos * 2) + 1;
     events.set(lenPos, events.get(lenPos) + delta);
 
     // increase start of following pos
-    for (int i = (pos + 1) * 2; i < events.size(); i += 2) {
-      events.set(i, events.get(i) + delta);
+    if (propagate) {
+      for (int i = (pos + 1) * 2; i < events.size(); i += 2) {
+        events.set(i, events.get(i) + delta);
+      }
     }
   }
 
@@ -141,10 +161,13 @@ public class FeatureEventBuffer<
     int minPos = minPos(current, currentEnclosing);
 
     increase(minPos);
+
+    // increase(current, currentEnclosing);
   }
 
   void reset() {
     Collections.fill(events, 0);
+    Collections.fill(enclosings, List.of());
   }
 
   public void bufferStart() {
@@ -176,7 +199,20 @@ public class FeatureEventBuffer<
       return Collections.unmodifiableList(buffer);
     }
 
-    return Collections.unmodifiableList(buffer.subList(start(pos), end(pos)));
+    int enclosing = minPos(pos, enclosings.get(pos));
+
+    List<Object> slice = buffer.subList(start(enclosing), end(enclosing));
+
+    /*if (slice.isEmpty() && !enclosings.get(pos).isEmpty()) {
+      for (int pos2: enclosings.get(pos)) {
+        slice = buffer.subList(start(pos2), end(pos2));
+        if (!slice.isEmpty()) {
+          break;
+        }
+      }
+    }*/
+
+    return Collections.unmodifiableList(slice);
   }
 
   public boolean replaceSlice(int pos, List<Object> replacement) {
@@ -184,7 +220,9 @@ public class FeatureEventBuffer<
       return false;
     }
 
-    List<Object> slice = pos == 0 ? buffer : buffer.subList(start(pos), end(pos));
+    int enclosing = minPos(pos, enclosings.get(pos));
+
+    List<Object> slice = pos == 0 ? buffer : buffer.subList(start(enclosing), end(enclosing));
 
     if (Objects.equals(slice, replacement)) {
       return false;
@@ -196,7 +234,7 @@ public class FeatureEventBuffer<
     slice.addAll(replacement);
 
     if (delta != 0) {
-      plus(pos, delta);
+      plus(enclosing, delta);
     }
 
     return true;
@@ -287,5 +325,35 @@ public class FeatureEventBuffer<
     } else {
       downstream.onValue(context);
     }
+  }
+
+  public String toFixture(String name) {
+    String tokens =
+        buffer.stream()
+            .map(
+                token -> {
+                  if (token instanceof FeatureTokenType) {
+                    return "FeatureTokenType." + token;
+                  }
+                  if (token instanceof SchemaBase.Type) {
+                    return "Type." + token;
+                  }
+                  if (token instanceof SimpleFeatureGeometry) {
+                    return "SimpleFeatureGeometry." + token;
+                  }
+                  if (token instanceof String) {
+                    return "\"" + token + "\"";
+                  }
+                  if (token instanceof List) {
+                    return ((List<?>) token)
+                        .stream()
+                            .map(elem -> "\"" + elem + "\"")
+                            .collect(Collectors.joining(", ", "[", "]"));
+                  }
+                  return token.toString();
+                })
+            .collect(Collectors.joining(",\n"));
+
+    return String.format("public static final List<Object> %s = [\n%s\n]\n", name, tokens);
   }
 }
