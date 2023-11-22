@@ -79,7 +79,7 @@ public class DecoderJson implements Decoder {
   private void init(Pipeline pipeline, boolean isValues) {
     if (!isValues && Objects.isNull(decoderJsonProperties)) {
       this.arrayPaths =
-          pipeline.context().mapping().getSchemasByTargetPath().entrySet().stream()
+          pipeline.context().mapping().getSchemasBySourcePath().entrySet().stream()
               .filter(entry -> entry.getValue().get(0).isArray())
               .map(entry -> entry.getKey())
               .collect(Collectors.toList());
@@ -97,11 +97,13 @@ public class DecoderJson implements Decoder {
   }
 
   @Override
-  public void reset() {
+  public void reset(boolean full) {
     this.inProperties = false;
     this.isArray = false;
     this.valueIndex = 0;
-    if (Objects.nonNull(decoderJsonProperties)) {
+    if (full) {
+      this.decoderJsonProperties = null;
+    } else if (Objects.nonNull(decoderJsonProperties)) {
       decoderJsonProperties.reset();
     }
   }

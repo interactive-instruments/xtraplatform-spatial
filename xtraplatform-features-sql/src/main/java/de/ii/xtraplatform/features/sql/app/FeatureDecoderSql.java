@@ -163,6 +163,10 @@ public class FeatureDecoderSql
             sqlRow.getPath(),
             multiplicityTracker.getMultiplicitiesForPath(sqlRow.getPath()));
       }
+    } else {
+      while (nestingTracker.isNested()) {
+        nestingTracker.close();
+      }
     }
 
     if (!Objects.equals(currentId, featureId) || !Objects.equals(context.type(), featureType)) {
@@ -257,7 +261,7 @@ public class FeatureDecoderSql
               subDecoders
                   .get(subDecoder)
                   .decode(context.value().getBytes(StandardCharsets.UTF_8), this);
-              subDecoders.get(subDecoder).reset();
+              subDecoders.get(subDecoder).reset(true);
             } else {
               LOGGER.warn("Invalid sub-decoder: {}", subDecoder);
             }

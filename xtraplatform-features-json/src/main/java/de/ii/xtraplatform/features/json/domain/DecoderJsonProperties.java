@@ -124,6 +124,11 @@ public class DecoderJsonProperties {
 
           context.pathTracker().track(depth + featureDepth);
           // LOGGER.debug("E ARR {} {} {}", context.pathAsString(), context.indexes(), depth);
+
+          if (!context.indexes().isEmpty()) {
+            context.setIndexes(
+                new ArrayList<>(context.indexes().subList(0, context.indexes().size() - 1)));
+          }
         }
         break;
 
@@ -177,10 +182,30 @@ public class DecoderJsonProperties {
         }
 
         Optional<FeatureSchema> schema = context.schema();
+        List<FeatureSchema> parentSchemas = context.parentSchemas();
 
         if (schema.filter(s -> s.isValue() && s.isArray()).isPresent()) {
           ArrayList<Integer> indexes = new ArrayList<>(context.indexes());
           indexes.add(++valueIndex);
+          context.setIndexes(indexes);
+        }
+        if (schema
+            .filter(
+                s ->
+                    s.isValue()
+                        && (parentSchemas.size() > 1
+                            && parentSchemas.get(0).isArray()
+                            && parentSchemas.get(0).getSourcePath().isEmpty()))
+            .isPresent()) {
+          ArrayList<Integer> indexes =
+              new ArrayList<>(
+                  context.indexes().isEmpty()
+                      ? List.of()
+                      : context.indexes().subList(0, context.indexes().size() - 1));
+          indexes.add(
+              context.indexes().isEmpty()
+                  ? 1
+                  : context.indexes().get(context.indexes().size() - 1) + 1);
           context.setIndexes(indexes);
         }
 
