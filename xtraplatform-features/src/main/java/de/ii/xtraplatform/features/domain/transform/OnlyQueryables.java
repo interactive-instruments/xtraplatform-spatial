@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
@@ -65,6 +66,38 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
       return null;
     }
 
+    if (schema.isFeatureRef()) {
+      if (schema
+          .getRefType()
+          .filter(refType -> !Objects.equals(refType, FeatureRefResolver.REF_TYPE_DYNAMIC))
+          .isEmpty()) {
+        return null;
+      }
+
+      Optional<FeatureSchema> idProperty =
+          visitedProperties.stream()
+              .filter(Objects::nonNull)
+              .filter(p -> Objects.equals(p.getName(), FeatureRefResolver.ID))
+              .findFirst();
+
+      if (idProperty.isEmpty()) {
+        return null;
+      }
+
+      ImmutableFeatureSchema build =
+          new Builder()
+              .from(schema)
+              .type(
+                  schema.isArray() || parents.stream().anyMatch(SchemaBase::isArray)
+                      ? Type.FEATURE_REF_ARRAY
+                      : Type.FEATURE_REF)
+              .valueType(idProperty.get().getValueType().orElse(idProperty.get().getType()))
+              .addAllPath(idProperty.get().getPath())
+              .propertyMap(Map.of())
+              .build();
+      return build;
+    }
+
     Map<String, FeatureSchema> visitedPropertiesMap =
         visitedProperties.stream()
             .filter(Objects::nonNull)
@@ -79,7 +112,6 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
     return new Builder()
         .from(adjustType(parents, schema))
         .propertyMap(visitedPropertiesMap)
-        .concat(List.of())
         .build();
   }
 
@@ -97,10 +129,6 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
     if (property.isArray()) {
       // nothing to do, already an array
       return property;
-    }
-
-    if (Objects.requireNonNull(property.getType()) == Type.FEATURE_REF) {
-      return new Builder().from(property).type(Type.FEATURE_REF_ARRAY).build();
     }
 
     return new ImmutableFeatureSchema.Builder()

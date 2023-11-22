@@ -190,7 +190,8 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
         schema
             .getRole()
             .map(Enum::name)
-            .map(r -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, r));
+            .map(r -> CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, r))
+            .or(() -> schema.getRefType().map(ignore -> "reference"));
     Optional<String> refCollectionId = schema.getRefType();
     Optional<String> refUriTemplate =
         schema
@@ -265,6 +266,8 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
         break;
       case OBJECT:
       case OBJECT_ARRAY:
+      case FEATURE_REF:
+      case FEATURE_REF_ARRAY:
         if (!schema.isFeatureRef()) {
           break;
         }

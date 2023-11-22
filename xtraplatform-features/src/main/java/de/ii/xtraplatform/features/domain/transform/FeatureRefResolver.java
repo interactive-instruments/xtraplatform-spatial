@@ -136,11 +136,35 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
                     .objectAddConstants(Map.of(TYPE, refType.orElse("")))
                     .build())
             .putProperties2(ID, new Builder().type(valueType).sourcePath(sourcePath));
+
+        if (schema.getRefUriTemplate().isPresent()) {
+          builder.addTransformations(
+              new ImmutablePropertyTransformation.Builder()
+                  .objectAddConstants(Map.of(URI_TEMPLATE, schema.getRefUriTemplate().get()))
+                  .build());
+        }
+        if (schema.getRefKeyTemplate().isPresent()) {
+          builder.addTransformations(
+              new ImmutablePropertyTransformation.Builder()
+                  .objectAddConstants(Map.of(KEY_TEMPLATE, schema.getRefKeyTemplate().get()))
+                  .build());
+        }
       } else {
         builder
             .putProperties2(ID, new Builder().type(valueType).sourcePath(idSourcePath))
             .putProperties2(TITLE, new Builder().type(Type.STRING).sourcePath(idSourcePath))
             .putProperties2(TYPE, new Builder().type(Type.STRING).constantValue(refType));
+
+        if (schema.getRefUriTemplate().isPresent()) {
+          builder.putProperties2(
+              URI_TEMPLATE,
+              new Builder().type(Type.STRING).constantValue(schema.getRefUriTemplate()));
+        }
+        if (schema.getRefKeyTemplate().isPresent()) {
+          builder.putProperties2(
+              KEY_TEMPLATE,
+              new Builder().type(Type.STRING).constantValue(schema.getRefKeyTemplate()));
+        }
       }
 
       return builder.build();
