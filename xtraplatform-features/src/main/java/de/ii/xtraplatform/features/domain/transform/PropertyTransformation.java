@@ -21,6 +21,7 @@ import de.ii.xtraplatform.entities.domain.ImmutableValidationResult;
 import de.ii.xtraplatform.entities.domain.Mergeable;
 import de.ii.xtraplatform.entities.domain.maptobuilder.Buildable;
 import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableBuilder;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -169,7 +170,16 @@ public interface PropertyTransformation
   Map<String, String> getObjectMapFormat();
 
   @JsonIgnore
+  Map<String, String> getObjectMapDuplicate();
+
+  @JsonIgnore
+  Map<String, String> getObjectAddConstants();
+
+  @JsonIgnore
   Optional<Boolean> getCoalesce();
+
+  @JsonIgnore
+  Optional<Type> getWrap();
 
   // Optional<String> getFlattenObjects();
 

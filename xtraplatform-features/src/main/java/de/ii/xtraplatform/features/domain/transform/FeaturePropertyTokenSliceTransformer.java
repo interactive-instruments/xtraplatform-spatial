@@ -56,7 +56,7 @@ public interface FeaturePropertyTokenSliceTransformer
     int end = findPos(slice, FeatureTokenType.OBJECT_END, rootPath, start);
 
     while (start > -1 && end > -1) {
-      transformObject(currentPropertyPath, slice, rootPath, start, end, transformed);
+      transformObject(currentPropertyPath, slice, rootPath, start, end + 2, transformed);
 
       start = findPos(slice, FeatureTokenType.OBJECT, rootPath, end);
       end = findPos(slice, FeatureTokenType.OBJECT_END, rootPath, start);
@@ -89,6 +89,15 @@ public interface FeaturePropertyTokenSliceTransformer
       throw new IllegalArgumentException(
           String.format(
               "Transformer %s can only be applied to OBJECT or OBJECT_ARRAY, found: %s",
+              getType(), schema.getType()));
+    }
+  }
+
+  default void checkValue(FeatureSchema schema) {
+    if (!schema.isValue() || schema.isArray()) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Transformer %s can only be applied to VALUE, found: %s",
               getType(), schema.getType()));
     }
   }
@@ -169,7 +178,7 @@ public interface FeaturePropertyTokenSliceTransformer
     };
   }
 
-  static Map<String, Integer> getValueIndexes(List<Object> slice, int from, int to) {
+  default Map<String, Integer> getValueIndexes(List<Object> slice, int from, int to) {
     Map<String, Integer> valueIndexes = new HashMap<>();
 
     for (int i = from; i < to; i++) {
@@ -181,6 +190,35 @@ public interface FeaturePropertyTokenSliceTransformer
     }
 
     return valueIndexes;
+  }
+
+  default boolean isValueWithPath(List<Object> slice, int index, List<String> path) {
+    return slice.get(index) == FeatureTokenType.VALUE
+        && index + 3 < slice.size()
+        && slice.get(index + 1) instanceof List
+        && Objects.equals(slice.get(index + 1), path);
+  }
+
+  default boolean isObjectWithPath(List<Object> slice, int index, List<String> path) {
+    return slice.get(index) == FeatureTokenType.OBJECT
+        && index + 3 < slice.size()
+        && slice.get(index + 1) instanceof List
+        && Objects.equals(slice.get(index + 1), path);
+  }
+
+  default boolean isObjectEndWithPath(List<Object> slice, int index, List<String> path) {
+    return slice.get(index) == FeatureTokenType.OBJECT_END
+        && index + 3 < slice.size()
+        && slice.get(index + 1) instanceof List
+        && Objects.equals(slice.get(index + 1), path);
+  }
+
+  default boolean isChildOfPath(List<Object> slice, int index, List<String> path) {
+    return slice.get(index) instanceof FeatureTokenType
+        && index + 1 < slice.size()
+        && slice.get(index + 1) instanceof List
+        && ((List<?>) slice.get(index + 1)).size() > path.size()
+        && Objects.equals(path, ((List<String>) slice.get(index + 1)).subList(0, path.size()));
   }
 
   static String joinPath(List<String> path) {

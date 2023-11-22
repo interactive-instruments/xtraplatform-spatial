@@ -93,7 +93,7 @@ public class TokenSliceTransformerChain
                   .forEach(
                       pos -> {
                         List<Object> slice = buffer.getSlice(pos);
-                        List<Object> transformed = transform(path, slice);
+                        List<Object> transformed = run(transformers, path, path, slice);
 
                         buffer.replaceSlice(pos, transformed);
                       });
@@ -202,6 +202,24 @@ public class TokenSliceTransformerChain
                     .build());
           }
 
+          if (!propertyTransformation.getObjectMapDuplicate().isEmpty()) {
+            transformers.add(
+                ImmutableFeaturePropertyTransformerObjectMapDuplicate.builder()
+                    .propertyPath(path)
+                    .parameter("")
+                    .mapping(propertyTransformation.getObjectMapDuplicate())
+                    .build());
+          }
+
+          if (!propertyTransformation.getObjectAddConstants().isEmpty()) {
+            transformers.add(
+                ImmutableFeaturePropertyTransformerObjectAddConstants.builder()
+                    .propertyPath(path)
+                    .parameter("")
+                    .mapping(propertyTransformation.getObjectAddConstants())
+                    .build());
+          }
+
           propertyTransformation
               .getCoalesce()
               .ifPresent(
@@ -222,6 +240,17 @@ public class TokenSliceTransformerChain
                               .propertyPath(path)
                               .parameter(flatten)
                               .flattenedPathProvider((separator, name) -> name)
+                              .build()));
+
+          propertyTransformation
+              .getWrap()
+              .ifPresent(
+                  type ->
+                      transformers.add(
+                          ImmutableFeaturePropertyTransformerWrap.builder()
+                              .propertyPath(path)
+                              .parameter("")
+                              .wrapper(type)
                               .build()));
         });
 

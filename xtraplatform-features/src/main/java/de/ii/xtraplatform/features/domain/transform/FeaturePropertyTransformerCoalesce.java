@@ -15,26 +15,30 @@ import java.util.List;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface FeaturePropertyTransformerCoalesce extends FeaturePropertyTokenSliceTransformer {
+public abstract class FeaturePropertyTransformerCoalesce
+    implements FeaturePropertyTokenSliceTransformer {
 
-  String TYPE = "COALESCE";
+  private static final String TYPE = "COALESCE";
+
+  private FeatureSchema schema;
 
   @Override
-  default String getType() {
+  public String getType() {
     return TYPE;
   }
 
-  boolean isObject();
+  public abstract boolean isObject();
 
   @Override
-  default FeatureSchema transformSchema(FeatureSchema schema) {
+  public FeatureSchema transformSchema(FeatureSchema schema) {
     // checkArray(schema);
+    this.schema = schema;
 
     return schema.with(builder -> builder.type(isObject() ? Type.OBJECT : Type.VALUE));
   }
 
   @Override
-  default List<Object> transform(String currentPropertyPath, List<Object> slice) {
+  public List<Object> transform(String currentPropertyPath, List<Object> slice) {
     if (slice.isEmpty()) {
       return slice;
     }
@@ -56,10 +60,35 @@ public interface FeaturePropertyTransformerCoalesce extends FeaturePropertyToken
         transformed.addAll(slice.subList(start, end + 2));
       }
     } else {
-      int start = findPos(slice, FeatureTokenType.VALUE, rootPath, 0);
+      /*int start = findPos(slice, FeatureTokenType.VALUE, rootPath, 0);
 
       if (start > -1) {
         transformed.addAll(slice.subList(start, start + 4));
+      }*/
+      return coalesceValues(slice);
+    }
+
+    return transformed;
+  }
+
+  private List<Object> coalesceValues(List<Object> slice) {
+    List<Object> transformed = new ArrayList<>();
+    boolean lastWasValueWithPath = false;
+    boolean skip = false;
+
+    for (int i = 0; i < slice.size(); i++) {
+      if (isValueWithPath(slice, i, schema.getFullPath())) {
+        if (!lastWasValueWithPath) {
+          lastWasValueWithPath = true;
+        } else {
+          skip = true;
+        }
+      } else if (slice.get(i) instanceof FeatureTokenType) {
+        lastWasValueWithPath = false;
+        skip = false;
+      }
+      if (!skip) {
+        transformed.add(slice.get(i));
       }
     }
 
@@ -67,7 +96,7 @@ public interface FeaturePropertyTransformerCoalesce extends FeaturePropertyToken
   }
 
   @Override
-  default void transformObject(
+  public void transformObject(
       String currentPropertyPath,
       List<Object> slice,
       List<String> rootPath,

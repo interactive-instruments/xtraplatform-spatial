@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
@@ -34,7 +35,19 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
   public static final String SUB_KEY_TEMPLATE = "{{keyTemplate}}";
   public static final String REF_TYPE_DYNAMIC = "DYNAMIC";
 
-  public FeatureRefResolver() {}
+  private final Set<String> connectors;
+
+  public FeatureRefResolver(Set<String> connectors) {
+    this.connectors = connectors.stream().map(c -> "[" + c + "]").collect(Collectors.toSet());
+  }
+
+  private boolean isConnected(String sourcePath) {
+    return connectors.stream().anyMatch(sourcePath::contains);
+  }
+
+  private boolean isConnected(Optional<String> sourcePath) {
+    return sourcePath.isPresent() && isConnected(sourcePath.get());
+  }
 
   @Override
   public FeatureSchema visit(
@@ -104,62 +117,112 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
               ? sourcePath.substring(sourcePath.lastIndexOf('/') + 1)
               : sourcePath;
 
-      FeatureSchema build =
+      Builder builder =
           new Builder()
               .from(schema)
               .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
               .valueType(Optional.empty())
-              .sourcePath(objectSourcePath)
-              .putProperties2(ID, new Builder().type(valueType).sourcePath(idSourcePath))
-              .putProperties2(TITLE, new Builder().type(Type.STRING).sourcePath(idSourcePath))
-              .putProperties2(TYPE, new Builder().type(Type.STRING).constantValue(refType))
-              .build();
-      return build;
+              .sourcePath(objectSourcePath);
+
+      if (objectSourcePath.isPresent() && isConnected(objectSourcePath.get())) {
+        builder
+            .sourcePath(Optional.empty())
+            .addTransformations(
+                new ImmutablePropertyTransformation.Builder()
+                    .objectMapDuplicate(Map.of(TITLE, ID))
+                    .build())
+            .addTransformations(
+                new ImmutablePropertyTransformation.Builder()
+                    .objectAddConstants(Map.of(TYPE, refType.orElse("")))
+                    .build())
+            .putProperties2(ID, new Builder().type(valueType).sourcePath(sourcePath));
+      } else {
+        builder
+            .putProperties2(ID, new Builder().type(valueType).sourcePath(idSourcePath))
+            .putProperties2(TITLE, new Builder().type(Type.STRING).sourcePath(idSourcePath))
+            .putProperties2(TYPE, new Builder().type(Type.STRING).constantValue(refType));
+      }
+
+      return builder.build();
     }
 
     List<FeatureSchema> newVisitedProperties = new ArrayList<>(properties);
+    List<PropertyTransformation> newTransformations = new ArrayList<>(schema.getTransformations());
 
     if (properties.stream().noneMatch(schema1 -> Objects.equals(schema1.getName(), TITLE))) {
-      FeatureSchema idSchema =
-          properties.stream()
-              .filter(schema1 -> Objects.equals(schema1.getName(), ID))
-              .findFirst()
-              .orElseThrow();
+      if (isConnected(schema.getSourcePath())) {
+        newTransformations.add(
+            new ImmutablePropertyTransformation.Builder()
+                .objectMapDuplicate(Map.of(TITLE, ID))
+                .build());
+      } else {
+        FeatureSchema idSchema =
+            properties.stream()
+                .filter(schema1 -> Objects.equals(schema1.getName(), ID))
+                .findFirst()
+                .orElseThrow();
 
-      newVisitedProperties.add(
-          new Builder().from(idSchema).name(TITLE).type(Type.STRING).path(List.of(TITLE)).build());
+        newVisitedProperties.add(
+            new Builder()
+                .from(idSchema)
+                .name(TITLE)
+                .type(Type.STRING)
+                .path(List.of(TITLE))
+                .build());
+      }
     }
 
     if (properties.stream().noneMatch(schema1 -> Objects.equals(schema1.getName(), TYPE))
         && schema.getRefType().isPresent()) {
-      newVisitedProperties.add(
-          new Builder()
-              .name(TYPE)
-              .type(Type.STRING)
-              .path(List.of(TYPE))
-              .parentPath(schema.getPath())
-              .constantValue(refType)
-              .build());
+      if (isConnected(schema.getSourcePath())) {
+        newTransformations.add(
+            new ImmutablePropertyTransformation.Builder()
+                .objectAddConstants(Map.of(TYPE, refType.orElse("")))
+                .build());
+      } else {
+        newVisitedProperties.add(
+            new Builder()
+                .name(TYPE)
+                .type(Type.STRING)
+                .path(List.of(TYPE))
+                .parentPath(schema.getPath())
+                .constantValue(refType)
+                .build());
+      }
     }
     if (schema.getRefUriTemplate().isPresent()) {
-      newVisitedProperties.add(
-          new Builder()
-              .name(URI_TEMPLATE)
-              .type(Type.STRING)
-              .path(List.of(URI_TEMPLATE))
-              .parentPath(schema.getPath())
-              .constantValue(schema.getRefUriTemplate())
-              .build());
+      if (isConnected(schema.getSourcePath())) {
+        newTransformations.add(
+            new ImmutablePropertyTransformation.Builder()
+                .objectAddConstants(Map.of(URI_TEMPLATE, schema.getRefUriTemplate().get()))
+                .build());
+      } else {
+        newVisitedProperties.add(
+            new Builder()
+                .name(URI_TEMPLATE)
+                .type(Type.STRING)
+                .path(List.of(URI_TEMPLATE))
+                .parentPath(schema.getPath())
+                .constantValue(schema.getRefUriTemplate())
+                .build());
+      }
     }
     if (schema.getRefKeyTemplate().isPresent()) {
-      newVisitedProperties.add(
-          new Builder()
-              .name(KEY_TEMPLATE)
-              .type(Type.STRING)
-              .path(List.of(KEY_TEMPLATE))
-              .parentPath(schema.getPath())
-              .constantValue(schema.getRefKeyTemplate())
-              .build());
+      if (isConnected(schema.getSourcePath())) {
+        newTransformations.add(
+            new ImmutablePropertyTransformation.Builder()
+                .objectAddConstants(Map.of(KEY_TEMPLATE, schema.getRefKeyTemplate().get()))
+                .build());
+      } else {
+        newVisitedProperties.add(
+            new Builder()
+                .name(KEY_TEMPLATE)
+                .type(Type.STRING)
+                .path(List.of(KEY_TEMPLATE))
+                .parentPath(schema.getPath())
+                .constantValue(schema.getRefKeyTemplate())
+                .build());
+      }
     }
 
     return new ImmutableFeatureSchema.Builder()
@@ -167,6 +230,7 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
         .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
         .refType(refType.orElse(REF_TYPE_DYNAMIC))
         .propertyMap(asMap(newVisitedProperties, FeatureSchema::getFullPathAsString))
+        .transformations(newTransformations)
         .build();
   }
 }
