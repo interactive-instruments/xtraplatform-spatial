@@ -7,12 +7,20 @@
  */
 package de.ii.xtraplatform.features.domain
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.common.io.Resources
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 
 import static de.ii.xtraplatform.features.domain.SchemaBase.Type
 
 class FeatureTokenFixtures {
 
+    private static final ObjectMapper YAML = YamlSerialization.createYamlMapper();
+
+    public static FeatureTokens fromYaml(String name) {
+        def resource = Resources.getResource("feature-tokens/" + name + ".yml");
+        return YAML.readValue(Resources.toByteArray(resource), FeatureTokens.class);
+    }
 
     public static final List<Object> SINGLE_FEATURE = [
             FeatureTokenType.INPUT,
@@ -776,5 +784,94 @@ class FeatureTokenFixtures {
             Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> STUFF = [
+            FeatureTokenType.VALUE,
+            ["oid"],
+            "17e2d34d-44e0-44af-9de9-d8f8d8a6408e",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["hatGenerAttribut"],
+            FeatureTokenType.OBJECT,
+            ["hatGenerAttribut"],
+            FeatureTokenType.VALUE,
+            ["hatGenerAttribut", "name"],
+            "drehwinkel",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["hatGenerAttribut", "wert"],
+            "1.0",
+            Type.FLOAT,
+            FeatureTokenType.VALUE,
+            ["hatGenerAttribut", "wert"],
+            "bar",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["hatGenerAttribut"],
+            FeatureTokenType.OBJECT,
+            ["hatGenerAttribut"],
+            FeatureTokenType.VALUE,
+            ["hatGenerAttribut", "name"],
+            "foo",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["hatGenerAttribut", "wert"],
+            "bar",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["hatGenerAttribut"],
+            FeatureTokenType.ARRAY_END,
+            ["hatGenerAttribut"],
+            FeatureTokenType.OBJECT,
+            ["gehoertZuBereich"],
+            FeatureTokenType.VALUE,
+            ["gehoertZuBereich", "id"],
+            "d9bfd586-3e00-488f-8686-fd8387f6fc35",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["gehoertZuBereich", "type"],
+            "BP_Bereich",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["gehoertZuBereich", "title"],
+            "0",
+            Type.INTEGER,
+            FeatureTokenType.OBJECT_END,
+            ["gehoertZuBereich"],
+            FeatureTokenType.VALUE,
+            ["rechtscharakter"],
+            "1000",
+            Type.STRING,
+            FeatureTokenType.OBJECT,
+            ["position"],
+            SimpleFeatureGeometry.POINT,
+            2,
+            FeatureTokenType.VALUE,
+            ["position"],
+            "561524.729 5942848.073",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["position"],
+            FeatureTokenType.VALUE,
+            ["nordwinkel"],
+            "0.0",
+            Type.FLOAT,
+            FeatureTokenType.VALUE,
+            ["massnahme"],
+            "1000",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["gegenstand"],
+            FeatureTokenType.VALUE,
+            ["gegenstand"],
+            "1000",
+            Type.STRING,
+            FeatureTokenType.ARRAY_END,
+            ["gegenstand"],
+            FeatureTokenType.VALUE,
+            ["istAusgleich"],
+            "false",
+            Type.BOOLEAN
     ]
 }

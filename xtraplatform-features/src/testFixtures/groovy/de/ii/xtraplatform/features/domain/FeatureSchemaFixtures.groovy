@@ -7,10 +7,19 @@
  */
 package de.ii.xtraplatform.features.domain
 
-
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.common.io.Resources
 import de.ii.xtraplatform.features.domain.SchemaBase.Type
 
 class FeatureSchemaFixtures {
+
+    private static final ObjectMapper YAML = YamlSerialization.createYamlMapper();
+
+    public static FeatureSchema fromYaml(String name) {
+        def resource = Resources.getResource("feature-schemas/" + name + ".yml");
+        ImmutableFeatureSchema.Builder builder = YAML.readValue(Resources.toByteArray(resource), ImmutableFeatureSchema.Builder.class);
+        return builder.name(name).build()
+    }
 
     static FeatureSchema VALUE_ARRAY = new ImmutableFeatureSchema.Builder()
             .name("externalprovider")

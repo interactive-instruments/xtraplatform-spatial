@@ -1,0 +1,130 @@
+tokens:
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/id
+    target: oid
+    value: 17e2d34d-44e0-44af-9de9-d8f8d8a6408e
+    valueType: STRING
+  - type: ARRAY
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut
+    target: hatGenerAttribut
+  - type: OBJECT
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut
+    target: hatGenerAttribut
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut/name
+    target: hatGenerAttribut.name
+    value: drehwinkel
+    valueType: STRING
+  - type: ARRAY
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut/wert_double
+    target: hatGenerAttribut.wert
+    onlyIf: wrapped
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut/wert_double
+    target: hatGenerAttribut.wert
+    value: 1.0
+    valueType: FLOAT
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut/wert_string
+    target: hatGenerAttribut.wert
+    value: bar
+    valueType: STRING
+  - type: ARRAY_END
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut/wert_double
+    target: hatGenerAttribut.wert
+    onlyIf: wrapped
+  - type: OBJECT_END
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut
+    target: hatGenerAttribut
+  - type: OBJECT
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut
+    target: hatGenerAttribut
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut/name
+    target: hatGenerAttribut.name
+    value: foo
+    valueType: STRING
+  - type: ARRAY
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut/wert_string
+    target: hatGenerAttribut.wert
+    onlyIf: wrapped
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut/wert_string
+    target: hatGenerAttribut.wert
+    value: bar
+    valueType: STRING
+  - type: ARRAY_END
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut/wert_string
+    target: hatGenerAttribut.wert
+    onlyIf: wrapped
+  - type: OBJECT_END
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut
+    target: hatGenerAttribut
+  - type: ARRAY_END
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/hatGenerAttribut
+    target: hatGenerAttribut
+  - type: OBJECT
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[ref=id]coretable
+    target: gehoertZuBereich
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[ref=id]coretable/id
+    target: gehoertZuBereich.id
+    value: d9bfd586-3e00-488f-8686-fd8387f6fc35
+    valueType: STRING
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[ref=id]coretable/featuretype
+    target: gehoertZuBereich.type
+    value: BP_Bereich
+    valueType: STRING
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[ref=id]coretable/[JSON]properties/nummer
+    target: gehoertZuBereich.title
+    value: 0
+    valueType: INTEGER
+  - type: OBJECT_END
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[ref=id]coretable
+    target: gehoertZuBereich
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/rechtscharakter
+    target: rechtscharakter
+    value: 1000
+    valueType: STRING
+  - type: OBJECT
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/geometry
+    target: position
+    geometryType: POINT
+    geometryDimension: 2
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/geometry
+    target: position
+    value: "561524.729 5942848.073"
+    valueType: STRING
+  - type: OBJECT_END
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/geometry
+    target: position
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/nordwinkel
+    target: nordwinkel
+    value: 0.0
+    valueType: FLOAT
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/massnahme
+    target: massnahme
+    value: 1000
+    valueType: STRING
+  - type: ARRAY
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/gegenstand
+    target: gegenstand
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/gegenstand
+    target: gegenstand
+    value: 1000
+    valueType: STRING
+  - type: ARRAY_END
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/gegenstand
+    target: gegenstand
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[JSON]properties/istAusgleich
+    target: istAusgleich
+    value: false
+    valueType: BOOLEAN

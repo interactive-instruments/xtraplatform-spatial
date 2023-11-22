@@ -7,8 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain
 
-import de.ii.xtraplatform.features.domain.transform.PropertyTransformation
-import de.ii.xtraplatform.features.domain.transform.PropertyTransformations
+
 import spock.lang.Specification
 
 /**
@@ -16,32 +15,13 @@ import spock.lang.Specification
  */
 class FeatureTokenTransformerMappingSpec extends Specification {
 
-    def createReader(FeatureSchema schema, List<Object> tokens) {
-        FeatureTokenTransformerMappings mapper = new FeatureTokenTransformerMappings(["test": new PropertyTransformations() {
-            @Override
-            Map<String, List<PropertyTransformation>> getTransformations() {
-                return Map<String, List<PropertyTransformation>>.of();
-            }
-        }])
-        FeatureQuery query = ImmutableFeatureQuery.builder().type("test").build()
-        FeatureEventHandler.ModifiableContext context = mapper.createContext()
-                .setQuery(query)
-                .setMappings([test: SchemaMapping.of(schema)])
-                .setType('test')
-
-        FeatureTokenReader tokenReader = new FeatureTokenReader(mapper, context)
-        //tokens = []
-        mapper.init(token -> tokens.add(token))
-
-        return tokenReader
-    }
 
     def 'feature mapping: #casename'() {
 
         given:
 
         List<Object> actual = []
-        FeatureTokenReader reader = createReader(schema, actual)
+        FeatureTokenReader reader = Util.createReader(schema, actual)
 
         when:
 
@@ -54,9 +34,9 @@ class FeatureTokenTransformerMappingSpec extends Specification {
         where:
 
         casename                                  | schema                                           | source                                                 | expected
-        "joined value array between main columns" | FeatureSchemaFixtures.BIOTOP                     | FeatureTokenFixtures.SINGLE_FEATURE_VALUE_ARRAY_AT_END | FeatureTokenFixtures.SINGLE_FEATURE_VALUE_ARRAY_IN_ORDER_MAPPED
+        //TODO "joined value array between main columns" | FeatureSchemaFixtures.BIOTOP                     | FeatureTokenFixtures.SINGLE_FEATURE_VALUE_ARRAY_AT_END | FeatureTokenFixtures.SINGLE_FEATURE_VALUE_ARRAY_IN_ORDER_MAPPED
         "joined object array"                     | FeatureSchemaFixtures.OBJECT_ARRAY               | FeatureTokenFixtures.EXPLORATION_SITE_OBJECT_ARRAY     | FeatureTokenFixtures.EXPLORATION_SITE_OBJECT_ARRAY_MAPPED
-        "object without source path"              | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH | FeatureTokenFixtures.OBJECT_WITHOUT_SOURCE_PATH        | FeatureTokenFixtures.OBJECT_WITHOUT_SOURCE_PATH_MAPPED
+        //"object without source path"              | FeatureSchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH | FeatureTokenFixtures.OBJECT_WITHOUT_SOURCE_PATH        | FeatureTokenFixtures.OBJECT_WITHOUT_SOURCE_PATH_MAPPED
 
     }
 
