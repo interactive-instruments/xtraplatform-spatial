@@ -262,9 +262,8 @@ public interface FeatureSchema
   @Value.Auxiliary
   default boolean queryable() {
     return !isObject()
+        && !isMultiSource()
         && !Objects.equals(getType(), Type.UNKNOWN)
-        && getConcat().isEmpty()
-        && getCoalesce().isEmpty()
         && !getExcludedScopes().contains(Scope.QUERYABLE);
   }
 
@@ -276,10 +275,9 @@ public interface FeatureSchema
     return !isSpatial()
         && !isObject()
         && !isArray()
+        && !isMultiSource()
         && !Objects.equals(getType(), Type.BOOLEAN)
         && !Objects.equals(getType(), Type.UNKNOWN)
-        && getConcat().isEmpty()
-        && getCoalesce().isEmpty()
         && !getExcludedScopes().contains(Scope.SORTABLE);
   }
 
@@ -291,6 +289,13 @@ public interface FeatureSchema
   @Value.Auxiliary
   default boolean receivable() {
     return !isConstant() && !getExcludedScopes().contains(Scope.RECEIVABLE);
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isMultiSource() {
+    return !getConcat().isEmpty() || !getCoalesce().isEmpty();
   }
 
   /**
