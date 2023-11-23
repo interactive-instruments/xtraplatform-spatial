@@ -11,7 +11,6 @@ import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
@@ -133,9 +132,9 @@ public interface FeatureTokenEmitter2<
   default void onValue(List<String> path, String value, Type type) {
     push(FeatureTokenType.VALUE);
     push(path);
-    if (Objects.nonNull(value)) {
-      push(value);
-      push(type);
-    }
+    // if (Objects.nonNull(value)) {
+    push(value);
+    push(type);
+    // }
   }
 }

@@ -146,13 +146,12 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
         transformValueBuffer(context, path);
       }
 
-      value = valueTransformerChain.transform(path, value);
-
-      // skip, if the value has been transformed to null
       if (Objects.nonNull(value)) {
-        context.setValue(value);
-        getDownstream().onValue(context);
+        value = valueTransformerChain.transform(path, value);
       }
+
+      context.setValue(value);
+      getDownstream().onValue(context);
     }
   }
 

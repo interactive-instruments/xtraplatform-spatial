@@ -192,6 +192,14 @@ public interface FeaturePropertyTokenSliceTransformer
     return valueIndexes;
   }
 
+  default boolean isTypeWithPath(
+      List<Object> slice, int index, FeatureTokenType type, List<String> path) {
+    return slice.get(index) == type
+        && index + 1 < slice.size()
+        && slice.get(index + 1) instanceof List
+        && Objects.equals(slice.get(index + 1), path);
+  }
+
   default boolean isValueWithPath(List<Object> slice, int index, List<String> path) {
     return slice.get(index) == FeatureTokenType.VALUE
         && index + 3 < slice.size()
@@ -201,14 +209,14 @@ public interface FeaturePropertyTokenSliceTransformer
 
   default boolean isObjectWithPath(List<Object> slice, int index, List<String> path) {
     return slice.get(index) == FeatureTokenType.OBJECT
-        && index + 3 < slice.size()
+        && index + 1 < slice.size()
         && slice.get(index + 1) instanceof List
         && Objects.equals(slice.get(index + 1), path);
   }
 
   default boolean isObjectEndWithPath(List<Object> slice, int index, List<String> path) {
     return slice.get(index) == FeatureTokenType.OBJECT_END
-        && index + 3 < slice.size()
+        && index + 1 < slice.size()
         && slice.get(index + 1) instanceof List
         && Objects.equals(slice.get(index + 1), path);
   }

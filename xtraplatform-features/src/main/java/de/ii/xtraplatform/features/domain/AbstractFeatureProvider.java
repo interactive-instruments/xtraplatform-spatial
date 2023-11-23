@@ -21,7 +21,9 @@ import de.ii.xtraplatform.features.app.FeatureChangeHandlerImpl;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.LIFECYCLE_HOOK;
 import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
+import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping.Builder;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.features.domain.transform.SchemaTransformerChain;
 import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.features.domain.transform.WithoutProperties;
 import de.ii.xtraplatform.streams.domain.Reactive;
@@ -439,8 +441,6 @@ public abstract class AbstractFeatureProvider<
 
   private Map<String, SchemaMapping> createMapping(
       Query query, Map<String, PropertyTransformations> propertyTransformations) {
-    // TODO: apply schema transformations
-
     if (query instanceof FeatureQuery) {
       FeatureQuery featureQuery = (FeatureQuery) query;
 
@@ -449,9 +449,8 @@ public abstract class AbstractFeatureProvider<
               ? WITH_SCOPE_QUERIES
               : WITH_SCOPE_MUTATIONS;
 
-      return ImmutableMap.of(
-          featureQuery.getType(),
-          new ImmutableSchemaMapping.Builder()
+      ImmutableSchemaMapping schemaMapping =
+          new Builder()
               .targetSchema(
                   getData()
                       .getTypes()
@@ -461,6 +460,19 @@ public abstract class AbstractFeatureProvider<
                           new WithoutProperties(
                               featureQuery.getFields(), featureQuery.skipGeometry())))
               .sourcePathTransformer(this::applySourcePathDefaults)
+              .build();
+
+      SchemaTransformerChain schemaTransformations =
+          propertyTransformations
+              .get(featureQuery.getType())
+              .getSchemaTransformations(
+                  schemaMapping, !((FeatureQuery) query).returnsSingleFeature());
+
+      return ImmutableMap.of(
+          featureQuery.getType(),
+          new Builder()
+              .from(schemaMapping)
+              .targetSchema(schemaMapping.getTargetSchema().accept(schemaTransformations))
               .build());
     }
 

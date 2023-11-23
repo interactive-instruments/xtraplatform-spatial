@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTransformer {
 
@@ -29,6 +30,9 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
       super.onObjectStart(context);
       return;
     }
+    if (context.schema().isEmpty()) {
+      return;
+    }
 
     FeatureSchema schema = context.schema().get();
 
@@ -47,6 +51,9 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
       super.onObjectEnd(context);
       return;
     }
+    if (context.schema().isEmpty()) {
+      return;
+    }
 
     if (schemaStack.isEmpty()) {
       getDownstream().onObjectEnd(context);
@@ -62,6 +69,9 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
     if (context.inGeometry()) {
       openIfNecessary(context);
       super.onArrayStart(context);
+      return;
+    }
+    if (context.schema().isEmpty()) {
       return;
     }
 
@@ -82,6 +92,9 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
       super.onArrayEnd(context);
       return;
     }
+    if (context.schema().isEmpty()) {
+      return;
+    }
 
     if (schemaStack.isEmpty()) {
       getDownstream().onArrayEnd(context);
@@ -94,10 +107,16 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
 
   @Override
   public void onValue(ModifiableContext<FeatureSchema, SchemaMapping> context) {
+    if (context.schema().isEmpty()) {
+      return;
+    }
 
-    openIfNecessary(context);
+    // skip, if the value has been transformed to null
+    if (Objects.nonNull(context.value())) {
+      openIfNecessary(context);
 
-    super.onValue(context);
+      super.onValue(context);
+    }
   }
 
   private void openIfNecessary(ModifiableContext<FeatureSchema, SchemaMapping> context) {

@@ -232,6 +232,17 @@ public class TokenSliceTransformerChain
                               .build()));
 
           propertyTransformation
+              .getConcat()
+              .ifPresent(
+                  isObject ->
+                      transformers.add(
+                          ImmutableFeaturePropertyTransformerConcat.builder()
+                              .propertyPath(path)
+                              .parameter("")
+                              .isObject(isObject)
+                              .build()));
+
+          propertyTransformation
               .getFlatten()
               .ifPresent(
                   flatten ->

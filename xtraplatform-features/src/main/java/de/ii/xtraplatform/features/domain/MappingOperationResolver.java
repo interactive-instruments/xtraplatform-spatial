@@ -317,7 +317,11 @@ public class MappingOperationResolver implements TypesResolver {
       String basePath = type.getSourcePath().map(p -> p + "/").orElse("");
 
       ImmutableFeatureSchema.Builder builder =
-          new ImmutableFeatureSchema.Builder().from(type).sourcePath(Optional.empty());
+          new ImmutableFeatureSchema.Builder()
+              .from(type)
+              .sourcePath(Optional.empty())
+              .addTransformations(
+                  new ImmutablePropertyTransformation.Builder().concat(false).build());
 
       for (FeatureSchema concat : type.getConcat()) {
         builder.addSourcePaths(basePath + concat.getSourcePath().orElse(""));
@@ -346,15 +350,18 @@ public class MappingOperationResolver implements TypesResolver {
       String basePath = type.getSourcePath().map(p -> p + "/").orElse("");
 
       ImmutableFeatureSchema.Builder builder =
-          new ImmutableFeatureSchema.Builder().from(type).sourcePath(Optional.empty());
+          new ImmutableFeatureSchema.Builder()
+              .from(type)
+              .sourcePath(Optional.empty())
+              .addTransformations(
+                  new ImmutablePropertyTransformation.Builder().concat(true).build());
 
       for (int i = 0; i < type.getConcat().size(); i++) {
         String basePath2 =
             basePath + type.getConcat().get(i).getSourcePath().map(p -> p + "/").orElse("");
 
-        // TODO: duplicate queries
-        // builder.addSourcePaths(basePath2.endsWith("/") ?
-        // basePath2.substring(0,basePath2.length()-1) : basePath2);
+        builder.addSourcePaths(
+            basePath2.endsWith("/") ? basePath2.substring(0, basePath2.length() - 1) : basePath2);
 
         for (FeatureSchema prop : type.getConcat().get(i).getProperties()) {
           builder.putPropertyMap(
@@ -363,13 +370,6 @@ public class MappingOperationResolver implements TypesResolver {
                   .from(prop)
                   .sourcePath(basePath2 + prop.getSourcePath().orElse(""))
                   .path(List.of(i + "_" + prop.getName())));
-          // .putAdditionalInfo("concatIndex", String.valueOf(i))
-          // .putAdditionalInfo(
-          //    type.getConcat().get(i).isArray() ? "concatArray" : "concatValue", "true")
-          // .transformations(List.of())
-          // .addTransformations(
-          //    new ImmutablePropertyTransformation.Builder().rename(prop.getName()).build())
-          // .addAllTransformations(prop.getTransformations()));
         }
       }
 
@@ -453,14 +453,6 @@ public class MappingOperationResolver implements TypesResolver {
                   .from(prop)
                   .sourcePath(basePath2 + prop.getSourcePath().orElse(""))
                   .path(List.of(i + "_" + prop.getName())));
-          /*.putAdditionalInfo("coalesceIndex", String.valueOf(i))
-          .putAdditionalInfo(
-              type.getCoalesce().get(i).isArray() ? "coalesceArray" : "coalesceValue",
-              "true")
-          .transformations(List.of())
-          .addTransformations(
-              new ImmutablePropertyTransformation.Builder().rename(prop.getName()).build())
-          .addAllTransformations(prop.getTransformations()));*/
         }
       }
 

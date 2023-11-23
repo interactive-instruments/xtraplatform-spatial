@@ -231,43 +231,40 @@ public class FeatureDecoderSql
     Map<List<String>, Integer> schemaIndexes = new HashMap<>();
 
     for (int i = 0; i < sqlRow.getValues().size() && i < sqlRow.getColumnPaths().size(); i++) {
-      if (Objects.nonNull(sqlRow.getValues().get(i))) {
+      context.pathTracker().track(sqlRow.getColumnPaths().get(i));
+      if (!schemaIndexes.containsKey(sqlRow.getColumnPaths().get(i))) {
+        schemaIndexes.put(sqlRow.getColumnPaths().get(i), 0);
+      } else {
+        schemaIndexes.put(
+            sqlRow.getColumnPaths().get(i), schemaIndexes.get(sqlRow.getColumnPaths().get(i)) + 1);
+      }
 
-        context.pathTracker().track(sqlRow.getColumnPaths().get(i));
-        if (!schemaIndexes.containsKey(sqlRow.getColumnPaths().get(i))) {
-          schemaIndexes.put(sqlRow.getColumnPaths().get(i), 0);
-        } else {
-          schemaIndexes.put(
-              sqlRow.getColumnPaths().get(i),
-              schemaIndexes.get(sqlRow.getColumnPaths().get(i)) + 1);
-        }
-
-        if (sqlRow.isSpatialColumn(i)) {
+      if (sqlRow.isSpatialColumn(i)) {
+        if (Objects.nonNull(sqlRow.getValues().get(i))) {
           try {
             context.setSchemaIndex(-1);
             geometryDecoder.decode((String) sqlRow.getValues().get(i));
           } catch (IOException e) {
             throw new IllegalStateException("Error parsing WKT geometry", e);
           }
-        } else {
-          // TODO: is that correct or do we need the column type?
-          context.setValueType(Type.STRING);
-          context.setValue((String) sqlRow.getValues().get(i));
-          context.setSchemaIndex(schemaIndexes.get(sqlRow.getColumnPaths().get(i)));
+        }
+      } else {
+        context.setValueType(Type.STRING);
+        context.setValue((String) sqlRow.getValues().get(i));
+        context.setSchemaIndex(schemaIndexes.get(sqlRow.getColumnPaths().get(i)));
 
-          if (sqlRow.isSubDecoderColumn(i)) {
-            String subDecoder = sqlRow.getSubDecoder(i);
-            if (subDecoders.containsKey(subDecoder)) {
-              subDecoders
-                  .get(subDecoder)
-                  .decode(context.value().getBytes(StandardCharsets.UTF_8), this);
-              subDecoders.get(subDecoder).reset(true);
-            } else {
-              LOGGER.warn("Invalid sub-decoder: {}", subDecoder);
-            }
+        if (sqlRow.isSubDecoderColumn(i)) {
+          String subDecoder = sqlRow.getSubDecoder(i);
+          if (subDecoders.containsKey(subDecoder)) {
+            subDecoders
+                .get(subDecoder)
+                .decode(context.value().getBytes(StandardCharsets.UTF_8), this);
+            subDecoders.get(subDecoder).reset(true);
           } else {
-            getDownstream().onValue(context);
+            LOGGER.warn("Invalid sub-decoder: {}", subDecoder);
           }
+        } else {
+          getDownstream().onValue(context);
         }
       }
     }

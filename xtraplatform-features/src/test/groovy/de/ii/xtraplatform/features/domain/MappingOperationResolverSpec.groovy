@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain
 
-
+import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -64,8 +64,9 @@ class MappingOperationResolverSpec extends Specification {
                             new ImmutableFeatureSchema.Builder().sourcePath("gmd")
                                     .type(SchemaBase.Type.VALUE_ARRAY)
                                     .valueType(SchemaBase.Type.STRING),
-                    ]))
-            .build()
+                    ])
+                    .addTransformations(new ImmutablePropertyTransformation.Builder().concat(false).build())
+            ).build()
 
     static FeatureSchema CONCAT_OBJECT_ARRAYS_RESOLVED = new ImmutableFeatureSchema.Builder()
             .from(FeatureSchemaFixtures.CONCAT_OBJECT_ARRAYS)
@@ -115,6 +116,9 @@ class MappingOperationResolverSpec extends Specification {
                             .path(List.of("1_title"))
                             .sourcePath("[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/name")
                             .type(SchemaBase.Type.STRING))
+                    .addSourcePaths("[_id=gehoertzuplan_pfs_plan_fk]bst_abwasserleitung")
+                    .addSourcePaths("[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung")
+                    .addTransformations(new ImmutablePropertyTransformation.Builder().concat(true).build())
             )
             .build()
 }

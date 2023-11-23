@@ -45,7 +45,7 @@ public interface FeatureTokens {
     List<Object> tokens = new ArrayList<>();
 
     for (FeatureToken token : getTokens()) {
-      if (Objects.nonNull(token.getOnlyIf()) && !Objects.equals(onlyIf, token.getOnlyIf())) {
+      if (skip(token.getOnlyIf(), onlyIf)) {
         continue;
       }
 
@@ -77,5 +77,18 @@ public interface FeatureTokens {
     }
 
     return tokens;
+  }
+
+  Splitter SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
+
+  static boolean skip(String onlyIf, String filter) {
+    if (Objects.isNull(onlyIf) || Objects.isNull(filter)) {
+      return false;
+    }
+    if (!onlyIf.contains(",")) {
+      return !Objects.equals(filter, onlyIf);
+    }
+
+    return SPLITTER.splitToStream(onlyIf).noneMatch(o -> Objects.equals(o, filter));
   }
 }

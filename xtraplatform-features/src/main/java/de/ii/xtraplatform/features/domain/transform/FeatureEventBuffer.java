@@ -350,6 +350,9 @@ public class FeatureEventBuffer<
                             .map(elem -> "\"" + elem + "\"")
                             .collect(Collectors.joining(", ", "[", "]"));
                   }
+                  if (token == null) {
+                    return "null";
+                  }
                   return token.toString();
                 })
             .collect(Collectors.joining(",\n"));

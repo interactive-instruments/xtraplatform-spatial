@@ -45,11 +45,15 @@ class TransformerSpec extends Specification {
 
         where:
 
-        casename           | transformations                            | schema                               | tokens                               | sourceOnlyIf | targetOnlyIf
-        "value array"      | wrap("hatGenerAttribut.wert", VALUE_ARRAY) | "bp_anpflanzungbindungerhaltung-min" | "bp_anpflanzungbindungerhaltung-min" | null         | "wrapped"
-        "value array noop" | wrap("hatGenerAttribut.wert", VALUE_ARRAY) | "bp_anpflanzungbindungerhaltung-min" | "bp_anpflanzungbindungerhaltung-min" | "wrapped"    | "wrapped"
-        "object"           | wrap("gehoertZuPlan", OBJECT)              | "bp_bereich-min"                     | "bp_bereich"                         | null         | "wrapped"
-        "object noop"      | wrap("gehoertZuPlan", OBJECT)              | "bp_bereich-min"                     | "bp_bereich"                         | "wrapped"    | "wrapped"
+        casename              | transformations                                | schema                               | tokens                               | sourceOnlyIf | targetOnlyIf
+        "value array"         | wrap("hatGenerAttribut.wert", VALUE_ARRAY)     | "bp_anpflanzungbindungerhaltung-min" | "bp_anpflanzungbindungerhaltung-min" | null         | "wrapped"
+        "value array noop"    | wrap("hatGenerAttribut.wert", VALUE_ARRAY)     | "bp_anpflanzungbindungerhaltung-min" | "bp_anpflanzungbindungerhaltung-min" | "wrapped"    | "wrapped"
+        "object"              | wrap("gehoertZuPlan", OBJECT)                  | "bp_bereich-min"                     | "bp_bereich"                         | null         | "wrapped"
+        "object noop"         | wrap("gehoertZuPlan", OBJECT)                  | "bp_bereich-min"                     | "bp_bereich"                         | "wrapped"    | "wrapped"
+        "object array concat" | concat("hatObjekt", true)                      | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "source"     | "concat"
+        "object array format" | mapFormat("hatObjekt", ["href": "id::{{id}}"]) | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "mapped"
+        "object array reduce" | reduceFormat("hatObjekt", "id::{{id}}")        | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "reduced"
+        //"object array select" | reduceSelect("hatObjekt", "id")                | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "selected"
 
     }
 
@@ -59,6 +63,30 @@ class TransformerSpec extends Specification {
 
     static Map<String, List<PropertyTransformation>> wrap(String path, Type type) {
         return [(path): [new ImmutablePropertyTransformation.Builder().wrap(type).build()]]
+    }
+
+    static Map<String, List<PropertyTransformation>> mapFormat(String path, Map<String, String> map) {
+        return [(path): [new ImmutablePropertyTransformation.Builder().objectMapFormat(map).build()]]
+    }
+
+    static Map<String, List<PropertyTransformation>> reduceFormat(String path, String template) {
+        return [(path): [new ImmutablePropertyTransformation.Builder().objectReduceFormat(template).build()]]
+    }
+
+    static Map<String, List<PropertyTransformation>> reduceSelect(String path, String property) {
+        return [(path): [new ImmutablePropertyTransformation.Builder().objectReduceSelect(property).build()]]
+    }
+
+    static Map<String, List<PropertyTransformation>> duplicate(String path, Map<String, String> map) {
+        return [(path): [new ImmutablePropertyTransformation.Builder().objectMapDuplicate(map).build()]]
+    }
+
+    static Map<String, List<PropertyTransformation>> concat(String path, boolean isObject) {
+        return [(path): [new ImmutablePropertyTransformation.Builder().concat(isObject).build()]]
+    }
+
+    static Map<String, List<PropertyTransformation>> noop() {
+        return [:]
     }
 
 }

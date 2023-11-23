@@ -61,6 +61,10 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
           .collect(Collectors.toList());
     }
 
+    if (sourceSchema.getType() == Type.OBJECT_ARRAY && !sourceSchema.getConcat().isEmpty()) {
+      return List.of();
+    }
+
     return sourceSchema.getEffectiveSourcePaths().stream()
         .map(
             sourcePath ->

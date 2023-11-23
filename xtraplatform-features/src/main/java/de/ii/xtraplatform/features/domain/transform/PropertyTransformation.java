@@ -179,6 +179,9 @@ public interface PropertyTransformation
   Optional<Boolean> getCoalesce();
 
   @JsonIgnore
+  Optional<Boolean> getConcat();
+
+  @JsonIgnore
   Optional<Type> getWrap();
 
   // Optional<String> getFlattenObjects();

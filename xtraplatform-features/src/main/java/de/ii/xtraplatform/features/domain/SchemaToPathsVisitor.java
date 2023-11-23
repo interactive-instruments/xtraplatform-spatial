@@ -11,6 +11,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Multimap;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,13 +62,7 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
 
     List<List<String>> paths =
         useTargetPath
-            ? /*(schema.isValue()
-                  && schema instanceof FeatureSchema
-                  && !((FeatureSchema) schema).getCoalesce().isEmpty()
-              ? ((FeatureSchema) schema)
-                  .getCoalesce().stream().map(c -> merge(schema.getPath(), c.getPath())).collect(Collectors.toList())
-              : */ ImmutableList.of(
-                appendToLast(schema.getPath(), "{priority=" + (counter) + "}")) // )
+            ? ImmutableList.of(appendToLast(schema.getPath(), "{priority=" + (counter) + "}")) // )
             // TODO: static cleanup method in PathParser
             : schema.getEffectiveSourcePaths().stream()
                 .map(
@@ -104,23 +99,42 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
       paths = List.of(List.of("__EMPTY__", String.valueOf(counter)));
     }
 
-    return (paths.isEmpty()
-            ? visitedProperties.stream()
-                .flatMap(
-                    map ->
-                        map.asMap().entrySet().stream()
-                            .flatMap(entry -> prependToKey(entry, ImmutableList.of())))
-            : paths.stream()
-                .flatMap(
-                    path -> {
-                      return Stream.concat(
-                          Stream.of(new AbstractMap.SimpleImmutableEntry<>(path, schema)),
-                          visitedProperties.stream()
-                              .flatMap(
-                                  map ->
-                                      map.asMap().entrySet().stream()
-                                          .flatMap(entry -> prependToKey(entry, path))));
-                    }))
+    if (paths.isEmpty()) {
+      return visitedProperties.stream()
+          .flatMap(
+              map ->
+                  map.asMap().entrySet().stream().flatMap(entry -> prependToKey(entry, List.of())))
+          .collect(
+              ImmutableListMultimap.toImmutableListMultimap(
+                  Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    if (!useTargetPath
+        && schema.getType() == Type.OBJECT_ARRAY
+        && schema instanceof FeatureSchema
+        && !((FeatureSchema) schema).getConcat().isEmpty()) {
+      return Stream.concat(
+              paths.stream().map(path -> Map.entry(path, schema)),
+              visitedProperties.stream()
+                  .flatMap(
+                      map ->
+                          map.asMap().entrySet().stream()
+                              .flatMap(entry -> prependToKey(entry, List.of()))))
+          .collect(
+              ImmutableListMultimap.toImmutableListMultimap(
+                  Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    return paths.stream()
+        .flatMap(
+            path ->
+                Stream.concat(
+                    Stream.of(Map.entry(path, schema)),
+                    visitedProperties.stream()
+                        .flatMap(
+                            map ->
+                                map.asMap().entrySet().stream()
+                                    .flatMap(entry -> prependToKey(entry, path)))))
         .collect(
             ImmutableListMultimap.toImmutableListMultimap(Map.Entry::getKey, Map.Entry::getValue));
   }
