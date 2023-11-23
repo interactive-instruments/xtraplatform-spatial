@@ -184,9 +184,8 @@ public class FeatureStreamImpl implements FeatureStream {
   private FeatureTokenSource getFeatureTokenSourceTransformed(
       FeatureTokenSource featureTokenSource,
       Map<String, PropertyTransformations> propertyTransformations) {
-
-    FeatureTokenTransformerSchemaMappings schemaMapper =
-        new FeatureTokenTransformerSchemaMappings(propertyTransformations);
+    FeatureTokenTransformerMappings schemaMapper =
+        new FeatureTokenTransformerMappings(propertyTransformations);
 
     Optional<CrsTransformer> crsTransformer =
         query
@@ -204,15 +203,7 @@ public class FeatureStreamImpl implements FeatureStream {
 
     FeatureTokenValidator validator = new FeatureTokenValidator();
 
-    FeatureTokenTransformerMappings mappings =
-        new FeatureTokenTransformerMappings(propertyTransformations);
-
-    return featureTokenSource
-        .via(mappings)
-        // .via(schemaMapper)
-        .via(valueMapper)
-        .via(cleaner)
-        .via(validator);
+    return featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner).via(validator);
   }
 
   private Map<String, PropertyTransformations> getMergedTransformations(

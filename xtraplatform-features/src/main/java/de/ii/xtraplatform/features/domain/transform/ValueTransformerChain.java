@@ -10,8 +10,6 @@ package de.ii.xtraplatform.features.domain.transform;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
-import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import java.time.ZoneId;
 import java.util.AbstractMap.SimpleEntry;
@@ -26,9 +24,6 @@ import javax.annotation.Nullable;
 
 public class ValueTransformerChain
     implements TransformerChain<String, FeaturePropertyValueTransformer> {
-
-  public static final String TYPE_WILDCARD = "*{type=";
-  public static final String VALUE_TYPE_WILDCARD = "*{valueType=";
 
   private final Map<String, List<FeaturePropertyValueTransformer>> transformers;
 
@@ -45,34 +40,11 @@ public class ValueTransformerChain
                   String propertyPath = entry.getKey();
                   List<PropertyTransformation> transformation = entry.getValue();
 
-                  if (hasWildcard(propertyPath, TYPE_WILDCARD)) {
-                    return createValueTransformersForType(
-                        propertyPath,
-                        schemaMapping,
-                        transformation,
-                        codelists,
-                        defaultTimeZone,
-                        substitutionLookup)
-                        .entrySet()
-                        .stream();
-                  }
+                  if (hasWildcard(propertyPath)) {
+                    List<String> propertyPaths = explodeWildcard(propertyPath, schemaMapping);
 
-                  if (hasWildcard(propertyPath, VALUE_TYPE_WILDCARD)) {
-                    return createContextTransformersForValueType(
-                        propertyPath,
-                        schemaMapping,
-                        transformation,
-                        codelists,
-                        defaultTimeZone,
-                        substitutionLookup)
-                        .entrySet()
-                        .stream();
-                  }
-
-                  if (hasWildcard(propertyPath, ContextTransformerChain.OBJECT_TYPE_WILDCARD)) {
-                    return createContextTransformersForObjectType(
-                        propertyPath,
-                        schemaMapping,
+                    return createValueTransformersForPaths(
+                        propertyPaths,
                         transformation,
                         codelists,
                         defaultTimeZone,
@@ -199,76 +171,13 @@ public class ValueTransformerChain
     return transformers;
   }
 
-  private Map<String, List<FeaturePropertyValueTransformer>> createValueTransformersForType(
-      String transformationKey,
-      SchemaMapping schemaMapping,
+  private Map<String, List<FeaturePropertyValueTransformer>> createValueTransformersForPaths(
+      List<String> propertyPaths,
       List<PropertyTransformation> propertyTransformation,
       Map<String, Codelist> codelists,
       Optional<ZoneId> defaultTimeZone,
       Function<String, String> substitutionLookup) {
-    return explodeWildcard2(transformationKey, TYPE_WILDCARD, schemaMapping, this::matchesType)
-        .stream()
-        .map(
-            property ->
-                new SimpleEntry<>(
-                    property.first(),
-                    createValueTransformers(
-                        property.first(),
-                        propertyTransformation,
-                        codelists,
-                        defaultTimeZone,
-                        (key) ->
-                            "type".equals(key)
-                                ? property.second().get(0).getRefType().orElse("")
-                                : substitutionLookup.apply(key))))
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-  }
-
-  private boolean matchesType(FeatureSchema schema, String type) {
-    return schema.isValue() && Objects.equals(schema.getType(), Type.valueOf(type));
-  }
-
-  private Map<String, List<FeaturePropertyValueTransformer>> createContextTransformersForValueType(
-      String transformationKey,
-      SchemaMapping schemaMapping,
-      List<PropertyTransformation> propertyTransformation,
-      Map<String, Codelist> codelists,
-      Optional<ZoneId> defaultTimeZone,
-      Function<String, String> substitutionLookup) {
-    return explodeWildcard(
-            transformationKey, VALUE_TYPE_WILDCARD, schemaMapping, this::matchesValueType)
-        .stream()
-        .map(
-            propertyPath ->
-                new SimpleEntry<>(
-                    propertyPath,
-                    createValueTransformers(
-                        propertyPath,
-                        propertyTransformation,
-                        codelists,
-                        defaultTimeZone,
-                        substitutionLookup)))
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-  }
-
-  private boolean matchesValueType(FeatureSchema schema, String valueType) {
-    return schema.isValue()
-        && Objects.equals(schema.getValueType().orElse(schema.getType()), Type.valueOf(valueType));
-  }
-
-  private Map<String, List<FeaturePropertyValueTransformer>> createContextTransformersForObjectType(
-      String transformationKey,
-      SchemaMapping schemaMapping,
-      List<PropertyTransformation> propertyTransformation,
-      Map<String, Codelist> codelists,
-      Optional<ZoneId> defaultTimeZone,
-      Function<String, String> substitutionLookup) {
-    return explodeWildcard(
-            transformationKey,
-            ContextTransformerChain.OBJECT_TYPE_WILDCARD,
-            schemaMapping,
-            ContextTransformerChain::matchesObjectType)
-        .stream()
+    return propertyPaths.stream()
         .map(
             propertyPath ->
                 new SimpleEntry<>(

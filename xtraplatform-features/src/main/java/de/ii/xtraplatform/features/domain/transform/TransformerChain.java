@@ -7,16 +7,25 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import com.google.common.collect.ImmutableList;
-import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 public interface TransformerChain<T, U> {
+
+  String WILDCARD_PREFIX = "*{";
+  String TYPE_WILDCARD = wildcard("type");
+  String VALUE_TYPE_WILDCARD = wildcard("valueType");
+  String OBJECT_TYPE_WILDCARD = wildcard("objectType");
+
+  static String wildcard(String parameter) {
+    return WILDCARD_PREFIX + parameter + "=";
+  }
 
   @Nullable
   T transform(String path, T schema);
@@ -30,8 +39,33 @@ public interface TransformerChain<T, U> {
         && propertyPath.length() > wildcardParameter.length() + 1;
   }
 
+  default boolean hasWildcard(String propertyPath) {
+    return propertyPath.startsWith(WILDCARD_PREFIX);
+  }
+
   default String extractWildcardParameter(String propertyPath, String wildcardParameter) {
     return propertyPath.substring(wildcardParameter.length(), propertyPath.length() - 1);
+  }
+
+  default List<String> explodeWildcard(String transformationKey, SchemaMapping schemaMapping) {
+    if (hasWildcard(transformationKey, TYPE_WILDCARD)) {
+      return explodeWildcard(
+          transformationKey, TYPE_WILDCARD, schemaMapping, TransformerChain::matchesType);
+    } else if (hasWildcard(transformationKey, VALUE_TYPE_WILDCARD)) {
+      return explodeWildcard(
+          transformationKey,
+          VALUE_TYPE_WILDCARD,
+          schemaMapping,
+          TransformerChain::matchesValueType);
+    } else if (hasWildcard(transformationKey, OBJECT_TYPE_WILDCARD)) {
+      return explodeWildcard(
+          transformationKey,
+          OBJECT_TYPE_WILDCARD,
+          schemaMapping,
+          TransformerChain::matchesObjectType);
+    }
+
+    return List.of();
   }
 
   default List<String> explodeWildcard(
@@ -39,10 +73,6 @@ public interface TransformerChain<T, U> {
       String wildcardPattern,
       SchemaMapping schemaMapping,
       BiPredicate<FeatureSchema, String> filter) {
-    if (!hasWildcard(transformationKey, wildcardPattern)) {
-      return ImmutableList.of();
-    }
-
     return schemaMapping.getSchemasByTargetPath().entrySet().stream()
         .filter(
             entry ->
@@ -56,25 +86,17 @@ public interface TransformerChain<T, U> {
         .collect(Collectors.toList());
   }
 
-  default List<Tuple<String, List<FeatureSchema>>> explodeWildcard2(
-      String transformationKey,
-      String wildcardPattern,
-      SchemaMapping schemaMapping,
-      BiPredicate<FeatureSchema, String> filter) {
-    if (!hasWildcard(transformationKey, wildcardPattern)) {
-      return ImmutableList.of();
-    }
+  static boolean matchesType(FeatureSchema schema, String type) {
+    return schema.isValue() && Objects.equals(schema.getType(), Type.valueOf(type));
+  }
 
-    return schemaMapping.getSchemasByTargetPath().entrySet().stream()
-        .filter(
-            entry ->
-                entry.getValue().stream()
-                    .anyMatch(
-                        schema ->
-                            filter.test(
-                                schema,
-                                extractWildcardParameter(transformationKey, wildcardPattern))))
-        .map(entry -> Tuple.of(String.join(".", entry.getKey()), entry.getValue()))
-        .collect(Collectors.toList());
+  static boolean matchesValueType(FeatureSchema schema, String valueType) {
+    return schema.isValue()
+        && Objects.equals(schema.getValueType().orElse(schema.getType()), Type.valueOf(valueType));
+  }
+
+  static boolean matchesObjectType(FeatureSchema schema, String objectType) {
+    return schema.getObjectType().isPresent()
+        && Objects.equals(schema.getObjectType().get(), objectType);
   }
 }

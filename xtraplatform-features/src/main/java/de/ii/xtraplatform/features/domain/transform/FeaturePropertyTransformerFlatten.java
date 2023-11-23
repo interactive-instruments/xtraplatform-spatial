@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
@@ -44,7 +43,10 @@ public abstract class FeaturePropertyTransformerFlatten
     return INCLUDE.ALL;
   }
 
-  public abstract BiFunction<String, String, String> flattenedPathProvider();
+  @Value.Derived
+  public FeatureSchemaFlattener getFlattener() {
+    return new FeatureSchemaFlattener(getParameter());
+  }
 
   @Override
   public List<Object> transform(String currentPropertyPath, List<Object> slice) {
@@ -132,7 +134,7 @@ public abstract class FeaturePropertyTransformerFlatten
             Map.of(
                 PropertyTransformations.WILDCARD, new Builder().flatten(getParameter()).build()));
 
-    return schema.accept(withTransformationsApplied);
+    return schema.accept(getFlattener());
   }
 
   @Override

@@ -27,8 +27,6 @@ public class TokenSliceTransformerChain
     implements TransformerChain<List<Object>, FeaturePropertyTokenSliceTransformer>,
         SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
-  public static final String OBJECT_TYPE_WILDCARD = "*{objectType=";
-
   private final SchemaMapping schemaMapping;
   private final Map<String, List<FeaturePropertyTokenSliceTransformer>> transformers;
 
@@ -44,9 +42,11 @@ public class TokenSliceTransformerChain
                   String propertyPath = entry.getKey();
                   List<PropertyTransformation> transformation = entry.getValue();
 
-                  if (hasWildcard(propertyPath, OBJECT_TYPE_WILDCARD)) {
-                    return createSliceTransformersForObjectType(
-                        propertyPath, schemaMapping, transformation, substitutionLookup)
+                  if (hasWildcard(propertyPath)) {
+                    List<String> propertyPaths = explodeWildcard(propertyPath, schemaMapping);
+
+                    return createSliceTransformersForPaths(
+                        propertyPaths, transformation, substitutionLookup)
                         .entrySet()
                         .stream();
                   }
@@ -239,7 +239,6 @@ public class TokenSliceTransformerChain
                           ImmutableFeaturePropertyTransformerFlatten.builder()
                               .propertyPath(path)
                               .parameter(flatten)
-                              .flattenedPathProvider((separator, name) -> name)
                               .build()));
 
           propertyTransformation
@@ -257,18 +256,11 @@ public class TokenSliceTransformerChain
     return transformers;
   }
 
-  private Map<String, List<FeaturePropertyTokenSliceTransformer>>
-      createSliceTransformersForObjectType(
-          String transformationKey,
-          SchemaMapping schemaMapping,
-          List<PropertyTransformation> propertyTransformation,
-          Function<String, String> substitutionLookup) {
-    return explodeWildcard(
-            transformationKey,
-            OBJECT_TYPE_WILDCARD,
-            schemaMapping,
-            TokenSliceTransformerChain::matchesObjectType)
-        .stream()
+  private Map<String, List<FeaturePropertyTokenSliceTransformer>> createSliceTransformersForPaths(
+      List<String> propertyPaths,
+      List<PropertyTransformation> propertyTransformation,
+      Function<String, String> substitutionLookup) {
+    return propertyPaths.stream()
         .map(
             propertyPath ->
                 new SimpleEntry<>(
@@ -276,10 +268,5 @@ public class TokenSliceTransformerChain
                     createSliceTransformers(
                         propertyPath, propertyTransformation, substitutionLookup)))
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-  }
-
-  static boolean matchesObjectType(FeatureSchema schema, String objectType) {
-    return schema.getObjectType().isPresent()
-        && Objects.equals(schema.getObjectType().get(), objectType);
   }
 }

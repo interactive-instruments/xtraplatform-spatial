@@ -7,24 +7,15 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
-import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class WithTransformationsApplied
     implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
@@ -70,126 +61,17 @@ public class WithTransformationsApplied
   @Override
   public FeatureSchema visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
-
-    TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer> schemaTransformations =
-        getPropertyTransformations(schema)
-            .getSchemaTransformations(null, true, (separator, name) -> name);
-
-    FeatureSchema transformed =
-        schemaTransformations.transform(schema.getFullPathAsString(), schema);
-
-    if (Objects.isNull(transformed)) {
-      return null;
+    if (!parents.isEmpty()) {
+      return schema;
     }
 
-    if (parents.isEmpty()) {
-      Optional<String> flatten = getFlatteningSeparator(transformed);
+    SchemaTransformerChain schemaTransformations =
+        getPropertyTransformations(schema).getSchemaTransformations(null, true);
 
-      if (flatten.isPresent()) {
-        String separator = flatten.get();
+    TokenSliceTransformerChain sliceTransformations =
+        getPropertyTransformations(schema).getTokenSliceTransformations(null);
 
-        Map<String, FeatureSchema> flatProperties =
-            flattenProperties(visitedProperties, null, separator, null, " > ").stream()
-                .map(property -> new SimpleEntry<>(property.getName(), property))
-                .collect(
-                    ImmutableMap.toImmutableMap(
-                        Entry::getKey, Entry::getValue, (first, second) -> second));
-
-        return new ImmutableFeatureSchema.Builder()
-            .from(transformed)
-            .propertyMap(flatProperties)
-            .build();
-      }
-    }
-
-    Map<String, FeatureSchema> visitedPropertiesMap =
-        visitedProperties.stream()
-            .filter(Objects::nonNull)
-            .map(
-                featureSchema ->
-                    new SimpleImmutableEntry<>(featureSchema.getFullPathAsString(), featureSchema))
-            .collect(
-                ImmutableMap.toImmutableMap(
-                    Map.Entry::getKey, Map.Entry::getValue, (first, second) -> second));
-
-    return new ImmutableFeatureSchema.Builder()
-        .from(transformed)
-        .propertyMap(visitedPropertiesMap)
-        .build();
-  }
-
-  private List<FeatureSchema> flattenProperties(
-      List<FeatureSchema> properties,
-      String parentName,
-      String nameSeparator,
-      String parentLabel,
-      String labelSeparator) {
-    String prefix = Objects.nonNull(parentName) ? parentName + nameSeparator : "";
-    String labelPrefix = Objects.nonNull(parentLabel) ? parentLabel + labelSeparator : "";
-
-    return properties.stream()
-        .filter(Objects::nonNull)
-        .flatMap(
-            property ->
-                property.isObject()
-                    ? flattenProperties(
-                        property.getProperties(),
-                        flatName(property, prefix),
-                        nameSeparator,
-                        flatLabel(property, labelPrefix),
-                        labelSeparator)
-                        .stream()
-                    : Stream.of(flattenProperty(property, prefix, labelPrefix, nameSeparator)))
-        .collect(Collectors.toList());
-  }
-
-  private FeatureSchema flattenProperty(
-      FeatureSchema property, String namePrefix, String labelPrefix, String nameSeparator) {
-    return new ImmutableFeatureSchema.Builder()
-        .from(property)
-        .type(flatType(property))
-        .valueType(Optional.empty())
-        .name(flatName(property, namePrefix))
-        .label(flatLabel(property, labelPrefix))
-        .path(flatPath(property, namePrefix, nameSeparator))
-        .concat(List.of())
-        .coalesce(List.of())
-        .build();
-  }
-
-  private String flatName(FeatureSchema property, String prefix) {
-    return prefix + property.getName() + (property.isArray() ? "[]" : "");
-  }
-
-  private List<String> flatPath(FeatureSchema property, String prefix, String nameSeparator) {
-    return Splitter.on(nameSeparator).splitToList(flatName(property, prefix));
-  }
-
-  private String flatLabel(FeatureSchema property, String prefix) {
-    return prefix + property.getLabel().orElse(property.getName());
-  }
-
-  private Type flatType(FeatureSchema property) {
-    if (property.getValueType().isPresent()) {
-      return property.getValueType().get();
-    }
-
-    if (!property.getConcat().isEmpty()) {
-      return property.getConcat().stream()
-          .map(FeatureSchema::getValueType)
-          .findFirst()
-          .flatMap(Function.identity())
-          .orElse(property.getType());
-    }
-
-    if (!property.getCoalesce().isEmpty()) {
-      return property.getCoalesce().stream()
-          .map(FeatureSchema::getType)
-          .findFirst()
-          .orElse(property.getType());
-    }
-
-    return property.getType();
+    return schema.accept(schemaTransformations).accept(sliceTransformations);
   }
 
   private Optional<PropertyTransformation> getFeatureTransformations(FeatureSchema schema) {
@@ -218,25 +100,6 @@ public class WithTransformationsApplied
             ? schemaTransformations.mergeInto(additionalTransformations)
             : additionalTransformations.mergeInto(schemaTransformations);
 
-    // TODO: currently flattening is done manually in this class,
-    // the actual flattening transformer would interfere with that, therefore we remove it here
-    // Of course it would be better to use the actual transformer, for that we would have to provide
-    // a flatteningPathProvider that is aware of parents/prefixes to getSchemaTransformations
-    ImmutableMap<String, List<PropertyTransformation>> mergedWithoutFlatten =
-        mergedTransformations.getTransformations().entrySet().stream()
-            .map(
-                entry ->
-                    new SimpleImmutableEntry<>(
-                        entry.getKey(),
-                        entry.getValue().stream()
-                            .filter(
-                                propertyTransformation ->
-                                    propertyTransformation.getFlatten().isEmpty())
-                            .collect(Collectors.toList())))
-            .collect(
-                ImmutableMap.toImmutableMap(
-                    Entry::getKey, Entry::getValue, (first, second) -> second));
-
-    return () -> mergedWithoutFlatten;
+    return mergedTransformations;
   }
 }
