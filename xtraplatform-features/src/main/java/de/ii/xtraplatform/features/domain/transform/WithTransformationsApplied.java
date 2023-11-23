@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
+import static de.ii.xtraplatform.features.domain.transform.PropertyTransformations.WILDCARD;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
@@ -65,11 +67,13 @@ public class WithTransformationsApplied
       return schema;
     }
 
+    PropertyTransformations propertyTransformations = getPropertyTransformations(schema);
+
     SchemaTransformerChain schemaTransformations =
-        getPropertyTransformations(schema).getSchemaTransformations(null, true);
+        propertyTransformations.getSchemaTransformations(null, true);
 
     TokenSliceTransformerChain sliceTransformations =
-        getPropertyTransformations(schema).getTokenSliceTransformations(null);
+        propertyTransformations.getTokenSliceTransformations(null);
 
     return schema.accept(schemaTransformations).accept(sliceTransformations);
   }
@@ -93,7 +97,22 @@ public class WithTransformationsApplied
 
   private PropertyTransformations getPropertyTransformations(FeatureSchema schema) {
     PropertyTransformations schemaTransformations =
-        () -> ImmutableMap.of(schema.getFullPathAsString(), schema.getTransformations());
+        () ->
+            schema.accept(
+                (schema2, visitedProperties) ->
+                    java.util.stream.Stream.concat(
+                            schema2.getTransformations().isEmpty()
+                                ? java.util.stream.Stream.empty()
+                                : java.util.stream.Stream.of(
+                                    Map.entry(
+                                        schema2.getFullPath().isEmpty()
+                                            ? WILDCARD
+                                            : String.join(".", schema2.getFullPath()),
+                                        schema2.getTransformations())),
+                            visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
+                        .collect(
+                            ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)));
+    ;
 
     PropertyTransformations mergedTransformations =
         preferSchemaTransformations
