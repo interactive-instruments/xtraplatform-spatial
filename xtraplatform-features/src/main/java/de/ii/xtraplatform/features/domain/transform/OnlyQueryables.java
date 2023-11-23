@@ -75,7 +75,7 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
       }
 
       Optional<FeatureSchema> idProperty =
-          visitedProperties.stream()
+          schema.getProperties().stream()
               .filter(Objects::nonNull)
               .filter(p -> Objects.equals(p.getName(), FeatureRefResolver.ID))
               .findFirst();
