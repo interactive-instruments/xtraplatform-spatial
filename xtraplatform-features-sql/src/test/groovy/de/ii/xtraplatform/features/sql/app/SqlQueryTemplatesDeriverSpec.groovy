@@ -9,12 +9,7 @@ package de.ii.xtraplatform.features.sql.app
 
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.cql.app.CqlImpl
-import de.ii.xtraplatform.cql.domain.And
-import de.ii.xtraplatform.cql.domain.Cql2Expression
-import de.ii.xtraplatform.cql.domain.Eq
-import de.ii.xtraplatform.cql.domain.Gt
-import de.ii.xtraplatform.cql.domain.Property
-import de.ii.xtraplatform.cql.domain.ScalarLiteral
+import de.ii.xtraplatform.cql.domain.*
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.features.domain.SortKey
 import de.ii.xtraplatform.features.domain.Tuple
@@ -27,9 +22,9 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
     @Shared
     FilterEncoderSql filterEncoder = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), null, null, new CqlImpl(), null)
     @Shared
-    SqlQueryTemplatesDeriver td = new SqlQueryTemplatesDeriver(filterEncoder, new SqlDialectPostGis(), true, false)
+    SqlQueryTemplatesDeriver td = new SqlQueryTemplatesDeriver(null, filterEncoder, new SqlDialectPostGis(), true, false)
     @Shared
-    SqlQueryTemplatesDeriver tdNoNm = new SqlQueryTemplatesDeriver(filterEncoder, new SqlDialectPostGis(), false, false)
+    SqlQueryTemplatesDeriver tdNoNm = new SqlQueryTemplatesDeriver(null, filterEncoder, new SqlDialectPostGis(), false, false)
 
     static Optional<Cql2Expression> noFilter = Optional.empty()
 
@@ -78,9 +73,9 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
         "object without sourcePath"          | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.OBJECT_WITHOUT_SOURCE_PATH          || SqlQueryTemplatesFixtures.OBJECT_WITHOUT_SOURCE_PATH
         "paging"                             | td      | 10    | 10     | []                      | null                                                                                                                        | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_PAGING
         "sortBy"                             | td      | 0     | 0      | [SortKey.of("created")] | null                                                                                                                        | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY
-        "sortBy + filter"                    | td      | 0     | 0      | [SortKey.of("created")] | Eq.of(Property.of("task.title"), ScalarLiteral.of("foo"))                                                                   | QuerySchemaFixtures.OBJECT_ARRAY || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_FILTER
+        "sortBy + filter"                    | td      | 0     | 0      | [SortKey.of("created")] | Eq.of(Property.of("task.title"), ScalarLiteral.of("foo"))                                                                   | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_FILTER
         "sortBy + paging"                    | td      | 10    | 10     | [SortKey.of("created")] | null                                                                                                                        | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING
-        "sortBy + paging + filter"           | td      | 10    | 10     | [SortKey.of("created")] | And.of(Eq.of(Property.of("task.title"), ScalarLiteral.of("foo")), Eq.of(Property.of("task.href"), ScalarLiteral.of("bar"))) | QuerySchemaFixtures.OBJECT_ARRAY || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING_FILTER
+        "sortBy + paging + filter"           | td      | 10    | 10     | [SortKey.of("created")] | And.of(Eq.of(Property.of("task.title"), ScalarLiteral.of("foo")), Eq.of(Property.of("task.href"), ScalarLiteral.of("bar"))) | QuerySchemaFixtures.OBJECT_ARRAY                        || SqlQueryTemplatesFixtures.OBJECT_ARRAY_SORTBY_PAGING_FILTER
         "property with multiple sourcePaths" | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS || SqlQueryTemplatesFixtures.PROPERTY_WITH_MULTIPLE_SOURCE_PATHS
         "nested joins"                       | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.NESTED_JOINS                        || SqlQueryTemplatesFixtures.NESTED_JOINS
         "nested joins"                       | td      | 0     | 0      | []                      | null                                                                                                                        | QuerySchemaFixtures.NESTED_JOINS                        || SqlQueryTemplatesFixtures.NESTED_JOINS

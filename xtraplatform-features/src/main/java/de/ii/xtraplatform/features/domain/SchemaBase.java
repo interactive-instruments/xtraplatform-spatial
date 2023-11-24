@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -120,7 +121,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     MUTATIONS,
     RECEIVABLE,
     QUERYABLE,
-    SORTABLE
+    SORTABLE;
+
+    public static List<Scope> allBut(Scope... scopes) {
+      return Arrays.stream(Scope.values())
+          .filter(s -> Arrays.stream(scopes).noneMatch(scope -> scope == s))
+          .collect(Collectors.toList());
+    }
   }
 
   String getName();
@@ -219,9 +226,9 @@ public interface SchemaBase<T extends SchemaBase<T>> {
             s -> {
               switch (s) {
                 case RETURNABLE:
-                  return receivable();
-                case RECEIVABLE:
                   return returnable();
+                case RECEIVABLE:
+                  return receivable();
                 case QUERYABLE:
                   return queryable();
                 case SORTABLE:

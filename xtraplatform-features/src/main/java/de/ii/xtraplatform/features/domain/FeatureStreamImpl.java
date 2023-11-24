@@ -255,7 +255,7 @@ public class FeatureStreamImpl implements FeatureStream {
   private Map<String, List<PropertyTransformation>> getProviderTransformations(
       FeatureSchema featureSchema) {
     return featureSchema
-        .accept(AbstractFeatureProvider.WITH_SCOPE_QUERIES)
+        .accept(AbstractFeatureProvider.WITH_SCOPE_RETURNABLE)
         .accept(
             (schema, visitedProperties) ->
                 java.util.stream.Stream.concat(
@@ -287,7 +287,7 @@ public class FeatureStreamImpl implements FeatureStream {
   private Map<String, List<PropertyTransformation>> getProviderTransformationsMutations(
       FeatureSchema featureSchema) {
     return featureSchema
-        .accept(AbstractFeatureProvider.WITH_SCOPE_MUTATIONS)
+        .accept(AbstractFeatureProvider.WITH_SCOPE_RECEIVABLE)
         .accept(
             (schema, visitedProperties) ->
                 java.util.stream.Stream.concat(

@@ -175,7 +175,8 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
       Query query,
       Map<String, String> additionalQueryParameters,
       boolean skipMetaQuery) {
-    SchemaSql mainTable = queryTemplates.getQuerySchemas().get(0);
+    SchemaSql mainTable =
+        queryTemplates.getSortablesSchema().orElse(queryTemplates.getQuerySchemas().get(0));
     List<SortKey> sortKeys = transformSortKeys(typeQuery.getSortKeys(), mainTable);
 
     BiFunction<Long, Long, Optional<String>> metaQuery =
@@ -224,10 +225,11 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
   @Override
   public SqlQueryOptions getOptions(TypeQuery typeQuery, Query query) {
     // TODO: either pass as parameter, or check for null here
-    List<SchemaSql> typeInfo = allQueryTemplates.get(typeQuery.getType()).get(0).getQuerySchemas();
+    SqlQueryTemplates queryTemplates = allQueryTemplates.get(typeQuery.getType()).get(0);
 
     // TODO: implement for multiple main tables
-    SchemaSql mainTable = typeInfo.get(0);
+    SchemaSql mainTable =
+        queryTemplates.getSortablesSchema().orElse(queryTemplates.getQuerySchemas().get(0));
 
     List<SortKey> sortKeys = transformSortKeys(typeQuery.getSortKeys(), mainTable);
 

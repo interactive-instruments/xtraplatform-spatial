@@ -266,8 +266,6 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
         break;
       case OBJECT:
       case OBJECT_ARRAY:
-      case FEATURE_REF:
-      case FEATURE_REF_ARRAY:
         if (!schema.isFeatureRef()) {
           break;
         }

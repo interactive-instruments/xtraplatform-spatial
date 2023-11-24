@@ -11,6 +11,8 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import de.ii.xtraplatform.features.domain.MappingOperationResolver;
+import de.ii.xtraplatform.features.domain.SchemaBase;
+import de.ii.xtraplatform.features.domain.SchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.ArrayList;
@@ -20,12 +22,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
   public static final String ID = "id";
   public static final String TYPE = "type";
   public static final String TITLE = "title";
+  public static final String QUERYABLE = "queryable";
   public static final String URI_TEMPLATE = "uriTemplate";
   public static final String KEY_TEMPLATE = "keyTemplate";
   public static final String SUB_ID = "{{id}}";
@@ -83,9 +87,55 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
       return resolve(schema, visitedProperties, Optional.empty(), Optional.empty());
     }
 
+    Map<String, FeatureSchema> visitedPropertiesMap =
+        asMap(visitedProperties, FeatureSchema::getFullPathAsString);
+
+    if (visitedProperties.stream().anyMatch(SchemaBase::isFeatureRef)) {
+      visitedPropertiesMap =
+          asMap(
+              visitedProperties.stream()
+                  .flatMap(
+                      property -> {
+                        if (property.isFeatureRef() && isStatic(property.getRefType())) {
+                          Optional<FeatureSchema> idProperty =
+                              property.getProperties().stream()
+                                  .filter(Objects::nonNull)
+                                  .filter(p -> Objects.equals(p.getName(), FeatureRefResolver.ID))
+                                  .findFirst();
+                          if (idProperty.isPresent()) {
+                            return Stream.of(
+                                property,
+                                new Builder()
+                                    .name(property.getName() + "_" + QUERYABLE)
+                                    .addPath(property.getName() + "_" + QUERYABLE)
+                                    .parentPath(property.getParentPath())
+                                    .type(property.isArray() ? Type.VALUE_ARRAY : Type.VALUE)
+                                    .valueType(idProperty.get().getType())
+                                    .refType(property.getRefType().get())
+                                    .label(property.getLabel())
+                                    .description(property.getDescription())
+                                    .sourcePath(
+                                        property.getSourcePath().map(s -> s + "/").orElse("")
+                                            + idProperty.get().getSourcePath().orElse(""))
+                                    .excludedScopes(property.getExcludedScopes())
+                                    .addAllExcludedScopes(
+                                        Scope.allBut(Scope.QUERYABLE, Scope.SORTABLE))
+                                    .addTransformations(
+                                        new ImmutablePropertyTransformation.Builder()
+                                            .rename(property.getName())
+                                            .build())
+                                    .build());
+                          }
+                        }
+                        return Stream.of(property);
+                      })
+                  .collect(Collectors.toList()),
+              FeatureSchema::getFullPathAsString);
+    }
+
     return new ImmutableFeatureSchema.Builder()
         .from(schema)
-        .propertyMap(asMap(visitedProperties, FeatureSchema::getFullPathAsString))
+        .propertyMap(visitedPropertiesMap)
         .build();
   }
 
@@ -105,6 +155,8 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
       Optional<String> fallbackRefType) {
     Type valueType = schema.getValueType().orElse(fallbackValueType.orElse(Type.STRING));
     Optional<String> refType = schema.getRefType().or(() -> fallbackRefType);
+    boolean isStatic = isStatic(refType);
+    List<Scope> excludedScopes = isStatic ? List.of(Scope.QUERYABLE, Scope.SORTABLE) : List.of();
 
     if (properties.isEmpty()) {
       String sourcePath = schema.getSourcePath().orElse("");
@@ -135,7 +187,12 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
                 new ImmutablePropertyTransformation.Builder()
                     .objectAddConstants(Map.of(TYPE, refType.orElse("")))
                     .build())
-            .putProperties2(ID, new Builder().type(valueType).sourcePath(sourcePath));
+            .putProperties2(
+                ID,
+                new Builder()
+                    .type(valueType)
+                    .sourcePath(sourcePath)
+                    .excludedScopes(excludedScopes));
 
         if (schema.getRefUriTemplate().isPresent()) {
           builder.addTransformations(
@@ -151,9 +208,24 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
         }
       } else {
         builder
-            .putProperties2(ID, new Builder().type(valueType).sourcePath(idSourcePath))
-            .putProperties2(TITLE, new Builder().type(Type.STRING).sourcePath(idSourcePath))
-            .putProperties2(TYPE, new Builder().type(Type.STRING).constantValue(refType));
+            .putProperties2(
+                ID,
+                new Builder()
+                    .type(valueType)
+                    .sourcePath(idSourcePath)
+                    .excludedScopes(excludedScopes))
+            .putProperties2(
+                TITLE,
+                new Builder()
+                    .type(Type.STRING)
+                    .sourcePath(idSourcePath)
+                    .excludedScopes(excludedScopes))
+            .putProperties2(
+                TYPE,
+                new Builder()
+                    .type(Type.STRING)
+                    .constantValue(refType)
+                    .excludedScopes(excludedScopes));
 
         if (schema.getRefUriTemplate().isPresent()) {
           builder.putProperties2(
@@ -192,6 +264,7 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
                 .name(TITLE)
                 .type(Type.STRING)
                 .path(List.of(TITLE))
+                .excludedScopes(excludedScopes)
                 .build());
       }
     }
@@ -211,6 +284,7 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
                 .path(List.of(TYPE))
                 .parentPath(schema.getPath())
                 .constantValue(refType)
+                .excludedScopes(excludedScopes)
                 .build());
       }
     }
@@ -228,6 +302,7 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
                 .path(List.of(URI_TEMPLATE))
                 .parentPath(schema.getPath())
                 .constantValue(schema.getRefUriTemplate())
+                .excludedScopes(excludedScopes)
                 .build());
       }
     }
@@ -245,6 +320,7 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
                 .path(List.of(KEY_TEMPLATE))
                 .parentPath(schema.getPath())
                 .constantValue(schema.getRefKeyTemplate())
+                .excludedScopes(excludedScopes)
                 .build());
       }
     }
@@ -256,5 +332,9 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
         .propertyMap(asMap(newVisitedProperties, FeatureSchema::getFullPathAsString))
         .transformations(newTransformations)
         .build();
+  }
+
+  private static boolean isStatic(Optional<String> refType) {
+    return refType.filter(refType2 -> !Objects.equals(refType2, REF_TYPE_DYNAMIC)).isPresent();
   }
 }

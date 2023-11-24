@@ -22,8 +22,8 @@ import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.LIFECYCLE_HOOK;
 import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
 import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping.Builder;
+import de.ii.xtraplatform.features.domain.SchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
-import de.ii.xtraplatform.features.domain.transform.SchemaTransformerChain;
 import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.features.domain.transform.WithoutProperties;
 import de.ii.xtraplatform.streams.domain.Reactive;
@@ -31,7 +31,6 @@ import de.ii.xtraplatform.streams.domain.Reactive.Runner;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import de.ii.xtraplatform.values.domain.Values;
 import java.io.IOException;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -54,9 +53,12 @@ public abstract class AbstractFeatureProvider<
     implements FeatureProvider2, FeatureQueries {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
+  protected static final WithScope WITH_SCOPE_RETURNABLE = new WithScope(Scope.RETURNABLE);
   protected static final WithScope WITH_SCOPE_QUERIES =
-      new WithScope(EnumSet.of(SchemaBase.Scope.RETURNABLE, SchemaBase.Scope.SORTABLE));
-  protected static final WithScope WITH_SCOPE_MUTATIONS =
+      new WithScope(
+          EnumSet.of(
+              SchemaBase.Scope.RETURNABLE, SchemaBase.Scope.QUERYABLE, SchemaBase.Scope.SORTABLE));
+  protected static final WithScope WITH_SCOPE_RECEIVABLE =
       new WithScope(SchemaBase.Scope.RECEIVABLE);
 
   private final ConnectorFactory connectorFactory;
@@ -446,34 +448,11 @@ public abstract class AbstractFeatureProvider<
 
       WithScope withScope =
           featureQuery.getSchemaScope() == SchemaBase.Scope.RETURNABLE
-              ? WITH_SCOPE_QUERIES
-              : WITH_SCOPE_MUTATIONS;
+              ? WITH_SCOPE_RETURNABLE
+              : WITH_SCOPE_RECEIVABLE;
 
-      ImmutableSchemaMapping schemaMapping =
-          new Builder()
-              .targetSchema(
-                  getData()
-                      .getTypes()
-                      .get(featureQuery.getType())
-                      .accept(withScope)
-                      .accept(
-                          new WithoutProperties(
-                              featureQuery.getFields(), featureQuery.skipGeometry())))
-              .sourcePathTransformer(this::applySourcePathDefaults)
-              .build();
-
-      SchemaTransformerChain schemaTransformations =
-          propertyTransformations
-              .get(featureQuery.getType())
-              .getSchemaTransformations(
-                  schemaMapping, !((FeatureQuery) query).returnsSingleFeature());
-
-      return ImmutableMap.of(
-          featureQuery.getType(),
-          new Builder()
-              .from(schemaMapping)
-              .targetSchema(schemaMapping.getTargetSchema().accept(schemaTransformations))
-              .build());
+      return Map.of(
+          featureQuery.getType(), createMapping(featureQuery, withScope, propertyTransformations));
     }
 
     if (query instanceof MultiFeatureQuery) {
@@ -481,23 +460,28 @@ public abstract class AbstractFeatureProvider<
           .getQueries().stream()
               .map(
                   typeQuery ->
-                      new SimpleImmutableEntry<>(
+                      Map.entry(
                           typeQuery.getType(),
-                          new ImmutableSchemaMapping.Builder()
-                              .targetSchema(
-                                  getData()
-                                      .getTypes()
-                                      .get(typeQuery.getType())
-                                      .accept(WITH_SCOPE_QUERIES)
-                                      .accept(
-                                          new WithoutProperties(
-                                              typeQuery.getFields(), typeQuery.skipGeometry())))
-                              .sourcePathTransformer(this::applySourcePathDefaults)
-                              .build()))
+                          createMapping(typeQuery, WITH_SCOPE_RETURNABLE, propertyTransformations)))
               .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
     }
 
     return Map.of();
+  }
+
+  private SchemaMapping createMapping(
+      TypeQuery query,
+      WithScope withScope,
+      Map<String, PropertyTransformations> propertyTransformations) {
+    return new Builder()
+        .targetSchema(
+            getData()
+                .getTypes()
+                .get(query.getType())
+                .accept(withScope)
+                .accept(new WithoutProperties(query.getFields(), query.skipGeometry())))
+        .sourcePathTransformer(this::applySourcePathDefaults)
+        .build();
   }
 
   protected String applySourcePathDefaults(String path, boolean isValue) {

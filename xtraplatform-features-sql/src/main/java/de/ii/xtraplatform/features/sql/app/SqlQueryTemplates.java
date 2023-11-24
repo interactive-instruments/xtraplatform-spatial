@@ -25,6 +25,8 @@ public interface SqlQueryTemplates {
 
   List<SchemaSql> getQuerySchemas();
 
+  Optional<SchemaSql> getSortablesSchema();
+
   @FunctionalInterface
   interface MetaQueryTemplate {
     String generateMetaQuery(

@@ -261,7 +261,7 @@ public interface FeatureSchema
   @Value.Derived
   @Value.Auxiliary
   default boolean queryable() {
-    return (!isObject() || isFeatureRef())
+    return !isObject()
         && !isMultiSource()
         && !Objects.equals(getType(), Type.UNKNOWN)
         && !getExcludedScopes().contains(Scope.QUERYABLE);
@@ -855,7 +855,7 @@ public interface FeatureSchema
   @Value.Check
   default void checkIsQueryable() {
     Preconditions.checkState(
-        !queryable() || isFeatureRef() || (!isObject() && !Objects.equals(getType(), Type.UNKNOWN)),
+        !queryable() || (!isObject() && !Objects.equals(getType(), Type.UNKNOWN)),
         "A queryable property must not be of type OBJECT, OBJECT_ARRAY or UNKNOWN. Found: %s. Path: %s.",
         getType(),
         getFullPathAsString());

@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
@@ -45,96 +44,82 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
   @Override
   public FeatureSchema visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
+    if (parents.isEmpty()) {
+      PropertyTransformations propertyTransformations =
+          schema.accept(new PropertyTransformationsCollector());
+      SchemaTransformerChain schemaTransformations =
+          propertyTransformations.getSchemaTransformations(null, false);
 
-    if (parents.stream()
-        .anyMatch(
-            parent ->
-                parent.isMultiSource()
-                    || excludePathMatcher.test(parent.getSourcePath().orElse("")))) {
-      // if the parent has multiple source paths or its target path is excluded, no property can be
-      // a queryable
-      return null;
+      return schema.accept(schemaTransformations).accept(new OnlyQueryablesIncluder());
     }
 
-    if (schema.queryable()) {
-      String path = schema.getFullPathAsString(pathSeparator);
-      // ignore property, if it is not included (by default or explicitly) or if it is excluded
-      if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
-        return null;
-      }
-    } else if (!schema.isObject()) {
-      return null;
-    }
-
-    if (schema.isFeatureRef()) {
-      if (schema
-          .getRefType()
-          .filter(refType -> !Objects.equals(refType, FeatureRefResolver.REF_TYPE_DYNAMIC))
-          .isEmpty()) {
-        return null;
-      }
-
-      Optional<FeatureSchema> idProperty =
-          schema.getProperties().stream()
-              .filter(Objects::nonNull)
-              .filter(p -> Objects.equals(p.getName(), FeatureRefResolver.ID))
-              .findFirst();
-
-      if (idProperty.isEmpty()) {
-        return null;
-      }
-
-      ImmutableFeatureSchema build =
-          new Builder()
-              .from(schema)
-              .type(
-                  schema.isArray() || parents.stream().anyMatch(SchemaBase::isArray)
-                      ? Type.FEATURE_REF_ARRAY
-                      : Type.FEATURE_REF)
-              .valueType(idProperty.get().getValueType().orElse(idProperty.get().getType()))
-              .addAllPath(idProperty.get().getPath())
-              .propertyMap(Map.of())
-              .build();
-      return build;
-    }
-
-    Map<String, FeatureSchema> visitedPropertiesMap =
-        visitedProperties.stream()
-            .filter(Objects::nonNull)
-            .map(
-                property ->
-                    new SimpleImmutableEntry<>(
-                        property.getFullPathAsString(pathSeparator), property))
-            .collect(
-                ImmutableMap.toImmutableMap(
-                    Entry::getKey, Entry::getValue, (first, second) -> second));
-
-    return new Builder()
-        .from(adjustType(parents, schema))
-        .propertyMap(visitedPropertiesMap)
-        .build();
+    return schema;
   }
 
-  private FeatureSchema adjustType(List<FeatureSchema> parents, FeatureSchema property) {
-    if (!property.queryable()) {
-      // not a queryable, we have an object that has embedded queryables
-      return property;
+  class OnlyQueryablesIncluder implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
+    @Override
+    public FeatureSchema visit(
+        FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
+
+      if (parents.stream()
+          .anyMatch(
+              parent ->
+                  parent.isMultiSource()
+                      || excludePathMatcher.test(parent.getSourcePath().orElse("")))) {
+        // if the parent has multiple source paths or its target path is excluded, no property can
+        // be
+        // a queryable
+        return null;
+      }
+
+      if (schema.queryable()) {
+        String path = schema.getFullPathAsString(pathSeparator);
+        // ignore property, if it is not included (by default or explicitly) or if it is excluded
+        if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
+          return null;
+        }
+      } else if (!schema.isObject() || visitedProperties.stream().noneMatch(Objects::nonNull)) {
+        return null;
+      }
+
+      Map<String, FeatureSchema> visitedPropertiesMap =
+          visitedProperties.stream()
+              .filter(Objects::nonNull)
+              .map(
+                  property ->
+                      new SimpleImmutableEntry<>(
+                          property.getFullPathAsString(pathSeparator), property))
+              .collect(
+                  ImmutableMap.toImmutableMap(
+                      Entry::getKey, Entry::getValue, (first, second) -> second));
+
+      return new Builder()
+          .from(adjustType(parents, schema))
+          .propertyMap(visitedPropertiesMap)
+          .build();
     }
 
-    if (parents.stream().noneMatch(SchemaBase::isArray)) {
-      // nothing to do, the property is not embedded in an array
-      return property;
-    }
+    private FeatureSchema adjustType(List<FeatureSchema> parents, FeatureSchema property) {
+      if (!property.queryable()) {
+        // not a queryable, we have an object that has embedded queryables
+        return property;
+      }
 
-    if (property.isArray()) {
-      // nothing to do, already an array
-      return property;
-    }
+      if (parents.stream().noneMatch(SchemaBase::isArray)) {
+        // nothing to do, the property is not embedded in an array
+        return property;
+      }
 
-    return new ImmutableFeatureSchema.Builder()
-        .from(property)
-        .type(Type.VALUE_ARRAY)
-        .valueType(property.getType())
-        .build();
+      if (property.isArray()) {
+        // nothing to do, already an array
+        return property;
+      }
+
+      return new ImmutableFeatureSchema.Builder()
+          .from(property)
+          .type(Type.VALUE_ARRAY)
+          .valueType(property.getType())
+          .build();
+    }
   }
 }
