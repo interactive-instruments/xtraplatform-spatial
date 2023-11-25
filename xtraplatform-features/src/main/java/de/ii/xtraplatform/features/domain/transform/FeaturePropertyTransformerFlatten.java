@@ -11,7 +11,6 @@ import com.google.common.base.Joiner;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
-import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation.Builder;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,8 +71,20 @@ public abstract class FeaturePropertyTransformerFlatten
         isObject = Objects.equals(token, FeatureTokenType.OBJECT);
         isObjectEnd = Objects.equals(token, FeatureTokenType.OBJECT_END);
       }
+
+      if (isObject && contextIndex == 2 && token instanceof SimpleFeatureGeometry) {
+        inGeometry = true;
+        transformed.add(FeatureTokenType.OBJECT);
+        transformed.add(currentPath);
+      }
+
       if (contextIndex == 1 && token instanceof List) {
         currentPath = (List<String>) token;
+
+        if (inGeometry && isObjectEnd) {
+          transformed.add(currentPath);
+          inGeometry = false;
+        }
 
         if (isArray) {
           arrayPath = currentPath;
@@ -98,20 +109,10 @@ public abstract class FeaturePropertyTransformerFlatten
           }
           currentPath = newPath;
         }
-
-        if (inGeometry && isObjectEnd) {
-          transformed.add(currentPath);
-          inGeometry = false;
-        }
-      }
-      if (isObject && contextIndex == 2 && token instanceof SimpleFeatureGeometry) {
-        inGeometry = true;
-        transformed.add(FeatureTokenType.OBJECT);
-        transformed.add(currentPath);
       }
 
       if (isValue || inGeometry) {
-        if (contextIndex == 1 && token instanceof List) {
+        if (!inGeometry && contextIndex == 1 && token instanceof List) {
           transformed.add(currentPath);
         } else {
           transformed.add(token);
@@ -129,10 +130,6 @@ public abstract class FeaturePropertyTransformerFlatten
     if (!schema.isFeature()) {
       return schema;
     }
-    WithTransformationsApplied withTransformationsApplied =
-        new WithTransformationsApplied(
-            Map.of(
-                PropertyTransformations.WILDCARD, new Builder().flatten(getParameter()).build()));
 
     return schema.accept(getFlattener());
   }
