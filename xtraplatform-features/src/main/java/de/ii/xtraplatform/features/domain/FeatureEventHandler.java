@@ -40,11 +40,6 @@ public interface FeatureEventHandler<
     @Nullable
     Type valueType();
 
-    Map<String, String> valueBuffer();
-
-    @Nullable
-    T customSchema();
-
     @Value.Default
     default boolean inGeometry() {
       return false;
@@ -88,11 +83,6 @@ public interface FeatureEventHandler<
     Map<String, String> transformed();
 
     @Value.Default
-    default boolean isBuffering() {
-      return false;
-    }
-
-    @Value.Default
     default boolean isUseTargetPaths() {
       return false;
     }
@@ -101,11 +91,6 @@ public interface FeatureEventHandler<
 
     @Value.Lazy
     default Optional<T> schema() {
-      return Optional.ofNullable(customSchema()).or(this::currentSchema);
-    }
-
-    @Value.Lazy
-    default Optional<T> currentSchema() {
       if (Objects.isNull(mapping())) {
         return Optional.empty();
       }
@@ -264,9 +249,8 @@ public interface FeatureEventHandler<
 
     @Value.Lazy
     default boolean shouldSkip() {
-      return isBuffering()
-          || currentSchema().isEmpty()
-          || !shouldInclude(currentSchema().get(), parentSchemas(), pathTracker().toString());
+      return schema().isEmpty()
+          || !shouldInclude(schema().get(), parentSchemas(), pathTracker().toString());
     }
 
     private boolean shouldInclude(T schema, List<T> parentSchemas, String path) {
@@ -319,10 +303,6 @@ public interface FeatureEventHandler<
 
     ModifiableContext<T, U> setValueType(SchemaBase.Type valueType);
 
-    ModifiableContext<T, U> putValueBuffer(String key, String value);
-
-    ModifiableContext<T, U> setCustomSchema(T schema);
-
     ModifiableContext<T, U> setInGeometry(boolean inGeometry);
 
     ModifiableContext<T, U> setInObject(boolean inObject);
@@ -339,9 +319,7 @@ public interface FeatureEventHandler<
 
     ModifiableContext<T, U> setSchemaIndex(int schemaIndex);
 
-    ModifiableContext<T, U> putTransformed(String key, String value);
-
-    ModifiableContext<T, U> setIsBuffering(boolean inArray);
+    ModifiableContext<T, U> setTransformed(Map<String, ? extends String> transformed);
 
     ModifiableContext<T, U> setIsUseTargetPaths(boolean isUseTargetPaths);
 

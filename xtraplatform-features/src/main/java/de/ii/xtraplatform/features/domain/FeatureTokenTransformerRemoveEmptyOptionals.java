@@ -15,12 +15,10 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
 
   private final List<String> nestingStack;
   private final List<FeatureSchema> schemaStack;
-  private final List<FeatureSchema> customSchemaStack;
 
   public FeatureTokenTransformerRemoveEmptyOptionals() {
     this.nestingStack = new ArrayList<>();
     this.schemaStack = new ArrayList<>();
-    this.customSchemaStack = new ArrayList<>();
   }
 
   @Override
@@ -41,7 +39,6 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
     } else {
       nestingStack.add("O");
       schemaStack.add(schema);
-      customSchemaStack.add(context.customSchema());
     }
   }
 
@@ -60,7 +57,6 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
     } else {
       nestingStack.remove(nestingStack.size() - 1);
       schemaStack.remove(schemaStack.size() - 1);
-      customSchemaStack.remove(customSchemaStack.size() - 1);
     }
   }
 
@@ -82,7 +78,6 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
     } else {
       nestingStack.add("A");
       schemaStack.add(schema);
-      customSchemaStack.add(context.customSchema());
     }
   }
 
@@ -101,7 +96,6 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
     } else {
       nestingStack.remove(nestingStack.size() - 1);
       schemaStack.remove(schemaStack.size() - 1);
-      customSchemaStack.remove(customSchemaStack.size() - 1);
     }
   }
 
@@ -122,12 +116,9 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
   private void openIfNecessary(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (!schemaStack.isEmpty()) {
       List<String> previousPath = context.path();
-      FeatureSchema previousCustomSchema = context.customSchema();
       for (int i = 0; i < schemaStack.size(); i++) {
         FeatureSchema schema = schemaStack.get(i);
-        FeatureSchema customSchema = customSchemaStack.get(i);
         context.pathTracker().track(schema.getFullPath());
-        context.setCustomSchema(customSchema);
 
         if (nestingStack.get(i).equals("A")) {
           getDownstream().onArrayStart(context);
@@ -139,9 +130,7 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
       }
       nestingStack.clear();
       schemaStack.clear();
-      customSchemaStack.clear();
       context.pathTracker().track(previousPath);
-      context.setCustomSchema(previousCustomSchema);
     }
   }
 }

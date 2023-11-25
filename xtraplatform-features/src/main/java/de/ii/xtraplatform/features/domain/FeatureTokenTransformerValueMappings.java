@@ -20,7 +20,6 @@ import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -59,11 +58,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
                         entry.getKey(),
                         propertyTransformations
                             .get(entry.getKey())
-                            .getValueTransformations(
-                                entry.getValue(),
-                                codelists,
-                                nativeTimeZone,
-                                context.valueBuffer()::get)))
+                            .getValueTransformations(entry.getValue(), codelists, nativeTimeZone)))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     super.onStart(context);
@@ -142,34 +137,12 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
       String path = context.pathAsString();
       String value = context.value();
 
-      if (!context.valueBuffer().isEmpty()) {
-        transformValueBuffer(context, path);
-      }
-
       if (Objects.nonNull(value)) {
         value = valueTransformerChain.transform(path, value);
       }
 
       context.setValue(value);
       getDownstream().onValue(context);
-    }
-  }
-
-  private void transformValueBuffer(
-      ModifiableContext<FeatureSchema, SchemaMapping> context, String path) {
-    for (Iterator<Entry<String, String>> it = context.valueBuffer().entrySet().iterator();
-        it.hasNext(); ) {
-      Map.Entry<String, String> entry = it.next();
-      String key = entry.getKey();
-
-      if (key.startsWith(path + ".")) {
-        String transformed = valueTransformerChain.transform(key, entry.getValue());
-        if (Objects.nonNull(transformed)) {
-          context.putValueBuffer(key, transformed);
-        } else {
-          it.remove();
-        }
-      }
     }
   }
 }

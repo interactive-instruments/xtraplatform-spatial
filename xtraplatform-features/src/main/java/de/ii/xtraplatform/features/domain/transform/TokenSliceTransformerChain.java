@@ -16,10 +16,12 @@ import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
@@ -80,7 +82,9 @@ public class TokenSliceTransformerChain
             .build());
   }
 
-  public void transform(FeatureEventBuffer buffer) {
+  public Map<String, String> transform(FeatureEventBuffer buffer) {
+    Map<String, String> applied = new HashMap<>();
+
     transformers.keySet().stream()
         .filter(path -> !transformers.get(path).isEmpty())
         .forEach(
@@ -95,9 +99,17 @@ public class TokenSliceTransformerChain
                         List<Object> slice = buffer.getSlice(pos);
                         List<Object> transformed = run(transformers, path, path, slice);
 
-                        buffer.replaceSlice(pos, transformed);
+                        boolean replaced = buffer.replaceSlice(pos, transformed);
+
+                        applied.put(
+                            path,
+                            transformers.get(path).stream()
+                                .map(FeaturePropertyTransformer::getType)
+                                .collect(Collectors.joining(",")));
                       });
             });
+
+    return applied;
   }
 
   @Nullable
