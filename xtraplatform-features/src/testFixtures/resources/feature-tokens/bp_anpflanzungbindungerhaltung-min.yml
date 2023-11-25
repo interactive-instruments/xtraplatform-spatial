@@ -80,7 +80,7 @@ tokens:
     source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[ref=id]coretable/[JSON]properties/nummer
     target: gehoertZuBereich.title
     value: 0
-    valueType: INTEGER
+    valueType: STRING
   - type: OBJECT_END
     source: /coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}/[ref=id]coretable
     target: gehoertZuBereich

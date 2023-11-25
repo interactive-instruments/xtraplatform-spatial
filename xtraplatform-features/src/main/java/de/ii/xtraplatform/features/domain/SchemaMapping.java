@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.ImmutableMappingInfo.Builder;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -122,6 +124,44 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
                   mappingInfos.addAll(second);
                   return mappingInfos;
                 }));
+  }
+
+  @Override
+  default List<FeatureSchema> getSchemas(
+      List<String> path, List<FeatureSchema> schemas, boolean useTargetPaths) {
+    if (!useTargetPaths && schemas.stream().anyMatch(schema -> !schema.getCoalesce().isEmpty())) {
+      return schemas.stream()
+          .map(
+              schema -> {
+                if (!schema.getCoalesce().isEmpty()) {
+                  for (FeatureSchema coalesce : schema.getCoalesce()) {
+                    if (coalesce.getSourcePath().isPresent()) {
+                      List<String> sourcePath =
+                          Splitter.on('/')
+                              .omitEmptyStrings()
+                              .splitToList(coalesce.getSourcePath().get());
+                      if (Objects.equals(
+                          sourcePath, path.subList(path.size() - sourcePath.size(), path.size()))) {
+                        ImmutableFeatureSchema build =
+                            new ImmutableFeatureSchema.Builder()
+                                .from(schema)
+                                .sourcePath(coalesce.getSourcePath())
+                                .valueType(coalesce.getValueType().orElse(coalesce.getType()))
+                                .sourcePaths(List.of())
+                                .coalesce(List.of())
+                                .build();
+                        return build;
+                      }
+                    }
+                  }
+                }
+
+                return schema;
+              })
+          .collect(Collectors.toList());
+    }
+
+    return schemas;
   }
 
   @Override

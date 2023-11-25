@@ -14,7 +14,6 @@ import de.ii.xtraplatform.features.domain.SchemaBase.Role;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.AbstractMap;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -61,13 +60,15 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
     return getSchemasByPath(
         getTargetSchema(),
         new SchemaToPathsVisitor<>(false, getSourcePathTransformer()),
-        this::cleanPath);
+        this::cleanPath,
+        false);
   }
 
   @Value.Derived
   @Value.Auxiliary
   default Map<List<String>, List<T>> getSchemasByTargetPath() {
-    return getSchemasByPath(getTargetSchema(), new SchemaToPathsVisitor<>(true), this::cleanPath);
+    return getSchemasByPath(
+        getTargetSchema(), new SchemaToPathsVisitor<>(true), this::cleanPath, true);
   }
 
   @Value.Derived
@@ -114,12 +115,17 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
   default Map<List<String>, List<T>> getSchemasByPath(
       T targetSchema,
       SchemaToPathsVisitor<T> pathsVisitor,
-      Function<List<String>, List<String>> pathCleaner) {
+      Function<List<String>, List<String>> pathCleaner,
+      boolean useTargetPaths) {
     return targetSchema.accept(pathsVisitor).asMap().entrySet().stream()
         .map(
-            entry ->
-                new SimpleImmutableEntry<>(
-                    pathCleaner.apply(entry.getKey()), Lists.newArrayList(entry.getValue())))
+            entry -> {
+              List<String> path = pathCleaner.apply(entry.getKey());
+              List<T> schemas =
+                  getSchemas(path, Lists.newArrayList(entry.getValue()), useTargetPaths);
+
+              return Map.entry(path, schemas);
+            })
         .collect(
             ImmutableMap.toImmutableMap(
                 Entry::getKey,
@@ -129,6 +135,10 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
                   schemas.addAll(second);
                   return schemas;
                 }));
+  }
+
+  default List<T> getSchemas(List<String> path, List<T> schemas, boolean useTargetPaths) {
+    return schemas;
   }
 
   default Map<List<String>, List<Integer>> getPositionsByPath(
@@ -265,7 +275,11 @@ public interface SchemaMappingBase<T extends SchemaBase<T>> {
 
   default Optional<T> findParentSchema(T schema) {
     return getAllSchemas().stream()
-        .filter(parent -> parent.getProperties().contains(schema))
+        .filter(
+            parent ->
+                parent.getProperties().stream()
+                    .anyMatch(
+                        property -> Objects.equals(property.getFullPath(), schema.getFullPath())))
         .findFirst();
   }
 

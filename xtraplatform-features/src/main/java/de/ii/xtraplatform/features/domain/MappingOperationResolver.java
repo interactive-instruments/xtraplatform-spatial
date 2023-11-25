@@ -420,8 +420,7 @@ public class MappingOperationResolver implements TypesResolver {
                       return new ImmutableFeatureSchema.Builder()
                           .from(s)
                           .type(Objects.isNull(s.getDesiredType()) ? type.getType() : s.getType())
-                          .valueType(
-                              s.getValueType().orElse(type.getValueType().orElse(Type.STRING)))
+                          .valueType(s.getValueType().or(type::getValueType))
                           .build();
                     }
                     return s;

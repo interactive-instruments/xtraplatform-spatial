@@ -15,7 +15,7 @@ tokens:
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/_id
     target: hatObjekt.1_id
     value: 1
-    valueType: STRING
+    valueType: INTEGER
     onlyIf: source,concat,selected
   - type: VALUE
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/constant_hatObjekt_37
@@ -27,7 +27,7 @@ tokens:
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/text
     target: hatObjekt.1_title
     value: WAL
-    valueType: INTEGER
+    valueType: STRING
     onlyIf: source,concat
   - type: VALUE
     target: hatObjekt.href
@@ -51,7 +51,7 @@ tokens:
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/_id
     target: hatObjekt.1_id
     value: 2
-    valueType: STRING
+    valueType: INTEGER
     onlyIf: source,concat,selected
   - type: VALUE
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/constant_hatObjekt_37
@@ -63,7 +63,7 @@ tokens:
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/text
     target: hatObjekt.1_title
     value: GTG DN 400
-    valueType: INTEGER
+    valueType: STRING
     onlyIf: source,concat
   - type: VALUE
     target: hatObjekt.href
@@ -95,7 +95,7 @@ tokens:
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/_id
     target: hatObjekt.2_id
     value: 1
-    valueType: STRING
+    valueType: INTEGER
     onlyIf: source,concat,selected
   - type: VALUE
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/constant_hatObjekt_38
@@ -107,7 +107,7 @@ tokens:
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/text
     target: hatObjekt.2_title
     value: Speicher Nüttemoor
-    valueType: INTEGER
+    valueType: STRING
     onlyIf: source,concat
   - type: VALUE
     target: hatObjekt.href
@@ -131,7 +131,7 @@ tokens:
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/_id
     target: hatObjekt.2_id
     value: 2
-    valueType: STRING
+    valueType: INTEGER
     onlyIf: source,concat,selected
   - type: VALUE
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/constant_hatObjekt_38
@@ -143,7 +143,7 @@ tokens:
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/text
     target: hatObjekt.2_title
     value: Speicher Jemgum
-    valueType: INTEGER
+    valueType: STRING
     onlyIf: source,concat
   - type: VALUE
     target: hatObjekt.href

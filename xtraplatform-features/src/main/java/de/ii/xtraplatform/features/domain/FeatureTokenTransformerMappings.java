@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.DynamicTargetSchemaTransformer;
 import de.ii.xtraplatform.features.domain.transform.FeatureEventBuffer;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten;
@@ -292,7 +293,12 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
           nestingTracker.open(schema, context);
         }
 
-        downstream.onValue(schema.getFullPath(), context.value(), context.valueType());
+        Type valueType =
+            schema.isSpatial()
+                ? context.valueType()
+                : schema.getValueType().orElse(schema.getType());
+
+        downstream.onValue(schema.getFullPath(), context.value(), valueType);
       }
     }
   }
