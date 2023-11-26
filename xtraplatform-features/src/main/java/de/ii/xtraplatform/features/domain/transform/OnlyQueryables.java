@@ -67,8 +67,7 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
                   parent.isMultiSource()
                       || excludePathMatcher.test(parent.getSourcePath().orElse("")))) {
         // if the parent has multiple source paths or its target path is excluded, no property can
-        // be
-        // a queryable
+        // be a queryable
         return null;
       }
 
@@ -78,7 +77,8 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
         if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
           return null;
         }
-      } else if (!schema.isObject() || visitedProperties.stream().noneMatch(Objects::nonNull)) {
+      } else if (!schema.isObject()
+          || (parents.isEmpty() && visitedProperties.stream().noneMatch(Objects::nonNull))) {
         return null;
       }
 
