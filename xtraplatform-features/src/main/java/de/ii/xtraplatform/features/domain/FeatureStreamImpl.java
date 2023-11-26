@@ -201,9 +201,14 @@ public class FeatureStreamImpl implements FeatureStream {
     FeatureTokenTransformerRemoveEmptyOptionals cleaner =
         new FeatureTokenTransformerRemoveEmptyOptionals();
 
-    FeatureTokenValidator validator = new FeatureTokenValidator();
+    FeatureTokenSource tokenSourceTransformed =
+        featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner);
 
-    return featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner).via(validator);
+    if (FeatureTokenValidator.LOGGER.isTraceEnabled()) {
+      tokenSourceTransformed = tokenSourceTransformed.via(new FeatureTokenValidator());
+    }
+
+    return tokenSourceTransformed;
   }
 
   private Map<String, PropertyTransformations> getMergedTransformations(

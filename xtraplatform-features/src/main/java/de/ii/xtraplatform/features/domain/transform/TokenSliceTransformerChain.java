@@ -24,10 +24,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TokenSliceTransformerChain
     implements TransformerChain<List<Object>, FeaturePropertyTokenSliceTransformer>,
         SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(TokenSliceTransformerChain.class);
 
   private final SchemaMapping schemaMapping;
   private final Map<String, List<FeaturePropertyTokenSliceTransformer>> transformers;
@@ -97,15 +101,39 @@ public class TokenSliceTransformerChain
                   .forEach(
                       pos -> {
                         List<Object> slice = buffer.getSlice(pos);
+
+                        if (LOGGER.isTraceEnabled()) {
+                          LOGGER.trace(
+                              "Token slice before transformations [{}]:\n{}\n",
+                              path,
+                              FeatureEventBuffer.sliceToString(slice));
+                        }
+
                         List<Object> transformed = run(transformers, path, path, slice);
 
                         boolean replaced = buffer.replaceSlice(pos, transformed);
 
-                        applied.put(
-                            path,
+                        String transformerNames =
                             transformers.get(path).stream()
                                 .map(FeaturePropertyTransformer::getType)
-                                .collect(Collectors.joining(",")));
+                                .collect(Collectors.joining(","));
+
+                        applied.put(path, transformerNames);
+
+                        if (LOGGER.isTraceEnabled()) {
+                          if (replaced) {
+                            LOGGER.trace(
+                                "Token slice after transformations [{}] ({}):\n{}\n",
+                                path,
+                                transformerNames,
+                                FeatureEventBuffer.sliceToString(transformed));
+                          } else {
+                            LOGGER.trace(
+                                "Token slice unchanged after transformations [{}] ({})",
+                                path,
+                                transformerNames);
+                          }
+                        }
                       });
             });
 

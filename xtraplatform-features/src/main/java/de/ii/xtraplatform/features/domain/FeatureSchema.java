@@ -95,12 +95,16 @@ public interface FeatureSchema
   Optional<String> getSourcePath();
 
   /**
-   * @langEn The relative paths for this schema object. The syntax depends on the provider types,
-   *     see [SQL](sql.md#path-syntax) or [WFS](wfs.md#path-syntax).
-   * @langDe Die relativen Pfade zu diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ
-   *     unterschiedlich ([SQL](sql.md#path-syntax) und [WFS](wfs.md#path-syntax)).
+   * @langEn *Deprected, use `concat` or `coalesce` instead.* The relative paths for this schema
+   *     object. The syntax depends on the provider types, see [SQL](sql.md#path-syntax) or
+   *     [WFS](wfs.md#path-syntax).
+   * @langDe *Deprecated, anstatt dessen `concat` oder `coalesce` verwenden.* Die relativen Pfade zu
+   *     diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ unterschiedlich
+   *     ([SQL](sql.md#path-syntax) und [WFS](wfs.md#path-syntax)).
    * @default [sourcePath]
    */
+  // Note: make internal
+  @Deprecated(since = "3.6")
   @JsonMerge(OptBoolean.FALSE)
   @Override
   List<String> getSourcePaths();

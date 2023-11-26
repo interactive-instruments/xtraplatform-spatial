@@ -327,36 +327,37 @@ public class FeatureEventBuffer<
     }
   }
 
-  public String toFixture(String name) {
-    String tokens =
-        buffer.stream()
-            .map(
-                token -> {
-                  if (token instanceof FeatureTokenType) {
-                    return "FeatureTokenType." + token;
-                  }
-                  if (token instanceof SchemaBase.Type) {
-                    return "Type." + token;
-                  }
-                  if (token instanceof SimpleFeatureGeometry) {
-                    return "SimpleFeatureGeometry." + token;
-                  }
-                  if (token instanceof String) {
-                    return "\"" + token + "\"";
-                  }
-                  if (token instanceof List) {
-                    return ((List<?>) token)
-                        .stream()
-                            .map(elem -> "\"" + elem + "\"")
-                            .collect(Collectors.joining(", ", "[", "]"));
-                  }
-                  if (token == null) {
-                    return "null";
-                  }
-                  return token.toString();
-                })
-            .collect(Collectors.joining(",\n"));
+  public String toString() {
+    return sliceToString(buffer);
+  }
 
-    return String.format("public static final List<Object> %s = [\n%s\n]\n", name, tokens);
+  public static String sliceToString(List<Object> slice) {
+    return slice.stream()
+        .map(
+            token -> {
+              if (token instanceof FeatureTokenType) {
+                return "FeatureTokenType." + token;
+              }
+              if (token instanceof SchemaBase.Type) {
+                return "Type." + token;
+              }
+              if (token instanceof SimpleFeatureGeometry) {
+                return "SimpleFeatureGeometry." + token;
+              }
+              if (token instanceof String) {
+                return "\"" + token + "\"";
+              }
+              if (token instanceof List) {
+                return ((List<?>) token)
+                    .stream()
+                        .map(elem -> "\"" + elem + "\"")
+                        .collect(Collectors.joining(", ", "[", "]"));
+              }
+              if (token == null) {
+                return "null";
+              }
+              return token.toString();
+            })
+        .collect(Collectors.joining(",\n"));
   }
 }

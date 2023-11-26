@@ -135,12 +135,7 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
 
   @Override
   public void onFeatureEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-
-    // System.out.println(downstream.toFixture("STUFF"));
-
     applyTokenSliceTransformers(context.type());
-
-    // System.out.println(downstream.toFixture("STUFF2"));
 
     downstream.bufferStop(true);
 
@@ -149,9 +144,17 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
   }
 
   private void applyTokenSliceTransformers(String type) {
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Token buffer before transformations:\n{}\n", downstream);
+    }
+
     Map<String, String> transformed = sliceTransformerChains.get(type).transform(downstream);
 
     newContext.setTransformed(transformed);
+
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace("Token buffer after transformations ({}):\n{}\n", transformed, downstream);
+    }
   }
 
   @Override
