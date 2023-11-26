@@ -105,7 +105,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
           withOneOfWrapper(
               schemas, Optional.of(schema.getName()), schema.getLabel(), schema.getDescription());
       if (schema.isArray()) {
-        objectSchema = withArrayWrapper(objectSchema);
+        objectSchema = withArrayWrapper(objectSchema, true);
       }
       return objectSchema;
     }
@@ -127,7 +127,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
           withOneOfWrapper(
               schemas, Optional.of(schema.getName()), schema.getLabel(), schema.getDescription());
       if (schema.isArray()) {
-        objectSchema = withArrayWrapper(objectSchema);
+        objectSchema = withArrayWrapper(objectSchema, true);
       }
       return objectSchema;
     }
@@ -163,7 +163,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     objectSchema = withRefWrapper(objectSchema, objectType);
 
     if (schema.isArray() && arrayAllowed) {
-      objectSchema = withArrayWrapper(objectSchema);
+      objectSchema = withArrayWrapper(objectSchema, true);
     }
 
     if (schema.getConstraints().isPresent()) {
@@ -213,7 +213,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
                 .map(
                     s ->
                         getSchemaForLiteralType(
-                            s.getType(),
+                            s.getValueType().orElse(Type.UNKNOWN),
                             s.getLabel(),
                             s.getDescription(),
                             s.getUnit(),
@@ -240,7 +240,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
                   .map(
                       s ->
                           getSchemaForLiteralType(
-                              s.getType(),
+                              s.getValueType().orElse(Type.UNKNOWN),
                               s.getLabel(),
                               s.getDescription(),
                               s.getUnit(),
@@ -288,7 +288,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
         } else {
           valueSchema =
               getSchemaForLiteralType(
-                  schema.getValueType().orElse(Type.STRING),
+                  schema.getValueType().orElse(Type.UNKNOWN),
                   label,
                   description,
                   unit,
@@ -317,7 +317,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
     }
 
     if (schema.isArray()) {
-      valueSchema = withArrayWrapper(valueSchema);
+      valueSchema = withArrayWrapper(valueSchema, true);
     }
 
     if (schema.getConstraints().isPresent()) {
@@ -375,7 +375,11 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
 
   protected abstract T withRefWrapper(T schema, String objectType);
 
-  protected abstract T withArrayWrapper(T schema);
+  protected T withArrayWrapper(T schema) {
+    return withArrayWrapper(schema, false);
+  }
+
+  protected abstract T withArrayWrapper(T schema, boolean moveTitleAndDescription);
 
   protected abstract T withOneOfWrapper(
       Collection<T> schema,
