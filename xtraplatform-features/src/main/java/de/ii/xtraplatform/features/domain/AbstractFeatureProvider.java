@@ -24,6 +24,7 @@ import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
 import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping.Builder;
 import de.ii.xtraplatform.features.domain.SchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.features.domain.transform.SchemaTransformerChain;
 import de.ii.xtraplatform.features.domain.transform.WithScope;
 import de.ii.xtraplatform.features.domain.transform.WithoutProperties;
 import de.ii.xtraplatform.streams.domain.Reactive;
@@ -473,12 +474,20 @@ public abstract class AbstractFeatureProvider<
       TypeQuery query,
       WithScope withScope,
       Map<String, PropertyTransformations> propertyTransformations) {
+    SchemaTransformerChain schemaTransformations =
+        propertyTransformations
+            .get(query.getType())
+            .getSchemaTransformations(
+                null,
+                !(query instanceof FeatureQuery) || !((FeatureQuery) query).returnsSingleFeature());
+
     return new Builder()
         .targetSchema(
             getData()
                 .getTypes()
                 .get(query.getType())
                 .accept(withScope)
+                .accept(schemaTransformations)
                 .accept(new WithoutProperties(query.getFields(), query.skipGeometry())))
         .sourcePathTransformer(this::applySourcePathDefaults)
         .build();
