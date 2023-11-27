@@ -48,6 +48,9 @@ public interface TransformerChain<T, U> {
   }
 
   default List<String> explodeWildcard(String transformationKey, SchemaMapping schemaMapping) {
+    if (Objects.isNull(schemaMapping)) {
+      return List.of();
+    }
     if (hasWildcard(transformationKey, TYPE_WILDCARD)) {
       return explodeWildcard(
           transformationKey, TYPE_WILDCARD, schemaMapping, TransformerChain::matchesType);
