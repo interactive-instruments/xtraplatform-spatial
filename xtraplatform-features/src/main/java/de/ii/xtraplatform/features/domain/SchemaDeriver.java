@@ -182,6 +182,9 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
 
     T valueSchema = null;
     Type propertyType = schema.getType();
+    if (propertyType.equals(Type.VALUE) && schema.getValueType().isPresent()) {
+      propertyType = schema.getValueType().get();
+    }
     String propertyName = schema.getName();
     Optional<String> label = schema.getLabel();
     Optional<String> description = schema.getDescription();
@@ -324,9 +327,9 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       valueSchema = withConstraints(valueSchema, schema.getConstraints().get(), schema, codelists);
     }
 
-    if (!schema.receivable()) {
+    if (!schema.receivable() && schema.returnable()) {
       valueSchema = withReadOnly(valueSchema);
-    } else if (!schema.returnable()) {
+    } else if (!schema.returnable() && schema.receivable()) {
       valueSchema = withWriteOnly(valueSchema);
     }
 
