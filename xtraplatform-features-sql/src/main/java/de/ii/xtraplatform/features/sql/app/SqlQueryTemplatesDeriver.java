@@ -37,16 +37,19 @@ public class SqlQueryTemplatesDeriver
   private static final String CSKEY = "CSKEY";
   private static final String TAB = "  ";
 
+  private final SchemaSql queryablesSchema;
   private final SqlDialect sqlDialect;
   private final FilterEncoderSql filterEncoder;
   private final boolean computeNumberMatched;
   private final boolean computeNumberSkipped;
 
   public SqlQueryTemplatesDeriver(
+      SchemaSql queryablesSchema,
       FilterEncoderSql filterEncoder,
       SqlDialect sqlDialect,
       boolean computeNumberMatched,
       boolean computeNumberSkipped) {
+    this.queryablesSchema = queryablesSchema;
     this.sqlDialect = sqlDialect;
     this.filterEncoder = filterEncoder;
     this.computeNumberMatched = computeNumberMatched;
@@ -73,6 +76,7 @@ public class SqlQueryTemplatesDeriver
         .metaQueryTemplate(createMetaQueryTemplate(schema))
         .valueQueryTemplates(valueQueryTemplates)
         .addAllQuerySchemas(schema.getAllObjects())
+        .sortablesSchema(Optional.ofNullable(queryablesSchema))
         .build();
   }
 
@@ -374,18 +378,20 @@ public class SqlQueryTemplatesDeriver
     if (schema.getFilter().isEmpty() && userFilter.isEmpty()) {
       return Optional.empty();
     }
+    SchemaSql queryables = Objects.requireNonNullElse(queryablesSchema, schema);
+
     if (schema.getFilter().isPresent() && schema.getRelation().isEmpty() && userFilter.isEmpty()) {
-      return Optional.of(filterEncoder.encode(schema.getFilter().get(), schema));
+      return Optional.of(filterEncoder.encode(schema.getFilter().get(), queryables));
     }
     if (schema.getFilter().isEmpty() && schema.getRelation().isEmpty() && userFilter.isPresent()) {
-      return Optional.of(filterEncoder.encode(userFilter.get(), schema));
+      return Optional.of(filterEncoder.encode(userFilter.get(), queryables));
     }
     if (schema.getFilter().isPresent()
         && schema.getRelation().isEmpty()
         && userFilter.isPresent()) {
       Cql2Expression mergedFilter = And.of(schema.getFilter().get(), userFilter.get());
 
-      return Optional.of(filterEncoder.encode(mergedFilter, schema));
+      return Optional.of(filterEncoder.encode(mergedFilter, queryables));
     }
     // TODO what to do, if schema.getRelation().isPresent() ?
 

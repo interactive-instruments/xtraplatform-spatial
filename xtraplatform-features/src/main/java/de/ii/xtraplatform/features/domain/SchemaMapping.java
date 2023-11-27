@@ -7,9 +7,12 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
+import de.ii.xtraplatform.features.domain.ImmutableMappingInfo.Builder;
+import de.ii.xtraplatform.features.domain.transform.DynamicTargetSchemaTransformer;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -17,15 +20,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
 
-  BiFunction<String, Boolean, String> getSourcePathTransformer();
+  Optional<DynamicTargetSchemaTransformer> getDynamicTransformer();
 
   @Override
   default FeatureSchema schemaWithGeometryType(
@@ -33,76 +38,147 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
     return new ImmutableFeatureSchema.Builder().from(schema).geometryType(geometryType).build();
   }
 
-  default SchemaMapping mappingWithTargetPaths() {
-    Multimap<List<String>, FeatureSchema> accept =
-        getTargetSchema().accept(new SchemaToMappingVisitor<>(true, getSourcePathTransformer()));
+  @Override
+  default List<FeatureSchema> getSchemasForTargetPath(List<String> path) {
+    if (getDynamicTransformer().isPresent()) {
+      DynamicTargetSchemaTransformer transformer = getDynamicTransformer().get();
+      if (transformer.isApplicableDynamic(path)) {
+        List<FeatureSchema> schemas =
+            getSchemasByTargetPath()
+                .getOrDefault(transformer.transformPathDynamic(path), ImmutableList.of());
 
-    return null;
+        return transformer.transformSchemaDynamic(schemas, path);
+      }
+    }
+
+    return SchemaMappingBase.super.getSchemasForTargetPath(path);
   }
 
-  @Value.Default
-  default boolean useTargetPaths() {
-    return false;
+  static SchemaMapping of(FeatureSchema schema) {
+    return new ImmutableSchemaMapping.Builder().targetSchema(schema).build();
   }
 
-  static SchemaMapping withTargetPaths(SchemaMapping mapping) {
-    return new ImmutableSchemaMapping.Builder().from(mapping).useTargetPaths(true).build();
+  @Value.Derived
+  @Value.Auxiliary
+  default Map<List<String>, List<MappingInfo>> forSourcePath() {
+    return forPath(
+        new SchemaToPathsVisitor<>(false, getSourcePathTransformer()), this::cleanPath, false);
+  }
+
+  @Value.Derived
+  @Value.Auxiliary
+  default Map<List<String>, List<MappingInfo>> forTargetPath() {
+    return forPath(new SchemaToPathsVisitor<>(true), this::cleanPath, true);
+  }
+
+  // TODO: needed?
+  default Map<List<String>, List<MappingInfo>> forPath(
+      SchemaToPathsVisitor<FeatureSchema> pathsVisitor,
+      Function<List<String>, List<String>> pathCleaner,
+      boolean useTargetPath) {
+    return getTargetSchema().accept(pathsVisitor).asMap().keySet().stream()
+        .map(pathCleaner)
+        .map(
+            path -> {
+              List<FeatureSchema> schemas =
+                  useTargetPath ? getSchemasForTargetPath(path) : getSchemasForSourcePath(path);
+              List<Integer> positions =
+                  useTargetPath ? getPositionsForTargetPath(path) : getPositionsForSourcePath(path);
+              List<List<FeatureSchema>> parentSchemas =
+                  useTargetPath
+                      ? getParentSchemasForTargetPath(path)
+                      : getParentSchemasForSourcePath(path);
+              List<List<Integer>> parentPositions =
+                  useTargetPath
+                      ? getParentPositionsForTargetPath(path)
+                      : getParentPositionsForSourcePath(path);
+
+              boolean b =
+                  schemas.size() == positions.size()
+                      && schemas.size() == parentSchemas.size()
+                      && schemas.size() == parentPositions.size()
+                      && parentPositions.stream().flatMap(List::stream).noneMatch(pos -> pos == -1);
+
+              Preconditions.checkState(b);
+
+              // TODO: if there is ever more than one value, loses position of duplicates
+              List<MappingInfo> mappingInfos = new ArrayList<>();
+              for (int i = 0; i < schemas.size(); i++) {
+                mappingInfos.add(
+                    new Builder()
+                        .schema(schemas.get(i))
+                        .position(positions.get(i))
+                        .parentSchemas(parentSchemas.get(i))
+                        .parentPositions(parentPositions.get(i))
+                        .build());
+              }
+
+              return new SimpleImmutableEntry<>(path, mappingInfos);
+            })
+        .collect(
+            ImmutableMap.toImmutableMap(
+                Entry::getKey,
+                Entry::getValue,
+                (first, second) -> {
+                  ArrayList<MappingInfo> mappingInfos = new ArrayList<>(first);
+                  mappingInfos.addAll(second);
+                  return mappingInfos;
+                }));
   }
 
   @Override
-  @Value.Derived
-  @Value.Auxiliary
-  default Map<List<String>, List<FeatureSchema>> getTargetSchemasByPath() {
+  default List<FeatureSchema> getSchemas(
+      List<String> path, List<FeatureSchema> schemas, boolean useTargetPaths) {
+    if (!useTargetPaths && schemas.stream().anyMatch(schema -> !schema.getCoalesce().isEmpty())) {
+      return schemas.stream()
+          .map(
+              schema -> {
+                if (!schema.getCoalesce().isEmpty()) {
+                  for (FeatureSchema coalesce : schema.getCoalesce()) {
+                    if (coalesce.getSourcePath().isPresent()) {
+                      List<String> sourcePath =
+                          Splitter.on('/')
+                              .omitEmptyStrings()
+                              .splitToList(coalesce.getSourcePath().get());
+                      if (Objects.equals(
+                          sourcePath, path.subList(path.size() - sourcePath.size(), path.size()))) {
+                        ImmutableFeatureSchema build =
+                            new ImmutableFeatureSchema.Builder()
+                                .from(schema)
+                                .sourcePath(coalesce.getSourcePath())
+                                .valueType(coalesce.getValueType().orElse(coalesce.getType()))
+                                .sourcePaths(List.of())
+                                .coalesce(List.of())
+                                .build();
+                        return build;
+                      }
+                    }
+                  }
+                }
 
-    ImmutableMap<List<String>, List<FeatureSchema>> original =
-        getTargetSchema()
-            .accept(new SchemaToMappingVisitor<>(useTargetPaths(), getSourcePathTransformer()))
-            .asMap()
-            .entrySet()
-            .stream()
-            .map(
-                entry ->
-                    new SimpleImmutableEntry<>(
-                        entry.getKey(), Lists.newArrayList(entry.getValue())))
-            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
-
-    ImmutableMap<List<String>, List<FeatureSchema>> newer =
-        getTargetSchema()
-            .accept(new SchemaToSourcePathsVisitor<>(getSourcePathTransformer()))
-            .asMap()
-            .entrySet()
-            .stream()
-            .map(
-                entry ->
-                    new SimpleImmutableEntry<>(
-                        cleanPath(entry.getKey()), Lists.newArrayList(entry.getValue())))
-            .collect(
-                ImmutableMap.toImmutableMap(
-                    Entry::getKey,
-                    Entry::getValue,
-                    (first, second) -> {
-                      ArrayList<FeatureSchema> featureSchemas = new ArrayList<>(first);
-                      featureSchemas.addAll(second);
-                      return featureSchemas;
-                    }));
-
-    if (useTargetPaths()) {
-      return original;
+                return schema;
+              })
+          .collect(Collectors.toList());
     }
 
-    return newer;
+    return schemas;
   }
 
+  @Override
   default List<String> cleanPath(List<String> path) {
-    if (path.get(path.size() - 1).contains("{")) {
+    if (path.stream().anyMatch(elem -> elem.contains("{"))) {
+      return path.stream().map(this::cleanPath).collect(Collectors.toList());
+    }
+    /*if (path.get(path.size() - 1).contains("{")) {
       List<String> key = new ArrayList<>(path.subList(0, path.size() - 1));
       key.add(cleanPath(path.get(path.size() - 1)));
       return key;
-    }
+    }*/
     return path;
   }
 
   // TODO: static cleanup method in PathParser
+  @Override
   default String cleanPath(String path) {
     if (path.contains("{")) {
       int i = path.indexOf("{");
@@ -114,15 +190,16 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
     return path;
   }
 
+  // TODO: still needed?
   @Override
   default Optional<String> getPathSeparator() {
-    if (useTargetPaths()) {
-      return getTargetSchema().getTransformations().stream()
-          .filter(transformation -> transformation.getFlatten().isPresent())
-          .findFirst()
-          .flatMap(PropertyTransformation::getFlatten);
-    }
+    // if (useTargetPaths()) {
+    return getTargetSchema().getTransformations().stream()
+        .filter(transformation -> transformation.getFlatten().isPresent())
+        .findFirst()
+        .flatMap(PropertyTransformation::getFlatten);
+    // }
 
-    return Optional.empty();
+    // return Optional.empty();
   }
 }

@@ -1,0 +1,164 @@
+tokens:
+  - type: VALUE
+    source: /pfs_plan/id
+    target: oid
+    value: 1
+    valueType: STRING
+  - type: ARRAY
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
+    target: hatObjekt
+  - type: OBJECT
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
+    target: hatObjekt
+    onlyIf: source,concat,mapped
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/_id
+    target: hatObjekt.1_id
+    value: 1
+    valueType: INTEGER
+    onlyIf: source,concat,selected
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/constant_hatObjekt_37
+    target: hatObjekt.1_type
+    value: bst_erdgasleitung
+    valueType: STRING
+    onlyIf: source,concat
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/text
+    target: hatObjekt.1_title
+    value: WAL
+    valueType: STRING
+    onlyIf: source,concat
+  - type: VALUE
+    target: hatObjekt.href
+    value: id::1
+    valueType: STRING
+    onlyIf: mapped
+  - type: VALUE
+    target: hatObjekt
+    value: id::1
+    valueType: STRING
+    onlyIf: reduced
+  - type: OBJECT_END
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
+    target: hatObjekt
+    onlyIf: source,concat,mapped
+  - type: OBJECT
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
+    target: hatObjekt
+    onlyIf: source,concat,mapped
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/_id
+    target: hatObjekt.1_id
+    value: 2
+    valueType: INTEGER
+    onlyIf: source,concat,selected
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/constant_hatObjekt_37
+    target: hatObjekt.1_type
+    value: bst_erdgasleitung
+    valueType: STRING
+    onlyIf: source,concat
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/text
+    target: hatObjekt.1_title
+    value: GTG DN 400
+    valueType: STRING
+    onlyIf: source,concat
+  - type: VALUE
+    target: hatObjekt.href
+    value: id::2
+    valueType: STRING
+    onlyIf: mapped
+  - type: VALUE
+    target: hatObjekt
+    value: id::2
+    valueType: STRING
+    onlyIf: reduced
+  - type: OBJECT_END
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
+    target: hatObjekt
+    onlyIf: source,concat,mapped
+  - type: ARRAY_END
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
+    target: hatObjekt
+    onlyIf: source
+  - type: ARRAY
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
+    target: hatObjekt
+    onlyIf: source
+  - type: OBJECT
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
+    target: hatObjekt
+    onlyIf: source,concat,mapped
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/_id
+    target: hatObjekt.2_id
+    value: 1
+    valueType: INTEGER
+    onlyIf: source,concat,selected
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/constant_hatObjekt_38
+    target: hatObjekt.2_type
+    value: bst_speicher
+    valueType: STRING
+    onlyIf: source,concat
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/text
+    target: hatObjekt.2_title
+    value: Speicher Nüttemoor
+    valueType: STRING
+    onlyIf: source,concat
+  - type: VALUE
+    target: hatObjekt.href
+    value: id::1
+    valueType: STRING
+    onlyIf: mapped
+  - type: VALUE
+    target: hatObjekt
+    value: id::1
+    valueType: STRING
+    onlyIf: reduced
+  - type: OBJECT_END
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
+    target: hatObjekt
+    onlyIf: source,concat,mapped
+  - type: OBJECT
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
+    target: hatObjekt
+    onlyIf: source,concat,mapped
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/_id
+    target: hatObjekt.2_id
+    value: 2
+    valueType: INTEGER
+    onlyIf: source,concat,selected
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/constant_hatObjekt_38
+    target: hatObjekt.2_type
+    value: bst_speicher
+    valueType: STRING
+    onlyIf: source,concat
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/text
+    target: hatObjekt.2_title
+    value: Speicher Jemgum
+    valueType: STRING
+    onlyIf: source,concat
+  - type: VALUE
+    target: hatObjekt.href
+    value: id::2
+    valueType: STRING
+    onlyIf: mapped
+  - type: VALUE
+    target: hatObjekt
+    value: id::2
+    valueType: STRING
+    onlyIf: reduced
+  - type: OBJECT_END
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
+    target: hatObjekt
+    onlyIf: source,concat,mapped
+  - type: ARRAY_END
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
+    target: hatObjekt

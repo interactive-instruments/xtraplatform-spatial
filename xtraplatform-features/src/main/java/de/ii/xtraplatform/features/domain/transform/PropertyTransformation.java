@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
@@ -19,11 +21,13 @@ import de.ii.xtraplatform.entities.domain.ImmutableValidationResult;
 import de.ii.xtraplatform.entities.domain.Mergeable;
 import de.ii.xtraplatform.entities.domain.maptobuilder.Buildable;
 import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableBuilder;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -141,11 +145,44 @@ public interface PropertyTransformation
 
   /**
    * @langEn Reduces an object to a string using the same syntax as `stringFormat` but with
-   *     additional replacements for objects property names.
+   *     additional replacements for the object property names.
    * @langDe Reduziert ein Objekt zu einem String mithilfe der `stringFormat`-Syntax aber mit
    *     zusätzlichen Ersetzungen für die Property-Names des Objekts.
    */
-  Optional<String> getReduceStringFormat();
+  @JsonAlias("reduceStringFormat")
+  Optional<String> getObjectReduceFormat();
+
+  /**
+   * @langEn Reduces an object to one of its properties, the value is the desired property name.
+   * @langDe Reduziert ein Objekt zu einem seiner Properties, der Wert ist der gewünschte
+   *     Property-Name.
+   */
+  Optional<String> getObjectReduceSelect();
+
+  /**
+   * @langEn Maps an object to another object, the value is map where the keys are the new property
+   *     names. The values use the same syntax as `stringFormat` but with additional replacements
+   *     for the source object property names.
+   * @langDe Bildet ein Object auf ein anderes Object ab, der Wert ist eine Map bei der die Keys die
+   *     neuen Property-Namen sind. Die Werte verwenden die `stringFormat`-Syntax aber mit
+   *     zusätzlichen Ersetzungen für die Property-Names des Quell-Objekts.
+   */
+  Map<String, String> getObjectMapFormat();
+
+  @JsonIgnore
+  Map<String, String> getObjectMapDuplicate();
+
+  @JsonIgnore
+  Map<String, String> getObjectAddConstants();
+
+  @JsonIgnore
+  Optional<Boolean> getCoalesce();
+
+  @JsonIgnore
+  Optional<Boolean> getConcat();
+
+  @JsonIgnore
+  Optional<Type> getWrap();
 
   // Optional<String> getFlattenObjects();
 
@@ -207,12 +244,6 @@ public interface PropertyTransformation
   @Deprecated
   @JsonProperty(value = "null", access = JsonProperty.Access.WRITE_ONLY)
   Optional<String> getNull();
-
-  /**
-   * @langEn TODO
-   * @langDe TODO
-   */
-  Optional<String> getAsLink(); // TODO: implement, with support for title
 
   @Override
   default PropertyTransformation mergeInto(PropertyTransformation source) {

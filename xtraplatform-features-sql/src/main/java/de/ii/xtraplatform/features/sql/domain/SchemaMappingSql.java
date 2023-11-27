@@ -26,7 +26,7 @@ public interface SchemaMappingSql extends SchemaMappingBase<SchemaSql> {
 
   @Value.Derived
   @Value.Auxiliary
-  default Map<List<String>, List<SchemaSql>> getTargetSchemasByPath() {
+  default Map<List<String>, List<SchemaSql>> getSchemasByTargetPath() {
     return getTargetSchema()
         .accept(new SchemaToMappingVisitor<>(getSourcePathTransformer()))
         .asMap()

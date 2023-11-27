@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -94,12 +95,16 @@ public interface FeatureSchema
   Optional<String> getSourcePath();
 
   /**
-   * @langEn The relative paths for this schema object. The syntax depends on the provider types,
-   *     see [SQL](sql.md#path-syntax) or [WFS](wfs.md#path-syntax).
-   * @langDe Die relativen Pfade zu diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ
-   *     unterschiedlich ([SQL](sql.md#path-syntax) und [WFS](wfs.md#path-syntax)).
+   * @langEn *Deprected, use `concat` or `coalesce` instead.* The relative paths for this schema
+   *     object. The syntax depends on the provider types, see [SQL](sql.md#path-syntax) or
+   *     [WFS](wfs.md#path-syntax).
+   * @langDe *Deprecated, anstatt dessen `concat` oder `coalesce` verwenden.* Die relativen Pfade zu
+   *     diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ unterschiedlich
+   *     ([SQL](sql.md#path-syntax) und [WFS](wfs.md#path-syntax)).
    * @default [sourcePath]
    */
+  // Note: make internal
+  @Deprecated(since = "3.6")
   @JsonMerge(OptBoolean.FALSE)
   @Override
   List<String> getSourcePaths();
@@ -261,9 +266,8 @@ public interface FeatureSchema
   @Value.Auxiliary
   default boolean queryable() {
     return !isObject()
+        && !isMultiSource()
         && !Objects.equals(getType(), Type.UNKNOWN)
-        && getConcat().isEmpty()
-        && getCoalesce().isEmpty()
         && !getExcludedScopes().contains(Scope.QUERYABLE);
   }
 
@@ -275,10 +279,9 @@ public interface FeatureSchema
     return !isSpatial()
         && !isObject()
         && !isArray()
+        && !isMultiSource()
         && !Objects.equals(getType(), Type.BOOLEAN)
         && !Objects.equals(getType(), Type.UNKNOWN)
-        && getConcat().isEmpty()
-        && getCoalesce().isEmpty()
         && !getExcludedScopes().contains(Scope.SORTABLE);
   }
 
@@ -290,6 +293,13 @@ public interface FeatureSchema
   @Value.Auxiliary
   default boolean receivable() {
     return !isConstant() && !getExcludedScopes().contains(Scope.RECEIVABLE);
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isMultiSource() {
+    return !getConcat().isEmpty() || !getCoalesce().isEmpty();
   }
 
   /**
@@ -685,6 +695,16 @@ public interface FeatureSchema
   }
 
   @Value.Check
+  default void disallowFlattening() {
+    Preconditions.checkState(
+        getTransformations().isEmpty()
+            || getTransformations().stream()
+                .noneMatch(transformations -> transformations.getFlatten().isPresent()),
+        "The 'flatten' transformation is not allowed in the provider schema. Path: %s.",
+        isFeature() ? getName() : getFullPathAsString());
+  }
+
+  @Value.Check
   default void checkMappingOperations() {
     Preconditions.checkState(
         getConcat().isEmpty() || isArray(),
@@ -717,15 +737,14 @@ public interface FeatureSchema
         getConcat().isEmpty()
             || getType() != Type.FEATURE_REF_ARRAY
             || getConcat().stream()
-                .allMatch(
-                    s ->
-                        List.of(Type.STRING, Type.FEATURE_REF, Type.FEATURE_REF_ARRAY)
-                            .contains(s.getType())),
+                .map(FeatureSchema::getDesiredType)
+                .filter(Objects::nonNull)
+                .allMatch(type -> List.of(Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(type)),
         "Concat of type FEATURE_REF_ARRAY may only contain items of type FEATURE_REF_ARRAY or FEATURE_REF. Found: %s. Path: %s.",
         getConcat().stream()
-            .map(FeatureSchema::getType)
-            .filter(
-                t -> !List.of(Type.STRING, Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(t))
+            .map(FeatureSchema::getDesiredType)
+            .filter(Objects::nonNull)
+            .filter(type -> !List.of(Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(type))
             .findFirst()
             .orElse(getType()),
         getFullPathAsString());
@@ -743,9 +762,10 @@ public interface FeatureSchema
                                 Type.BOOLEAN,
                                 Type.DATE,
                                 Type.DATETIME,
-                                Type.VALUE_ARRAY)
+                                Type.VALUE_ARRAY,
+                                Type.VALUE)
                             .contains(s.getType())),
-        "Concat of type VALUE_ARRAY may only contain items of type VALUE_ARRAY, INTEGER, FLOAT, STRING, BOOLEAN, DATE or DATETIME. Found: %s. Path: %s.",
+        "Concat of type VALUE_ARRAY may only contain items of type VALUE_ARRAY, VALUE, INTEGER, FLOAT, STRING, BOOLEAN, DATE or DATETIME. Found: %s. Path: %s.",
         getConcat().stream()
             .map(FeatureSchema::getType)
             .filter(
@@ -757,16 +777,11 @@ public interface FeatureSchema
                             Type.BOOLEAN,
                             Type.DATE,
                             Type.DATETIME,
-                            Type.VALUE_ARRAY)
+                            Type.VALUE_ARRAY,
+                            Type.VALUE)
                         .contains(t))
             .findFirst()
             .orElse(getType()),
-        getFullPathAsString());
-
-    Preconditions.checkState(
-        getCoalesce().isEmpty() || !isArray(),
-        "Coalesce may not be used with array types. Found: %s. Path: %s.",
-        getType(),
         getFullPathAsString());
 
     Preconditions.checkState(
@@ -801,9 +816,10 @@ public interface FeatureSchema
                                 Type.BOOLEAN,
                                 Type.DATE,
                                 Type.DATETIME,
-                                Type.VALUE_ARRAY)
+                                Type.VALUE_ARRAY,
+                                Type.VALUE)
                             .contains(s.getType())),
-        "Coalesce of type VALUE may only contain items of type INTEGER, FLOAT, STRING, BOOLEAN, DATE, DATETIME or VALUE_ARRAY. Found: %s. Path: %s.",
+        "Coalesce of type VALUE may only contain items of type INTEGER, FLOAT, STRING, BOOLEAN, DATE, DATETIME, VALUE or VALUE_ARRAY. Found: %s. Path: %s.",
         getCoalesce().stream()
             .map(FeatureSchema::getType)
             .filter(
@@ -815,7 +831,8 @@ public interface FeatureSchema
                             Type.BOOLEAN,
                             Type.DATE,
                             Type.DATETIME,
-                            Type.VALUE_ARRAY)
+                            Type.VALUE_ARRAY,
+                            Type.VALUE)
                         .contains(t))
             .findFirst()
             .orElse(getType()),
@@ -836,12 +853,6 @@ public interface FeatureSchema
             .filter(t -> !List.of(Type.STRING, getType()).contains(t))
             .findFirst()
             .orElse(getType()),
-        getFullPathAsString());
-
-    Preconditions.checkState(
-        getType() != Type.VALUE || !getCoalesce().isEmpty(),
-        "Type VALUE may only be used with coalesce. Found: %s. Path: %s.",
-        getType(),
         getFullPathAsString());
   }
 
@@ -939,7 +950,7 @@ public interface FeatureSchema
     return visitor.visit(
         this,
         parents,
-        getProperties().stream().map(visit).collect(Collectors.toList()),
+        getPropertyMap().values().stream().map(visit).collect(Collectors.toList()),
         getMerge().stream()
             .map(
                 partial -> {
@@ -961,5 +972,34 @@ public interface FeatureSchema
                       .build();
                 })
             .collect(Collectors.toList()));
+  }
+
+  default FeatureSchema with(Consumer<ImmutableFeatureSchema.Builder> changes) {
+    ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(this);
+
+    changes.accept(builder);
+
+    if (!getConcat().isEmpty()) {
+      builder.concat(
+          getConcat().stream().map(concat -> apply(concat, changes)).collect(Collectors.toList()));
+    }
+
+    if (!getCoalesce().isEmpty()) {
+      builder.coalesce(
+          getCoalesce().stream()
+              .map(coalesce -> apply(coalesce, changes))
+              .collect(Collectors.toList()));
+    }
+
+    return builder.build();
+  }
+
+  static FeatureSchema apply(
+      FeatureSchema schema, Consumer<ImmutableFeatureSchema.Builder> changes) {
+    ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(schema);
+
+    changes.accept(builder);
+
+    return builder.build();
   }
 }

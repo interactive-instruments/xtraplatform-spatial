@@ -7,6 +7,9 @@ dependencies {
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-strings')
+
+
+    testFixturesAnnotationProcessor "org.immutables:value:2.8.8"
 }
 
 moduleInfo {

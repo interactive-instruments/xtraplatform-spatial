@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.ii.xtraplatform.base.domain.LogContext;
@@ -20,7 +21,12 @@ import de.ii.xtraplatform.features.app.FeatureChangeHandlerImpl;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension.LIFECYCLE_HOOK;
 import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
+import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping.Builder;
+import de.ii.xtraplatform.features.domain.SchemaBase.Scope;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.features.domain.transform.SchemaTransformerChain;
 import de.ii.xtraplatform.features.domain.transform.WithScope;
+import de.ii.xtraplatform.features.domain.transform.WithoutProperties;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Runner;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
@@ -30,6 +36,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -47,9 +54,12 @@ public abstract class AbstractFeatureProvider<
     implements FeatureProvider2, FeatureQueries {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
+  protected static final WithScope WITH_SCOPE_RETURNABLE = new WithScope(Scope.RETURNABLE);
   protected static final WithScope WITH_SCOPE_QUERIES =
-      new WithScope(EnumSet.of(SchemaBase.Scope.RETURNABLE, SchemaBase.Scope.SORTABLE));
-  protected static final WithScope WITH_SCOPE_MUTATIONS =
+      new WithScope(
+          EnumSet.of(
+              SchemaBase.Scope.RETURNABLE, SchemaBase.Scope.QUERYABLE, SchemaBase.Scope.SORTABLE));
+  protected static final WithScope WITH_SCOPE_RECEIVABLE =
       new WithScope(SchemaBase.Scope.RECEIVABLE);
 
   private final ConnectorFactory connectorFactory;
@@ -334,12 +344,12 @@ public abstract class AbstractFeatureProvider<
 
   protected abstract FeatureTokenDecoder<
           T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(Query query);
+      getDecoder(Query query, Map<String, SchemaMapping> mappings);
 
   protected FeatureTokenDecoder<
           T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
       getDecoderPassThrough(Query query) {
-    return getDecoder(query);
+    return getDecoder(query, Map.of());
   }
 
   protected List<FeatureTokenTransformer> getDecoderTransformers() {
@@ -397,7 +407,10 @@ public abstract class AbstractFeatureProvider<
 
   // TODO: encodingOptions vs executionOptions
   private FeatureTokenSource getFeatureTokenSource(
-      Query query, Map<String, String> virtualTables, boolean passThrough) {
+      Query query,
+      Map<String, PropertyTransformations> propertyTransformations,
+      Map<String, String> beforeHookResults,
+      boolean passThrough) {
     TypeQuery typeQuery =
         query instanceof MultiFeatureQuery
             ? ((MultiFeatureQuery) query).getQueries().get(0)
@@ -405,7 +418,7 @@ public abstract class AbstractFeatureProvider<
 
     getQueryEncoder().validate(typeQuery, query);
 
-    U transformedQuery = getQueryEncoder().encode(query, virtualTables);
+    U transformedQuery = getQueryEncoder().encode(query, beforeHookResults);
     // TODO: remove options, already embedded in SqlQuerySet
     V options = getQueryEncoder().getOptions(typeQuery, query);
     Reactive.Source<T> source = getConnector().getSourceStream(transformedQuery, options);
@@ -415,7 +428,10 @@ public abstract class AbstractFeatureProvider<
             FeatureSchema,
             SchemaMapping,
             FeatureEventHandler.ModifiableContext<FeatureSchema, SchemaMapping>>
-        decoder = passThrough ? getDecoderPassThrough(query) : getDecoder(query);
+        decoder =
+            passThrough
+                ? getDecoderPassThrough(query)
+                : getDecoder(query, createMapping(query, propertyTransformations));
 
     FeatureTokenSource featureSource = source.via(decoder);
 
@@ -426,23 +442,79 @@ public abstract class AbstractFeatureProvider<
     return featureSource;
   }
 
+  private Map<String, SchemaMapping> createMapping(
+      Query query, Map<String, PropertyTransformations> propertyTransformations) {
+    if (query instanceof FeatureQuery) {
+      FeatureQuery featureQuery = (FeatureQuery) query;
+
+      WithScope withScope =
+          featureQuery.getSchemaScope() == SchemaBase.Scope.RETURNABLE
+              ? WITH_SCOPE_RETURNABLE
+              : WITH_SCOPE_RECEIVABLE;
+
+      return Map.of(
+          featureQuery.getType(), createMapping(featureQuery, withScope, propertyTransformations));
+    }
+
+    if (query instanceof MultiFeatureQuery) {
+      return ((MultiFeatureQuery) query)
+          .getQueries().stream()
+              .map(
+                  typeQuery ->
+                      Map.entry(
+                          typeQuery.getType(),
+                          createMapping(typeQuery, WITH_SCOPE_RETURNABLE, propertyTransformations)))
+              .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+    }
+
+    return Map.of();
+  }
+
+  private SchemaMapping createMapping(
+      TypeQuery query,
+      WithScope withScope,
+      Map<String, PropertyTransformations> propertyTransformations) {
+    SchemaTransformerChain schemaTransformations =
+        propertyTransformations
+            .get(query.getType())
+            .getSchemaTransformations(
+                null,
+                !(query instanceof FeatureQuery) || !((FeatureQuery) query).returnsSingleFeature());
+
+    return new Builder()
+        .targetSchema(
+            getData()
+                .getTypes()
+                .get(query.getType())
+                .accept(withScope)
+                .accept(schemaTransformations)
+                .accept(new WithoutProperties(query.getFields(), query.skipGeometry())))
+        .sourcePathTransformer(this::applySourcePathDefaults)
+        .build();
+  }
+
+  protected String applySourcePathDefaults(String path, boolean isValue) {
+    return path;
+  }
+
   protected <W extends ResultBase> CompletionStage<W> runQuery(
       BiFunction<FeatureTokenSource, Map<String, String>, Stream<W>> stream,
       Query query,
+      Map<String, PropertyTransformations> propertyTransformations,
       boolean passThrough) {
-    // TODO: rename to context?
-    Map<String, String> virtualTables = beforeQuery(query);
+    Map<String, String> beforeHookResults = beforeQuery(query);
 
-    FeatureTokenSource tokenSource = getFeatureTokenSource(query, virtualTables, passThrough);
+    FeatureTokenSource tokenSource =
+        getFeatureTokenSource(query, propertyTransformations, beforeHookResults, passThrough);
 
     Reactive.RunnableStream<W> runnableStream =
-        stream.apply(tokenSource, virtualTables).on(streamRunner);
+        stream.apply(tokenSource, beforeHookResults).on(streamRunner);
 
     return runnableStream.run().whenComplete((result, throwable) -> afterQuery(query));
   }
 
   private Map<String, String> beforeQuery(Query query) {
-    Map<String, String> virtualTables = new HashMap<>();
+    Map<String, String> beforeHookResults = new HashMap<>();
 
     extensionRegistry
         .getAll()
@@ -454,11 +526,11 @@ public abstract class AbstractFeatureProvider<
                     getData(),
                     getConnector(),
                     query,
-                    virtualTables::put);
+                    beforeHookResults::put);
               }
             });
 
-    return virtualTables;
+    return beforeHookResults;
   }
 
   private void afterQuery(Query query) {

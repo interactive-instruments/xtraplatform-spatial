@@ -61,11 +61,14 @@ public class FeatureStreamImpl implements FeatureStream {
   public CompletionStage<Result> runWith(
       Sink<Object> sink, Map<String, PropertyTransformations> propertyTransformations) {
 
+    Map<String, PropertyTransformations> mergedTransformations =
+        getMergedTransformations(propertyTransformations);
+
     BiFunction<FeatureTokenSource, Map<String, String>, Stream<Result>> stream =
         (tokenSource, virtualTables) -> {
           FeatureTokenSource source =
               doTransform
-                  ? getFeatureTokenSourceTransformed(tokenSource, propertyTransformations)
+                  ? getFeatureTokenSourceTransformed(tokenSource, mergedTransformations)
                   : tokenSource;
           ImmutableResult.Builder resultBuilder = ImmutableResult.builder();
           final ETag.Incremental eTag = ETag.incremental();
@@ -112,18 +115,21 @@ public class FeatureStreamImpl implements FeatureStream {
                   });
         };
 
-    return runner.runQuery(stream, query, !doTransform);
+    return runner.runQuery(stream, query, mergedTransformations, !doTransform);
   }
 
   @Override
   public <X> CompletionStage<ResultReduced<X>> runWith(
       SinkReduced<Object, X> sink, Map<String, PropertyTransformations> propertyTransformations) {
 
+    Map<String, PropertyTransformations> mergedTransformations =
+        getMergedTransformations(propertyTransformations);
+
     BiFunction<FeatureTokenSource, Map<String, String>, Reactive.Stream<ResultReduced<X>>> stream =
         (tokenSource, virtualTables) -> {
           FeatureTokenSource source =
               doTransform
-                  ? getFeatureTokenSourceTransformed(tokenSource, propertyTransformations)
+                  ? getFeatureTokenSourceTransformed(tokenSource, mergedTransformations)
                   : tokenSource;
           ImmutableResultReduced.Builder<X> resultBuilder = ImmutableResultReduced.<X>builder();
           final ETag.Incremental eTag = ETag.incremental();
@@ -172,18 +178,14 @@ public class FeatureStreamImpl implements FeatureStream {
                   });
         };
 
-    return runner.runQuery(stream, query, !doTransform);
+    return runner.runQuery(stream, query, mergedTransformations, !doTransform);
   }
 
   private FeatureTokenSource getFeatureTokenSourceTransformed(
       FeatureTokenSource featureTokenSource,
       Map<String, PropertyTransformations> propertyTransformations) {
-
-    Map<String, PropertyTransformations> mergedTransformations =
-        getMergedTransformations(propertyTransformations);
-
-    FeatureTokenTransformerSchemaMappings schemaMapper =
-        new FeatureTokenTransformerSchemaMappings(mergedTransformations);
+    FeatureTokenTransformerMappings schemaMapper =
+        new FeatureTokenTransformerMappings(propertyTransformations);
 
     Optional<CrsTransformer> crsTransformer =
         query
@@ -194,15 +196,19 @@ public class FeatureStreamImpl implements FeatureStream {
                         data.getNativeCrs().orElse(OgcCrs.CRS84), targetCrs));
     FeatureTokenTransformerValueMappings valueMapper =
         new FeatureTokenTransformerValueMappings(
-            mergedTransformations, codelists, data.getNativeTimeZone(), crsTransformer);
+            propertyTransformations, codelists, data.getNativeTimeZone(), crsTransformer);
 
     FeatureTokenTransformerRemoveEmptyOptionals cleaner =
         new FeatureTokenTransformerRemoveEmptyOptionals();
 
-    FeatureTokenValidator validator = new FeatureTokenValidator();
+    FeatureTokenSource tokenSourceTransformed =
+        featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner);
 
-    return featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner);
-    // .via(validator);
+    if (FeatureTokenValidator.LOGGER.isTraceEnabled()) {
+      tokenSourceTransformed = tokenSourceTransformed.via(new FeatureTokenValidator());
+    }
+
+    return tokenSourceTransformed;
   }
 
   private Map<String, PropertyTransformations> getMergedTransformations(
@@ -254,7 +260,7 @@ public class FeatureStreamImpl implements FeatureStream {
   private Map<String, List<PropertyTransformation>> getProviderTransformations(
       FeatureSchema featureSchema) {
     return featureSchema
-        .accept(AbstractFeatureProvider.WITH_SCOPE_QUERIES)
+        .accept(AbstractFeatureProvider.WITH_SCOPE_RETURNABLE)
         .accept(
             (schema, visitedProperties) ->
                 java.util.stream.Stream.concat(
@@ -286,7 +292,7 @@ public class FeatureStreamImpl implements FeatureStream {
   private Map<String, List<PropertyTransformation>> getProviderTransformationsMutations(
       FeatureSchema featureSchema) {
     return featureSchema
-        .accept(AbstractFeatureProvider.WITH_SCOPE_MUTATIONS)
+        .accept(AbstractFeatureProvider.WITH_SCOPE_RECEIVABLE)
         .accept(
             (schema, visitedProperties) ->
                 java.util.stream.Stream.concat(

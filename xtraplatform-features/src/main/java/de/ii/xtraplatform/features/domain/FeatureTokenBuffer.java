@@ -57,6 +57,7 @@ public class FeatureTokenBuffer<
   public void bufferInsert(Object token) {
     if (mark > -1) {
       buffer.add(mark, token);
+      this.mark++;
     } else {
       throw new IllegalStateException("no mark set");
     }

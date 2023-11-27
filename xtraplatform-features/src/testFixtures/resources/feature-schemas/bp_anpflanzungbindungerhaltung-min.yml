@@ -1,0 +1,128 @@
+# schema references, mapping operations and feature refs are already resolved
+sourcePath: "/coretable{filter=featuretype='BP_AnpflanzungBindungErhaltung'}"
+type: OBJECT
+objectType: BP_AnpflanzungBindungErhaltung
+properties:
+  oid:
+    sourcePath: id
+    type: STRING
+    role: ID
+  hatGenerAttribut:
+    sourcePath: "[JSON]properties/hatGenerAttribut"
+    type: OBJECT_ARRAY
+    objectType: XP_GenerAttribut
+    constraints:
+      minOccurrence: 0
+    properties:
+      name:
+        sourcePath: name
+        type: STRING
+        constraints:
+          required: true
+      wert:
+        type: VALUE_ARRAY
+        valueType: VALUE
+        sourcePaths:
+          - wert_integer
+          - wert_double
+          - wert_string
+        coalesce:
+          - sourcePath: wert_integer
+            type: INTEGER
+          - sourcePath: wert_double
+            type: FLOAT
+          - sourcePath: wert_string
+            type: STRING
+        transformations:
+          - coalesce: false
+  gehoertZuBereich:
+    type: OBJECT
+    constraints:
+      required: true
+    sourcePath: '[ref=id]coretable'
+    refType: DYNAMIC
+    properties:
+      id:
+        type: STRING
+        sourcePath: id
+      type:
+        type: STRING
+        sourcePath: featuretype
+        constraints:
+          enum:
+            - BP_Bereich
+            - FP_Bereich
+            - LP_Bereich
+            - RP_Bereich
+            - SO_Bereich
+      title:
+        type: STRING
+        sourcePath: '[JSON]properties/nummer'
+  rechtscharakter:
+    sourcePath: "[JSON]properties/rechtscharakter"
+    type: STRING
+    constraints:
+      codelist: XP_Rechtscharakter
+      enum:
+        - "1000"
+        - "2000"
+        - "3000"
+        - "4000"
+        - "4100"
+        - "4200"
+        - "4300"
+        - "4400"
+        - "4500"
+        - "4600"
+        - "4700"
+        - "5000"
+        - "5100"
+        - "5200"
+        - "5300"
+        - "6000"
+        - "7000"
+        - "8000"
+        - "9998"
+        - "9999"
+      required: true
+  position:
+    sourcePath: geometry
+    type: GEOMETRY
+    role: PRIMARY_GEOMETRY
+    geometryType: ANY
+    constraints:
+      required: true
+  nordwinkel:
+    sourcePath: "[JSON]properties/nordwinkel"
+    type: FLOAT
+  massnahme:
+    sourcePath: "[JSON]properties/massnahme"
+    type: STRING
+    constraints:
+      codelist: XP_ABEMassnahmenTypen
+      enum:
+        - "1000"
+        - "2000"
+        - "3000"
+  gegenstand:
+    sourcePath: "[JSON]properties/gegenstand"
+    type: VALUE_ARRAY
+    valueType: STRING
+    constraints:
+      codelist: XP_AnpflanzungBindungErhaltungsGegenstand
+      enum:
+        - "1000"
+        - "1100"
+        - "1200"
+        - "2000"
+        - "2050"
+        - "2100"
+        - "2200"
+        - "3000"
+        - "4000"
+        - "5000"
+        - "6000"
+      minOccurrence: 0
+  istAusgleich:
+    sourcePath: "[JSON]properties/istAusgleich"
+    type: BOOLEAN

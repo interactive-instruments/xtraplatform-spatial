@@ -7,15 +7,16 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.SchemaMapping;
+import java.util.List;
 
-public interface ContextTransformer {
+public interface DynamicTargetSchemaTransformer {
 
-  void reset();
+  boolean isApplicableDynamic(List<String> path);
 
-  boolean transform(
-      ModifiableContext<FeatureSchema, SchemaMapping> context,
-      ModifiableContext<FeatureSchema, SchemaMapping> newContext);
+  default List<String> transformPathDynamic(List<String> path) {
+    return path;
+  }
+
+  List<FeatureSchema> transformSchemaDynamic(List<FeatureSchema> schemas, List<String> indexedPath);
 }

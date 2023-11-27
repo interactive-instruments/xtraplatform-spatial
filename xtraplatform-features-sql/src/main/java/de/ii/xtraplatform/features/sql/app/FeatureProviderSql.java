@@ -44,14 +44,12 @@ import de.ii.xtraplatform.features.domain.FeatureStreamImpl;
 import de.ii.xtraplatform.features.domain.FeatureTokenDecoder;
 import de.ii.xtraplatform.features.domain.FeatureTokenSource;
 import de.ii.xtraplatform.features.domain.FeatureTokenTransformer;
-import de.ii.xtraplatform.features.domain.FeatureTokenTransformerSorting;
 import de.ii.xtraplatform.features.domain.FeatureTransactions;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Builder;
 import de.ii.xtraplatform.features.domain.FeatureTransactions.MutationResult.Type;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureQuery;
 import de.ii.xtraplatform.features.domain.ImmutableMultiFeatureQuery;
 import de.ii.xtraplatform.features.domain.ImmutableMutationResult;
-import de.ii.xtraplatform.features.domain.ImmutableSchemaMapping;
 import de.ii.xtraplatform.features.domain.ImmutableSubQuery;
 import de.ii.xtraplatform.features.domain.MultiFeatureQueries;
 import de.ii.xtraplatform.features.domain.MultiFeatureQuery;
@@ -65,7 +63,9 @@ import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SourceSchemaValidator;
 import de.ii.xtraplatform.features.domain.transform.OnlyQueryables;
 import de.ii.xtraplatform.features.domain.transform.OnlySortables;
-import de.ii.xtraplatform.features.domain.transform.WithScope;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformationsCollector;
+import de.ii.xtraplatform.features.domain.transform.SchemaTransformerChain;
 import de.ii.xtraplatform.features.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.features.sql.SqlPathSyntax;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
@@ -151,6 +151,7 @@ public class FeatureProviderSql
   private SqlPathParser pathParser3;
   private SourceSchemaValidator<SchemaSql> sourceSchemaValidator;
   private Map<String, List<SchemaSql>> tableSchemas;
+  private Map<String, List<SchemaSql>> tableSchemasQueryables;
   private Map<String, List<SchemaSql>> tableSchemasMutations;
 
   @AssistedInject
@@ -209,9 +210,27 @@ public class FeatureProviderSql
         getData().getTypes().entrySet().stream()
             .map(
                 entry ->
-                    new SimpleImmutableEntry<>(
+                    Map.entry(
                         entry.getKey(),
                         entry.getValue().accept(WITH_SCOPE_QUERIES).accept(querySchemaDeriver)))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+    this.tableSchemasQueryables =
+        getData().getTypes().entrySet().stream()
+            .map(
+                entry -> {
+                  PropertyTransformations propertyTransformations =
+                      entry.getValue().accept(new PropertyTransformationsCollector());
+                  SchemaTransformerChain schemaTransformations =
+                      propertyTransformations.getSchemaTransformations(null, false);
+
+                  return Map.entry(
+                      entry.getKey(),
+                      entry
+                          .getValue()
+                          .accept(schemaTransformations)
+                          .accept(WITH_SCOPE_QUERIES)
+                          .accept(querySchemaDeriver));
+                })
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     boolean success = super.onStartup();
@@ -239,40 +258,34 @@ public class FeatureProviderSql
     AggregateStatsQueryGenerator queryGeneratorSql =
         new AggregateStatsQueryGenerator(sqlDialect, filterEncoder);
 
-    SqlQueryTemplatesDeriver queryTemplatesDeriver =
-        new SqlQueryTemplatesDeriver(
-            filterEncoder,
-            sqlDialect,
-            getData().getQueryGeneration().getComputeNumberMatched(),
-            false);
-
     this.tableSchemasMutations =
         getData().getTypes().entrySet().stream()
             .map(
                 entry ->
                     new SimpleImmutableEntry<>(
                         entry.getKey(),
-                        entry.getValue().accept(WITH_SCOPE_MUTATIONS).accept(querySchemaDeriver)))
+                        entry.getValue().accept(WITH_SCOPE_RECEIVABLE).accept(querySchemaDeriver)))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     Map<String, List<SqlQueryTemplates>> allQueryTemplates =
         tableSchemas.entrySet().stream()
             .map(
-                entry ->
-                    new SimpleImmutableEntry<>(
-                        entry.getKey(),
-                        entry.getValue().stream()
-                            .map(
-                                schemaSql ->
-                                    schemaSql.accept(
-                                        new SqlQueryTemplatesDeriver(
-                                            filterEncoder,
-                                            sqlDialect,
-                                            getData()
-                                                .getQueryGeneration()
-                                                .getComputeNumberMatched(),
-                                            true)))
-                            .collect(Collectors.toList())))
+                entry -> {
+                  final int[] i = {0};
+                  return new SimpleImmutableEntry<>(
+                      entry.getKey(),
+                      entry.getValue().stream()
+                          .map(
+                              schemaSql ->
+                                  schemaSql.accept(
+                                      new SqlQueryTemplatesDeriver(
+                                          tableSchemasQueryables.get(entry.getKey()).get(i[0]++),
+                                          filterEncoder,
+                                          sqlDialect,
+                                          getData().getQueryGeneration().getComputeNumberMatched(),
+                                          true)))
+                          .collect(Collectors.toList()));
+                })
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations =
@@ -284,10 +297,16 @@ public class FeatureProviderSql
                         ImmutableList.of(
                             entry
                                 .getValue()
-                                .accept(WITH_SCOPE_MUTATIONS)
+                                .accept(WITH_SCOPE_RECEIVABLE)
                                 .accept(querySchemaDeriver)
                                 .get(0)
-                                .accept(queryTemplatesDeriver))))
+                                .accept(
+                                    new SqlQueryTemplatesDeriver(
+                                        null,
+                                        filterEncoder,
+                                        sqlDialect,
+                                        getData().getQueryGeneration().getComputeNumberMatched(),
+                                        false)))))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     this.queryTransformer =
@@ -328,7 +347,7 @@ public class FeatureProviderSql
       for (FeatureSchema fs : getData().getTypes().values()) {
         sourceSchema.put(
             fs.getName(),
-            fs.accept(WITH_SCOPE_MUTATIONS)
+            fs.accept(WITH_SCOPE_RECEIVABLE)
                 .accept(new MutationSchemaDeriver(pathParser2, pathParser3)));
       }
     } catch (Throwable e) {
@@ -456,7 +475,8 @@ public class FeatureProviderSql
     return Optional.ofNullable(sourceSchemaValidator);
   }
 
-  private String applySourcePathDefaults(String path, boolean isValue) {
+  @Override
+  protected String applySourcePathDefaults(String path, boolean isValue) {
     Optional<String> schemaPrefix = getData().getSourcePathDefaults().getSchema();
     if (schemaPrefix.isPresent() && !isValue) {
       return pathParser3.tablePathWithDefaults(path);
@@ -467,22 +487,9 @@ public class FeatureProviderSql
   @Override
   protected FeatureTokenDecoder<
           SqlRow, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
-      getDecoder(Query query) {
+      getDecoder(Query query, Map<String, SchemaMapping> mappings) {
     if (query instanceof FeatureQuery) {
       FeatureQuery featureQuery = (FeatureQuery) query;
-
-      WithScope withScope =
-          featureQuery.getSchemaScope() == SchemaBase.Scope.RETURNABLE
-              ? WITH_SCOPE_QUERIES
-              : WITH_SCOPE_MUTATIONS;
-
-      Map<String, SchemaMapping> mappings =
-          ImmutableMap.of(
-              featureQuery.getType(),
-              new ImmutableSchemaMapping.Builder()
-                  .targetSchema(getData().getTypes().get(featureQuery.getType()).accept(withScope))
-                  .sourcePathTransformer(this::applySourcePathDefaults)
-                  .build());
 
       List<SchemaSql> schemas =
           featureQuery.getSchemaScope() == SchemaBase.Scope.RETURNABLE
@@ -494,22 +501,6 @@ public class FeatureProviderSql
 
     if (query instanceof MultiFeatureQuery) {
       MultiFeatureQuery multiFeatureQuery = (MultiFeatureQuery) query;
-
-      Map<String, SchemaMapping> mappings =
-          multiFeatureQuery.getQueries().stream()
-              .map(
-                  typeQuery ->
-                      new SimpleImmutableEntry<>(
-                          typeQuery.getType(),
-                          new ImmutableSchemaMapping.Builder()
-                              .targetSchema(
-                                  getData()
-                                      .getTypes()
-                                      .get(typeQuery.getType())
-                                      .accept(WITH_SCOPE_QUERIES))
-                              .sourcePathTransformer(this::applySourcePathDefaults)
-                              .build()))
-              .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
       List<SchemaSql> schemas =
           multiFeatureQuery.getQueries().stream()
@@ -524,7 +515,7 @@ public class FeatureProviderSql
 
   @Override
   protected List<FeatureTokenTransformer> getDecoderTransformers() {
-    return ImmutableList.of(new FeatureTokenTransformerSorting());
+    return ImmutableList.of(); // new FeatureTokenTransformerSorting());
   }
 
   @Override
@@ -733,7 +724,7 @@ public class FeatureProviderSql
 
     List<SchemaSql> sqlSchema =
         migrated
-            .accept(WITH_SCOPE_MUTATIONS)
+            .accept(WITH_SCOPE_RECEIVABLE)
             .accept(new MutationSchemaDeriver(pathParser2, pathParser3));
 
     if (sqlSchema.isEmpty()) {
@@ -789,7 +780,7 @@ public class FeatureProviderSql
     List<SchemaSql> sqlSchema =
         schema
             .get()
-            .accept(WITH_SCOPE_MUTATIONS)
+            .accept(WITH_SCOPE_RECEIVABLE)
             .accept(new MutationSchemaDeriver(pathParser2, pathParser3));
 
     if (sqlSchema.isEmpty()) {

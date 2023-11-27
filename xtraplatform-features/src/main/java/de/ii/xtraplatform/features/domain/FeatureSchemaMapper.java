@@ -336,7 +336,7 @@ public class FeatureSchemaMapper<T extends SchemaBase<T>> implements FeatureRead
   }
 
   private List<T> getTargetSchemas(List<String> path, Map<String, String> context) {
-    List<T> targetSchemas = mapping.getTargetSchemas(path);
+    List<T> targetSchemas = mapping.getSchemasForTargetPath(path);
 
     if (targetSchemas.isEmpty() && context.containsKey("type")) {
       targetSchemas =

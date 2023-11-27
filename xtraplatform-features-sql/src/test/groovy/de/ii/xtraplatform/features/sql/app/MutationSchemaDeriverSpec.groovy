@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlImpl
+import de.ii.xtraplatform.features.domain.FeatureSchemaFixtures
 import de.ii.xtraplatform.features.sql.domain.SqlPathParser
 import de.ii.xtraplatform.features.sql.ImmutableSqlPathSyntax
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults
@@ -43,7 +44,7 @@ class MutationSchemaDeriverSpec extends Specification {
         where:
 
         casename       | source                             || expected
-        "value array"  | FeatureSchemaFixtures.VALUE_ARRAY  || MutationSchemaFixtures.VALUE_ARRAY
+        "value array"  | FeatureSchemaFixtures.VALUE_ARRAY || MutationSchemaFixtures.VALUE_ARRAY
         "object array" | FeatureSchemaFixtures.OBJECT_ARRAY || MutationSchemaFixtures.OBJECT_ARRAY
     }
 

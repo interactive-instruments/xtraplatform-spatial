@@ -33,6 +33,7 @@ dependencies {
     embeddedFlat group: 'com.github.jsqlparser', name: 'jsqlparser', version: '3.2'
 
     testImplementation(testFixtures(project(":xtraplatform-cql")))
+    testImplementation(testFixtures(project(":xtraplatform-features")))
 }
 
 moduleInfo {

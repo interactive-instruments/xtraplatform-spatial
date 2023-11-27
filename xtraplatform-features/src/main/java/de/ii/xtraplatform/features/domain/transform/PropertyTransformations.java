@@ -11,8 +11,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
-import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
-import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import java.time.ZoneId;
 import java.util.AbstractMap;
@@ -22,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -114,25 +111,41 @@ public interface PropertyTransformations {
       }
 
       @Override
+      public TokenSliceTransformerChain getTokenSliceTransformations(SchemaMapping schemaMapping) {
+        return PropertyTransformations.super.getTokenSliceTransformations(
+            schemaMapping, substitutions::get);
+      }
+
+      @Override
+      public TokenSliceTransformerChain getTokenSliceTransformations(
+          SchemaMapping schemaMapping, Function<String, String> substitutionLookup) {
+        return PropertyTransformations.super.getTokenSliceTransformations(
+            schemaMapping,
+            key ->
+                substitutions.containsKey(key)
+                    ? substitutions.get(key)
+                    : substitutionLookup.apply(key));
+      }
+
+      @Override
       public PropertyTransformations mergeInto(PropertyTransformations source) {
         return PropertyTransformations.super.mergeInto(source).withSubstitutions(substitutions);
       }
     };
   }
 
-  default TransformerChain<FeatureSchema, FeaturePropertySchemaTransformer>
-      getSchemaTransformations(
-          SchemaMapping schemaMapping,
-          boolean inCollection,
-          BiFunction<String, String, String> flattenedPathProvider) {
-    return new SchemaTransformerChain(
-        getTransformations(), schemaMapping, inCollection, flattenedPathProvider);
+  default SchemaTransformerChain getSchemaTransformations(
+      SchemaMapping schemaMapping, boolean inCollection) {
+    return new SchemaTransformerChain(getTransformations(), schemaMapping, inCollection);
   }
 
-  default TransformerChain<
-          ModifiableContext<FeatureSchema, SchemaMapping>, FeaturePropertyContextTransformer>
-      getContextTransformations(SchemaMapping schemaMapping) {
-    return new ContextTransformerChain(getTransformations(), schemaMapping);
+  default TokenSliceTransformerChain getTokenSliceTransformations(SchemaMapping schemaMapping) {
+    return new TokenSliceTransformerChain(getTransformations(), schemaMapping, key -> null);
+  }
+
+  default TokenSliceTransformerChain getTokenSliceTransformations(
+      SchemaMapping schemaMapping, Function<String, String> substitutionLookup) {
+    return new TokenSliceTransformerChain(getTransformations(), schemaMapping, substitutionLookup);
   }
 
   default TransformerChain<String, FeaturePropertyValueTransformer> getValueTransformations(

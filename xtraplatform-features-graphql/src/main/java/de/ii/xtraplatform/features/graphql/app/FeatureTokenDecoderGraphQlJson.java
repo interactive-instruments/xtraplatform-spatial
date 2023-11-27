@@ -98,7 +98,7 @@ public class FeatureTokenDecoderGraphQlJson
             .setQuery(featureQuery);
 
     this.arrayPaths =
-        context.mapping().getTargetSchemasByPath().entrySet().stream()
+        context.mapping().getSchemasByTargetPath().entrySet().stream()
             .filter(entry -> entry.getValue().get(0).isArray())
             .map(entry -> entry.getKey())
             .collect(Collectors.toList());

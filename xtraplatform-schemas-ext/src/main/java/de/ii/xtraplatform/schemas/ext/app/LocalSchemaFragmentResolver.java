@@ -18,7 +18,6 @@ import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -92,7 +91,7 @@ public class LocalSchemaFragmentResolver implements SchemaFragmentResolver {
     return new ImmutablePartialObjectSchema.Builder()
         .from(original)
         .sourcePath(resolved.getSourcePath())
-        .schema(Optional.empty())
+        .schema(resolved.getSchema())
         .propertyMap(properties)
         .build();
   }

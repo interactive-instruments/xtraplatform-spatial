@@ -5,15 +5,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.sql.app
+package de.ii.xtraplatform.features.domain
 
-
-import de.ii.xtraplatform.features.domain.FeatureSchema
-import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema
-import de.ii.xtraplatform.features.domain.SchemaBase
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.common.io.Resources
 import de.ii.xtraplatform.features.domain.SchemaBase.Type
 
 class FeatureSchemaFixtures {
+
+    private static final ObjectMapper YAML = YamlSerialization.createYamlMapper();
+
+    public static FeatureSchema fromYaml(String name) {
+        def resource = Resources.getResource("feature-schemas/" + name + ".yml");
+        ImmutableFeatureSchema.Builder builder = YAML.readValue(Resources.toByteArray(resource), ImmutableFeatureSchema.Builder.class);
+        return builder.name(name).build()
+    }
 
     static FeatureSchema VALUE_ARRAY = new ImmutableFeatureSchema.Builder()
             .name("externalprovider")
@@ -41,6 +47,9 @@ class FeatureSchemaFixtures {
                     .sourcePath("[id=explorationsite_fk]explorationsite_task/[task_fk=id]task")
                     .type(Type.OBJECT_ARRAY)
                     .objectType("Link")
+                    .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                            .sourcePath("id")
+                            .type(Type.STRING))
                     .putProperties2("title", new ImmutableFeatureSchema.Builder()
                             .sourcePath("projectname")
                             .type(Type.STRING))
@@ -325,7 +334,93 @@ class FeatureSchemaFixtures {
                     .type(Type.STRING))
             .build()
 
-    //TODO: flags
 
+    public static final FeatureSchema BIOTOP = new ImmutableFeatureSchema.Builder()
+            .name("biotop")
+            .type(Type.OBJECT)
+            .sourcePath("/biotop")
+            .putProperties2("id",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.STRING)
+                            .role(SchemaBase.Role.ID)
+                            .sourcePath("id"))
+            .putProperties2("erfasser_array_join",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.VALUE_ARRAY)
+                            .valueType(Type.STRING)
+                            .sourcePath("[eid=id]erfasser/name"))
+            .putProperties2("kennung",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.STRING)
+                            .sourcePath("kennung"))
+            .putProperties2("erfasser",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.OBJECT)
+                            .putProperties2("name",
+                                    new ImmutableFeatureSchema.Builder()
+                                            .type(Type.STRING)
+                                            .sourcePath("name")))
+            .putProperties2("erfasser_required",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.OBJECT)
+                            .constraints(new ImmutableSchemaConstraints.Builder()
+                                    .required(true)
+                                    .build())
+                            .putProperties2("name",
+                                    new ImmutableFeatureSchema.Builder()
+                                            .type(Type.STRING)
+                                            .sourcePath("name")))
+            .putProperties2("erfasser_array",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.VALUE_ARRAY)
+                            .valueType(Type.STRING)
+                            .sourcePath("name"))
+            .putProperties2("erfasser_array_required",
+                    new ImmutableFeatureSchema.Builder()
+                            .type(Type.VALUE_ARRAY)
+                            .valueType(Type.STRING)
+                            .constraints(new ImmutableSchemaConstraints.Builder()
+                                    .required(true)
+                                    .build())
+                            .sourcePath("name"))
+            .build()
 
+    public static final SchemaMapping BIOTOP_MAPPING = new ImmutableSchemaMapping.Builder()
+            .targetSchema(BIOTOP)
+            .sourcePathTransformer((path, isValue) -> path)
+            .build()
+
+    static FeatureSchema CONCAT_OBJECT_ARRAYS = new ImmutableFeatureSchema.Builder()
+            .name("pfs_plan")
+            .sourcePath("/pfs_plan")
+            .type(Type.OBJECT)
+            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                    .sourcePath("objid")
+                    .type(Type.STRING)
+                    .role(SchemaBase.Role.ID))
+            .putProperties2("hatObjekt", new ImmutableFeatureSchema.Builder()
+                    .type(Type.OBJECT_ARRAY)
+                    .concat([
+                            new ImmutableFeatureSchema.Builder()
+                                    .name("bst_abwasserleitung")
+                                    .sourcePath("[_id=gehoertzuplan_pfs_plan_fk]bst_abwasserleitung")
+                                    .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                                            .sourcePath("_id")
+                                            .type(Type.INTEGER))
+                                    .putProperties2("title", new ImmutableFeatureSchema.Builder()
+                                            .sourcePath("name")
+                                            .type(Type.STRING))
+                                    .build(),
+                            new ImmutableFeatureSchema.Builder()
+                                    .name("bst_erdgasleitung")
+                                    .sourcePath("[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung")
+                                    .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                                            .sourcePath("_id")
+                                            .type(Type.INTEGER))
+                                    .putProperties2("title", new ImmutableFeatureSchema.Builder()
+                                            .sourcePath("name")
+                                            .type(Type.STRING))
+                                    .build(),
+                    ]))
+            .build()
 }

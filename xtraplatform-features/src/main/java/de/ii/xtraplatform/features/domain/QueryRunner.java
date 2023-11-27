@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.features.domain.FeatureStream.ResultBase;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
@@ -17,5 +18,6 @@ public interface QueryRunner {
   <W extends ResultBase> CompletionStage<W> runQuery(
       BiFunction<FeatureTokenSource, Map<String, String>, Stream<W>> stream,
       Query query,
+      Map<String, PropertyTransformations> propertyTransformations,
       boolean passThrough);
 }
