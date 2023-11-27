@@ -57,6 +57,13 @@ public class TokenSliceTransformerChain
                         .stream();
                   }
 
+                  if (Objects.nonNull(schemaMapping)
+                      && schemaMapping.getSchemasByTargetPath().keySet().stream()
+                          .noneMatch(
+                              path -> Objects.equals(propertyPath, String.join(".", path)))) {
+                    return Stream.empty();
+                  }
+
                   return Stream.of(
                       new SimpleEntry<>(
                           propertyPath,

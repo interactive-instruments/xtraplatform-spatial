@@ -12,6 +12,7 @@ import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -38,6 +39,10 @@ public abstract class FeaturePropertyTransformerWrap
 
   @Override
   public List<Object> transform(String currentPropertyPath, List<Object> slice) {
+    if (Objects.isNull(schema)) {
+      return slice;
+    }
+
     if (wrapper() == Type.VALUE_ARRAY) {
       if (findPos(slice, FeatureTokenType.ARRAY, schema.getFullPath(), 0) > -1) {
         return slice;

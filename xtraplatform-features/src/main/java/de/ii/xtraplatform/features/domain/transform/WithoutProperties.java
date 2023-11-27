@@ -30,7 +30,10 @@ public class WithoutProperties implements SchemaVisitorTopDown<FeatureSchema, Fe
       return null;
     }
 
-    if (!fields.isEmpty() && !parents.isEmpty() && !fields.contains(schema.getFullPathAsString())) {
+    if (!schema.isPrimaryGeometry()
+        && !fields.isEmpty()
+        && !parents.isEmpty()
+        && !fields.contains(schema.getFullPathAsString())) {
       return null;
     }
 

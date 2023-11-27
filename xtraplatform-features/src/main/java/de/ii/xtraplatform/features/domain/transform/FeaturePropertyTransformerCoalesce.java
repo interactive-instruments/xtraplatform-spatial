@@ -12,6 +12,7 @@ import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -39,7 +40,7 @@ public abstract class FeaturePropertyTransformerCoalesce
 
   @Override
   public List<Object> transform(String currentPropertyPath, List<Object> slice) {
-    if (slice.isEmpty()) {
+    if (slice.isEmpty() || Objects.isNull(schema)) {
       return slice;
     }
 
