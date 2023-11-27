@@ -57,7 +57,8 @@ public class TokenSliceTransformerChain
                         .stream();
                   }
 
-                  if (Objects.nonNull(schemaMapping)
+                  if (!Objects.equals(propertyPath, PropertyTransformations.WILDCARD)
+                      && Objects.nonNull(schemaMapping)
                       && schemaMapping.getSchemasByTargetPath().keySet().stream()
                           .noneMatch(
                               path -> Objects.equals(propertyPath, String.join(".", path)))) {

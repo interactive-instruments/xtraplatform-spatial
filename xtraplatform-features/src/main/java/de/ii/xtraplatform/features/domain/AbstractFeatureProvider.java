@@ -349,7 +349,7 @@ public abstract class AbstractFeatureProvider<
   protected FeatureTokenDecoder<
           T, FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
       getDecoderPassThrough(Query query) {
-    return getDecoder(query, null);
+    return getDecoder(query, Map.of());
   }
 
   protected List<FeatureTokenTransformer> getDecoderTransformers() {
