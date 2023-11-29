@@ -96,7 +96,13 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
               visitedProperties.stream()
                   .flatMap(
                       property -> {
-                        if (property.isFeatureRef() && isStatic(property.getRefType())) {
+                        if (property.isFeatureRef()
+                            && (isStatic(property.getRefType())
+                                || property.getProperties().stream()
+                                    .anyMatch(
+                                        p ->
+                                            p.getName().equals("type")
+                                                && p.getSourcePath().isPresent()))) {
                           Optional<FeatureSchema> idProperty =
                               property.getProperties().stream()
                                   .filter(Objects::nonNull)
