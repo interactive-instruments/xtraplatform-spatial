@@ -54,7 +54,6 @@ import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
-import de.ii.xtraplatform.features.sql.domain.SqlRelation;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -146,27 +145,31 @@ public class FilterEncoderSql {
       return Optional.empty();
     }
 
-    SqlRelation relation = table.get().getRelation().get(table.get().getRelation().size() - 1);
+    List<Cql2Expression> targetFilters =
+        table.get().getRelation().stream()
+            .filter(rel -> rel.getTargetFilter().isPresent())
+            .map(rel -> cql.read(rel.getTargetFilter().get(), Format.TEXT))
+            .collect(Collectors.toList());
 
-    if (!relation.getTargetFilter().isPresent() && !cqlFilter.isPresent()) {
+    Optional<Cql2Expression> targetFilter =
+        targetFilters.isEmpty()
+            ? Optional.empty()
+            : targetFilters.size() == 1
+                ? Optional.of(targetFilters.get(0))
+                : Optional.of(And.of(targetFilters));
+
+    if (targetFilter.isEmpty() && cqlFilter.isEmpty()) {
       return Optional.empty();
     }
-    if (relation.getTargetFilter().isPresent() && !cqlFilter.isPresent()) {
-      return Optional.of(
-          encodeNested(
-              relation.getTargetFilter().map(filter -> cql.read(filter, Format.TEXT)).get(),
-              table.get(),
-              false));
+    if (targetFilter.isPresent() && cqlFilter.isEmpty()) {
+      return Optional.of(encodeNested(targetFilter.get(), table.get(), false));
     }
-    if (!relation.getTargetFilter().isPresent() && cqlFilter.isPresent()) {
+    if (targetFilters.isEmpty() && cqlFilter.isPresent()) {
       return Optional.of(encodeNested(cqlFilter.get(), table.get(), true));
     }
 
     // TODO: add AND to encoded filters so that isUserFilter is unambiguous
-    Cql2Expression mergedFilter =
-        And.of(
-            relation.getTargetFilter().map(filter -> cql.read(filter, Format.TEXT)).get(),
-            cqlFilter.get());
+    Cql2Expression mergedFilter = And.of(targetFilter.get(), cqlFilter.get());
 
     return Optional.of(encodeNested(mergedFilter, table.get(), true));
   }
