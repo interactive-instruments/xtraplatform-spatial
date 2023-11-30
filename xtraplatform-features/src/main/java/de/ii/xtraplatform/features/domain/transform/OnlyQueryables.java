@@ -78,7 +78,7 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
           return null;
         }
       } else if (!schema.isObject()
-          || (parents.isEmpty() && visitedProperties.stream().noneMatch(Objects::nonNull))) {
+          || (!parents.isEmpty() && visitedProperties.stream().noneMatch(Objects::nonNull))) {
         return null;
       }
 
