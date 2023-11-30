@@ -126,8 +126,8 @@ public interface TileProviderMbtilesData extends TileProviderData {
   @Value.Check
   default void checkSingleTileset() {
     Preconditions.checkState(
-        getTilesets().size() == 1,
-        "There must be exactly one tileset in an MBTiles provider. Found: %s.",
+        getTilesets().size() <= 1,
+        "There can only be one tileset in an MBTiles provider. Found: %s.",
         getTilesets().size());
   }
 }
