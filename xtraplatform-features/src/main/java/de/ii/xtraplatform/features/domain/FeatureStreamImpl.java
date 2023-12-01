@@ -185,7 +185,8 @@ public class FeatureStreamImpl implements FeatureStream {
       FeatureTokenSource featureTokenSource,
       Map<String, PropertyTransformations> propertyTransformations) {
     FeatureTokenTransformerMappings schemaMapper =
-        new FeatureTokenTransformerMappings(propertyTransformations);
+        new FeatureTokenTransformerMappings(
+            propertyTransformations, codelists, data.getNativeTimeZone());
 
     Optional<CrsTransformer> crsTransformer =
         query
@@ -194,9 +195,8 @@ public class FeatureStreamImpl implements FeatureStream {
                 targetCrs ->
                     crsTransformerFactory.getTransformer(
                         data.getNativeCrs().orElse(OgcCrs.CRS84), targetCrs));
-    FeatureTokenTransformerValueMappings valueMapper =
-        new FeatureTokenTransformerValueMappings(
-            propertyTransformations, codelists, data.getNativeTimeZone(), crsTransformer);
+    FeatureTokenTransformerCoordinates valueMapper =
+        new FeatureTokenTransformerCoordinates(crsTransformer);
 
     FeatureTokenTransformerRemoveEmptyOptionals cleaner =
         new FeatureTokenTransformerRemoveEmptyOptionals();

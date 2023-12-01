@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.domain.transform;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
@@ -39,12 +40,23 @@ public interface FeaturePropertyTokenSliceTransformer
       return slice;
     }
 
-    List<String> rootPath = getRootPath(slice);
-    boolean isArray = slice.get(0) == FeatureTokenType.ARRAY;
+    int min = findFirst(slice, pathAsList(currentPropertyPath), 0);
+    int max = findLast(slice, pathAsList(currentPropertyPath), min + 1);
+
+    if (min == -1 || max == -1) {
+      return slice;
+    }
+
+    List<String> rootPath = getRootPath(slice, min);
+    boolean isArray = slice.get(min) == FeatureTokenType.ARRAY;
     List<Object> transformed = new ArrayList<>();
 
+    transformed.addAll(slice.subList(0, min));
+
     if (!isArray) {
-      transformObject(currentPropertyPath, slice, rootPath, 0, slice.size(), transformed);
+      transformObject(currentPropertyPath, slice, rootPath, min, max + 1, transformed);
+
+      transformed.addAll(slice.subList(max + 1, slice.size()));
 
       return transformed;
     }
@@ -52,10 +64,10 @@ public interface FeaturePropertyTokenSliceTransformer
     transformed.add(FeatureTokenType.ARRAY);
     transformed.add(rootPath);
 
-    int start = findPos(slice, FeatureTokenType.OBJECT, rootPath, 0);
+    int start = findPos(slice, FeatureTokenType.OBJECT, rootPath, min);
     int end = findPos(slice, FeatureTokenType.OBJECT_END, rootPath, start);
 
-    while (start > -1 && end > -1) {
+    while (start > -1 && end > -1 && end + 1 <= max) {
       transformObject(currentPropertyPath, slice, rootPath, start, end + 2, transformed);
 
       start = findPos(slice, FeatureTokenType.OBJECT, rootPath, end);
@@ -65,13 +77,21 @@ public interface FeaturePropertyTokenSliceTransformer
     transformed.add(FeatureTokenType.ARRAY_END);
     transformed.add(rootPath);
 
+    transformed.addAll(slice.subList(max + 1, slice.size()));
+
     return transformed;
   }
 
   Joiner PATH_JOINER = Joiner.on('.');
 
+  Splitter PATH_SPLITTER = Splitter.on('.');
+
   default String pathAsString(List<String> path) {
     return PATH_JOINER.join(path);
+  }
+
+  default List<String> pathAsList(String path) {
+    return PATH_SPLITTER.splitToList(path);
   }
 
   default List<String> getRootPath(List<Object> slice) {
@@ -82,6 +102,16 @@ public interface FeaturePropertyTokenSliceTransformer
     }
 
     return (List<String>) slice.get(1);
+  }
+
+  default List<String> getRootPath(List<Object> slice, int min) {
+    if (slice.size() < min + 2
+        || (slice.get(min) != FeatureTokenType.OBJECT && slice.get(min) != FeatureTokenType.ARRAY)
+        || !(slice.get(min + 1) instanceof List)) {
+      throw new IllegalArgumentException("Not a valid object or array");
+    }
+
+    return (List<String>) slice.get(min + 1);
   }
 
   default void checkObject(FeatureSchema schema) {
@@ -123,6 +153,43 @@ public interface FeaturePropertyTokenSliceTransformer
     }
 
     return -1;
+  }
+
+  default int findFirst(List<Object> slice, List<String> path, int offset) {
+    if (offset == -1) {
+      return -1;
+    }
+
+    for (int i = offset; i < slice.size() - 1; i++) {
+      if (slice.get(i) instanceof FeatureTokenType && Objects.equals(slice.get(i + 1), path)) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+  default int findLast(List<Object> slice, List<String> path, int offset) {
+    if (offset == -1) {
+      return -1;
+    }
+    boolean last = false;
+    int pos = -1;
+
+    for (int i = offset; i < slice.size(); i++) {
+      if (slice.get(i) instanceof FeatureTokenType && Objects.equals(slice.get(i + 1), path)) {
+        last = true;
+      } else if (last
+          && slice.get(i) instanceof FeatureTokenType
+          && !Objects.equals(slice.get(i + 1), path)) {
+        last = false;
+        pos = i - 1;
+      } else if (last && i == slice.size() - 1) {
+        pos = i;
+      }
+    }
+
+    return pos;
   }
 
   default List<Object> valueSlice(List<String> path, @Nullable String value, Type type) {

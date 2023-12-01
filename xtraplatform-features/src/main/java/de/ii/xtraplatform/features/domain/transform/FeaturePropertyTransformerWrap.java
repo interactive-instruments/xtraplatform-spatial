@@ -56,7 +56,7 @@ public abstract class FeaturePropertyTransformerWrap
 
       List<Object> slice2 = slice;
       if (findPos(slice, FeatureTokenType.OBJECT, schema.getFullPath(), 0) == -1) {
-        slice2 = wrapSingleValuesWithObject(slice);
+        slice2 = wrapSingleValuesWithObject(slice, false);
       }
 
       return wrapWithObjectArray(slice2);
@@ -162,7 +162,7 @@ public abstract class FeaturePropertyTransformerWrap
     return transformed;
   }
 
-  private List<Object> wrapSingleValuesWithObject(List<Object> slice) {
+  private List<Object> wrapSingleValuesWithObject(List<Object> slice, boolean wrapEachValue) {
     List<Object> transformed = new ArrayList<>();
     boolean lastWasChildOfPath = false;
 
@@ -172,7 +172,7 @@ public abstract class FeaturePropertyTransformerWrap
           transformed.add(FeatureTokenType.OBJECT);
           transformed.add(schema.getFullPath());
           lastWasChildOfPath = true;
-        } else {
+        } else if (wrapEachValue) {
           transformed.add(FeatureTokenType.OBJECT_END);
           transformed.add(schema.getFullPath());
           transformed.add(FeatureTokenType.OBJECT);

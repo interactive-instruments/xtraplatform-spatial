@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Vector;
 import java.util.stream.Collectors;
@@ -35,9 +36,11 @@ public class FeatureEventBuffer<
 
   private final Vector<Integer> events;
   private final Vector<List<Integer>> enclosings;
+  private final Map<String, SchemaMapping> mappings;
   private boolean doBuffer;
   public int current;
   public List<Integer> currentEnclosing;
+  private String lastType;
 
   public FeatureEventBuffer(
       FeatureEventHandler<U, V, W> downstream, W context, Map<String, SchemaMapping> mappings) {
@@ -47,6 +50,7 @@ public class FeatureEventBuffer<
     this.bufferOut = new FeatureTokenReader<>(downstream, context);
     this.events = new Vector<>();
     this.enclosings = new Vector<>();
+    this.mappings = mappings;
 
     this.doBuffer = false;
     this.current = 0;
@@ -74,7 +78,6 @@ public class FeatureEventBuffer<
   public void next(int pos, List<Integer> enclosing) {
     this.current = pos;
     this.currentEnclosing = enclosing;
-    enclosings.set(pos, enclosing);
   }
 
   /**
@@ -161,13 +164,26 @@ public class FeatureEventBuffer<
     int minPos = minPos(current, currentEnclosing);
 
     increase(minPos);
-
-    // increase(current, currentEnclosing);
   }
 
-  void reset() {
+  void reset(String type) {
     Collections.fill(events, 0);
-    Collections.fill(enclosings, List.of());
+
+    if (!Objects.equals(lastType, type)) {
+      Collections.fill(enclosings, List.of());
+
+      this.lastType = type;
+
+      SchemaMapping mapping = mappings.get(lastType);
+
+      for (Entry<List<String>, List<Integer>> entry :
+          mapping.getPositionsByTargetPath().entrySet()) {
+        List<String> path = entry.getKey();
+        List<Integer> pos = entry.getValue();
+
+        enclosings.set(pos.get(0), mapping.getParentPositionsForTargetPath(path).get(0));
+      }
+    }
   }
 
   public void bufferStart() {
@@ -265,7 +281,8 @@ public class FeatureEventBuffer<
 
   @Override
   public void onFeatureStart(W context) {
-    reset();
+    reset(context.type());
+
     if (doBuffer) {
       bufferIn.onFeatureStart(context);
     } else {

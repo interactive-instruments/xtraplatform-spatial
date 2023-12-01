@@ -8,17 +8,22 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.DynamicTargetSchemaTransformer;
 import de.ii.xtraplatform.features.domain.transform.FeatureEventBuffer;
 import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten;
+import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.features.domain.transform.SchemaTransformerChain;
 import de.ii.xtraplatform.features.domain.transform.TokenSliceTransformerChain;
+import de.ii.xtraplatform.features.domain.transform.TransformerChain;
+import java.time.ZoneId;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,16 +34,25 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
       LoggerFactory.getLogger(FeatureTokenTransformerMappings.class);
 
   private final Map<String, PropertyTransformations> propertyTransformations;
+  private final Map<String, Codelist> codelists;
+  private final Optional<ZoneId> nativeTimeZone;
   private Map<String, SchemaTransformerChain> schemaTransformerChains;
   private Map<String, TokenSliceTransformerChain> sliceTransformerChains;
+  private Map<String, TransformerChain<String, FeaturePropertyValueTransformer>>
+      valueTransformerChains;
   private FeatureEventBuffer<
           FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
       downstream;
   private ModifiableContext<FeatureSchema, SchemaMapping> newContext;
+  private TransformerChain<String, FeaturePropertyValueTransformer> currentValueTransformerChain;
 
   public FeatureTokenTransformerMappings(
-      Map<String, PropertyTransformations> propertyTransformations) {
+      Map<String, PropertyTransformations> propertyTransformations,
+      Map<String, Codelist> codelists,
+      Optional<ZoneId> nativeTimeZone) {
     this.propertyTransformations = propertyTransformations;
+    this.codelists = codelists;
+    this.nativeTimeZone = nativeTimeZone;
   }
 
   @Override
@@ -71,6 +85,17 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
                         propertyTransformations
                             .get(entry.getKey())
                             .getTokenSliceTransformations(entry.getValue())))
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+    this.valueTransformerChains =
+        context.mappings().entrySet().stream()
+            .map(
+                entry ->
+                    new SimpleImmutableEntry<>(
+                        entry.getKey(),
+                        propertyTransformations
+                            .get(entry.getKey())
+                            .getValueTransformations(entry.getValue(), codelists, nativeTimeZone)))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     Map<String, SchemaMapping> newMappings =
@@ -131,6 +156,8 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
     downstream.onFeatureStart(newContext);
     downstream.bufferStart();
     downstream.next(0);
+
+    this.currentValueTransformerChain = valueTransformerChains.get(context.type());
   }
 
   @Override
@@ -226,7 +253,14 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
                 ? context.valueType()
                 : schema.getValueType().orElse(schema.getType());
 
-        downstream.onValue(schema.getFullPath(), context.value(), valueType);
+        String path = schema.getFullPathAsString();
+        String value = context.value();
+
+        if (Objects.nonNull(value)) {
+          value = currentValueTransformerChain.transform(path, value);
+        }
+
+        downstream.onValue(schema.getFullPath(), value, valueType);
       }
     }
   }
