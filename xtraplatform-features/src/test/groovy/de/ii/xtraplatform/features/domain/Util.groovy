@@ -38,7 +38,7 @@ class Util {
             Map<String, List<PropertyTransformation>> getTransformations() {
                 return transformations;
             }
-        }])
+        }], Map.of(), Optional.empty())
 
         mapper.init(token -> target.add(token))
 
@@ -62,7 +62,7 @@ class Util {
 
         def mapping = context.mapping()
 
-        for(Object token: source) {
+        for (Object token : source) {
             mapping.getPositionsForTargetPath()
         }
 
