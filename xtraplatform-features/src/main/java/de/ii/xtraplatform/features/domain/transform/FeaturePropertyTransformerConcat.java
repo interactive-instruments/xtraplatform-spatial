@@ -46,18 +46,31 @@ public abstract class FeaturePropertyTransformerConcat
       return slice;
     }
 
-    boolean isArray = slice.get(0) == ARRAY;
+    if (!isObject()) {
+      return transformValues(schema.getFullPath(), slice);
+    }
+
+    int min = findFirst(slice, pathAsList(currentPropertyPath), 0);
+    int max = findLast(slice, pathAsList(currentPropertyPath), min + 1);
+
+    if (min == -1 || max == -1) {
+      return slice;
+    }
+
+    boolean isArray = slice.get(min) == FeatureTokenType.ARRAY;
     List<Object> transformed = new ArrayList<>();
 
     if (!isArray) {
       return slice;
     }
 
+    transformed.addAll(slice.subList(0, min));
+
     if (isObject()) {
-      return concatObjects(slice);
-    } else {
-      // return coalesceValues(slice);
+      transformed.addAll(concatObjects(slice));
     }
+
+    transformed.addAll(slice.subList(max + 1, slice.size()));
 
     return transformed;
   }
@@ -96,28 +109,20 @@ public abstract class FeaturePropertyTransformerConcat
     return transformed;
   }
 
-  private List<Object> coalesceValues(List<Object> slice) {
-    List<Object> transformed = new ArrayList<>();
-    boolean lastWasValueWithPath = false;
+  @Override
+  public void transformValue(List<Object> slice, int start, int end, List<Object> result) {
     boolean skip = false;
 
-    for (int i = 0; i < slice.size(); i++) {
+    for (int i = start; i <= end; i++) {
       if (isValueWithPath(slice, i, schema.getFullPath())) {
-        if (!lastWasValueWithPath) {
-          lastWasValueWithPath = true;
-        } else {
-          skip = true;
-        }
-      } else if (slice.get(i) instanceof FeatureTokenType) {
-        lastWasValueWithPath = false;
         skip = false;
+      } else if (slice.get(i) instanceof FeatureTokenType) {
+        skip = true;
       }
       if (!skip) {
-        transformed.add(slice.get(i));
+        result.add(slice.get(i));
       }
     }
-
-    return transformed;
   }
 
   @Override

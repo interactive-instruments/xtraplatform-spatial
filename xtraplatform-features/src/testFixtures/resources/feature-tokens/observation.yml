@@ -1,0 +1,84 @@
+tokens:
+  - type: VALUE
+    source: /observation/id
+    target: id
+    value: 19906
+    valueType: INTEGER
+  - type: ARRAY
+    source: /observation/[process_fk=id]process
+    target: process
+  - type: OBJECT
+    source: /observation/[process_fk=id]process
+    target: process
+  - type: ARRAY
+    source: /observation/[process_fk=id]process/category_fk
+    target: process.title
+    onlyIf: wrapped
+  - type: VALUE
+    source: /observation/[process_fk=id]process/category_fk
+    target: process.title
+    value: CarbonateContent
+    valueType: STRING
+    onlyIf: source,concat,wrapped
+  - type: VALUE
+    source: /observation/[process_fk=id]process/processstandard_fk
+    target: process.title
+    value: DIN_18129:1996-11
+    valueType: STRING
+    onlyIf: source,concat,wrapped
+  - type: ARRAY_END
+    source: /observation/[process_fk=id]process/category_fk
+    target: process.title
+    onlyIf: wrapped
+  - type: VALUE
+    target: process.title
+    value: CarbonateContent nach DIN_18129:1996-11
+    valueType: STRING
+    onlyIf: reduced
+  - type: VALUE
+    source: /observation/[process_fk=id]process/id
+    target: process.href
+    value: http://localhost:7080/rest/services/geoval/collections/process/items/60914
+    valueType: STRING
+  - type: OBJECT_END
+    source: /observation/[process_fk=id]process
+    target: process
+  - type: OBJECT
+    source: /observation/[process_fk=id]process
+    target: process
+  - type: ARRAY
+    source: /observation/[process_fk=id]process/category_fk
+    target: process.title
+    onlyIf: wrapped
+  - type: VALUE
+    source: /observation/[process_fk=id]process/category_fk
+    target: process.title
+    value: OrganicContent
+    valueType: STRING
+    onlyIf: source,concat,wrapped
+  - type: VALUE
+    source: /observation/[process_fk=id]process/processstandard_fk
+    target: process.title
+    value: DIN_18128:2002-12
+    valueType: STRING
+    onlyIf: source,concat,wrapped
+  - type: ARRAY_END
+    source: /observation/[process_fk=id]process/category_fk
+    target: process.title
+    onlyIf: wrapped
+  - type: VALUE
+    target: process.title
+    value: OrganicContent nach DIN_18128:2002-12
+    valueType: STRING
+    onlyIf: reduced
+  - type: VALUE
+    source: /observation/[process_fk=id]process/id
+    target: process.href
+    value: http://localhost:7080/rest/services/geoval/collections/process/items/61040
+    valueType: STRING
+  - type: OBJECT_END
+    source: /observation/[process_fk=id]process
+    target: process
+  - type: ARRAY_END
+    source: /observation/[process_fk=id]process
+    target: process

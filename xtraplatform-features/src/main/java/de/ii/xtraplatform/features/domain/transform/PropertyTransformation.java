@@ -175,6 +175,14 @@ public interface PropertyTransformation
   @JsonIgnore
   Map<String, String> getObjectAddConstants();
 
+  /**
+   * @langEn Reduces a value array to a string using the same syntax as `stringFormat` but with
+   *     additional replacements for the array indexes.
+   * @langDe Reduziert ein Werte-Array zu einem String mithilfe der `stringFormat`-Syntax aber mit
+   *     zusätzlichen Ersetzungen für die Array-Indizes.
+   */
+  Optional<String> getArrayReduceFormat();
+
   @JsonIgnore
   Optional<Boolean> getCoalesce();
 
