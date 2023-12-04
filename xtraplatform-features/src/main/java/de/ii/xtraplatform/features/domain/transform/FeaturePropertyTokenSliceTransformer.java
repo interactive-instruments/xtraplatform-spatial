@@ -34,8 +34,14 @@ public interface FeaturePropertyTokenSliceTransformer
       int end,
       List<Object> result);
 
+  default void transformValue(List<Object> slice, int start, int end, List<Object> result) {}
+
   @Override
   default List<Object> transform(String currentPropertyPath, List<Object> slice) {
+    return transformObjects(currentPropertyPath, slice);
+  }
+
+  default List<Object> transformObjects(String currentPropertyPath, List<Object> slice) {
     if (slice.isEmpty()) {
       return slice;
     }
@@ -78,6 +84,106 @@ public interface FeaturePropertyTokenSliceTransformer
     transformed.add(rootPath);
 
     transformed.addAll(slice.subList(max + 1, slice.size()));
+
+    return transformed;
+  }
+
+  default List<Object> transformValueArray(List<String> path, List<Object> slice) {
+    if (slice.isEmpty()) {
+      return slice;
+    }
+
+    int min = findFirst(slice, path, 0);
+    int max = findLast(slice, path, min + 1);
+
+    if (min == -1 || max == -1) {
+      return slice;
+    }
+
+    List<Object> before = slice.subList(0, min);
+    List<Object> after = slice.subList(max + 1, slice.size());
+    boolean inArray = before.contains(FeatureTokenType.ARRAY);
+    List<Object> transformed = new ArrayList<>();
+
+    transformed.addAll(before);
+
+    if (!inArray) {
+      transformValue(slice, min, max + 1, transformed);
+    } else {
+
+      int start = findPos(slice, FeatureTokenType.ARRAY, path, min);
+      int end = findPos(slice, FeatureTokenType.ARRAY_END, path, start);
+
+      if (start > -1) {
+        transformed.addAll(slice.subList(min, start));
+      }
+
+      while (start > -1 && end > -1 && end + 1 <= max) {
+        transformValue(slice, start, end, transformed);
+
+        start = findPos(slice, FeatureTokenType.ARRAY, path, end);
+
+        if (start > -1) {
+          transformed.addAll(slice.subList(end + 2, start));
+        } else {
+          transformed.addAll(slice.subList(end + 2, max + 1));
+        }
+
+        end = findPos(slice, FeatureTokenType.ARRAY_END, path, start);
+      }
+    }
+
+    transformed.addAll(after);
+
+    return transformed;
+  }
+
+  default List<Object> transformValues(List<String> path, List<Object> slice) {
+    if (slice.isEmpty()) {
+      return slice;
+    }
+
+    int min = findFirst(slice, path, 0);
+    int max = findLast(slice, path, min + 1);
+
+    if (min == -1 || max == -1) {
+      return slice;
+    }
+
+    List<Object> before = slice.subList(0, min);
+    List<Object> after = slice.subList(max + 1, slice.size());
+    boolean inArray = before.contains(FeatureTokenType.ARRAY);
+    List<Object> transformed = new ArrayList<>();
+
+    transformed.addAll(before);
+
+    if (!inArray) {
+      transformValue(slice, min, max + 1, transformed);
+    } else {
+
+      int start = findPos(slice, FeatureTokenType.VALUE, path, min);
+      int end = findFirstNot(slice, FeatureTokenType.VALUE, path, start);
+
+      if (start > -1) {
+        transformed.addAll(slice.subList(min, start));
+      }
+
+      while (start > -1 && end > -1 && end <= max) {
+        transformValue(slice, start, end, transformed);
+
+        start = findPos(slice, FeatureTokenType.VALUE, path, end);
+
+        if (start > -1) {
+          transformed.addAll(slice.subList(end + 1, start));
+        } else {
+          transformed.addAll(slice.subList(end + 1, max + 1));
+        }
+
+        end = findFirstNot(slice, FeatureTokenType.VALUE, path, start);
+      }
+    }
+
+    transformed.addAll(after);
 
     return transformed;
   }
@@ -141,6 +247,15 @@ public interface FeaturePropertyTokenSliceTransformer
     }
   }
 
+  default void checkValueArray(FeatureSchema schema) {
+    if (schema.getType() != Type.VALUE_ARRAY) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Transformer %s can only be applied to VALUE_ARRAY, found: %s",
+              getType(), schema.getType()));
+    }
+  }
+
   default int findPos(List<Object> slice, FeatureTokenType type, List<String> path, int offset) {
     if (offset == -1) {
       return -1;
@@ -153,6 +268,22 @@ public interface FeaturePropertyTokenSliceTransformer
     }
 
     return -1;
+  }
+
+  default int findFirstNot(
+      List<Object> slice, FeatureTokenType type, List<String> path, int offset) {
+    if (offset == -1) {
+      return -1;
+    }
+
+    for (int i = offset; i < slice.size() - 1; i++) {
+      if (slice.get(i) instanceof FeatureTokenType
+          && (!Objects.equals(slice.get(i), type) || !Objects.equals(slice.get(i + 1), path))) {
+        return i - 1;
+      }
+    }
+
+    return slice.size() - 1;
   }
 
   default int findFirst(List<Object> slice, List<String> path, int offset) {
@@ -245,6 +376,44 @@ public interface FeaturePropertyTokenSliceTransformer
     };
   }
 
+  default Function<String, String> getValueIndexLookup(
+      List<String> path,
+      Function<String, String> genericLookup,
+      List<Object> slice,
+      int from,
+      int to) {
+    Map<String, Integer> valueIndexes = getValueIndexesList(slice, from, to);
+
+    return key -> {
+      if (Objects.isNull(key)) {
+        return null;
+      }
+
+      String lookupWithKey = genericLookup.apply(key);
+
+      if (Objects.nonNull(lookupWithKey)) {
+        return lookupWithKey;
+      }
+
+      String fullKey = joinPath(path) + "." + key;
+      String lookupWithFullKey = genericLookup.apply(fullKey);
+
+      if (Objects.nonNull(lookupWithFullKey)) {
+        return lookupWithFullKey;
+      }
+
+      if (valueIndexes.containsKey(key)) {
+        return getValue(slice, valueIndexes.get(key));
+      }
+
+      if (valueIndexes.containsKey(fullKey)) {
+        return getValue(slice, valueIndexes.get(fullKey));
+      }
+
+      return null;
+    };
+  }
+
   default Map<String, Integer> getValueIndexes(List<Object> slice, int from, int to) {
     Map<String, Integer> valueIndexes = new HashMap<>();
 
@@ -252,6 +421,21 @@ public interface FeaturePropertyTokenSliceTransformer
       if (slice.get(i) == FeatureTokenType.VALUE) {
         if (i + 2 < to && slice.get(i + 1) instanceof List) {
           valueIndexes.put(joinPath((List<String>) slice.get(i + 1)), i + 2);
+        }
+      }
+    }
+
+    return valueIndexes;
+  }
+
+  default Map<String, Integer> getValueIndexesList(List<Object> slice, int from, int to) {
+    Map<String, Integer> valueIndexes = new HashMap<>();
+    int j = 0;
+
+    for (int i = from; i < to; i++) {
+      if (slice.get(i) == FeatureTokenType.VALUE) {
+        if (i + 2 < to && slice.get(i + 1) instanceof List) {
+          valueIndexes.put(Integer.toString(j++), i + 2);
         }
       }
     }

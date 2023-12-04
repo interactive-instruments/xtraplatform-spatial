@@ -269,6 +269,17 @@ public class TokenSliceTransformerChain
           }
 
           propertyTransformation
+              .getArrayReduceFormat()
+              .ifPresent(
+                  stringFormat ->
+                      transformers.add(
+                          ImmutableFeaturePropertyTransformerArrayReduceFormat.builder()
+                              .propertyPath(path)
+                              .parameter(stringFormat)
+                              .substitutionLookup(substitutionLookup)
+                              .build()));
+
+          propertyTransformation
               .getCoalesce()
               .ifPresent(
                   isObject ->
