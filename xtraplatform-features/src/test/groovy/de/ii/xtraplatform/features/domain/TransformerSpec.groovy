@@ -53,7 +53,7 @@ class TransformerSpec extends Specification {
         "object array concat"   | concat("hatObjekt", true)                              | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "source"     | "concat"
         "object array format"   | mapFormat("hatObjekt", ["href": "id::{{id}}"])         | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "mapped"
         "object array reduce"   | reduceFormat("hatObjekt", "id::{{id}}")                | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "reduced"
-        //"object array select" | reduceSelect("hatObjekt", "id")                | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "selected"
+        "object array select"   | reduceSelect("hatObjekt", "1_id")                        | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "selected"
         "concat values"         | concat("process.title", false)                         | "observation"                        | "observation"                        | "source"     | "concat"
         "wrap value array"      | wrap("process.title", VALUE_ARRAY)                     | "observation"                        | "observation"                        | "concat"     | "wrapped"
         "reduce value array"    | arrayReduceFormat("process.title", "{{0}} nach {{1}}") | "observation"                        | "observation"                        | "wrapped"    | "reduced"
