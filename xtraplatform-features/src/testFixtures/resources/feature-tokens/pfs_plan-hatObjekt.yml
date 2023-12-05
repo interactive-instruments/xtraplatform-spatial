@@ -16,7 +16,7 @@ tokens:
     target: hatObjekt.1_id
     value: 1
     valueType: INTEGER
-    onlyIf: source,concat,selected
+    onlyIf: source,concat
   - type: VALUE
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/constant_hatObjekt_37
     target: hatObjekt.1_type
@@ -39,6 +39,11 @@ tokens:
     value: id::1
     valueType: STRING
     onlyIf: reduced
+  - type: VALUE
+    target: hatObjekt
+    value: 1
+    valueType: INTEGER
+    onlyIf: selected
   - type: OBJECT_END
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
     target: hatObjekt
@@ -52,7 +57,7 @@ tokens:
     target: hatObjekt.1_id
     value: 2
     valueType: INTEGER
-    onlyIf: source,concat,selected
+    onlyIf: source,concat
   - type: VALUE
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/constant_hatObjekt_37
     target: hatObjekt.1_type
@@ -75,6 +80,11 @@ tokens:
     value: id::2
     valueType: STRING
     onlyIf: reduced
+  - type: VALUE
+    target: hatObjekt
+    value: 2
+    valueType: INTEGER
+    onlyIf: selected
   - type: OBJECT_END
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
     target: hatObjekt
@@ -96,7 +106,7 @@ tokens:
     target: hatObjekt.2_id
     value: 1
     valueType: INTEGER
-    onlyIf: source,concat,selected
+    onlyIf: source,concat
   - type: VALUE
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/constant_hatObjekt_38
     target: hatObjekt.2_type
@@ -119,6 +129,10 @@ tokens:
     value: id::1
     valueType: STRING
     onlyIf: reduced
+  - type: VALUE
+    target: hatObjekt
+    valueType: STRING
+    onlyIf: selected
   - type: OBJECT_END
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
     target: hatObjekt
@@ -132,7 +146,7 @@ tokens:
     target: hatObjekt.2_id
     value: 2
     valueType: INTEGER
-    onlyIf: source,concat,selected
+    onlyIf: source,concat
   - type: VALUE
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/constant_hatObjekt_38
     target: hatObjekt.2_type
@@ -155,6 +169,10 @@ tokens:
     value: id::2
     valueType: STRING
     onlyIf: reduced
+  - type: VALUE
+    target: hatObjekt
+    valueType: STRING
+    onlyIf: selected
   - type: OBJECT_END
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
     target: hatObjekt

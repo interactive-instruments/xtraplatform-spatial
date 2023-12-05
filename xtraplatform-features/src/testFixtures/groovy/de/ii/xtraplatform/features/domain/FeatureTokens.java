@@ -61,6 +61,8 @@ public interface FeatureTokens {
 
       if (Objects.nonNull(token.getValue())) {
         tokens.add(token.getValue());
+      } else if (token.getType() == FeatureTokenType.VALUE) {
+        tokens.add(null);
       }
 
       if (Objects.nonNull(token.getValueType())) {

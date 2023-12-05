@@ -1,10 +1,7 @@
 package de.ii.xtraplatform.features.domain
 
-import com.fasterxml.jackson.annotation.JsonInclude
+
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator
 import de.ii.xtraplatform.base.domain.JacksonProvider
 import de.ii.xtraplatform.values.api.ValueEncodingJackson
 

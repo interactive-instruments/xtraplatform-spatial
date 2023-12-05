@@ -7,22 +7,14 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.features.domain.ImmutableMappingInfo.Builder;
 import de.ii.xtraplatform.features.domain.transform.DynamicTargetSchemaTransformer;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
@@ -56,74 +48,6 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
 
   static SchemaMapping of(FeatureSchema schema) {
     return new ImmutableSchemaMapping.Builder().targetSchema(schema).build();
-  }
-
-  @Value.Derived
-  @Value.Auxiliary
-  default Map<List<String>, List<MappingInfo>> forSourcePath() {
-    return forPath(
-        new SchemaToPathsVisitor<>(false, getSourcePathTransformer()), this::cleanPath, false);
-  }
-
-  @Value.Derived
-  @Value.Auxiliary
-  default Map<List<String>, List<MappingInfo>> forTargetPath() {
-    return forPath(new SchemaToPathsVisitor<>(true), this::cleanPath, true);
-  }
-
-  // TODO: needed?
-  default Map<List<String>, List<MappingInfo>> forPath(
-      SchemaToPathsVisitor<FeatureSchema> pathsVisitor,
-      Function<List<String>, List<String>> pathCleaner,
-      boolean useTargetPath) {
-    return getTargetSchema().accept(pathsVisitor).asMap().keySet().stream()
-        .map(pathCleaner)
-        .map(
-            path -> {
-              List<FeatureSchema> schemas =
-                  useTargetPath ? getSchemasForTargetPath(path) : getSchemasForSourcePath(path);
-              List<Integer> positions =
-                  useTargetPath ? getPositionsForTargetPath(path) : getPositionsForSourcePath(path);
-              List<List<FeatureSchema>> parentSchemas =
-                  useTargetPath
-                      ? getParentSchemasForTargetPath(path)
-                      : getParentSchemasForSourcePath(path);
-              List<List<Integer>> parentPositions =
-                  useTargetPath
-                      ? getParentPositionsForTargetPath(path)
-                      : getParentPositionsForSourcePath(path);
-
-              boolean b =
-                  schemas.size() == positions.size()
-                      && schemas.size() == parentSchemas.size()
-                      && schemas.size() == parentPositions.size()
-                      && parentPositions.stream().flatMap(List::stream).noneMatch(pos -> pos == -1);
-
-              Preconditions.checkState(b);
-
-              // TODO: if there is ever more than one value, loses position of duplicates
-              List<MappingInfo> mappingInfos = new ArrayList<>();
-              for (int i = 0; i < schemas.size(); i++) {
-                mappingInfos.add(
-                    new Builder()
-                        .schema(schemas.get(i))
-                        .position(positions.get(i))
-                        .parentSchemas(parentSchemas.get(i))
-                        .parentPositions(parentPositions.get(i))
-                        .build());
-              }
-
-              return new SimpleImmutableEntry<>(path, mappingInfos);
-            })
-        .collect(
-            ImmutableMap.toImmutableMap(
-                Entry::getKey,
-                Entry::getValue,
-                (first, second) -> {
-                  ArrayList<MappingInfo> mappingInfos = new ArrayList<>(first);
-                  mappingInfos.addAll(second);
-                  return mappingInfos;
-                }));
   }
 
   @Override
