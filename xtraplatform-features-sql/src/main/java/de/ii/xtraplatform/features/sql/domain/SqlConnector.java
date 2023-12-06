@@ -119,7 +119,7 @@ public interface SqlConnector
             .via(
                 Transformer.flatMap(
                     querySet -> {
-                      String currentTable = querySet.getTableSchemas().get(0).getName();
+                      String currentTable = querySet.getTableSchemas().get(0).getFullPathAsString();
 
                       Optional<Tuple<Long, Long>> maxLimitAndSkipped = paging.get(currentTable);
 
@@ -261,7 +261,11 @@ public interface SqlConnector
                               Transformer.flatMap(
                                   index -> {
                                     String currentTable =
-                                        querySets.get(index).getTableSchemas().get(0).getName();
+                                        querySets
+                                            .get(index)
+                                            .getTableSchemas()
+                                            .get(0)
+                                            .getFullPathAsString();
                                     int[] j = {0};
 
                                     if (metaResults.get(index).getNumberReturned() <= 0) {
