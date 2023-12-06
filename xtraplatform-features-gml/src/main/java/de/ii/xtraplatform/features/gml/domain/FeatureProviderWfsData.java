@@ -53,7 +53,7 @@ import org.immutables.value.Value;
  */
 @DocFile(
     path = "providers/feature",
-    name = "wfs.md",
+    name = "50-wfs.md",
     tables = {
       @DocTable(
           name = "connectionInfo",

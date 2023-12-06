@@ -77,7 +77,7 @@ import org.immutables.value.Value;
  */
 @DocFile(
     path = "providers/feature",
-    name = "graphql.md",
+    name = "60-graphql.md",
     tables = {
       @DocTable(
           name = "properties",
