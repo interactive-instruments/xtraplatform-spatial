@@ -70,7 +70,7 @@ import org.immutables.value.Value;
  */
 @DocFile(
     path = "providers/tile",
-    name = "http.md",
+    name = "60-http.md",
     tables = {
       @DocTable(
           name = "properties",

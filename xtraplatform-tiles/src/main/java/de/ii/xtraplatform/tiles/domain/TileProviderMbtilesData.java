@@ -61,7 +61,7 @@ import org.immutables.value.Value;
  */
 @DocFile(
     path = "providers/tile",
-    name = "mbtiles.md",
+    name = "30-mbtiles.md",
     tables = {
       @DocTable(
           name = "properties",

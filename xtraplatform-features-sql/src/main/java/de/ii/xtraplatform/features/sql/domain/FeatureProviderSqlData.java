@@ -121,7 +121,7 @@ import org.immutables.value.Value;
  */
 @DocFile(
     path = "providers/feature",
-    name = "sql.md",
+    name = "10-sql.md",
     tables = {
       @DocTable(
           name = "properties",
