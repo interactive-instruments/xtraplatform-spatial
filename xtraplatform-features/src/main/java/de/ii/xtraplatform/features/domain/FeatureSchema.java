@@ -86,9 +86,9 @@ public interface FeatureSchema
 
   /**
    * @langEn The relative path for this schema object. The syntax depends on the provider types, see
-   *     [SQL](sql.md#path-syntax) or [WFS](wfs.md#path-syntax).
+   *     [SQL](10-sql.md#path-syntax) or [WFS](50-wfs.md#path-syntax).
    * @langDe Der relative Pfad zu diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ
-   *     unterschiedlich ([SQL](sql.md#path-syntax) und [WFS](wfs.md#path-syntax)).
+   *     unterschiedlich ([SQL](10-sql.md#path-syntax) und [WFS](50-wfs.md#path-syntax)).
    */
   @JsonAlias("path")
   @Override
@@ -96,11 +96,11 @@ public interface FeatureSchema
 
   /**
    * @langEn *Deprected, use `concat` or `coalesce` instead.* The relative paths for this schema
-   *     object. The syntax depends on the provider types, see [SQL](sql.md#path-syntax) or
-   *     [WFS](wfs.md#path-syntax).
+   *     object. The syntax depends on the provider types, see [SQL](10-sql.md#path-syntax) or
+   *     [WFS](50-wfs.md#path-syntax).
    * @langDe *Deprecated, anstatt dessen `concat` oder `coalesce` verwenden.* Die relativen Pfade zu
    *     diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ unterschiedlich
-   *     ([SQL](sql.md#path-syntax) und [WFS](wfs.md#path-syntax)).
+   *     ([SQL](10-sql.md#path-syntax) und [WFS](50-wfs.md#path-syntax)).
    * @default [sourcePath]
    */
   // Note: make internal

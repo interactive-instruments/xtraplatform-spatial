@@ -85,12 +85,11 @@ public interface SeedingOptions {
    *     compete for the available background task threads.
    * @langDe Die maximale Anzahl an Threads, die für das Seeding verwendet werden darf. Die
    *     tatsächlich verwendete Zahl der Threads hängt davon ab, wie viele Threads für
-   *     [Hintergrundprozesse](../../global-configuration.md#background-tasks) zur Verfügung stehen,
-   *     wenn das Seeding startet. Wenn mehr als ein Thread erlaubt sein soll, ist zunächst zu
-   *     prüfen, ob genügend Threads für
-   *     [Hintergrundprozesse](../../global-configuration.md#background-tasks) konfiguriert sind. Es
-   *     ist zu berücksichtigen, dass alle APIs um die vorhandenen Threads für
-   *     [Hintergrundprozesse](../../global-configuration.md#background-tasks) konkurrieren.
+   *     [Hintergrundprozesse](../../application/20-configuration/90-background-tasks.md) zur
+   *     Verfügung stehen, wenn das Seeding startet. Wenn mehr als ein Thread erlaubt sein soll, ist
+   *     zunächst zu prüfen, ob genügend Threads fürHintergrundprozesse konfiguriert sind. Es ist zu
+   *     berücksichtigen, dass alle APIs um die vorhandenen Threads für Hintergrundprozesse
+   *     konkurrieren.
    * @default 1
    */
   @Nullable

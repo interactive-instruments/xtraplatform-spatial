@@ -44,6 +44,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
     PGIS,
     GPKG
   }
+
   /**
    * @langEn Always `SLICK`.
    * @langDe Stets `SLICK`.
@@ -66,10 +67,10 @@ public interface ConnectionInfoSql extends ConnectionInfo {
   }
 
   /**
-   * @langEn The name of the database. For `GPKG` the file path, either absolute or relative to the
-   *     [data folder](../../application/30-data-folder.md).
-   * @langDe Der Name der Datenbank. Für `GPKG` der Pfad zur Datei, entweder absolut oder relativ
-   *     zum [Daten-Verzeichnis](../../application/30-data-folder.md).
+   * @langEn The name of the database. For `GPKG` a relative path to a resource with type `features`
+   *     in the [Store (new)](../../application/20-configuration/10-store-new.md).
+   * @langDe Der Name der Datenbank. Für `GPKG` ein relativer Pfad zu einer Ressource mit Typ
+   *     `features` * im [Store (neu)](../../application/20-configuration/10-store-new.md).
    */
   String getDatabase();
 
