@@ -171,7 +171,16 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default boolean isForcePolygonCCW() {
-    return getForcePolygonCCW().filter(force -> force == false).isEmpty();
+    return getForcePolygonCCW().orElse(true);
+  }
+
+  Optional<Boolean> getLinearizeCurves();
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean shouldLinearizeCurves() {
+    return getLinearizeCurves().orElse(false);
   }
 
   @Deprecated(since = "3.6")

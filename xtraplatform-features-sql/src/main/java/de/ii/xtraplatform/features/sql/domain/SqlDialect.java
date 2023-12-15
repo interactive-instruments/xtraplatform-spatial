@@ -28,7 +28,7 @@ import org.threeten.extra.Interval;
 
 public interface SqlDialect {
 
-  String applyToWkt(String column, boolean forcePolygonCCW);
+  String applyToWkt(String column, boolean forcePolygonCCW, boolean linearizeCurves);
 
   String applyToExtent(String column, boolean is3d);
 
