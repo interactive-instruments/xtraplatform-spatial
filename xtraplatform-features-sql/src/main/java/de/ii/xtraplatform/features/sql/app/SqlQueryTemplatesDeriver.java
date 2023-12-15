@@ -208,7 +208,8 @@ public class SqlQueryTemplatesDeriver
                                       + column.getName()
                                   : getQualifiedColumn(attributeContainerAlias, column.getName());
                           if (column.isSpatial()) {
-                            return sqlDialect.applyToWkt(name, column.isForcePolygonCCW());
+                            return sqlDialect.applyToWkt(
+                                name, column.isForcePolygonCCW(), column.shouldLinearizeCurves());
                           }
                           if (column.isTemporal()) {
                             if (column.getType() == SchemaBase.Type.DATE)

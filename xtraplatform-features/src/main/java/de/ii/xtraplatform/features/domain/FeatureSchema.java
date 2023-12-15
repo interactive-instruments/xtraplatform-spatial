@@ -356,6 +356,17 @@ public interface FeatureSchema
   Optional<Boolean> getForcePolygonCCW();
 
   /**
+   * @langEn Option to linearize curve geometries (e.g., CircularString or CurvePolygon) to a Simple
+   *     Features geometry. This option only applies to SQL feature providers of dialect PostGIS.
+   * @langDe Option zur Linearisierung von Kurvengeometrien (z. B. CircularString oder CurvePolygon)
+   *     zu einer Simple-Features-Geometrie. Diese Option gilt nur für SQL-Feature-Anbieter mit
+   *     Dialekt PostGIS.
+   * @default `false`
+   */
+  @Override
+  Optional<Boolean> getLinearizeCurves();
+
+  /**
    * @langEn *Deprecated, use `excludedScopes` instead.* Properties that are not of type OBJECT or
    *     OBJECT_ARRAY are by default eligible as queryables. This setting can be used to declare a
    *     property as ineligible, for example, if the property is not optimized for use in queries.
