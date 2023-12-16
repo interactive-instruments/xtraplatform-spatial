@@ -3,6 +3,13 @@ maturity = 'MATURE'
 
 
 dependencies {
+    provided 'de.interactive_instruments:xtraplatform-blobs'
+    provided 'de.interactive_instruments:xtraplatform-entities'
+    provided 'de.interactive_instruments:xtraplatform-streams'
+    provided 'de.interactive_instruments:xtraplatform-values'
+    provided 'de.interactive_instruments:xtraplatform-nativ-loader'
+    provided 'de.interactive_instruments:xtraplatform-spatialite'
+    provided 'de.interactive_instruments:xtraplatform-web'
     provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-codelists')
     provided project(':xtraplatform-cql')
@@ -16,6 +23,9 @@ dependencies {
         exclude module: 'slf4j-api'
         exclude group: 'com.google.code.findbugs'
     }
+    //use reactive-streams + rxjava exported from this
+    embeddedImport 'de.interactive_instruments:xtraplatform-streams'
+
     //TODO: move to https://github.com/davidmoten/rxjava3-jdbc
     //embeddedFlat group: 'io.reactivex.rxjava3', name: 'rxjava', version: '3.1.3'
     embeddedFlat group: 'com.github.akarnokd', name: 'rxjava3-bridge', version: '3.0.2'
@@ -32,6 +42,7 @@ dependencies {
 
     embeddedFlat group: 'com.github.jsqlparser', name: 'jsqlparser', version: '3.2'
 
+    testImplementation 'de.interactive_instruments:xtraplatform-proj'
     testImplementation(testFixtures(project(":xtraplatform-cql")))
     testImplementation(testFixtures(project(":xtraplatform-features")))
 }

@@ -2,6 +2,10 @@
 maturity = 'CANDIDATE'
 
 dependencies {
+    provided 'de.interactive_instruments:xtraplatform-entities'
+    provided 'de.interactive_instruments:xtraplatform-streams'
+    provided 'de.interactive_instruments:xtraplatform-values'
+    provided 'de.interactive_instruments:xtraplatform-web'
     provided project(':xtraplatform-codelists')
     provided project(':xtraplatform-cql')
     provided project(':xtraplatform-crs')

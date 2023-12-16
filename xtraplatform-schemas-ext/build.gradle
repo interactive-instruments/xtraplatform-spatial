@@ -7,6 +7,9 @@ repositories {
 }
 
 dependencies {
+    provided 'de.interactive_instruments:xtraplatform-entities'
+    provided 'de.interactive_instruments:xtraplatform-blobs'
+    provided 'de.interactive_instruments:xtraplatform-values'
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-geometries')
 

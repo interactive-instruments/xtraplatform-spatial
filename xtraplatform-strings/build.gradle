@@ -2,7 +2,6 @@
 maturity = 'MATURE'
 
 dependencies {
-
     embedded group: 'com.atlassian.commonmark', name: 'commonmark', version: '0.11.0'
     embedded group: 'com.atlassian.commonmark', name: 'commonmark-ext-gfm-tables', version: '0.11.0'
 }
