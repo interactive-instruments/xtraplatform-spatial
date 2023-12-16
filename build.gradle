@@ -1,3 +1,12 @@
+buildscript {
+    configurations.all {
+        resolutionStrategy {
+            cacheChangingModulesFor 0, 'seconds'
+            cacheDynamicVersionsFor 0, 'seconds'
+        }
+    }
+}
+
 plugins {
     alias catalog.plugins.xtraplatform.layer
     alias catalog.plugins.spotless apply false
@@ -22,10 +31,17 @@ layer {
 }
 
 dependencies {
-    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '6.0.0-SNAPSHOT'
+    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '6.0.0-build-SNAPSHOT'
     layers group: 'de.interactive_instruments', name: 'xtraplatform-native', version: "2.3.0-${platform}"
 
     modules subprojects
+}
+
+configurations.all {
+    resolutionStrategy {
+        cacheChangingModulesFor 0, 'seconds'
+        cacheDynamicVersionsFor 0, 'seconds'
+    }
 }
 
 
