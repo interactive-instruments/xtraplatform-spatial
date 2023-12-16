@@ -39,5 +39,5 @@ extensions.gitHooks.with {
 }
 
 //includeBuild '../xtraplatform-build'
-//includeBuild '../xtraplatform/xtraplatform-core'
+//includeBuild '../xtraplatform'
 //includeBuild '../xtraplatform-native'
