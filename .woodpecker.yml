@@ -1,12 +1,13 @@
-pipeline:
+steps:
 
   load-cache:
     image: drillster/drone-volume-cache
     volumes: [/var/lib/docker/tmp:/cache]
-    restore: true
-    mount:
-      - .gradle/caches
-      - .gradle/wrapper
+    settings:
+      restore: true
+      mount:
+        - .gradle/caches
+        - .gradle/wrapper
 
 #  test:
 #    image: openjdk:11-slim
@@ -56,32 +57,8 @@ pipeline:
   save-cache:
     image: drillster/drone-volume-cache
     volumes: [/var/lib/docker/tmp:/cache]
-    rebuild: true
-    mount:
-      - .gradle/caches
-      - .gradle/wrapper
-
-#  notify:
-#    image: plugins/slack:1.3.0
-#    webhook: ${SLACK_WEBHOOK}
-#    secrets: [ slack_webhook ]
-#    link_names: true
-#    template: >
-#      {{#if build.pull }}
-#        *{{#success build.status}}✔{{ else }}✘{{/success}} {{ uppercasefirst build.status }}*: {{ repo.owner }}/{{ repo.name }} - <https://github.com/{{ repo.owner }}/{{ repo.name }}/pull/{{ build.pull }}|Pull Request #{{ build.pull }}>
-#      {{else}}
-#        *{{#success build.status}}✔{{ else }}✘{{/success}} {{ uppercasefirst build.status }}: {{ repo.owner }}/{{ repo.name }} - Build #{{ build.number }}* (type: `{{ build.event }}`)
-#      {{/if}}
-#
-#      Commit: <https://github.com/{{ repo.owner }}/{{ repo.name }}/commit/{{ build.commit }}|{{ truncate build.commit 8 }}>
-#
-#      Branch: <https://github.com/{{ repo.owner }}/{{ repo.name }}/commits/{{ build.branch }}|{{ build.branch }}>
-#
-#      Author: {{ build.author }} <@{{ build.author }}>
-#
-#      Duration: {{ since build.created }}
-#
-#      <{{ build.link }}|Visit build page ↗>
-#    when:
-#      event: [ push, tag ]
-#      status:  [ failure, success ]
+    settings:
+      rebuild: true
+      mount:
+        - .gradle/caches
+        - .gradle/wrapper
