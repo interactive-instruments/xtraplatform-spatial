@@ -7,9 +7,9 @@ maturity = 'MATURE'
 dependencies {
     provided project(":xtraplatform-crs")
 
-    antlr "org.antlr:antlr4:4.7.2"
+    antlr libs.antlr
 
-    embeddedFlat 'org.antlr:antlr4-runtime:4.7.2'
+    embeddedFlat libs.antlr.runtime
 
     testImplementation 'de.interactive_instruments:xtraplatform-blobs'
     testImplementation 'de.interactive_instruments:xtraplatform-openapi'

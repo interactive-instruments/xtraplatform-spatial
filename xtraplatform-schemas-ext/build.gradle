@@ -13,6 +13,7 @@ dependencies {
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-geometries')
 
+    // TODO: will most likely not work with dependabot since it is not from maven central
     embeddedFlat 'net.jimblackler.jsonschemafriend:core:0.12.2'
     embeddedFlat 'com.damnhandy:handy-uri-templates:2.1.8'
     embedded 'org.jruby.joni:joni:2.1.41'

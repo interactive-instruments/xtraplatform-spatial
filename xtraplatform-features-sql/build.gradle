@@ -17,7 +17,7 @@ dependencies {
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-strings')
 
-    embedded (group: 'com.github.davidmoten', name: 'rxjava2-jdbc', version: '0.2.12') {
+    embedded (libs.rxjava.jdbc) {
         exclude module: 'reactive-streams'
         exclude module: 'commons-io'
         exclude module: 'slf4j-api'
@@ -26,21 +26,10 @@ dependencies {
     //use reactive-streams + rxjava exported from this
     embeddedImport 'de.interactive_instruments:xtraplatform-streams'
 
-    //TODO: move to https://github.com/davidmoten/rxjava3-jdbc
-    //embeddedFlat group: 'io.reactivex.rxjava3', name: 'rxjava', version: '3.1.3'
-    embeddedFlat group: 'com.github.akarnokd', name: 'rxjava3-bridge', version: '3.0.2'
-    embeddedFlat group: 'com.zaxxer', name: 'HikariCP', version: '5.0.1'
+    embedded libs.bundles.sql
+    embeddedFlat libs.bundles.sqlFlat
 
-    embeddedFlat group: 'org.postgresql', name: 'postgresql', version: '42.5.1'
-
-    embeddedFlatExport group: 'org.xerial', name: 'sqlite-jdbc', version: '3.43.2.2'
-
-    embedded group: 'us.fatehi', name: 'schemacrawler-api', version: '16.11.6'
-    embedded group: 'us.fatehi', name: 'schemacrawler-tools', version: '16.11.6'
-    embeddedFlat group: 'us.fatehi', name: 'schemacrawler-postgresql', version: '16.11.6'
-    embeddedFlat group: 'us.fatehi', name: 'schemacrawler-sqlite', version: '16.11.6'
-
-    embeddedFlat group: 'com.github.jsqlparser', name: 'jsqlparser', version: '3.2'
+    embeddedFlatExport libs.sqlite
 
     testImplementation 'de.interactive_instruments:xtraplatform-proj'
     testImplementation(testFixtures(project(":xtraplatform-cql")))

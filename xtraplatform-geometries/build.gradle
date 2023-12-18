@@ -4,8 +4,5 @@ maturity = 'MATURE'
 dependencies {
     provided project(':xtraplatform-crs')
 
-    embeddedExport (group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0')
-    embeddedExport (group: 'org.locationtech.jts.io', name: 'jts-io-common', version: '1.19.0') {
-        exclude module: 'junit'
-    }
+    embeddedExport libs.bundles.geometries
 }
