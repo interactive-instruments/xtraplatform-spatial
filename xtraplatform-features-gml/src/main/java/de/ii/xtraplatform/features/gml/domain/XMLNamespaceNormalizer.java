@@ -128,6 +128,7 @@ public class XMLNamespaceNormalizer {
       addNamespace(prefix, namespaceURI);
     }
   }
+
   /*
   public String getDefaultNamespaceURI() {
   return defaultNamespaceURI;

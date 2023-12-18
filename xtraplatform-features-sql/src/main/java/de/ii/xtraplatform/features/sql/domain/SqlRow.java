@@ -67,6 +67,7 @@ public interface SqlRow extends Comparable<SqlRow> {
   default int compareTo(SqlRow sqlRow) {
     return 0;
   }
+
   /*Optional<SqlColumn> next();
 
   default List<String> getIds() {
