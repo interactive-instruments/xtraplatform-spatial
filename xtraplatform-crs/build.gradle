@@ -1,2 +1,9 @@
 
 maturity = 'MATURE'
+
+dependencies {
+    provided 'de.interactive_instruments:xtraplatform-blobs'
+    provided 'de.interactive_instruments:xtraplatform-nativ-loader'
+    provided 'de.interactive_instruments:xtraplatform-proj'
+
+}

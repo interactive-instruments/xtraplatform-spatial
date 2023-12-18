@@ -2,6 +2,8 @@
 maturity = 'MATURE'
 
 dependencies {
+    provided 'de.interactive_instruments:xtraplatform-entities'
+    provided 'de.interactive_instruments:xtraplatform-streams'
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-crs')

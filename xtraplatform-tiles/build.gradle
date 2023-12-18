@@ -8,20 +8,28 @@ repositories {
 }
 
 dependencies {
+    provided 'de.interactive_instruments:xtraplatform-entities'
+    provided 'de.interactive_instruments:xtraplatform-blobs'
+    provided 'de.interactive_instruments:xtraplatform-services'
+    provided 'de.interactive_instruments:xtraplatform-values'
+    provided 'de.interactive_instruments:xtraplatform-streams'
+    provided 'de.interactive_instruments:xtraplatform-proj'
     provided project(':xtraplatform-cql')
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-strings')
 
-    embedded (group: 'no.ecc.vectortile', name: 'java-vector-tile', version: '1.3.21') {
+    embedded (libs.vectortile) {
         exclude module: 'jts-core'
         exclude module: 'jts-io-common'
     }
+    //use jts exported from this
+    embeddedImport project(':xtraplatform-geometries')
 }
 
 moduleInfo {
     requires = [
-            'java.sql'
+            'java.sql',
     ]
 }

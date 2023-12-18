@@ -1,3 +1,6 @@
+when:
+  event: [push, tag]
+
 steps:
 
   load-cache:
@@ -9,27 +12,19 @@ steps:
         - .gradle/caches
         - .gradle/wrapper
 
-#  test:
-#    image: openjdk:11-slim
-#    commands:
-#      - export GRADLE_USER_HOME=$${DRONE_WORKSPACE}/.gradle
-#      - ./gradlew check
-#    when:
-#      event: [push, pull_request]
-
   build:
     image: openjdk:11-slim
     commands:
-      - export GRADLE_USER_HOME=$${DRONE_WORKSPACE}/.gradle
-      - ./gradlew build -Pbranch=$DRONE_COMMIT_BRANCH -PdeployUser=$SNAPSHOT_USER -PdeployPassword=$SNAPSHOT_PASS
+      - export GRADLE_USER_HOME=$${CI_WORKSPACE}/.gradle
+      - ./gradlew build -Pbranch=$CI_COMMIT_BRANCH -PdeployUser=$SNAPSHOT_USER -PdeployPassword=$SNAPSHOT_PASS
     secrets: [ snapshot_user, snapshot_pass]
     when:
-      event: [push, pull_request]
+      event: push
 
   build-release:
     image: openjdk:11-slim
     commands:
-      - export GRADLE_USER_HOME=$${DRONE_WORKSPACE}/.gradle
+      - export GRADLE_USER_HOME=$${CI_WORKSPACE}/.gradle
       - ./gradlew build -Prelease=true -PdeployUser=$SNAPSHOT_USER -PdeployPassword=$SNAPSHOT_PASS
     secrets: [ snapshot_user, snapshot_pass]
     when:
@@ -38,17 +33,16 @@ steps:
   publish-snapshot:
     image: openjdk:11-slim
     commands:
-      - export GRADLE_USER_HOME=$${DRONE_WORKSPACE}/.gradle
-      - ./gradlew publish -Pbranch=$DRONE_COMMIT_BRANCH -PdeployUser=$SNAPSHOT_USER -PdeployPassword=$SNAPSHOT_PASS
+      - export GRADLE_USER_HOME=$${CI_WORKSPACE}/.gradle
+      - ./gradlew publish -Pbranch=$CI_COMMIT_BRANCH -PdeployUser=$SNAPSHOT_USER -PdeployPassword=$SNAPSHOT_PASS
     secrets: [ snapshot_user, snapshot_pass]
     when:
       event: push
-#      branch: master
 
   publish-release:
     image: openjdk:11-slim
     commands:
-      - export GRADLE_USER_HOME=$${DRONE_WORKSPACE}/.gradle
+      - export GRADLE_USER_HOME=$${CI_WORKSPACE}/.gradle
       - ./gradlew publish -Prelease=true -PdeployUser=$SNAPSHOT_USER -PdeployPassword=$SNAPSHOT_PASS
     secrets: [ snapshot_user, snapshot_pass]
     when:
