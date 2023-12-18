@@ -54,11 +54,22 @@ public class SqlDialectPostGis implements SqlDialect {
           .build();
 
   @Override
-  public String applyToWkt(String column, boolean forcePolygonCCW) {
-    if (!forcePolygonCCW) {
-      return String.format("ST_AsText(%s)", column);
+  public String applyToWkt(String column, boolean forcePolygonCCW, boolean linearizeCurves) {
+    StringBuilder queryBuilder = new StringBuilder("ST_AsText(");
+    if (linearizeCurves) {
+      queryBuilder.append("ST_CurveToLine(");
     }
-    return String.format("ST_AsText(ST_ForcePolygonCCW(%s))", column);
+    if (forcePolygonCCW) {
+      queryBuilder.append("ST_ForcePolygonCCW(");
+    }
+    queryBuilder.append(column);
+    if (forcePolygonCCW) {
+      queryBuilder.append(")");
+    }
+    if (linearizeCurves) {
+      queryBuilder.append(",32,0,1)");
+    }
+    return queryBuilder.append(")").toString();
   }
 
   @Override

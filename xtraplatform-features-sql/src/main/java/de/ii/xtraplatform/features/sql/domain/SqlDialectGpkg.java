@@ -36,7 +36,7 @@ public class SqlDialectGpkg implements SqlDialect {
       Splitter.onPattern("[(), ]").omitEmptyStrings().trimResults();
 
   @Override
-  public String applyToWkt(String column, boolean forcePolygonCCW) {
+  public String applyToWkt(String column, boolean forcePolygonCCW, boolean linearizeCurves) {
     if (!forcePolygonCCW) {
       return String.format("ST_AsText(%s)", column);
     }
