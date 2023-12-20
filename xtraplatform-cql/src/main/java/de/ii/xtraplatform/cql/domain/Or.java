@@ -30,9 +30,4 @@ public interface Or extends LogicalOperation, CqlNode {
   static Or of(List<Cql2Expression> predicates) {
     return new ImmutableOr.Builder().args(predicates).build();
   }
-
-  @Deprecated
-  static Or of(CqlPredicate... predicates) {
-    return new ImmutableOr.Builder().addArgs(Eq.of("", ""), Eq.of("", "")).build();
-  }
 }

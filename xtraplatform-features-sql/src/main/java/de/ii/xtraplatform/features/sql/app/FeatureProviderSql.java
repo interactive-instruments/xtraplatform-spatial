@@ -121,8 +121,7 @@ import org.threeten.extra.Interval;
       @SubType(key = ProviderData.PROVIDER_TYPE_KEY, value = FeatureProvider2.PROVIDER_TYPE),
       @SubType(
           key = ProviderData.PROVIDER_SUB_TYPE_KEY,
-          value = FeatureProviderSql.PROVIDER_SUB_TYPE,
-          keyAlias = {FeatureProviderDataV2.PROVIDER_SUB_TYPE_KEY_OLD})
+          value = FeatureProviderSql.PROVIDER_SUB_TYPE)
     },
     data = FeatureProviderSqlData.class)
 public class FeatureProviderSql

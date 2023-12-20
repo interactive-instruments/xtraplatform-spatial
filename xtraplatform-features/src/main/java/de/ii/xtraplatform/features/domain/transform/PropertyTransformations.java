@@ -7,13 +7,10 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import java.time.ZoneId;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,7 +21,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,36 +158,6 @@ public interface PropertyTransformations {
       Function<String, String> substitutionLookup) {
     return new ValueTransformerChain(
         getTransformations(), schemaMapping, codelists, defaultTimeZone, substitutionLookup);
-  }
-
-  @JsonIgnore
-  @Value.Derived
-  @Value.Auxiliary
-  default boolean hasDeprecatedTransformationKeys() {
-    return getTransformations().keySet().stream().anyMatch(key -> key.matches(".*\\[[^\\]]*\\].*"));
-  }
-
-  // TODO: Check method instead of hydration
-  default Map<String, List<PropertyTransformation>> normalizeTransformationKeys(
-      String buildingBlock, String collectionId) {
-    return getTransformations().entrySet().stream()
-        // normalize property names
-        .map(
-            transformation -> {
-              if (transformation.getKey().matches(".*\\[[^\\]]*\\].*"))
-              // TODO use info for now, but upgrade to warn after some time
-              {
-                LOGGER.info(
-                    "The transformation key '{}' in collection '{}' uses a deprecated style that includes square brackets for arrays. The brackets have been dropped during hydration. Building block: {}.",
-                    transformation.getKey(),
-                    collectionId,
-                    buildingBlock);
-              }
-              return new AbstractMap.SimpleEntry<>(
-                  transformation.getKey().replaceAll("\\[[^\\]]*\\]", ""),
-                  transformation.getValue());
-            })
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   default PropertyTransformations mergeInto(PropertyTransformations source) {

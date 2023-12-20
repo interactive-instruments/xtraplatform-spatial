@@ -183,7 +183,7 @@ public class SchemaGeneratorSql implements SchemaGenerator {
               idFound = true;
             }
             if (schemaInfo.isColumnReadOnly(column.getName(), table.getName())) {
-              featureProperty.scope(Scope.RETURNABLE);
+              featureProperty.excludedScopes(ImmutableList.of(Scope.RECEIVABLE));
             }
             if (featurePropertyType == SchemaBase.Type.GEOMETRY) {
               if (!geometryInfos.containsKey(table.getName())) {

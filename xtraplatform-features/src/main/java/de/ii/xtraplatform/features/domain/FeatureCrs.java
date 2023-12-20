@@ -22,6 +22,7 @@ public interface FeatureCrs {
   }
 
   // TODO: let transformer handle swapping again
+  // FIXME what to do here?
   @Deprecated
   default boolean shouldSwapCoordinates(EpsgCrs crs) {
     return false;

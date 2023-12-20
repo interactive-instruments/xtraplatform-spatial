@@ -48,10 +48,8 @@ import de.ii.xtraplatform.tiles.domain.TileWalker;
 import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -272,8 +270,6 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   @Override
   protected boolean onStartup() throws InterruptedException {
 
-    cleanupCache32();
-
     loadMetadata();
 
     return super.onStartup();
@@ -407,52 +403,6 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                 getData().getTilesets().containsKey(entry.getKey())
                     && getData().getTilesets().get(entry.getKey()).isCombined())
         .collect(MapStreams.toMap());
-  }
-
-  @Deprecated(since = "3.3")
-  private void cleanupCache32() {
-    try {
-      List<Path> unknownDirs = getUnknownDirs(tilesStore);
-
-      for (Path unknownDir : unknownDirs) {
-        deleteDir(tilesStore, unknownDir);
-      }
-
-    } catch (IOException e) {
-      // ignore
-    }
-  }
-
-  private List<Path> getUnknownDirs(ResourceStore tileStore) throws IOException {
-    try (Stream<Path> paths = tileStore.walk(Path.of(""), 1, (p, a) -> !a.isValue()).skip(1)) {
-      return paths
-          .map(Path::getFileName)
-          .filter(
-              path ->
-                  !Objects.equals(
-                          path.toString(), String.format("cache_%s", Type.DYNAMIC.getSuffix()))
-                      && !Objects.equals(
-                          path.toString(), String.format("cache_%s", Type.IMMUTABLE.getSuffix())))
-          .collect(Collectors.toList());
-    }
-  }
-
-  private void deleteDir(ResourceStore blobStore, Path dir) {
-    try (Stream<Path> paths = blobStore.walk(dir, 6, (p, a) -> true)) {
-      paths
-          .sorted(Comparator.reverseOrder())
-          .forEach(
-              path -> {
-                Path path1 = dir.resolve(path);
-                try {
-                  blobStore.delete(path1);
-                } catch (IOException e) {
-                  // ignore
-                }
-              });
-    } catch (IOException e) {
-      // ignore
-    }
   }
 
   private void loadMetadata() {

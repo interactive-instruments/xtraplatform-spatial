@@ -121,8 +121,6 @@ import org.immutables.value.Value;
 // @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
 public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, ExtendableConfiguration {
 
-  @Deprecated String PROVIDER_SUB_TYPE_KEY_OLD = "featureProviderType";
-
   @JsonIgnore
   @Override
   @Value.Derived
@@ -243,17 +241,6 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
 
   @Override
   Optional<Boolean> getAutoPersist();
-
-  /**
-   * @langEn *Deprecated, use the editor instead.* List of source types to include in derived
-   *     `types` definitions when `auto: true`. Currently only works for [SQL](10-sql.md).
-   * @langDe *Deprecated, wird vom Editor abgelöst.* Liste von Quelltypen, die für die Ableitung der
-   *     `types` Definitionen im Auto-Modus berücksichtigt werden sollen. Funktioniert aktuell nur
-   *     für [SQL](10-sql.md).
-   * @default []
-   */
-  @Deprecated(since = "3.6")
-  List<String> getAutoTypes();
 
   // custom builder to automatically use keys of types as name of FeatureTypeV2
   abstract class Builder<T extends Builder<T>> implements EntityDataBuilder<FeatureProviderDataV2> {

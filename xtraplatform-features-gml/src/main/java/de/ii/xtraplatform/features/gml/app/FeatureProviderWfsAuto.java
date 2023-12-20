@@ -24,7 +24,6 @@ import de.ii.xtraplatform.features.gml.domain.WfsClientBasicFactory;
 import de.ii.xtraplatform.features.gml.infra.WfsSchemaCrawler;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -189,7 +188,6 @@ public class FeatureProviderWfsAuto implements AutoEntityFactory {
         .from(data)
         .auto(Optional.empty())
         .autoPersist(Optional.empty())
-        .autoTypes(new ArrayList<>())
         .build();
   }
 }

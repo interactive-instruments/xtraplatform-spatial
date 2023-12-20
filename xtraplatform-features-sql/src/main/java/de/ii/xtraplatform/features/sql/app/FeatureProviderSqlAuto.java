@@ -25,7 +25,6 @@ import de.ii.xtraplatform.features.sql.domain.SqlClientBasicFactory;
 import de.ii.xtraplatform.features.sql.infra.db.SchemaGeneratorSql;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -220,12 +219,7 @@ public class FeatureProviderSqlAuto implements AutoEntityFactory {
   }
 
   private FeatureProviderSqlData cleanupAuto(FeatureProviderSqlData data) {
-    return new Builder()
-        .from(data)
-        .auto(Optional.empty())
-        .autoPersist(Optional.empty())
-        .autoTypes(new ArrayList<>())
-        .build();
+    return new Builder().from(data).auto(Optional.empty()).autoPersist(Optional.empty()).build();
   }
 
   private FeatureProviderSqlData cleanupAdditionalInfo(FeatureProviderSqlData data) {

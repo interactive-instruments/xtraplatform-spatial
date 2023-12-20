@@ -124,6 +124,7 @@ public interface FeatureProperty extends Buildable<FeatureProperty> {
   }
 
   // TODO: implement double col support as provider transformer and remove this
+  // FIXME what to do here?
   @Deprecated
   @JsonIgnore
   @Value.Derived

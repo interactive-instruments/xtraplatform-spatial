@@ -114,11 +114,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
    */
   @DocFile(path = "providers/details", name = "scopes.md")
   enum Scope {
-    @Deprecated(since = "3.6")
-    QUERIES,
     RETURNABLE,
-    @Deprecated(since = "3.6")
-    MUTATIONS,
     RECEIVABLE,
     QUERYABLE,
     SORTABLE;
@@ -183,16 +179,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     return getLinearizeCurves().orElse(false);
   }
 
-  @Deprecated(since = "3.6")
-  Optional<Scope> getScope();
-
   Set<Scope> getExcludedScopes();
-
-  @Deprecated(since = "3.6")
-  Optional<Boolean> getIsQueryable();
-
-  @Deprecated(since = "3.6")
-  Optional<Boolean> getIsSortable();
 
   @JsonIgnore
   @Value.Derived
