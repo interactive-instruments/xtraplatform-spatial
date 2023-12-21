@@ -12,8 +12,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableList;
 import org.immutables.value.Value;
 
-// FIXME is this deprecated?
-@Deprecated
 @Value.Immutable
 @JsonDeserialize(as = TemporalOperation.class)
 public interface TemporalOperation extends BinaryOperation<TemporalLiteral>, CqlNode {

@@ -174,7 +174,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      *     Diese Option sollte in der Regel nur auf Entwicklungssystemen deaktiviert werden.
      * @default true
      */
-    // FIXME should this be removed?
+    // TODO what should be done here in v4.0?
     @Deprecated
     @Nullable
     Boolean getInitFailFast();

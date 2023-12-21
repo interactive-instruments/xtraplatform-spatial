@@ -146,7 +146,6 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
     return ds;
   }
 
-  // FIXME check, if changes are correct
   private DataSource createGpkg(String providerId, ConnectionInfoSql connectionInfo) {
     Path source = Path.of(connectionInfo.getDatabase());
 

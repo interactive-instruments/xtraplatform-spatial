@@ -207,8 +207,6 @@ public interface FeatureProviderSqlData
   @Override
   BuildableMap<FeatureSchema, ImmutableFeatureSchema.Builder> getFragments();
 
-  // FIXME check, if changes are correct
-  @Deprecated(since = "3.5") // nested defaults are handled by FeatureProviderSqlFactory.dataBuilder
   @Value.Check
   default FeatureProviderSqlData initNestedDefault() {
     /*
