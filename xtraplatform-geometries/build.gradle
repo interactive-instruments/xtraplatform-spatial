@@ -1,5 +1,8 @@
 
 maturity = 'MATURE'
+maintenance = 'FULL'
+description = 'Geometry transformations.'
+descriptionDe = 'Geometry transformations.'
 
 dependencies {
     provided project(':xtraplatform-crs')

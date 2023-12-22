@@ -1,5 +1,8 @@
 
 maturity = 'MATURE'
+maintenance = 'FULL'
+description = 'Feature providers and transformations.'
+descriptionDe = 'Feature-Provider und Transformationen.'
 
 dependencies {
     provided 'de.interactive_instruments:xtraplatform-entities'

@@ -1,5 +1,8 @@
 
 maturity = 'MATURE'
+maintenance = 'FULL'
+description = 'SQL feature provider, PostgreSQL and GeoPackage.'
+descriptionDe = 'SQL-Feature-Provider, PostgreSQL und GeoPackage.'
 
 
 dependencies {

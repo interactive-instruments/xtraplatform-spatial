@@ -1,5 +1,8 @@
 
 maturity = 'MATURE'
+maintenance = 'FULL'
+description = 'String templates.'
+descriptionDe = 'String-Templates.'
 
 dependencies {
     embedded libs.bundles.strings
