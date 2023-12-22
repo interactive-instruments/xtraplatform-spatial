@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocIgnore;
 import java.util.Optional;
@@ -29,7 +28,6 @@ public interface SqlPathDefaults {
    *     Spalte in `sourcePath` gesetzt wird.
    * @default `id`
    */
-  @JsonAlias("defaultPrimaryKey")
   @Value.Default
   default String getPrimaryKey() {
     return "id";
@@ -43,7 +41,6 @@ public interface SqlPathDefaults {
    *     Ganzzahl verwendet wird.
    * @default `id`
    */
-  @JsonAlias("defaultSortKey")
   @Value.Default
   default String getSortKey() {
     return "id";

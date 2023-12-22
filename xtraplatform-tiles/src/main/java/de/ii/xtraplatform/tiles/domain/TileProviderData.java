@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
@@ -82,7 +81,6 @@ public interface TileProviderData extends ProviderData {
    * @langDe Defaults für alle `tilesets`.
    * @since v3.4
    */
-  @JsonAlias("layerDefaults")
   TilesetCommonDefaults getTilesetDefaults();
 
   /**
@@ -91,7 +89,6 @@ public interface TileProviderData extends ProviderData {
    * @since v3.4
    * @default {}
    */
-  @JsonAlias("layers")
   Map<String, ? extends TilesetCommon> getTilesets();
 
   @JsonIgnore

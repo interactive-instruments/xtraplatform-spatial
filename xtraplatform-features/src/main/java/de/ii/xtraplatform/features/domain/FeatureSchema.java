@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
@@ -88,7 +87,6 @@ public interface FeatureSchema
    * @langDe Der relative Pfad zu diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ
    *     unterschiedlich ([SQL](10-sql.md#path-syntax) und [WFS](50-wfs.md#path-syntax)).
    */
-  @JsonAlias("path")
   @Override
   Optional<String> getSourcePath();
 
@@ -378,7 +376,6 @@ public interface FeatureSchema
    *     Operationen](#merge).
    * @default []
    */
-  @JsonAlias("allOf")
   List<PartialObjectSchema> getMerge();
 
   /**

@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.docs.DocStep;
@@ -196,7 +195,6 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
    * @langDe Defaults für alle `tilesets`, siehe [Tileset Defaults](#tileset-defaults).
    * @since v3.4
    */
-  @JsonAlias("layerDefaults")
   @Nullable
   @Override
   TilesetFeaturesDefaults getTilesetDefaults();
@@ -207,7 +205,6 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
    * @since v3.4
    * @default {}
    */
-  @JsonAlias("layers")
   @Override
   BuildableMap<TilesetFeatures, ImmutableTilesetFeatures.Builder> getTilesets();
 
@@ -238,10 +235,8 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
           .providerSubType(EntityDataDefaults.PLACEHOLDER);
     }
 
-    @JsonAlias("layers")
     public abstract Map<String, ImmutableTilesetFeatures.Builder> getTilesets();
 
-    @JsonAlias("layerDefaults")
     public abstract ImmutableTileProviderFeaturesData.Builder tilesetDefaultsBuilder(
         ImmutableTilesetFeaturesDefaults.Builder tilesetDefaults);
   }

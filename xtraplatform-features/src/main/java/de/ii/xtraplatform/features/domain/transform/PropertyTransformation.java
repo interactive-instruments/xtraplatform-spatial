@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocFile;
@@ -146,7 +145,6 @@ public interface PropertyTransformation
    * @langDe Reduziert ein Objekt zu einem String mithilfe der `stringFormat`-Syntax aber mit
    *     zusätzlichen Ersetzungen für die Property-Names des Objekts.
    */
-  @JsonAlias("reduceStringFormat")
   Optional<String> getObjectReduceFormat();
 
   /**

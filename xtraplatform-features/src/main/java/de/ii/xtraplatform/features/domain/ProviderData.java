@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.ii.xtraplatform.entities.domain.EntityData;
 import java.util.Optional;
@@ -21,7 +20,6 @@ public interface ProviderData extends EntityData {
 
   String getProviderType();
 
-  @JsonAlias("featureProviderType")
   String getProviderSubType();
 
   @JsonIgnore

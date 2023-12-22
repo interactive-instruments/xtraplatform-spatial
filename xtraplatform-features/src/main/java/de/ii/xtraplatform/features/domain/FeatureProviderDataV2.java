@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -139,7 +138,6 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
    * @langDe `SQL` für ein SQL-DBMS als Datenquelle, `WFS` für einen OGC Web Feature Service als
    *     Datenquelle.
    */
-  @JsonAlias("featureProviderType")
   @Override
   String getProviderSubType();
 
