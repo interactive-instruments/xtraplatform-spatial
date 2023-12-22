@@ -3,6 +3,9 @@ plugins {
 }
 
 maturity = 'MATURE'
+maintenance = 'FULL'
+description = 'CQL2 Expressions.'
+descriptionDe = 'CQL2 Ausdrücke.'
 
 dependencies {
     provided project(":xtraplatform-crs")

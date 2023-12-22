@@ -1,5 +1,8 @@
 
 maturity = 'PROPOSAL'
+maintenance = 'NONE'
+description = 'GraphQL feature provider.'
+descriptionDe = 'GraphQL-Feature-Provider.'
 
 dependencies {
     provided 'de.interactive_instruments:xtraplatform-entities'

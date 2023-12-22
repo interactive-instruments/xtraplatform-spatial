@@ -1,4 +1,8 @@
+
 maturity = 'PROPOSAL'
+maintenance = 'NONE'
+description = 'Derive feature provider type definitions from JSON schemas.'
+descriptionDe = 'Ableiten von Feature-Provider Typ-Definitionen aus JSON-Schemas.'
 
 repositories {
     maven {

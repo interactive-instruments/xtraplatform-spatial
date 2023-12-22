@@ -1,5 +1,8 @@
 
 maturity = 'CANDIDATE'
+maintenance = 'NONE'
+description = 'WFS feature provider and GML features.'
+descriptionDe = 'WFS-Feature-Provider und GML-Features.'
 
 dependencies {
     provided 'de.interactive_instruments:xtraplatform-entities'

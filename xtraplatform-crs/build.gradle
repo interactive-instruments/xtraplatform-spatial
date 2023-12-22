@@ -1,9 +1,11 @@
 
 maturity = 'MATURE'
+maintenance = 'FULL'
+description = 'CRS transformations with PROJ.'
+descriptionDe = 'CRS-Transformations mit PROJ.'
 
 dependencies {
     provided 'de.interactive_instruments:xtraplatform-blobs'
     provided 'de.interactive_instruments:xtraplatform-nativ-loader'
     provided 'de.interactive_instruments:xtraplatform-proj'
-
 }
