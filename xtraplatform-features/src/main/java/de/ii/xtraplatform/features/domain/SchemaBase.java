@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.docs.DocFile;
+import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.Arrays;
 import java.util.List;
@@ -148,6 +149,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
 
   Optional<String> getSourcePath();
 
+  // not part of the configuration, but de-/serialization is needed for unit tests
+  @DocIgnore
   List<String> getSourcePaths();
 
   @JsonIgnore
