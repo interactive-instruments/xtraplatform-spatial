@@ -30,9 +30,4 @@ public interface And extends LogicalOperation, CqlNode {
   static And of(List<Cql2Expression> predicates) {
     return new ImmutableAnd.Builder().args(predicates).build();
   }
-
-  @Deprecated
-  static And of(CqlPredicate... predicates) {
-    return new ImmutableAnd.Builder().addArgs(Eq.of("", ""), Eq.of("", "")).build();
-  }
 }

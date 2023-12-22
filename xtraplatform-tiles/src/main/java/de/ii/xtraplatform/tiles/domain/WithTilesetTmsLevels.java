@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Range;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -16,7 +15,6 @@ import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 public interface WithTilesetTmsLevels {
-  @JsonAlias("layerLevels")
   Map<String, Map<String, MinMax>> getTilesetLevels();
 
   @JsonIgnore

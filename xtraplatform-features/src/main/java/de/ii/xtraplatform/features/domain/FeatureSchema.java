@@ -7,13 +7,10 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.OptBoolean;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -90,24 +87,8 @@ public interface FeatureSchema
    * @langDe Der relative Pfad zu diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ
    *     unterschiedlich ([SQL](10-sql.md#path-syntax) und [WFS](50-wfs.md#path-syntax)).
    */
-  @JsonAlias("path")
   @Override
   Optional<String> getSourcePath();
-
-  /**
-   * @langEn *Deprected, use `concat` or `coalesce` instead.* The relative paths for this schema
-   *     object. The syntax depends on the provider types, see [SQL](10-sql.md#path-syntax) or
-   *     [WFS](50-wfs.md#path-syntax).
-   * @langDe *Deprecated, anstatt dessen `concat` oder `coalesce` verwenden.* Die relativen Pfade zu
-   *     diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ unterschiedlich
-   *     ([SQL](10-sql.md#path-syntax) und [WFS](50-wfs.md#path-syntax)).
-   * @default [sourcePath]
-   */
-  // Note: make internal
-  @Deprecated(since = "3.6")
-  @JsonMerge(OptBoolean.FALSE)
-  @Override
-  List<String> getSourcePaths();
 
   /**
    * @langEn Data type of the schema object. Default is `OBJECT` when `properties` is set, otherwise
@@ -239,18 +220,6 @@ public interface FeatureSchema
   Optional<String> getConstantValue();
 
   /**
-   * @langEn `*Deprecated, use `excludedScopes` instead.*` Optional scope for properties that should
-   *     only be used when either reading (`QUERIES`) or writing (`MUTATIONS`) features.
-   * @langDe *Deprecated, benutzen Sie stattdessen `excludedScopes`.* Optionaler Geltungsbereich für
-   *     Eigenschaften die entweder nur beim Lesen (`QUERIES`) oder beim Schreiben (`MUTATIONS`)
-   *     verwendet werden sollen.
-   * @default null
-   */
-  @Override
-  @Deprecated(since = "3.6")
-  Optional<Scope> getScope();
-
-  /**
    * @langEn Optional exclusion of a property from a schema scope. See [Schema
    *     Scopes](../details/scopes.md) for a description of the scopes.
    * @langDe Optionaler Ausschluss einer Eigenschaft aus einem Schema-Anwendungsbereich. Siehe
@@ -367,44 +336,6 @@ public interface FeatureSchema
   Optional<Boolean> getLinearizeCurves();
 
   /**
-   * @langEn *Deprecated, use `excludedScopes` instead.* Properties that are not of type OBJECT or
-   *     OBJECT_ARRAY are by default eligible as queryables. This setting can be used to declare a
-   *     property as ineligible, for example, if the property is not optimized for use in queries.
-   *     If an eligible property can actually be queried is decided by the provider implementation,
-   *     that might not be feasible due to technical reasons.
-   * @langDe *Deprecated, benutzen Sie stattdessen `excludedScopes`.* Eigenschaften, die nicht vom
-   *     Typ OBJECT oder OBJECT_ARRAY sind, sind standardmäßig für Abfragen geeignet. Diese
-   *     Einstellung kann verwendet werden, um eine Eigenschaft als nicht abfragefähig zu markieren,
-   *     z. B. wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert ist. Ob eine
-   *     geeignete Eigenschaft tatsächlich abgefragt werden kann entscheidet die
-   *     Provider-Implementierung, das könnte aufgrund technischer Gründe nicht möglich sein.
-   * @default see description
-   */
-  @Override
-  @Deprecated(since = "3.6")
-  Optional<Boolean> getIsQueryable();
-
-  /**
-   * @langEn *Deprecated, use `excludedScopes` instead.* Only the direct properties of a feature
-   *     type that are of type STRING, FLOAT, INTEGER, DATE, or DATETIME are eligible as sortables.
-   *     This setting can be used to declare a property as ineligible, for example, if the property
-   *     is not optimized for use in queries. If an eligible property can actually be used as
-   *     sortable is decided by the provider implementation, that might not be feasible due to
-   *     technical reasons.
-   * @langDe *Deprecated, benutzen Sie stattdessen `excludedScopes`.* Nur die direkten
-   *     Feature-Eigenschaften einer Objektart, die vom Typ STRING, FLOAT, INTEGER, DATE oder
-   *     DATETIME sind, kommen als Sortierkriterien in Frage. Diese Einstellung kann verwendet
-   *     werden, um eine Eigenschaft als nicht geeignet zu deklarieren, zum Beispiel, wenn die
-   *     Eigenschaft nicht für die Verwendung in Abfragen optimiert ist. Ob eine geeignete
-   *     Eigenschaft tatsächlich als Sortierkriterium verwendet werden kann entscheidet die
-   *     Provider-Implementierung, das könnte aufgrund technischer Gründe nicht möglich sein.
-   * @default see description
-   */
-  @Override
-  @Deprecated(since = "3.6")
-  Optional<Boolean> getIsSortable();
-
-  /**
    * @langEn Identifies a DATETIME property as a property that contains the timestamp when the
    *     feature was last modified. This information is used in optimistic locking to evaluate the
    *     pre-conditions, if a mutation request includes a `Last-Modified` header.
@@ -445,7 +376,6 @@ public interface FeatureSchema
    *     Operationen](#merge).
    * @default []
    */
-  @JsonAlias("allOf")
   List<PartialObjectSchema> getMerge();
 
   /**
@@ -565,39 +495,6 @@ public interface FeatureSchema
     return (isValue() && getConstantValue().isPresent())
         || (isObject() && getProperties().stream().allMatch(FeatureSchema::isConstant));
   }
-
-  /*@Value.Check
-  default FeatureSchema backwardsCompatibility() {
-    // migrate double column syntax to multiple sourcePaths, ignore wfs mappings
-    if (!getParentPath().isEmpty()
-        && !getParentPath().get(0).contains(":")
-        && getSourcePath()
-            .filter(path -> path.lastIndexOf(':') > path.lastIndexOf('/'))
-            .isPresent()) {
-      @Deprecated(since = "3.1.0")
-      String path1 = getSourcePath().get().substring(0, getSourcePath().get().lastIndexOf(':'));
-      String path2 =
-          path1.substring(0, path1.lastIndexOf('/') + 1)
-              + getSourcePath().get().substring(getSourcePath().get().lastIndexOf(':') + 1);
-
-      LOGGER.info(
-          "The sourcePath '{}' in property '{}' uses a deprecated style that includes a colon to merge two columns. Please use multiple sourcePaths instead, one for each column.",
-          getSourcePath().get(),
-          getName());
-
-      return new ImmutableFeatureSchema.Builder()
-          .from(this)
-          .sourcePath(Optional.empty())
-          .sourcePaths(ImmutableList.of(path1, path2))
-          .addTransformations(
-              new ImmutablePropertyTransformation.Builder()
-                  .stringFormat(String.format("{{%s}} ||| {{%s}}", path1, path2))
-                  .build())
-          .build();
-    }
-
-    return this;
-  }*/
 
   @Value.Check
   default FeatureSchema primaryGeometry() {
@@ -888,41 +785,6 @@ public interface FeatureSchema
         "A sortable property must be a string, a number or an instant. Found %s. Path: %s.",
         getType(),
         getFullPathAsString());
-  }
-
-  @Value.Check
-  default FeatureSchema backwardsCompatibility() {
-    boolean migrate =
-        !getIsQueryable().orElse(true) || !getIsSortable().orElse(true) || getScope().isPresent();
-    if (migrate) {
-      ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(this);
-
-      if (!getIsQueryable().orElse(true)) {
-        builder.addExcludedScopes(Scope.QUERYABLE).isQueryable(Optional.empty());
-      }
-
-      if (!getIsSortable().orElse(true)) {
-        builder.addExcludedScopes(Scope.SORTABLE).isSortable(Optional.empty());
-      }
-
-      getScope()
-          .ifPresent(
-              scope -> {
-                if (scope.equals(Scope.MUTATIONS)) {
-                  builder.addExcludedScopes(Scope.RETURNABLE).scope(Optional.empty());
-                } else if (scope.equals(Scope.QUERIES)) {
-                  builder.addExcludedScopes(Scope.RECEIVABLE).scope(Optional.empty());
-                } else {
-                  throw new IllegalStateException(
-                      String.format(
-                          "Unexpected scope value. Expected QUERIES or MUTATIONS. Found: %s",
-                          scope));
-                }
-              });
-
-      return builder.build();
-    }
-    return this;
   }
 
   @JsonIgnore

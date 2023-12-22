@@ -187,9 +187,8 @@ public class FeatureProviderSqlFactory
                     ? ImmutableList.of()
                     : ImmutableList.of("public")
                 : connectionInfo.getSchemas();
-        List<String> autoTypes = data.getAutoTypes();
 
-        // TODO: derive from schemas and autoTypes
+        // TODO: derive from schemas
         Map<String, List<String>> includeTypes = Map.of();
 
         data = featureProviderSqlAuto.generate(data, includeTypes, ignore -> {});

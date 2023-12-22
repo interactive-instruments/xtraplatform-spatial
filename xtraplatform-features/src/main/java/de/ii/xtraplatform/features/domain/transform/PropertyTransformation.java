@@ -7,11 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
@@ -29,7 +26,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.immutables.value.Value;
@@ -149,7 +145,6 @@ public interface PropertyTransformation
    * @langDe Reduziert ein Objekt zu einem String mithilfe der `stringFormat`-Syntax aber mit
    *     zusätzlichen Ersetzungen für die Property-Names des Objekts.
    */
-  @JsonAlias("reduceStringFormat")
   Optional<String> getObjectReduceFormat();
 
   /**
@@ -240,18 +235,7 @@ public interface PropertyTransformation
    * @langDe Bildet alle Werte, die einem der regulären Ausdrücke in der Liste entsprechen, auf
    *     `null` ab. Diese Transformation ist nicht bei objektwertigen Eigenschaften anwendbar.
    */
-  @Value.Default
-  default List<String> getNullify() {
-    return getNull().map(ImmutableList::of).orElse(ImmutableList.of());
-  }
-
-  /**
-   * @langEn *Deprecated* See `nullify`.
-   * @langDe *Deprecated* Siehe `nullify`.
-   */
-  @Deprecated
-  @JsonProperty(value = "null", access = JsonProperty.Access.WRITE_ONLY)
-  Optional<String> getNull();
+  List<String> getNullify();
 
   @Override
   default PropertyTransformation mergeInto(PropertyTransformation source) {
@@ -300,17 +284,6 @@ public interface PropertyTransformation
             MessageFormat.format(
                 "The codelist transformation in collection ''{0}'' for property ''{1}'' is invalid. The codelist ''{2}'' is not one of the known values: {3}.",
                 collectionId, property, codelist.get(), codelists));
-      }
-    }
-    final Optional<String> null_ = getNull();
-    if (null_.isPresent()) {
-      try {
-        Pattern.compile(null_.get());
-      } catch (Exception e) {
-        builder.addStrictErrors(
-            MessageFormat.format(
-                "The null transformation in collection ''{0}'' for property ''{1}'' with  value ''{2}'' is invalid: {3}.",
-                collectionId, property, null_.get(), e.getMessage()));
       }
     }
 

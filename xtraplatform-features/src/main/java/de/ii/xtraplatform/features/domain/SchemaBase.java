@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import de.ii.xtraplatform.docs.DocFile;
+import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.Arrays;
 import java.util.List;
@@ -114,11 +115,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
    */
   @DocFile(path = "providers/details", name = "scopes.md")
   enum Scope {
-    @Deprecated(since = "3.6")
-    QUERIES,
     RETURNABLE,
-    @Deprecated(since = "3.6")
-    MUTATIONS,
     RECEIVABLE,
     QUERYABLE,
     SORTABLE;
@@ -152,6 +149,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
 
   Optional<String> getSourcePath();
 
+  // not part of the configuration, but de-/serialization is needed for unit tests
+  @DocIgnore
   List<String> getSourcePaths();
 
   @JsonIgnore
@@ -183,16 +182,7 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     return getLinearizeCurves().orElse(false);
   }
 
-  @Deprecated(since = "3.6")
-  Optional<Scope> getScope();
-
   Set<Scope> getExcludedScopes();
-
-  @Deprecated(since = "3.6")
-  Optional<Boolean> getIsQueryable();
-
-  @Deprecated(since = "3.6")
-  Optional<Boolean> getIsSortable();
 
   @JsonIgnore
   @Value.Derived

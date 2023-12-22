@@ -20,10 +20,4 @@ public interface FeatureCrs {
   default boolean is3dSupported() {
     return false;
   }
-
-  // TODO: let transformer handle swapping again
-  @Deprecated
-  default boolean shouldSwapCoordinates(EpsgCrs crs) {
-    return false;
-  }
 }
