@@ -1,5 +1,8 @@
 
 maturity = 'MATURE'
+maintenance = 'FULL'
+description = 'Codelists for feature property values.'
+descriptionDe = 'Codelisten für Werte von Feature-Properties.'
 
 dependencies {
     provided 'de.interactive_instruments:xtraplatform-values'

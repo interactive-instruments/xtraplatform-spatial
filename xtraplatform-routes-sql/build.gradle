@@ -1,5 +1,8 @@
 
 maturity = 'PROPOSAL'
+maintenance = 'NONE'
+description = 'pgRouting extension for PostgreSQL feature providers.'
+descriptionDe = 'pgRouting Erweiterung für PostgreSQL-Feature-Provider.'
 
 dependencies {
     provided 'de.interactive_instruments:xtraplatform-entities'
