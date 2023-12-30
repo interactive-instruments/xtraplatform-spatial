@@ -19,12 +19,12 @@ import java.util.stream.Collectors;
 /**
  * @langEn Mapping operations may be needed when the source and target schema structure diverge too
  *     much.
- *     <p>### Merge
+ *     <p>#### Merge
  *     <p>If only some of the `properties` are defined in an external `schema`, or if some of the
  *     `properties` should be mapped to a different table, this provides a convenient way to define
  *     these properties alongside the regular properties.
- *     <p>#### Examples
- *     <p>##### Define only some properties using an external JSON schema
+ *     <p>##### Examples
+ *     <p>###### Define only some properties using an external JSON schema
  *     <p><code>
  * ```yaml
  * example:
@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  *     schema: names.json
  * ```
  * </code>
- *     <p>##### Using columns from a joined table in the main feature
+ *     <p>###### Using columns from a joined table in the main feature
  *     <p><code>
  * ```yaml
  * example:
@@ -62,10 +62,10 @@ import java.util.stream.Collectors;
  *         type: STRING
  * ```
  * </code>
- *     <p>### Coalesce
+ *     <p>#### Coalesce
  *     <p>If the value for a property may come from more than one `sourcePath`, this allows to
  *     choose the first non-null value.
- *     <p>#### Example
+ *     <p>##### Example
  *     <p><code>
  * ```yaml
  * foo:
@@ -82,7 +82,7 @@ import java.util.stream.Collectors;
  *         type: BOOLEAN
  * ```
  * </code>
- *     <p>#### Type compatibility
+ *     <p>##### Type compatibility
  *     <p>Constraints on the types of inner properties depending on the type of the outer property
  *     are shown in the table below.
  *     <p><code>
@@ -98,10 +98,10 @@ import java.util.stream.Collectors;
  * | `OBJECT`  |  `OBJECT`  | Different `objectType` with different schemas can be used  |
  * | `FEATURE_REF `  |  `FEATURE_REF `  | Different `refType` can be used  |
  * </code>
- *     <p>### Concat
+ *     <p>#### Concat
  *     <p>If the values for an array property may come from more than one `sourcePath`, this allows
  *     to concatenate all available values.
- *     <p>#### Example
+ *     <p>##### Example
  *     <p><code>
  * ```yaml
  * foo:
@@ -118,7 +118,7 @@ import java.util.stream.Collectors;
  *         refType: bazn
  * ```
  * </code>
- *     <p>#### Type compatibility
+ *     <p>##### Type compatibility
  *     <p>Constraints on the types of inner properties depending on the type of the outer property
  *     are shown in the table below.
  *     <p><code>
@@ -130,13 +130,13 @@ import java.util.stream.Collectors;
  * </code>
  * @langDe Mapping Operationen können notwendig sein, wenn die Quell- and Ziel-Schema-Struktur zu
  *     unterschiedlich sind.
- *     <p>### Merge
+ *     <p>#### Merge
  *     <p>Wenn nur einige `properties` in einem externen `schema` definiert sind, oder wenn nur
  *     einige `properties` auf eine andere Tabelle gemappt werden sollen, stellt diese Option einen
  *     komfortablen Weg zur Verfügung, um solche properties zusammen mit den regulären properties zu
  *     definieren.
- *     <p>#### Beispiele
- *     <p>##### Einige Properties in einem externen JSON schema definieren
+ *     <p>##### Beispiele
+ *     <p>###### Einige Properties in einem externen JSON schema definieren
  *     <p><code>
  * ```yaml
  * example:
@@ -152,7 +152,7 @@ import java.util.stream.Collectors;
  *     schema: names.json
  * ```
  * </code>
- *     <p>##### Spalten aus einer gejointen Tabelle im Haupt-Feature verwenden
+ *     <p>###### Spalten aus einer gejointen Tabelle im Haupt-Feature verwenden
  *     <p><code>
  * ```yaml
  * example:
@@ -174,10 +174,10 @@ import java.util.stream.Collectors;
  *         type: STRING
  * ```
  * </code>
- *     <p>### Coalesce
+ *     <p>#### Coalesce
  *     <p>Wenn der Wert für ein Property aus mehr als einem `sourcePath` stammen kann, erlaubt diese
  *     Option den ersten Wert der nicht Null ist zu wählen.
- *     <p>#### Beispiel
+ *     <p>##### Beispiel
  *     <p><code>
  * ```yaml
  * foo:
@@ -194,7 +194,7 @@ import java.util.stream.Collectors;
  *         type: BOOLEAN
  * ```
  * </code>
- *     <p>#### Typ-Kompabilität
+ *     <p>##### Typ-Kompabilität
  *     <p>Die Einschränkungen für die Arten der inneren Eigenschaften in Abhängigkeit von der Art
  *     der äußeren Eigenschaft sind in der nachstehenden Tabelle aufgeführt.
  *     <p><code>
@@ -210,10 +210,10 @@ import java.util.stream.Collectors;
  * | `OBJECT`  |  `OBJECT`  | Verschiedene `objectType` mit unterschiedlichen Schemata können verwendet werden  |
  * | `FEATURE_REF `  |  `FEATURE_REF `  | Verschiedene `refType` können verwendet werden  |
  * </code>
- *     <p>### Concat
+ *     <p>#### Concat
  *     <p>Wenn die Werte für ein Array-Property aus mehr als einem `sourcePath` stammen können,
  *     erlaubt diese Option alle verfügbaren Werte zu konkatenieren.
- *     <p>#### Beispiel
+ *     <p>##### Beispiel
  *     <p><code>
  * ```yaml
  * foo:
@@ -230,7 +230,7 @@ import java.util.stream.Collectors;
  *         refType: bazn
  * ```
  * </code>
- *     <p>#### Typ-Kompabilität
+ *     <p>##### Typ-Kompabilität
  *     <p>Die Einschränkungen für die Arten der inneren Eigenschaften in Abhängigkeit von der Art
  *     der äußeren Eigenschaft sind in der nachstehenden Tabelle aufgeführt.
  *     <p><code>

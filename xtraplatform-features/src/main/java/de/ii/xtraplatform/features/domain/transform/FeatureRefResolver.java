@@ -32,7 +32,7 @@ import java.util.stream.Stream;
  * - `title` is the title to use when presenting the link to a user, a `STRING`. The default value is the `id`, if the property is not specified.
  * - `type` is the feature type of the referenced feature in the same feature provider, a `STRING`.
  * </code>
- *     <p>### Encoding feature references
+ *     <p>#### Encoding feature references
  *     <p>When requested via the API, the feature reference can be encoded according to different
  *     profiles using the query parameter `profile` and depending on the negotiated feature format.
  *     The following profiles are supported:
@@ -47,8 +47,8 @@ import java.util.stream.Stream;
  *     <p>The profile is negotiated based on the requested profile (default is `rel-as-link`) and
  *     the supported profiles of the negotiated format based on the `Accept` header and the query
  *     parameter `f`.
- *     <p>### Configuration
- *     <p>#### Simple Case
+ *     <p>#### Configuration
+ *     <p>##### Simple Case
  *     <p>If the default value of `title` (that is, the `id`) is sufficient and the target features
  *     are in the same API and all in the same collection, the properties of the object do not need
  *     to be specified in the schema. It is sufficient to specify the following configuration
@@ -86,7 +86,7 @@ import java.util.stream.Stream;
  *     refType: aeste
  * ```
  * </code>
- *     <p>#### Advanced Cases
+ *     <p>##### Advanced Cases
  *     <p>If the `title` should differ from `id`, if the type of the referenced feature is
  *     determined from the data, or if the referenced resource is outside of the API, the properties
  *     of the feature reference are explicitly specified in the feature schema.
@@ -143,7 +143,7 @@ import java.util.stream.Stream;
  * - `title` ist die Bezeichnung, die verwendet wird, wenn der Link einem Benutzer angezeigt wird, ein `STRING`. Der Standardwert ist die `id`, wenn die Eigenschaft nicht angegeben wird.
  * - `type` ist die Objektart des referenzierten Features im selben Feature Provider, ein `STRING`.
  * </code>
- *     <p>### Kodieren von Objektreferenzen
+ *     <p>#### Kodieren von Objektreferenzen
  *     <p>Wenn Objekte über die API angefordert werden, können Objektreferenzen mit Hilfe des
  *     Abfrageparameters `profile` nach verschiedenen Profilen kodiert werden, je nach dem
  *     ausgehandelten Datenformat. Folgende Profile werden unterstützt:
@@ -158,8 +158,8 @@ import java.util.stream.Stream;
  *     <p>Das Profil wird auf der Grundlage des angeforderten Profils (Standard ist `rel-as-link`)
  *     und der unterstützten Profile des ausgehandelten Datenformats auf der Grundlage des
  *     `Accept`-Headers und des Abfrageparameters `f` ausgehandelt.
- *     <p>### Konfiguration
- *     <p>#### Einfacher Fall
+ *     <p>#### Konfiguration
+ *     <p>##### Einfacher Fall
  *     <p>Wenn der Standardwert von `title` (d.h. die `id`) ausreicht und die Zielobjekte in
  *     derselben API und alle in derselben Collection sind, müssen die Eigenschaften des
  *     FEATURE_REF-Objekts nicht im Schema angegeben werden. Es genügt, die folgende
@@ -197,7 +197,7 @@ import java.util.stream.Stream;
  *     refType: aeste
  * ```
  * </code>
- *     <p>#### Fortgeschrittene Fälle
+ *     <p>##### Fortgeschrittene Fälle
  *     <p>Wenn sich der `title` von der `id` unterscheiden soll, wenn der Typ des referenzierten
  *     Objekts aus den Daten bestimmt wird oder wenn die referenzierte Ressource außerhalb der API
  *     liegt, werden die Eigenschaften der Objektreferenz explizit im Feature-Schema angegeben.
