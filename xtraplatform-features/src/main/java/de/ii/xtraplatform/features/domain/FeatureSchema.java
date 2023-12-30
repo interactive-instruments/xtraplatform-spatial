@@ -97,8 +97,10 @@ public interface FeatureSchema
    * - `FLOAT`, `INTEGER`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE` for simple values.
    * - `GEOMETRY` for geometries.
    * - `OBJECT` for objects.
-   * - `OBJECT_ARRAY` a list of objects.
-   * - `VALUE_ARRAY` a list of simple values.
+   * - `OBJECT_ARRAY` for a list of objects.
+   * - `VALUE_ARRAY` for a list of simple values.
+   * - `FEATURE_REF` for a reference to another feature or external resource.
+   * - `FEATURE_REF_ARRAY` for a list of references to others features or external resources.
    * </code>
    *     <p>
    * @langDe Der Datentyp des Schemaobjekts. Der Standardwert ist `STRING`, sofern nicht auch die
@@ -109,6 +111,8 @@ public interface FeatureSchema
    * - `OBJECT` für ein Objekt.
    * - `OBJECT_ARRAY` für eine Liste von Objekten.
    * - `VALUE_ARRAY`für eine Liste von einfachen Werten.
+   * - `FEATURE_REF` für einen Verweis auf ein anderes Feature oder eine externe Ressource.
+   * - "FEATURE_REF_ARRAY" für eine Liste von Verweisen auf andere Features oder externe Ressourcen.
    * </code>
    *     <p>
    * @default STRING/OBJECT
@@ -228,6 +232,40 @@ public interface FeatureSchema
    */
   @Override
   Set<Scope> getExcludedScopes();
+
+  /**
+   * @langEn For a property of type `FEATURE_REF` or `FEATURE_REF_ARRAY` where the target is always
+   *     a feature of another type in the same provider, declare the feature type identifier in
+   *     `refType`. For details see [Feature References](#feature-references).
+   * @langDe Für eine Feature-Eigenschaft des Typs `FEATURE_REF` oder `FEATURE_REF_ARRAY`, bei der
+   *     das Ziel immer ein Feature einer anderen Objektart im selben Provider ist, wird die Kennung
+   *     der Objektart in `refType` angegeben. Für Details siehe
+   *     [Objektreferenzen](#objektreferenzen).
+   */
+  @Override
+  Optional<String> getRefType();
+
+  /**
+   * @langEn For a property of type `FEATURE_REF` or `FEATURE_REF_ARRAY` where the target is an
+   *     external resource, declare the URI template of the link in `refUriTemplate`. For details
+   *     see [Feature References](#feature-references).
+   * @langDe Für eine Eigenschaft vom Typ `FEATURE_REF` oder `FEATURE_REF_ARRAY`, bei der das Ziel
+   *     eine externe Ressource ist, deklarieren Sie das URI-Template in `refUriTemplate`. Für
+   *     Details siehe [Objektreferenzen](#objektreferenzen).
+   */
+  @Override
+  Optional<String> getRefUriTemplate();
+
+  /**
+   * @langEn For a property of type `FEATURE_REF` or `FEATURE_REF_ARRAY` where the type of the
+   *     target varies, declare the string template of the foreign key in `refKeyTemplate`. For
+   *     details see [Feature References](#feature-references).
+   * @langDe Für eine Eigenschaft vom Typ `FEATURE_REF` oder `FEATURE_REF_ARRAY`, bei der die
+   *     Objektart des Ziels variiert, deklarieren Sie das String-Template in `refKeyTemplate`. Für
+   *     Details siehe [Objektreferenzen](#objektreferenzen).
+   */
+  @Override
+  Optional<String> getRefKeyTemplate();
 
   @Override
   @JsonIgnore
