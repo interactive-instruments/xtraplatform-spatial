@@ -75,15 +75,17 @@ public class TileStoreMbTiles implements TileStore {
               consumerMayThrow(
                   path -> {
                     String tileset = path.getName(0).toString();
-                    String tms = path.getName(1).toString().replace(MBTILES_SUFFIX, "");
-                    tileSets.put(
-                        key(tileset, tms),
-                        createTileSet(
-                            rootStore,
-                            providerId,
-                            tileset,
-                            tms,
-                            getVectorLayers(tileSchemas, tileset)));
+                    if (tileSchemas.containsKey(tileset)) {
+                      String tms = path.getName(1).toString().replace(MBTILES_SUFFIX, "");
+                      tileSets.put(
+                          key(tileset, tms),
+                          createTileSet(
+                              rootStore,
+                              providerId,
+                              tileset,
+                              tms,
+                              getVectorLayers(tileSchemas, tileset)));
+                    }
                   }));
     } catch (IOException e) {
       LogContext.errorAsWarn(LOGGER, e, "Error when loading tile caches");
