@@ -71,7 +71,7 @@ import org.immutables.value.Value;
             @DocStep(type = Step.TAG, params = "{@examplesAll}")
           })
     })
-@Value.Immutable
+@Value.Immutable(prehash = true)
 @Value.Style(
     builder = "new",
     deepImmutablesDetection = true,
