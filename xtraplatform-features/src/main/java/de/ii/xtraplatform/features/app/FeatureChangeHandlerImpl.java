@@ -36,6 +36,16 @@ public class FeatureChangeHandlerImpl implements FeatureChangeHandler {
   }
 
   @Override
+  public void removeListener(DatasetChangeListener listener) {
+    datasetListeners.remove(listener);
+  }
+
+  @Override
+  public void removeListener(FeatureChangeListener listener) {
+    featureListeners.remove(listener);
+  }
+
+  @Override
   public void handle(DatasetChange change) {
     datasetListeners.forEach(listener -> listener.onDatasetChange(change));
   }

@@ -13,6 +13,10 @@ public interface FeatureChangeHandler {
 
   void addListener(FeatureChangeListener listener);
 
+  void removeListener(DatasetChangeListener listener);
+
+  void removeListener(FeatureChangeListener listener);
+
   void handle(DatasetChange change);
 
   void handle(FeatureChange change);
