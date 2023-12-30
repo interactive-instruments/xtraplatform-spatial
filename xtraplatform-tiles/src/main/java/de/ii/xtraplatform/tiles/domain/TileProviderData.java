@@ -113,6 +113,6 @@ public interface TileProviderData extends ProviderData {
 
     public abstract T providerType(String providerType);
 
-    public abstract T providerSubType(String featureProviderType);
+    public abstract T providerSubType(String providerSubType);
   }
 }

@@ -195,10 +195,10 @@ import java.util.stream.Collectors;
  * ```
  * </code>
  *     <p>#### Typ-Kompabilität
- *     <p>Constraints on the types of inner properties depending on the type of the outer property
- *     are shown in the table below.
+ *     <p>Die Einschränkungen für die Arten der inneren Eigenschaften in Abhängigkeit von der Art
+ *     der äußeren Eigenschaft sind in der nachstehenden Tabelle aufgeführt.
  *     <p><code>
- * | Outer type  | Valid inner types  | Remarks |
+ * | Äußerer Typ | Gültige innere Typen | Bemerkungen |
  * |---|---|---|
  * | `VALUE`  |  `INTEGER`, `FLOAT`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE`  |   |
  * | `INTEGER`  |  `INTEGER` |   |
@@ -207,8 +207,8 @@ import java.util.stream.Collectors;
  * | `BOOLEAN`  |  `BOOLEAN`  |   |
  * | `DATETIME`  |  `DATETIME`  |   |
  * | `DATE`  |  `DATE`  |   |
- * | `OBJECT`  |  `OBJECT`  | Different `objectType` with different schemas can be used  |
- * | `FEATURE_REF `  |  `FEATURE_REF `  | Different `refType` can be used  |
+ * | `OBJECT`  |  `OBJECT`  | Verschiedene `objectType` mit unterschiedlichen Schemata können verwendet werden  |
+ * | `FEATURE_REF `  |  `FEATURE_REF `  | Verschiedene `refType` können verwendet werden  |
  * </code>
  *     <p>### Concat
  *     <p>Wenn die Werte für ein Array-Property aus mehr als einem `sourcePath` stammen können,
@@ -231,14 +231,14 @@ import java.util.stream.Collectors;
  * ```
  * </code>
  *     <p>#### Typ-Kompabilität
- *     <p>Constraints on the types of inner properties depending on the type of the outer property
- *     are shown in the table below.
+ *     <p>Die Einschränkungen für die Arten der inneren Eigenschaften in Abhängigkeit von der Art
+ *     der äußeren Eigenschaft sind in der nachstehenden Tabelle aufgeführt.
  *     <p><code>
- * | Outer type  | Valid inner types  | Remarks |
+ * | Äußerer Typ | Gültige innere Typen | Bemerkungen |
  * |---|---|---|
  * | `VALUE_ARRAY`  |  `VALUE_ARRAY`, `INTEGER`, `FLOAT`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE`  |   |
- * | `OBJECT_ARRAY`  |  `OBJECT_ARRAY`, `OBJECT`  | Different `objectType` with different schemas can be used  |
- * | `FEATURE_REF_ARRAY `  |  `FEATURE_REF_ARRAY`, `FEATURE_REF `  | Different `refType` can be used  |
+ * | `OBJECT_ARRAY`  |  `OBJECT_ARRAY`, `OBJECT`  | Verschiedene `objectType` mit unterschiedlichen Schemata können verwendet werden  |
+ * | `FEATURE_REF_ARRAY `  |  `FEATURE_REF_ARRAY`, `FEATURE_REF `  | Verschiedene `refType` können verwendet werden  |
  * </code>
  */
 public class MappingOperationResolver implements TypesResolver {
