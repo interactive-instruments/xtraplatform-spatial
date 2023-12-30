@@ -77,9 +77,14 @@ import org.immutables.value.Value;
  *     <p>{@docVar:mappingOps}
  * @langDe ### Mapping Operationen
  *     <p>{@docVar:mappingOps}
+ * @langEn ### Feature References
+ *     <p>{@docVar:featureRefs}
+ * @langDe ### Objektreferenzen
+ *     <p>{@docVar:featureRefs}
  * @ref:cfgProperties {@link de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData}
  * @ref:cfgProperties:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
  * @ref:mappingOps {@link de.ii.xtraplatform.features.domain.MappingOperationResolver}
+ * @ref:featureRefs {@link de.ii.xtraplatform.features.domain.transform.FeatureRefResolver}
  */
 @DocFile(
     path = "providers/feature",
@@ -105,6 +110,12 @@ import org.immutables.value.Value;
           name = "mappingOps",
           value = {
             @DocStep(type = Step.TAG_REFS, params = "{@ref:mappingOps}"),
+            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
+          }),
+      @DocVar(
+          name = "featureRefs",
+          value = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:featureRefs}"),
             @DocStep(type = Step.TAG, params = "{@bodyBlock}")
           }),
     })
@@ -195,6 +206,7 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
   @Nullable
   MODE getTypeValidation();
 
+  @DocIgnore
   Optional<String> getLabelTemplate();
 
   /**
@@ -296,7 +308,7 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
 
     public abstract T providerType(String providerType);
 
-    public abstract T providerSubType(String featureProviderType);
+    public abstract T providerSubType(String providerSubType);
 
     // jackson should append to instead of replacing extensions
     @JsonIgnore
