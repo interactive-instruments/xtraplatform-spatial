@@ -220,6 +220,16 @@ public class TokenSliceTransformerChain
     propertyTransformations.forEach(
         propertyTransformation -> {
           propertyTransformation
+              .getObjectRemoveSelect()
+              .ifPresent(
+                  selected ->
+                      transformers.add(
+                          ImmutableFeaturePropertyTransformerObjectRemoveSelect.builder()
+                              .propertyPath(path)
+                              .parameter(selected)
+                              .build()));
+
+          propertyTransformation
               .getObjectReduceFormat()
               .ifPresent(
                   stringFormat ->
