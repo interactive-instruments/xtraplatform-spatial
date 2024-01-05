@@ -41,6 +41,24 @@ public interface SchemaMappingSql extends SchemaMappingBase<SchemaSql> {
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
+  // TODO: I had to add this to make mutation requests work, but don't fully understand why and what
+  //       exactly needs to be done
+  @Value.Derived
+  @Value.Auxiliary
+  default Map<List<String>, List<SchemaSql>> getSchemasBySourcePath() {
+    return getTargetSchema()
+        .accept(new SchemaToMappingVisitor<>(getSourcePathTransformer()))
+        .asMap()
+        .entrySet()
+        .stream()
+        .map(
+            entry ->
+                new AbstractMap.SimpleImmutableEntry<>(
+                    entry.getKey().subList(1, entry.getKey().size()),
+                    Lists.newArrayList(entry.getValue())))
+        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
   @Override
   default SchemaSql schemaWithGeometryType(SchemaSql schema, SimpleFeatureGeometry geometryType) {
     return new ImmutableSchemaSql.Builder().from(schema).geometryType(geometryType).build();
