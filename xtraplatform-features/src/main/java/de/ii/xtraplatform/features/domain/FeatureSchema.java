@@ -37,7 +37,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = true)
 @Value.Style(
     builder = "new",
     deepImmutablesDetection = true,

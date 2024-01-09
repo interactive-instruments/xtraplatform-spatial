@@ -160,7 +160,7 @@ import org.immutables.value.Value;
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
     })
-@Value.Immutable
+@Value.Immutable(prehash = true)
 @Value.Style(
     builder = "new",
     deepImmutablesDetection = true,
