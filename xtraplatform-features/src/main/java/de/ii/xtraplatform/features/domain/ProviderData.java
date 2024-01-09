@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.entities.domain.EntityData;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -30,5 +31,23 @@ public interface ProviderData extends EntityData {
   default Optional<String> getEntitySubType() {
     return Optional.of(
         String.format("%s/%s", getProviderType(), getProviderSubType()).toLowerCase());
+  }
+
+  // We need to add the @Value.Auxiliary annotation here again, otherwise createdAt and lastModified
+  // are still included in the hash. This may be a bug in the immutables?
+  @DocIgnore
+  @Value.Default
+  @Value.Auxiliary
+  @Override
+  default long getCreatedAt() {
+    return EntityData.super.getCreatedAt();
+  }
+
+  @DocIgnore
+  @Value.Default
+  @Value.Auxiliary
+  @Override
+  default long getLastModified() {
+    return EntityData.super.getLastModified();
   }
 }
