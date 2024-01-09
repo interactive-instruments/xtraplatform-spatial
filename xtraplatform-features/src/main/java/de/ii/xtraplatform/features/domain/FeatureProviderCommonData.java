@@ -16,7 +16,7 @@ import de.ii.xtraplatform.entities.domain.maptobuilder.encoding.BuildableMapEnco
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
-@Value.Immutable
+@Value.Immutable(prehash = true)
 @Value.Style(
     builder = "new",
     deepImmutablesDetection = true,
