@@ -33,7 +33,7 @@ public class WithoutProperties implements SchemaVisitorTopDown<FeatureSchema, Fe
     if (!schema.isPrimaryGeometry()
         && !fields.isEmpty()
         && !parents.isEmpty()
-        && !fields.contains(schema.getFullPathAsString())) {
+        && !fields.contains(getEffectiveSchema(schema, parents).getFullPathAsString())) {
       return null;
     }
 
@@ -41,5 +41,17 @@ public class WithoutProperties implements SchemaVisitorTopDown<FeatureSchema, Fe
         .from(schema)
         .propertyMap(asMap(visitedProperties, FeatureSchema::getFullPathAsString))
         .build();
+  }
+
+  private FeatureSchema getEffectiveSchema(FeatureSchema schema, List<FeatureSchema> parents) {
+    if (!schema.isFeatureRef() && isFeatureRef(parents)) {
+      return parents.get(parents.size() - 1);
+    }
+
+    return schema;
+  }
+
+  private boolean isFeatureRef(List<FeatureSchema> parents) {
+    return !parents.isEmpty() && parents.get(parents.size() - 1).isFeatureRef();
   }
 }
