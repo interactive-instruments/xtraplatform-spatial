@@ -155,6 +155,12 @@ public interface PropertyTransformation
   Optional<String> getObjectReduceSelect();
 
   /**
+   * @langEn Removes an object, if the property with the name in the value is `null`.
+   * @langDe Entfernt ein Objekt, wenn die Eigenschaft mit dem Namen im Wert `null` ist.
+   */
+  Optional<String> getObjectRemoveSelect();
+
+  /**
    * @langEn Maps an object to another object, the value is map where the keys are the new property
    *     names. The values use the same syntax as `stringFormat` but with additional replacements
    *     for the source object property names.
