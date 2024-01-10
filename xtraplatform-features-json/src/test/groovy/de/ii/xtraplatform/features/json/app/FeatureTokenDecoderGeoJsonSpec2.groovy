@@ -45,7 +45,7 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
     }
 
     def setup() {
-        decoder = new FeatureTokenDecoderGeoJson()
+        decoder = new FeatureTokenDecoderGeoJson("biotop")
     }
 
     public <T> T runStream(Reactive.Stream<T> stream) {
@@ -78,7 +78,7 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
         List<Object> tokens = runStream(stream)
 
         then:
-        tokens == FeatureTokenFixtures.SINGLE_FEATURE
+        tokens == FeatureTokenFixtures.SINGLE_FEATURE_SOURCE
 
     }
 
@@ -95,7 +95,7 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
         List<Object> tokens = runStream(stream)
 
         then:
-        tokens == FeatureTokenFixtures.SINGLE_FEATURE_POINT
+        tokens == FeatureTokenFixtures.SINGLE_FEATURE_POINT_SOURCE
 
     }
 
@@ -112,7 +112,7 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
         List<Object> tokens = runStream(stream)
 
         then:
-        tokens == FeatureTokenFixtures.SINGLE_FEATURE_MULTI_POINT
+        tokens == FeatureTokenFixtures.SINGLE_FEATURE_MULTI_POINT_SOURCE
 
     }
 
@@ -129,7 +129,7 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
         List<Object> tokens = runStream(stream)
 
         then:
-        tokens == FeatureTokenFixtures.SINGLE_FEATURE_MULTI_POLYGON
+        tokens == FeatureTokenFixtures.SINGLE_FEATURE_MULTI_POLYGON_SOURCE
 
     }
 
@@ -146,7 +146,7 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
         List<Object> tokens = runStream(stream)
 
         then:
-        tokens == FeatureTokenFixtures.SINGLE_FEATURE_NESTED_OBJECT
+        tokens == FeatureTokenFixtures.SINGLE_FEATURE_NESTED_OBJECT_SOURCE
 
     }
 
@@ -163,7 +163,7 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
         List<Object> tokens = runStream(stream)
 
         then:
-        tokens == FeatureTokenFixtures.SINGLE_FEATURE_VALUE_ARRAY
+        tokens == FeatureTokenFixtures.SINGLE_FEATURE_VALUE_ARRAY_SOURCE
 
     }
 
@@ -180,7 +180,7 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
         List<Object> tokens = runStream(stream)
 
         then:
-        tokens == FeatureTokenFixtures.SINGLE_FEATURE_NESTED_OBJECT_ARRAYS
+        tokens == FeatureTokenFixtures.SINGLE_FEATURE_NESTED_OBJECT_ARRAYS_SOURCE
 
     }
 
@@ -197,7 +197,7 @@ class FeatureTokenDecoderGeoJsonSpec2 extends Specification {
         List<Object> tokens = runStream(stream)
 
         then:
-        tokens == FeatureTokenFixtures.COLLECTION
+        tokens == FeatureTokenFixtures.COLLECTION_SOURCE
 
     }
 }

@@ -11,6 +11,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.io.Resources
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 
+import java.util.stream.Collectors
+import java.util.stream.Stream
+
 import static de.ii.xtraplatform.features.domain.SchemaBase.Type
 
 class FeatureTokenFixtures {
@@ -20,6 +23,18 @@ class FeatureTokenFixtures {
     public static FeatureTokens fromYaml(String name) {
         def resource = Resources.getResource("feature-tokens/" + name + ".yml");
         return YAML.readValue(Resources.toByteArray(resource), FeatureTokens.class);
+    }
+
+    public static List<Object> withType(String type, List<Object> tokens) {
+        return tokens.stream().flatMap {
+            if (it instanceof List) {
+                return Stream.of([type] + ((List<String>) it))
+            }
+            if (it == FeatureTokenType.FEATURE) {
+                return [it, [type]].stream()
+            }
+            return Stream.of(it)
+        }.collect(Collectors.toList());
     }
 
     public static final List<Object> SINGLE_FEATURE = [
@@ -38,22 +53,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.INPUT_END
     ]
 
-    public static final List<Object> SINGLE_FEATURE_SQL = [
-            FeatureTokenType.INPUT,
-            true,
-            FeatureTokenType.FEATURE,
-            ["biotop"],
-            FeatureTokenType.VALUE,
-            ["biotop", "id"],
-            "24",
-            Type.STRING,
-            FeatureTokenType.VALUE,
-            ["biotop", "kennung"],
-            "611320001-1",
-            Type.STRING,
-            FeatureTokenType.FEATURE_END,
-            FeatureTokenType.INPUT_END
-    ]
+    public static final List<Object> SINGLE_FEATURE_SOURCE = withType("biotop", SINGLE_FEATURE)
 
     public static final List<Object> SINGLE_FEATURE_POINT = [
             FeatureTokenType.INPUT,
@@ -88,6 +88,8 @@ class FeatureTokenFixtures {
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
+
+    public static final List<Object> SINGLE_FEATURE_POINT_SOURCE = withType("biotop", SINGLE_FEATURE_POINT)
 
     public static final List<Object> SINGLE_FEATURE_MULTI_POINT = [
             FeatureTokenType.INPUT,
@@ -130,6 +132,8 @@ class FeatureTokenFixtures {
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
+
+    public static final List<Object> SINGLE_FEATURE_MULTI_POINT_SOURCE = withType("biotop", SINGLE_FEATURE_MULTI_POINT)
 
     public static final List<Object> SINGLE_FEATURE_MULTI_POLYGON = [
             FeatureTokenType.INPUT,
@@ -225,6 +229,8 @@ class FeatureTokenFixtures {
             FeatureTokenType.INPUT_END
     ]
 
+    public static final List<Object> SINGLE_FEATURE_MULTI_POLYGON_SOURCE = withType("biotop", SINGLE_FEATURE_MULTI_POLYGON)
+
     public static final List<Object> SINGLE_FEATURE_POLYGON_INNER = [
             FeatureTokenType.INPUT,
             true,
@@ -293,6 +299,8 @@ class FeatureTokenFixtures {
             FeatureTokenType.INPUT_END
     ]
 
+    public static final List<Object> SINGLE_FEATURE_NESTED_OBJECT_SOURCE = withType("biotop", SINGLE_FEATURE_NESTED_OBJECT)
+
     public static final List<Object> SINGLE_FEATURE_NESTED_OBJECT_EMPTY = [
             FeatureTokenType.INPUT,
             true,
@@ -360,6 +368,8 @@ class FeatureTokenFixtures {
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
+
+    public static final List<Object> SINGLE_FEATURE_VALUE_ARRAY_SOURCE = withType("biotop", SINGLE_FEATURE_VALUE_ARRAY)
 
     public static final List<Object> SINGLE_FEATURE_VALUE_ARRAY_EMPTY = [
             FeatureTokenType.INPUT,
@@ -560,6 +570,8 @@ class FeatureTokenFixtures {
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
+
+    public static final List<Object> SINGLE_FEATURE_NESTED_OBJECT_ARRAYS_SOURCE = withType("biotop", SINGLE_FEATURE_NESTED_OBJECT_ARRAYS)
 
     public static final List<Object> OBJECT_WITHOUT_SOURCE_PATH = [
             FeatureTokenType.INPUT,
@@ -785,6 +797,8 @@ class FeatureTokenFixtures {
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
+
+    public static final List<Object> COLLECTION_SOURCE = withType("biotop", COLLECTION)
 
     public static final List<Object> STUFF = [
             FeatureTokenType.VALUE,

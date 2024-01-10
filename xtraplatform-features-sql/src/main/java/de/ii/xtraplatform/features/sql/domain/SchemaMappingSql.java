@@ -7,60 +7,40 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import de.ii.xtraplatform.features.domain.SchemaMappingBase;
-import de.ii.xtraplatform.features.domain.SchemaToMappingVisitor;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
-import java.util.AbstractMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 public interface SchemaMappingSql extends SchemaMappingBase<SchemaSql> {
 
-  BiFunction<String, Boolean, String> getSourcePathTransformer();
-
-  @Value.Derived
-  @Value.Auxiliary
-  default Map<List<String>, List<SchemaSql>> getSchemasByTargetPath() {
-    return getTargetSchema()
-        .accept(new SchemaToMappingVisitor<>(getSourcePathTransformer()))
-        .asMap()
-        .entrySet()
-        .stream()
-        // TODO: removal of first path element only makes sense for geojson, so change in parser
-        .map(
-            entry ->
-                new AbstractMap.SimpleImmutableEntry<>(
-                    entry.getKey().subList(1, entry.getKey().size()),
-                    Lists.newArrayList(entry.getValue())))
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-  }
-
-  // TODO: I had to add this to make mutation requests work, but don't fully understand why and what
-  //       exactly needs to be done
-  @Value.Derived
-  @Value.Auxiliary
-  default Map<List<String>, List<SchemaSql>> getSchemasBySourcePath() {
-    return getTargetSchema()
-        .accept(new SchemaToMappingVisitor<>(getSourcePathTransformer()))
-        .asMap()
-        .entrySet()
-        .stream()
-        .map(
-            entry ->
-                new AbstractMap.SimpleImmutableEntry<>(
-                    entry.getKey().subList(1, entry.getKey().size()),
-                    Lists.newArrayList(entry.getValue())))
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-  }
-
   @Override
   default SchemaSql schemaWithGeometryType(SchemaSql schema, SimpleFeatureGeometry geometryType) {
     return new ImmutableSchemaSql.Builder().from(schema).geometryType(geometryType).build();
+  }
+
+  @Override
+  default List<String> cleanPath(List<String> path) {
+    if (path.stream().anyMatch(elem -> elem.contains("{"))) {
+      return path.stream().map(this::cleanPath).collect(Collectors.toList());
+    }
+
+    return path;
+  }
+
+  // TODO: static cleanup method in PathParser
+  @Override
+  default String cleanPath(String path) {
+    if (path.contains("{")) {
+      int i = path.indexOf("{");
+      if (path.startsWith("filter", i + 1)) {
+        return path.substring(0, i + 2) + cleanPath(path.substring(i + 2));
+      }
+      return path.substring(0, path.indexOf("{"));
+    }
+    return path;
   }
 }
