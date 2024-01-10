@@ -49,6 +49,7 @@ import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults;
 import de.ii.xtraplatform.features.sql.domain.SqlClientBasicFactory;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.values.domain.ValueStore;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -189,10 +190,21 @@ public class FeatureProviderSqlFactory
                 : connectionInfo.getSchemas();
         List<String> autoTypes = data.getAutoTypes();
 
-        // TODO: derive from schemas and autoTypes
-        Map<String, List<String>> includeTypes = Map.of();
+        Map<String, List<String>> tables = featureProviderSqlAuto.analyze(data);
 
-        data = featureProviderSqlAuto.generate(data, includeTypes, ignore -> {});
+        if (connectionInfo.getDialect() != Dialect.GPKG) {
+          Map<String, List<String>> schemaTables = new LinkedHashMap<>();
+
+          for (String schema : schemas) {
+            if (tables.containsKey(schema)) {
+              schemaTables.put(schema, tables.get(schema));
+            }
+          }
+
+          tables = schemaTables;
+        }
+
+        data = featureProviderSqlAuto.generate(data, tables, ignore -> {});
       }
 
       return normalizeConstants(
