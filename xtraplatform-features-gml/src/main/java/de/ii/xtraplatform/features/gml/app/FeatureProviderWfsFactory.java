@@ -130,10 +130,9 @@ public class FeatureProviderWfsFactory
             "Feature provider with id '{}' is in auto mode, generating configuration ...",
             data.getId());
 
-        // TODO: derive from schemas and autoTypes
-        Map<String, List<String>> includeTypes = Map.of();
+        Map<String, List<String>> types = featureProviderWfsAuto.analyze(data);
 
-        data = featureProviderWfsAuto.generate(data, includeTypes, ignore -> {});
+        data = featureProviderWfsAuto.generate(data, types, ignore -> {});
       }
 
       return data;
