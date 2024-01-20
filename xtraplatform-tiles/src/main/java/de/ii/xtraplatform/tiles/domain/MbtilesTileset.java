@@ -17,6 +17,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.tiles.app.FeatureEncoderMVT;
 import de.ii.xtraplatform.tiles.app.SqlHelper;
 import java.io.ByteArrayOutputStream;
@@ -551,6 +552,9 @@ public class MbtilesTileset {
 
       SqlHelper.execute(connection, "COMMIT");
     } catch (SQLException e) {
+      if (LOGGER.isDebugEnabled(MARKER.STACKTRACE)) {
+        LOGGER.debug("Stacktrace: ", e);
+      }
       SqlHelper.execute(connection, "ROLLBACK");
       throw new IllegalStateException(
           String.format(
