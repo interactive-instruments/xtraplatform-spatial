@@ -51,6 +51,7 @@ public class MbtilesTileset {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MbtilesTileset.class);
   private static final int EMPTY_TILE_ID = 1;
+  private static final int IDS_CHUCK_SIZE = 10000;
   private final Path tilesetPath;
   private final Semaphore mutex = new Semaphore(1);
   private final MbtilesMetadata metadata;
@@ -673,11 +674,17 @@ public class MbtilesTileset {
         throw new IllegalStateException(String.format("Query execution failed: %s", sql), e);
       }
       SqlHelper.execute(connection, "BEGIN IMMEDIATE");
-      SqlHelper.execute(
-          connection,
-          String.format(
-              "DELETE FROM tile_blobs WHERE tile_id IN (%s)",
-              tile_ids.stream().map(String::valueOf).collect(Collectors.joining(","))));
+      int idx = 0;
+      while (idx < tile_ids.size()) {
+        String sqlDeleteBlobs =
+            String.format(
+                "DELETE FROM tile_blobs WHERE tile_id IN (%s)",
+                tile_ids.subList(idx, Math.min(idx + IDS_CHUCK_SIZE, tile_ids.size())).stream()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(",")));
+        SqlHelper.execute(connection, sqlDeleteBlobs);
+        idx += IDS_CHUCK_SIZE;
+      }
       SqlHelper.execute(connection, String.format("DELETE %s", sqlFrom));
       SqlHelper.execute(connection, "COMMIT");
     } catch (InterruptedException e) {
