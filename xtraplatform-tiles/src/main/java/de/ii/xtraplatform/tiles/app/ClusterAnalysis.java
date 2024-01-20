@@ -33,8 +33,13 @@ class ClusterAnalysis {
       for (int j = i + 1; j < features.size(); j++) {
         MvtFeature fj = features.get(j);
         Geometry gj = fj.getGeometry();
-        boolean clustered =
-            boundary ? gi.getBoundary().intersects(gj.getBoundary()) : gi.intersects(gj);
+        boolean clustered;
+        try {
+          clustered = boundary ? gi.getBoundary().intersects(gj.getBoundary()) : gi.intersects(gj);
+        } catch (Throwable ignore) {
+          // ignore feature
+          continue;
+        }
         if (clustered) {
           if (cluster.isPresent()) {
             // already in a cluster, add to the new feature to the cluster
