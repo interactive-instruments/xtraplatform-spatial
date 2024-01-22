@@ -556,16 +556,14 @@ public class MbtilesTileset {
         LOGGER.debug("Stacktrace: ", e);
       }
       SqlHelper.execute(connection, "ROLLBACK");
-      throw new IllegalStateException(
-          String.format(
-              "Failed to write tile %s/%d/%d/%d for layer '%s'. Reason: %s",
-              tile.getTileMatrixSet().getId(),
-              tile.getLevel(),
-              tile.getRow(),
-              tile.getCol(),
-              tile.getTileset(),
-              e.getMessage()),
-          e);
+      LOGGER.error(
+          "Failed to write tile {}/{}/{}/{} for layer '{}'. Check the state of the tile in the MBTiles file. Reason: {}",
+          tile.getTileMatrixSet().getId(),
+          tile.getLevel(),
+          tile.getRow(),
+          tile.getCol(),
+          tile.getTileset(),
+          e.getMessage());
     } catch (InterruptedException e) {
       LOGGER.debug("writeTile: Thread has been interrupted.");
     } finally {
