@@ -492,6 +492,8 @@ public class MbtilesTileset {
         throw new IllegalStateException(
             String.format("Could not acquire mutex to create MBTiles file: %s", tilesetPath));
       connection = getConnection(false, false);
+      // TODO just for testing, remove again
+      Thread.sleep(100);
       SqlHelper.execute(connection, "BEGIN IMMEDIATE");
       // do we have an old blob?
       boolean exists = false;
