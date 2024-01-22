@@ -459,6 +459,12 @@ public interface FeaturePropertyTokenSliceTransformer
         && Objects.equals(slice.get(index + 1), path);
   }
 
+  default boolean isNonNullValue(List<Object> slice, int index) {
+    return slice.get(index) == FeatureTokenType.VALUE
+        && index + 3 < slice.size()
+        && Objects.nonNull(slice.get(index + 2));
+  }
+
   default boolean isObjectWithPath(List<Object> slice, int index, List<String> path) {
     return slice.get(index) == FeatureTokenType.OBJECT
         && index + 1 < slice.size()

@@ -79,8 +79,9 @@ public abstract class FeaturePropertyTransformerCoalesce
 
     for (int i = 0; i < slice.size(); i++) {
       if (isValueWithPath(slice, i, schema.getFullPath())) {
-        if (!lastWasValueWithPath) {
+        if (!lastWasValueWithPath && isNonNullValue(slice, i)) {
           lastWasValueWithPath = true;
+          skip = false;
         } else {
           skip = true;
         }

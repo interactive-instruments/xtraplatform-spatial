@@ -1,0 +1,23 @@
+# schema references, mapping operations and feature refs are already resolved
+sourcePath: "/pfs_plan"
+type: OBJECT
+objectType: PFS_Plan
+properties:
+  oid:
+    sourcePath: id
+    type: STRING
+    role: ID
+  hatObjekt:
+    type: VALUE_ARRAY
+    valueType: INTEGER
+    sourcePaths:
+      - '[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/_id'
+      - '[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/_id'
+      - '[_id=gehoertzuplan_pfs_plan_fk]bst_hausanschluss/_id'
+    coalesce:
+      - sourcePath: '[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/_id'
+        type: INTEGER
+      - sourcePath: '[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/_id'
+        type: INTEGER
+      - sourcePath: '[_id=gehoertzuplan_pfs_plan_fk]bst_hausanschluss/_id'
+        type: INTEGER

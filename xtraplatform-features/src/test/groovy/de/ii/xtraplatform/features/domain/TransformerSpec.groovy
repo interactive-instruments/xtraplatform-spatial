@@ -54,6 +54,7 @@ class TransformerSpec extends Specification {
         "object array format"   | mapFormat("hatObjekt", ["href": "id::{{id}}"], "id")   | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "mapped"
         "object array reduce"   | reduceFormat("hatObjekt", "id::{{id}}", "id")          | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "reduced"
         "object array select"   | reduceSelect("hatObjekt", "id")                        | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "selected"
+        "value array coalesce"  | coalesce("hatObjekt", false)                           | "pfs_plan-hatObjekt-coalesce"        | "pfs_plan-hatObjekt"                 | "source2"   | "coalesce"
         "concat values"         | concat("process.title", false)                         | "observation"                        | "observation"                        | "source"     | "concat"
         "wrap value array"      | wrap("process.title", VALUE_ARRAY)                     | "observation"                        | "observation"                        | "concat"     | "wrapped"
         "reduce value array"    | arrayReduceFormat("process.title", "{{0}} nach {{1}}") | "observation"                        | "observation"                        | "wrapped"    | "reduced"
@@ -86,6 +87,10 @@ class TransformerSpec extends Specification {
 
     static Map<String, List<PropertyTransformation>> concat(String path, boolean isObject) {
         return [(path): [new ImmutablePropertyTransformation.Builder().concat(isObject).build()]]
+    }
+
+    static Map<String, List<PropertyTransformation>> coalesce(String path, boolean isObject) {
+        return [(path): [new ImmutablePropertyTransformation.Builder().coalesce(isObject).build()]]
     }
 
     static Map<String, List<PropertyTransformation>> arrayReduceFormat(String path, String template) {

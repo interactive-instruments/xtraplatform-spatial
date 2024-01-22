@@ -7,6 +7,10 @@ tokens:
   - type: ARRAY
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
     target: hatObjekt
+  - type: ARRAY
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/_id
+    target: hatObjekt
+    onlyIf: source2
   - type: OBJECT
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
     target: hatObjekt
@@ -40,6 +44,7 @@ tokens:
     valueType: STRING
     onlyIf: reduced
   - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/_id
     target: hatObjekt
     value: 1
     valueType: INTEGER
@@ -81,6 +86,7 @@ tokens:
     valueType: STRING
     onlyIf: reduced
   - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/_id
     target: hatObjekt
     value: 2
     valueType: INTEGER
@@ -119,6 +125,12 @@ tokens:
     value: Speicher Nüttemoor
     valueType: STRING
     onlyIf: source,concat
+  - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/_id
+    target: hatObjekt
+    value: null
+    valueType: INTEGER
+    onlyIf: source2
   - type: OBJECT_END
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
     target: hatObjekt
@@ -156,14 +168,19 @@ tokens:
     valueType: STRING
     onlyIf: reduced
   - type: VALUE
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/_id
     target: hatObjekt
     value: 2
     valueType: INTEGER
-    onlyIf: selected
+    onlyIf: selected,source2,coalesce
   - type: OBJECT_END
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
     target: hatObjekt
     onlyIf: source,concat,mapped
   - type: ARRAY_END
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
+    target: hatObjekt
+  - type: ARRAY_END
+    onlyIf: source2
+    source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/_id
     target: hatObjekt
