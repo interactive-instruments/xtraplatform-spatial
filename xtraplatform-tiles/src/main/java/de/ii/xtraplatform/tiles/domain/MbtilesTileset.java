@@ -84,6 +84,11 @@ public class MbtilesTileset {
 
   private void initMbtilesDb(MbtilesMetadata metadata, Connection connection) {
     try {
+      // change settings to reduce overheads at the cost of protection against corrupt databases
+      // in case of an error
+      SqlHelper.execute(connection, "PRAGMA journal_mode=MEMORY");
+      SqlHelper.execute(connection, "PRAGMA locking_mode=EXCLUSIVE");
+      SqlHelper.execute(connection, "PRAGMA synchronous=OFF");
       // create tables and views
       SqlHelper.execute(connection, "BEGIN TRANSACTION IMMEDIATE");
       SqlHelper.execute(connection, "CREATE TABLE metadata (name text, value text)");
@@ -492,7 +497,7 @@ public class MbtilesTileset {
         throw new IllegalStateException(
             String.format("Could not acquire mutex to create MBTiles file: %s", tilesetPath));
       connection = getConnection(false, false);
-      // TODO just for testing, remove again
+      // TODO for testing, remove again?
       Thread.sleep(100);
       SqlHelper.execute(connection, "BEGIN IMMEDIATE");
       // do we have an old blob?
