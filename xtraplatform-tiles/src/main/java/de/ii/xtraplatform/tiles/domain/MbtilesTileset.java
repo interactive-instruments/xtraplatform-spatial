@@ -163,8 +163,11 @@ public class MbtilesTileset {
       }
 
       SqlHelper.execute(connection, "COMMIT");
-    } catch (Exception e) {
-      SqlHelper.execute(connection, "ROLLBACK");
+    } catch (SQLException | IOException e) {
+      try {
+        SqlHelper.execute(connection, "ROLLBACK");
+      } catch (SQLException ignore) {
+      }
       throw new IllegalStateException(
           String.format("Could not create new Mbtiles file: %s", tilesetPath), e);
     }
@@ -557,7 +560,10 @@ public class MbtilesTileset {
 
       SqlHelper.execute(connection, "COMMIT");
     } catch (SQLException e) {
-      SqlHelper.execute(connection, "ROLLBACK");
+      try {
+        SqlHelper.execute(connection, "ROLLBACK");
+      } catch (Exception ignore) {
+      }
       throw e;
     } catch (InterruptedException e) {
       LOGGER.debug("writeTile: Thread has been interrupted.");
@@ -623,6 +629,12 @@ public class MbtilesTileset {
         sql = String.format("DELETE FROM tile_blobs WHERE tile_id=%d", tile_id);
         SqlHelper.execute(connection, sql);
       }
+    } catch (SQLException e) {
+      try {
+        SqlHelper.execute(connection, "ROLLBACK");
+      } catch (Exception ignore) {
+      }
+      throw e;
     } catch (InterruptedException e) {
       LOGGER.debug("deleteTile: Thread has been interrupted.");
     } finally {
@@ -684,6 +696,12 @@ public class MbtilesTileset {
       }
       SqlHelper.execute(connection, String.format("DELETE %s", sqlFrom));
       SqlHelper.execute(connection, "COMMIT");
+    } catch (SQLException e) {
+      try {
+        SqlHelper.execute(connection, "ROLLBACK");
+      } catch (Exception ignore) {
+      }
+      throw e;
     } catch (InterruptedException e) {
       LOGGER.debug("deleteTiles: Thread has been interrupted.");
     } finally {
