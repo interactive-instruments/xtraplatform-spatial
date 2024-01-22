@@ -87,6 +87,7 @@ public class MbtilesTileset {
       // change settings to reduce overheads at the cost of protection against corrupt databases
       // in case of an error
       SqlHelper.execute(connection, "PRAGMA journal_mode=MEMORY");
+      SqlHelper.execute(connection, "PRAGMA temp_store=MEMORY");
       SqlHelper.execute(connection, "PRAGMA locking_mode=EXCLUSIVE");
       SqlHelper.execute(connection, "PRAGMA synchronous=OFF");
       // create tables and views
