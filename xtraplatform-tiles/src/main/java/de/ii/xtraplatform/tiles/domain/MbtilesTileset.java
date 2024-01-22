@@ -17,7 +17,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.tiles.app.FeatureEncoderMVT;
 import de.ii.xtraplatform.tiles.app.SqlHelper;
 import java.io.ByteArrayOutputStream;
@@ -476,8 +475,7 @@ public class MbtilesTileset {
     return count > 1;
   }
 
-  public boolean writeTile(TileQuery tile, byte[] content) throws SQLException, IOException {
-    boolean written = false;
+  public void writeTile(TileQuery tile, byte[] content) throws SQLException, IOException {
     int level = tile.getLevel();
     int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
@@ -558,22 +556,9 @@ public class MbtilesTileset {
       }
 
       SqlHelper.execute(connection, "COMMIT");
-      written = true;
     } catch (SQLException e) {
-      if (LOGGER.isDebugEnabled(MARKER.STACKTRACE)) {
-        LOGGER.debug("Stacktrace: ", e);
-      }
       SqlHelper.execute(connection, "ROLLBACK");
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(
-            "Failed to write tile {}/{}/{}/{} for layer '{}'. Check the state of the tile in the MBTiles file. Reason: {}",
-            tile.getTileMatrixSet().getId(),
-            tile.getLevel(),
-            tile.getRow(),
-            tile.getCol(),
-            tile.getTileset(),
-            e.getMessage());
-      }
+      throw e;
     } catch (InterruptedException e) {
       LOGGER.debug("writeTile: Thread has been interrupted.");
     } finally {
@@ -583,8 +568,6 @@ public class MbtilesTileset {
         mutex.release();
       }
     }
-
-    return written;
   }
 
   public void deleteTile(TileQuery tile) throws SQLException, IOException {

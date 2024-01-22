@@ -195,66 +195,56 @@ public class TileStoreMbTiles implements TileStore {
 
   @Override
   public void put(TileQuery tile, InputStream content) throws IOException {
-    try {
-      synchronized (tileSets) {
-        if (!tileSets.containsKey(key(tile))) {
-          tileSets.put(
-              key(tile),
-              createTileSet(
-                  rootStore,
-                  providerId,
-                  tile.getTileset(),
-                  tile.getTileMatrixSet().getId(),
-                  getVectorLayers(tileSchemas, tile.getTileset())));
-        }
-      }
-      MbtilesTileset tileset = tileSets.get(key(tile));
-      boolean written = false;
-      int count = 0;
-      while (!written && count++ < 3) {
-        if (count > 1) {
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(
-                "Failed to write tile {}/{}/{}/{} for tileset '{}'. Trying again...",
+    synchronized (tileSets) {
+      if (!tileSets.containsKey(key(tile))) {
+        tileSets.put(
+            key(tile),
+            createTileSet(
+                rootStore,
+                providerId,
+                tile.getTileset(),
                 tile.getTileMatrixSet().getId(),
-                tile.getLevel(),
-                tile.getRow(),
-                tile.getCol(),
-                tile.getTileset());
-          }
-          try {
-            Thread.sleep(100);
-          } catch (InterruptedException e) {
-            // ignore
-          }
-        }
-        written = tileset.writeTile(tile, content.readAllBytes());
+                getVectorLayers(tileSchemas, tile.getTileset())));
       }
-
-      if (!written) {
-        if (LOGGER.isWarnEnabled()) {
-          LOGGER.warn(
-              "Failed to write tile {}/{}/{}/{} for tileset '{}'.",
+    }
+    MbtilesTileset tileset = tileSets.get(key(tile));
+    boolean written = false;
+    int count = 0;
+    while (!written && count++ < 3) {
+      try {
+        tileset.writeTile(tile, content.readAllBytes());
+        written = true;
+      } catch (SQLException e) {
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug(
+              "Failed to write tile {}/{}/{}/{} for tileset '{}'. Reason: {}. Trying again...",
               tile.getTileMatrixSet().getId(),
               tile.getLevel(),
               tile.getRow(),
               tile.getCol(),
-              tile.getTileset());
+              tile.getTileset(),
+              e.getMessage());
+        }
+        if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
+          LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
+        }
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException ignore) {
+          // ignore
         }
       }
-    } catch (SQLException e) {
+    }
+
+    if (!written) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(
-            "Failed to write tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
+            "Failed to write tile {}/{}/{}/{} for tileset '{}'.",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getTileset(),
-            e.getMessage());
-        if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
-          LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
-        }
+            tile.getTileset());
       }
     }
   }
