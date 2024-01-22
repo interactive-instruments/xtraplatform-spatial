@@ -208,8 +208,40 @@ public class TileStoreMbTiles implements TileStore {
                   getVectorLayers(tileSchemas, tile.getTileset())));
         }
       }
-      tileSets.get(key(tile)).writeTile(tile, content.readAllBytes());
+      MbtilesTileset tileset = tileSets.get(key(tile));
+      boolean written = false;
+      int count = 0;
+      while (!written && count++ < 3) {
+        if (count > 1) {
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(
+                "Failed to write tile {}/{}/{}/{} for tileset '{}'. Trying again...",
+                tile.getTileMatrixSet().getId(),
+                tile.getLevel(),
+                tile.getRow(),
+                tile.getCol(),
+                tile.getTileset());
+          }
+          try {
+            Thread.sleep(100);
+          } catch (InterruptedException e) {
+            // ignore
+          }
+        }
+        written = tileset.writeTile(tile, content.readAllBytes());
+      }
 
+      if (!written) {
+        if (LOGGER.isWarnEnabled()) {
+          LOGGER.warn(
+              "Failed to write tile {}/{}/{}/{} for tileset '{}'.",
+              tile.getTileMatrixSet().getId(),
+              tile.getLevel(),
+              tile.getRow(),
+              tile.getCol(),
+              tile.getTileset());
+        }
+      }
     } catch (SQLException e) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(

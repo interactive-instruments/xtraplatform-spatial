@@ -476,7 +476,8 @@ public class MbtilesTileset {
     return count > 1;
   }
 
-  public void writeTile(TileQuery tile, byte[] content) throws SQLException, IOException {
+  public boolean writeTile(TileQuery tile, byte[] content) throws SQLException, IOException {
+    boolean written = false;
     int level = tile.getLevel();
     int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
@@ -498,8 +499,6 @@ public class MbtilesTileset {
         throw new IllegalStateException(
             String.format("Could not acquire mutex to create MBTiles file: %s", tilesetPath));
       connection = getConnection(false, false);
-      // TODO for testing, remove again?
-      Thread.sleep(100);
       SqlHelper.execute(connection, "BEGIN IMMEDIATE");
       // do we have an old blob?
       boolean exists = false;
@@ -559,19 +558,22 @@ public class MbtilesTileset {
       }
 
       SqlHelper.execute(connection, "COMMIT");
+      written = true;
     } catch (SQLException e) {
       if (LOGGER.isDebugEnabled(MARKER.STACKTRACE)) {
         LOGGER.debug("Stacktrace: ", e);
       }
       SqlHelper.execute(connection, "ROLLBACK");
-      LOGGER.error(
-          "Failed to write tile {}/{}/{}/{} for layer '{}'. Check the state of the tile in the MBTiles file. Reason: {}",
-          tile.getTileMatrixSet().getId(),
-          tile.getLevel(),
-          tile.getRow(),
-          tile.getCol(),
-          tile.getTileset(),
-          e.getMessage());
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "Failed to write tile {}/{}/{}/{} for layer '{}'. Check the state of the tile in the MBTiles file. Reason: {}",
+            tile.getTileMatrixSet().getId(),
+            tile.getLevel(),
+            tile.getRow(),
+            tile.getCol(),
+            tile.getTileset(),
+            e.getMessage());
+      }
     } catch (InterruptedException e) {
       LOGGER.debug("writeTile: Thread has been interrupted.");
     } finally {
@@ -581,6 +583,8 @@ public class MbtilesTileset {
         mutex.release();
       }
     }
+
+    return written;
   }
 
   public void deleteTile(TileQuery tile) throws SQLException, IOException {
