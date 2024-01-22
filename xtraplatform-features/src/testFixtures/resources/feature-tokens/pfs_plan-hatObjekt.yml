@@ -100,11 +100,11 @@ tokens:
   - type: OBJECT
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
     target: hatObjekt
-    onlyIf: source,concat,mapped
+    onlyIf: source,concat
   - type: VALUE
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/_id
     target: hatObjekt.2_id
-    value: 1
+    value: null
     valueType: INTEGER
     onlyIf: source,concat
   - type: VALUE
@@ -119,24 +119,10 @@ tokens:
     value: Speicher Nüttemoor
     valueType: STRING
     onlyIf: source,concat
-  - type: VALUE
-    target: hatObjekt.href
-    value: id::1
-    valueType: STRING
-    onlyIf: mapped
-  - type: VALUE
-    target: hatObjekt
-    value: id::1
-    valueType: STRING
-    onlyIf: reduced
-  - type: VALUE
-    target: hatObjekt
-    valueType: STRING
-    onlyIf: selected
   - type: OBJECT_END
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
     target: hatObjekt
-    onlyIf: source,concat,mapped
+    onlyIf: source,concat
   - type: OBJECT
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
     target: hatObjekt
@@ -171,7 +157,8 @@ tokens:
     onlyIf: reduced
   - type: VALUE
     target: hatObjekt
-    valueType: STRING
+    value: 2
+    valueType: INTEGER
     onlyIf: selected
   - type: OBJECT_END
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher

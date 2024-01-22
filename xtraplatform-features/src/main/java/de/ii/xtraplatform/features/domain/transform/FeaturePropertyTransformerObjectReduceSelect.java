@@ -13,7 +13,6 @@ import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import org.immutables.value.Value;
 
@@ -32,10 +31,7 @@ public interface FeaturePropertyTransformerObjectReduceSelect
   default FeatureSchema transformSchema(FeatureSchema schema) {
     checkObject(schema);
 
-    Optional<FeatureSchema> selected =
-        schema.getProperties().stream()
-            .filter(property -> Objects.equals(property.getName(), getParameter()))
-            .findFirst();
+    Optional<FeatureSchema> selected = findProperty(schema, getParameter());
 
     if (selected.isEmpty()) {
       throw new IllegalArgumentException("Selected property not found: " + getParameter());

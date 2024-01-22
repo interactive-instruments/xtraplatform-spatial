@@ -51,9 +51,9 @@ class TransformerSpec extends Specification {
         "wrap object"           | wrap("gehoertZuPlan", OBJECT)                          | "bp_bereich-min"                     | "bp_bereich"                         | null         | "wrapped"
         "wrap object noop"      | wrap("gehoertZuPlan", OBJECT)                          | "bp_bereich-min"                     | "bp_bereich"                         | "wrapped"    | "wrapped"
         "object array concat"   | concat("hatObjekt", true)                              | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "source"     | "concat"
-        "object array format"   | mapFormat("hatObjekt", ["href": "id::{{id}}"])         | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "mapped"
-        "object array reduce"   | reduceFormat("hatObjekt", "id::{{id}}")                | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "reduced"
-        "object array select"   | reduceSelect("hatObjekt", "1_id")                        | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "selected"
+        "object array format"   | mapFormat("hatObjekt", ["href": "id::{{id}}"], "id")   | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "mapped"
+        "object array reduce"   | reduceFormat("hatObjekt", "id::{{id}}", "id")          | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "reduced"
+        "object array select"   | reduceSelect("hatObjekt", "id")                        | "pfs_plan-hatObjekt"                 | "pfs_plan-hatObjekt"                 | "concat"     | "selected"
         "concat values"         | concat("process.title", false)                         | "observation"                        | "observation"                        | "source"     | "concat"
         "wrap value array"      | wrap("process.title", VALUE_ARRAY)                     | "observation"                        | "observation"                        | "concat"     | "wrapped"
         "reduce value array"    | arrayReduceFormat("process.title", "{{0}} nach {{1}}") | "observation"                        | "observation"                        | "wrapped"    | "reduced"
@@ -68,16 +68,16 @@ class TransformerSpec extends Specification {
         return [(path): [new ImmutablePropertyTransformation.Builder().wrap(type).build()]]
     }
 
-    static Map<String, List<PropertyTransformation>> mapFormat(String path, Map<String, String> map) {
-        return [(path): [new ImmutablePropertyTransformation.Builder().objectMapFormat(map).build()]]
+    static Map<String, List<PropertyTransformation>> mapFormat(String path, Map<String, String> map, String property) {
+        return [(path): [new ImmutablePropertyTransformation.Builder().objectRemoveSelect(property).objectMapFormat(map).build()]]
     }
 
-    static Map<String, List<PropertyTransformation>> reduceFormat(String path, String template) {
-        return [(path): [new ImmutablePropertyTransformation.Builder().objectReduceFormat(template).build()]]
+    static Map<String, List<PropertyTransformation>> reduceFormat(String path, String template, String property) {
+        return [(path): [new ImmutablePropertyTransformation.Builder().objectRemoveSelect(property).objectReduceFormat(template).build()]]
     }
 
     static Map<String, List<PropertyTransformation>> reduceSelect(String path, String property) {
-        return [(path): [new ImmutablePropertyTransformation.Builder().objectReduceSelect(property).build()]]
+        return [(path): [new ImmutablePropertyTransformation.Builder().objectRemoveSelect(property).objectReduceSelect(property).build()]]
     }
 
     static Map<String, List<PropertyTransformation>> duplicate(String path, Map<String, String> map) {

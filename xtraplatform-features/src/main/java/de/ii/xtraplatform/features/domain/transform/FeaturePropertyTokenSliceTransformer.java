@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -482,14 +483,26 @@ public interface FeaturePropertyTokenSliceTransformer
 
   static String joinPath(List<String> path) {
     String last = path.get(path.size() - 1);
-    if (last.matches("[0-9]+_.*")) {
+    if (needsClean(last)) {
       List<String> path2 = new ArrayList<>(path.subList(0, path.size() - 1));
-      path2.add(last.substring(last.indexOf("_") + 1));
+      path2.add(clean(last));
 
       return PATH_JOINER.join(path2);
     }
 
     return PATH_JOINER.join(path);
+  }
+
+  static String clean(String propertyPath) {
+    if (needsClean(propertyPath)) {
+      return propertyPath.substring(propertyPath.indexOf("_") + 1);
+    }
+
+    return propertyPath;
+  }
+
+  static boolean needsClean(String propertyPath) {
+    return propertyPath.matches("[0-9]+_.*");
   }
 
   static String getValue(List<Object> slice, int valueIndex) {
@@ -504,7 +517,7 @@ public interface FeaturePropertyTokenSliceTransformer
     for (int i = from; i < to; i++) {
       if (slice.get(i) == FeatureTokenType.VALUE) {
         if (i + 2 < to && slice.get(i + 1) instanceof List) {
-          if (Objects.equals(path, PATH_JOINER.join((List<String>) slice.get(i + 1)))) {
+          if (Objects.equals(path, joinPath((List<String>) slice.get(i + 1)))) {
             return i + 2;
           }
         }
@@ -546,5 +559,14 @@ public interface FeaturePropertyTokenSliceTransformer
             : Type.STRING;
 
     return Tuple.of(value, type);
+  }
+
+  default Optional<FeatureSchema> findProperty(FeatureSchema schema, String propertyName) {
+    return schema.getProperties().stream()
+        .filter(
+            property ->
+                Objects.equals(property.getName(), propertyName)
+                    || Objects.equals(clean(property.getName()), propertyName))
+        .findFirst();
   }
 }
