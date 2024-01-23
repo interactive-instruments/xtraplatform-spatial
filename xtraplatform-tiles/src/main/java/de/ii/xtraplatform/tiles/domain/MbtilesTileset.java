@@ -137,8 +137,10 @@ public class MbtilesTileset {
               mapper.writeValueAsString(
                   ImmutableMap.of("vector_layers", metadata.getVectorLayers())));
         } catch (JsonProcessingException e) {
-          LOGGER.error(
-              String.format("Could not write 'json' metadata entry. Reason: %s", e.getMessage()));
+          if (LOGGER.isErrorEnabled()) {
+            LOGGER.error(
+                String.format("Could not write 'json' metadata entry. Reason: %s", e.getMessage()));
+          }
           if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
             LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
           }
@@ -190,7 +192,9 @@ public class MbtilesTileset {
     try {
       acquired = acquireMutexOnCreate && mutex.tryAcquire(5, TimeUnit.SECONDS);
       if (acquireMutexOnCreate)
-        LOGGER.trace("getConnection: Trying to acquire mutex: '{}'.", acquired);
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("getConnection: Trying to acquire mutex: '{}'.", acquired);
+        }
       if (acquireMutexOnCreate && !acquired)
         throw new IllegalStateException(
             String.format("Could not acquire mutex to create MBTiles file: %s", tilesetPath));
@@ -198,17 +202,23 @@ public class MbtilesTileset {
       // created by a parallel request
       if (!Files.exists(tilesetPath)) {
         // recreate an empty MBTiles container
-        LOGGER.trace("Creating MBTiles file '{}'.", tilesetPath);
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("Creating MBTiles file '{}'.", tilesetPath);
+        }
         Files.createDirectories(tilesetPath.getParent());
         connection = SqlHelper.getConnection(tilesetPath, false);
         initMbtilesDb(metadata, connection);
       }
     } catch (InterruptedException e) {
-      LOGGER.debug("getConnection: Thread has been interrupted.");
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("getConnection: Thread has been interrupted.");
+      }
     } finally {
       releaseConnection(connection);
       if (acquired) {
-        LOGGER.trace("getConnection: Releasing mutex.");
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("getConnection: Releasing mutex.");
+        }
         mutex.release();
       }
     }
@@ -338,6 +348,9 @@ public class MbtilesTileset {
                   LOGGER.error(
                       "Could not parse Vector Layers object from MBTiles metadata, the vector layers are ignored: {}",
                       e.getMessage());
+                }
+                if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
+                  LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
                 }
               }
               break;
@@ -484,18 +497,22 @@ public class MbtilesTileset {
     int col = tile.getCol();
     boolean gzip = Objects.equals(tile.getMediaType(), FeatureEncoderMVT.FORMAT);
     boolean supportsEmtpyTile = Objects.equals(tile.getMediaType(), FeatureEncoderMVT.FORMAT);
-    LOGGER.trace(
-        "Write tile {}/{}/{}/{} to MBTiles cache {}.",
-        tile.getTileMatrixSet().getId(),
-        level,
-        tile.getRow(),
-        col,
-        tilesetPath);
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace(
+          "Write tile {}/{}/{}/{} to MBTiles cache {}.",
+          tile.getTileMatrixSet().getId(),
+          level,
+          tile.getRow(),
+          col,
+          tilesetPath);
+    }
     Connection connection = null;
     boolean acquired = false;
     try {
       acquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
-      LOGGER.trace("writeTile: Trying to acquire mutex: '{}'.", acquired);
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("writeTile: Trying to acquire mutex: '{}'.", acquired);
+      }
       if (!acquired)
         throw new IllegalStateException(
             String.format("Could not acquire mutex to create MBTiles file: %s", tilesetPath));
@@ -566,11 +583,15 @@ public class MbtilesTileset {
       }
       throw e;
     } catch (InterruptedException e) {
-      LOGGER.debug("writeTile: Thread has been interrupted.");
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("writeTile: Thread has been interrupted.");
+      }
     } finally {
       releaseConnection(connection);
       if (acquired) {
-        LOGGER.trace("writeTile: Releasing mutex.");
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("writeTile: Releasing mutex.");
+        }
         mutex.release();
       }
     }
@@ -601,7 +622,9 @@ public class MbtilesTileset {
     boolean acquired = false;
     try {
       acquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
-      LOGGER.trace("deleteTile: Trying to acquire mutex: '{}'.", acquired);
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("deleteTile: Trying to acquire mutex: '{}'.", acquired);
+      }
       if (!acquired)
         throw new IllegalStateException(
             String.format(
@@ -636,11 +659,15 @@ public class MbtilesTileset {
       }
       throw e;
     } catch (InterruptedException e) {
-      LOGGER.debug("deleteTile: Thread has been interrupted.");
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("deleteTile: Thread has been interrupted.");
+      }
     } finally {
       releaseConnection(connection);
       if (acquired) {
-        LOGGER.trace("deleteTile: Releasing mutex.");
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("deleteTile: Releasing mutex.");
+        }
         mutex.release();
       }
     }
@@ -649,13 +676,20 @@ public class MbtilesTileset {
   public void deleteTiles(TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits)
       throws SQLException, IOException {
     int level = Integer.parseInt(limits.getTileMatrix());
-    LOGGER.trace(
-        "Delete tiles {}/{}/*/* from MBTiles cache {}.", tileMatrixSet.getId(), level, tilesetPath);
+    if (LOGGER.isTraceEnabled()) {
+      LOGGER.trace(
+          "Delete tiles {}/{}/*/* from MBTiles cache {}.",
+          tileMatrixSet.getId(),
+          level,
+          tilesetPath);
+    }
     Connection connection = null;
     boolean acquired = false;
     try {
       acquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
-      LOGGER.trace("deleteTiles: Trying to acquire mutex: '{}'.", acquired);
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("deleteTiles: Trying to acquire mutex: '{}'.", acquired);
+      }
       if (!acquired)
         throw new IllegalStateException(
             String.format(
@@ -703,11 +737,15 @@ public class MbtilesTileset {
       }
       throw e;
     } catch (InterruptedException e) {
-      LOGGER.debug("deleteTiles: Thread has been interrupted.");
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("deleteTiles: Thread has been interrupted.");
+      }
     } finally {
       releaseConnection(connection);
       if (acquired) {
-        LOGGER.trace("deleteTiles: Releasing mutex.");
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("deleteTiles: Releasing mutex.");
+        }
         mutex.release();
       }
     }

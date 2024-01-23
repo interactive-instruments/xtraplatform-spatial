@@ -215,8 +215,8 @@ public class TileStoreMbTiles implements TileStore {
         tileset.writeTile(tile, content.readAllBytes());
         written = true;
       } catch (SQLException e) {
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug(
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace(
               "Failed to write tile {}/{}/{}/{} for tileset '{}'. Reason: {}. Trying again...",
               tile.getTileMatrixSet().getId(),
               tile.getLevel(),
@@ -224,9 +224,6 @@ public class TileStoreMbTiles implements TileStore {
               tile.getCol(),
               tile.getTileset(),
               e.getMessage());
-        }
-        if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
-          LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
         }
         try {
           Thread.sleep(100);
