@@ -7,6 +7,7 @@ tokens:
   - type: ARRAY
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
     target: hatObjekt
+    onlyIf: source,concat,mapped,selected,reduced
   - type: ARRAY
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/_id
     target: hatObjekt
@@ -14,25 +15,25 @@ tokens:
   - type: OBJECT
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
     target: hatObjekt
-    onlyIf: source,concat,mapped
+    onlyIf: source,concat,coalesce,mapped
   - type: VALUE
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/_id
     target: hatObjekt.1_id
     value: 1
     valueType: INTEGER
-    onlyIf: source,concat
+    onlyIf: source,concat,coalesce
   - type: VALUE
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/constant_hatObjekt_37
     target: hatObjekt.1_type
     value: bst_erdgasleitung
     valueType: STRING
-    onlyIf: source,concat
+    onlyIf: source,concat,coalesce
   - type: VALUE
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung/text
     target: hatObjekt.1_title
     value: WAL
     valueType: STRING
-    onlyIf: source,concat
+    onlyIf: source,concat,coalesce
   - type: VALUE
     target: hatObjekt.href
     value: id::1
@@ -52,7 +53,7 @@ tokens:
   - type: OBJECT_END
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
     target: hatObjekt
-    onlyIf: source,concat,mapped
+    onlyIf: source,concat,coalesce,mapped
   - type: OBJECT
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung
     target: hatObjekt
@@ -172,7 +173,7 @@ tokens:
     target: hatObjekt
     value: 2
     valueType: INTEGER
-    onlyIf: selected,source2,coalesce
+    onlyIf: selected,source2,coalesce2
   - type: OBJECT_END
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
     target: hatObjekt
@@ -180,6 +181,7 @@ tokens:
   - type: ARRAY_END
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher
     target: hatObjekt
+    onlyIf: source,concat,mapped,selected,reduced
   - type: ARRAY_END
     onlyIf: source2
     source: /pfs_plan/[_id=gehoertzuplan_pfs_plan_fk]bst_speicher/_id

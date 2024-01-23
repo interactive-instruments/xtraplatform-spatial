@@ -74,20 +74,25 @@ public abstract class FeaturePropertyTransformerCoalesce
 
   private List<Object> coalesceValues(List<Object> slice) {
     List<Object> transformed = new ArrayList<>();
-    boolean lastWasValueWithPath = false;
     boolean skip = false;
+    boolean found = false;
 
     for (int i = 0; i < slice.size(); i++) {
       if (isValueWithPath(slice, i, schema.getFullPath())) {
-        if (!lastWasValueWithPath && isNonNullValue(slice, i)) {
-          lastWasValueWithPath = true;
+        if (found) {
+          break;
+        }
+        if (isNonNullValue(slice, i)) {
           skip = false;
+          found = true;
         } else {
           skip = true;
         }
       } else if (slice.get(i) instanceof FeatureTokenType) {
-        lastWasValueWithPath = false;
-        skip = false;
+        if (found) {
+          break;
+        }
+        skip = true;
       }
       if (!skip) {
         transformed.add(slice.get(i));
