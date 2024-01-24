@@ -14,7 +14,7 @@ import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -416,7 +416,7 @@ public interface FeaturePropertyTokenSliceTransformer
   }
 
   default Map<String, Integer> getValueIndexes(List<Object> slice, int from, int to) {
-    Map<String, Integer> valueIndexes = new HashMap<>();
+    Map<String, Integer> valueIndexes = new LinkedHashMap<>();
 
     for (int i = from; i < to; i++) {
       if (slice.get(i) == FeatureTokenType.VALUE) {
@@ -429,8 +429,25 @@ public interface FeaturePropertyTokenSliceTransformer
     return valueIndexes;
   }
 
+  default Map<String, Integer> getValueIndexesByProp(
+      List<Object> slice, int from, int to, int depth) {
+    Map<String, Integer> valueIndexes = new LinkedHashMap<>();
+
+    for (int i = from; i < to; i++) {
+      if (slice.get(i) == FeatureTokenType.VALUE) {
+        if (i + 2 < to
+            && slice.get(i + 1) instanceof List
+            && ((List<?>) slice.get(i + 1)).size() > depth) {
+          valueIndexes.put(((List<String>) slice.get(i + 1)).get(depth), i + 2);
+        }
+      }
+    }
+
+    return valueIndexes;
+  }
+
   default Map<String, Integer> getValueIndexesList(List<Object> slice, int from, int to) {
-    Map<String, Integer> valueIndexes = new HashMap<>();
+    Map<String, Integer> valueIndexes = new LinkedHashMap<>();
     int j = 0;
 
     for (int i = from; i < to; i++) {
