@@ -32,6 +32,8 @@ import java.util.stream.Stream;
  * - `title` is the title to use when presenting the link to a user, a `STRING`. The default value is the `id`, if the property is not specified.
  * - `type` is the feature type of the referenced feature in the same feature provider, a `STRING`.
  * </code>
+ *     <p>Limitations: These properties do not support transformations (e.g. `stringFormat`) or
+ *     `coalesce`.
  *     <p>#### Encoding feature references
  *     <p>When requested via the API, the feature reference can be encoded according to different
  *     profiles using the query parameter `profile` and depending on the negotiated feature format.
@@ -143,6 +145,8 @@ import java.util.stream.Stream;
  * - `title` ist die Bezeichnung, die verwendet wird, wenn der Link einem Benutzer angezeigt wird, ein `STRING`. Der Standardwert ist die `id`, wenn die Eigenschaft nicht angegeben wird.
  * - `type` ist die Objektart des referenzierten Features im selben Feature Provider, ein `STRING`.
  * </code>
+ *     <p>Einschränkungen: Diese Eigenschaften unterstützen keine Transformationen (z.B.
+ *     `stringFormat`) oder `coalesce`.
  *     <p>#### Kodieren von Objektreferenzen
  *     <p>Wenn Objekte über die API angefordert werden, können Objektreferenzen mit Hilfe des
  *     Abfrageparameters `profile` nach verschiedenen Profilen kodiert werden, je nach dem
