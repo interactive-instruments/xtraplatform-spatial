@@ -12,6 +12,7 @@ import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.immutables.value.Value;
 
@@ -58,14 +59,9 @@ public abstract class FeaturePropertyTransformerCoalesce
       if (start > -1) {
         int end = findPos(slice, FeatureTokenType.OBJECT_END, rootPath, start);
 
-        transformed.addAll(slice.subList(start, end + 2));
+        return coalesceObjectProperties(slice, start + 2, end, rootPath);
       }
     } else {
-      /*int start = findPos(slice, FeatureTokenType.VALUE, rootPath, 0);
-
-      if (start > -1) {
-        transformed.addAll(slice.subList(start, start + 4));
-      }*/
       return coalesceValues(slice);
     }
 
@@ -74,23 +70,66 @@ public abstract class FeaturePropertyTransformerCoalesce
 
   private List<Object> coalesceValues(List<Object> slice) {
     List<Object> transformed = new ArrayList<>();
-    boolean lastWasValueWithPath = false;
     boolean skip = false;
+    boolean found = false;
 
     for (int i = 0; i < slice.size(); i++) {
       if (isValueWithPath(slice, i, schema.getFullPath())) {
-        if (!lastWasValueWithPath) {
-          lastWasValueWithPath = true;
+        if (found) {
+          break;
+        }
+        if (isNonNullValue(slice, i)) {
+          skip = false;
+          found = true;
         } else {
           skip = true;
         }
       } else if (slice.get(i) instanceof FeatureTokenType) {
-        lastWasValueWithPath = false;
-        skip = false;
+        if (found) {
+          break;
+        }
+        skip = true;
       }
       if (!skip) {
         transformed.add(slice.get(i));
       }
+    }
+
+    return transformed;
+  }
+
+  private List<Object> coalesceObjectProperties(
+      List<Object> slice, int start, int end, List<String> rootPath) {
+    List<Object> transformed = new ArrayList<>();
+    boolean found = false;
+
+    Map<String, Integer> valueIndexes = getValueIndexesByProp(slice, start, end, rootPath.size());
+
+    for (int i = 0; i < schema.getCoalesce().size(); i++) {
+      String prefix = i + "_";
+      if (valueIndexes.keySet().stream().anyMatch(prop -> prop.startsWith(prefix))) {
+        valueIndexes.forEach(
+            (prop, index) -> {
+              if (prop.startsWith(prefix)) {
+                transformed.add(slice.get(index - 2));
+                transformed.add(slice.get(index - 1));
+                transformed.add(slice.get(index));
+                transformed.add(slice.get(index + 1));
+              }
+            });
+
+        // TODO: check if all required props are set, otherwise reset and continue
+
+        found = true;
+        break;
+      }
+    }
+
+    if (found) {
+      transformed.add(0, FeatureTokenType.OBJECT);
+      transformed.add(1, rootPath);
+      transformed.add(FeatureTokenType.OBJECT_END);
+      transformed.add(rootPath);
     }
 
     return transformed;
