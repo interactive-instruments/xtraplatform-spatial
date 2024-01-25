@@ -28,6 +28,8 @@ public interface TileStore extends TileStoreReadOnly {
     return false;
   }
 
+  default void tidyup() {}
+
   interface Staging {
 
     boolean inProgress();

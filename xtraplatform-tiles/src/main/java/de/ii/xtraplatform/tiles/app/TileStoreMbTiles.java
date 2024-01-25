@@ -333,6 +333,19 @@ public class TileStoreMbTiles implements TileStore {
     }
   }
 
+  @Override
+  public void tidyup() {
+    tileSets.forEach(
+        (key, mbtiles) -> {
+          String[] fromKey = fromKey(key);
+          try {
+            mbtiles.cleanup();
+          } catch (SQLException | IOException e) {
+            // ignore
+          }
+        });
+  }
+
   private static List<VectorLayer> getVectorLayers(
       Map<String, Map<String, TileGenerationSchema>> tileSchemas, String tileset) {
     return tileSchemas.get(tileset).entrySet().stream()

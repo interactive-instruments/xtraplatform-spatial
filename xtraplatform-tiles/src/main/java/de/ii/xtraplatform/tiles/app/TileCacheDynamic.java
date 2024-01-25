@@ -149,11 +149,13 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
               }
             });
 
+        tileStore.tidyup();
+
         LOGGER.debug(
             "{}: purged cache successfully for {}", taskContext.getTaskLabel(), tileSourceLabel);
       } else {
         try {
-          Thread.sleep(1000);
+          Thread.sleep(10000);
         } catch (InterruptedException e) {
           // ignore
         }

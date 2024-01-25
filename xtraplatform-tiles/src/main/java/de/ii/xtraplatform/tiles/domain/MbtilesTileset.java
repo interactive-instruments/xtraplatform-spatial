@@ -750,4 +750,32 @@ public class MbtilesTileset {
       }
     }
   }
+
+  public void cleanup() throws SQLException, IOException {
+    Connection connection = null;
+    boolean acquired = false;
+    try {
+      acquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("cleanup: Trying to acquire mutex: '{}'.", acquired);
+      }
+      if (!acquired)
+        throw new IllegalStateException(
+            String.format("Could not acquire mutex to cleanup MBTiles file: %s", tilesetPath));
+      connection = getConnection(false, false);
+      SqlHelper.execute(connection, "VACUUM");
+    } catch (InterruptedException e) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("cleanup: Thread has been interrupted.");
+      }
+    } finally {
+      releaseConnection(connection);
+      if (acquired) {
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("cleanup: Releasing mutex.");
+        }
+        mutex.release();
+      }
+    }
+  }
 }
