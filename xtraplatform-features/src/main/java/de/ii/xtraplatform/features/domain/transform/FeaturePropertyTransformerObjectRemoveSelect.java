@@ -27,8 +27,7 @@ public interface FeaturePropertyTransformerObjectRemoveSelect
   default FeatureSchema transformSchema(FeatureSchema schema) {
     checkObject(schema);
 
-    if (schema.getProperties().stream()
-        .noneMatch(property -> Objects.equals(property.getName(), getParameter()))) {
+    if (findProperty(schema, getParameter()).isEmpty()) {
       throw new IllegalArgumentException("Selected property not found: " + getParameter());
     }
 
@@ -46,7 +45,7 @@ public interface FeaturePropertyTransformerObjectRemoveSelect
     String value = getValue(slice, getPropertyPath() + "." + getParameter(), start, end);
 
     if (Objects.nonNull(value)) {
-      result.addAll(slice);
+      result.addAll(slice.subList(start, end));
     }
   }
 }

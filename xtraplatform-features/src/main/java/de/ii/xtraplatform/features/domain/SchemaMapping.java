@@ -53,7 +53,10 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
   @Override
   default List<FeatureSchema> getSchemas(
       List<String> path, List<FeatureSchema> schemas, boolean useTargetPaths) {
-    if (!useTargetPaths && schemas.stream().anyMatch(schema -> !schema.getCoalesce().isEmpty())) {
+    if (!useTargetPaths
+        && schemas.stream()
+            .anyMatch(
+                schema -> !schema.getCoalesce().isEmpty() && schema.getPropertyMap().isEmpty())) {
       return schemas.stream()
           .map(
               schema -> {

@@ -112,7 +112,8 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
     if (!useTargetPath
         && schema.getType() == Type.OBJECT_ARRAY
         && schema instanceof FeatureSchema
-        && !((FeatureSchema) schema).getConcat().isEmpty()) {
+        && (!((FeatureSchema) schema).getConcat().isEmpty()
+            || !((FeatureSchema) schema).getCoalesce().isEmpty())) {
       return Stream.concat(
               paths.stream().map(path -> Map.entry(path, schema)),
               visitedProperties.stream()

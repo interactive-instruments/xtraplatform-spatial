@@ -14,10 +14,11 @@ import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -415,7 +416,7 @@ public interface FeaturePropertyTokenSliceTransformer
   }
 
   default Map<String, Integer> getValueIndexes(List<Object> slice, int from, int to) {
-    Map<String, Integer> valueIndexes = new HashMap<>();
+    Map<String, Integer> valueIndexes = new LinkedHashMap<>();
 
     for (int i = from; i < to; i++) {
       if (slice.get(i) == FeatureTokenType.VALUE) {
@@ -428,8 +429,25 @@ public interface FeaturePropertyTokenSliceTransformer
     return valueIndexes;
   }
 
+  default Map<String, Integer> getValueIndexesByProp(
+      List<Object> slice, int from, int to, int depth) {
+    Map<String, Integer> valueIndexes = new LinkedHashMap<>();
+
+    for (int i = from; i < to; i++) {
+      if (slice.get(i) == FeatureTokenType.VALUE) {
+        if (i + 2 < to
+            && slice.get(i + 1) instanceof List
+            && ((List<?>) slice.get(i + 1)).size() > depth) {
+          valueIndexes.put(((List<String>) slice.get(i + 1)).get(depth), i + 2);
+        }
+      }
+    }
+
+    return valueIndexes;
+  }
+
   default Map<String, Integer> getValueIndexesList(List<Object> slice, int from, int to) {
-    Map<String, Integer> valueIndexes = new HashMap<>();
+    Map<String, Integer> valueIndexes = new LinkedHashMap<>();
     int j = 0;
 
     for (int i = from; i < to; i++) {
@@ -458,6 +476,12 @@ public interface FeaturePropertyTokenSliceTransformer
         && Objects.equals(slice.get(index + 1), path);
   }
 
+  default boolean isNonNullValue(List<Object> slice, int index) {
+    return slice.get(index) == FeatureTokenType.VALUE
+        && index + 3 < slice.size()
+        && Objects.nonNull(slice.get(index + 2));
+  }
+
   default boolean isObjectWithPath(List<Object> slice, int index, List<String> path) {
     return slice.get(index) == FeatureTokenType.OBJECT
         && index + 1 < slice.size()
@@ -482,14 +506,26 @@ public interface FeaturePropertyTokenSliceTransformer
 
   static String joinPath(List<String> path) {
     String last = path.get(path.size() - 1);
-    if (last.matches("[0-9]+_.*")) {
+    if (needsClean(last)) {
       List<String> path2 = new ArrayList<>(path.subList(0, path.size() - 1));
-      path2.add(last.substring(last.indexOf("_") + 1));
+      path2.add(clean(last));
 
       return PATH_JOINER.join(path2);
     }
 
     return PATH_JOINER.join(path);
+  }
+
+  static String clean(String propertyPath) {
+    if (needsClean(propertyPath)) {
+      return propertyPath.substring(propertyPath.indexOf("_") + 1);
+    }
+
+    return propertyPath;
+  }
+
+  static boolean needsClean(String propertyPath) {
+    return propertyPath.matches("[0-9]+_.*");
   }
 
   static String getValue(List<Object> slice, int valueIndex) {
@@ -504,7 +540,7 @@ public interface FeaturePropertyTokenSliceTransformer
     for (int i = from; i < to; i++) {
       if (slice.get(i) == FeatureTokenType.VALUE) {
         if (i + 2 < to && slice.get(i + 1) instanceof List) {
-          if (Objects.equals(path, PATH_JOINER.join((List<String>) slice.get(i + 1)))) {
+          if (Objects.equals(path, joinPath((List<String>) slice.get(i + 1)))) {
             return i + 2;
           }
         }
@@ -546,5 +582,14 @@ public interface FeaturePropertyTokenSliceTransformer
             : Type.STRING;
 
     return Tuple.of(value, type);
+  }
+
+  default Optional<FeatureSchema> findProperty(FeatureSchema schema, String propertyName) {
+    return schema.getProperties().stream()
+        .filter(
+            property ->
+                Objects.equals(property.getName(), propertyName)
+                    || Objects.equals(clean(property.getName()), propertyName))
+        .findFirst();
   }
 }
