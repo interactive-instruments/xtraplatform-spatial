@@ -27,6 +27,8 @@ import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -252,9 +254,42 @@ public class FeatureStreamImpl implements FeatureStream {
     PropertyTransformations providerTransformations =
         () -> getProviderTransformations(featureSchema);
 
-    return propertyTransformations
-        .map(p -> p.mergeInto(providerTransformations))
-        .orElse(providerTransformations);
+    PropertyTransformations merged =
+        propertyTransformations
+            .map(p -> p.mergeInto(providerTransformations))
+            .orElse(providerTransformations);
+
+    return applyRename(merged);
+  }
+
+  private PropertyTransformations applyRename(PropertyTransformations propertyTransformations) {
+    if (propertyTransformations.getTransformations().values().stream()
+        .flatMap(Collection::stream)
+        .anyMatch(propertyTransformation -> propertyTransformation.getRename().isPresent())) {
+      Map<String, List<PropertyTransformation>> adjusted =
+          new LinkedHashMap<>(propertyTransformations.getTransformations());
+
+      propertyTransformations
+          .getTransformations()
+          .forEach(
+              (key, value) -> {
+                Optional<String> rename =
+                    value.stream()
+                        .filter(
+                            propertyTransformation ->
+                                propertyTransformation.getRename().isPresent())
+                        .map(propertyTransformation -> propertyTransformation.getRename().get())
+                        .findFirst();
+
+                if (rename.isPresent()) {
+                  adjusted.put(rename.get(), value);
+                }
+              });
+
+      return () -> adjusted;
+    }
+
+    return propertyTransformations;
   }
 
   private Map<String, List<PropertyTransformation>> getProviderTransformations(
