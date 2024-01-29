@@ -266,8 +266,7 @@ public class FeatureStreamImpl implements FeatureStream {
     if (propertyTransformations.getTransformations().values().stream()
         .flatMap(Collection::stream)
         .anyMatch(propertyTransformation -> propertyTransformation.getRename().isPresent())) {
-      Map<String, List<PropertyTransformation>> adjusted =
-          new LinkedHashMap<>(propertyTransformations.getTransformations());
+      Map<String, List<PropertyTransformation>> renamed = new LinkedHashMap<>();
 
       propertyTransformations
           .getTransformations()
@@ -282,11 +281,22 @@ public class FeatureStreamImpl implements FeatureStream {
                         .findFirst();
 
                 if (rename.isPresent()) {
-                  adjusted.put(rename.get(), value);
+                  renamed.put(rename.get(), value);
+
+                  String prefix = key + ".";
+
+                  propertyTransformations
+                      .getTransformations()
+                      .forEach(
+                          (key2, value2) -> {
+                            if (key2.startsWith(prefix)) {
+                              renamed.put(key2.replace(key, rename.get()), value2);
+                            }
+                          });
                 }
               });
 
-      return () -> adjusted;
+      return propertyTransformations.mergeInto(() -> renamed);
     }
 
     return propertyTransformations;
