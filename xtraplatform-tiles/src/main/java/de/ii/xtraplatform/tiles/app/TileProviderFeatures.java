@@ -312,6 +312,13 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
       }
     }
+
+    for (TileStore cache :
+        tileStores.values().stream()
+            .flatMap(m -> m.values().stream())
+            .collect(Collectors.toList())) {
+      cache.tidyup();
+    }
   }
 
   @Override

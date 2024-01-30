@@ -40,20 +40,9 @@ public class SqlHelper {
     }
   }
 
-  public static void execute(Connection connection, String sql) {
+  public static void execute(Connection connection, String sql) throws SQLException {
     try (Statement statement = connection.createStatement()) {
       statement.execute(sql);
-    } catch (SQLException e) {
-      // error updating a cache, just report and continue
-      if (LOGGER.isErrorEnabled()) {
-        String dbUrl = "unknown";
-        try {
-          dbUrl = connection.getMetaData().getURL();
-        } catch (SQLException ignore) {
-        }
-        LOGGER.error(
-            "Statement execution failed: {}. Database: {}. Reason: {}", sql, dbUrl, e.getMessage());
-      }
     }
   }
 

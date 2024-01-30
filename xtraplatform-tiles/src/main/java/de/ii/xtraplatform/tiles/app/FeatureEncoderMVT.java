@@ -29,6 +29,7 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.locationtech.jts.geom.util.AffineTransformation;
+import org.locationtech.jts.geom.util.GeometryFixer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,19 +148,23 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
         return;
       }
 
-      // Geometry is invalid -> log this information and skip it, if that option is used
+      // Geometry is invalid -> try to fix the geometry, otherwise log this information and skip it,
+      // if that option is used
       if (!tileGeometry.isValid()) {
-        LOGGER.warn(
-            "Feature {} in tileset {} has an invalid tile geometry in tile {}/{}/{}/{}. Size in pixels: {}.",
-            feature.getIdValue(),
-            tileset,
-            tile.getTileMatrixSet().getId(),
-            tile.getLevel(),
-            tile.getRow(),
-            tile.getCol(),
-            featureGeometry.get().getArea());
-        if (parameters.getIgnoreInvalidGeometries()) {
-          return;
+        tileGeometry = new GeometryFixer(tileGeometry).getResult();
+        if (!tileGeometry.isValid()) {
+          LOGGER.warn(
+              "Feature {} in tileset {} has an invalid tile geometry in tile {}/{}/{}/{}. Size in pixels: {}.",
+              feature.getIdValue(),
+              tileset,
+              tile.getTileMatrixSet().getId(),
+              tile.getLevel(),
+              tile.getRow(),
+              tile.getCol(),
+              featureGeometry.get().getArea());
+          if (Boolean.TRUE.equals(parameters.getIgnoreInvalidGeometries())) {
+            return;
+          }
         }
       }
 
@@ -221,17 +226,23 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
           .forEach(
               mergedFeature -> {
                 Geometry geom = mergedFeature.getGeometry();
-                // Geometry is invalid? -> log this information and skip it, if that option is used
+                // Geometry is invalid? -> try to fix the geometry, otherwise log this information
+                // and skip it, if that option is used
                 if (!geom.isValid()) {
-                  LOGGER.warn(
-                      "A merged feature in tileset {} has an invalid tile geometry in tile {}/{}/{}/{}. Properties: {}",
-                      tileset,
-                      tile.getTileMatrixSet().getId(),
-                      tile.getLevel(),
-                      tile.getRow(),
-                      tile.getCol(),
-                      mergedFeature.getProperties());
-                  if (parameters.getIgnoreInvalidGeometries()) return;
+                  geom = new GeometryFixer(geom).getResult();
+                  if (!geom.isValid()) {
+                    LOGGER.warn(
+                        "A merged feature in tileset {} has an invalid tile geometry in tile {}/{}/{}/{}. Properties: {}",
+                        tileset,
+                        tile.getTileMatrixSet().getId(),
+                        tile.getLevel(),
+                        tile.getRow(),
+                        tile.getCol(),
+                        mergedFeature.getProperties());
+                    if (Boolean.TRUE.equals(parameters.getIgnoreInvalidGeometries())) {
+                      return;
+                    }
+                  }
                 }
                 tileEncoder.addFeature(tileset, mergedFeature.getProperties(), geom);
                 written++;

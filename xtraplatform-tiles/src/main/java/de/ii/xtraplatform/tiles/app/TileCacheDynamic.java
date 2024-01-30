@@ -13,6 +13,7 @@ import de.ii.xtraplatform.services.domain.TaskContext;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.TileCache;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
+import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStore;
@@ -115,8 +116,6 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
       return;
     }
 
-    Map<String, Optional<BoundingBox>> boundingBoxes = getBoundingBoxes(tilesets);
-
     // NOTE: other partials may start writing before first partial is done with purging, as a
     // workaround they will sleep for 1s
     // TODO: to implement this properly, add preRun and postRun to tasks which are run before/after
@@ -125,23 +124,38 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
       if (taskContext.isFirstPartial()) {
         LOGGER.debug("{}: purging cache for {}", taskContext.getTaskLabel(), tileSourceLabel);
 
+        Map<String, Optional<BoundingBox>> boundingBoxes = getBoundingBoxes(tilesets);
+
         tileWalker.walkTilesetsAndLimits(
             tilesets.keySet(),
             getTmsRanges(),
             boundingBoxes,
             (tileset, tileMatrixSet, limits) -> {
               try {
-                tileStore.delete(tileset, tileMatrixSet, limits, false);
+                // Purge: delete all tiles in the tile matrix
+                BoundingBox bbox = tileMatrixSet.getBoundingBox();
+                TileMatrixSetLimits purgeLimits =
+                    tileMatrixSet.getLimits(Integer.parseInt(limits.getTileMatrix()), bbox);
+                tileStore.delete(tileset, tileMatrixSet, purgeLimits, false);
               } catch (IOException e) {
                 // ignore
+                LOGGER.debug(
+                    "{}: Error while purging cached tiles for {}, tileset {}, tile matrix {}. Reason: {}",
+                    taskContext.getTaskLabel(),
+                    tileSourceLabel,
+                    tileset,
+                    limits.getTileMatrix(),
+                    e.getMessage());
               }
             });
+
+        tileStore.tidyup();
 
         LOGGER.debug(
             "{}: purged cache successfully for {}", taskContext.getTaskLabel(), tileSourceLabel);
       } else {
         try {
-          Thread.sleep(1000);
+          Thread.sleep(10000);
         } catch (InterruptedException e) {
           // ignore
         }

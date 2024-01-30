@@ -195,34 +195,53 @@ public class TileStoreMbTiles implements TileStore {
 
   @Override
   public void put(TileQuery tile, InputStream content) throws IOException {
-    try {
-      synchronized (tileSets) {
-        if (!tileSets.containsKey(key(tile))) {
-          tileSets.put(
-              key(tile),
-              createTileSet(
-                  rootStore,
-                  providerId,
-                  tile.getTileset(),
-                  tile.getTileMatrixSet().getId(),
-                  getVectorLayers(tileSchemas, tile.getTileset())));
+    synchronized (tileSets) {
+      if (!tileSets.containsKey(key(tile))) {
+        tileSets.put(
+            key(tile),
+            createTileSet(
+                rootStore,
+                providerId,
+                tile.getTileset(),
+                tile.getTileMatrixSet().getId(),
+                getVectorLayers(tileSchemas, tile.getTileset())));
+      }
+    }
+    MbtilesTileset tileset = tileSets.get(key(tile));
+    boolean written = false;
+    int count = 0;
+    while (!written && count++ < 3) {
+      try {
+        tileset.writeTile(tile, content.readAllBytes());
+        written = true;
+      } catch (SQLException e) {
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace(
+              "Failed to write tile {}/{}/{}/{} for tileset '{}'. Reason: {}. Trying again...",
+              tile.getTileMatrixSet().getId(),
+              tile.getLevel(),
+              tile.getRow(),
+              tile.getCol(),
+              tile.getTileset(),
+              e.getMessage());
+        }
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException ignore) {
+          // ignore
         }
       }
-      tileSets.get(key(tile)).writeTile(tile, content.readAllBytes());
+    }
 
-    } catch (SQLException e) {
+    if (!written) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(
-            "Failed to write tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
+            "Failed to write tile {}/{}/{}/{} for tileset '{}'.",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getTileset(),
-            e.getMessage());
-        if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
-          LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
-        }
+            tile.getTileset());
       }
     }
   }
@@ -312,6 +331,19 @@ public class TileStoreMbTiles implements TileStore {
     } catch (SQLException | IOException e) {
       // ignore
     }
+  }
+
+  @Override
+  public void tidyup() {
+    tileSets.forEach(
+        (key, mbtiles) -> {
+          String[] fromKey = fromKey(key);
+          try {
+            mbtiles.cleanup();
+          } catch (SQLException | IOException e) {
+            // ignore
+          }
+        });
   }
 
   private static List<VectorLayer> getVectorLayers(
