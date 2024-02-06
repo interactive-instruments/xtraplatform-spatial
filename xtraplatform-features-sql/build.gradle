@@ -10,7 +10,7 @@ dependencies {
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-strings')
 
-    embedded (group: 'com.github.davidmoten', name: 'rxjava2-jdbc', version: '0.2.12') {
+    embedded (group: 'com.github.davidmoten', name: 'rxjava2-jdbc', version: '0.2.14') {
         exclude module: 'reactive-streams'
         exclude module: 'commons-io'
         exclude module: 'slf4j-api'

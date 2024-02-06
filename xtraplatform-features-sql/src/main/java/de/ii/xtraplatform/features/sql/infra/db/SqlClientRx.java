@@ -189,13 +189,17 @@ public class SqlClientRx implements SqlClient {
 
     String first = toStatementsWithLog.get(0).apply(feature);
 
-    Flowable<Tx<String>> txFlowable =
-        session
-            .update(first)
-            .transacted()
-            .returnGeneratedKeys()
-            .get(resultSet -> mapper.apply(resultSet, null))
-            .filter(tx -> !tx.isComplete());
+    Flowable<? extends Tx<?>> txFlowable =
+        // TODO: workaround for bug in rxjava2-jdbc, TransactedConnection.commit is called too
+        // often, therefore close is never called because counter < 0
+        toStatements.size() == 2
+            ? session.update(first).transacted().tx().filter(tx -> !tx.isComplete())
+            : session
+                .update(first)
+                .transacted()
+                .returnGeneratedKeys()
+                .get(resultSet -> mapper.apply(resultSet, null))
+                .filter(tx -> !tx.isComplete());
 
     for (int j = 1; j < toStatementsWithLog.size(); j++) {
       String next = toStatementsWithLog.get(j).apply(feature);
@@ -205,11 +209,15 @@ public class SqlClientRx implements SqlClient {
               tx ->
                   tx.update(next)
                       .returnGeneratedKeys()
-                      .get(resultSet -> mapper.apply(resultSet, tx.value()))
+                      .get(
+                          resultSet ->
+                              mapper.apply(
+                                  resultSet,
+                                  tx.value() instanceof String ? (String) tx.value() : null))
                       .filter(tx2 -> !tx2.isComplete()));
     }
 
-    Flowable<String> flowable = txFlowable.map(Tx::value);
+    Flowable<String> flowable = txFlowable.map(tx -> (String) tx.value());
 
     return Reactive.Source.publisher(RxJavaBridge.toV3Flowable(flowable));
   }
